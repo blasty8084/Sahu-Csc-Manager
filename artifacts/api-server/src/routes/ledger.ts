@@ -1,0 +1,249 @@
+import { Router, type IRouter } from "express";
+import { db, ledgerTable, usersTable } from "@workspace/db";
+import { eq, and, gte, lte, like, desc, sql, count, sum } from "drizzle-orm";
+import {
+  CreateLedgerEntryBody,
+  UpdateLedgerEntryBody,
+  UpdateLedgerEntryParams,
+  GetLedgerEntryParams,
+  DeleteLedgerEntryParams,
+  ListLedgerEntriesQueryParams,
+  GetLedgerSummaryQueryParams,
+} from "@workspace/api-zod";
+import { requireAuth, auditLog, getClientIp } from "../lib/auth";
+
+const router: IRouter = Router();
+
+function formatEntry(entry: any, createdByName?: string | null) {
+  return {
+    id: entry.id,
+    date: entry.date,
+    customerName: entry.customerName,
+    serviceType: entry.serviceType,
+    credit: parseFloat(entry.credit ?? "0"),
+    debit: parseFloat(entry.debit ?? "0"),
+    description: entry.description,
+    balance: parseFloat(entry.balance ?? "0"),
+    createdBy: entry.createdBy,
+    createdByName: createdByName ?? null,
+    createdAt: entry.createdAt instanceof Date ? entry.createdAt.toISOString() : entry.createdAt,
+  };
+}
+
+router.get("/ledger/balance", requireAuth, async (req, res): Promise<void> => {
+  const result = await db
+    .select({
+      totalCredits: sum(ledgerTable.credit),
+      totalDebits: sum(ledgerTable.debit),
+    })
+    .from(ledgerTable);
+
+  const totalCredits = parseFloat(result[0]?.totalCredits ?? "0");
+  const totalDebits = parseFloat(result[0]?.totalDebits ?? "0");
+  res.json({
+    balance: totalCredits - totalDebits,
+    totalCredits,
+    totalDebits,
+  });
+});
+
+router.get("/ledger/summary", requireAuth, async (req, res): Promise<void> => {
+  const params = GetLedgerSummaryQueryParams.safeParse(req.query);
+  const period = params.success ? params.data.period ?? "today" : "today";
+
+  let startDate: string;
+  let endDate: string;
+  const now = new Date();
+
+  if (period === "custom" && params.success && params.data.startDate && params.data.endDate) {
+    startDate = params.data.startDate as string;
+    endDate = params.data.endDate as string;
+  } else if (period === "yesterday") {
+    const y = new Date(now);
+    y.setDate(y.getDate() - 1);
+    startDate = endDate = y.toISOString().split("T")[0];
+  } else if (period === "week") {
+    const start = new Date(now);
+    start.setDate(start.getDate() - 6);
+    startDate = start.toISOString().split("T")[0];
+    endDate = now.toISOString().split("T")[0];
+  } else if (period === "month") {
+    startDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+    endDate = now.toISOString().split("T")[0];
+  } else {
+    startDate = endDate = now.toISOString().split("T")[0];
+  }
+
+  const result = await db
+    .select({
+      totalCredits: sum(ledgerTable.credit),
+      totalDebits: sum(ledgerTable.debit),
+      totalTransactions: count(),
+    })
+    .from(ledgerTable)
+    .where(and(gte(ledgerTable.date, startDate), lte(ledgerTable.date, endDate)));
+
+  const totalCredits = parseFloat(result[0]?.totalCredits ?? "0");
+  const totalDebits = parseFloat(result[0]?.totalDebits ?? "0");
+
+  res.json({
+    totalTransactions: result[0]?.totalTransactions ?? 0,
+    totalCredits,
+    totalDebits,
+    netChange: totalCredits - totalDebits,
+    period,
+  });
+});
+
+router.get("/ledger", requireAuth, async (req, res): Promise<void> => {
+  const params = ListLedgerEntriesQueryParams.safeParse(req.query);
+  const page = params.success && params.data.page ? params.data.page : 1;
+  const limit = params.success && params.data.limit ? params.data.limit : 20;
+  const offset = (page - 1) * limit;
+
+  const conditions: any[] = [];
+  if (params.success) {
+    if (params.data.startDate) conditions.push(gte(ledgerTable.date, params.data.startDate as string));
+    if (params.data.endDate) conditions.push(lte(ledgerTable.date, params.data.endDate as string));
+    if (params.data.serviceType) conditions.push(eq(ledgerTable.serviceType, params.data.serviceType as string));
+    if (params.data.customerName) conditions.push(like(ledgerTable.customerName, `%${params.data.customerName}%`));
+  }
+
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+  const [entries, totalResult] = await Promise.all([
+    db
+      .select({
+        id: ledgerTable.id,
+        date: ledgerTable.date,
+        customerName: ledgerTable.customerName,
+        serviceType: ledgerTable.serviceType,
+        credit: ledgerTable.credit,
+        debit: ledgerTable.debit,
+        description: ledgerTable.description,
+        balance: ledgerTable.balance,
+        createdBy: ledgerTable.createdBy,
+        createdAt: ledgerTable.createdAt,
+        createdByName: usersTable.username,
+      })
+      .from(ledgerTable)
+      .leftJoin(usersTable, eq(ledgerTable.createdBy, usersTable.id))
+      .where(whereClause)
+      .orderBy(desc(ledgerTable.createdAt))
+      .limit(limit)
+      .offset(offset),
+    db.select({ total: count() }).from(ledgerTable).where(whereClause),
+  ]);
+
+  res.json({
+    entries: entries.map((e) => formatEntry(e, e.createdByName)),
+    total: totalResult[0]?.total ?? 0,
+    page,
+    limit,
+  });
+});
+
+router.post("/ledger", requireAuth, async (req, res): Promise<void> => {
+  const parsed = CreateLedgerEntryBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { date, customerName, serviceType, credit, debit, description } = parsed.data;
+
+  // Calculate running balance from all previous entries
+  const balanceResult = await db
+    .select({ totalCredits: sum(ledgerTable.credit), totalDebits: sum(ledgerTable.debit) })
+    .from(ledgerTable);
+
+  const prevCredits = parseFloat(balanceResult[0]?.totalCredits ?? "0");
+  const prevDebits = parseFloat(balanceResult[0]?.totalDebits ?? "0");
+  const newBalance = prevCredits - prevDebits + (credit ?? 0) - (debit ?? 0);
+
+  const [entry] = await db
+    .insert(ledgerTable)
+    .values({
+      date,
+      customerName,
+      serviceType,
+      credit: String(credit ?? 0),
+      debit: String(debit ?? 0),
+      description,
+      balance: String(newBalance),
+      createdBy: req.session.userId!,
+    })
+    .returning();
+
+  await auditLog(req.session.userId!, "ledger.create", `Created ledger entry for ${customerName}`, getClientIp(req));
+
+  res.status(201).json(formatEntry(entry));
+});
+
+router.get("/ledger/:id", requireAuth, async (req, res): Promise<void> => {
+  const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const id = parseInt(rawId, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+
+  const [entry] = await db
+    .select({
+      id: ledgerTable.id,
+      date: ledgerTable.date,
+      customerName: ledgerTable.customerName,
+      serviceType: ledgerTable.serviceType,
+      credit: ledgerTable.credit,
+      debit: ledgerTable.debit,
+      description: ledgerTable.description,
+      balance: ledgerTable.balance,
+      createdBy: ledgerTable.createdBy,
+      createdAt: ledgerTable.createdAt,
+      createdByName: usersTable.username,
+    })
+    .from(ledgerTable)
+    .leftJoin(usersTable, eq(ledgerTable.createdBy, usersTable.id))
+    .where(eq(ledgerTable.id, id));
+
+  if (!entry) { res.status(404).json({ error: "Not found" }); return; }
+  res.json(formatEntry(entry, entry.createdByName));
+});
+
+router.patch("/ledger/:id", requireAuth, async (req, res): Promise<void> => {
+  const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const id = parseInt(rawId, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+
+  const parsed = UpdateLedgerEntryBody.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+
+  const updateData: Record<string, any> = {};
+  if (parsed.data.date !== undefined) updateData.date = parsed.data.date;
+  if (parsed.data.customerName !== undefined) updateData.customerName = parsed.data.customerName;
+  if (parsed.data.serviceType !== undefined) updateData.serviceType = parsed.data.serviceType;
+  if (parsed.data.credit !== undefined) updateData.credit = String(parsed.data.credit);
+  if (parsed.data.debit !== undefined) updateData.debit = String(parsed.data.debit);
+  if (parsed.data.description !== undefined) updateData.description = parsed.data.description;
+
+  const [existing] = await db.select().from(ledgerTable).where(eq(ledgerTable.id, id));
+  if (!existing) { res.status(404).json({ error: "Not found" }); return; }
+
+  const [updated] = await db.update(ledgerTable).set(updateData).where(eq(ledgerTable.id, id)).returning();
+  await auditLog(req.session.userId!, "ledger.update", `Updated ledger entry ${id}`, getClientIp(req));
+
+  res.json(formatEntry(updated));
+});
+
+router.delete("/ledger/:id", requireAuth, async (req, res): Promise<void> => {
+  const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const id = parseInt(rawId, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+
+  const [existing] = await db.select().from(ledgerTable).where(eq(ledgerTable.id, id));
+  if (!existing) { res.status(404).json({ error: "Not found" }); return; }
+
+  await db.delete(ledgerTable).where(eq(ledgerTable.id, id));
+  await auditLog(req.session.userId!, "ledger.delete", `Deleted ledger entry ${id}`, getClientIp(req));
+
+  res.sendStatus(204);
+});
+
+export default router;

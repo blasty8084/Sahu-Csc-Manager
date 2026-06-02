@@ -3,13 +3,34 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: SAHU CSC FV1 - CSC Business Management Platform API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: ledger
+    description: Ledger and financial operations
+  - name: services
+    description: CSC service management
+  - name: users
+    description: User management
+  - name: reports
+    description: Reporting and analytics
+  - name: notifications
+    description: Notification management
+  - name: audit
+    description: Audit log operations
+  - name: settings
+    description: System settings
+  - name: backups
+    description: Backup and restore operations
+  - name: dashboard
+    description: Dashboard summary data
+
 paths:
   /healthz:
     get:
@@ -24,13 +45,1134 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # Auth
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "401":
+          description: Invalid credentials
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "401":
+          description: Not authenticated
+
+  # Ledger
+  /ledger:
+    get:
+      operationId: listLedgerEntries
+      tags: [ledger]
+      summary: List ledger entries
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+        - name: serviceType
+          in: query
+          schema:
+            type: string
+        - name: customerName
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of ledger entries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LedgerListResponse"
+    post:
+      operationId: createLedgerEntry
+      tags: [ledger]
+      summary: Create ledger entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LedgerEntryInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LedgerEntry"
+
+  /ledger/balance:
+    get:
+      operationId: getBalance
+      tags: [ledger]
+      summary: Get current running balance
+      responses:
+        "200":
+          description: Current balance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BalanceResponse"
+
+  /ledger/summary:
+    get:
+      operationId: getLedgerSummary
+      tags: [ledger]
+      summary: Get ledger summary stats
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [today, yesterday, week, month, custom]
+        - name: startDate
+          in: query
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Summary stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LedgerSummary"
+
+  /ledger/{id}:
+    get:
+      operationId: getLedgerEntry
+      tags: [ledger]
+      summary: Get ledger entry by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Ledger entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LedgerEntry"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateLedgerEntry
+      tags: [ledger]
+      summary: Update ledger entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LedgerEntryUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LedgerEntry"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteLedgerEntry
+      tags: [ledger]
+      summary: Delete ledger entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  # Services
+  /services:
+    get:
+      operationId: listServices
+      tags: [services]
+      summary: List CSC services
+      responses:
+        "200":
+          description: List of services
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Service"
+    post:
+      operationId: createService
+      tags: [services]
+      summary: Create a CSC service
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+
+  /services/{id}:
+    patch:
+      operationId: updateService
+      tags: [services]
+      summary: Update a CSC service
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteService
+      tags: [services]
+      summary: Delete a CSC service
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  # Users
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List users (admin only)
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+    post:
+      operationId: createUser
+      tags: [users]
+      summary: Create a user (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/{id}:
+    patch:
+      operationId: updateUser
+      tags: [users]
+      summary: Update a user (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteUser
+      tags: [users]
+      summary: Delete a user (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  # Reports
+  /reports/daily:
+    get:
+      operationId: getDailyReport
+      tags: [reports]
+      summary: Get daily report
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Daily report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyReport"
+
+  /reports/monthly:
+    get:
+      operationId: getMonthlyReport
+      tags: [reports]
+      summary: Get monthly report
+      parameters:
+        - name: year
+          in: query
+          schema:
+            type: integer
+        - name: month
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Monthly report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MonthlyReport"
+
+  /reports/service-breakdown:
+    get:
+      operationId: getServiceBreakdown
+      tags: [reports]
+      summary: Get revenue breakdown by service type
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Service breakdown
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ServiceBreakdown"
+
+  /reports/export:
+    get:
+      operationId: exportReport
+      tags: [reports]
+      summary: Export report to Excel
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [daily, monthly, custom]
+        - name: startDate
+          in: query
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Excel file
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+
+  # Notifications
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      summary: List notifications
+      parameters:
+        - name: unreadOnly
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: List of notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+
+  /notifications/read-all:
+    post:
+      operationId: markAllNotificationsRead
+      tags: [notifications]
+      summary: Mark all notifications as read
+      responses:
+        "200":
+          description: All marked as read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /notifications/{id}/read:
+    patch:
+      operationId: markNotificationRead
+      tags: [notifications]
+      summary: Mark notification as read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Marked as read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+        "404":
+          description: Not found
+
+  /notifications/{id}:
+    delete:
+      operationId: deleteNotification
+      tags: [notifications]
+      summary: Delete notification
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  # Audit Logs
+  /audit-logs:
+    get:
+      operationId: listAuditLogs
+      tags: [audit]
+      summary: List audit logs
+      parameters:
+        - name: userId
+          in: query
+          schema:
+            type: integer
+        - name: action
+          in: query
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of audit logs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditLogListResponse"
+
+  # Settings
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get system settings
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+    patch:
+      operationId: updateSettings
+      tags: [settings]
+      summary: Update system settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SettingsUpdate"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+
+  # Backups
+  /backups:
+    get:
+      operationId: listBackups
+      tags: [backups]
+      summary: List backups
+      responses:
+        "200":
+          description: List of backups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Backup"
+    post:
+      operationId: createBackup
+      tags: [backups]
+      summary: Create a backup
+      responses:
+        "201":
+          description: Backup created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Backup"
+
+  /backups/{id}/restore:
+    post:
+      operationId: restoreBackup
+      tags: [backups]
+      summary: Restore from backup
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Restore successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "404":
+          description: Not found
+
+  # Dashboard
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [dashboard]
+      summary: Get dashboard summary
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    MessageResponse:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+
+    # Auth
+    LoginInput:
+      type: object
+      required: [identifier, password]
+      properties:
+        identifier:
+          type: string
+          description: Username, email or mobile
+        password:
+          type: string
+
+    AuthUser:
+      type: object
+      required: [id, username, email, role]
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+        mobile:
+          type: ["string", "null"]
+        role:
+          type: string
+          enum: [admin, operator, user]
+        fullName:
+          type: ["string", "null"]
+
+    # Ledger
+    LedgerEntry:
+      type: object
+      required: [id, date, customerName, serviceType, credit, debit, description, balance, createdBy, createdAt]
+      properties:
+        id:
+          type: integer
+        date:
+          type: string
+        customerName:
+          type: string
+        serviceType:
+          type: string
+        credit:
+          type: number
+        debit:
+          type: number
+        description:
+          type: string
+        balance:
+          type: number
+        createdBy:
+          type: integer
+        createdByName:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    LedgerEntryInput:
+      type: object
+      required: [date, customerName, serviceType, credit, debit, description]
+      properties:
+        date:
+          type: string
+        customerName:
+          type: string
+        serviceType:
+          type: string
+        credit:
+          type: number
+        debit:
+          type: number
+        description:
+          type: string
+
+    LedgerEntryUpdate:
+      type: object
+      properties:
+        date:
+          type: string
+        customerName:
+          type: string
+        serviceType:
+          type: string
+        credit:
+          type: number
+        debit:
+          type: number
+        description:
+          type: string
+
+    LedgerListResponse:
+      type: object
+      required: [entries, total, page, limit]
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/LedgerEntry"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    BalanceResponse:
+      type: object
+      required: [balance, totalCredits, totalDebits]
+      properties:
+        balance:
+          type: number
+        totalCredits:
+          type: number
+        totalDebits:
+          type: number
+
+    LedgerSummary:
+      type: object
+      required: [totalTransactions, totalCredits, totalDebits, netChange, period]
+      properties:
+        totalTransactions:
+          type: integer
+        totalCredits:
+          type: number
+        totalDebits:
+          type: number
+        netChange:
+          type: number
+        period:
+          type: string
+
+    # Services
+    Service:
+      type: object
+      required: [id, name, description, price, category, isActive, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+        category:
+          type: string
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+
+    ServiceInput:
+      type: object
+      required: [name, description, price, category]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+        category:
+          type: string
+        isActive:
+          type: boolean
+
+    ServiceUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+        category:
+          type: string
+        isActive:
+          type: boolean
+
+    # Users
+    User:
+      type: object
+      required: [id, username, email, role, isActive, createdAt]
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+        mobile:
+          type: ["string", "null"]
+        fullName:
+          type: ["string", "null"]
+        role:
+          type: string
+          enum: [admin, operator, user]
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+
+    UserInput:
+      type: object
+      required: [username, email, password, role]
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+        mobile:
+          type: string
+        fullName:
+          type: string
+        password:
+          type: string
+        role:
+          type: string
+          enum: [admin, operator, user]
+
+    UserUpdate:
+      type: object
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+        mobile:
+          type: string
+        fullName:
+          type: string
+        password:
+          type: string
+        role:
+          type: string
+          enum: [admin, operator, user]
+        isActive:
+          type: boolean
+
+    # Reports
+    DailyReport:
+      type: object
+      required: [date, transactionCount, totalCredits, totalDebits, netRevenue, topServices]
+      properties:
+        date:
+          type: string
+        transactionCount:
+          type: integer
+        totalCredits:
+          type: number
+        totalDebits:
+          type: number
+        netRevenue:
+          type: number
+        topServices:
+          type: array
+          items:
+            $ref: "#/components/schemas/ServiceBreakdown"
+
+    MonthlyReport:
+      type: object
+      required: [year, month, totalTransactions, totalCredits, totalDebits, netProfit, dailyBreakdown, topServices]
+      properties:
+        year:
+          type: integer
+        month:
+          type: integer
+        totalTransactions:
+          type: integer
+        totalCredits:
+          type: number
+        totalDebits:
+          type: number
+        netProfit:
+          type: number
+        dailyBreakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/DailyBreakdown"
+        topServices:
+          type: array
+          items:
+            $ref: "#/components/schemas/ServiceBreakdown"
+
+    DailyBreakdown:
+      type: object
+      required: [date, credits, debits, transactions]
+      properties:
+        date:
+          type: string
+        credits:
+          type: number
+        debits:
+          type: number
+        transactions:
+          type: integer
+
+    ServiceBreakdown:
+      type: object
+      required: [serviceType, count, revenue]
+      properties:
+        serviceType:
+          type: string
+        count:
+          type: integer
+        revenue:
+          type: number
+
+    # Notifications
+    Notification:
+      type: object
+      required: [id, title, message, type, isRead, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        message:
+          type: string
+        type:
+          type: string
+          enum: [info, warning, success, error]
+        isRead:
+          type: boolean
+        createdAt:
+          type: string
+
+    # Audit Logs
+    AuditLog:
+      type: object
+      required: [id, userId, action, details, ipAddress, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        username:
+          type: ["string", "null"]
+        action:
+          type: string
+        details:
+          type: ["string", "null"]
+        ipAddress:
+          type: string
+        createdAt:
+          type: string
+
+    AuditLogListResponse:
+      type: object
+      required: [logs, total, page, limit]
+      properties:
+        logs:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditLog"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    # Settings
+    Settings:
+      type: object
+      required: [businessName, businessAddress, businessMobile, language, theme, currency]
+      properties:
+        businessName:
+          type: string
+        businessAddress:
+          type: string
+        businessMobile:
+          type: string
+        businessEmail:
+          type: ["string", "null"]
+        language:
+          type: string
+          enum: [en, hi, or]
+        theme:
+          type: string
+          enum: [light, dark]
+        currency:
+          type: string
+        autoBackup:
+          type: boolean
+        backupFrequencyDays:
+          type: integer
+
+    SettingsUpdate:
+      type: object
+      properties:
+        businessName:
+          type: string
+        businessAddress:
+          type: string
+        businessMobile:
+          type: string
+        businessEmail:
+          type: string
+        language:
+          type: string
+          enum: [en, hi, or]
+        theme:
+          type: string
+          enum: [light, dark]
+        currency:
+          type: string
+        autoBackup:
+          type: boolean
+        backupFrequencyDays:
+          type: integer
+
+    # Backups
+    Backup:
+      type: object
+      required: [id, filename, size, createdAt]
+      properties:
+        id:
+          type: integer
+        filename:
+          type: string
+        size:
+          type: integer
+        createdAt:
+          type: string
+
+    # Dashboard
+    DashboardSummary:
+      type: object
+      required: [currentBalance, todayCredits, todayDebits, todayTransactions, monthCredits, monthDebits, monthTransactions, netProfitMonth, recentEntries, topServicesMonth]
+      properties:
+        currentBalance:
+          type: number
+        todayCredits:
+          type: number
+        todayDebits:
+          type: number
+        todayTransactions:
+          type: integer
+        monthCredits:
+          type: number
+        monthDebits:
+          type: number
+        monthTransactions:
+          type: integer
+        netProfitMonth:
+          type: number
+        recentEntries:
+          type: array
+          items:
+            $ref: "#/components/schemas/LedgerEntry"
+        topServicesMonth:
+          type: array
+          items:
+            $ref: "#/components/schemas/ServiceBreakdown"

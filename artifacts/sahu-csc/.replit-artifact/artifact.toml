@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "SAHU CSC FV1"
+version = "1.0.0"
+id = "artifacts/sahu-csc"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21700
+
+[services.development]
+run = "pnpm --filter @workspace/sahu-csc run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/sahu-csc", "run", "build" ]
+publicDir = "artifacts/sahu-csc/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21700"
+BASE_PATH = "/"
