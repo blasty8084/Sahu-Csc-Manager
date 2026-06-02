@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -23,7 +23,8 @@ export default function Settings() {
   const form = useForm({
     defaultValues: {
       businessName: "", businessAddress: "", businessMobile: "", businessEmail: "",
-      language: "en", theme: "light", currency: "INR", autoBackup: false, backupFrequencyDays: 7,
+      language: "en", theme: "light", currency: "INR", autoBackup: false,
+      backupFrequencyDays: 7, openingBalance: 0,
     }
   });
 
@@ -39,6 +40,7 @@ export default function Settings() {
         currency: settings.currency,
         autoBackup: settings.autoBackup,
         backupFrequencyDays: settings.backupFrequencyDays,
+        openingBalance: settings.openingBalance ?? 0,
       });
     }
   }, [settings]);
@@ -61,10 +63,38 @@ export default function Settings() {
 
         {isLoading ? (
           <div className="space-y-4">
-            {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-lg" />)}
+            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-lg" />)}
           </div>
         ) : (
           <form onSubmit={onSubmit} className="space-y-6">
+            {/* Opening Balance */}
+            <Card className="border-amber-200 dark:border-amber-800">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Opening Balance</CardTitle>
+                <CardDescription>
+                  Set this to carry forward the balance from before you started using this system.
+                  All new ledger entries will start from this amount.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-3">
+                  <span className="text-lg font-medium text-muted-foreground">₹</span>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    placeholder="0.00"
+                    className="w-48 text-lg font-semibold"
+                    {...form.register("openingBalance", { valueAsNumber: true })}
+                    data-testid="input-opening-balance"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Example: if your cashbook had ₹12,500 before this date, enter 12500.
+                </p>
+              </CardContent>
+            </Card>
+
             {/* Business Info */}
             <Card>
               <CardHeader className="pb-3"><CardTitle className="text-base">Business Information</CardTitle></CardHeader>

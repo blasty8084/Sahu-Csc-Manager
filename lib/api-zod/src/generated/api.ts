@@ -501,7 +501,8 @@ export const UpdateSettingsBody = zod.object({
   "theme": zod.enum(['light', 'dark']).optional(),
   "currency": zod.string().optional(),
   "autoBackup": zod.boolean().optional(),
-  "backupFrequencyDays": zod.number().optional()
+  "backupFrequencyDays": zod.number().optional(),
+  "openingBalance": zod.number().optional()
 })
 
 export const UpdateSettingsResponse = zod.object({
@@ -513,7 +514,8 @@ export const UpdateSettingsResponse = zod.object({
   "theme": zod.enum(['light', 'dark']),
   "currency": zod.string(),
   "autoBackup": zod.boolean().optional(),
-  "backupFrequencyDays": zod.number().optional()
+  "backupFrequencyDays": zod.number().optional(),
+  "openingBalance": zod.number().optional()
 })
 
 

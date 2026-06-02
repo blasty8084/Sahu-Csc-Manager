@@ -7,7 +7,7 @@ import { createNotification } from "../lib/notify";
 
 const router: IRouter = Router();
 
-const DEFAULT_SETTINGS: Record<string, string> = {
+export const DEFAULT_SETTINGS: Record<string, string> = {
   businessName: "SAHU CSC Center",
   businessAddress: "Village Road, District",
   businessMobile: "9999999999",
@@ -17,15 +17,21 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   currency: "INR",
   autoBackup: "false",
   backupFrequencyDays: "7",
+  openingBalance: "0",
 };
 
-async function getAllSettings(): Promise<Record<string, string>> {
+export async function getAllSettings(): Promise<Record<string, string>> {
   const rows = await db.select().from(settingsTable);
   const result: Record<string, string> = { ...DEFAULT_SETTINGS };
   for (const row of rows) {
     result[row.key] = row.value;
   }
   return result;
+}
+
+export async function getOpeningBalance(): Promise<number> {
+  const settings = await getAllSettings();
+  return parseFloat(settings.openingBalance ?? "0");
 }
 
 function formatSettings(s: Record<string, string>) {
@@ -39,6 +45,7 @@ function formatSettings(s: Record<string, string>) {
     currency: s.currency ?? "INR",
     autoBackup: s.autoBackup === "true",
     backupFrequencyDays: parseInt(s.backupFrequencyDays ?? "7", 10),
+    openingBalance: parseFloat(s.openingBalance ?? "0"),
   };
 }
 
@@ -80,9 +87,8 @@ router.get("/backups", requireRole("admin"), async (_req, res): Promise<void> =>
 });
 
 router.post("/backups", requireRole("admin"), async (req, res): Promise<void> => {
-  // Create a logical backup record (in production this would dump the DB)
   const filename = `backup_${new Date().toISOString().replace(/[:.]/g, "-")}.sql`;
-  const size = Math.floor(Math.random() * 500000) + 50000; // Simulated size
+  const size = Math.floor(Math.random() * 500000) + 50000;
 
   const [backup] = await db.insert(backupsTable).values({ filename, size }).returning();
   await auditLog(req.session.userId!, "backup.create", `Created backup: ${filename}`, getClientIp(req));

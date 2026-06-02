@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { getOpeningBalance } from "./settings";
 import { db, ledgerTable, servicesTable } from "@workspace/db";
 import { and, gte, lte, eq, sql, sum, count, desc } from "drizzle-orm";
 import { GetDailyReportQueryParams, GetMonthlyReportQueryParams, GetServiceBreakdownQueryParams, ExportReportQueryParams } from "@workspace/api-zod";
@@ -167,7 +168,8 @@ router.get("/dashboard", requireAuth, async (req, res): Promise<void> => {
   const now = new Date();
   const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
 
-  const [balanceResult, todayResult, monthResult, recentEntries, topServices] = await Promise.all([
+  const [openingBalance, balanceResult, todayResult, monthResult, recentEntries, topServices] = await Promise.all([
+    getOpeningBalance(),
     db.select({ totalCredits: sum(ledgerTable.credit), totalDebits: sum(ledgerTable.debit) }).from(ledgerTable),
     db.select({ credits: sum(ledgerTable.credit), debits: sum(ledgerTable.debit), transactions: count() })
       .from(ledgerTable).where(eq(ledgerTable.date, today)),
@@ -194,7 +196,7 @@ router.get("/dashboard", requireAuth, async (req, res): Promise<void> => {
   const monthDebits = parseFloat(monthResult[0]?.debits ?? "0");
 
   res.json({
-    currentBalance: totalCredits - totalDebits,
+    currentBalance: openingBalance + totalCredits - totalDebits,
     todayCredits: parseFloat(todayResult[0]?.credits ?? "0"),
     todayDebits: parseFloat(todayResult[0]?.debits ?? "0"),
     todayTransactions: todayResult[0]?.transactions ?? 0,
