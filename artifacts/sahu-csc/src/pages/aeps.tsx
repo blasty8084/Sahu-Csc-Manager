@@ -9,8 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Fingerprint, Plus, Trash2, ArrowDownLeft, ArrowUpRight, Wallet } from "lucide-react";
+import { Fingerprint, Plus, Trash2, ArrowDownLeft, ArrowUpRight, Wallet, Pencil } from "lucide-react";
 import { useForm } from "react-hook-form";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -37,20 +38,22 @@ function todayStr() {
   return new Date().toISOString().split("T")[0];
 }
 
+type AepsTx = {
+  id: number;
+  type: "withdrawal" | "deposit";
+  amount: number;
+  customerName: string;
+  description: string | null;
+  balance: number;
+  createdAt: string;
+};
+
 type AepsSession = {
   id: number;
   date: string;
   openingBalance: number;
   notes: string | null;
-  transactions: {
-    id: number;
-    type: "withdrawal" | "deposit";
-    amount: number;
-    customerName: string;
-    description: string | null;
-    balance: number;
-    createdAt: string;
-  }[];
+  transactions: AepsTx[];
   totalWithdrawals: number;
   totalDeposits: number;
   currentBalance: number;
@@ -63,6 +66,8 @@ export default function AePS() {
   const [showOpenDialog, setShowOpenDialog] = useState(false);
   const [showTxDialog, setShowTxDialog] = useState(false);
   const [txType, setTxType] = useState<"withdrawal" | "deposit">("withdrawal");
+  const [editingTx, setEditingTx] = useState<AepsTx | null>(null);
+  const [deletingTx, setDeletingTx] = useState<AepsTx | null>(null);
 
   const sessionKey = ["aeps-session", selectedDate];
 
@@ -73,13 +78,11 @@ export default function AePS() {
 
   const openForm = useForm({ defaultValues: { openingBalance: "", notes: "" } });
   const txForm = useForm({ defaultValues: { amount: "", customerName: "", description: "" } });
+  const editForm = useForm({ defaultValues: { type: "withdrawal", amount: "", customerName: "", description: "" } });
 
   const openMut = useMutation({
     mutationFn: (data: { openingBalance: number; notes?: string }) =>
-      apiFetch("/api/aeps/session", {
-        method: "POST",
-        body: JSON.stringify({ date: selectedDate, ...data }),
-      }),
+      apiFetch("/api/aeps/session", { method: "POST", body: JSON.stringify({ date: selectedDate, ...data }) }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: sessionKey });
       setShowOpenDialog(false);
@@ -91,10 +94,7 @@ export default function AePS() {
 
   const txMut = useMutation({
     mutationFn: (data: { type: string; amount: number; customerName: string; description?: string }) =>
-      apiFetch("/api/aeps/transaction", {
-        method: "POST",
-        body: JSON.stringify({ date: selectedDate, ...data }),
-      }),
+      apiFetch("/api/aeps/transaction", { method: "POST", body: JSON.stringify({ date: selectedDate, ...data }) }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: sessionKey });
       setShowTxDialog(false);
@@ -104,31 +104,49 @@ export default function AePS() {
     onError: (e: Error) => toast({ title: e.message, variant: "destructive" }),
   });
 
+  const editMut = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Record<string, any> }) =>
+      apiFetch(`/api/aeps/transaction/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: sessionKey });
+      setEditingTx(null);
+      toast({ title: "Transaction updated" });
+    },
+    onError: (e: Error) => toast({ title: e.message, variant: "destructive" }),
+  });
+
   const deleteMut = useMutation({
     mutationFn: (id: number) => apiFetch(`/api/aeps/transaction/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: sessionKey });
-      toast({ title: "Transaction removed" });
+      setDeletingTx(null);
+      toast({ title: "Transaction deleted" });
     },
     onError: (e: Error) => toast({ title: e.message, variant: "destructive" }),
   });
 
   const onOpenSubmit = openForm.handleSubmit((v) => {
     const bal = parseFloat(v.openingBalance);
-    if (isNaN(bal) || bal < 0) {
-      toast({ title: "Enter a valid opening balance", variant: "destructive" });
-      return;
-    }
+    if (isNaN(bal) || bal < 0) { toast({ title: "Enter a valid opening balance", variant: "destructive" }); return; }
     openMut.mutate({ openingBalance: bal, notes: v.notes || undefined });
   });
 
   const onTxSubmit = txForm.handleSubmit((v) => {
     const amt = parseFloat(v.amount);
-    if (isNaN(amt) || amt <= 0) {
-      toast({ title: "Enter a valid amount", variant: "destructive" });
-      return;
-    }
+    if (isNaN(amt) || amt <= 0) { toast({ title: "Enter a valid amount", variant: "destructive" }); return; }
     txMut.mutate({ type: txType, amount: amt, customerName: v.customerName, description: v.description || undefined });
+  });
+
+  const openEditDialog = (tx: AepsTx) => {
+    setEditingTx(tx);
+    editForm.reset({ type: tx.type, amount: String(tx.amount), customerName: tx.customerName, description: tx.description ?? "" });
+  };
+
+  const onEditSubmit = editForm.handleSubmit((v) => {
+    if (!editingTx) return;
+    const amt = parseFloat(v.amount);
+    if (isNaN(amt) || amt <= 0) { toast({ title: "Enter a valid amount", variant: "destructive" }); return; }
+    editMut.mutate({ id: editingTx.id, data: { type: v.type, amount: amt, customerName: v.customerName, description: v.description || undefined } });
   });
 
   const isToday = selectedDate === todayStr();
@@ -147,14 +165,7 @@ export default function AePS() {
               <p className="text-sm text-muted-foreground">Aadhaar-enabled Payment System</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-40"
-            />
-          </div>
+          <Input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="w-40" />
         </div>
 
         {isLoading ? (
@@ -163,19 +174,14 @@ export default function AePS() {
             <Skeleton className="h-64 w-full" />
           </div>
         ) : !session ? (
-          /* ── No session: prompt to open the day ── */
           <Card className="border-dashed border-2 border-amber-300 dark:border-amber-700">
             <CardContent className="py-10 flex flex-col items-center gap-4 text-center">
               <div className="w-14 h-14 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
                 <Wallet size={28} className="text-amber-600" />
               </div>
               <div>
-                <p className="font-semibold text-lg">
-                  {isToday ? "Day not opened yet" : `No AePS session for ${selectedDate}`}
-                </p>
-                <p className="text-muted-foreground text-sm mt-1">
-                  Set the opening balance (cash loaded) to start tracking AePS transactions.
-                </p>
+                <p className="font-semibold text-lg">{isToday ? "Day not opened yet" : `No AePS session for ${selectedDate}`}</p>
+                <p className="text-muted-foreground text-sm mt-1">Set the opening balance (cash loaded) to start tracking AePS transactions.</p>
               </div>
               <Button onClick={() => setShowOpenDialog(true)} className="gap-2">
                 <Plus size={16} /> Set Day Opening Balance
@@ -183,7 +189,6 @@ export default function AePS() {
             </CardContent>
           </Card>
         ) : (
-          /* ── Session exists: show tracker ── */
           <div className="space-y-4">
             {/* Summary Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -205,36 +210,25 @@ export default function AePS() {
                   <p className="text-xl font-bold text-green-600">₹{fmt(session.totalDeposits)}</p>
                 </CardContent>
               </Card>
-              <Card className={`${session.currentBalance < 0 ? "bg-red-50 dark:bg-red-950/20 border-red-300" : "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200"}`}>
+              <Card className={session.currentBalance < 0 ? "bg-red-50 dark:bg-red-950/20 border-red-300" : "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200"}>
                 <CardContent className="p-4">
                   <p className="text-xs text-muted-foreground mb-1">Current Balance</p>
-                  <p className={`text-xl font-bold ${session.currentBalance < 0 ? "text-red-600" : "text-emerald-600"}`}>
-                    ₹{fmt(session.currentBalance)}
-                  </p>
+                  <p className={`text-xl font-bold ${session.currentBalance < 0 ? "text-red-600" : "text-emerald-600"}`}>₹{fmt(session.currentBalance)}</p>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Formula hint */}
             <p className="text-xs text-muted-foreground">
-              Balance = Opening Balance − Withdrawals + Deposits &nbsp;|&nbsp;
+              Balance = Opening − Withdrawals + Deposits &nbsp;|&nbsp;
               ₹{fmt(session.openingBalance)} − ₹{fmt(session.totalWithdrawals)} + ₹{fmt(session.totalDeposits)} = <strong>₹{fmt(session.currentBalance)}</strong>
             </p>
 
             {/* Action buttons */}
             <div className="flex flex-wrap gap-2">
-              <Button
-                variant="destructive"
-                className="gap-2"
-                onClick={() => { setTxType("withdrawal"); txForm.reset(); setShowTxDialog(true); }}
-              >
+              <Button variant="destructive" className="gap-2" onClick={() => { setTxType("withdrawal"); txForm.reset(); setShowTxDialog(true); }}>
                 <ArrowDownLeft size={16} /> AePS Withdrawal
               </Button>
-              <Button
-                variant="default"
-                className="gap-2 bg-green-600 hover:bg-green-700"
-                onClick={() => { setTxType("deposit"); txForm.reset(); setShowTxDialog(true); }}
-              >
+              <Button className="gap-2 bg-green-600 hover:bg-green-700" onClick={() => { setTxType("deposit"); txForm.reset(); setShowTxDialog(true); }}>
                 <ArrowUpRight size={16} /> AePS Deposit
               </Button>
               <Button variant="outline" size="sm" onClick={() => {
@@ -251,9 +245,7 @@ export default function AePS() {
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">
                   Transactions — {session.date}
-                  <span className="ml-2 text-muted-foreground font-normal text-sm">
-                    ({session.transactions.length} entries)
-                  </span>
+                  <span className="ml-2 text-muted-foreground font-normal text-sm">({session.transactions.length} entries)</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
@@ -266,9 +258,7 @@ export default function AePS() {
                     {/* Opening row */}
                     <div className="flex items-center justify-between px-4 py-3 bg-muted/30">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-                          OB
-                        </div>
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">OB</div>
                         <div>
                           <p className="text-sm font-medium">Day Opening Balance</p>
                           {session.notes && <p className="text-xs text-muted-foreground">{session.notes}</p>}
@@ -279,26 +269,27 @@ export default function AePS() {
 
                     {/* Transaction rows */}
                     {session.transactions.map((tx, idx) => (
-                      <div key={tx.id} className="flex items-center justify-between px-4 py-3 hover:bg-muted/20 transition-colors group">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${tx.type === "withdrawal" ? "bg-red-100 text-red-600 dark:bg-red-900/30" : "bg-green-100 text-green-600 dark:bg-green-900/30"}`}>
+                      <div key={tx.id} className="flex items-center justify-between px-4 py-3 hover:bg-muted/20 transition-colors">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className={`w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-xs font-bold ${tx.type === "withdrawal" ? "bg-red-100 text-red-600 dark:bg-red-900/30" : "bg-green-100 text-green-600 dark:bg-green-900/30"}`}>
                             {idx + 1}
                           </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <p className="text-sm font-medium">{tx.customerName}</p>
-                              <Badge variant={tx.type === "withdrawal" ? "destructive" : "default"} className={`text-[10px] px-1.5 h-4 ${tx.type === "deposit" ? "bg-green-600" : ""}`}>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="text-sm font-medium truncate">{tx.customerName}</p>
+                              <Badge variant={tx.type === "withdrawal" ? "destructive" : "default"} className={`text-[10px] px-1.5 h-4 shrink-0 ${tx.type === "deposit" ? "bg-green-600" : ""}`}>
                                 {tx.type === "withdrawal" ? "Withdrawal" : "Deposit"}
                               </Badge>
                             </div>
-                            {tx.description && <p className="text-xs text-muted-foreground">{tx.description}</p>}
+                            {tx.description && <p className="text-xs text-muted-foreground truncate">{tx.description}</p>}
                             <p className="text-xs text-muted-foreground">
                               {new Date(tx.createdAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <div className="text-right">
+
+                        <div className="flex items-center gap-2 shrink-0 ml-2">
+                          <div className="text-right mr-1">
                             <p className={`text-sm font-semibold ${tx.type === "withdrawal" ? "text-red-600" : "text-green-600"}`}>
                               {tx.type === "withdrawal" ? "−" : "+"}₹{fmt(tx.amount)}
                             </p>
@@ -306,12 +297,23 @@ export default function AePS() {
                               Bal: ₹{fmt(tx.balance)}
                             </p>
                           </div>
+                          {/* Edit button */}
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="icon"
-                            className="h-7 w-7 opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => deleteMut.mutate(tx.id)}
-                            disabled={deleteMut.isPending}
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                            onClick={() => openEditDialog(tx)}
+                            title="Edit transaction"
+                          >
+                            <Pencil size={14} />
+                          </Button>
+                          {/* Delete button */}
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:bg-destructive hover:text-destructive-foreground border-destructive/30"
+                            onClick={() => setDeletingTx(tx)}
+                            title="Delete transaction"
                           >
                             <Trash2 size={14} />
                           </Button>
@@ -319,12 +321,10 @@ export default function AePS() {
                       </div>
                     ))}
 
-                    {/* Final balance footer */}
+                    {/* Closing balance */}
                     <div className={`flex items-center justify-between px-4 py-3 font-semibold ${session.currentBalance < 0 ? "bg-red-50 dark:bg-red-950/20" : "bg-emerald-50 dark:bg-emerald-950/20"}`}>
                       <span className="text-sm">Closing Balance</span>
-                      <span className={`text-base ${session.currentBalance < 0 ? "text-red-600" : "text-emerald-600"}`}>
-                        ₹{fmt(session.currentBalance)}
-                      </span>
+                      <span className={`text-base ${session.currentBalance < 0 ? "text-red-600" : "text-emerald-600"}`}>₹{fmt(session.currentBalance)}</span>
                     </div>
                   </div>
                 )}
@@ -334,12 +334,10 @@ export default function AePS() {
         )}
       </div>
 
-      {/* Open Day Dialog */}
+      {/* ── Open Day Dialog ── */}
       <Dialog open={showOpenDialog} onOpenChange={setShowOpenDialog}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Set Day Opening Balance</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Set Day Opening Balance</DialogTitle></DialogHeader>
           <form onSubmit={onOpenSubmit} className="space-y-4">
             <div className="space-y-1.5">
               <Label>Date</Label>
@@ -349,14 +347,7 @@ export default function AePS() {
               <Label>Opening Balance (₹) — Cash loaded for AePS today</Label>
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground font-medium">₹</span>
-                <Input
-                  type="number"
-                  min={0}
-                  step={0.01}
-                  placeholder="e.g. 50000"
-                  {...openForm.register("openingBalance", { required: true })}
-                  autoFocus
-                />
+                <Input type="number" min={0} step={0.01} placeholder="e.g. 50000" {...openForm.register("openingBalance", { required: true })} autoFocus />
               </div>
             </div>
             <div className="space-y-1.5">
@@ -365,15 +356,13 @@ export default function AePS() {
             </div>
             <DialogFooter>
               <Button variant="outline" type="button" onClick={() => setShowOpenDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={openMut.isPending}>
-                {openMut.isPending ? "Saving..." : "Confirm & Open Day"}
-              </Button>
+              <Button type="submit" disabled={openMut.isPending}>{openMut.isPending ? "Saving..." : "Confirm & Open Day"}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* Add Transaction Dialog */}
+      {/* ── Add Transaction Dialog ── */}
       <Dialog open={showTxDialog} onOpenChange={setShowTxDialog}>
         <DialogContent>
           <DialogHeader>
@@ -385,9 +374,7 @@ export default function AePS() {
             <div className="space-y-1.5">
               <Label>Transaction Type</Label>
               <Select value={txType} onValueChange={(v) => setTxType(v as "withdrawal" | "deposit")}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="withdrawal">Withdrawal (Balance decreases)</SelectItem>
                   <SelectItem value="deposit">Deposit (Balance increases)</SelectItem>
@@ -396,30 +383,17 @@ export default function AePS() {
             </div>
             <div className="space-y-1.5">
               <Label>Customer Name</Label>
-              <Input
-                placeholder="Customer name"
-                {...txForm.register("customerName", { required: true })}
-                autoFocus
-              />
+              <Input placeholder="Customer name" {...txForm.register("customerName", { required: true })} autoFocus />
             </div>
             <div className="space-y-1.5">
               <Label>Amount (₹)</Label>
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground font-medium">₹</span>
-                <Input
-                  type="number"
-                  min={1}
-                  step={0.01}
-                  placeholder="e.g. 2000"
-                  {...txForm.register("amount", { required: true })}
-                />
+                <Input type="number" min={1} step={0.01} placeholder="e.g. 2000" {...txForm.register("amount", { required: true })} />
               </div>
-              {session && (
+              {session && txType === "withdrawal" && (
                 <p className="text-xs text-muted-foreground">
-                  Current balance: ₹{fmt(session.currentBalance)}
-                  {txType === "withdrawal" && (
-                    <> → After withdrawal: <strong>₹{fmt(session.currentBalance - (parseFloat(txForm.watch("amount")) || 0))}</strong></>
-                  )}
+                  Current balance: ₹{fmt(session.currentBalance)} → After: <strong>₹{fmt(session.currentBalance - (parseFloat(txForm.watch("amount")) || 0))}</strong>
                 </p>
               )}
             </div>
@@ -429,18 +403,75 @@ export default function AePS() {
             </div>
             <DialogFooter>
               <Button variant="outline" type="button" onClick={() => setShowTxDialog(false)}>Cancel</Button>
-              <Button
-                type="submit"
-                disabled={txMut.isPending}
+              <Button type="submit" disabled={txMut.isPending}
                 className={txType === "deposit" ? "bg-green-600 hover:bg-green-700" : ""}
-                variant={txType === "withdrawal" ? "destructive" : "default"}
-              >
+                variant={txType === "withdrawal" ? "destructive" : "default"}>
                 {txMut.isPending ? "Recording..." : `Record ${txType === "withdrawal" ? "Withdrawal" : "Deposit"}`}
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* ── Edit Transaction Dialog ── */}
+      <Dialog open={!!editingTx} onOpenChange={(open) => { if (!open) setEditingTx(null); }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Transaction</DialogTitle></DialogHeader>
+          <form onSubmit={onEditSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Transaction Type</Label>
+              <Select value={editForm.watch("type")} onValueChange={(v) => editForm.setValue("type", v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="withdrawal">Withdrawal (Balance decreases)</SelectItem>
+                  <SelectItem value="deposit">Deposit (Balance increases)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Customer Name</Label>
+              <Input {...editForm.register("customerName", { required: true })} autoFocus />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Amount (₹)</Label>
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground font-medium">₹</span>
+                <Input type="number" min={1} step={0.01} {...editForm.register("amount", { required: true })} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Description (optional)</Label>
+              <Input placeholder="e.g. Aadhaar linked, HDFC Bank" {...editForm.register("description")} />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" type="button" onClick={() => setEditingTx(null)}>Cancel</Button>
+              <Button type="submit" disabled={editMut.isPending}>{editMut.isPending ? "Saving..." : "Save Changes"}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Delete Confirmation Dialog ── */}
+      <AlertDialog open={!!deletingTx} onOpenChange={(open) => { if (!open) setDeletingTx(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Transaction?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove the {deletingTx?.type} of <strong>₹{deletingTx ? fmt(deletingTx.amount) : ""}</strong> for <strong>{deletingTx?.customerName}</strong>. The balance will be recalculated.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deletingTx && deleteMut.mutate(deletingTx.id)}
+              disabled={deleteMut.isPending}
+            >
+              {deleteMut.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 }

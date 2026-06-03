@@ -277,6 +277,7 @@ export interface Settings {
   currency: string;
   autoBackup?: boolean;
   backupFrequencyDays?: number;
+  openingBalance?: number;
 }
 
 export type SettingsUpdateLanguage = typeof SettingsUpdateLanguage[keyof typeof SettingsUpdateLanguage];
