@@ -13,7 +13,8 @@ import {
   Settings, 
   Database,
   LogOut,
-  Menu
+  Menu,
+  Fingerprint
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -32,6 +33,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
     { href: "/ledger", label: "Ledger", icon: BookOpen },
+    { href: "/aeps", label: "AePS Cash", icon: Fingerprint },
     { href: "/services", label: "Services", icon: Briefcase },
     { href: "/reports", label: "Reports", icon: BarChart3 },
     { href: "/notifications", label: "Notifications", icon: Bell, badge: unreadCount },

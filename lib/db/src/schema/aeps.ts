@@ -1,0 +1,20 @@
+import { pgTable, serial, date, numeric, text, integer, timestamp } from "drizzle-orm/pg-core";
+
+export const aepsDailyTable = pgTable("aeps_daily", {
+  id: serial("id").primaryKey(),
+  date: date("date").notNull().unique(),
+  openingBalance: numeric("opening_balance", { precision: 12, scale: 2 }).notNull().default("0"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const aepsTransactionsTable = pgTable("aeps_transactions", {
+  id: serial("id").primaryKey(),
+  dailyId: integer("daily_id").notNull().references(() => aepsDailyTable.id, { onDelete: "cascade" }),
+  type: text("type").notNull(), // "withdrawal" | "deposit"
+  amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+  customerName: text("customer_name").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});

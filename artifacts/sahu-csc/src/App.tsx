@@ -17,6 +17,7 @@ import AuditLogs from "@/pages/audit-logs";
 import Users from "@/pages/users";
 import Settings from "@/pages/settings";
 import Backups from "@/pages/backups";
+import AePS from "@/pages/aeps";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -69,6 +70,7 @@ function Router() {
       <Route path="/ledger">{() => <ProtectedRoute component={Ledger} />}</Route>
       <Route path="/services">{() => <ProtectedRoute component={Services} />}</Route>
       <Route path="/reports">{() => <ProtectedRoute component={Reports} />}</Route>
+      <Route path="/aeps">{() => <ProtectedRoute component={AePS} />}</Route>
       <Route path="/notifications">{() => <ProtectedRoute component={Notifications} />}</Route>
       <Route path="/users">{() => <ProtectedRoute component={Users} adminOnly />}</Route>
       <Route path="/audit-logs">{() => <ProtectedRoute component={AuditLogs} adminOnly />}</Route>

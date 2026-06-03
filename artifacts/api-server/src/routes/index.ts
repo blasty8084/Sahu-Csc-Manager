@@ -8,6 +8,7 @@ import notificationsRouter from "./notifications";
 import auditRouter from "./audit";
 import settingsRouter from "./settings";
 import reportsRouter from "./reports";
+import aepsRouter from "./aeps";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(notificationsRouter);
 router.use(auditRouter);
 router.use(settingsRouter);
 router.use(reportsRouter);
+router.use(aepsRouter);
 
 export default router;
