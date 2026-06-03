@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   useListLedgerEntries, useCreateLedgerEntry, useUpdateLedgerEntry, useDeleteLedgerEntry,
   useGetBalance, useListServices,
   getListLedgerEntriesQueryKey, getGetBalanceQueryKey
 } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,10 +12,13 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Filter, Download } from "lucide-react";
+import { Plus, Pencil, Trash2, Download } from "lucide-react";
 import { useForm } from "react-hook-form";
+
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 interface EntryForm {
   date: string;
@@ -38,6 +40,7 @@ export default function Ledger() {
   const [showForm, setShowForm] = useState(false);
   const [editEntry, setEditEntry] = useState<any>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [showDeleteAll, setShowDeleteAll] = useState(false);
 
   const params = {
     page,
@@ -54,6 +57,24 @@ export default function Ledger() {
   const createMut = useCreateLedgerEntry();
   const updateMut = useUpdateLedgerEntry();
   const deleteMut = useDeleteLedgerEntry();
+
+  const deleteAllMut = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`${BASE}/api/ledger/all`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to delete all transactions");
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: getListLedgerEntriesQueryKey() });
+      qc.invalidateQueries({ queryKey: getGetBalanceQueryKey() });
+      setShowDeleteAll(false);
+      setPage(1);
+      toast({ title: "All transactions deleted. Balance reset to ₹0." });
+    },
+    onError: () => toast({ title: "Failed to delete all transactions", variant: "destructive" }),
+  });
 
   const form = useForm<EntryForm>({
     defaultValues: { date: new Date().toISOString().split("T")[0], customerName: "", serviceType: "", credit: 0, debit: 0, description: "" }
@@ -115,9 +136,17 @@ export default function Ledger() {
             <h2 className="text-xl font-bold">Ledger</h2>
             <p className="text-sm text-muted-foreground">{data?.total ?? 0} transactions</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button asChild variant="outline" size="sm">
               <a href="/api/reports/export" target="_blank"><Download size={14} className="mr-1.5" />Export</a>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-destructive border-destructive/30 hover:bg-destructive hover:text-destructive-foreground"
+              onClick={() => setShowDeleteAll(true)}
+            >
+              <Trash2 size={14} className="mr-1.5" />Delete All
             </Button>
             <Button size="sm" onClick={openCreate} data-testid="button-new-entry">
               <Plus size={14} className="mr-1.5" />New Entry
@@ -178,7 +207,9 @@ export default function Ledger() {
                 {isLoading ? [...Array(5)].map((_, i) => (
                   <tr key={i}><td colSpan={8} className="px-4 py-3"><Skeleton className="h-8 w-full" /></td></tr>
                 )) : data?.entries?.length === 0 ? (
-                  <tr><td colSpan={8} className="text-center text-muted-foreground py-12">No entries found</td></tr>
+                  <tr><td colSpan={8} className="text-center text-muted-foreground py-12">
+                    No entries found. Balance starts at ₹0.00 for each new day.
+                  </td></tr>
                 ) : data?.entries?.map((entry: any) => (
                   <tr key={entry.id} className="hover:bg-muted/20 transition-colors" data-testid={`row-ledger-${entry.id}`}>
                     <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{entry.date}</td>
@@ -260,7 +291,7 @@ export default function Ledger() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirm */}
+      {/* Delete Single Confirm */}
       <Dialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>Delete Entry?</DialogTitle></DialogHeader>
@@ -271,6 +302,28 @@ export default function Ledger() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete All Confirm */}
+      <AlertDialog open={showDeleteAll} onOpenChange={setShowDeleteAll}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete ALL Transactions?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete <strong>every ledger entry</strong> and reset the balance to <strong>₹0.00</strong>. This cannot be undone. Are you sure?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteAllMut.mutate()}
+              disabled={deleteAllMut.isPending}
+            >
+              {deleteAllMut.isPending ? "Deleting..." : "Yes, Delete All"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 }

@@ -7,7 +7,7 @@ import { createNotification } from "../lib/notify";
 
 const router: IRouter = Router();
 
-export const DEFAULT_SETTINGS: Record<string, string> = {
+const DEFAULT_SETTINGS: Record<string, string> = {
   businessName: "SAHU CSC Center",
   businessAddress: "Village Road, District",
   businessMobile: "9999999999",
@@ -17,21 +17,15 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   currency: "INR",
   autoBackup: "false",
   backupFrequencyDays: "7",
-  openingBalance: "0",
 };
 
-export async function getAllSettings(): Promise<Record<string, string>> {
+async function getAllSettings(): Promise<Record<string, string>> {
   const rows = await db.select().from(settingsTable);
   const result: Record<string, string> = { ...DEFAULT_SETTINGS };
   for (const row of rows) {
     result[row.key] = row.value;
   }
   return result;
-}
-
-export async function getOpeningBalance(): Promise<number> {
-  const settings = await getAllSettings();
-  return parseFloat(settings.openingBalance ?? "0");
 }
 
 function formatSettings(s: Record<string, string>) {
@@ -45,7 +39,6 @@ function formatSettings(s: Record<string, string>) {
     currency: s.currency ?? "INR",
     autoBackup: s.autoBackup === "true",
     backupFrequencyDays: parseInt(s.backupFrequencyDays ?? "7", 10),
-    openingBalance: parseFloat(s.openingBalance ?? "0"),
   };
 }
 

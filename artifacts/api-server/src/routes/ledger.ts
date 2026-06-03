@@ -7,8 +7,7 @@ import {
   ListLedgerEntriesQueryParams,
   GetLedgerSummaryQueryParams,
 } from "@workspace/api-zod";
-import { requireAuth, auditLog, getClientIp } from "../lib/auth";
-import { getOpeningBalance } from "./settings";
+import { requireAuth, requireRole, auditLog, getClientIp } from "../lib/auth";
 
 const router: IRouter = Router();
 
@@ -29,16 +28,14 @@ function formatEntry(entry: any, createdByName?: string | null) {
 }
 
 router.get("/ledger/balance", requireAuth, async (_req, res): Promise<void> => {
-  const [result, openingBalance] = await Promise.all([
-    db.select({ totalCredits: sum(ledgerTable.credit), totalDebits: sum(ledgerTable.debit) }).from(ledgerTable),
-    getOpeningBalance(),
-  ]);
+  const result = await db
+    .select({ totalCredits: sum(ledgerTable.credit), totalDebits: sum(ledgerTable.debit) })
+    .from(ledgerTable);
 
   const totalCredits = parseFloat(result[0]?.totalCredits ?? "0");
   const totalDebits = parseFloat(result[0]?.totalDebits ?? "0");
   res.json({
-    balance: openingBalance + totalCredits - totalDebits,
-    openingBalance,
+    balance: totalCredits - totalDebits,
     totalCredits,
     totalDebits,
   });
@@ -130,22 +127,17 @@ router.get("/ledger", requireAuth, async (req, res): Promise<void> => {
 
 router.post("/ledger", requireAuth, async (req, res): Promise<void> => {
   const parsed = CreateLedgerEntryBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
   const { date, customerName, serviceType, credit, debit, description } = parsed.data;
 
-  // Balance = opening balance + all prior credits - all prior debits + this entry
-  const [balanceResult, openingBalance] = await Promise.all([
-    db.select({ totalCredits: sum(ledgerTable.credit), totalDebits: sum(ledgerTable.debit) }).from(ledgerTable),
-    getOpeningBalance(),
-  ]);
+  const balanceResult = await db
+    .select({ totalCredits: sum(ledgerTable.credit), totalDebits: sum(ledgerTable.debit) })
+    .from(ledgerTable);
 
   const prevCredits = parseFloat(balanceResult[0]?.totalCredits ?? "0");
   const prevDebits = parseFloat(balanceResult[0]?.totalDebits ?? "0");
-  const newBalance = openingBalance + prevCredits - prevDebits + (credit ?? 0) - (debit ?? 0);
+  const newBalance = prevCredits - prevDebits + (credit ?? 0) - (debit ?? 0);
 
   const [entry] = await db
     .insert(ledgerTable)
@@ -204,6 +196,12 @@ router.patch("/ledger/:id", requireAuth, async (req, res): Promise<void> => {
   const [updated] = await db.update(ledgerTable).set(updateData).where(eq(ledgerTable.id, id)).returning();
   await auditLog(req.session.userId!, "ledger.update", `Updated ledger entry ${id}`, getClientIp(req));
   res.json(formatEntry(updated));
+});
+
+router.delete("/ledger/all", requireRole("admin"), async (req, res): Promise<void> => {
+  await db.delete(ledgerTable);
+  await auditLog(req.session.userId!, "ledger.clear", "Deleted ALL ledger transactions", getClientIp(req));
+  res.sendStatus(204);
 });
 
 router.delete("/ledger/:id", requireAuth, async (req, res): Promise<void> => {
