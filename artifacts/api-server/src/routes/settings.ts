@@ -1,9 +1,14 @@
 import { Router, type IRouter } from "express";
+import { execSync } from "child_process";
+import { statSync, mkdirSync, existsSync } from "fs";
+import path from "path";
 import { db, settingsTable, backupsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { UpdateSettingsBody } from "@workspace/api-zod";
 import { requireAuth, requireRole, auditLog, getClientIp } from "../lib/auth";
 import { createNotification } from "../lib/notify";
+
+const BACKUP_DIR = path.resolve(process.cwd(), "../../backups");
 
 const router: IRouter = Router();
 
@@ -80,19 +85,30 @@ router.get("/backups", requireRole("admin"), async (_req, res): Promise<void> =>
 });
 
 router.post("/backups", requireRole("admin"), async (req, res): Promise<void> => {
-  const filename = `backup_${new Date().toISOString().replace(/[:.]/g, "-")}.sql`;
-  const size = Math.floor(Math.random() * 500000) + 50000;
+  const dbUrl = process.env["DATABASE_URL"];
+  if (!dbUrl) { res.status(500).json({ error: "DATABASE_URL not configured" }); return; }
 
-  const [backup] = await db.insert(backupsTable).values({ filename, size }).returning();
-  await auditLog(req.session.userId!, "backup.create", `Created backup: ${filename}`, getClientIp(req));
-  await createNotification("Backup Created", `Database backup ${filename} created successfully`, "success");
+  try {
+    mkdirSync(BACKUP_DIR, { recursive: true });
+    const filename = `backup_${new Date().toISOString().replace(/[:.]/g, "-")}.sql`;
+    const filepath = path.join(BACKUP_DIR, filename);
 
-  res.status(201).json({
-    id: backup.id,
-    filename: backup.filename,
-    size: backup.size,
-    createdAt: backup.createdAt instanceof Date ? backup.createdAt.toISOString() : backup.createdAt,
-  });
+    execSync(`pg_dump "${dbUrl}" -f "${filepath}"`);
+    const size = statSync(filepath).size;
+
+    const [backup] = await db.insert(backupsTable).values({ filename, size }).returning();
+    await auditLog(req.session.userId!, "backup.create", `Created backup: ${filename}`, getClientIp(req));
+    await createNotification("Backup Created", `Database backup ${filename} created successfully`, "success");
+
+    res.status(201).json({
+      id: backup.id,
+      filename: backup.filename,
+      size: backup.size,
+      createdAt: backup.createdAt instanceof Date ? backup.createdAt.toISOString() : backup.createdAt,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: `Backup failed: ${err.message}` });
+  }
 });
 
 router.post("/backups/:id/restore", requireRole("admin"), async (req, res): Promise<void> => {
@@ -103,10 +119,23 @@ router.post("/backups/:id/restore", requireRole("admin"), async (req, res): Prom
   const [backup] = await db.select().from(backupsTable).where(eq(backupsTable.id, id));
   if (!backup) { res.status(404).json({ error: "Backup not found" }); return; }
 
-  await auditLog(req.session.userId!, "backup.restore", `Restored backup: ${backup.filename}`, getClientIp(req));
-  await createNotification("Backup Restored", `Database restored from ${backup.filename}`, "success");
+  const dbUrl = process.env["DATABASE_URL"];
+  if (!dbUrl) { res.status(500).json({ error: "DATABASE_URL not configured" }); return; }
 
-  res.json({ message: `Backup ${backup.filename} restored successfully` });
+  const filepath = path.join(BACKUP_DIR, backup.filename);
+  if (!existsSync(filepath)) {
+    res.status(404).json({ error: `Backup file not found on disk: ${backup.filename}` });
+    return;
+  }
+
+  try {
+    execSync(`psql "${dbUrl}" -f "${filepath}"`);
+    await auditLog(req.session.userId!, "backup.restore", `Restored backup: ${backup.filename}`, getClientIp(req));
+    await createNotification("Backup Restored", `Database restored from ${backup.filename}`, "success");
+    res.json({ message: `Backup ${backup.filename} restored successfully` });
+  } catch (err: any) {
+    res.status(500).json({ error: `Restore failed: ${err.message}` });
+  }
 });
 
 export default router;
