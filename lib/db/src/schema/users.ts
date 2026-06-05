@@ -11,6 +11,9 @@ export const usersTable = pgTable("users", {
   passwordHash: text("password_hash").notNull(),
   role: text("role").notNull().default("operator"), // admin, operator, user
   isActive: boolean("is_active").notNull().default(true),
+  profilePicture: text("profile_picture"), // base64 data URL or file path
+  bio: text("bio"),
+  address: text("address"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

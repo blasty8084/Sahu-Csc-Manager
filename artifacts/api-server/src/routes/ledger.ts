@@ -27,10 +27,19 @@ function formatEntry(entry: any, createdByName?: string | null) {
   };
 }
 
-router.get("/ledger/balance", requireAuth, async (_req, res): Promise<void> => {
+function getUserFilter(req: any) {
+  const role = req.session.userRole;
+  const userId = req.session.userId!;
+  if (role === "admin") return undefined;
+  return eq(ledgerTable.createdBy, userId);
+}
+
+router.get("/ledger/balance", requireAuth, async (req, res): Promise<void> => {
+  const userFilter = getUserFilter(req);
   const result = await db
     .select({ totalCredits: sum(ledgerTable.credit), totalDebits: sum(ledgerTable.debit) })
-    .from(ledgerTable);
+    .from(ledgerTable)
+    .where(userFilter);
 
   const totalCredits = parseFloat(result[0]?.totalCredits ?? "0");
   const totalDebits = parseFloat(result[0]?.totalDebits ?? "0");
@@ -68,10 +77,14 @@ router.get("/ledger/summary", requireAuth, async (req, res): Promise<void> => {
     startDate = endDate = now.toISOString().split("T")[0];
   }
 
+  const userFilter = getUserFilter(req);
+  const dateFilter = and(gte(ledgerTable.date, startDate), lte(ledgerTable.date, endDate));
+  const whereClause = userFilter ? and(userFilter, dateFilter) : dateFilter;
+
   const result = await db
     .select({ totalCredits: sum(ledgerTable.credit), totalDebits: sum(ledgerTable.debit), totalTransactions: count() })
     .from(ledgerTable)
-    .where(and(gte(ledgerTable.date, startDate), lte(ledgerTable.date, endDate)));
+    .where(whereClause);
 
   const totalCredits = parseFloat(result[0]?.totalCredits ?? "0");
   const totalDebits = parseFloat(result[0]?.totalDebits ?? "0");
@@ -91,7 +104,9 @@ router.get("/ledger", requireAuth, async (req, res): Promise<void> => {
   const limit = params.success && params.data.limit ? params.data.limit : 20;
   const offset = (page - 1) * limit;
 
-  const conditions: any[] = [];
+  const userFilter = getUserFilter(req);
+  const conditions: any[] = userFilter ? [userFilter] : [];
+
   if (params.success) {
     if (params.data.startDate) conditions.push(gte(ledgerTable.date, params.data.startDate as string));
     if (params.data.endDate) conditions.push(lte(ledgerTable.date, params.data.endDate as string));
@@ -130,10 +145,13 @@ router.post("/ledger", requireAuth, async (req, res): Promise<void> => {
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
   const { date, customerName, serviceType, credit, debit, description } = parsed.data;
+  const userId = req.session.userId!;
 
+  // Balance computed per-user (each user has their own running balance)
   const balanceResult = await db
     .select({ totalCredits: sum(ledgerTable.credit), totalDebits: sum(ledgerTable.debit) })
-    .from(ledgerTable);
+    .from(ledgerTable)
+    .where(eq(ledgerTable.createdBy, userId));
 
   const prevCredits = parseFloat(balanceResult[0]?.totalCredits ?? "0");
   const prevDebits = parseFloat(balanceResult[0]?.totalDebits ?? "0");
@@ -147,11 +165,11 @@ router.post("/ledger", requireAuth, async (req, res): Promise<void> => {
       debit: String(debit ?? 0),
       description,
       balance: String(newBalance),
-      createdBy: req.session.userId!,
+      createdBy: userId,
     })
     .returning();
 
-  await auditLog(req.session.userId!, "ledger.create", `Created ledger entry for ${customerName}`, getClientIp(req));
+  await auditLog(userId, "ledger.create", `Created ledger entry for ${customerName}`, getClientIp(req));
   res.status(201).json(formatEntry(entry));
 });
 
@@ -171,6 +189,12 @@ router.get("/ledger/:id", requireAuth, async (req, res): Promise<void> => {
     .where(eq(ledgerTable.id, id));
 
   if (!entry) { res.status(404).json({ error: "Not found" }); return; }
+
+  // IDOR check: non-admins can only view their own entries
+  if (req.session.userRole !== "admin" && entry.createdBy !== req.session.userId) {
+    res.status(403).json({ error: "Forbidden" }); return;
+  }
+
   res.json(formatEntry(entry, entry.createdByName));
 });
 
@@ -184,6 +208,11 @@ router.patch("/ledger/:id", requireAuth, async (req, res): Promise<void> => {
 
   const [existing] = await db.select().from(ledgerTable).where(eq(ledgerTable.id, id));
   if (!existing) { res.status(404).json({ error: "Not found" }); return; }
+
+  // IDOR check: non-admins can only edit their own entries
+  if (req.session.userRole !== "admin" && existing.createdBy !== req.session.userId) {
+    res.status(403).json({ error: "Forbidden" }); return;
+  }
 
   const updateData: Record<string, any> = {};
   if (parsed.data.date !== undefined) updateData.date = parsed.data.date;
@@ -211,6 +240,11 @@ router.delete("/ledger/:id", requireAuth, async (req, res): Promise<void> => {
 
   const [existing] = await db.select().from(ledgerTable).where(eq(ledgerTable.id, id));
   if (!existing) { res.status(404).json({ error: "Not found" }); return; }
+
+  // IDOR check: non-admins can only delete their own entries
+  if (req.session.userRole !== "admin" && existing.createdBy !== req.session.userId) {
+    res.status(403).json({ error: "Forbidden" }); return;
+  }
 
   await db.delete(ledgerTable).where(eq(ledgerTable.id, id));
   await auditLog(req.session.userId!, "ledger.delete", `Deleted ledger entry ${id}`, getClientIp(req));

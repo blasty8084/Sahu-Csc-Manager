@@ -12,6 +12,10 @@ tags:
     description: Health operations
   - name: auth
     description: Authentication operations
+  - name: profile
+    description: User profile management
+  - name: preferences
+    description: User preferences management
   - name: ledger
     description: Ledger and financial operations
   - name: services
@@ -48,6 +52,7 @@ paths:
 
   # Auth
   /auth/login:
+
     post:
       operationId: login
       tags: [auth]
@@ -95,6 +100,98 @@ paths:
                 $ref: "#/components/schemas/AuthUser"
         "401":
           description: Not authenticated
+
+  # Profile
+  /profile:
+    get:
+      operationId: getProfile
+      tags: [profile]
+      summary: Get current user profile
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+    patch:
+      operationId: updateProfile
+      tags: [profile]
+      summary: Update current user profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileInput"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+
+  /profile/avatar:
+    post:
+      operationId: uploadAvatar
+      tags: [profile]
+      summary: Upload or replace profile picture (base64 data URL)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AvatarInput"
+      responses:
+        "200":
+          description: Avatar uploaded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvatarResponse"
+    delete:
+      operationId: deleteAvatar
+      tags: [profile]
+      summary: Remove profile picture
+      responses:
+        "200":
+          description: Avatar removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  # Preferences
+  /preferences:
+    get:
+      operationId: getPreferences
+      tags: [preferences]
+      summary: Get current user preferences
+      responses:
+        "200":
+          description: User preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserPreferences"
+    patch:
+      operationId: updatePreferences
+      tags: [preferences]
+      summary: Update current user preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePreferencesInput"
+      responses:
+        "200":
+          description: Updated preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserPreferences"
 
   # Ledger
   /ledger:
@@ -748,6 +845,98 @@ components:
           enum: [admin, operator, user]
         fullName:
           type: ["string", "null"]
+        profilePicture:
+          type: ["string", "null"]
+        bio:
+          type: ["string", "null"]
+        address:
+          type: ["string", "null"]
+
+    UserProfile:
+      type: object
+      required: [id, username, email, role]
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+        mobile:
+          type: ["string", "null"]
+        fullName:
+          type: ["string", "null"]
+        role:
+          type: string
+          enum: [admin, operator, user]
+        profilePicture:
+          type: ["string", "null"]
+        bio:
+          type: ["string", "null"]
+        address:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    UpdateProfileInput:
+      type: object
+      properties:
+        fullName:
+          type: string
+        email:
+          type: string
+        mobile:
+          type: string
+        bio:
+          type: string
+        address:
+          type: string
+        password:
+          type: string
+        currentPassword:
+          type: string
+
+    AvatarInput:
+      type: object
+      required: [profilePicture]
+      properties:
+        profilePicture:
+          type: string
+          description: Base64 data URL (data:image/...;base64,...)
+
+    AvatarResponse:
+      type: object
+      required: [profilePicture]
+      properties:
+        profilePicture:
+          type: ["string", "null"]
+
+    UserPreferences:
+      type: object
+      required: [theme, language, dashboardLayout]
+      properties:
+        theme:
+          type: string
+          enum: [light, dark]
+        language:
+          type: string
+          enum: [en, hi, or]
+        dashboardLayout:
+          type: string
+        updatedAt:
+          type: string
+
+    UpdatePreferencesInput:
+      type: object
+      properties:
+        theme:
+          type: string
+          enum: [light, dark]
+        language:
+          type: string
+          enum: [en, hi, or]
+        dashboardLayout:
+          type: string
 
     # Ledger
     LedgerEntry:

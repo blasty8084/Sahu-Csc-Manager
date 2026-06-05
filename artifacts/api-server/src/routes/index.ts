@@ -9,11 +9,15 @@ import auditRouter from "./audit";
 import settingsRouter from "./settings";
 import reportsRouter from "./reports";
 import aepsRouter from "./aeps";
+import profileRouter from "./profile";
+import preferencesRouter from "./preferences";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(authRouter);
+router.use(profileRouter);
+router.use(preferencesRouter);
 router.use(ledgerRouter);
 router.use(servicesRouter);
 router.use(usersRouter);

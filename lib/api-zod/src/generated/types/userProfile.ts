@@ -5,21 +5,22 @@
  * SAHU CSC FV1 - CSC Business Management Platform API
  * OpenAPI spec version: 0.1.0
  */
-import type { AuthUserRole } from './authUserRole';
+import type { UserProfileRole } from './userProfileRole';
 
-export interface AuthUser {
+export interface UserProfile {
   id: number;
   username: string;
   email: string;
   /** @nullable */
   mobile?: string | null;
-  role: AuthUserRole;
   /** @nullable */
   fullName?: string | null;
+  role: UserProfileRole;
   /** @nullable */
   profilePicture?: string | null;
   /** @nullable */
   bio?: string | null;
   /** @nullable */
   address?: string | null;
+  createdAt?: string;
 }

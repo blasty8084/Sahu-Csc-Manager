@@ -7,6 +7,20 @@ import { createNotification } from "../lib/notify";
 
 const router: IRouter = Router();
 
+function fmtUser(user: any) {
+  return {
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    mobile: user.mobile ?? null,
+    role: user.role,
+    fullName: user.fullName ?? null,
+    profilePicture: user.profilePicture ?? null,
+    bio: user.bio ?? null,
+    address: user.address ?? null,
+  };
+}
+
 router.post("/auth/login", async (req, res): Promise<void> => {
   const parsed = LoginBody.safeParse(req.body);
   if (!parsed.success) {
@@ -57,19 +71,11 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     user.id
   );
 
-  res.json({
-    id: user.id,
-    username: user.username,
-    email: user.email,
-    mobile: user.mobile ?? null,
-    role: user.role,
-    fullName: user.fullName ?? null,
-  });
+  res.json(fmtUser(user));
 });
 
 router.post("/auth/logout", requireAuth, async (req, res): Promise<void> => {
   const userId = req.session.userId!;
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
   await auditLog(userId, "logout", `User logged out`, getClientIp(req));
   req.session.destroy(() => {});
   res.json({ message: "Logged out successfully" });
@@ -81,14 +87,7 @@ router.get("/auth/me", requireAuth, async (req, res): Promise<void> => {
     res.status(401).json({ error: "Not authenticated" });
     return;
   }
-  res.json({
-    id: user.id,
-    username: user.username,
-    email: user.email,
-    mobile: user.mobile ?? null,
-    role: user.role,
-    fullName: user.fullName ?? null,
-  });
+  res.json(fmtUser(user));
 });
 
 export default router;

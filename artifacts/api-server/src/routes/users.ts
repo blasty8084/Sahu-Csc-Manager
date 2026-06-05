@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { CreateUserBody, UpdateUserBody, UpdateUserParams, DeleteUserParams } from "@workspace/api-zod";
+import { CreateUserBody, UpdateUserBody } from "@workspace/api-zod";
 import { requireRole, hashPassword, auditLog, getClientIp } from "../lib/auth";
 
 const router: IRouter = Router();
@@ -15,6 +15,9 @@ function fmt(u: any) {
     fullName: u.fullName ?? null,
     role: u.role,
     isActive: u.isActive,
+    profilePicture: u.profilePicture ?? null,
+    bio: u.bio ?? null,
+    address: u.address ?? null,
     createdAt: u.createdAt instanceof Date ? u.createdAt.toISOString() : u.createdAt,
   };
 }

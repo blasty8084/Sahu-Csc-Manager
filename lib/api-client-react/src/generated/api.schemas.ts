@@ -37,6 +37,106 @@ export interface AuthUser {
   role: AuthUserRole;
   /** @nullable */
   fullName?: string | null;
+  /** @nullable */
+  profilePicture?: string | null;
+  /** @nullable */
+  bio?: string | null;
+  /** @nullable */
+  address?: string | null;
+}
+
+export type UserProfileRole = typeof UserProfileRole[keyof typeof UserProfileRole];
+
+
+export const UserProfileRole = {
+  admin: 'admin',
+  operator: 'operator',
+  user: 'user',
+} as const;
+
+export interface UserProfile {
+  id: number;
+  username: string;
+  email: string;
+  /** @nullable */
+  mobile?: string | null;
+  /** @nullable */
+  fullName?: string | null;
+  role: UserProfileRole;
+  /** @nullable */
+  profilePicture?: string | null;
+  /** @nullable */
+  bio?: string | null;
+  /** @nullable */
+  address?: string | null;
+  createdAt?: string;
+}
+
+export interface UpdateProfileInput {
+  fullName?: string;
+  email?: string;
+  mobile?: string;
+  bio?: string;
+  address?: string;
+  password?: string;
+  currentPassword?: string;
+}
+
+export interface AvatarInput {
+  /** Base64 data URL (data:image/...;base64,...) */
+  profilePicture: string;
+}
+
+export interface AvatarResponse {
+  /** @nullable */
+  profilePicture: string | null;
+}
+
+export type UserPreferencesTheme = typeof UserPreferencesTheme[keyof typeof UserPreferencesTheme];
+
+
+export const UserPreferencesTheme = {
+  light: 'light',
+  dark: 'dark',
+} as const;
+
+export type UserPreferencesLanguage = typeof UserPreferencesLanguage[keyof typeof UserPreferencesLanguage];
+
+
+export const UserPreferencesLanguage = {
+  en: 'en',
+  hi: 'hi',
+  or: 'or',
+} as const;
+
+export interface UserPreferences {
+  theme: UserPreferencesTheme;
+  language: UserPreferencesLanguage;
+  dashboardLayout: string;
+  updatedAt?: string;
+}
+
+export type UpdatePreferencesInputTheme = typeof UpdatePreferencesInputTheme[keyof typeof UpdatePreferencesInputTheme];
+
+
+export const UpdatePreferencesInputTheme = {
+  light: 'light',
+  dark: 'dark',
+} as const;
+
+export type UpdatePreferencesInputLanguage = typeof UpdatePreferencesInputLanguage[keyof typeof UpdatePreferencesInputLanguage];
+
+
+export const UpdatePreferencesInputLanguage = {
+  en: 'en',
+  hi: 'hi',
+  or: 'or',
+} as const;
+
+export interface UpdatePreferencesInput {
+  theme?: UpdatePreferencesInputTheme;
+  language?: UpdatePreferencesInputLanguage;
+  dashboardLayout?: string;
 }
 
 export interface LedgerEntry {
@@ -277,7 +377,6 @@ export interface Settings {
   currency: string;
   autoBackup?: boolean;
   backupFrequencyDays?: number;
-  openingBalance?: number;
 }
 
 export type SettingsUpdateLanguage = typeof SettingsUpdateLanguage[keyof typeof SettingsUpdateLanguage];

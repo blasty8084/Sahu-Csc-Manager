@@ -31,7 +31,10 @@ export const LoginResponse = zod.object({
   "email": zod.string(),
   "mobile": zod.string().nullish(),
   "role": zod.enum(['admin', 'operator', 'user']),
-  "fullName": zod.string().nullish()
+  "fullName": zod.string().nullish(),
+  "profilePicture": zod.string().nullish(),
+  "bio": zod.string().nullish(),
+  "address": zod.string().nullish()
 })
 
 
@@ -52,7 +55,102 @@ export const GetMeResponse = zod.object({
   "email": zod.string(),
   "mobile": zod.string().nullish(),
   "role": zod.enum(['admin', 'operator', 'user']),
-  "fullName": zod.string().nullish()
+  "fullName": zod.string().nullish(),
+  "profilePicture": zod.string().nullish(),
+  "bio": zod.string().nullish(),
+  "address": zod.string().nullish()
+})
+
+
+/**
+ * @summary Get current user profile
+ */
+export const GetProfileResponse = zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "email": zod.string(),
+  "mobile": zod.string().nullish(),
+  "fullName": zod.string().nullish(),
+  "role": zod.enum(['admin', 'operator', 'user']),
+  "profilePicture": zod.string().nullish(),
+  "bio": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "createdAt": zod.string().optional()
+})
+
+
+/**
+ * @summary Update current user profile
+ */
+export const UpdateProfileBody = zod.object({
+  "fullName": zod.string().optional(),
+  "email": zod.string().optional(),
+  "mobile": zod.string().optional(),
+  "bio": zod.string().optional(),
+  "address": zod.string().optional(),
+  "password": zod.string().optional(),
+  "currentPassword": zod.string().optional()
+})
+
+export const UpdateProfileResponse = zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "email": zod.string(),
+  "mobile": zod.string().nullish(),
+  "fullName": zod.string().nullish(),
+  "role": zod.enum(['admin', 'operator', 'user']),
+  "profilePicture": zod.string().nullish(),
+  "bio": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "createdAt": zod.string().optional()
+})
+
+
+/**
+ * @summary Upload or replace profile picture (base64 data URL)
+ */
+export const UploadAvatarBody = zod.object({
+  "profilePicture": zod.string().describe('Base64 data URL (data:image\/...;base64,...)')
+})
+
+export const UploadAvatarResponse = zod.object({
+  "profilePicture": zod.string().nullable()
+})
+
+
+/**
+ * @summary Remove profile picture
+ */
+export const DeleteAvatarResponse = zod.object({
+  "message": zod.string()
+})
+
+
+/**
+ * @summary Get current user preferences
+ */
+export const GetPreferencesResponse = zod.object({
+  "theme": zod.enum(['light', 'dark']),
+  "language": zod.enum(['en', 'hi', 'or']),
+  "dashboardLayout": zod.string(),
+  "updatedAt": zod.string().optional()
+})
+
+
+/**
+ * @summary Update current user preferences
+ */
+export const UpdatePreferencesBody = zod.object({
+  "theme": zod.enum(['light', 'dark']).optional(),
+  "language": zod.enum(['en', 'hi', 'or']).optional(),
+  "dashboardLayout": zod.string().optional()
+})
+
+export const UpdatePreferencesResponse = zod.object({
+  "theme": zod.enum(['light', 'dark']),
+  "language": zod.enum(['en', 'hi', 'or']),
+  "dashboardLayout": zod.string(),
+  "updatedAt": zod.string().optional()
 })
 
 
@@ -485,8 +583,7 @@ export const GetSettingsResponse = zod.object({
   "theme": zod.enum(['light', 'dark']),
   "currency": zod.string(),
   "autoBackup": zod.boolean().optional(),
-  "backupFrequencyDays": zod.number().optional(),
-  "openingBalance": zod.number().optional()
+  "backupFrequencyDays": zod.number().optional()
 })
 
 
@@ -502,8 +599,7 @@ export const UpdateSettingsBody = zod.object({
   "theme": zod.enum(['light', 'dark']).optional(),
   "currency": zod.string().optional(),
   "autoBackup": zod.boolean().optional(),
-  "backupFrequencyDays": zod.number().optional(),
-  "openingBalance": zod.number().optional()
+  "backupFrequencyDays": zod.number().optional()
 })
 
 export const UpdateSettingsResponse = zod.object({
@@ -515,8 +611,7 @@ export const UpdateSettingsResponse = zod.object({
   "theme": zod.enum(['light', 'dark']),
   "currency": zod.string(),
   "autoBackup": zod.boolean().optional(),
-  "backupFrequencyDays": zod.number().optional(),
-  "openingBalance": zod.number().optional()
+  "backupFrequencyDays": zod.number().optional()
 })
 
 

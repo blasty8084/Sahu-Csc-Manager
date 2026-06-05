@@ -14,11 +14,13 @@ import {
   Database,
   LogOut,
   Menu,
-  Fingerprint
+  Fingerprint,
+  UserCircle,
+  SlidersHorizontal
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -37,6 +39,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/services", label: "Services", icon: Briefcase },
     { href: "/reports", label: "Reports", icon: BarChart3 },
     { href: "/notifications", label: "Notifications", icon: Bell, badge: unreadCount },
+    { href: "/profile", label: "My Profile", icon: UserCircle },
+    { href: "/preferences", label: "Preferences", icon: SlidersHorizontal },
     ...(isAdmin ? [
       { href: "/users", label: "Users", icon: Users },
       { href: "/audit-logs", label: "Audit Logs", icon: History },
@@ -44,6 +48,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
       { href: "/settings", label: "Settings", icon: Settings },
     ] : []),
   ];
+
+  const initials = (user?.fullName || user?.username || "U").charAt(0).toUpperCase();
+  const avatarSrc = (user as any)?.profilePicture;
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full bg-sidebar border-r border-sidebar-border text-sidebar-foreground">
@@ -82,18 +89,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
       
       <div className="p-4 border-t border-sidebar-border/50">
         <div className="flex items-center justify-between p-2">
-          <div className="flex items-center gap-3">
-            <Avatar className="h-9 w-9 border border-sidebar-border">
+          <Link href="/profile" className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity cursor-pointer">
+            <Avatar className="h-9 w-9 border border-sidebar-border flex-shrink-0">
+              {avatarSrc ? <AvatarImage src={avatarSrc} alt="Profile" className="object-cover" /> : null}
               <AvatarFallback className="bg-sidebar-accent text-sidebar-foreground">
-                {user?.fullName?.charAt(0) || user?.username?.charAt(0) || 'U'}
+                {initials}
               </AvatarFallback>
             </Avatar>
-            <div className="flex flex-col">
-              <span className="text-sm font-medium leading-none mb-1">{user?.fullName || user?.username}</span>
+            <div className="flex flex-col min-w-0">
+              <span className="text-sm font-medium leading-none mb-1 truncate">{user?.fullName || user?.username}</span>
               <span className="text-xs text-sidebar-foreground/60 capitalize">{user?.role}</span>
             </div>
-          </div>
-          <Button variant="ghost" size="icon" onClick={() => logout()} className="text-sidebar-foreground/60 hover:text-destructive hover:bg-destructive/10 h-8 w-8">
+          </Link>
+          <Button variant="ghost" size="icon" onClick={() => logout()} className="text-sidebar-foreground/60 hover:text-destructive hover:bg-destructive/10 h-8 w-8 flex-shrink-0">
             <LogOut size={16} />
           </Button>
         </div>
@@ -142,7 +150,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <h1 className="text-xl font-semibold capitalize">
             {location === "/" ? "Dashboard" : location.split('/')[1].replace('-', ' ')}
           </h1>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <Link href="/notifications">
               <Button variant="outline" size="sm" className="gap-2 relative bg-background hover:bg-muted">
                 <Bell size={16} />
@@ -153,6 +161,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   </Badge>
                 )}
               </Button>
+            </Link>
+            <Link href="/profile">
+              <Avatar className="h-8 w-8 border border-border cursor-pointer hover:opacity-80 transition-opacity">
+                {avatarSrc ? <AvatarImage src={avatarSrc} alt="Profile" className="object-cover" /> : null}
+                <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
             </Link>
           </div>
         </header>
