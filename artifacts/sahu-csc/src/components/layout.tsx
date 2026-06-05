@@ -16,7 +16,6 @@ import {
   Menu,
   Fingerprint,
   UserCircle,
-  SlidersHorizontal,
   LayoutGrid
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -41,7 +40,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/reports", label: "Reports", icon: BarChart3 },
     { href: "/notifications", label: "Notifications", icon: Bell, badge: unreadCount },
     { href: "/profile", label: "My Profile", icon: UserCircle },
-    { href: "/preferences", label: "Preferences", icon: SlidersHorizontal },
     ...(isAdmin ? [
       { href: "/users-overview", label: "Users Overview", icon: LayoutGrid },
       { href: "/users", label: "User Management", icon: Users },

@@ -20,7 +20,7 @@ import Settings from "@/pages/settings";
 import Backups from "@/pages/backups";
 import AePS from "@/pages/aeps";
 import Profile from "@/pages/profile";
-import Preferences from "@/pages/preferences";
+import { Redirect } from "wouter";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -76,7 +76,7 @@ function Router() {
       <Route path="/aeps">{() => <ProtectedRoute component={AePS} />}</Route>
       <Route path="/notifications">{() => <ProtectedRoute component={Notifications} />}</Route>
       <Route path="/profile">{() => <ProtectedRoute component={Profile} />}</Route>
-      <Route path="/preferences">{() => <ProtectedRoute component={Preferences} />}</Route>
+      <Route path="/preferences">{() => <Redirect to="/profile" />}</Route>
       <Route path="/users">{() => <ProtectedRoute component={Users} adminOnly />}</Route>
       <Route path="/users-overview">{() => <ProtectedRoute component={UsersOverview} adminOnly />}</Route>
       <Route path="/audit-logs">{() => <ProtectedRoute component={AuditLogs} adminOnly />}</Route>

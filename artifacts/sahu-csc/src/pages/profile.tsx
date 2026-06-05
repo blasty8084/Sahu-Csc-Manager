@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useGetProfile, useUpdateProfile, useUploadAvatar, useDeleteAvatar, getGetProfileQueryKey, getGetMeQueryKey } from "@workspace/api-client-react";
+import { useGetProfile, useUpdateProfile, useUploadAvatar, useDeleteAvatar, getGetProfileQueryKey, getGetMeQueryKey, useGetPreferences, useUpdatePreferences, getGetPreferencesQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
@@ -11,23 +11,30 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { useTheme } from "@/components/theme-provider";
 import { useForm } from "react-hook-form";
-import { Camera, Trash2, User, Shield, Lock } from "lucide-react";
+import { Camera, Trash2, User, Shield, Lock, Palette, Globe, LayoutDashboard } from "lucide-react";
 
 export default function Profile() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { setTheme } = useTheme();
   const qc = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [showPasswordSection, setShowPasswordSection] = useState(false);
 
-  const { data: profile, isLoading } = useGetProfile();
+  const { data: profile, isLoading: profileLoading } = useGetProfile();
+  const { data: prefs, isLoading: prefsLoading } = useGetPreferences();
   const updateMut = useUpdateProfile();
+  const updatePrefsMut = useUpdatePreferences();
   const uploadAvatarMut = useUploadAvatar();
   const deleteAvatarMut = useDeleteAvatar();
+
+  const isLoading = profileLoading || prefsLoading;
 
   const profileForm = useForm({
     defaultValues: {
@@ -47,6 +54,14 @@ export default function Profile() {
     }
   });
 
+  const prefsForm = useForm({
+    defaultValues: {
+      theme: "light" as "light" | "dark",
+      language: "en" as "en" | "hi" | "or",
+      dashboardLayout: "default",
+    }
+  });
+
   useEffect(() => {
     if (profile) {
       profileForm.reset({
@@ -59,7 +74,17 @@ export default function Profile() {
     }
   }, [profile]);
 
-  const invalidate = () => {
+  useEffect(() => {
+    if (prefs) {
+      prefsForm.reset({
+        theme: prefs.theme,
+        language: prefs.language,
+        dashboardLayout: prefs.dashboardLayout,
+      });
+    }
+  }, [prefs]);
+
+  const invalidateProfile = () => {
     qc.invalidateQueries({ queryKey: getGetProfileQueryKey() });
     qc.invalidateQueries({ queryKey: getGetMeQueryKey() });
   };
@@ -67,7 +92,7 @@ export default function Profile() {
   const onSaveProfile = profileForm.handleSubmit(async (values) => {
     try {
       await updateMut.mutateAsync({ data: values as any });
-      invalidate();
+      invalidateProfile();
       toast({ title: "Profile updated successfully" });
     } catch {
       toast({ title: "Failed to update profile", variant: "destructive" });
@@ -86,13 +111,24 @@ export default function Profile() {
           password: values.password,
         } as any
       });
-      invalidate();
+      invalidateProfile();
       passwordForm.reset();
       setShowPasswordSection(false);
       toast({ title: "Password changed successfully" });
     } catch (e: any) {
       const msg = e?.response?.data?.error ?? "Failed to change password";
       toast({ title: msg, variant: "destructive" });
+    }
+  });
+
+  const onSavePreferences = prefsForm.handleSubmit(async (values) => {
+    try {
+      await updatePrefsMut.mutateAsync({ data: values });
+      qc.invalidateQueries({ queryKey: getGetPreferencesQueryKey() });
+      setTheme(values.theme);
+      toast({ title: "Preferences saved successfully" });
+    } catch {
+      toast({ title: "Failed to save preferences", variant: "destructive" });
     }
   });
 
@@ -115,7 +151,7 @@ export default function Profile() {
       setAvatarPreview(dataUrl);
       try {
         await uploadAvatarMut.mutateAsync({ data: { profilePicture: dataUrl } });
-        invalidate();
+        invalidateProfile();
         toast({ title: "Profile picture updated" });
       } catch {
         setAvatarPreview(null);
@@ -129,7 +165,7 @@ export default function Profile() {
     try {
       await deleteAvatarMut.mutateAsync();
       setAvatarPreview(null);
-      invalidate();
+      invalidateProfile();
       toast({ title: "Profile picture removed" });
     } catch {
       toast({ title: "Failed to remove picture", variant: "destructive" });
@@ -149,12 +185,12 @@ export default function Profile() {
       <div className="space-y-6 max-w-2xl">
         <div>
           <h2 className="text-xl font-bold">My Profile</h2>
-          <p className="text-sm text-muted-foreground">Manage your personal information and account settings</p>
+          <p className="text-sm text-muted-foreground">Manage your personal information, account settings, and preferences</p>
         </div>
 
         {isLoading ? (
           <div className="space-y-4">
-            {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-40 w-full rounded-lg" />)}
+            {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-40 w-full rounded-lg" />)}
           </div>
         ) : (
           <div className="space-y-6">
@@ -336,6 +372,105 @@ export default function Profile() {
                 </CardContent>
               )}
             </Card>
+
+            {/* Preferences */}
+            <div>
+              <h3 className="text-base font-semibold mb-4">Preferences</h3>
+              <form onSubmit={onSavePreferences} className="space-y-4">
+                {/* Appearance */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Palette size={16} /> Appearance
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-sm font-medium">Theme</Label>
+                        <p className="text-xs text-muted-foreground">Choose your preferred colour scheme</p>
+                      </div>
+                      <Select
+                        value={prefsForm.watch("theme")}
+                        onValueChange={(v) => prefsForm.setValue("theme", v as "light" | "dark")}
+                      >
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="light">☀️ Light</SelectItem>
+                          <SelectItem value="dark">🌙 Dark</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Language */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Globe size={16} /> Language
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-sm font-medium">Interface Language</Label>
+                        <p className="text-xs text-muted-foreground">Select your preferred display language</p>
+                      </div>
+                      <Select
+                        value={prefsForm.watch("language")}
+                        onValueChange={(v) => prefsForm.setValue("language", v as "en" | "hi" | "or")}
+                      >
+                        <SelectTrigger className="w-36">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="en">🇬🇧 English</SelectItem>
+                          <SelectItem value="hi">🇮🇳 हिंदी</SelectItem>
+                          <SelectItem value="or">🇮🇳 ଓଡ଼ିଆ</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Dashboard Layout */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <LayoutDashboard size={16} /> Dashboard
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-sm font-medium">Layout</Label>
+                        <p className="text-xs text-muted-foreground">Choose how your dashboard is arranged</p>
+                      </div>
+                      <Select
+                        value={prefsForm.watch("dashboardLayout")}
+                        onValueChange={(v) => prefsForm.setValue("dashboardLayout", v)}
+                      >
+                        <SelectTrigger className="w-36">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="default">Default</SelectItem>
+                          <SelectItem value="compact">Compact</SelectItem>
+                          <SelectItem value="expanded">Expanded</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Button type="submit" disabled={updatePrefsMut.isPending}>
+                  {updatePrefsMut.isPending ? "Saving..." : "Save Preferences"}
+                </Button>
+              </form>
+            </div>
           </div>
         )}
       </div>
