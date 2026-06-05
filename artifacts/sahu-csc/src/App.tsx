@@ -15,6 +15,7 @@ import Reports from "@/pages/reports";
 import Notifications from "@/pages/notifications";
 import AuditLogs from "@/pages/audit-logs";
 import Users from "@/pages/users";
+import UsersOverview from "@/pages/users-overview";
 import Settings from "@/pages/settings";
 import Backups from "@/pages/backups";
 import AePS from "@/pages/aeps";
@@ -77,6 +78,7 @@ function Router() {
       <Route path="/profile">{() => <ProtectedRoute component={Profile} />}</Route>
       <Route path="/preferences">{() => <ProtectedRoute component={Preferences} />}</Route>
       <Route path="/users">{() => <ProtectedRoute component={Users} adminOnly />}</Route>
+      <Route path="/users-overview">{() => <ProtectedRoute component={UsersOverview} adminOnly />}</Route>
       <Route path="/audit-logs">{() => <ProtectedRoute component={AuditLogs} adminOnly />}</Route>
       <Route path="/settings">{() => <ProtectedRoute component={Settings} adminOnly />}</Route>
       <Route path="/backups">{() => <ProtectedRoute component={Backups} adminOnly />}</Route>

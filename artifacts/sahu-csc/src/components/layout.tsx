@@ -16,7 +16,8 @@ import {
   Menu,
   Fingerprint,
   UserCircle,
-  SlidersHorizontal
+  SlidersHorizontal,
+  LayoutGrid
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -42,7 +43,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/profile", label: "My Profile", icon: UserCircle },
     { href: "/preferences", label: "Preferences", icon: SlidersHorizontal },
     ...(isAdmin ? [
-      { href: "/users", label: "Users", icon: Users },
+      { href: "/users-overview", label: "Users Overview", icon: LayoutGrid },
+      { href: "/users", label: "User Management", icon: Users },
       { href: "/audit-logs", label: "Audit Logs", icon: History },
       { href: "/backups", label: "Backups", icon: Database },
       { href: "/settings", label: "Settings", icon: Settings },
