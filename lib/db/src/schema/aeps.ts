@@ -1,13 +1,16 @@
-import { pgTable, serial, date, numeric, text, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, date, numeric, text, integer, timestamp, unique } from "drizzle-orm/pg-core";
 
 export const aepsDailyTable = pgTable("aeps_daily", {
   id: serial("id").primaryKey(),
-  date: date("date").notNull().unique(),
+  date: date("date").notNull(),
+  createdBy: integer("created_by").notNull(),
   openingBalance: numeric("opening_balance", { precision: 12, scale: 2 }).notNull().default("0"),
   notes: text("notes"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => [
+  unique("aeps_daily_date_user").on(t.date, t.createdBy),
+]);
 
 export const aepsTransactionsTable = pgTable("aeps_transactions", {
   id: serial("id").primaryKey(),
