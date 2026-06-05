@@ -11,6 +11,7 @@ import reportsRouter from "./reports";
 import aepsRouter from "./aeps";
 import profileRouter from "./profile";
 import preferencesRouter from "./preferences";
+import adminRouter from "./admin";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use(auditRouter);
 router.use(settingsRouter);
 router.use(reportsRouter);
 router.use(aepsRouter);
+router.use(adminRouter);
 
 export default router;

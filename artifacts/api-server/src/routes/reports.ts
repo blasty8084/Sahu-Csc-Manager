@@ -8,9 +8,7 @@ import * as XLSX from "xlsx";
 const router: IRouter = Router();
 
 function getUserFilter(req: any) {
-  const role = req.session.userRole;
   const userId = req.session.userId!;
-  if (role === "admin") return undefined;
   return eq(ledgerTable.createdBy, userId);
 }
 

@@ -28,9 +28,7 @@ function formatEntry(entry: any, createdByName?: string | null) {
 }
 
 function getUserFilter(req: any) {
-  const role = req.session.userRole;
   const userId = req.session.userId!;
-  if (role === "admin") return undefined;
   return eq(ledgerTable.createdBy, userId);
 }
 
@@ -190,8 +188,7 @@ router.get("/ledger/:id", requireAuth, async (req, res): Promise<void> => {
 
   if (!entry) { res.status(404).json({ error: "Not found" }); return; }
 
-  // IDOR check: non-admins can only view their own entries
-  if (req.session.userRole !== "admin" && entry.createdBy !== req.session.userId) {
+  if (entry.createdBy !== req.session.userId && req.session.userRole !== "admin") {
     res.status(403).json({ error: "Forbidden" }); return;
   }
 
@@ -209,8 +206,7 @@ router.patch("/ledger/:id", requireAuth, async (req, res): Promise<void> => {
   const [existing] = await db.select().from(ledgerTable).where(eq(ledgerTable.id, id));
   if (!existing) { res.status(404).json({ error: "Not found" }); return; }
 
-  // IDOR check: non-admins can only edit their own entries
-  if (req.session.userRole !== "admin" && existing.createdBy !== req.session.userId) {
+  if (existing.createdBy !== req.session.userId && req.session.userRole !== "admin") {
     res.status(403).json({ error: "Forbidden" }); return;
   }
 
@@ -241,8 +237,7 @@ router.delete("/ledger/:id", requireAuth, async (req, res): Promise<void> => {
   const [existing] = await db.select().from(ledgerTable).where(eq(ledgerTable.id, id));
   if (!existing) { res.status(404).json({ error: "Not found" }); return; }
 
-  // IDOR check: non-admins can only delete their own entries
-  if (req.session.userRole !== "admin" && existing.createdBy !== req.session.userId) {
+  if (existing.createdBy !== req.session.userId && req.session.userRole !== "admin") {
     res.status(403).json({ error: "Forbidden" }); return;
   }
 
