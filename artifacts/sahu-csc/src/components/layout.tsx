@@ -50,13 +50,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
     ] : []),
   ];
 
-  // Bottom nav items for mobile (most-used 5)
+  // Bottom nav items for mobile
   const bottomNavItems = [
     { href: "/", label: "Home", icon: LayoutDashboard },
     { href: "/ledger", label: "Ledger", icon: BookOpen },
-    { href: "/reports", label: "Reports", icon: BarChart3 },
-    { href: "/notifications", label: "Alerts", icon: Bell, badge: unreadCount },
-    { href: "/profile", label: "Profile", icon: UserCircle },
+    { href: "/aeps", label: "AePS", icon: Fingerprint },
+    { href: "/profile", label: "My Profile", icon: UserCircle },
   ];
 
   const initials = (user?.fullName || user?.username || "U").charAt(0).toUpperCase();
