@@ -94,10 +94,15 @@ export default function Login() {
                 >
                   {form.formState.isSubmitting ? "Authenticating..." : "Sign In"}
                 </Button>
-                <div className="text-center">
+                <div className="flex items-center justify-between text-sm">
                   <Link href="/forgot-password">
-                    <span className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+                    <span className="text-muted-foreground hover:text-primary transition-colors cursor-pointer">
                       Forgot password?
+                    </span>
+                  </Link>
+                  <Link href="/reset-password">
+                    <span className="text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+                      Have an OTP?
                     </span>
                   </Link>
                 </div>

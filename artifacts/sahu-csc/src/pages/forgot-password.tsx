@@ -150,6 +150,13 @@ export default function ForgotPassword() {
                   </p>
                 </div>
 
+                {/* Go to reset page */}
+                <Link href="/reset-password">
+                  <Button className="w-full gap-2">
+                    Go to Reset Password →
+                  </Button>
+                </Link>
+
                 {/* Generate new */}
                 <Button variant="ghost" size="sm" className="w-full gap-2 text-muted-foreground" onClick={handleReset}>
                   <RefreshCw className="w-4 h-4" />
