@@ -1,267 +1,227 @@
-import { useState } from "react";
 import {
-  Home, BookOpen, CreditCard, User, Bell, ChevronRight, Search,
-  TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft,
-  Shield, Zap, FileText, Users, BarChart2, Settings, LogOut,
-  CheckCircle, Clock, AlertCircle, Activity, Wallet,
-  Download, Plus, RefreshCw, ChevronDown, Monitor
+  LayoutDashboard, BookOpen, CreditCard, Briefcase, BarChart2,
+  Bell, User, Users, Shield, FileText, HardDrive, Settings,
+  TrendingUp, TrendingDown, Activity, Wallet,
+  LogOut, ChevronRight, ArrowUpRight, ArrowDownLeft
 } from "lucide-react";
 
-const navGroups = [
-  {
-    label: "Main",
-    items: [
-      { icon: Home, label: "Dashboard", active: true, badge: null },
-      { icon: BookOpen, label: "Ledger", active: false, badge: null },
-      { icon: CreditCard, label: "AePS", active: false, badge: null },
-      { icon: Shield, label: "Services", active: false, badge: "22" },
-      { icon: BarChart2, label: "Reports", active: false, badge: null },
-    ],
-  },
-  {
-    label: "Administration",
-    items: [
-      { icon: Bell, label: "Notifications", active: false, badge: "3" },
-      { icon: Users, label: "User Management", active: false, badge: null },
-      { icon: Activity, label: "Audit Logs", active: false, badge: null },
-      { icon: Settings, label: "Settings", active: false, badge: null },
-    ],
-  },
+const navMain = [
+  { icon: LayoutDashboard, label: "Dashboard", active: true, badge: null },
+  { icon: BookOpen, label: "Ledger", active: false, badge: null },
+  { icon: CreditCard, label: "AePS Cash", active: false, badge: null },
+  { icon: Briefcase, label: "Services", active: false, badge: null },
+  { icon: BarChart2, label: "Reports", active: false, badge: null },
+  { icon: Bell, label: "Notifications", active: false, badge: "3" },
+  { icon: User, label: "My Profile", active: false, badge: null },
+];
+
+const navAdmin = [
+  { icon: Users, label: "Users Overview", active: false, badge: null },
+  { icon: Shield, label: "User Management", active: false, badge: null },
+  { icon: Activity, label: "Audit Logs", active: false, badge: null },
+  { icon: HardDrive, label: "Backups", active: false, badge: null },
+  { icon: Settings, label: "Settings", active: false, badge: null },
 ];
 
 const stats = [
-  { label: "Current Balance", value: "₹1,24,850", sub: "Running balance", change: "+₹5,200 today", up: true, icon: Wallet, accent: "#1a2e5a" },
-  { label: "Today's Income", value: "₹8,450", sub: "24 transactions", change: "+18% vs yesterday", up: true, icon: TrendingUp, accent: "#059669" },
-  { label: "Today's Expense", value: "₹3,250", sub: "8 transactions", change: "-5% vs yesterday", up: false, icon: TrendingDown, accent: "#e11d48" },
-  { label: "Active Services", value: "22", sub: "Across 5 categories", change: "All operational", up: true, icon: Zap, accent: "#f97316" },
-];
-
-const transactions = [
-  { name: "Aadhaar Card Update", customer: "Ramesh Sahu", amount: 150, type: "credit", time: "10:32 AM", status: "success", service: "Gov ID", method: "Cash" },
-  { name: "LIC Premium Collection", customer: "Sunita Devi", amount: 2400, type: "debit", time: "09:15 AM", status: "success", service: "Insurance", method: "Online" },
-  { name: "PAN Card Application", customer: "Mohan Patra", amount: 200, type: "credit", time: "08:50 AM", status: "pending", service: "Gov ID", method: "Cash" },
-  { name: "BSNL Electricity Bill", customer: "Geeta Nayak", amount: 850, type: "debit", time: "08:20 AM", status: "success", service: "Utility", method: "Online" },
-  { name: "PM Kisan Registration", customer: "Bijay Behera", amount: 500, type: "credit", time: "07:45 AM", status: "success", service: "Scheme", method: "Cash" },
-  { name: "Voter ID Application", customer: "Priya Das", amount: 100, type: "credit", time: "07:10 AM", status: "success", service: "Gov ID", method: "Cash" },
-  { name: "Health Insurance", customer: "Suresh Nanda", amount: 1800, type: "debit", time: "Yesterday", status: "success", service: "Insurance", method: "Online" },
+  { label: "Current Balance", sub: "Running balance", value: "₹24,580.00", change: "↗ +₹1,240", up: true, icon: Wallet, iconBg: "bg-[#1a2040]" },
+  { label: "Today's Income", sub: "14 transactions", value: "₹3,720.00", change: "↗ +18%", up: true, icon: TrendingUp, iconBg: "bg-emerald-500" },
+  { label: "Today's Expense", sub: "2 entries", value: "₹480.00", change: "↘ -5%", up: false, icon: TrendingDown, iconBg: "bg-[#f97316]" },
+  { label: "Active Services", sub: "All enabled", value: "22", change: "↗ +5", up: true, icon: Briefcase, iconBg: "bg-purple-600" },
 ];
 
 const topServices = [
-  { name: "Aadhaar Services", count: 48, revenue: "₹7,200", pct: 80, color: "#1a2e5a" },
-  { name: "Utility Bills", count: 32, revenue: "₹4,800", pct: 53, color: "#f97316" },
-  { name: "Insurance", count: 24, revenue: "₹18,000", pct: 40, color: "#059669" },
-  { name: "PAN Card", count: 18, revenue: "₹3,600", pct: 30, color: "#7c3aed" },
-  { name: "PM Schemes", count: 12, revenue: "₹6,000", pct: 20, color: "#d97706" },
+  { rank: 1, name: "PAN Card", revenue: "₹1,284", txns: 12 },
+  { rank: 2, name: "Electricity Bill", revenue: "₹90", txns: 9 },
+  { rank: 3, name: "Aadhaar Update", revenue: "₹350", txns: 7 },
+  { rank: 4, name: "Mobile Recharge", revenue: "₹30", txns: 6 },
+  { rank: 5, name: "Income Certificate", revenue: "₹120", txns: 4 },
 ];
 
-const weeklyData = [65, 48, 82, 74, 90, 58, 76];
-const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const maxVal = Math.max(...weeklyData);
+const barData = [
+  { day: "Mon", income: 55, expense: 20 },
+  { day: "Tue", income: 72, expense: 28 },
+  { day: "Wed", income: 48, expense: 18 },
+  { day: "Thu", income: 90, expense: 32 },
+  { day: "Fri", income: 68, expense: 24 },
+  { day: "Sat", income: 40, expense: 12 },
+  { day: "Sun", income: 30, expense: 8 },
+];
+const maxIncome = Math.max(...barData.map(d => d.income));
 
-function StatusChip({ status }: { status: string }) {
-  const map: Record<string, { label: string; cls: string; Icon: typeof CheckCircle }> = {
-    success: { label: "Completed", cls: "bg-emerald-50 text-emerald-700 border-emerald-200", Icon: CheckCircle },
-    pending: { label: "Pending", cls: "bg-amber-50 text-amber-700 border-amber-200", Icon: Clock },
-    failed: { label: "Failed", cls: "bg-red-50 text-red-700 border-red-200", Icon: AlertCircle },
-  };
-  const { label, cls, Icon } = map[status] ?? map.failed;
-  return (
-    <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${cls}`}>
-      <Icon className="w-2.5 h-2.5" /> {label}
-    </span>
-  );
-}
+const transactions = [
+  { num: 1, customer: "Ravi Kumar", initial: "R", color: "bg-blue-500", service: "PAN Card", serviceColor: "text-blue-600 bg-blue-50", date: "Jun 5 · 10:22 AM", credit: "₹107.00", debit: "—", balance: "₹24,580.00" },
+  { num: 2, customer: "Sunita Devi", initial: "S", color: "bg-emerald-500", service: "Electricity Bill", serviceColor: "text-emerald-600 bg-emerald-50", date: "Jun 5 · 11:05 AM", credit: "₹10.00", debit: "—", balance: "₹24,473.00" },
+  { num: 3, customer: "Mohan Patra", initial: "M", color: "bg-orange-500", service: "Aadhaar Update", serviceColor: "text-orange-600 bg-orange-50", date: "Jun 5 · 09:40 AM", credit: "₹150.00", debit: "—", balance: "₹24,323.00" },
+  { num: 4, customer: "Geeta Nayak", initial: "G", color: "bg-purple-500", service: "LIC Premium", serviceColor: "text-purple-600 bg-purple-50", date: "Jun 5 · 08:55 AM", credit: "—", debit: "₹2,400.00", balance: "₹24,173.00" },
+  { num: 5, customer: "Bijay Behera", initial: "B", color: "bg-teal-500", service: "PM Kisan", serviceColor: "text-teal-600 bg-teal-50", date: "Jun 5 · 08:20 AM", credit: "₹500.00", debit: "—", balance: "₹26,573.00" },
+];
 
 export function Desktop() {
-  const [activeGroup, setActiveGroup] = useState(0);
-  const [activeItem, setActiveItem] = useState(0);
-
   return (
-    <div className="w-[1280px] h-[800px] bg-gray-50 flex font-['Inter'] overflow-hidden">
-      {/* Sidebar */}
-      <div className="w-64 bg-[#0f1e3d] flex flex-col flex-shrink-0 overflow-y-auto">
+    <div className="w-[1280px] h-[800px] bg-[#f5f6fa] flex font-['Inter'] overflow-hidden">
+
+      {/* ── Sidebar ── */}
+      <div className="w-[188px] bg-[#1a2040] flex flex-col flex-shrink-0 overflow-y-auto">
         {/* Logo */}
-        <div className="px-5 pt-5 pb-4 border-b border-white/10">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#f97316] flex items-center justify-center flex-shrink-0">
-              <Monitor className="w-4.5 h-4.5 text-white" />
-            </div>
-            <div>
-              <p className="text-white text-sm font-bold">SAHU CSC</p>
-              <p className="text-blue-300 text-[10px]">Common Service Center</p>
-            </div>
+        <div className="px-4 pt-5 pb-4 flex items-center gap-3 border-b border-white/10">
+          <div className="w-9 h-9 rounded-xl bg-[#f97316] flex items-center justify-center flex-shrink-0">
+            <span className="text-white text-sm font-black">S</span>
+          </div>
+          <div>
+            <p className="text-white text-xs font-bold leading-tight">SAHU CSC</p>
+            <p className="text-blue-300 text-[9px] leading-tight">Management Platform</p>
           </div>
         </div>
 
-        {/* User Card */}
-        <div className="mx-3 mt-3 bg-white/10 rounded-xl p-3 flex items-center gap-2.5">
+        {/* Main Nav */}
+        <nav className="flex-1 py-3 px-2.5 space-y-0.5">
+          {navMain.map((item) => (
+            <button
+              key={item.label}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all text-left ${
+                item.active
+                  ? "bg-[#f97316] text-white"
+                  : "text-blue-200 hover:bg-white/10 hover:text-white"
+              }`}
+            >
+              <item.icon className="w-3.5 h-3.5 flex-shrink-0" />
+              <span className="text-[11px] font-semibold flex-1 truncate">{item.label}</span>
+              {item.badge && (
+                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${item.active ? "bg-white/30 text-white" : "bg-[#f97316] text-white"}`}>
+                  {item.badge}
+                </span>
+              )}
+            </button>
+          ))}
+
+          {/* Admin Section */}
+          <div className="pt-3 pb-1">
+            <p className="text-blue-400 text-[8px] font-bold uppercase tracking-widest px-2 mb-1.5">Admin</p>
+            {navAdmin.map((item) => (
+              <button
+                key={item.label}
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-blue-200 hover:bg-white/10 hover:text-white transition-all text-left"
+              >
+                <item.icon className="w-3.5 h-3.5 flex-shrink-0" />
+                <span className="text-[11px] font-semibold flex-1 truncate">{item.label}</span>
+              </button>
+            ))}
+          </div>
+        </nav>
+
+        {/* Bottom User */}
+        <div className="px-2.5 pb-4 border-t border-white/10 pt-3 flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-[#f97316] flex items-center justify-center flex-shrink-0">
             <span className="text-white text-xs font-bold">A</span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-white text-xs font-semibold truncate">Admin User</p>
-            <p className="text-blue-300 text-[10px] truncate">Administrator · Odisha</p>
+            <p className="text-white text-[11px] font-semibold truncate">Admin</p>
+            <p className="text-blue-300 text-[9px] truncate">Administrator</p>
           </div>
-          <ChevronDown className="w-3.5 h-3.5 text-blue-300 flex-shrink-0" />
-        </div>
-
-        {/* Nav Groups */}
-        <nav className="flex-1 py-3 px-3 space-y-4">
-          {navGroups.map((group, gi) => (
-            <div key={group.label}>
-              <p className="text-blue-400 text-[9px] font-bold uppercase tracking-widest px-2 mb-1.5">{group.label}</p>
-              <div className="space-y-0.5">
-                {group.items.map((item, ii) => {
-                  const isActive = gi === 0 && ii === 0;
-                  return (
-                    <button
-                      key={item.label}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-left ${isActive ? "bg-[#f97316] text-white shadow-lg" : "text-blue-200 hover:bg-white/10 hover:text-white"}`}
-                    >
-                      <item.icon className="w-4 h-4 flex-shrink-0" />
-                      <span className="text-xs font-semibold flex-1">{item.label}</span>
-                      {item.badge && (
-                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${isActive ? "bg-white/30 text-white" : "bg-[#f97316]/30 text-[#f97316]"}`}>
-                          {item.badge}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </nav>
-
-        {/* Logout */}
-        <div className="px-3 pb-4 border-t border-white/10 pt-3">
-          <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-blue-300 hover:bg-white/10 hover:text-white transition-all">
-            <LogOut className="w-4 h-4" />
-            <span className="text-xs font-semibold">Sign Out</span>
+          <button className="text-blue-300 hover:text-white transition-colors">
+            <LogOut className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* ── Main ── */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Topbar */}
-        <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-4 flex-shrink-0">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2 max-w-sm">
-              <Search className="w-3.5 h-3.5 text-gray-400" />
-              <input placeholder="Search services, customers, ledger..." className="text-xs text-gray-600 bg-transparent outline-none flex-1" readOnly />
-              <kbd className="text-[9px] font-mono bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded">⌘K</kbd>
-            </div>
+
+        {/* Top Bar */}
+        <div className="bg-white border-b border-gray-200 px-6 py-3.5 flex items-center justify-between flex-shrink-0">
+          <div>
+            <h1 className="text-gray-900 text-base font-bold">Dashboard</h1>
+            <p className="text-gray-400 text-xs">Friday, 5 June 2026</p>
           </div>
-          <div className="flex items-center gap-2">
-            <button className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 bg-gray-50 border border-gray-200 px-3 py-2 rounded-xl hover:bg-gray-100 transition-colors">
-              <RefreshCw className="w-3 h-3" /> Sync
+          <div className="flex items-center gap-3">
+            <button className="flex items-center gap-2 text-xs font-semibold text-gray-600 bg-gray-50 border border-gray-200 px-3 py-2 rounded-xl hover:bg-gray-100 transition-colors">
+              <Bell className="w-3.5 h-3.5" />
+              Notifications
+              <span className="bg-[#f97316] text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">3</span>
             </button>
-            <button className="flex items-center gap-1.5 text-xs font-semibold text-white bg-[#f97316] px-3 py-2 rounded-xl hover:bg-orange-600 transition-colors">
-              <Plus className="w-3 h-3" /> New Entry
-            </button>
-            <div className="relative ml-1">
-              <div className="w-8 h-8 bg-gray-100 rounded-xl flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors">
-                <Bell className="w-4 h-4 text-gray-500" />
-              </div>
-              <div className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#f97316] rounded-full flex items-center justify-center">
-                <span className="text-white text-[8px] font-bold">3</span>
-              </div>
+            <div className="w-8 h-8 rounded-full bg-[#1a2040] flex items-center justify-center">
+              <span className="text-white text-xs font-bold">A</span>
             </div>
           </div>
         </div>
 
-        {/* Dashboard Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-5">
-          {/* Page Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-gray-900 text-xl font-bold">Dashboard</h1>
-              <p className="text-gray-400 text-xs mt-0.5">Monday, 8 June 2026 · SAHU Common Service Center, Odisha</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <select className="text-xs font-semibold text-gray-600 bg-white border border-gray-200 px-3 py-2 rounded-xl outline-none cursor-pointer">
-                <option>Today</option>
-                <option>This Week</option>
-                <option>This Month</option>
-              </select>
-              <button className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 bg-white border border-gray-200 px-3 py-2 rounded-xl hover:bg-gray-50 transition-colors">
-                <Download className="w-3 h-3" /> Export
-              </button>
-            </div>
-          </div>
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
 
-          {/* Stats Row */}
+          {/* 4 Stat Cards */}
           <div className="grid grid-cols-4 gap-4">
             {stats.map((stat) => (
               <div key={stat.label} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <p className="text-gray-500 text-xs font-medium">{stat.label}</p>
-                    <p className="text-gray-500 text-[10px]">{stat.sub}</p>
-                  </div>
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: stat.accent + "18" }}>
-                    <stat.icon className="w-4.5 h-4.5" style={{ color: stat.accent }} />
+                <div className="flex items-start justify-between mb-3">
+                  <p className={`text-xs font-semibold ${stat.up ? "text-emerald-500" : "text-rose-500"}`}>{stat.change}</p>
+                  <div className={`w-8 h-8 rounded-xl ${stat.iconBg} flex items-center justify-center flex-shrink-0`}>
+                    <stat.icon className="w-4 h-4 text-white" />
                   </div>
                 </div>
-                <p className="text-gray-900 text-2xl font-bold mb-1.5">{stat.value}</p>
-                <p className={`text-[10px] font-semibold ${stat.up ? "text-emerald-600" : "text-rose-500"}`}>
-                  {stat.change}
-                </p>
+                <p className="text-gray-900 text-xl font-bold mb-0.5">{stat.value}</p>
+                <p className="text-gray-500 text-[10px] font-medium">{stat.label}</p>
+                <p className="text-gray-400 text-[9px]">{stat.sub}</p>
               </div>
             ))}
           </div>
 
-          {/* Middle Row: Chart + Top Services */}
+          {/* Middle Row */}
           <div className="grid grid-cols-3 gap-4">
-            {/* Weekly Chart - 2 cols */}
+
+            {/* Weekly Overview — 2 cols */}
             <div className="col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-1">
                 <div>
-                  <h2 className="text-gray-900 text-sm font-bold">Weekly Revenue</h2>
-                  <p className="text-gray-400 text-xs">Jun 2 – Jun 8, 2026</p>
+                  <h2 className="text-gray-900 text-sm font-bold">Weekly Overview</h2>
+                  <p className="text-gray-400 text-[10px]">Income vs Expenses — this week</p>
                 </div>
-                <div className="flex items-center gap-3 text-[10px] font-semibold">
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#1a2e5a] inline-block" /> Revenue</span>
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#f97316] inline-block" /> Target</span>
+                <div className="flex items-center gap-4 text-[10px] font-semibold text-gray-500">
+                  <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#1a2040] inline-block" /> Income</span>
+                  <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#f97316] inline-block" /> Expense</span>
                 </div>
               </div>
-              <div className="flex items-end gap-2 h-32">
-                {weeklyData.map((val, i) => (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                    <div className="w-full flex flex-col items-center gap-0.5">
+              <div className="flex items-end gap-3 h-36 mt-4">
+                {barData.map((d) => (
+                  <div key={d.day} className="flex-1 flex flex-col items-center gap-1">
+                    <div className="flex items-end gap-0.5 w-full justify-center">
+                      {/* Income bar */}
                       <div
-                        className="w-full rounded-t-lg transition-all"
-                        style={{
-                          height: `${(val / maxVal) * 112}px`,
-                          background: i === 6 ? "linear-gradient(180deg, #f97316, #fb923c)" : "linear-gradient(180deg, #1a2e5a, #2d4a8a)"
-                        }}
+                        className="flex-1 rounded-t-md bg-[#1a2040] transition-all"
+                        style={{ height: `${(d.income / maxIncome) * 120}px` }}
+                      />
+                      {/* Expense bar */}
+                      <div
+                        className="flex-1 rounded-t-md bg-[#f97316] transition-all"
+                        style={{ height: `${(d.expense / maxIncome) * 120}px` }}
                       />
                     </div>
-                    <span className="text-[9px] text-gray-400 font-medium">{dayLabels[i]}</span>
+                    <span className="text-[9px] text-gray-400 font-medium">{d.day}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Top Services */}
+            {/* Top Services — 1 col */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-gray-900 text-sm font-bold">Top Services</h2>
-                <button className="text-[#f97316] text-[10px] font-semibold">This month</button>
+                <button className="text-[#1a2040] text-[10px] font-semibold">See all</button>
               </div>
-              <div className="space-y-3.5">
+              <div className="space-y-3">
                 {topServices.map((svc) => (
-                  <div key={svc.name}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-gray-700 text-xs font-semibold truncate">{svc.name}</span>
-                      <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                        <span className="text-gray-400 text-[10px]">{svc.count}</span>
-                        <span className="text-gray-600 text-[10px] font-semibold">{svc.revenue}</span>
-                      </div>
+                  <div key={svc.rank}>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="text-gray-400 text-[10px] font-bold w-3">{svc.rank}</span>
+                      <span className="text-gray-800 text-xs font-semibold flex-1 truncate">{svc.name}</span>
+                      <span className="text-gray-700 text-xs font-bold">{svc.revenue}</span>
+                      <span className="text-gray-400 text-[9px] ml-1">({svc.txns})</span>
                     </div>
-                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full transition-all" style={{ width: `${svc.pct}%`, backgroundColor: svc.color }} />
+                    <div className="h-1 bg-gray-100 rounded-full overflow-hidden ml-5">
+                      <div
+                        className="h-full bg-[#1a2040] rounded-full"
+                        style={{ width: `${(svc.txns / 12) * 100}%` }}
+                      />
                     </div>
                   </div>
                 ))}
@@ -269,64 +229,43 @@ export function Desktop() {
             </div>
           </div>
 
-          {/* Transactions Table */}
+          {/* Recent Transactions Table */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
-              <div>
-                <h2 className="text-gray-900 text-sm font-bold">Recent Transactions</h2>
-                <p className="text-gray-400 text-[10px]">Today's ledger entries</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button className="text-xs font-semibold text-gray-500 bg-gray-50 border border-gray-200 px-2.5 py-1.5 rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-1">
-                  <Download className="w-3 h-3" /> Export Excel
-                </button>
-                <button className="text-[#f97316] text-xs font-semibold flex items-center gap-0.5">
-                  View all <ChevronRight className="w-3 h-3" />
-                </button>
-              </div>
+              <h2 className="text-gray-900 text-sm font-bold">Recent Transactions</h2>
+              <button className="text-[#1a2040] text-xs font-semibold flex items-center gap-0.5">
+                View all ledger <ChevronRight className="w-3 h-3" />
+              </button>
             </div>
             <table className="w-full">
               <thead>
-                <tr className="border-b border-gray-100 bg-gray-50/50">
-                  {["Service", "Customer", "Amount", "Method", "Time", "Status"].map((h) => (
-                    <th key={h} className="text-left px-5 py-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">{h}</th>
+                <tr className="border-b border-gray-100 bg-gray-50/60">
+                  {["#", "CUSTOMER", "SERVICE", "DATE", "CREDIT", "DEBIT", "BALANCE"].map((h) => (
+                    <th key={h} className="text-left px-4 py-2.5 text-[9px] font-bold text-gray-400 uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {transactions.map((tx, i) => (
-                  <tr key={i} className="hover:bg-gray-50/50 transition-colors cursor-pointer">
-                    <td className="px-5 py-2.5">
-                      <div className="flex items-center gap-2.5">
-                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${tx.type === "credit" ? "bg-emerald-50" : "bg-rose-50"}`}>
-                          {tx.type === "credit"
-                            ? <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-600" />
-                            : <ArrowUpRight className="w-3.5 h-3.5 text-rose-600" />
-                          }
+                {transactions.map((tx) => (
+                  <tr key={tx.num} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="px-4 py-3 text-gray-400 text-xs font-medium">{tx.num}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-7 h-7 rounded-full ${tx.color} flex items-center justify-center flex-shrink-0`}>
+                          <span className="text-white text-[10px] font-bold">{tx.initial}</span>
                         </div>
-                        <div>
-                          <p className="text-gray-800 text-xs font-semibold">{tx.name}</p>
-                          <p className="text-gray-400 text-[10px]">{tx.service}</p>
-                        </div>
+                        <span className="text-gray-800 text-xs font-semibold">{tx.customer}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-2.5">
-                      <p className="text-gray-700 text-xs font-medium">{tx.customer}</p>
-                    </td>
-                    <td className="px-5 py-2.5">
-                      <span className={`text-xs font-bold ${tx.type === "credit" ? "text-emerald-600" : "text-rose-500"}`}>
-                        {tx.type === "credit" ? "+" : "−"}₹{tx.amount.toLocaleString()}
+                    <td className="px-4 py-3">
+                      <span className={`text-[10px] font-semibold px-2 py-1 rounded-full ${tx.serviceColor}`}>
+                        {tx.service}
                       </span>
                     </td>
-                    <td className="px-5 py-2.5">
-                      <span className="text-gray-500 text-xs">{tx.method}</span>
-                    </td>
-                    <td className="px-5 py-2.5">
-                      <span className="text-gray-400 text-xs">{tx.time}</span>
-                    </td>
-                    <td className="px-5 py-2.5">
-                      <StatusChip status={tx.status} />
-                    </td>
+                    <td className="px-4 py-3 text-gray-400 text-[10px]">{tx.date}</td>
+                    <td className="px-4 py-3 text-emerald-600 text-xs font-bold">{tx.credit}</td>
+                    <td className="px-4 py-3 text-rose-500 text-xs font-bold">{tx.debit}</td>
+                    <td className="px-4 py-3 text-gray-800 text-xs font-bold">{tx.balance}</td>
                   </tr>
                 ))}
               </tbody>

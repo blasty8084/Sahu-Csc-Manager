@@ -1,236 +1,268 @@
 import { useState } from "react";
 import {
-  Home, BookOpen, CreditCard, User, Bell, ChevronRight, Search,
-  TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft,
-  Shield, Zap, FileText, Users, BarChart2, Settings,
-  CheckCircle, Clock, AlertCircle, Menu, X, Activity,
-  PieChart, Wallet
+  LayoutDashboard, BookOpen, CreditCard, Briefcase, BarChart2,
+  Bell, User, Users, Shield, FileText, HardDrive, Settings,
+  TrendingUp, TrendingDown, Activity, Wallet,
+  LogOut, ChevronRight, Plus, Fingerprint, Menu, X
 } from "lucide-react";
 
-const navItems = [
-  { icon: Home, label: "Dashboard", active: true },
-  { icon: BookOpen, label: "Ledger", active: false },
-  { icon: CreditCard, label: "AePS", active: false },
-  { icon: Shield, label: "Services", active: false },
-  { icon: BarChart2, label: "Reports", active: false },
-  { icon: Bell, label: "Notifications", active: false },
-  { icon: Users, label: "Users", active: false },
-  { icon: Settings, label: "Settings", active: false },
-];
-
-const stats = [
-  { label: "Today's Balance", value: "₹1,24,850", change: "+₹5,200", up: true, icon: Wallet, color: "from-[#1a2e5a] to-[#2d4a8a]" },
-  { label: "Today's Income", value: "₹8,450", change: "+18%", up: true, icon: TrendingUp, color: "from-emerald-600 to-emerald-500" },
-  { label: "Today's Expense", value: "₹3,250", change: "-5%", up: false, icon: TrendingDown, color: "from-rose-500 to-rose-400" },
-  { label: "Transactions", value: "24", change: "+8 today", up: true, icon: Activity, color: "from-[#f97316] to-[#fb923c]" },
+const topServices = [
+  { rank: 1, name: "PAN Card", txns: 12, revenue: "₹1,284", color: "bg-blue-100 text-blue-700", pct: 100 },
+  { rank: 2, name: "Electricity Bill", txns: 9, revenue: "₹90", color: "bg-yellow-100 text-yellow-700", pct: 75 },
+  { rank: 3, name: "Aadhaar Update", txns: 7, revenue: "₹350", color: "bg-teal-100 text-teal-700", pct: 58 },
+  { rank: 4, name: "Mobile Recharge", txns: 6, revenue: "₹30", color: "bg-purple-100 text-purple-700", pct: 50 },
 ];
 
 const transactions = [
-  { name: "Aadhaar Card Update", customer: "Ramesh Sahu", amount: 150, type: "credit", time: "10:32 AM", status: "success", service: "Gov ID" },
-  { name: "LIC Premium", customer: "Sunita Devi", amount: 2400, type: "debit", time: "09:15 AM", status: "success", service: "Insurance" },
-  { name: "PAN Card Apply", customer: "Mohan Patra", amount: 200, type: "credit", time: "08:50 AM", status: "pending", service: "Gov ID" },
-  { name: "Electricity Bill", customer: "Geeta Nayak", amount: 850, type: "debit", time: "08:20 AM", status: "success", service: "Utility" },
-  { name: "PM Kisan Scheme", customer: "Bijay Behera", amount: 500, type: "credit", time: "Yesterday", status: "success", service: "Scheme" },
-  { name: "Voter ID Apply", customer: "Priya Das", amount: 100, type: "credit", time: "Yesterday", status: "success", service: "Gov ID" },
+  { customer: "Ravi Kumar", initial: "R", color: "bg-blue-500", service: "PAN Card", time: "10:22 AM", credit: "₹107", debit: "—", balance: "₹24,580" },
+  { customer: "Sunita Devi", initial: "S", color: "bg-emerald-500", service: "Electricity Bill", time: "11:05 AM", credit: "₹10", debit: "—", balance: "₹24,473" },
+  { customer: "Mohan Patra", initial: "M", color: "bg-orange-500", service: "Aadhaar Update", time: "09:40 AM", credit: "₹150", debit: "—", balance: "₹24,323" },
+  { customer: "Geeta Nayak", initial: "G", color: "bg-purple-500", service: "LIC Premium", time: "08:55 AM", credit: "—", debit: "₹2,400", balance: "₹24,173" },
 ];
 
-const topServices = [
-  { name: "Aadhaar Services", count: 48, pct: 80, color: "bg-[#1a2e5a]" },
-  { name: "Utility Bills", count: 32, pct: 53, color: "bg-[#f97316]" },
-  { name: "Insurance", count: 24, pct: 40, color: "bg-emerald-500" },
-  { name: "PAN Card", count: 18, pct: 30, color: "bg-purple-500" },
-  { name: "PM Schemes", count: 12, pct: 20, color: "bg-amber-500" },
+const navMain = [
+  { icon: LayoutDashboard, label: "Dashboard", active: true, badge: null },
+  { icon: BookOpen, label: "Ledger", active: false, badge: null },
+  { icon: CreditCard, label: "AePS Cash", active: false, badge: null },
+  { icon: Briefcase, label: "Services", active: false, badge: null },
+  { icon: BarChart2, label: "Reports", active: false, badge: null },
+  { icon: Bell, label: "Notifications", active: false, badge: "3" },
+  { icon: User, label: "My Profile", active: false, badge: null },
 ];
 
-function StatusBadge({ status }: { status: string }) {
-  if (status === "success") return (
-    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-full">
-      <CheckCircle className="w-2.5 h-2.5" /> Done
-    </span>
-  );
-  if (status === "pending") return (
-    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-full">
-      <Clock className="w-2.5 h-2.5" /> Pending
-    </span>
-  );
-  return (
-    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-red-700 bg-red-50 px-1.5 py-0.5 rounded-full">
-      <AlertCircle className="w-2.5 h-2.5" /> Failed
-    </span>
-  );
-}
+const navAdmin = [
+  { icon: Users, label: "Users Overview" },
+  { icon: Shield, label: "User Management" },
+  { icon: Activity, label: "Audit Logs" },
+  { icon: HardDrive, label: "Backups" },
+  { icon: Settings, label: "Settings" },
+];
+
+const stats = [
+  { label: "Balance", sub: "Running balance", value: "₹24,580", change: "↗ +₹1,240", up: true, icon: Wallet, iconBg: "bg-[#1a2040]" },
+  { label: "Today's Income", sub: "14 transactions", value: "₹3,720", change: "↗ +18%", up: true, icon: TrendingUp, iconBg: "bg-emerald-500" },
+  { label: "Today's Expense", sub: "2 entries", value: "₹480", change: "↘ -5%", up: false, icon: TrendingDown, iconBg: "bg-[#f97316]" },
+  { label: "Transactions", sub: "+3 new today", value: "14", change: "↗ +3 today", up: true, icon: Activity, iconBg: "bg-purple-600" },
+];
 
 export function Tablet() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeNav, setActiveNav] = useState(0);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
-    <div className="w-[768px] h-[1024px] bg-gray-100 flex font-['Inter'] overflow-hidden">
-      {/* Sidebar */}
-      <div className={`${sidebarOpen ? "w-48" : "w-16"} bg-[#1a2e5a] flex flex-col flex-shrink-0 transition-all duration-300 overflow-hidden`}>
+    <div className="w-[768px] h-[1024px] bg-[#f5f6fa] flex font-['Inter'] overflow-hidden">
+
+      {/* ── Sidebar ── */}
+      <div className={`${sidebarOpen ? "w-52" : "w-14"} bg-[#1a2040] flex flex-col flex-shrink-0 transition-all duration-300 overflow-hidden`}>
         {/* Logo */}
-        <div className="p-3 flex items-center gap-2 border-b border-white/10">
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/10 transition-colors flex-shrink-0"
-          >
-            {sidebarOpen ? <X className="w-4.5 h-4.5 text-white" /> : <Menu className="w-4.5 h-4.5 text-white" />}
-          </button>
+        <div className="px-3 pt-5 pb-4 flex items-center gap-2.5 border-b border-white/10">
+          <div className="w-9 h-9 rounded-xl bg-[#f97316] flex items-center justify-center flex-shrink-0">
+            <span className="text-white text-sm font-black">S</span>
+          </div>
           {sidebarOpen && (
             <div className="overflow-hidden">
-              <p className="text-white text-xs font-bold whitespace-nowrap">SAHU CSC</p>
-              <p className="text-blue-300 text-[9px] whitespace-nowrap">Service Center</p>
+              <p className="text-white text-xs font-bold whitespace-nowrap leading-tight">SAHU CSC</p>
+              <p className="text-blue-300 text-[9px] whitespace-nowrap leading-tight">Management Platform</p>
             </div>
           )}
         </div>
 
+        {/* Toggle Button */}
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="mx-2 mt-2 p-2 rounded-xl text-blue-300 hover:bg-white/10 hover:text-white transition-colors flex items-center gap-2"
+        >
+          {sidebarOpen ? <X className="w-4 h-4 flex-shrink-0" /> : <Menu className="w-4 h-4 flex-shrink-0" />}
+          {sidebarOpen && <span className="text-[11px] font-semibold whitespace-nowrap">Close</span>}
+        </button>
+
         {/* Nav */}
-        <nav className="flex-1 py-3 space-y-0.5 px-2">
-          {navItems.map((item, i) => (
+        <nav className="flex-1 py-2 px-2 space-y-0.5">
+          {navMain.map((item) => (
             <button
               key={item.label}
-              onClick={() => setActiveNav(i)}
-              className={`w-full flex items-center gap-2.5 p-2.5 rounded-xl transition-all ${activeNav === i ? "bg-white/20 text-white" : "text-blue-300 hover:bg-white/10 hover:text-white"}`}
+              className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl transition-all text-left ${
+                item.active ? "bg-[#f97316] text-white" : "text-blue-200 hover:bg-white/10 hover:text-white"
+              }`}
             >
-              <item.icon className="w-4.5 h-4.5 flex-shrink-0" />
-              {sidebarOpen && <span className="text-xs font-semibold whitespace-nowrap">{item.label}</span>}
+              <item.icon className="w-4 h-4 flex-shrink-0" />
+              {sidebarOpen && <span className="text-[11px] font-semibold flex-1 truncate whitespace-nowrap">{item.label}</span>}
+              {item.badge && sidebarOpen && (
+                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${item.active ? "bg-white/30 text-white" : "bg-[#f97316] text-white"}`}>
+                  {item.badge}
+                </span>
+              )}
+              {item.badge && !sidebarOpen && (
+                <div className="w-1.5 h-1.5 rounded-full bg-[#f97316] absolute right-2" />
+              )}
             </button>
           ))}
+
+          {sidebarOpen && (
+            <>
+              <p className="text-blue-400 text-[8px] font-bold uppercase tracking-widest px-2.5 pt-3 pb-1">Admin</p>
+              {navAdmin.map((item) => (
+                <button
+                  key={item.label}
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-blue-200 hover:bg-white/10 hover:text-white transition-all text-left"
+                >
+                  <item.icon className="w-4 h-4 flex-shrink-0" />
+                  <span className="text-[11px] font-semibold truncate whitespace-nowrap">{item.label}</span>
+                </button>
+              ))}
+            </>
+          )}
         </nav>
 
         {/* User */}
-        <div className="p-3 border-t border-white/10">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-[#f97316] flex items-center justify-center flex-shrink-0">
-              <span className="text-white text-xs font-bold">A</span>
-            </div>
-            {sidebarOpen && (
-              <div className="overflow-hidden">
-                <p className="text-white text-xs font-semibold whitespace-nowrap">Admin</p>
-                <p className="text-blue-300 text-[9px] whitespace-nowrap">Administrator</p>
-              </div>
-            )}
+        <div className="px-2 pb-4 border-t border-white/10 pt-3 flex items-center gap-2">
+          <div className="w-8 h-8 rounded-xl bg-[#f97316] flex items-center justify-center flex-shrink-0">
+            <span className="text-white text-xs font-bold">A</span>
           </div>
+          {sidebarOpen && (
+            <>
+              <div className="flex-1 min-w-0">
+                <p className="text-white text-[11px] font-semibold truncate">Admin</p>
+                <p className="text-blue-300 text-[9px] truncate">Administrator</p>
+              </div>
+              <LogOut className="w-3.5 h-3.5 text-blue-300 flex-shrink-0" />
+            </>
+          )}
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* ── Main ── */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Bar */}
-        <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3">
-          <div className="flex-1 flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-2">
-            <Search className="w-3.5 h-3.5 text-gray-400" />
-            <input placeholder="Search services, customers..." className="text-xs text-gray-600 bg-transparent outline-none flex-1" readOnly />
+        <div className="bg-white border-b border-gray-200 px-5 py-3 flex items-center justify-between flex-shrink-0">
+          <div>
+            <h1 className="text-gray-900 text-sm font-bold">Dashboard</h1>
+            <p className="text-gray-400 text-[10px]">Friday, 5 June 2026</p>
           </div>
-          <div className="relative">
-            <div className="w-8 h-8 bg-gray-100 rounded-xl flex items-center justify-center">
-              <Bell className="w-4 h-4 text-gray-500" />
+          <div className="flex items-center gap-2">
+            <button className="flex items-center gap-1.5 text-[11px] font-semibold text-white bg-[#f97316] px-3 py-1.5 rounded-xl">
+              <Plus className="w-3 h-3" /> New Entry
+            </button>
+            <div className="relative">
+              <div className="w-8 h-8 bg-gray-100 rounded-xl flex items-center justify-center">
+                <Bell className="w-3.5 h-3.5 text-gray-500" />
+              </div>
+              <div className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#f97316] rounded-full flex items-center justify-center">
+                <span className="text-white text-[7px] font-bold">3</span>
+              </div>
             </div>
-            <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-[#f97316] rounded-full" />
+            <div className="w-8 h-8 rounded-full bg-[#1a2040] flex items-center justify-center">
+              <span className="text-white text-[10px] font-bold">A</span>
+            </div>
           </div>
         </div>
 
-        {/* Scrollable */}
+        {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {/* Page Title */}
-          <div>
-            <h1 className="text-gray-900 text-base font-bold">Dashboard</h1>
-            <p className="text-gray-400 text-xs">Monday, 8 June 2026</p>
-          </div>
 
-          {/* Stats Grid 2x2 */}
+          {/* 2×2 Stats */}
           <div className="grid grid-cols-2 gap-3">
             {stats.map((stat) => (
-              <div key={stat.label} className={`rounded-2xl bg-gradient-to-br ${stat.color} p-4 text-white`}>
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-white/80 text-xs font-medium">{stat.label}</p>
-                  <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
-                    <stat.icon className="w-4 h-4 text-white" />
-                  </div>
+              <div key={stat.label} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl ${stat.iconBg} flex items-center justify-center flex-shrink-0`}>
+                  <stat.icon className="w-5 h-5 text-white" />
                 </div>
-                <p className="text-2xl font-bold">{stat.value}</p>
-                <p className={`text-xs font-medium mt-1 ${stat.up ? "text-emerald-200" : "text-rose-200"}`}>
-                  {stat.change}
-                </p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-gray-500 text-[10px] font-medium truncate">{stat.label}</p>
+                  <p className="text-gray-900 text-lg font-bold leading-tight">{stat.value}</p>
+                  <p className={`text-[10px] font-semibold ${stat.up ? "text-emerald-500" : "text-rose-500"}`}>{stat.change}</p>
+                </div>
               </div>
             ))}
           </div>
 
-          {/* Two columns: Transactions + Top Services */}
-          <div className="grid grid-cols-5 gap-3">
-            {/* Recent Transactions - 3 cols */}
-            <div className="col-span-3 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                <h2 className="text-gray-800 text-sm font-bold">Recent Transactions</h2>
-                <button className="text-[#f97316] text-xs font-semibold flex items-center gap-0.5">
-                  All <ChevronRight className="w-3 h-3" />
-                </button>
-              </div>
-              <div className="divide-y divide-gray-50">
-                {transactions.map((tx, i) => (
-                  <div key={i} className="px-4 py-2.5 flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${tx.type === "credit" ? "bg-emerald-50" : "bg-rose-50"}`}>
-                      {tx.type === "credit"
-                        ? <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-600" />
-                        : <ArrowUpRight className="w-3.5 h-3.5 text-rose-600" />
-                      }
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-gray-800 text-xs font-semibold truncate">{tx.name}</p>
-                      <p className="text-gray-400 text-[10px]">{tx.customer} · {tx.time}</p>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <StatusBadge status={tx.status} />
-                      <p className={`text-xs font-bold ${tx.type === "credit" ? "text-emerald-600" : "text-rose-600"}`}>
-                        {tx.type === "credit" ? "+" : "-"}₹{tx.amount.toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Top Services - 2 cols */}
-            <div className="col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="px-4 py-3 border-b border-gray-100">
-                <h2 className="text-gray-800 text-sm font-bold">Top Services</h2>
-                <p className="text-gray-400 text-[10px]">This month</p>
-              </div>
-              <div className="p-4 space-y-3">
-                {topServices.map((svc) => (
-                  <div key={svc.name}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-gray-700 text-[10px] font-semibold truncate">{svc.name}</span>
-                      <span className="text-gray-500 text-[10px] font-bold flex-shrink-0 ml-1">{svc.count}</span>
-                    </div>
-                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                      <div className={`h-full ${svc.color} rounded-full transition-all`} style={{ width: `${svc.pct}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
+          {/* Quick Actions */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+            <p className="text-gray-400 text-[9px] font-bold uppercase tracking-widest mb-3">Quick Actions</p>
+            <div className="grid grid-cols-4 gap-2">
+              <button className="flex flex-col items-center gap-2 bg-[#1a2040] rounded-xl py-3 px-2">
+                <Plus className="w-5 h-5 text-white" />
+                <span className="text-white text-[10px] font-semibold">New Entry</span>
+              </button>
+              <button className="flex flex-col items-center gap-2 bg-orange-50 rounded-xl py-3 px-2">
+                <Fingerprint className="w-5 h-5 text-orange-500" />
+                <span className="text-orange-700 text-[10px] font-semibold">AePS</span>
+              </button>
+              <button className="flex flex-col items-center gap-2 bg-blue-50 rounded-xl py-3 px-2">
+                <Briefcase className="w-5 h-5 text-blue-500" />
+                <span className="text-blue-700 text-[10px] font-semibold">Services</span>
+              </button>
+              <button className="flex flex-col items-center gap-2 bg-purple-50 rounded-xl py-3 px-2">
+                <BarChart2 className="w-5 h-5 text-purple-500" />
+                <span className="text-purple-700 text-[10px] font-semibold">Reports</span>
+              </button>
             </div>
           </div>
 
-          {/* Quick Actions Row */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
-            <h2 className="text-gray-800 text-sm font-bold mb-3">Quick Services</h2>
-            <div className="grid grid-cols-6 gap-2">
-              {[
-                { icon: Shield, label: "Aadhaar", color: "bg-blue-50 text-blue-600" },
-                { icon: CreditCard, label: "AePS", color: "bg-orange-50 text-orange-600" },
-                { icon: FileText, label: "PAN Card", color: "bg-green-50 text-green-600" },
-                { icon: Zap, label: "Utility", color: "bg-yellow-50 text-yellow-600" },
-                { icon: Users, label: "Schemes", color: "bg-purple-50 text-purple-600" },
-                { icon: BarChart2, label: "Reports", color: "bg-rose-50 text-rose-600" },
-              ].map((a) => (
-                <button key={a.label} className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-gray-50 transition-colors">
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${a.color}`}>
-                    <a.icon className="w-4.5 h-4.5" />
+          {/* Two columns: Top Services + Transactions */}
+          <div className="grid grid-cols-5 gap-3">
+            {/* Top Services */}
+            <div className="col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-gray-900 text-sm font-bold">Top Services Today</h2>
+                <button className="text-[#1a2040] text-[10px] font-semibold">See all</button>
+              </div>
+              <div className="space-y-3">
+                {topServices.map((svc) => (
+                  <div key={svc.rank} className="flex items-center gap-2">
+                    <span className="text-gray-400 text-[10px] font-bold w-3">{svc.rank}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${svc.color}`}>{svc.name}</span>
+                        <span className="text-gray-500 text-[10px] font-bold">{svc.txns} txns</span>
+                      </div>
+                      <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-[#1a2040] rounded-full" style={{ width: `${svc.pct}%` }} />
+                      </div>
+                    </div>
                   </div>
-                  <span className="text-gray-600 text-[9px] font-semibold text-center leading-tight">{a.label}</span>
+                ))}
+              </div>
+            </div>
+
+            {/* Recent Transactions */}
+            <div className="col-span-3 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                <h2 className="text-gray-900 text-sm font-bold">Recent Transactions</h2>
+                <button className="text-[#1a2040] text-[10px] font-semibold flex items-center gap-0.5">
+                  View all <ChevronRight className="w-3 h-3" />
                 </button>
-              ))}
+              </div>
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-100 bg-gray-50">
+                    <th className="text-left px-4 py-2 text-[9px] font-bold text-gray-400 uppercase">Customer</th>
+                    <th className="text-left px-3 py-2 text-[9px] font-bold text-gray-400 uppercase">Service</th>
+                    <th className="text-left px-3 py-2 text-[9px] font-bold text-gray-400 uppercase">Credit</th>
+                    <th className="text-left px-3 py-2 text-[9px] font-bold text-gray-400 uppercase">Debit</th>
+                    <th className="text-left px-3 py-2 text-[9px] font-bold text-gray-400 uppercase">Balance</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {transactions.map((tx, i) => (
+                    <tr key={i} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-6 h-6 rounded-full ${tx.color} flex items-center justify-center`}>
+                            <span className="text-white text-[9px] font-bold">{tx.initial}</span>
+                          </div>
+                          <span className="text-gray-700 text-[11px] font-semibold truncate max-w-[80px]">{tx.customer}</span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <span className="text-[10px] font-semibold text-gray-600">{tx.service}</span>
+                      </td>
+                      <td className="px-3 py-2.5 text-emerald-600 text-[11px] font-bold">{tx.credit}</td>
+                      <td className="px-3 py-2.5 text-rose-500 text-[11px] font-bold">{tx.debit}</td>
+                      <td className="px-3 py-2.5 text-gray-800 text-[11px] font-bold">{tx.balance}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

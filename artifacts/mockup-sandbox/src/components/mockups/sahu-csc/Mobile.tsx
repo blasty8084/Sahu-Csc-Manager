@@ -1,202 +1,183 @@
 import { useState } from "react";
 import {
-  Home, BookOpen, CreditCard, User, Bell, ChevronRight,
-  TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft,
-  Wifi, Shield, Zap, FileText, Users, BarChart2, Settings,
-  Search, Plus, CheckCircle, Clock, AlertCircle
+  Bell, Menu, TrendingUp, TrendingDown, Activity, Wallet,
+  Plus, Fingerprint, Briefcase, BarChart2,
+  LayoutDashboard, BookOpen, CreditCard, Grid2X2
 } from "lucide-react";
 
-const transactions = [
-  { id: 1, name: "Aadhaar Card Update", customer: "Ramesh Sahu", amount: 150, type: "credit", time: "10:32 AM", status: "success", service: "Gov ID" },
-  { id: 2, name: "LIC Premium", customer: "Sunita Devi", amount: 2400, type: "debit", time: "09:15 AM", status: "success", service: "Insurance" },
-  { id: 3, name: "PAN Card Apply", customer: "Mohan Patra", amount: 200, type: "credit", time: "08:50 AM", status: "pending", service: "Gov ID" },
-  { id: 4, name: "Electricity Bill", customer: "Geeta Nayak", amount: 850, type: "debit", time: "08:20 AM", status: "success", service: "Utility" },
-  { id: 5, name: "PM Kisan Scheme", customer: "Bijay Behera", amount: 500, type: "credit", time: "Yesterday", status: "success", service: "Scheme" },
-];
-
-const quickActions = [
-  { icon: Shield, label: "Aadhaar", color: "bg-blue-100 text-blue-700" },
-  { icon: CreditCard, label: "AePS", color: "bg-orange-100 text-orange-700" },
-  { icon: Zap, label: "Utility", color: "bg-yellow-100 text-yellow-700" },
-  { icon: FileText, label: "PAN Card", color: "bg-green-100 text-green-700" },
-  { icon: Users, label: "Schemes", color: "bg-purple-100 text-purple-700" },
-  { icon: BarChart2, label: "Reports", color: "bg-rose-100 text-rose-700" },
+const topServices = [
+  { rank: 1, name: "PAN Card", txns: 12, color: "bg-teal-100 text-teal-700" },
+  { rank: 2, name: "Electricity Bill", txns: 9, color: "bg-yellow-100 text-yellow-700" },
+  { rank: 3, name: "Aadhaar Update", txns: 7, color: "bg-green-100 text-green-700" },
+  { rank: 4, name: "Mobile Recharge", txns: 6, color: "bg-blue-100 text-blue-700" },
+  { rank: 5, name: "Income Certificate", txns: 4, color: "bg-purple-100 text-purple-700" },
 ];
 
 const navItems = [
-  { icon: Home, label: "Home", active: true },
-  { icon: BookOpen, label: "Ledger", active: false },
-  { icon: CreditCard, label: "AePS", active: false },
-  { icon: User, label: "Profile", active: false },
+  { icon: LayoutDashboard, label: "Dashboard" },
+  { icon: BookOpen, label: "Ledger" },
+  { icon: Fingerprint, label: "AePS" },
+  { icon: Briefcase, label: "Services" },
+  { icon: BarChart2, label: "Reports" },
 ];
-
-function StatusDot({ status }: { status: string }) {
-  if (status === "success") return <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />;
-  if (status === "pending") return <Clock className="w-3.5 h-3.5 text-amber-500" />;
-  return <AlertCircle className="w-3.5 h-3.5 text-red-500" />;
-}
 
 export function Mobile() {
   const [activeNav, setActiveNav] = useState(0);
 
   return (
-    <div className="w-[390px] h-[844px] bg-gray-50 flex flex-col overflow-hidden font-['Inter'] relative">
-      {/* Status Bar */}
-      <div className="bg-[#1a2e5a] px-5 pt-3 pb-0 flex items-center justify-between">
-        <span className="text-white text-[11px] font-semibold">9:41</span>
-        <div className="flex items-center gap-1.5">
-          <Wifi className="w-3 h-3 text-white" />
-          <div className="flex gap-0.5 items-end">
-            {[2, 3, 4, 5].map(h => (
-              <div key={h} style={{ height: h * 2.5 }} className="w-0.5 bg-white rounded-sm" />
-            ))}
-          </div>
-          <div className="w-5 h-2.5 border border-white rounded-sm relative">
-            <div className="absolute inset-0.5 right-1 bg-white rounded-sm" />
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-full w-0.5 h-1 bg-white rounded-r-sm" />
-          </div>
-        </div>
-      </div>
-
+    <div className="w-[390px] h-[844px] bg-[#f5f6fa] flex flex-col overflow-hidden font-['Inter'] relative">
       {/* Header */}
-      <div className="bg-gradient-to-br from-[#1a2e5a] via-[#1e3a6e] to-[#0f1e3d] px-5 pt-3 pb-6">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <p className="text-blue-200 text-xs font-medium">SAHU CSC Center</p>
-            <h1 className="text-white text-lg font-bold leading-tight">Good morning, Admin</h1>
-          </div>
-          <div className="relative">
-            <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
-              <Bell className="w-4.5 h-4.5 text-white" />
+      <div className="bg-[#1a2040] px-4 pt-10 pb-4">
+        <div className="flex items-center justify-between mb-3">
+          {/* Logo + Name */}
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#f97316] flex items-center justify-center flex-shrink-0">
+              <span className="text-white text-base font-black">S</span>
             </div>
-            <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-[#f97316] rounded-full border border-[#1a2e5a]" />
+            <div>
+              <p className="text-white text-sm font-bold leading-tight">SAHU CSC</p>
+              <p className="text-blue-300 text-[10px]">Management Platform</p>
+            </div>
+          </div>
+          {/* Actions */}
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center">
+                <Bell className="w-4.5 h-4.5 text-white" />
+              </div>
+              <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-[#f97316] rounded-full" />
+            </div>
+            <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center">
+              <Menu className="w-4.5 h-4.5 text-white" />
+            </div>
           </div>
         </div>
 
-        {/* Balance Card */}
-        <div className="bg-white/10 backdrop-blur rounded-2xl p-4 border border-white/20">
-          <p className="text-blue-200 text-xs font-medium mb-1">Today's Balance</p>
-          <p className="text-white text-3xl font-bold mb-3">₹1,24,850</p>
-          <div className="flex gap-4">
-            <div className="flex items-center gap-1.5">
-              <div className="w-6 h-6 rounded-full bg-emerald-400/20 flex items-center justify-center">
-                <TrendingUp className="w-3 h-3 text-emerald-400" />
-              </div>
-              <div>
-                <p className="text-emerald-300 text-[10px]">Income</p>
-                <p className="text-white text-xs font-semibold">₹8,450</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-6 h-6 rounded-full bg-rose-400/20 flex items-center justify-center">
-                <TrendingDown className="w-3 h-3 text-rose-400" />
-              </div>
-              <div>
-                <p className="text-rose-300 text-[10px]">Expense</p>
-                <p className="text-white text-xs font-semibold">₹3,250</p>
-              </div>
-            </div>
-            <div className="ml-auto text-right">
-              <p className="text-blue-200 text-[10px]">Transactions</p>
-              <p className="text-white text-xs font-semibold">24 today</p>
-            </div>
-          </div>
+        {/* Greeting */}
+        <div className="pb-1">
+          <p className="text-blue-300 text-xs">Friday, 5 June 2026</p>
+          <p className="text-white text-lg font-bold">Good morning, Admin 👋</p>
         </div>
       </div>
 
-      {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto">
+      {/* Scrollable Body */}
+      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-24 space-y-5">
+
+        {/* 2×2 Stat Cards */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* Balance */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <div className="w-10 h-10 rounded-xl bg-[#1a2040] flex items-center justify-center mb-3">
+              <Wallet className="w-5 h-5 text-white" />
+            </div>
+            <p className="text-gray-500 text-xs mb-1">Balance</p>
+            <p className="text-gray-900 text-xl font-bold">₹24,580</p>
+            <p className="text-emerald-500 text-xs font-semibold mt-1">↗ +₹1,240</p>
+          </div>
+
+          {/* Today's Income */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center mb-3">
+              <TrendingUp className="w-5 h-5 text-white" />
+            </div>
+            <p className="text-gray-500 text-xs mb-1">Today's Income</p>
+            <p className="text-gray-900 text-xl font-bold">₹3,720</p>
+            <p className="text-emerald-500 text-xs font-semibold mt-1">↗ +18%</p>
+          </div>
+
+          {/* Today's Expense */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <div className="w-10 h-10 rounded-xl bg-[#f97316] flex items-center justify-center mb-3">
+              <TrendingDown className="w-5 h-5 text-white" />
+            </div>
+            <p className="text-gray-500 text-xs mb-1">Today's Expense</p>
+            <p className="text-gray-900 text-xl font-bold">₹480</p>
+            <p className="text-rose-500 text-xs font-semibold mt-1">↘ -5%</p>
+          </div>
+
+          {/* Transactions */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <div className="w-10 h-10 rounded-xl bg-purple-600 flex items-center justify-center mb-3">
+              <Activity className="w-5 h-5 text-white" />
+            </div>
+            <p className="text-gray-500 text-xs mb-1">Transactions</p>
+            <p className="text-gray-900 text-xl font-bold">14</p>
+            <p className="text-emerald-500 text-xs font-semibold mt-1">↗ +3 today</p>
+          </div>
+        </div>
+
         {/* Quick Actions */}
-        <div className="px-4 pt-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-gray-800 text-sm font-bold">Quick Services</h2>
-            <button className="text-[#f97316] text-xs font-semibold">See all</button>
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            {quickActions.map((action) => (
-              <button key={action.label} className="flex flex-col items-center gap-1.5 p-3 bg-white rounded-xl shadow-sm border border-gray-100 active:scale-95 transition-transform">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${action.color}`}>
-                  <action.icon className="w-5 h-5" />
-                </div>
-                <span className="text-gray-700 text-[10px] font-semibold text-center leading-tight">{action.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Stats Row */}
-        <div className="px-4 pt-4 grid grid-cols-2 gap-2">
-          <div className="bg-white rounded-xl p-3 shadow-sm border border-gray-100">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 bg-blue-50 rounded-lg flex items-center justify-center">
-                <Users className="w-3.5 h-3.5 text-blue-600" />
+        <div>
+          <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-3">Quick Actions</p>
+          <div className="grid grid-cols-4 gap-2">
+            {/* New Entry - dark */}
+            <button className="flex flex-col items-center gap-2 bg-[#1a2040] rounded-2xl py-4 px-2">
+              <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+                <Plus className="w-4 h-4 text-white" />
               </div>
-              <span className="text-gray-500 text-xs">Customers</span>
-            </div>
-            <p className="text-gray-900 text-xl font-bold">127</p>
-            <p className="text-emerald-500 text-[10px] font-medium mt-0.5">↑ 12 new today</p>
-          </div>
-          <div className="bg-white rounded-xl p-3 shadow-sm border border-gray-100">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 bg-orange-50 rounded-lg flex items-center justify-center">
-                <Zap className="w-3.5 h-3.5 text-orange-600" />
-              </div>
-              <span className="text-gray-500 text-xs">Services</span>
-            </div>
-            <p className="text-gray-900 text-xl font-bold">22</p>
-            <p className="text-gray-400 text-[10px] font-medium mt-0.5">Active categories</p>
-          </div>
-        </div>
-
-        {/* Recent Transactions */}
-        <div className="px-4 pt-4 pb-24">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-gray-800 text-sm font-bold">Recent Transactions</h2>
-            <button className="flex items-center gap-0.5 text-[#f97316] text-xs font-semibold">
-              View all <ChevronRight className="w-3 h-3" />
+              <span className="text-white text-[10px] font-semibold text-center leading-tight">New Entry</span>
             </button>
+
+            {/* AePS - warm yellow */}
+            <button className="flex flex-col items-center gap-2 bg-orange-50 rounded-2xl py-4 px-2">
+              <div className="w-8 h-8 rounded-xl bg-orange-100 flex items-center justify-center">
+                <Fingerprint className="w-4 h-4 text-orange-500" />
+              </div>
+              <span className="text-orange-700 text-[10px] font-semibold text-center">AePS</span>
+            </button>
+
+            {/* Services - light blue */}
+            <button className="flex flex-col items-center gap-2 bg-blue-50 rounded-2xl py-4 px-2">
+              <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center">
+                <Briefcase className="w-4 h-4 text-blue-500" />
+              </div>
+              <span className="text-blue-700 text-[10px] font-semibold text-center">Services</span>
+            </button>
+
+            {/* Reports - pink/purple */}
+            <button className="flex flex-col items-center gap-2 bg-purple-50 rounded-2xl py-4 px-2">
+              <div className="w-8 h-8 rounded-xl bg-purple-100 flex items-center justify-center">
+                <BarChart2 className="w-4 h-4 text-purple-500" />
+              </div>
+              <span className="text-purple-700 text-[10px] font-semibold text-center">Reports</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Top Services Today */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Top Services Today</p>
+            <button className="text-[#1a2040] text-xs font-semibold">See all</button>
           </div>
 
           <div className="space-y-2">
-            {transactions.map((tx) => (
-              <div key={tx.id} className="bg-white rounded-xl p-3 shadow-sm border border-gray-100 flex items-center gap-3">
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${tx.type === "credit" ? "bg-emerald-50" : "bg-rose-50"}`}>
-                  {tx.type === "credit"
-                    ? <ArrowDownLeft className="w-4 h-4 text-emerald-600" />
-                    : <ArrowUpRight className="w-4 h-4 text-rose-600" />
-                  }
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <p className="text-gray-800 text-xs font-semibold truncate">{tx.name}</p>
-                    <StatusDot status={tx.status} />
-                  </div>
-                  <p className="text-gray-400 text-[10px] truncate">{tx.customer} · {tx.time}</p>
-                </div>
-                <div className="text-right flex-shrink-0">
-                  <p className={`text-xs font-bold ${tx.type === "credit" ? "text-emerald-600" : "text-rose-600"}`}>
-                    {tx.type === "credit" ? "+" : "-"}₹{tx.amount.toLocaleString()}
-                  </p>
-                  <span className="text-[9px] text-gray-400 bg-gray-100 rounded px-1">{tx.service}</span>
-                </div>
+            {topServices.map((svc) => (
+              <div key={svc.rank} className="bg-white rounded-xl px-4 py-3 flex items-center gap-3 shadow-sm">
+                <span className="text-gray-400 text-sm font-bold w-4 flex-shrink-0">{svc.rank}</span>
+                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full flex-1 ${svc.color}`}>
+                  {svc.name}
+                </span>
+                <span className="text-gray-700 text-xs font-bold flex-shrink-0">{svc.txns} txns</span>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Bottom Navigation */}
-      <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 pb-5 pt-2 flex">
+      {/* Bottom Navigation — 5 items */}
+      <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-1 pb-6 pt-2 flex">
         {navItems.map((item, i) => (
           <button
             key={item.label}
             onClick={() => setActiveNav(i)}
             className="flex-1 flex flex-col items-center gap-1"
           >
-            <div className={`w-10 h-6 rounded-full flex items-center justify-center transition-all ${activeNav === i ? "bg-[#1a2e5a]" : ""}`}>
-              <item.icon className={`w-4 h-4 transition-colors ${activeNav === i ? "text-white" : "text-gray-400"}`} />
-            </div>
-            <span className={`text-[9px] font-semibold transition-colors ${activeNav === i ? "text-[#1a2e5a]" : "text-gray-400"}`}>
+            <item.icon
+              className={`w-5 h-5 transition-colors ${activeNav === i ? "text-[#1a2040]" : "text-gray-400"}`}
+              strokeWidth={activeNav === i ? 2.5 : 1.8}
+            />
+            <span className={`text-[9px] font-semibold transition-colors ${activeNav === i ? "text-[#1a2040]" : "text-gray-400"}`}>
               {item.label}
             </span>
           </button>
