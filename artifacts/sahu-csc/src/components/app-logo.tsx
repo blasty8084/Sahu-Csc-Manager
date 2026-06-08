@@ -7,25 +7,19 @@ interface AppLogoProps {
 
 export function AppLogo({ size = "sm", className = "" }: AppLogoProps) {
   const [imgError, setImgError] = useState(false);
-
   const logoUrl = `${import.meta.env.BASE_URL}logo.png`;
 
-  const dim = size === "lg"
-    ? "w-16 h-16 rounded-xl"
-    : "w-9 h-9 rounded-xl";
-
+  const dim = size === "lg" ? "w-16 h-16 rounded-xl" : "w-9 h-9 rounded-xl";
   const textSize = size === "lg" ? "text-2xl" : "text-base";
 
   if (!imgError) {
     return (
-      <div className={`${dim} flex-shrink-0 overflow-hidden flex items-center justify-center bg-sidebar-primary ${className}`}>
-        <img
-          src={logoUrl}
-          alt="App Logo"
-          className="w-full h-full object-contain"
-          onError={() => setImgError(true)}
-        />
-      </div>
+      <img
+        src={logoUrl}
+        alt="SAHU CSC Logo"
+        className={`${dim} flex-shrink-0 object-cover ${className}`}
+        onError={() => setImgError(true)}
+      />
     );
   }
 
@@ -42,14 +36,12 @@ export function LoginLogo() {
 
   if (!imgError) {
     return (
-      <div className="mx-auto w-16 h-16 bg-primary rounded-xl flex items-center justify-center mb-4 overflow-hidden">
-        <img
-          src={logoUrl}
-          alt="App Logo"
-          className="w-full h-full object-contain"
-          onError={() => setImgError(true)}
-        />
-      </div>
+      <img
+        src={logoUrl}
+        alt="SAHU CSC Logo"
+        className="mx-auto w-20 h-20 rounded-xl object-cover mb-4 shadow-md"
+        onError={() => setImgError(true)}
+      />
     );
   }
 
