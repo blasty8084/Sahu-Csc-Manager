@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   Bell, Menu, TrendingUp, TrendingDown, Activity, Wallet,
   Plus, Fingerprint, Briefcase, BarChart2,
-  LayoutDashboard, BookOpen, CreditCard, Grid2X2
+  LayoutDashboard, BookOpen, User
 } from "lucide-react";
 
 const topServices = [
@@ -17,8 +17,7 @@ const navItems = [
   { icon: LayoutDashboard, label: "Dashboard" },
   { icon: BookOpen, label: "Ledger" },
   { icon: Fingerprint, label: "AePS" },
-  { icon: Briefcase, label: "Services" },
-  { icon: BarChart2, label: "Reports" },
+  { icon: User, label: "My Profile" },
 ];
 
 export function Mobile() {
