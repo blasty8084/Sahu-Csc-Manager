@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -93,6 +94,13 @@ export default function Login() {
                 >
                   {form.formState.isSubmitting ? "Authenticating..." : "Sign In"}
                 </Button>
+                <div className="text-center">
+                  <Link href="/forgot-password">
+                    <span className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+                      Forgot password?
+                    </span>
+                  </Link>
+                </div>
               </form>
             </Form>
           </CardContent>

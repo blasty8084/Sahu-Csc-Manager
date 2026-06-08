@@ -11,12 +11,13 @@ import reportsRouter from "./reports";
 import aepsRouter from "./aeps";
 import profileRouter from "./profile";
 import preferencesRouter from "./preferences";
-import adminRouter from "./admin";
+import passwordResetRouter from "./password-reset";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(authRouter);
+router.use(passwordResetRouter);
 router.use(profileRouter);
 router.use(preferencesRouter);
 router.use(ledgerRouter);
@@ -27,6 +28,5 @@ router.use(auditRouter);
 router.use(settingsRouter);
 router.use(reportsRouter);
 router.use(aepsRouter);
-router.use(adminRouter);
 
 export default router;

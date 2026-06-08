@@ -8,6 +8,8 @@ import { ThemeProvider } from "@/components/theme-provider";
 import NotFound from "@/pages/not-found";
 
 import Login from "@/pages/login";
+import ForgotPassword from "@/pages/forgot-password";
+import ResetPassword from "@/pages/reset-password";
 import Dashboard from "@/pages/dashboard";
 import Ledger from "@/pages/ledger";
 import Services from "@/pages/services";
@@ -69,6 +71,8 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
       <Route path="/">{() => <ProtectedRoute component={Dashboard} />}</Route>
       <Route path="/ledger">{() => <ProtectedRoute component={Ledger} />}</Route>
       <Route path="/services">{() => <ProtectedRoute component={Services} />}</Route>
