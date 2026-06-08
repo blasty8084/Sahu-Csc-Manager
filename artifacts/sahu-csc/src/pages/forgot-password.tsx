@@ -8,16 +8,20 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { LoginLogo } from "@/components/app-logo";
-import { ArrowLeft, Copy, CheckCircle2, Clock, Mail } from "lucide-react";
+import { ArrowLeft, Copy, CheckCircle2, Clock, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const schema = z.object({
-  identifier: z.string().min(1, "Enter your username, email, or mobile"),
+  identifier: z.string().min(1, "Enter username, email, or mobile"),
 });
 
 export default function ForgotPassword() {
   const { toast } = useToast();
-  const [resetInfo, setResetInfo] = useState<{ resetUrl: string; expiresAt: string } | null>(null);
+  const [otpInfo, setOtpInfo] = useState<{
+    otp: string;
+    username: string;
+    expiresAt: string;
+  } | null>(null);
   const [copied, setCopied] = useState(false);
 
   const form = useForm<z.infer<typeof schema>>({
@@ -35,23 +39,33 @@ export default function ForgotPassword() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Request failed");
-      setResetInfo({ resetUrl: data.resetUrl, expiresAt: data.expiresAt });
+      if (!data.otp) {
+        toast({ title: "Not found", description: "No active account found for that identifier.", variant: "destructive" });
+        return;
+      }
+      setOtpInfo({ otp: data.otp, username: data.username, expiresAt: data.expiresAt });
     } catch (err: any) {
       toast({ variant: "destructive", title: "Error", description: err.message });
     }
   };
 
-  const copyLink = async () => {
-    if (!resetInfo) return;
-    await navigator.clipboard.writeText(resetInfo.resetUrl);
+  const copyOtp = async () => {
+    if (!otpInfo) return;
+    await navigator.clipboard.writeText(otpInfo.otp);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-    toast({ title: "Link copied!" });
+    toast({ title: "OTP copied!" });
   };
 
-  const expiryDisplay = resetInfo
-    ? new Date(resetInfo.expiresAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })
+  const expiryDisplay = otpInfo
+    ? new Date(otpInfo.expiresAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })
     : "";
+
+  const handleReset = () => {
+    setOtpInfo(null);
+    form.reset();
+    setCopied(false);
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
@@ -66,11 +80,13 @@ export default function ForgotPassword() {
           <CardHeader className="text-center space-y-1">
             <CardTitle className="text-xl">Forgot Password</CardTitle>
             <CardDescription>
-              Enter your username, email, or mobile to get a reset link
+              {otpInfo
+                ? "Share this OTP with the user to reset their password"
+                : "Enter the account identifier to generate a one-time password"}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {!resetInfo ? (
+            {!otpInfo ? (
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                   <FormField
@@ -80,56 +96,64 @@ export default function ForgotPassword() {
                       <FormItem>
                         <FormLabel>Username, Email or Mobile</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter your identifier" {...field} />
+                          <Input placeholder="Enter account identifier" autoFocus {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                   <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-                    {form.formState.isSubmitting ? "Generating link..." : "Get Reset Link"}
+                    {form.formState.isSubmitting ? "Generating OTP…" : "Generate OTP"}
                   </Button>
                 </form>
               </Form>
             ) : (
-              <div className="space-y-4">
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
-                  <div className="text-sm text-emerald-800 dark:text-emerald-300">
-                    Reset link generated successfully.
-                  </div>
+              <div className="space-y-5">
+                {/* Account info */}
+                <div className="rounded-lg bg-muted/60 border px-4 py-3 text-sm flex justify-between items-center">
+                  <span className="text-muted-foreground">Account</span>
+                  <span className="font-semibold">{otpInfo.username}</span>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                {/* OTP display */}
+                <div className="rounded-xl border-2 border-primary/20 bg-primary/5 p-6 text-center space-y-3">
+                  <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">One-Time Password</p>
+                  <div className="flex justify-center gap-2">
+                    {otpInfo.otp.split("").map((digit, i) => (
+                      <span
+                        key={i}
+                        className="w-11 h-14 flex items-center justify-center text-3xl font-bold bg-background border-2 border-border rounded-lg shadow-sm text-foreground"
+                      >
+                        {digit}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
                     <Clock className="w-3.5 h-3.5" />
-                    <span>Expires at {expiryDisplay} (1 hour)</span>
-                  </div>
-                  <div className="p-3 rounded-lg bg-muted border text-xs font-mono break-all leading-relaxed">
-                    {resetInfo.resetUrl}
-                  </div>
-                  <Button variant="outline" size="sm" className="w-full gap-2" onClick={copyLink}>
-                    {copied ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-                    {copied ? "Copied!" : "Copy Reset Link"}
-                  </Button>
-                </div>
-
-                <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3">
-                  <div className="flex items-start gap-2 text-xs text-amber-800 dark:text-amber-300">
-                    <Mail className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                    <span>
-                      Share this link with the user or open it directly to reset the password.
-                      The link works only once and expires in 1 hour.
-                    </span>
+                    <span>Expires at {expiryDisplay} · valid for 15 minutes</span>
                   </div>
                 </div>
 
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => { setResetInfo(null); form.reset(); }}
-                >
-                  Generate another link
+                {/* Copy button */}
+                <Button variant="outline" className="w-full gap-2" onClick={copyOtp}>
+                  {copied
+                    ? <><CheckCircle2 className="w-4 h-4 text-emerald-600" /> Copied!</>
+                    : <><Copy className="w-4 h-4" /> Copy OTP</>}
+                </Button>
+
+                {/* Instructions */}
+                <div className="rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 px-4 py-3">
+                  <p className="text-xs text-blue-800 dark:text-blue-300 leading-relaxed">
+                    Share this 6-digit OTP with <strong>{otpInfo.username}</strong> via WhatsApp or verbally.
+                    They will enter it on the Reset Password page along with their username and new password.
+                    The OTP works only once.
+                  </p>
+                </div>
+
+                {/* Generate new */}
+                <Button variant="ghost" size="sm" className="w-full gap-2 text-muted-foreground" onClick={handleReset}>
+                  <RefreshCw className="w-4 h-4" />
+                  Generate for a different user
                 </Button>
               </div>
             )}
