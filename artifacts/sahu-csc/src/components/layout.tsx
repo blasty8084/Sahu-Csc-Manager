@@ -108,6 +108,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
         )}
       </div>
 
+      {/* Version */}
+      <div className="px-4 pb-1 flex items-center justify-between">
+        <span className="text-[10px] text-sidebar-foreground/30 font-mono tracking-wide">SAHU CSC v{__APP_VERSION__}</span>
+        <span className="text-[10px] text-sidebar-foreground/25">© 2026</span>
+      </div>
+
       {/* User Footer */}
       <div className="p-3 border-t border-sidebar-border/50">
         <div className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-sidebar-accent/40 transition-colors">
