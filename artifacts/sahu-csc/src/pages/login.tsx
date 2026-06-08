@@ -8,6 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { LoginLogo } from "@/components/app-logo";
 
 const loginSchema = z.object({
   identifier: z.string().min(1, "Username, email, or mobile is required"),
@@ -46,9 +47,7 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <div className="mx-auto w-16 h-16 bg-primary rounded-xl flex items-center justify-center mb-4">
-            <span className="text-primary-foreground font-bold text-2xl">S</span>
-          </div>
+          <LoginLogo />
           <h1 className="text-3xl font-bold text-foreground">SAHU CSC</h1>
           <p className="text-muted-foreground mt-2">Government Service Center Platform</p>
         </div>

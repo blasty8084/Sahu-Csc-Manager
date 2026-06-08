@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { AppLogo } from "@/components/app-logo";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -56,9 +57,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
       {/* Logo */}
       <div className="px-5 pt-5 pb-4 flex items-center gap-3 border-b border-sidebar-border/50">
-        <div className="w-9 h-9 bg-sidebar-primary rounded-xl flex items-center justify-center font-black text-sidebar-primary-foreground text-base flex-shrink-0 shadow-sm">
-          S
-        </div>
+        <AppLogo size="sm" />
         <div>
           <h2 className="font-bold text-sm leading-tight">SAHU CSC</h2>
           <p className="text-[10px] text-sidebar-foreground/60">Management Platform</p>
@@ -154,9 +153,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <header className="bg-sidebar sticky top-0 z-20 md:hidden shadow-md">
           <div className="flex items-center justify-between px-4 h-14">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-sidebar-primary rounded-xl flex items-center justify-center font-black text-sidebar-primary-foreground text-sm flex-shrink-0">
-                S
-              </div>
+              <AppLogo size="sm" />
               <div>
                 <h1 className="font-bold text-sm leading-tight text-sidebar-foreground">SAHU CSC</h1>
                 <p className="text-[10px] text-sidebar-foreground/60 leading-none">Management Platform</p>
