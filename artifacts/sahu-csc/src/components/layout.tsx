@@ -12,6 +12,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { AppLogo } from "@/components/app-logo";
+import { PWAInstallBanner } from "@/components/pwa-install-banner";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -218,6 +219,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </Link>
           </div>
         </header>
+
+        {/* PWA install / offline banner */}
+        <PWAInstallBanner />
 
         {/* Page Content */}
         <main className="flex-1 p-4 md:p-8 pb-24 md:pb-8 max-w-7xl mx-auto w-full">
