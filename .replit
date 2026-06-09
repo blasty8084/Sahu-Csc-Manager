@@ -14,11 +14,14 @@ runButton = "Project"
 [[workflows.workflow]]
 name = "Seed Database"
 mode = "sequential"
-author = 60440534
+author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "PORT=8080 NODE_ENV=development npx tsx artifacts/api-server/src/scripts/seed.ts"
+args = "PORT=8080 NODE_ENV=development node_modules/.pnpm/node_modules/.bin/tsx artifacts/api-server/src/scripts/seed.ts"
+
+[workflows.workflow.metadata]
+outputType = "console"
 
 [[workflows.workflow]]
 name = "Project"
@@ -28,6 +31,10 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "workflow.run"
 args = "Start application"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Seed Database"
 
 [[workflows.workflow]]
 name = "Start application"
