@@ -82,6 +82,15 @@ waitForPort = 8080
 [workflows.workflow.tasks.env]
 PORT = "8080"
 
+[[workflows.workflow]]
+name = "Seed Database"
+mode = "sequential"
+author = 60440534
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "PORT=8080 NODE_ENV=development npx tsx artifacts/api-server/src/scripts/seed.ts"
+
 [agent]
 stack = "BEST_EFFORT_FALLBACK"
 expertMode = true
