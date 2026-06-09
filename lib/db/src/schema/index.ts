@@ -7,3 +7,4 @@ export * from "./settings";
 export * from "./aeps";
 export * from "./user_preferences";
 export * from "./password_reset_tokens";
+export * from "./push_subscriptions";

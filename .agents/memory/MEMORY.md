@@ -1,3 +1,4 @@
 - [DB push clears data](db-push-data-loss.md) — drizzle-kit push can empty tables; always re-seed after schema changes
 - [Seed via pg module](db-push-data-loss.md) — use pg@8.20.0 + bcryptjs@3.0.3 directly since tsx is not available in scripts
 - [Offline PWA architecture](offline-pwa.md) — IndexedDB queue for offline ledger entries, sync engine, Workbox strategy map
+- [Advanced PWA injectManifest](pwa-injectmanifest.md) — switched from generateSW to injectManifest for push/periodic sync; custom sw.ts; Uint8Array.buffer cast needed for PushManager.subscribe applicationServerKey

@@ -12,6 +12,7 @@ import aepsRouter from "./aeps";
 import profileRouter from "./profile";
 import preferencesRouter from "./preferences";
 import passwordResetRouter from "./password-reset";
+import pushRouter from "./push";
 
 const router: IRouter = Router();
 
@@ -28,5 +29,6 @@ router.use(auditRouter);
 router.use(settingsRouter);
 router.use(reportsRouter);
 router.use(aepsRouter);
+router.use(pushRouter);
 
 export default router;

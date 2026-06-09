@@ -22,6 +22,7 @@ import Settings from "@/pages/settings";
 import Backups from "@/pages/backups";
 import AePS from "@/pages/aeps";
 import Profile from "@/pages/profile";
+import Offline from "@/pages/offline";
 import { Redirect } from "wouter";
 import { useEffect } from "react";
 import { useListNotifications } from "@workspace/api-client-react";
@@ -107,6 +108,8 @@ function Router() {
       <Route path="/settings">{() => <ProtectedRoute component={Settings} adminOnly />}</Route>
       <Route path="/backups">{() => <ProtectedRoute component={Backups} adminOnly />}</Route>
       <Route path="/share-target" component={ShareTargetHandler} />
+      <Route path="/offline" component={Offline} />
+      <Route path="/open-file">{() => <ProtectedRoute component={Ledger} />}</Route>
       <Route component={NotFound} />
     </Switch>
   );

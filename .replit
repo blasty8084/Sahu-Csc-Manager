@@ -113,3 +113,6 @@ channel = "stable-25_05"
 [userenv.shared]
 PORT = "5000"
 BASE_PATH = "/"
+VAPID_PUBLIC_KEY = "BAIqC04KRPkjuV9slRekhW3aJHuevCDSF9Q5hSkGmB8XtiDPS7eRMFemC7viKq-578m-kuBf_MyEh8mQIYug630"
+VAPID_PRIVATE_KEY = "bJV8IqXpVgKodPEsrjTaaxtyYZ8h3v5twt2PjY0knsI"
+VAPID_EMAIL = "mailto:admin@sahucsc.in"
