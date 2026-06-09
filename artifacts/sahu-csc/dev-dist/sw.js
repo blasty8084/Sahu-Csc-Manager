@@ -67,7 +67,7 @@ if (!self.define) {
     });
   };
 }
-define(['./workbox-25ee6505'], (function (workbox) { 'use strict';
+define(['./workbox-cce6ffed'], (function (workbox) { 'use strict';
 
   self.skipWaiting();
   workbox.clientsClaim();
@@ -78,7 +78,7 @@ define(['./workbox-25ee6505'], (function (workbox) { 'use strict';
    */
   workbox.precacheAndRoute([{
     "url": "/",
-    "revision": "0.k6b9evba4go"
+    "revision": "0.hpecc2p1tj8"
   }], {});
   workbox.cleanupOutdatedCaches();
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("/"), {
@@ -86,21 +86,89 @@ define(['./workbox-25ee6505'], (function (workbox) { 'use strict';
     denylist: [/^\/api\//]
   }));
   workbox.registerRoute(/^\/api\/auth\/me/, new workbox.NetworkOnly(), 'GET');
-  workbox.registerRoute(/^\/api\//, new workbox.NetworkFirst({
-    "cacheName": "api-cache",
-    "networkTimeoutSeconds": 10,
+  workbox.registerRoute(/^\/api\/auth\//, new workbox.NetworkOnly(), 'GET');
+  workbox.registerRoute(/^\/api\/dashboard/, new workbox.StaleWhileRevalidate({
+    "cacheName": "api-dashboard",
     plugins: [new workbox.ExpirationPlugin({
-      maxEntries: 100,
+      maxEntries: 5,
       maxAgeSeconds: 300
     }), new workbox.CacheableResponsePlugin({
       statuses: [0, 200]
     })]
   }), 'GET');
-  workbox.registerRoute(/\.(?:png|jpg|jpeg|svg|gif|webp)$/, new workbox.CacheFirst({
+  workbox.registerRoute(/^\/api\/reports/, new workbox.StaleWhileRevalidate({
+    "cacheName": "api-reports",
+    plugins: [new workbox.ExpirationPlugin({
+      maxEntries: 20,
+      maxAgeSeconds: 600
+    }), new workbox.CacheableResponsePlugin({
+      statuses: [0, 200]
+    })]
+  }), 'GET');
+  workbox.registerRoute(/^\/api\/settings/, new workbox.StaleWhileRevalidate({
+    "cacheName": "api-settings",
+    plugins: [new workbox.ExpirationPlugin({
+      maxEntries: 5,
+      maxAgeSeconds: 1800
+    }), new workbox.CacheableResponsePlugin({
+      statuses: [0, 200]
+    })]
+  }), 'GET');
+  workbox.registerRoute(/^\/api\/profile/, new workbox.StaleWhileRevalidate({
+    "cacheName": "api-profile",
+    plugins: [new workbox.ExpirationPlugin({
+      maxEntries: 5,
+      maxAgeSeconds: 300
+    }), new workbox.CacheableResponsePlugin({
+      statuses: [0, 200]
+    })]
+  }), 'GET');
+  workbox.registerRoute(/^\/api\/preferences/, new workbox.StaleWhileRevalidate({
+    "cacheName": "api-preferences",
+    plugins: [new workbox.ExpirationPlugin({
+      maxEntries: 5,
+      maxAgeSeconds: 1800
+    }), new workbox.CacheableResponsePlugin({
+      statuses: [0, 200]
+    })]
+  }), 'GET');
+  workbox.registerRoute(/^\/api\/services/, new workbox.NetworkFirst({
+    "cacheName": "api-services",
+    "networkTimeoutSeconds": 8,
+    plugins: [new workbox.ExpirationPlugin({
+      maxEntries: 10,
+      maxAgeSeconds: 3600
+    }), new workbox.CacheableResponsePlugin({
+      statuses: [0, 200]
+    })]
+  }), 'GET');
+  workbox.registerRoute(/^\/api\/ledger/, new workbox.NetworkFirst({
+    "cacheName": "api-ledger",
+    "networkTimeoutSeconds": 8,
+    plugins: [new workbox.ExpirationPlugin({
+      maxEntries: 50,
+      maxAgeSeconds: 300
+    }), new workbox.CacheableResponsePlugin({
+      statuses: [0, 200]
+    })]
+  }), 'GET');
+  workbox.registerRoute(/^\/api\/notifications/, new workbox.NetworkFirst({
+    "cacheName": "api-notifications",
+    "networkTimeoutSeconds": 8,
+    plugins: [new workbox.ExpirationPlugin({
+      maxEntries: 20,
+      maxAgeSeconds: 120
+    }), new workbox.CacheableResponsePlugin({
+      statuses: [0, 200]
+    })]
+  }), 'GET');
+  workbox.registerRoute(/\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/, new workbox.CacheFirst({
     "cacheName": "image-cache",
     plugins: [new workbox.ExpirationPlugin({
-      maxEntries: 60,
+      maxEntries: 100,
       maxAgeSeconds: 2592000
+    }), new workbox.CacheableResponsePlugin({
+      statuses: [0, 200]
     })]
   }), 'GET');
   workbox.registerRoute(/\.(?:woff2|woff|ttf|eot)$/, new workbox.CacheFirst({
@@ -108,6 +176,8 @@ define(['./workbox-25ee6505'], (function (workbox) { 'use strict';
     plugins: [new workbox.ExpirationPlugin({
       maxEntries: 20,
       maxAgeSeconds: 31536000
+    }), new workbox.CacheableResponsePlugin({
+      statuses: [0, 200]
     })]
   }), 'GET');
 
