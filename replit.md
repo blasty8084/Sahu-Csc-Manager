@@ -1,6 +1,6 @@
 # SAHU CSC FV1
 
-A full-stack CSC (Common Service Center) business management platform for tracking services, ledger accounting, and reporting. Built for Odisha / India rural service centers.
+A full-stack CSC (Common Service Center) business management platform for tracking services, ledger accounting, and reporting. Built for Odisha / India rural service centers. Supports PWA installation and TWA (Android) packaging.
 
 ## Run & Operate
 
@@ -22,6 +22,7 @@ A full-stack CSC (Common Service Center) business management platform for tracki
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
 - Frontend: React + Vite + Tailwind CSS v4 + shadcn/ui (Navy + Saffron theme)
+- PWA: `vite-plugin-pwa` + Workbox service worker (offline support, installable)
 - API: Express 5 with express-session, helmet, rate-limiting
 - DB: PostgreSQL + Drizzle ORM
 - Validation: Zod (`zod/v4`), `drizzle-zod`
@@ -36,7 +37,10 @@ A full-stack CSC (Common Service Center) business management platform for tracki
 - `artifacts/api-server/src/routes/` — Express route handlers (auth, ledger, services, users, notifications, audit, settings, reports)
 - `artifacts/api-server/src/lib/` — auth helpers (sessions, bcrypt, audit log), notify helper
 - `artifacts/sahu-csc/src/pages/` — React pages for all sections
-- `artifacts/sahu-csc/src/components/` — layout, theme-provider, shadcn UI components
+- `artifacts/sahu-csc/src/components/` — layout, theme-provider, pwa-install-banner, shadcn UI components
+- `artifacts/sahu-csc/src/hooks/use-pwa.ts` — install prompt + offline detection hook
+- `artifacts/sahu-csc/public/.well-known/assetlinks.json` — Digital Asset Links for TWA (Android)
+- `artifacts/sahu-csc/public/pwa-*.png` — PWA icons (96, 144, 192, 512px) + apple-touch-icon
 
 ## Architecture decisions
 
@@ -46,6 +50,8 @@ A full-stack CSC (Common Service Center) business management platform for tracki
 - Running balance computed at insert time from sum of all previous entries
 - Admin-only pages enforced at both route level (requireRole middleware) and frontend (ProtectedRoute with adminOnly prop)
 - Notifications system: auto-created on login events, failed logins, backups, etc.
+- PWA uses Workbox NetworkFirst for API calls (10s timeout), CacheFirst for static assets/images/fonts
+- TWA digital asset links served statically from `public/.well-known/assetlinks.json`
 
 ## Product
 
@@ -58,6 +64,7 @@ A full-stack CSC (Common Service Center) business management platform for tracki
 - **User Management**: Multi-user with admin/operator/user roles (admin only)
 - **Settings**: Business info, language, theme, backup config (admin only)
 - **Backups**: Manual backup creation and restore (admin only)
+- **PWA / TWA**: Installable on desktop and mobile; offline-capable; Android TWA-ready
 
 ## User preferences
 
@@ -72,6 +79,17 @@ A full-stack CSC (Common Service Center) business management platform for tracki
 - Numeric columns from Drizzle return as strings — always `parseFloat()` before returning from routes
 - The notifications endpoint returns an array directly (not paginated); the layout uses `.length` not `.total`
 - Sessions require `SESSION_SECRET` env var; falls back to a default in dev only
+- PWA service worker is active in dev mode (`devOptions.enabled: true`); clear site data in DevTools if caching causes stale-asset issues during development
+- After changing `vite.config.ts` PWA manifest, restart the frontend workflow — Vite does not hot-reload config changes
+- TWA `assetlinks.json` requires the SHA-256 fingerprint of your Android signing key. Update `public/.well-known/assetlinks.json` after generating the APK via PWABuilder
+
+## TWA (Android App) Publishing Steps
+
+1. Deploy the app (Publish on Replit) to get a live HTTPS domain
+2. Visit [PWABuilder.com](https://www.pwabuilder.com) → enter your deployed URL → download Android package
+3. Get your SHA-256 signing fingerprint from PWABuilder
+4. Update `artifacts/sahu-csc/public/.well-known/assetlinks.json` with your `package_name` and fingerprint
+5. Re-deploy, then upload the `.aab` / `.apk` to Google Play Console
 
 ## Pointers
 

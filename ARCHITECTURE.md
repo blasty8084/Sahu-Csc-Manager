@@ -15,22 +15,27 @@
    - [Routing & Access Control](#52-routing--access-control)
    - [Pages](#53-pages)
    - [Data Fetching Layer](#54-data-fetching-layer)
-6. [Security Model](#6-security-model)
-   - [Authentication Flow](#61-authentication-flow)
-   - [Role-Based Access Control](#62-role-based-access-control)
-   - [Data Isolation (Multi-User)](#63-data-isolation-multi-user)
-   - [IDOR Protection](#64-idor-protection)
-7. [Data Flow — End to End](#7-data-flow--end-to-end)
-8. [Business Logic Details](#8-business-logic-details)
-   - [Ledger & Running Balance](#81-ledger--running-balance)
-   - [AePS (Aadhaar Payment System)](#82-aeps-aadhaar-payment-system)
-   - [Reports & Export](#83-reports--export)
-   - [Notifications](#84-notifications)
-   - [Profile & Preferences](#85-profile--preferences)
-9. [OpenAPI Contract-First Design](#9-openapi-contract-first-design)
-10. [Environment & Configuration](#10-environment--configuration)
-11. [Default Seed Data](#11-default-seed-data)
-12. [Known Gotchas & Conventions](#12-known-gotchas--conventions)
+6. [PWA & TWA Support](#6-pwa--twa-support)
+   - [Service Worker & Caching](#61-service-worker--caching)
+   - [Web App Manifest](#62-web-app-manifest)
+   - [Install Prompt & Offline Banner](#63-install-prompt--offline-banner)
+   - [TWA (Android)](#64-twa-android)
+7. [Security Model](#7-security-model)
+   - [Authentication Flow](#71-authentication-flow)
+   - [Role-Based Access Control](#72-role-based-access-control)
+   - [Data Isolation (Multi-User)](#73-data-isolation-multi-user)
+   - [IDOR Protection](#74-idor-protection)
+8. [Data Flow — End to End](#8-data-flow--end-to-end)
+9. [Business Logic Details](#9-business-logic-details)
+   - [Ledger & Running Balance](#91-ledger--running-balance)
+   - [AePS (Aadhaar Payment System)](#92-aeps-aadhaar-payment-system)
+   - [Reports & Export](#93-reports--export)
+   - [Notifications](#94-notifications)
+   - [Profile & Preferences](#95-profile--preferences)
+10. [OpenAPI Contract-First Design](#10-openapi-contract-first-design)
+11. [Environment & Configuration](#11-environment--configuration)
+12. [Default Seed Data](#12-default-seed-data)
+13. [Known Gotchas & Conventions](#13-known-gotchas--conventions)
 
 ---
 
@@ -46,6 +51,7 @@
 - Per-user profile, avatar, and UI preferences
 - Full audit trail of all sensitive actions
 - System-wide notifications and settings
+- **PWA** (installable, offline-capable) and **TWA** (Android app via Digital Asset Links)
 
 **Default Credentials**
 
@@ -86,28 +92,43 @@ workspace/
 │   │   └── build.mjs          # esbuild bundler script
 │   │
 │   └── sahu-csc/            # React + Vite frontend (serves /)
-│       ├── src/
-│       │   ├── App.tsx             # QueryClient, providers, router
-│       │   ├── pages/              # One file per route
-│       │   │   ├── login.tsx
-│       │   │   ├── dashboard.tsx
-│       │   │   ├── ledger.tsx
-│       │   │   ├── aeps.tsx
-│       │   │   ├── services.tsx
-│       │   │   ├── reports.tsx
-│       │   │   ├── notifications.tsx
-│       │   │   ├── profile.tsx
-│       │   │   ├── preferences.tsx
-│       │   │   ├── users.tsx       # Admin only
-│       │   │   ├── audit-logs.tsx  # Admin only
-│       │   │   ├── settings.tsx    # Admin only
-│       │   │   └── backups.tsx     # Admin only
-│       │   ├── components/
-│       │   │   ├── layout.tsx       # Sidebar + header shell
-│       │   │   ├── theme-provider.tsx
-│       │   │   └── ui/              # shadcn/ui components
-│       │   └── hooks/
-│       │       └── use-auth.tsx     # AuthContext + useAuth hook
+│       ├── index.html              # PWA meta tags, theme-color, apple-touch-icon
+│       ├── vite.config.ts          # Vite config with VitePWA plugin + Workbox
+│       ├── public/
+│       │   ├── favicon.svg
+│       │   ├── apple-touch-icon.png    # 180×180 — iOS home screen icon
+│       │   ├── pwa-96x96.png
+│       │   ├── pwa-144x144.png
+│       │   ├── pwa-192x192.png
+│       │   ├── pwa-512x512.png         # Also used as maskable icon
+│       │   └── .well-known/
+│       │       └── assetlinks.json     # Digital Asset Links for TWA (Android)
+│       └── src/
+│           ├── App.tsx             # QueryClient, providers, router
+│           ├── main.tsx            # createRoot + registerSW (PWA)
+│           ├── vite-env.d.ts       # /// <reference types="vite-plugin-pwa/client" />
+│           ├── pages/              # One file per route
+│           │   ├── login.tsx
+│           │   ├── dashboard.tsx
+│           │   ├── ledger.tsx
+│           │   ├── aeps.tsx
+│           │   ├── services.tsx
+│           │   ├── reports.tsx
+│           │   ├── notifications.tsx
+│           │   ├── profile.tsx
+│           │   ├── preferences.tsx
+│           │   ├── users.tsx       # Admin only
+│           │   ├── audit-logs.tsx  # Admin only
+│           │   ├── settings.tsx    # Admin only
+│           │   └── backups.tsx     # Admin only
+│           ├── components/
+│           │   ├── layout.tsx               # Sidebar + header + PWAInstallBanner
+│           │   ├── pwa-install-banner.tsx   # Install prompt + offline indicator
+│           │   ├── theme-provider.tsx
+│           │   └── ui/                      # shadcn/ui components
+│           └── hooks/
+│               ├── use-auth.tsx     # AuthContext + useAuth hook
+│               └── use-pwa.ts       # isInstallable, isOffline, promptInstall
 │
 ├── lib/
 │   ├── db/                  # @workspace/db — Drizzle ORM + schema
@@ -451,6 +472,8 @@ All reports are user-scoped (non-admins see only their own data).
 
 ### 5.1 App Bootstrap & Providers
 
+`artifacts/sahu-csc/src/main.tsx` registers the Workbox service worker via `registerSW()` from `vite-plugin-pwa`, then mounts the React root.
+
 `artifacts/sahu-csc/src/App.tsx` wraps the entire app in this provider tree (outermost first):
 
 ```
@@ -529,9 +552,85 @@ These hooks wrap `@tanstack/react-query` internally — `useQuery` for GET, `use
 
 ---
 
-## 6. Security Model
+## 6. PWA & TWA Support
 
-### 6.1 Authentication Flow
+### 6.1 Service Worker & Caching
+
+The service worker is generated at build time by **`vite-plugin-pwa`** (Workbox). It is also active in development (`devOptions.enabled: true`).
+
+**Caching strategies:**
+
+| URL pattern | Strategy | Cache name | TTL |
+|-------------|----------|------------|-----|
+| `/api/auth/me` | NetworkOnly | — | — |
+| `/api/*` | NetworkFirst (10s timeout) | `api-cache` | 5 min, max 100 entries |
+| `*.png / *.jpg / *.svg` | CacheFirst | `image-cache` | 30 days, max 60 entries |
+| `*.woff2 / *.woff` | CacheFirst | `font-cache` | 365 days, max 20 entries |
+| Everything else (JS/CSS/HTML) | Precached by Workbox | — | Auto-updated on deploy |
+
+`/api/auth/me` is **NetworkOnly** — the app must always verify the session against the server, never serve a stale auth response from cache.
+
+**Registration** (`src/main.tsx`):
+```ts
+import { registerSW } from "virtual:pwa-register";
+registerSW({
+  onOfflineReady() { /* app is cached and ready offline */ },
+  onRegisteredSW(swUrl, r) { /* hourly update check */ },
+});
+```
+
+### 6.2 Web App Manifest
+
+Served at `/manifest.webmanifest`. Key fields:
+
+| Field | Value |
+|-------|-------|
+| `name` | SAHU CSC — Common Service Center |
+| `short_name` | SAHU CSC |
+| `display` | standalone |
+| `theme_color` | `#0b2c60` (Deep Navy) |
+| `background_color` | `#ffffff` |
+| `start_url` | `/` |
+| `orientation` | portrait-primary |
+| `categories` | business, finance, productivity |
+| **shortcuts** | Ledger (`/ledger`), Reports (`/reports`) |
+| **icons** | 96, 144, 192, 512px + maskable (512px) |
+
+### 6.3 Install Prompt & Offline Banner
+
+**`src/hooks/use-pwa.ts`** — `usePWA()` hook:
+- Listens for `beforeinstallprompt` → exposes `isInstallable` and `promptInstall()`
+- Listens for `appinstalled` → sets `isInstalled = true`
+- Listens for `online` / `offline` → exposes `isOffline`
+
+**`src/components/pwa-install-banner.tsx`** — rendered inside `Layout` above the main content area:
+- **Offline bar** — red destructive banner with WifiOff icon, always visible when `isOffline`
+- **Install bar** — navy-tinted banner with Download icon and Install button; shows only when `isInstallable && !dismissed`; dismissed state is component-local (reappears on next full page load)
+
+### 6.4 TWA (Android)
+
+TWA (Trusted Web Activity) allows the PWA to be packaged as an Android app via Chrome Custom Tabs with no browser chrome.
+
+**Requirements:**
+1. The site must be served over HTTPS (Replit deployment provides this)
+2. A valid, installable PWA (manifest + service worker — already implemented)
+3. Digital Asset Links verification file at `/.well-known/assetlinks.json`
+
+**File:** `artifacts/sahu-csc/public/.well-known/assetlinks.json`  
+Served statically by Vite (dev) and in the production build. Update with your Android package name and SHA-256 signing fingerprint before publishing to Google Play.
+
+**Publishing flow:**
+1. Deploy on Replit to get an HTTPS domain
+2. Visit [PWABuilder.com](https://www.pwabuilder.com) → enter URL → download Android package
+3. Copy the SHA-256 cert fingerprint from PWABuilder
+4. Update `assetlinks.json` with `package_name` and `sha256_cert_fingerprints`
+5. Re-deploy, then upload `.aab` to Google Play Console
+
+---
+
+## 7. Security Model
+
+### 7.1 Authentication Flow
 
 ```
 POST /api/auth/login
@@ -554,7 +653,7 @@ requireAuth middleware
 
 Session is destroyed on `POST /api/auth/logout`.
 
-### 6.2 Role-Based Access Control
+### 7.2 Role-Based Access Control
 
 Three roles: **admin**, **operator**, **user**
 
@@ -579,7 +678,7 @@ Three roles: **admin**, **operator**, **user**
 **Frontend enforcement:** `ProtectedRoute adminOnly` prop hides admin pages.  
 **Backend enforcement:** `requireRole("admin")` middleware on admin routes.
 
-### 6.3 Data Isolation (Multi-User)
+### 7.3 Data Isolation (Multi-User)
 
 The `getUserFilter(req)` function is used in every query that touches user-owned data:
 
@@ -597,7 +696,7 @@ This pattern is applied in:
 
 Admin users see **all data across all users** in every query.
 
-### 6.4 IDOR Protection
+### 7.4 IDOR Protection
 
 On any route that operates on a specific record by ID, the server:
 1. Fetches the record from DB
@@ -615,7 +714,7 @@ Protected endpoints:
 
 ---
 
-## 7. Data Flow — End to End
+## 8. Data Flow — End to End
 
 ```
 User Action in Browser
@@ -651,9 +750,9 @@ User sees new entry in the table
 
 ---
 
-## 8. Business Logic Details
+## 9. Business Logic Details
 
-### 8.1 Ledger & Running Balance
+### 9.1 Ledger & Running Balance
 
 The `balance` column stores a **snapshot** of the user's total balance at the time of entry creation:
 
@@ -670,7 +769,7 @@ This means:
 - The `GET /ledger/balance` endpoint always computes live from SUM, not from the stored snapshot
 - Admin's balance = sum of all users' entries (they see everything)
 
-### 8.2 AePS (Aadhaar Payment System)
+### 9.2 AePS (Aadhaar Payment System)
 
 AePS tracks a physical cash float (not linked to the main ledger):
 
@@ -683,7 +782,7 @@ AePS tracks a physical cash float (not linked to the main ledger):
 4. Sessions are shared (not user-scoped) — only one session per date for the whole CSC
 5. AePS data appears in reports: daily, monthly, and a dedicated AePS report tab
 
-### 8.3 Reports & Export
+### 9.3 Reports & Export
 
 **Daily report** (`GET /reports/daily?date=YYYY-MM-DD`):
 - Transaction count, total credits, total debits, net revenue for the day
@@ -701,7 +800,7 @@ AePS tracks a physical cash float (not linked to the main ledger):
 - Sheet 2: AePS sessions (Date, Opening Balance, Withdrawals, Deposits, Transactions, Net Flow)
 - Generated with the `xlsx` (SheetJS) library, served as `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
 
-### 8.4 Notifications
+### 9.4 Notifications
 
 Notifications have two scopes:
 - `userId = NULL` → **system-wide**, shown to every logged-in user
@@ -718,7 +817,7 @@ Auto-created notifications:
 | Backup created | "Backup Created" | success | system-wide |
 | Backup restored | "Backup Restored" | success | system-wide |
 
-### 8.5 Profile & Preferences
+### 9.5 Profile & Preferences
 
 **Profile** — owned by the authenticated user only. No `:id` parameter means IDOR is not possible.
 - Password changes require `currentPassword` (verified against current hash)
@@ -729,7 +828,7 @@ Auto-created notifications:
 
 ---
 
-## 9. OpenAPI Contract-First Design
+## 10. OpenAPI Contract-First Design
 
 The API is defined once in `lib/api-spec/openapi.yaml` (OpenAPI 3.1). This drives:
 
@@ -745,7 +844,7 @@ pnpm --filter @workspace/api-spec run codegen
 
 ---
 
-## 10. Environment & Configuration
+## 11. Environment & Configuration
 
 | Variable | Required | Description |
 |----------|----------|-------------|
@@ -753,6 +852,7 @@ pnpm --filter @workspace/api-spec run codegen
 | `SESSION_SECRET` | Yes (prod) | Used to sign session cookies. Falls back to a hardcoded string in dev only. |
 | `PORT` | No | Port for each service (assigned by Replit). Defaults: api=8080 |
 | `NODE_ENV` | No | `production` enables secure cookies and strict sameSite |
+| `BASE_PATH` | Yes (frontend) | Vite base URL — set to `/` in the workflow |
 
 **Schema changes:**
 ```bash
@@ -780,7 +880,7 @@ EOF
 
 ---
 
-## 11. Default Seed Data
+## 12. Default Seed Data
 
 The seed script (`artifacts/api-server/src/scripts/seed.ts`) populates:
 
@@ -807,13 +907,13 @@ The seed script (`artifacts/api-server/src/scripts/seed.ts`) populates:
 
 ---
 
-## 12. Known Gotchas & Conventions
+## 13. Known Gotchas & Conventions
 
 | Rule | Details |
 |------|---------|
 | **Numeric columns return strings** | Drizzle returns `numeric` columns as strings. Always `parseFloat(value ?? "0")` before returning from routes. |
 | **Balance is a snapshot, not live** | The `balance` column in `ledger` is set at insert time. `GET /ledger/balance` computes live from SUM. They can diverge if entries are edited/deleted. |
-| **drizzle-kit push empties tables** | After any schema push, query `SELECT COUNT(*) FROM users`. If empty, re-seed. See §10. |
+| **drizzle-kit push empties tables** | After any schema push, query `SELECT COUNT(*) FROM users`. If empty, re-seed. See §11. |
 | **tsx not available in scripts** | Use `node --input-type=module` with direct pg + bcryptjs require paths for ad-hoc DB scripts. |
 | **notifications returns array, not page** | Unlike ledger and audit-logs, `GET /notifications` returns a plain array (not `{ items, total }`). Frontend uses `.length` for the unread count badge. |
 | **Admin user filter = undefined** | `getUserFilter` returns `undefined` for admins (no WHERE clause), so Drizzle does a full table scan. Non-admins get `eq(ledgerTable.createdBy, userId)`. |
@@ -822,3 +922,6 @@ The seed script (`artifacts/api-server/src/scripts/seed.ts`) populates:
 | **AePS sessions are not user-scoped** | AePS daily sessions belong to the entire CSC, not individual users. Any authenticated user can open/view/add to a session. |
 | **PATCH on ledger does not recompute balance** | Editing credit or debit on an entry updates those fields but not `balance`. The live `GET /ledger/balance` (which uses SUM) stays correct; only the snapshot column drifts. |
 | **Session cookie** | Cookie name defaults to `connect.sid`. httpOnly, 24h expiry. In dev it is `sameSite: lax` to allow cross-origin dev proxy. |
+| **PWA service worker in dev** | SW is enabled in development (`devOptions.enabled: true`). If assets appear stale, open DevTools → Application → Service Workers → "Update on reload", or clear site data. |
+| **PWA manifest changes need restart** | Vite does not hot-reload `vite.config.ts`. After editing the VitePWA manifest config, restart the Frontend workflow. |
+| **TWA assetlinks.json** | Update `public/.well-known/assetlinks.json` with your Android `package_name` and `sha256_cert_fingerprints` before submitting to Google Play. The placeholder values will fail TWA verification. |
