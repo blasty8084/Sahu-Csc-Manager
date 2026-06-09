@@ -37,8 +37,13 @@ A full-stack CSC (Common Service Center) business management platform for tracki
 - `artifacts/api-server/src/routes/` — Express route handlers (auth, ledger, services, users, notifications, audit, settings, reports)
 - `artifacts/api-server/src/lib/` — auth helpers (sessions, bcrypt, audit log), notify helper
 - `artifacts/sahu-csc/src/pages/` — React pages for all sections
-- `artifacts/sahu-csc/src/components/` — layout, theme-provider, pwa-install-banner, shadcn UI components
-- `artifacts/sahu-csc/src/hooks/use-pwa.ts` — install prompt + offline detection hook
+- `artifacts/sahu-csc/src/components/` — layout, theme-provider, pwa-install-banner, sync-status-bar, shadcn UI components
+- `artifacts/sahu-csc/src/hooks/use-pwa.ts` — install prompt hook (uses use-network-status)
+- `artifacts/sahu-csc/src/hooks/use-network-status.ts` — online/offline/slow network detection
+- `artifacts/sahu-csc/src/hooks/use-sync.ts` — sync queue state (pending count, last sync, status)
+- `artifacts/sahu-csc/src/lib/offline-db.ts` — IndexedDB wrapper (pending_ledger + cache_store)
+- `artifacts/sahu-csc/src/lib/sync-engine.ts` — offline queue processor; auto-syncs on `window.online`
+- `artifacts/sahu-csc/src/components/sync-status-bar.tsx` — global 🟢/🟡/🔴 sync status indicator
 - `artifacts/sahu-csc/public/.well-known/assetlinks.json` — Digital Asset Links for TWA (Android)
 - `artifacts/sahu-csc/public/pwa-*.png` — PWA icons (96, 144, 192, 512px) + apple-touch-icon
 
@@ -50,8 +55,11 @@ A full-stack CSC (Common Service Center) business management platform for tracki
 - Running balance computed at insert time from sum of all previous entries
 - Admin-only pages enforced at both route level (requireRole middleware) and frontend (ProtectedRoute with adminOnly prop)
 - Notifications system: auto-created on login events, failed logins, backups, etc.
-- PWA uses Workbox NetworkFirst for API calls (10s timeout), CacheFirst for static assets/images/fonts
+- PWA Workbox strategies: NetworkOnly for auth, StaleWhileRevalidate for dashboard/reports/settings/profile, NetworkFirst for ledger/services, CacheFirst for assets/fonts
+- Offline queue: new ledger entries saved to IndexedDB `pending_ledger` store when offline; sync engine auto-flushes on `window.online` event
+- Dashboard and ledger cache data in IndexedDB (`cache_store`) for offline read access; expire in 30 min
 - TWA digital asset links served statically from `public/.well-known/assetlinks.json`
+- Enhanced manifest: `display_override`, 4 app shortcuts (Dashboard, Ledger, Reports, Settings), `screenshots`, `id`, `lang`
 
 ## Product
 

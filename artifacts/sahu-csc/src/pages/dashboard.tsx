@@ -4,16 +4,37 @@ import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useNetworkStatus } from "@/hooks/use-network-status";
+import { useEffect, useState } from "react";
+import { setCacheItem, getCacheItem } from "@/lib/offline-db";
 import {
   Wallet, TrendingUp, TrendingDown, Activity,
   Plus, Fingerprint, Briefcase, BarChart2,
-  ChevronRight, ArrowUpRight, ArrowDownLeft,
+  ChevronRight, WifiOff,
 } from "lucide-react";
+
+const DASHBOARD_CACHE_KEY = "dashboard-data";
 
 // ─── Mobile Dashboard ──────────────────────────────────────────────────────────
 function MobileDashboard() {
   const { user } = useAuth();
-  const { data, isLoading } = useGetDashboard();
+  const { isOffline } = useNetworkStatus();
+  const { data: liveData, isLoading } = useGetDashboard();
+  const [cachedData, setCachedData] = useState<any>(null);
+
+  useEffect(() => {
+    if (liveData) {
+      setCacheItem(DASHBOARD_CACHE_KEY, liveData, 30 * 60 * 1000).catch(() => {});
+    }
+  }, [liveData]);
+
+  useEffect(() => {
+    if (isOffline) {
+      getCacheItem<any>(DASHBOARD_CACHE_KEY).then((d) => { if (d) setCachedData(d); }).catch(() => {});
+    }
+  }, [isOffline]);
+
+  const data = liveData ?? cachedData;
 
   const today = new Date().toLocaleDateString("en-IN", {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
@@ -70,6 +91,13 @@ function MobileDashboard() {
 
   return (
     <div className="space-y-5">
+      {/* Offline indicator */}
+      {isOffline && cachedData && (
+        <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/20 rounded-xl px-3 py-2">
+          <WifiOff size={13} className="text-destructive flex-shrink-0" />
+          <p className="text-xs text-destructive font-medium">Offline — showing cached data</p>
+        </div>
+      )}
       {/* Greeting */}
       <div>
         <p className="text-muted-foreground text-xs">{today}</p>
@@ -170,7 +198,23 @@ function MobileDashboard() {
 
 // ─── Desktop Dashboard ─────────────────────────────────────────────────────────
 function DesktopDashboard() {
-  const { data, isLoading } = useGetDashboard();
+  const { isOffline } = useNetworkStatus();
+  const { data: liveData, isLoading } = useGetDashboard();
+  const [cachedData, setCachedData] = useState<any>(null);
+
+  useEffect(() => {
+    if (liveData) {
+      setCacheItem(DASHBOARD_CACHE_KEY, liveData, 30 * 60 * 1000).catch(() => {});
+    }
+  }, [liveData]);
+
+  useEffect(() => {
+    if (isOffline) {
+      getCacheItem<any>(DASHBOARD_CACHE_KEY).then((d) => { if (d) setCachedData(d); }).catch(() => {});
+    }
+  }, [isOffline]);
+
+  const data = liveData ?? cachedData;
 
   const statCards = [
     {
@@ -227,6 +271,15 @@ function DesktopDashboard() {
 
   return (
     <div className="space-y-5">
+      {/* Offline indicator */}
+      {isOffline && (
+        <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/20 rounded-xl px-4 py-2">
+          <WifiOff size={13} className="text-destructive flex-shrink-0" />
+          <p className="text-xs text-destructive font-medium">
+            Offline — {cachedData ? "showing cached data" : "no cached data available"}
+          </p>
+        </div>
+      )}
       {/* 4 Stat Cards */}
       <div className="grid grid-cols-4 gap-4">
         {statCards.map((s) => (

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   useListLedgerEntries, useCreateLedgerEntry, useUpdateLedgerEntry, useDeleteLedgerEntry,
@@ -16,8 +16,11 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Plus, Pencil, Trash2, Download, Filter, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { useNetworkStatus } from "@/hooks/use-network-status";
+import { Plus, Pencil, Trash2, Download, Filter, X, ChevronLeft, ChevronRight, Clock, WifiOff } from "lucide-react";
 import { useForm } from "react-hook-form";
+import { addPendingEntry, getAllPendingEntries, type PendingLedgerEntry } from "@/lib/offline-db";
+import { syncEngine } from "@/lib/sync-engine";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -34,6 +37,8 @@ export default function Ledger() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const isMobile = useIsMobile();
+  const { isOffline } = useNetworkStatus();
+  const [pendingEntries, setPendingEntries] = useState<PendingLedgerEntry[]>([]);
   const [page, setPage] = useState(1);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -44,6 +49,24 @@ export default function Ledger() {
   const [editEntry, setEditEntry] = useState<any>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [showDeleteAll, setShowDeleteAll] = useState(false);
+
+  const refreshPending = async () => {
+    try {
+      const entries = await getAllPendingEntries();
+      setPendingEntries(entries.sort((a, b) => b.createdAt - a.createdAt));
+    } catch {}
+  };
+
+  useEffect(() => {
+    refreshPending();
+    const handler = () => refreshPending();
+    window.addEventListener("sahu-sync-complete", handler);
+    window.addEventListener("online", handler);
+    return () => {
+      window.removeEventListener("sahu-sync-complete", handler);
+      window.removeEventListener("online", handler);
+    };
+  }, []);
 
   const params = {
     page,
@@ -102,12 +125,34 @@ export default function Ledger() {
       if (editEntry) {
         await updateMut.mutateAsync({ id: editEntry.id, data: values });
         toast({ title: "Entry updated" });
+        setShowForm(false);
+        invalidate();
+      } else if (isOffline) {
+        const pending: PendingLedgerEntry = {
+          id: `local-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          date: values.date,
+          customerName: values.customerName,
+          serviceType: values.serviceType,
+          credit: Number(values.credit) || 0,
+          debit: Number(values.debit) || 0,
+          description: values.description || "",
+          createdAt: Date.now(),
+          retryCount: 0,
+        };
+        await addPendingEntry(pending);
+        await syncEngine.markPendingAdded();
+        await refreshPending();
+        setShowForm(false);
+        toast({
+          title: "Saved offline",
+          description: "Will sync automatically when connected",
+        });
       } else {
         await createMut.mutateAsync({ data: values });
         toast({ title: "Entry created" });
+        setShowForm(false);
+        invalidate();
       }
-      setShowForm(false);
-      invalidate();
     } catch {
       toast({ title: "Failed to save entry", variant: "destructive" });
     }
@@ -178,6 +223,49 @@ export default function Ledger() {
             </div>
           ))}
         </div>
+
+        {/* Offline Pending Entries */}
+        {pendingEntries.length > 0 && (
+          <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-xl p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Clock size={14} className="text-amber-600 dark:text-amber-400 flex-shrink-0" />
+              <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
+                {pendingEntries.length} offline {pendingEntries.length === 1 ? "entry" : "entries"} — will sync when connected
+              </p>
+              {isOffline && (
+                <span className="ml-auto flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-500">
+                  <WifiOff size={11} /> Offline
+                </span>
+              )}
+            </div>
+            <div className="space-y-2">
+              {pendingEntries.slice(0, 5).map((entry) => (
+                <div key={entry.id} className="flex items-center gap-3 bg-white dark:bg-amber-950/30 rounded-lg px-3 py-2 border border-amber-100 dark:border-amber-800/30">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-foreground truncate">{entry.customerName || "—"}</p>
+                    <p className="text-[10px] text-muted-foreground truncate">{entry.serviceType} · {entry.date}</p>
+                  </div>
+                  <div className="flex-shrink-0 text-right">
+                    {entry.credit > 0 && (
+                      <p className="text-xs font-bold text-emerald-600">+₹{entry.credit.toLocaleString("en-IN")}</p>
+                    )}
+                    {entry.debit > 0 && (
+                      <p className="text-xs font-bold text-rose-500">-₹{entry.debit.toLocaleString("en-IN")}</p>
+                    )}
+                  </div>
+                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-amber-300 text-amber-600 dark:text-amber-400 flex-shrink-0">
+                    Pending
+                  </Badge>
+                </div>
+              ))}
+              {pendingEntries.length > 5 && (
+                <p className="text-[10px] text-amber-600 dark:text-amber-400 text-center">
+                  +{pendingEntries.length - 5} more
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Mobile Filters (collapsible) */}
         {showFilters && (

@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { AppLogo } from "@/components/app-logo";
 import { PWAInstallBanner } from "@/components/pwa-install-banner";
+import { SyncStatusBar, SyncDot } from "@/components/sync-status-bar";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -198,6 +199,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <SyncDot />
             <Link href="/notifications">
               <Button variant="outline" size="sm" className="gap-2 relative bg-background hover:bg-muted">
                 <Bell size={15} />
@@ -220,7 +222,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        {/* PWA install / offline banner */}
+        {/* Sync status + PWA install banners */}
+        <SyncStatusBar />
         <PWAInstallBanner />
 
         {/* Page Content */}
