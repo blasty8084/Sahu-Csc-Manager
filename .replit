@@ -14,14 +14,11 @@ runButton = "Project"
 [[workflows.workflow]]
 name = "Seed Database"
 mode = "sequential"
-author = "agent"
+author = 60440534
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "PORT=8080 NODE_ENV=development npx tsx artifacts/api-server/src/scripts/seed.ts"
-
-[workflows.workflow.metadata]
-outputType = "console"
 
 [[workflows.workflow]]
 name = "Project"
@@ -30,96 +27,10 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Seed Database"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "API Server"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Full Setup"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Install"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Frontend"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "SAHU CSC"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Build"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Codegen"
+args = "Start application"
 
 [[workflows.workflow]]
-name = "Database Setup"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "PORT=8080 NODE_ENV=development pnpm --filter @workspace/db run push"
-
-[workflows.workflow.metadata]
-outputType = "console"
-
-[[workflows.workflow]]
-name = "API Server"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "PORT=8080 pnpm --filter @workspace/api-server run dev"
-waitForPort = 8080
-
-[workflows.workflow.metadata]
-outputType = "console"
-
-[[workflows.workflow]]
-name = "Full Setup"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "bash scripts/full-setup.sh"
-waitForPort = 5000
-
-[workflows.workflow.metadata]
-outputType = "webview"
-
-[[workflows.workflow]]
-name = "Install"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "pnpm install && pnpm run typecheck:libs"
-
-[workflows.workflow.metadata]
-outputType = "console"
-
-[[workflows.workflow]]
-name = "Frontend"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "pnpm run typecheck:libs && pnpm --filter @workspace/sahu-csc run dev"
-waitForPort = 5000
-
-[workflows.workflow.metadata]
-outputType = "webview"
-
-[[workflows.workflow]]
-name = "SAHU CSC"
+name = "Start application"
 author = "agent"
 
 [[workflows.workflow.tasks]]
@@ -129,28 +40,6 @@ waitForPort = 5000
 
 [workflows.workflow.metadata]
 outputType = "webview"
-
-[[workflows.workflow]]
-name = "Build"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "pnpm install && pnpm run typecheck:libs && pnpm run build"
-
-[workflows.workflow.metadata]
-outputType = "console"
-
-[[workflows.workflow]]
-name = "Codegen"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "pnpm run typecheck:libs && pnpm --filter @workspace/api-spec run codegen"
-
-[workflows.workflow.metadata]
-outputType = "console"
 
 [agent]
 stack = "BEST_EFFORT_FALLBACK"
@@ -167,6 +56,18 @@ externalPort = 80
 [[ports]]
 localPort = 8080
 externalPort = 8080
+
+[[ports]]
+localPort = 8081
+externalPort = 8081
+
+[[ports]]
+localPort = 8082
+externalPort = 3001
+
+[[ports]]
+localPort = 21700
+externalPort = 3000
 
 [nix]
 channel = "stable-25_05"
