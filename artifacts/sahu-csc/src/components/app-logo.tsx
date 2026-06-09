@@ -9,7 +9,7 @@ export function AppLogo({ size = "sm", className = "" }: AppLogoProps) {
   const [imgError, setImgError] = useState(false);
   const logoUrl = `${import.meta.env.BASE_URL}logo.png`;
 
-  const dim = size === "lg" ? "w-16 h-16 rounded-xl" : "w-9 h-9 rounded-xl";
+  const dim = size === "lg" ? "w-16 h-16 rounded-full" : "w-9 h-9 rounded-full";
   const textSize = size === "lg" ? "text-2xl" : "text-base";
 
   if (!imgError) {
@@ -39,7 +39,7 @@ export function LoginLogo() {
       <img
         src={logoUrl}
         alt="SAHU CSC Logo"
-        className="mx-auto w-20 h-20 rounded-xl object-cover mb-4 shadow-md"
+        className="mx-auto w-20 h-20 rounded-full object-cover mb-4 shadow-md"
         onError={() => setImgError(true)}
       />
     );

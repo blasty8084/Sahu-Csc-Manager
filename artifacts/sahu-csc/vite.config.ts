@@ -144,6 +144,24 @@ export default defineConfig({
           },
         ],
         prefer_related_applications: false,
+        share_target: {
+          action: "/share-target",
+          method: "GET",
+          params: {
+            title: "title",
+            text: "text",
+            url: "url",
+          },
+        },
+        protocol_handlers: [
+          {
+            protocol: "web+sahucsc",
+            url: "/?action=%s",
+          },
+        ],
+        edge_side_panel: {
+          preferred_width: 400,
+        },
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,webp}"],
@@ -299,10 +317,7 @@ export default defineConfig({
               root: path.resolve(import.meta.dirname, ".."),
             }),
           ),
-          await import("@replit/vite-plugin-dev-banner").then((m) =>
-            m.devBanner(),
-          ),
-        ]
+          ]
       : []),
   ],
   resolve: {

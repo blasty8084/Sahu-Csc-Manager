@@ -23,6 +23,26 @@ import Backups from "@/pages/backups";
 import AePS from "@/pages/aeps";
 import Profile from "@/pages/profile";
 import { Redirect } from "wouter";
+import { useEffect } from "react";
+import { useListNotifications } from "@workspace/api-client-react";
+import { updateAppBadge } from "@/lib/pwa-badge";
+
+function BadgeUpdater() {
+  const { data } = useListNotifications({ unreadOnly: true });
+  const count = Array.isArray(data) ? data.length : 0;
+  useEffect(() => { updateAppBadge(count); }, [count]);
+  return null;
+}
+
+function ShareTargetHandler() {
+  const [, setLocation] = useLocation();
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const text = params.get("text") || params.get("title") || "";
+    setLocation(text ? `/ledger?description=${encodeURIComponent(text)}` : "/ledger");
+  }, []);
+  return null;
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -86,6 +106,7 @@ function Router() {
       <Route path="/audit-logs">{() => <ProtectedRoute component={AuditLogs} adminOnly />}</Route>
       <Route path="/settings">{() => <ProtectedRoute component={Settings} adminOnly />}</Route>
       <Route path="/backups">{() => <ProtectedRoute component={Backups} adminOnly />}</Route>
+      <Route path="/share-target" component={ShareTargetHandler} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -98,6 +119,7 @@ function App() {
         <ThemeProvider defaultTheme="light" storageKey="sahu-csc-theme">
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
             <AuthProvider>
+              <BadgeUpdater />
               <Router />
             </AuthProvider>
           </WouterRouter>
