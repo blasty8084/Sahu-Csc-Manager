@@ -1,10 +1,14 @@
-import React from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, QueryCache } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { ThemeProvider } from "@/components/theme-provider";
+import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { useIdleTimer } from "@/hooks/use-idle-timer";
 import NotFound from "@/pages/not-found";
 
 import Login from "@/pages/login";
@@ -24,10 +28,28 @@ import AePS from "@/pages/aeps";
 import Profile from "@/pages/profile";
 import Offline from "@/pages/offline";
 import { Redirect } from "wouter";
-import { useEffect } from "react";
 import { useListNotifications } from "@workspace/api-client-react";
 import { updateAppBadge } from "@/lib/pwa-badge";
 
+// ─── QueryClient — detects SESSION_REPLACED from any failed request ───────────
+const queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError: (error: any) => {
+      const msg: string = error?.message ?? String(error ?? "");
+      if (msg.includes("SESSION_REPLACED")) {
+        window.dispatchEvent(new CustomEvent("sahu-session-replaced"));
+      }
+    },
+  }),
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 30_000,
+    },
+  },
+});
+
+// ─── Badge ────────────────────────────────────────────────────────────────────
 function BadgeUpdater() {
   const { data } = useListNotifications({ unreadOnly: true });
   const count = Array.isArray(data) ? data.length : 0;
@@ -35,6 +57,7 @@ function BadgeUpdater() {
   return null;
 }
 
+// ─── Share target ─────────────────────────────────────────────────────────────
 function ShareTargetHandler() {
   const [, setLocation] = useLocation();
   useEffect(() => {
@@ -45,15 +68,89 @@ function ShareTargetHandler() {
   return null;
 }
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      staleTime: 30_000,
-    },
-  },
-});
+// ─── Idle / session-replaced manager (only rendered when logged in) ──────────
+function SessionManager() {
+  const { user, logout } = useAuth();
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const [showWarning, setShowWarning] = useState(false);
+  const [displaySec, setDisplaySec] = useState(120);
 
+  const handleIdle = useCallback(async () => {
+    if (!user) return;
+    setShowWarning(false);
+    try { await logout(); } catch { /* ignore */ }
+    setLocation("/login");
+    toast({ title: "Logged out", description: "You were logged out after 30 minutes of inactivity." });
+  }, [user, logout, setLocation, toast]);
+
+  const { isWarning, remaining, resetTimer } = useIdleTimer(
+    30 * 60 * 1000,
+    2 * 60 * 1000,
+    user ? handleIdle : undefined,
+  );
+
+  useEffect(() => { setShowWarning(user ? isWarning : false); }, [isWarning, user]);
+  useEffect(() => { setDisplaySec(Math.max(0, Math.ceil(remaining / 1000))); }, [remaining]);
+
+  // SESSION_REPLACED: another device logged in
+  useEffect(() => {
+    const handler = () => {
+      queryClient.clear();
+      setLocation("/login");
+      toast({
+        title: "Signed in on another device",
+        description: "Your account was accessed from another device. Please log in again.",
+        variant: "destructive",
+      });
+    };
+    window.addEventListener("sahu-session-replaced", handler);
+    return () => window.removeEventListener("sahu-session-replaced", handler);
+  }, [setLocation, toast]);
+
+  const minutes = Math.floor(displaySec / 60);
+  const seconds = displaySec % 60;
+
+  if (!user) return null;
+
+  return (
+    <AlertDialog open={showWarning}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>⏱ Session About to Expire</AlertDialogTitle>
+          <AlertDialogDescription className="space-y-1">
+            <span>You've been inactive. You'll be logged out automatically in</span>
+            <span className="block text-2xl font-bold text-foreground tabular-nums text-center py-2">
+              {minutes}:{String(seconds).padStart(2, "0")}
+            </span>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={async () => {
+              setShowWarning(false);
+              try { await logout(); } catch { /* ignore */ }
+              setLocation("/login");
+            }}
+          >
+            Log Out Now
+          </Button>
+          <AlertDialogAction
+            onClick={() => {
+              resetTimer();
+              setShowWarning(false);
+            }}
+          >
+            Stay Logged In
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+// ─── Route protection ─────────────────────────────────────────────────────────
 function ProtectedRoute({ component: Component, adminOnly = false, ...rest }: any) {
   const { user, isLoading } = useAuth();
   const [location, setLocation] = useLocation();
@@ -88,6 +185,7 @@ function ProtectedRoute({ component: Component, adminOnly = false, ...rest }: an
   return <Component {...rest} />;
 }
 
+// ─── Router ───────────────────────────────────────────────────────────────────
 function Router() {
   return (
     <Switch>
@@ -115,6 +213,7 @@ function Router() {
   );
 }
 
+// ─── App root ─────────────────────────────────────────────────────────────────
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -123,6 +222,7 @@ function App() {
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
             <AuthProvider>
               <BadgeUpdater />
+              <SessionManager />
               <Router />
             </AuthProvider>
           </WouterRouter>

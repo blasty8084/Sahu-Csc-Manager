@@ -4,6 +4,7 @@ import { eq, or } from "drizzle-orm";
 import { LoginBody } from "@workspace/api-zod";
 import { hashPassword, comparePassword, requireAuth, auditLog, getClientIp } from "../lib/auth";
 import { createNotification } from "../lib/notify";
+import { randomUUID } from "crypto";
 
 const router: IRouter = Router();
 
@@ -60,8 +61,17 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     return;
   }
 
+  // Generate a new session token — invalidates any existing session on another device
+  const sessionToken = randomUUID();
+
+  await db
+    .update(usersTable)
+    .set({ activeSessionToken: sessionToken })
+    .where(eq(usersTable.id, user.id));
+
   req.session.userId = user.id;
   req.session.userRole = user.role;
+  req.session.sessionToken = sessionToken;
 
   await auditLog(user.id, "login", `User logged in`, getClientIp(req));
   await createNotification(
@@ -76,6 +86,13 @@ router.post("/auth/login", async (req, res): Promise<void> => {
 
 router.post("/auth/logout", requireAuth, async (req, res): Promise<void> => {
   const userId = req.session.userId!;
+
+  // Clear the active session token so no device can reuse this session
+  await db
+    .update(usersTable)
+    .set({ activeSessionToken: null })
+    .where(eq(usersTable.id, userId));
+
   await auditLog(userId, "logout", `User logged out`, getClientIp(req));
   req.session.destroy(() => {});
   res.json({ message: "Logged out successfully" });

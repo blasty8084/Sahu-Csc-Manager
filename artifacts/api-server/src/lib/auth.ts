@@ -8,6 +8,7 @@ declare module "express-session" {
   interface SessionData {
     userId: number;
     userRole: string;
+    sessionToken: string;
   }
 }
 
@@ -19,11 +20,27 @@ export async function comparePassword(password: string, hash: string): Promise<b
   return bcrypt.compare(password, hash);
 }
 
-export function requireAuth(req: Request, res: Response, next: NextFunction): void {
+export async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
   if (!req.session.userId) {
     res.status(401).json({ error: "Not authenticated" });
     return;
   }
+
+  // Single-device enforcement: if the user has an activeSessionToken set,
+  // the current session MUST carry a matching token.
+  if (req.session.sessionToken) {
+    const [user] = await db
+      .select({ activeSessionToken: usersTable.activeSessionToken })
+      .from(usersTable)
+      .where(eq(usersTable.id, req.session.userId));
+
+    if (user && user.activeSessionToken && user.activeSessionToken !== req.session.sessionToken) {
+      req.session.destroy(() => {});
+      res.status(401).json({ error: "SESSION_REPLACED" });
+      return;
+    }
+  }
+
   next();
 }
 

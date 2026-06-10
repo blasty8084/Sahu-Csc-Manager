@@ -14,6 +14,7 @@ export const usersTable = pgTable("users", {
   profilePicture: text("profile_picture"), // base64 data URL or file path
   bio: text("bio"),
   address: text("address"),
+  activeSessionToken: text("active_session_token"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
