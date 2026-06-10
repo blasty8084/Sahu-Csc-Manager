@@ -6,3 +6,9 @@ id = "Yw9KQCq41C0FGuhWK-Qdl"
 uri = "file://ARCHITECTURE.md"
 type = "text"
 title = "SAHU CSC — Complete Architecture & Logic Doc"
+
+[[outputs]]
+id = "tJs7cZSIJbiA83ByZixLn"
+uri = "file://CHANGELOG.md"
+type = "text"
+title = "SAHU CSC — Complete Change Document"

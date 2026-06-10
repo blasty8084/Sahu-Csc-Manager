@@ -1,0 +1,678 @@
+# SAHU CSC — Change Log & Feature Documentation
+
+> Full record of every feature, change, and upgrade applied to the SAHU CSC platform.
+> Use this file as a reference for future development, onboarding, and audits.
+
+---
+
+## Table of Contents
+
+1. [Project Foundation](#1-project-foundation)
+2. [Authentication & User Management](#2-authentication--user-management)
+3. [Ledger System](#3-ledger-system)
+4. [AePS (Aadhaar Payment System)](#4-aeps-aadhaar-payment-system)
+5. [Services Catalog](#5-services-catalog)
+6. [Reports & Dashboard](#6-reports--dashboard)
+7. [Notifications System](#7-notifications-system)
+8. [Audit Logs](#8-audit-logs)
+9. [Settings & Backups](#9-settings--backups)
+10. [PWA — Basic Implementation](#10-pwa--basic-implementation)
+11. [PWA — Advanced Upgrade (Offline-First)](#11-pwa--advanced-upgrade-offline-first)
+12. [TWA — Android App Support](#12-twa--android-app-support)
+13. [Push Notification Infrastructure](#13-push-notification-infrastructure)
+14. [Database Schema Changes](#14-database-schema-changes)
+15. [API Routes Added](#15-api-routes-added)
+16. [File Structure Summary](#16-file-structure-summary)
+17. [Environment Variables](#17-environment-variables)
+18. [Known Gotchas & Conventions](#18-known-gotchas--conventions)
+19. [Future Work Items](#19-future-work-items)
+
+---
+
+## 1. Project Foundation
+
+### Stack
+| Layer | Technology |
+|---|---|
+| Monorepo | pnpm workspaces |
+| Runtime | Node.js 24, TypeScript 5.9 |
+| Frontend | React 19, Vite 7, Tailwind CSS v4, shadcn/ui |
+| Backend | Express 5, express-session, helmet, rate-limit |
+| Database | PostgreSQL, Drizzle ORM |
+| Validation | Zod (v4), drizzle-zod |
+| API contract | OpenAPI 3.1 YAML → Orval codegen → typed React Query hooks |
+| Build | esbuild (API), Vite (frontend) |
+
+### Monorepo Packages
+```
+workspace/
+├── artifacts/api-server/        Express 5 backend (PORT 8080, /api)
+├── artifacts/sahu-csc/          React + Vite frontend (/)
+├── artifacts/mockup-sandbox/    Canvas component preview server
+├── lib/db/                      @workspace/db — Drizzle ORM + all schema tables
+├── lib/api-spec/                @workspace/api-spec — openapi.yaml (source of truth)
+└── lib/api-client-react/        @workspace/api-client-react — Orval-generated hooks
+```
+
+### Theme
+- **Primary (Navy)**: `#0b2c60` — HSL 217 79% 21%
+- **Accent (Saffron)**: `#f97415` — HSL 25 95% 53%
+- Light and Dark mode both supported
+
+### Default Login Credentials
+| Username | Password | Role |
+|---|---|---|
+| `admin` | `admin123` | admin |
+| `operator` | `operator123` | operator |
+
+---
+
+## 2. Authentication & User Management
+
+### Session-Based Auth
+- Login accepts **username OR email OR mobile** as identifier
+- bcrypt with 12 salt rounds
+- `express-session` with server-side storage (24-hour TTL)
+- Session cookie: `httpOnly`, `secure` in production, `sameSite: strict` in production
+
+### Password Reset Flow
+- `POST /api/auth/forgot-password` — generates a token, creates a notification with a link
+- `POST /api/auth/reset-password` — validates token, sets new password
+
+### Middleware
+- `requireAuth` — checks `req.session.userId`; returns 401 if missing
+- `requireRole(...roles)` — re-fetches user from DB, checks role; returns 403 if insufficient
+
+### User Roles
+| Role | Access |
+|---|---|
+| `admin` | All pages, all users' data, admin-only routes |
+| `operator` | All non-admin pages, own data only |
+| `user` | Same as operator |
+
+### Rate Limiting
+- Global: 500 requests / 15 min
+- Login endpoint: 20 requests / 15 min (brute-force protection)
+
+### User Management (Admin only)
+- Create, update, delete users
+- Toggle `isActive` to lock accounts without deleting
+- Admin cannot delete their own account
+
+---
+
+## 3. Ledger System
+
+### Core Features
+- Per-user transaction ledger (credit / debit entries)
+- **Running balance** computed at insert time from sum of all previous entries for that user
+- Paginated list (15 per page) with filters: date range, customer name, service type
+- Excel export (`/api/reports/export`) — downloads `.xlsx` with two sheets
+
+### Data Model (`ledger` table)
+| Column | Type | Notes |
+|---|---|---|
+| `date` | text | ISO `YYYY-MM-DD` |
+| `customer_name` | text | |
+| `service_type` | text | Must match a service name |
+| `credit` | numeric(12,2) | Income |
+| `debit` | numeric(12,2) | Expense |
+| `balance` | numeric(12,2) | Snapshot of running balance at insert |
+| `created_by` | integer | FK → users.id |
+
+### API Endpoints
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/ledger` | Paginated list (user-scoped) |
+| POST | `/api/ledger` | Create entry — auto-computes balance |
+| PATCH | `/api/ledger/:id` | Update (IDOR check for non-admins) |
+| DELETE | `/api/ledger/:id` | Delete (IDOR check for non-admins) |
+| DELETE | `/api/ledger/all` | Admin: wipe all entries |
+| GET | `/api/ledger/balance` | `{ balance, totalCredits, totalDebits }` |
+| GET | `/api/ledger/summary` | Totals for period: today/yesterday/week/month |
+
+### Offline Ledger (added in PWA upgrade)
+- New entries created while offline are stored in **IndexedDB** (`pending_ledger` store)
+- Shown as an amber "Pending" card in the ledger list with the full entry details
+- Automatically synced to the server when connectivity returns
+- Up to **3 retry attempts** per entry before marking as a sync error
+
+---
+
+## 4. AePS (Aadhaar Payment System)
+
+### Purpose
+Track daily cash float for AePS (Aadhaar Enabled Payment System) operations — the physical cash managed at the CSC counter.
+
+### Model
+- `aeps_daily` — one session per calendar day (`opening_balance`, `notes`)
+- `aeps_transactions` — individual withdrawals / deposits against a daily session
+
+### Running Balance
+Each transaction includes a per-transaction running balance computed in the API response (`GET /api/aeps/session`).
+
+### API Endpoints
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/aeps/session?date=` | Session + transactions + running balances |
+| POST | `/api/aeps/session` | Create or update day session |
+| POST | `/api/aeps/transaction` | Add withdrawal or deposit |
+| PATCH | `/api/aeps/transaction/:id` | Edit transaction |
+| DELETE | `/api/aeps/transaction/:id` | Delete transaction |
+
+---
+
+## 5. Services Catalog
+
+### Features
+- 22 pre-seeded CSC services across 5 categories
+- Admin can create, update, delete, and toggle services active/inactive
+- Service names appear in ledger dropdowns
+
+### Categories
+1. Government ID (Aadhaar, PAN, Voter ID, Passport, Driving Licence)
+2. Certificates (Birth, Death, Income, Caste, Residence)
+3. Insurance (Pradhan Mantri Jeevan Jyoti, Suraksha, Fasal Bima)
+4. Utility Bills (Electricity, Water, Gas LPG, Mobile Recharge)
+5. Schemes (PM Kisan, NREGA, Scholarships, Banking Correspondent)
+
+---
+
+## 6. Reports & Dashboard
+
+### Dashboard
+- Current running balance, today's credits/debits/transactions, monthly net profit
+- 5 most recent ledger entries
+- Top 5 services by revenue (this month)
+- Weekly overview bar chart (income vs expense)
+- **Offline**: data cached in IndexedDB for 30 minutes; served from cache when offline
+
+### Reports
+| Type | Endpoint | Contents |
+|---|---|---|
+| Daily | `/api/reports/daily?date=` | Day summary, top services, AePS stats |
+| Monthly | `/api/reports/monthly?year=&month=` | Monthly totals, daily breakdown, top services |
+| AePS | `/api/reports/aeps?startDate=&endDate=` | AePS-only stats |
+| Service Breakdown | `/api/reports/service-breakdown?startDate=&endDate=` | Per-service count + revenue |
+| Excel Export | `/api/reports/export?startDate=&endDate=` | `.xlsx` with Ledger + AePS sheets |
+
+### Caching Strategy (Workbox — added in PWA upgrade)
+- Dashboard: **StaleWhileRevalidate** (5-min cache)
+- Reports: **StaleWhileRevalidate** (10-min cache)
+- Ledger: **NetworkFirst** (8-second timeout, 5-min cache)
+
+---
+
+## 7. Notifications System
+
+### Auto-Generated Notifications
+The following events automatically create notifications:
+
+| Event | Visibility |
+|---|---|
+| Successful login | Own user |
+| Failed login attempt (wrong password) | Own user |
+| Backup created | System-wide |
+| Backup restored | System-wide |
+
+### API Endpoints
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/notifications?unreadOnly=` | Own + system-wide (max 50, newest first) |
+| PATCH | `/api/notifications/:id/read` | Mark one as read |
+| POST | `/api/notifications/read-all` | Mark all as read |
+| DELETE | `/api/notifications/:id` | Delete one |
+
+---
+
+## 8. Audit Logs
+
+### Logged Actions
+Every mutating action writes an audit row with: `userId`, `action`, `details`, `ipAddress`, `createdAt`.
+
+**Full list of audit codes:**
+```
+login, logout
+ledger.create, ledger.update, ledger.delete, ledger.clear
+aeps.session, aeps.transaction, aeps.edit, aeps.delete
+profile.update, profile.password_change, profile.avatar_update, profile.avatar_delete
+preferences.update
+user.create, user.update, user.delete
+settings.update
+backup.create, backup.restore
+```
+
+### API
+- `GET /api/audit-logs` — admin only, paginated, filterable by userId, action, date range
+
+---
+
+## 9. Settings & Backups
+
+### Global Settings (Admin only)
+Stored as key-value pairs in the `settings` table.
+
+| Key | Default |
+|---|---|
+| `businessName` | SAHU Common Service Center |
+| `businessAddress` | (empty) |
+| `businessMobile` | (empty) |
+| `businessEmail` | (empty) |
+| `language` | en |
+| `theme` | light |
+| `currency` | INR |
+| `autoBackup` | false |
+| `backupFrequencyDays` | 7 |
+
+### Backups
+- `POST /api/backups` — creates a backup record + auto-creates a system notification
+- `POST /api/backups/:id/restore` — marks as restored + notification
+- Actual backup file creation is simulated in dev; wire to `pg_dump` in production
+
+---
+
+## 10. PWA — Basic Implementation
+
+### Initial Setup
+- `vite-plugin-pwa` with Workbox service worker auto-generated (`generateSW` strategy)
+- `registerSW` in `main.tsx` with hourly update checks
+- Dev mode enabled (`devOptions.enabled: true`)
+
+### Manifest Fields (initial)
+```json
+{
+  "name": "SAHU CSC — Common Service Center",
+  "short_name": "SAHU CSC",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#0b2c60",
+  "background_color": "#ffffff"
+}
+```
+
+### Icons Added
+| File | Size | Purpose |
+|---|---|---|
+| `pwa-96x96.png` | 96×96 | Small devices |
+| `pwa-144x144.png` | 144×144 | Splash screen |
+| `pwa-192x192.png` | 192×192 | Standard PWA icon |
+| `pwa-512x512.png` | 512×512 | Large icon + maskable |
+| `apple-touch-icon.png` | 180×180 | iOS home screen |
+
+### Hooks & Components
+- `use-pwa.ts` — `isInstallable`, `isInstalled`, `isOffline`, `promptInstall()`
+- `pwa-install-banner.tsx` — install prompt UI + offline indicator banner
+- `PWAStatusIcon` — small `WifiOff` icon for the header when offline
+
+---
+
+## 11. PWA — Advanced Upgrade (Offline-First)
+
+### New Files Created
+
+#### `src/lib/offline-db.ts`
+Raw IndexedDB wrapper (no external library). Two object stores:
+- **`pending_ledger`** — queued ledger entries created while offline
+- **`cache_store`** — generic key-value cache with TTL expiry
+
+Key functions:
+```ts
+addPendingEntry(entry)          // queue a new entry
+getAllPendingEntries()           // read the full queue
+removePendingEntry(id)          // remove after successful sync
+updatePendingEntryRetry(id, n)  // increment retry count
+getPendingCount()               // how many are queued
+setCacheItem(key, value, ttl)   // write to cache store
+getCacheItem(key)               // read (returns null if expired)
+clearExpiredCache()             // housekeeping on startup
+```
+
+#### `src/lib/sync-engine.ts`
+Singleton class `syncEngine` that manages the offline queue:
+- Auto-triggers `sync()` on `window.online` event
+- Runs on startup if already online
+- POSTs each pending entry to `/api/ledger`, removes on success
+- Max **3 retries** per entry; after that marks as `partial` error
+- Dispatches custom `sahu-sync-complete` event when entries are synced
+- Exposes `subscribe(listener)` for reactive UI updates
+
+Sync status states: `idle` | `syncing` | `partial` | `error`
+
+#### `src/hooks/use-network-status.ts`
+```ts
+useNetworkStatus() → { isOnline, isOffline, isSlow, quality }
+```
+- Listens to `window.online` / `window.offline`
+- Also listens to `navigator.connection` change events
+- Detects slow-2g / 2g as `isSlow: true`
+
+#### `src/hooks/use-sync.ts`
+```ts
+useSync() → { syncStatus, pendingCount, lastSyncTime, syncNow }
+```
+- Subscribes to `syncEngine` state
+- `syncNow()` manually triggers a sync
+
+#### `src/components/sync-status-bar.tsx`
+Global banner shown at top of every page below the header.
+
+| State | Display |
+|---|---|
+| Offline | 🔴 Red bar — "Offline Mode — N pending" |
+| Slow connection | 🟡 Amber bar — "Slow connection detected" |
+| Syncing | 🔵 Blue bar — spinning "Synchronising N entries…" |
+| Partial failure | 🟠 Orange bar — "N entries failed to sync" + Retry button |
+| Pending (online) | 🟡 Amber bar — "N entries queued to sync" + last sync time |
+| All good | _(hidden — no bar shown)_ |
+
+Also exports `<SyncDot>` — a compact icon for the desktop header.
+
+### Modified Files
+
+#### `src/hooks/use-pwa.ts`
+- Now delegates network detection to `useNetworkStatus`
+- Exports `isSlow` in addition to `isOffline`
+
+#### `src/components/pwa-install-banner.tsx`
+- Simplified — only shows install prompt (offline/sync state moved to `SyncStatusBar`)
+- Better icon + description copy
+
+#### `src/components/layout.tsx`
+- `<SyncStatusBar />` added above `<PWAInstallBanner />`
+- `<SyncDot />` added to desktop header (right side, near notifications)
+
+#### `src/main.tsx`
+- Initialises `syncEngine` on startup
+- Triggers `syncEngine.sync()` if already online at load time
+- Logs `sahu-sync-complete` events to console
+
+#### `src/pages/ledger.tsx`
+- Imports `useNetworkStatus`, `addPendingEntry`, `getAllPendingEntries`, `syncEngine`
+- `onSubmit` handler is **offline-aware**:
+  - If **online** → POST to server as normal
+  - If **offline** → save to `pending_ledger` IDB store, toast "Saved offline"
+- Pending entries panel shown above the transaction list (amber card with each entry)
+- Panel auto-refreshes on `online` and `sahu-sync-complete` events
+
+#### `src/pages/dashboard.tsx`
+- On successful API load → saves data to `cache_store` IDB (30-min TTL)
+- If offline → reads from `cache_store` IDB and renders cached data
+- Shows a red offline indicator banner when rendering cached data
+
+### Enhanced Workbox Caching Strategy
+| Route | Strategy | Cache Name | TTL |
+|---|---|---|---|
+| `/api/auth/*` | NetworkOnly | — | — |
+| `/api/dashboard` | StaleWhileRevalidate | api-dashboard | 5 min |
+| `/api/reports/*` | StaleWhileRevalidate | api-reports | 10 min |
+| `/api/settings` | StaleWhileRevalidate | api-settings | 30 min |
+| `/api/profile` | StaleWhileRevalidate | api-profile | 5 min |
+| `/api/preferences` | StaleWhileRevalidate | api-preferences | 30 min |
+| `/api/ledger/*` | NetworkFirst | api-ledger | 5 min, 8s timeout |
+| `/api/services` | NetworkFirst | api-services | 1 hr, 8s timeout |
+| `/api/notifications` | NetworkFirst | api-notifications | 2 min, 8s timeout |
+| Images / icons | CacheFirst | image-cache | 30 days |
+| Fonts | CacheFirst | font-cache | 1 year |
+
+---
+
+## 12. TWA — Android App Support
+
+### Digital Asset Links
+File: `artifacts/sahu-csc/public/.well-known/assetlinks.json`
+
+Tells Android that the website and native app are the same — required for TWA to launch the app fullscreen without a browser chrome.
+
+**To complete TWA setup:**
+1. Deploy the app on Replit (`Publish` button) to get a live HTTPS URL
+2. Go to **[pwabuilder.com](https://www.pwabuilder.com)** → enter your deployed URL
+3. Click **Package for Stores → Android** → download
+4. Copy your **SHA-256 fingerprint** from PWABuilder
+5. Update `assetlinks.json` with your `package_name` and fingerprint
+6. Re-deploy
+7. Upload the `.aab` to Google Play Console
+
+### Enhanced Manifest Fields for TWA
+```json
+{
+  "id": "sahu-csc-app",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui", "browser"],
+  "launch_handler": { "client_mode": ["navigate-existing", "auto"] },
+  "shortcuts": [
+    { "name": "Dashboard", "url": "/?source=shortcut" },
+    { "name": "New Ledger Entry", "url": "/ledger?new=1&source=shortcut" },
+    { "name": "AePS", "url": "/aeps?source=shortcut" },
+    { "name": "Reports", "url": "/reports?source=shortcut" }
+  ]
+}
+```
+
+### App Shortcuts
+Long-pressing the app icon on Android / right-clicking on desktop shows 4 shortcuts:
+1. **Dashboard** — today's stats
+2. **New Ledger Entry** — ledger with new entry form
+3. **AePS** — AePS cash management
+4. **Reports** — daily/monthly reports
+
+---
+
+## 13. Push Notification Infrastructure
+
+### What Was Built (Infrastructure Only — not fully wired yet)
+Push notifications require VAPID keys set as environment variables before they activate.
+
+#### New Files
+- `artifacts/api-server/src/lib/push.ts` — VAPID setup, `sendPushToUser()`, `sendPushToAll()`
+- `artifacts/api-server/src/routes/push.ts` — subscription management routes
+- `artifacts/sahu-csc/src/hooks/use-push-notifications.ts` — subscription hook
+
+#### New DB Table: `push_subscriptions`
+| Column | Type |
+|---|---|
+| `id` | serial PK |
+| `user_id` | integer FK → users |
+| `endpoint` | text UNIQUE |
+| `p256dh` | text |
+| `auth` | text |
+| `created_at` | timestamptz |
+
+#### Push API Routes
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/push/vapid-public-key` | Returns VAPID public key for browser subscription |
+| POST | `/api/push/subscribe` | Save a push subscription for current user |
+| DELETE | `/api/push/unsubscribe` | Remove a push subscription |
+
+#### Environment Variables Required
+```env
+VAPID_PUBLIC_KEY=   # Generate with: npx web-push generate-vapid-keys
+VAPID_PRIVATE_KEY=
+VAPID_EMAIL=mailto:admin@sahucsc.in
+```
+
+#### To Generate VAPID Keys
+```bash
+npx web-push generate-vapid-keys
+```
+Then save both keys as environment variables in Replit Secrets.
+
+#### Push is Disabled by Default
+If `VAPID_PUBLIC_KEY` or `VAPID_PRIVATE_KEY` is not set, `pushEnabled` is `false` and all push calls are silently skipped — the app runs normally without push.
+
+---
+
+## 14. Database Schema Changes
+
+### Tables Added (Beyond Initial Schema)
+| Table | Purpose |
+|---|---|
+| `push_subscriptions` | Web Push API subscription records per user |
+
+### All Tables (Current)
+```
+users               — user accounts
+ledger              — income/expense transactions
+services            — service catalog
+aeps_daily          — AePS daily float sessions
+aeps_transactions   — individual AePS transactions
+notifications       — user + system notifications
+audit_logs          — immutable action trail
+settings            — global key-value config
+user_preferences    — per-user UI preferences
+backups             — backup metadata records
+push_subscriptions  — Web Push subscriptions (new)
+```
+
+### Running Schema Push
+```bash
+pnpm --filter @workspace/db run push
+```
+> ⚠️ This can empty tables in dev. Always run the seed script after:
+> `NODE_ENV=development npx tsx artifacts/api-server/src/scripts/seed.ts`
+
+---
+
+## 15. API Routes Added
+
+### Password Reset (new)
+| Method | Path | Description |
+|---|---|---|
+| POST | `/api/auth/forgot-password` | Generate reset token, notify user |
+| POST | `/api/auth/reset-password` | Validate token, set new password |
+
+### Push Notifications (new)
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/push/vapid-public-key` | Returns public key |
+| POST | `/api/push/subscribe` | Save subscription |
+| DELETE | `/api/push/unsubscribe` | Remove subscription |
+
+### Admin Overview (new)
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/users/overview` | Stats for all users (admin dashboard) |
+
+---
+
+## 16. File Structure Summary
+
+### New Files Added (all sessions)
+```
+artifacts/api-server/src/
+├── lib/
+│   └── push.ts                          Web Push helper (VAPID + send functions)
+├── routes/
+│   ├── push.ts                          Push subscription CRUD routes
+│   ├── password-reset.ts                Forgot/reset password routes
+│   └── admin.ts                         Admin overview route
+
+artifacts/sahu-csc/src/
+├── lib/
+│   ├── offline-db.ts                    IndexedDB wrapper (2 stores)
+│   ├── sync-engine.ts                   Offline sync queue engine
+│   └── pwa-badge.ts                     App badge API helper
+├── hooks/
+│   ├── use-network-status.ts            Online/offline/slow detection
+│   ├── use-sync.ts                      Sync state hook
+│   ├── use-push-notifications.ts        Push subscription management hook
+│   ├── use-file-handler.ts              File handler API hook
+│   └── use-wake-lock.ts                 Screen Wake Lock API hook
+└── components/
+    └── sync-status-bar.tsx              Global sync status bar + SyncDot
+
+lib/db/src/schema/
+└── push_subscriptions.ts               Push subscription DB table
+
+public/
+└── .well-known/
+    └── assetlinks.json                  Digital Asset Links for Android TWA
+```
+
+### Modified Files (all sessions)
+```
+artifacts/sahu-csc/
+├── vite.config.ts                       Enhanced manifest, Workbox strategies
+├── src/main.tsx                         SW registration + sync engine init
+├── src/hooks/use-pwa.ts                 Uses use-network-status
+├── src/components/pwa-install-banner.tsx  Simplified (offline moved to SyncStatusBar)
+├── src/components/layout.tsx            Added SyncStatusBar + SyncDot
+├── src/pages/dashboard.tsx             Offline caching + offline indicator
+└── src/pages/ledger.tsx                Offline entry creation + pending panel
+
+lib/db/src/schema/index.ts              Exports push_subscriptions table
+replit.md                               Updated with all new architecture details
+ARCHITECTURE.md                         Added Section 6 (PWA & TWA)
+```
+
+---
+
+## 17. Environment Variables
+
+| Variable | Required | Description |
+|---|---|---|
+| `DATABASE_URL` | ✅ Yes | PostgreSQL connection string |
+| `SESSION_SECRET` | ✅ Yes | express-session secret (falls back to hardcoded default in dev only) |
+| `PORT` | ✅ Yes (API) | API server port (use 8080) |
+| `BASE_PATH` | ✅ Yes (Frontend) | Vite base path (use `/`) |
+| `NODE_ENV` | Optional | `development` or `production` |
+| `VAPID_PUBLIC_KEY` | Optional | VAPID public key for Web Push (push disabled if missing) |
+| `VAPID_PRIVATE_KEY` | Optional | VAPID private key for Web Push |
+| `VAPID_EMAIL` | Optional | Contact email for VAPID (default: `mailto:admin@sahucsc.in`) |
+
+---
+
+## 18. Known Gotchas & Conventions
+
+### TypeScript
+- Always run `pnpm run typecheck:libs` before running `pnpm run typecheck` — the DB package must emit fresh type declarations first
+- After adding new schema files, add an export to `lib/db/src/schema/index.ts`
+
+### Database
+- Drizzle `numeric` columns return as **strings** from the DB — always `parseFloat()` before returning from routes
+- Running balance is computed by summing all previous entries at insert time — do not cache it separately
+- `drizzle-kit push` can empty tables in dev — always re-seed after schema changes
+
+### API
+- The notifications endpoint returns a plain **array** (not paginated) — the layout uses `.length` not `.total`
+- Auth routes (`/api/auth/*`) must use `NetworkOnly` in Workbox — `StaleWhileRevalidate` will cache stale session state
+- IDOR protection: non-admin users cannot read/modify another user's ledger entries (checked in each route)
+
+### PWA / Service Worker
+- In dev mode the SW is active (`devOptions.enabled: true`) — if you see stale UI, open DevTools → Application → Clear Storage
+- After changing `vite.config.ts` manifest or Workbox config, restart the frontend workflow — Vite does not hot-reload config files
+- The `generateSW` strategy is used (not `injectManifest`) — no custom `src/sw.ts` file is needed; Workbox is configured entirely in `vite.config.ts`
+- `skipWaiting: true` + `clientsClaim: true` ensures new SW takes over immediately on update
+
+### Offline / Sync
+- Pending ledger entries are keyed by a local UUID (`local-${Date.now()}-${random}`) — never clash with server IDs
+- The sync engine retries up to 3 times per entry; after that it shows a "Retry" button in the sync bar
+- `sahu-sync-complete` CustomEvent is dispatched after a successful sync — the ledger page listens to this to refresh the list
+- `clearExpiredCache()` is called once on startup to keep IndexedDB tidy
+
+### Deployment
+- Deploying to Replit gives you a stable HTTPS domain required for TWA and push notifications
+- `assetlinks.json` SHA-256 fingerprint must be updated after generating the APK via PWABuilder
+
+---
+
+## 19. Future Work Items
+
+The following features are architected or partially wired but not yet fully active:
+
+### Ready to Enable (just needs env vars)
+- **Web Push Notifications** — set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_EMAIL` in Replit Secrets; the infrastructure is in place
+
+### Ready to Wire (UI + route exists, integration needed)
+- **Offline ledger sync for edits** — currently only new entry creation works offline; edits/deletes show an error if attempted offline
+- **Offline Reports** — reports page does not yet cache to IDB; only dashboard caches
+
+### Planned / Design-Ready
+- **Web Push notification triggers** — call `sendPushToUser()` from ledger create, daily summary cron, backup events
+- **Background Sync API** — use SW `sync` event for more reliable background flushing (current approach uses `window.online` event which requires the tab to be open)
+- **Multi-device sync** — detect and resolve conflicts when the same user edits on two devices
+- **PWA Widgets** — manifest has a `widgets` entry for Android 12+ / Windows 11 home screen widgets; needs `/widgets/balance-template.json` served from the API
+- **Share Target** — manifest has `share_target` defined; needs a `/share-target` page to handle received content
+- **File Handler** — manifest would allow opening `.csv`/`.xlsx` files; needs `/open-file` page
+- **Language support** — English, Hindi (`hi`), Odia (`or`) are listed in preferences but UI strings are currently English only; i18n library needed
+- **Cloud backup** — current backup is a metadata record only; wire to `pg_dump` / S3 for real backups
+- **TWA APK** — follow the 5-step publishing guide in `replit.md` after deploying

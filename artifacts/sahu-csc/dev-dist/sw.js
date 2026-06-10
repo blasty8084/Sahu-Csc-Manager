@@ -78,14 +78,13 @@ define(['./workbox-cce6ffed'], (function (workbox) { 'use strict';
    */
   workbox.precacheAndRoute([{
     "url": "/",
-    "revision": "0.lcrjlo71c7g"
+    "revision": "0.t0cnig0jsi8"
   }], {});
   workbox.cleanupOutdatedCaches();
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("/"), {
     allowlist: [/^\/$/],
     denylist: [/^\/api\//]
   }));
-  workbox.registerRoute(/^\/api\/auth\/me/, new workbox.NetworkOnly(), 'GET');
   workbox.registerRoute(/^\/api\/auth\//, new workbox.NetworkOnly(), 'GET');
   workbox.registerRoute(/^\/api\/dashboard/, new workbox.StaleWhileRevalidate({
     "cacheName": "api-dashboard",
