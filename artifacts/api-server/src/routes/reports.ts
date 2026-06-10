@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, ledgerTable, aepsDailyTable, aepsTransactionsTable } from "@workspace/db";
+import { db, ledgerTable, aepsDailyTable, aepsTransactionsTable, usersTable } from "@workspace/db";
 import { and, gte, lte, eq, sql, sum, count, desc } from "drizzle-orm";
 import { GetDailyReportQueryParams, GetMonthlyReportQueryParams, GetServiceBreakdownQueryParams, ExportReportQueryParams } from "@workspace/api-zod";
 import { requireAuth } from "../lib/auth";
@@ -293,7 +293,10 @@ router.get("/dashboard", requireAuth, async (req, res): Promise<void> => {
       serviceType: ledgerTable.serviceType, credit: ledgerTable.credit, debit: ledgerTable.debit,
       description: ledgerTable.description, balance: ledgerTable.balance,
       createdBy: ledgerTable.createdBy, createdAt: ledgerTable.createdAt,
-    }).from(ledgerTable).where(balanceWhere).orderBy(desc(ledgerTable.createdAt)).limit(5),
+      createdByName: usersTable.fullName,
+    }).from(ledgerTable)
+      .leftJoin(usersTable, eq(ledgerTable.createdBy, usersTable.id))
+      .where(balanceWhere).orderBy(desc(ledgerTable.createdAt)).limit(5),
     getServiceBreakdownData(monthStart, today, userFilter),
   ]);
 
@@ -316,7 +319,7 @@ router.get("/dashboard", requireAuth, async (req, res): Promise<void> => {
       serviceType: e.serviceType, credit: parseFloat(e.credit ?? "0"),
       debit: parseFloat(e.debit ?? "0"), description: e.description,
       balance: parseFloat(e.balance ?? "0"), createdBy: e.createdBy,
-      createdByName: null,
+      createdByName: e.createdByName ?? null,
       createdAt: e.createdAt instanceof Date ? e.createdAt.toISOString() : e.createdAt,
     })),
     topServicesMonth: topServices.slice(0, 5),

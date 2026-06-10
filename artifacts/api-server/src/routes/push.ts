@@ -26,7 +26,7 @@ router.post("/push/subscribe", requireAuth, async (req: any, res): Promise<void>
     await db
       .insert(pushSubscriptionsTable)
       .values({
-        userId: req.user.id,
+        userId: req.session.userId!,
         endpoint,
         p256dh,
         auth,
@@ -34,7 +34,7 @@ router.post("/push/subscribe", requireAuth, async (req: any, res): Promise<void>
       })
       .onConflictDoUpdate({
         target: pushSubscriptionsTable.endpoint,
-        set: { p256dh, auth, userId: req.user.id },
+        set: { p256dh, auth, userId: req.session.userId! },
       });
     res.json({ success: true });
   } catch {
@@ -65,7 +65,7 @@ router.get("/push/subscriptions", requireAuth, async (req: any, res) => {
     const subs = await db
       .select({ id: pushSubscriptionsTable.id, userAgent: pushSubscriptionsTable.userAgent, createdAt: pushSubscriptionsTable.createdAt })
       .from(pushSubscriptionsTable)
-      .where(eq(pushSubscriptionsTable.userId, req.user.id));
+      .where(eq(pushSubscriptionsTable.userId, req.session.userId!));
     res.json({ subscriptions: subs, enabled: pushEnabled });
   } catch {
     res.status(500).json({ error: "Failed to fetch subscriptions" });

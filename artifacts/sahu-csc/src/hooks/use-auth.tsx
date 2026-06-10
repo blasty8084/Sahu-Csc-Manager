@@ -55,9 +55,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const session: UserSession = {
         id: liveUser.id,
         username: liveUser.username,
-        fullName: liveUser.fullName,
+        fullName: liveUser.fullName ?? "",
         role: liveUser.role,
-        email: (liveUser as any).email,
+        email: (liveUser as any).email ?? undefined,
         profilePicture: (liveUser as any).profilePicture,
         cachedAt: Date.now(),
       };

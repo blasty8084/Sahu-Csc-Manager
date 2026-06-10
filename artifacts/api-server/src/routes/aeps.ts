@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, aepsDailyTable, aepsTransactionsTable } from "@workspace/db";
-import { eq, and, sum, count, desc, gte, lte, ilike } from "drizzle-orm";
+import { eq, and, sum, count, desc, gte, lte, ilike, sql } from "drizzle-orm";
 import { requireAuth, requireRole, auditLog, getClientIp } from "../lib/auth";
 import { z } from "zod";
 
@@ -106,11 +106,10 @@ router.get("/aeps/transactions", requireAuth, async (req, res): Promise<void> =>
   const sessionIds = sessions.map((s) => s.id);
 
   // Build transaction filters
-  const txWhere: any[] = [
-    sessionIds.length === 1
-      ? eq(aepsTransactionsTable.dailyId, sessionIds[0])
-      : sessionIds.reduce((acc: any, id, i) => i === 0 ? eq(aepsTransactionsTable.dailyId, id) : acc, eq(aepsTransactionsTable.dailyId, sessionIds[0])),
-  ];
+  const idFilter = sessionIds.length === 1
+    ? eq(aepsTransactionsTable.dailyId, sessionIds[0])
+    : sql`${aepsTransactionsTable.dailyId} = ANY(ARRAY[${sql.raw(sessionIds.join(","))}])`;
+  const txWhere: any[] = [idFilter];
   if (typeFilter === "withdrawal" || typeFilter === "deposit") {
     txWhere.push(eq(aepsTransactionsTable.type, typeFilter));
   }
