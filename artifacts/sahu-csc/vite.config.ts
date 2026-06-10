@@ -29,11 +29,6 @@ export default defineConfig({
       registerType: "autoUpdate",
       injectRegister: "auto",
 
-      // ── Custom service worker (injectManifest) ──────────────────
-      strategies: "injectManifest",
-      srcDir: "src",
-      filename: "sw.ts",
-
       includeAssets: [
         "favicon.svg",
         "apple-touch-icon.png",
@@ -41,7 +36,6 @@ export default defineConfig({
         "pwa-512x512.png",
       ],
 
-      // ── Web App Manifest ────────────────────────────────────────
       manifest: {
         name: "SAHU CSC — Common Service Center",
         short_name: "SAHU CSC",
@@ -50,12 +44,7 @@ export default defineConfig({
         theme_color: "#0b2c60",
         background_color: "#ffffff",
         display: "standalone",
-        display_override: [
-          "window-controls-overlay",
-          "standalone",
-          "minimal-ui",
-          "browser",
-        ],
+        display_override: ["window-controls-overlay", "standalone", "minimal-ui", "browser"],
         orientation: "portrait-primary",
         scope: "/",
         start_url: "/?source=pwa",
@@ -63,39 +52,10 @@ export default defineConfig({
         categories: ["business", "finance", "productivity"],
         lang: "en-IN",
         dir: "ltr",
-
-        // Age rating (IARC)
-        iarc_rating_id: "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
-
-        // Launch handler — focus existing window instead of opening new one
+        prefer_related_applications: false,
         launch_handler: {
           client_mode: ["navigate-existing", "auto"],
         },
-
-        // Note-taking capability — "New Entry" opens ledger
-        note_taking: {
-          new_note_url: "/ledger?new=1",
-        },
-
-        // Edge side panel support
-        edge_side_panel: {
-          preferred_width: 400,
-        },
-
-        // Scope extensions (allow same-origin subdomains)
-        scope_extensions: [{ origin: "*.replit.app" }],
-
-        // Related applications
-        prefer_related_applications: false,
-        related_applications: [
-          {
-            platform: "webapp",
-            url: "https://sahu0924.replit.app/manifest.webmanifest",
-            id: "sahu-csc-app",
-          },
-        ],
-
-        // Icons
         icons: [
           { src: "pwa-96x96.png", sizes: "96x96", type: "image/png" },
           { src: "pwa-144x144.png", sizes: "144x144", type: "image/png" },
@@ -104,8 +64,6 @@ export default defineConfig({
           { src: "pwa-512x512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
           { src: "apple-touch-icon.png", sizes: "180x180", type: "image/png" },
         ],
-
-        // App shortcuts
         shortcuts: [
           {
             name: "Dashboard",
@@ -136,8 +94,6 @@ export default defineConfig({
             icons: [{ src: "pwa-96x96.png", sizes: "96x96" }],
           },
         ],
-
-        // Screenshots
         screenshots: [
           {
             src: "pwa-512x512.png",
@@ -154,55 +110,114 @@ export default defineConfig({
             label: "SAHU CSC Ledger",
           },
         ],
-
-        // Share target — receive shared text/links → open in ledger
-        share_target: {
-          action: "/share-target",
-          method: "GET",
-          params: { title: "title", text: "text", url: "url" },
-        },
-
-        // File handlers — open CSV/XLSX files in the app
-        file_handlers: [
-          {
-            action: "/open-file",
-            accept: {
-              "text/csv": [".csv"],
-              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
-              "application/vnd.ms-excel": [".xls"],
-            },
-            icons: [{ src: "pwa-96x96.png", sizes: "96x96" }],
-            launch_type: "single-client",
-          },
-        ],
-
-        // Protocol handler — deep-link into the app via web+sahucsc://
-        protocol_handlers: [
-          { protocol: "web+sahucsc", url: "/?action=%s" },
-        ],
-
-        // Home screen widgets (desktop / Android 12+)
-        widgets: [
-          {
-            name: "SAHU CSC Balance",
-            short_name: "Balance",
-            description: "Current running balance at a glance",
-            tag: "balance-widget",
-            ms_ac_template: "/widgets/balance-template.json",
-            data: "/api/dashboard",
-            type: "application/json",
-            screenshots: [],
-            icons: [{ src: "pwa-96x96.png", sizes: "96x96" }],
-            auth: true,
-            update: 900,
-          },
-        ],
       } as any,
 
-      // ── injectManifest workbox config ───────────────────────────
-      injectManifest: {
+      workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,webp}"],
-        globIgnores: ["**/node_modules/**"],
+        navigateFallback: "/",
+        navigateFallbackDenylist: [/^\/api\//],
+        cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true,
+        runtimeCaching: [
+          {
+            urlPattern: /^\/api\/auth\//,
+            handler: "NetworkOnly",
+          },
+          {
+            urlPattern: /^\/api\/dashboard/,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "api-dashboard",
+              expiration: { maxEntries: 5, maxAgeSeconds: 5 * 60 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: /^\/api\/reports/,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "api-reports",
+              expiration: { maxEntries: 20, maxAgeSeconds: 10 * 60 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: /^\/api\/settings/,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "api-settings",
+              expiration: { maxEntries: 5, maxAgeSeconds: 30 * 60 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: /^\/api\/profile/,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "api-profile",
+              expiration: { maxEntries: 5, maxAgeSeconds: 5 * 60 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: /^\/api\/preferences/,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "api-preferences",
+              expiration: { maxEntries: 5, maxAgeSeconds: 30 * 60 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: /^\/api\/services/,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "api-services",
+              networkTimeoutSeconds: 8,
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: /^\/api\/ledger/,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "api-ledger",
+              networkTimeoutSeconds: 8,
+              expiration: { maxEntries: 50, maxAgeSeconds: 5 * 60 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: /^\/api\/notifications/,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "api-notifications",
+              networkTimeoutSeconds: 8,
+              expiration: { maxEntries: 20, maxAgeSeconds: 2 * 60 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "image-cache",
+              expiration: { maxEntries: 100, maxAgeSeconds: 30 * 24 * 60 * 60 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: /\.(?:woff2|woff|ttf|eot)$/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "font-cache",
+              expiration: { maxEntries: 20, maxAgeSeconds: 365 * 24 * 60 * 60 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
       },
 
       devOptions: {
