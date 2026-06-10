@@ -5,7 +5,7 @@ import { useListNotifications } from "@workspace/api-client-react";
 import {
   LayoutDashboard, BookOpen, Briefcase, BarChart3, Bell,
   History, Users, Settings, Database, LogOut, Menu,
-  Fingerprint, UserCircle, LayoutGrid, WifiOff,
+  Fingerprint, UserCircle, LayoutGrid, WifiOff, ArrowDownToLine,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -33,6 +33,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/notifications", label: "Notifications", icon: Bell, badge: unreadCount },
     { href: "/profile", label: "My Profile", icon: UserCircle },
     { href: "/pwa-status", label: "App & Offline", icon: WifiOff },
+    { href: "/download-app", label: "Download App", icon: ArrowDownToLine },
   ];
 
   const adminNavItems = isAdmin ? [

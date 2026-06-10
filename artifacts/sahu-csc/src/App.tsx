@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
-import { QueryClient, QueryClientProvider, QueryCache } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
@@ -28,20 +28,22 @@ import AePS from "@/pages/aeps";
 import Profile from "@/pages/profile";
 import Offline from "@/pages/offline";
 import PwaStatus from "@/pages/pwa-status";
+import DownloadApp from "@/pages/download-app";
 import { Redirect } from "wouter";
 import { useListNotifications } from "@workspace/api-client-react";
 import { updateAppBadge } from "@/lib/pwa-badge";
 
 // ─── QueryClient — detects SESSION_REPLACED from any failed request ───────────
+function detectSessionReplaced(error: any) {
+  const msg: string = error?.message ?? String(error ?? "");
+  if (msg.includes("SESSION_REPLACED")) {
+    window.dispatchEvent(new CustomEvent("sahu-session-replaced"));
+  }
+}
+
 const queryClient = new QueryClient({
-  queryCache: new QueryCache({
-    onError: (error: any) => {
-      const msg: string = error?.message ?? String(error ?? "");
-      if (msg.includes("SESSION_REPLACED")) {
-        window.dispatchEvent(new CustomEvent("sahu-session-replaced"));
-      }
-    },
-  }),
+  queryCache: new QueryCache({ onError: detectSessionReplaced }),
+  mutationCache: new MutationCache({ onError: detectSessionReplaced }),
   defaultOptions: {
     queries: {
       retry: 1,
@@ -207,6 +209,7 @@ function Router() {
       <Route path="/settings">{() => <ProtectedRoute component={Settings} adminOnly />}</Route>
       <Route path="/backups">{() => <ProtectedRoute component={Backups} adminOnly />}</Route>
       <Route path="/pwa-status">{() => <ProtectedRoute component={PwaStatus} />}</Route>
+      <Route path="/download-app">{() => <ProtectedRoute component={DownloadApp} />}</Route>
       <Route path="/share-target" component={ShareTargetHandler} />
       <Route path="/offline" component={Offline} />
       <Route path="/open-file">{() => <ProtectedRoute component={Ledger} />}</Route>
