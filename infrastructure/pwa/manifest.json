@@ -1,0 +1,95 @@
+{
+  "id": "sahu-csc-app",
+  "name": "SAHU CSC — Common Service Center",
+  "short_name": "SAHU CSC",
+  "description": "Business management platform for Common Service Centers — ledger, AePS, services, reports & more.",
+  "theme_color": "#0b2c60",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui", "browser"],
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "start_url": "/?source=pwa",
+  "lang": "en-IN",
+  "dir": "ltr",
+  "categories": ["business", "finance", "productivity"],
+  "prefer_related_applications": false,
+  "launch_handler": {
+    "client_mode": ["navigate-existing", "auto"]
+  },
+  "icons": [
+    { "src": "/pwa-96x96.png",   "sizes": "96x96",   "type": "image/png" },
+    { "src": "/pwa-144x144.png", "sizes": "144x144", "type": "image/png" },
+    { "src": "/pwa-192x192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/pwa-512x512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/pwa-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "View today's summary and business stats",
+      "url": "/?source=shortcut",
+      "icons": [{ "src": "/pwa-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "New Ledger Entry",
+      "short_name": "Ledger",
+      "description": "Open the ledger to add a new entry",
+      "url": "/ledger?new=1&source=shortcut",
+      "icons": [{ "src": "/pwa-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "AePS Cash",
+      "short_name": "AePS",
+      "description": "AePS cash management and daily sessions",
+      "url": "/aeps?source=shortcut",
+      "icons": [{ "src": "/pwa-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Reports",
+      "short_name": "Reports",
+      "description": "View daily and monthly business reports",
+      "url": "/reports?source=shortcut",
+      "icons": [{ "src": "/pwa-96x96.png", "sizes": "96x96" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "SAHU CSC Dashboard — Business Overview"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "SAHU CSC Ledger — Transaction Management"
+    }
+  ],
+  "share_target": {
+    "action": "/share-target",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "protocol_handlers": [
+    { "protocol": "web+sahucsc", "url": "/?action=%s" }
+  ],
+  "file_handlers": [
+    {
+      "action": "/open-file",
+      "accept": {
+        "text/csv": [".csv"],
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"]
+      }
+    }
+  ]
+}

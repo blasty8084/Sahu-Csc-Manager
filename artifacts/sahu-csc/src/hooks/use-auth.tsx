@@ -2,6 +2,12 @@ import React, { createContext, useContext, useEffect, ReactNode } from "react";
 import { useGetMe, useLogin, useLogout } from "@workspace/api-client-react";
 import type { AuthUser, LoginInput } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
+import {
+  saveUserSession,
+  getCachedUserSession,
+  clearUserSession,
+  type UserSession,
+} from "@/lib/offline-db";
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -14,12 +20,51 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [, setLocation] = useLocation();
-  const { data: user, isLoading, refetch } = useGetMe({
+  const {
+    data: liveUser,
+    isLoading: liveLoading,
+    refetch,
+    isError,
+  } = useGetMe({
     query: {
       retry: false,
       queryKey: ["auth/me"],
-    }
+    },
   });
+
+  const [offlineUser, setOfflineUser] = React.useState<AuthUser | null>(null);
+  const [offlineChecked, setOfflineChecked] = React.useState(false);
+
+  useEffect(() => {
+    if (!navigator.onLine && !liveUser) {
+      getCachedUserSession()
+        .then((session) => {
+          if (session) {
+            setOfflineUser(session as unknown as AuthUser);
+          }
+        })
+        .catch(() => {})
+        .finally(() => setOfflineChecked(true));
+    } else {
+      setOfflineChecked(true);
+    }
+  }, [liveUser]);
+
+  useEffect(() => {
+    if (liveUser) {
+      const session: UserSession = {
+        id: liveUser.id,
+        username: liveUser.username,
+        fullName: liveUser.fullName,
+        role: liveUser.role,
+        email: (liveUser as any).email,
+        profilePicture: (liveUser as any).profilePicture,
+        cachedAt: Date.now(),
+      };
+      saveUserSession(session).catch(() => {});
+      setOfflineUser(null);
+    }
+  }, [liveUser]);
 
   const loginMutation = useLogin();
   const logoutMutation = useLogout();
@@ -32,14 +77,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const handleLogout = async () => {
     await logoutMutation.mutateAsync();
+    await clearUserSession().catch(() => {});
+    setOfflineUser(null);
     await refetch();
     setLocation("/login");
   };
 
+  const user = liveUser || offlineUser || null;
+  const isLoading = liveLoading && !offlineChecked;
+
   return (
     <AuthContext.Provider
       value={{
-        user: user || null,
+        user,
         isLoading,
         login: handleLogin,
         logout: handleLogout,

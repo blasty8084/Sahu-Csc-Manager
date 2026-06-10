@@ -7,6 +7,9 @@ import hpp from "hpp";
 import rateLimit from "express-rate-limit";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { ensureVapidKeys } from "./lib/vapid";
+
+ensureVapidKeys().catch((e) => logger.error({ err: e }, "VAPID init failed"));
 
 const app: Express = express();
 

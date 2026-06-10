@@ -1,0 +1,83 @@
+{
+  "_comment": "Android TWA (Trusted Web Activity) configuration for SAHU CSC",
+  "_docs": "Use Bubblewrap CLI (npm i -g @bubblewrap/cli) to generate an Android project from this config.",
+
+  "packageId": "com.sahucsc.app",
+  "host": "nbxzs.sisko.replit.dev",
+  "startUrl": "/?source=twa",
+  "name": "SAHU CSC",
+  "launcherName": "SAHU CSC",
+  "display": "standalone",
+  "orientation": "portrait",
+  "themeColor": "#0b2c60",
+  "navigationColor": "#0b2c60",
+  "navigationColorDark": "#0a1f3c",
+  "navigationDividerColor": "#0b2c60",
+  "navigationDividerColorDark": "#0a1f3c",
+  "backgroundColor": "#ffffff",
+  "enableNotifications": true,
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "url": "/?source=shortcut",
+      "icons": [{ "src": "/pwa-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Ledger",
+      "short_name": "Ledger",
+      "url": "/ledger?new=1&source=shortcut",
+      "icons": [{ "src": "/pwa-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "AePS Cash",
+      "short_name": "AePS",
+      "url": "/aeps?source=shortcut",
+      "icons": [{ "src": "/pwa-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Reports",
+      "short_name": "Reports",
+      "url": "/reports?source=shortcut",
+      "icons": [{ "src": "/pwa-96x96.png", "sizes": "96x96" }]
+    }
+  ],
+  "iconUrl": "/pwa-512x512.png",
+  "maskableIconUrl": "/pwa-512x512.png",
+  "monochromeIconUrl": "/pwa-96x96.png",
+  "splashScreenFadeOutDuration": 300,
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://nbxzs.sisko.replit.dev/",
+  "minSdkVersion": 21,
+  "targetSdkVersion": 34,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "sahucsc"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "features": {
+    "locationDelegation": { "enabled": false },
+    "playBilling": { "enabled": false }
+  },
+  "alphaDependencies": { "enabled": false },
+  "serviceAccountJsonFile": "./play-service-account.json",
+  "fallbackType": "customtabs",
+  "enableSiteSettingsShortcut": true,
+  "generatorApp": "bubblewrap-cli",
+
+  "_setup_instructions": [
+    "1. Install Bubblewrap: npm install -g @bubblewrap/cli",
+    "2. Run: bubblewrap init --manifest https://<your-domain>/manifest.webmanifest",
+    "3. Replace host with your production domain",
+    "4. Generate a keystore: keytool -genkey -v -keystore android.keystore -alias sahucsc -keyalg RSA -keysize 2048 -validity 10000",
+    "5. Get the SHA-256 fingerprint: keytool -list -v -keystore android.keystore | grep SHA256",
+    "6. Update public/.well-known/assetlinks.json with the SHA-256 fingerprint",
+    "7. Deploy assetlinks.json to your production domain at /.well-known/assetlinks.json",
+    "8. Run: bubblewrap build",
+    "9. Sign the APK: jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore android.keystore app-release-unsigned.apk sahucsc",
+    "10. Upload to Google Play Console"
+  ]
+}
