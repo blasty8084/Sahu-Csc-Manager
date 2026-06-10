@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, aepsDailyTable, aepsTransactionsTable } from "@workspace/db";
-import { eq, and, sum, count } from "drizzle-orm";
+import { eq, and, sum, count, desc, gte, lte, ilike } from "drizzle-orm";
 import { requireAuth, requireRole, auditLog, getClientIp } from "../lib/auth";
 import { z } from "zod";
 
@@ -74,6 +74,80 @@ router.get("/aeps/session", requireAuth, async (req, res): Promise<void> => {
     totalDeposits,
     currentBalance: fmt(session.openingBalance) - totalWithdrawals + totalDeposits,
   });
+});
+
+// GET /api/aeps/transactions — paginated list of all transactions for current user
+router.get("/aeps/transactions", requireAuth, async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const page = Math.max(1, parseInt((req.query.page as string) || "1", 10));
+  const limit = Math.min(50, Math.max(1, parseInt((req.query.limit as string) || "20", 10)));
+  const offset = (page - 1) * limit;
+  const startDate = req.query.startDate as string | undefined;
+  const endDate   = req.query.endDate   as string | undefined;
+  const typeFilter = req.query.type as string | undefined;
+  const customerName = req.query.customerName as string | undefined;
+
+  // Collect all session IDs belonging to this user (with optional date range)
+  const sessionWhere: any[] = [eq(aepsDailyTable.createdBy, userId)];
+  if (startDate) sessionWhere.push(gte(aepsDailyTable.date, startDate));
+  if (endDate)   sessionWhere.push(lte(aepsDailyTable.date, endDate));
+
+  const sessions = await db
+    .select({ id: aepsDailyTable.id, date: aepsDailyTable.date, openingBalance: aepsDailyTable.openingBalance })
+    .from(aepsDailyTable)
+    .where(and(...sessionWhere));
+
+  if (sessions.length === 0) {
+    res.json({ transactions: [], total: 0, page, limit });
+    return;
+  }
+
+  const sessionMap = new Map(sessions.map((s) => [s.id, s]));
+  const sessionIds = sessions.map((s) => s.id);
+
+  // Build transaction filters
+  const txWhere: any[] = [
+    sessionIds.length === 1
+      ? eq(aepsTransactionsTable.dailyId, sessionIds[0])
+      : sessionIds.reduce((acc: any, id, i) => i === 0 ? eq(aepsTransactionsTable.dailyId, id) : acc, eq(aepsTransactionsTable.dailyId, sessionIds[0])),
+  ];
+  if (typeFilter === "withdrawal" || typeFilter === "deposit") {
+    txWhere.push(eq(aepsTransactionsTable.type, typeFilter));
+  }
+  if (customerName) {
+    txWhere.push(ilike(aepsTransactionsTable.customerName, `%${customerName}%`));
+  }
+
+  // We do a simpler approach: select all matching tx then paginate in JS (avoids complex IN query with Drizzle)
+  const allTx = await db
+    .select()
+    .from(aepsTransactionsTable)
+    .where(and(...txWhere))
+    .orderBy(desc(aepsTransactionsTable.createdAt));
+
+  // Filter to only transactions whose dailyId is in our session set
+  const filtered = allTx.filter((tx) => sessionMap.has(tx.dailyId));
+  const finalFiltered = typeFilter || customerName
+    ? filtered
+    : filtered; // already filtered above
+
+  const total = finalFiltered.length;
+  const paginated = finalFiltered.slice(offset, offset + limit);
+
+  const result = paginated.map((tx) => {
+    const session = sessionMap.get(tx.dailyId)!;
+    return {
+      id: tx.id,
+      date: session.date,
+      type: tx.type,
+      amount: fmt(tx.amount),
+      customerName: tx.customerName,
+      description: tx.description,
+      createdAt: tx.createdAt instanceof Date ? tx.createdAt.toISOString() : tx.createdAt,
+    };
+  });
+
+  res.json({ transactions: result, total, page, limit });
 });
 
 // POST /aeps/session — create or update the current user's day-open balance
