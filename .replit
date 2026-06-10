@@ -9,6 +9,7 @@ args = ["pnpm", "store", "prune"]
 env = { "CI" = "true" }
 
 [workflows]
+runButton = "Project"
 
 [[workflows.workflow]]
 name = "artifacts/sahu-csc: web"
@@ -71,11 +72,23 @@ PORT = "8080"
 [[workflows.workflow]]
 name = "Seed Database"
 mode = "sequential"
-author = 60589585
+author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "PORT=8080 NODE_ENV=development npx tsx artifacts/api-server/src/scripts/seed.ts"
+args = "pnpm --filter @workspace/api-server run seed"
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Seed Database"
 
 [agent]
 stack = "BEST_EFFORT_FALLBACK"
