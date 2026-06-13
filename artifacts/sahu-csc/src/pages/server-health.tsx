@@ -119,7 +119,8 @@ export default function ServerHealth() {
     setError(null);
 
     try {
-      const res = await fetch("/api/healthz");
+      const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+      const res = await fetch(`${base}/api/healthz`, { credentials: "include" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       setData(json);
