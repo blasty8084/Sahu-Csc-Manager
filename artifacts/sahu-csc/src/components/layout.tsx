@@ -86,29 +86,51 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
-      {/* Logo */}
-      <div className="px-5 pt-5 pb-4 flex items-center gap-3 border-b border-sidebar-border/50">
-        <AppLogo size="sm" />
-        <div>
-          <h2 className="font-bold text-sm leading-tight">SAHU CSC</h2>
-          <p className="text-[10px] text-sidebar-foreground/60">Management Platform</p>
+      {/* Header — circular logo + title + grid icon */}
+      <div className="flex items-center justify-between px-5 pt-5 pb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-sidebar-primary flex items-center justify-center flex-shrink-0">
+            <svg viewBox="0 0 40 40" width="40" height="40" fill="none">
+              <circle cx="20" cy="20" r="20" fill="currentColor" className="text-sidebar-primary" />
+              <path d="M20 8 L28 12 L28 20 C28 25 24 29 20 31 C16 29 12 25 12 20 L12 12 Z" fill="white" fillOpacity="0.25" />
+              <text x="20" y="25" textAnchor="middle" fill="white" fontSize="15" fontWeight="bold" fontFamily="Inter, sans-serif">S</text>
+            </svg>
+          </div>
+          <div>
+            <h2 className="font-bold text-[15px] leading-tight text-sidebar-foreground">
+              SAHU <span className="text-sidebar-primary">CSC</span>
+            </h2>
+            <p className="text-[11px] text-sidebar-foreground/55 leading-tight">Management Platform</p>
+          </div>
+        </div>
+        <div className="w-7 h-7 rounded-md border border-sidebar-border/30 flex items-center justify-center text-sidebar-foreground/35 flex-shrink-0">
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+            <rect x="1" y="1" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.5" />
+            <rect x="8" y="1" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.5" />
+            <rect x="1" y="8" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.5" />
+            <rect x="8" y="8" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.5" />
+          </svg>
         </div>
       </div>
 
       {/* Main Nav */}
-      <div className="flex-1 overflow-y-auto py-3 px-2.5 space-y-0.5">
+      <div className="flex-1 overflow-y-auto py-2 px-2.5 space-y-0.5">
         {mainNavItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
           return (
             <Link key={item.href} href={item.href}>
-              <div className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-all group ${active ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold shadow-sm" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"}`}>
+              <div className={`flex items-center justify-between px-3 py-[10px] rounded-xl cursor-pointer transition-all group ${active ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"}`}>
                 <div className="flex items-center gap-3">
-                  <Icon size={16} className={active ? "text-sidebar-primary-foreground" : "text-sidebar-foreground/50 group-hover:text-sidebar-foreground/80"} />
+                  <Icon
+                    size={16}
+                    strokeWidth={active ? 2.5 : 1.8}
+                    className={active ? "text-sidebar-primary-foreground" : "text-sidebar-foreground/50 group-hover:text-sidebar-foreground/80"}
+                  />
                   <span className="text-[13px]">{item.label}</span>
                 </div>
                 {item.badge !== undefined && item.badge > 0 && (
-                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${active ? "bg-white/30 text-white" : "bg-sidebar-primary text-sidebar-primary-foreground"}`}>
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center ${active ? "bg-white/30 text-white" : "bg-sidebar-primary text-sidebar-primary-foreground"}`}>
                     {item.badge}
                   </span>
                 )}
@@ -120,7 +142,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {/* Admin Section */}
         {adminNavItems.length > 0 && (
           <>
-            <p className="text-sidebar-foreground/40 text-[9px] font-bold uppercase tracking-widest px-3 pt-4 pb-1.5">
+            <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-sidebar-foreground/35 px-3 pt-4 pb-2">
               Admin
             </p>
             {adminNavItems.map((item) => {
@@ -128,8 +150,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
               const active = isActive(item.href);
               return (
                 <Link key={item.href} href={item.href}>
-                  <div className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all group ${active ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"}`}>
-                    <Icon size={16} className={active ? "text-sidebar-primary-foreground" : "text-sidebar-foreground/50 group-hover:text-sidebar-foreground/80"} />
+                  <div className={`flex items-center gap-3 px-3 py-[10px] rounded-xl cursor-pointer transition-all group ${active ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"}`}>
+                    <Icon
+                      size={16}
+                      strokeWidth={active ? 2.5 : 1.8}
+                      className={active ? "text-sidebar-primary-foreground" : "text-sidebar-foreground/50 group-hover:text-sidebar-foreground/80"}
+                    />
                     <span className="text-[13px]">{item.label}</span>
                   </div>
                 </Link>
@@ -140,34 +166,32 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Version */}
-      <div className="px-4 pb-1 flex items-center justify-between">
-        <span className="text-[10px] text-sidebar-foreground/30 font-mono tracking-wide">SAHU CSC v{__APP_VERSION__}</span>
-        <span className="text-[10px] text-sidebar-foreground/25">© 2026</span>
+      <div className="px-5 py-2 flex items-center justify-between">
+        <span className="text-[10px] text-sidebar-foreground/28 font-mono tracking-wide">SAHU CSC v{__APP_VERSION__}</span>
+        <span className="text-[10px] text-sidebar-foreground/22">© 2026</span>
       </div>
 
-      {/* User Footer */}
-      <div className="p-3 border-t border-sidebar-border/50">
-        <div className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-sidebar-accent/40 transition-colors">
-          <Link href="/profile" className="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer">
-            <Avatar className="h-8 w-8 border border-sidebar-border flex-shrink-0">
-              {avatarSrc ? <AvatarImage src={avatarSrc} alt="Profile" className="object-cover" /> : null}
-              <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground text-xs font-bold">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col min-w-0">
-              <span className="text-xs font-semibold leading-none mb-0.5 truncate">{user?.fullName || user?.username}</span>
-              <span className="text-[10px] text-sidebar-foreground/50 capitalize">{user?.role}</span>
-            </div>
-          </Link>
-          <Button
-            variant="ghost" size="icon"
-            onClick={() => logout()}
-            className="text-sidebar-foreground/40 hover:text-destructive hover:bg-destructive/10 h-7 w-7 flex-shrink-0"
-          >
-            <LogOut size={14} />
-          </Button>
-        </div>
+      {/* User Footer — rounded card */}
+      <div className="mx-3 mb-3 px-3 py-3 rounded-xl bg-sidebar-accent/20 flex items-center gap-3">
+        <Link href="/profile" className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer">
+          <Avatar className="h-9 w-9 flex-shrink-0">
+            {avatarSrc ? <AvatarImage src={avatarSrc} alt="Profile" className="object-cover" /> : null}
+            <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground text-sm font-bold">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex flex-col min-w-0">
+            <span className="text-[13px] font-semibold leading-tight truncate text-sidebar-foreground">{user?.fullName || user?.username}</span>
+            <span className="text-[11px] text-sidebar-foreground/45 capitalize leading-tight">{user?.role}</span>
+          </div>
+        </Link>
+        <Button
+          variant="ghost" size="icon"
+          onClick={() => logout()}
+          className="text-sidebar-foreground/35 hover:text-destructive hover:bg-destructive/10 h-7 w-7 flex-shrink-0"
+        >
+          <LogOut size={14} />
+        </Button>
       </div>
     </div>
   );
