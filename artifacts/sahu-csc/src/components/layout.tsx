@@ -5,9 +5,9 @@ import { useListNotifications } from "@workspace/api-client-react";
 import { useIdleTimer } from "@/hooks/use-idle-timer";
 import {
   LayoutDashboard, BookOpen, Briefcase, BarChart3, Bell,
-  History, Users, Settings, Database, LogOut, Menu,
+  History, Users, Settings, Database, Menu,
   Fingerprint, UserCircle, LayoutGrid, WifiOff, ArrowDownToLine, HeartPulse, MonitorSmartphone,
-  Clock,
+  Clock, LogIn,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -75,41 +75,62 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
     { href: "/ledger", label: "Ledger", icon: BookOpen },
     { href: "/aeps", label: "AePS", icon: Fingerprint },
-    { href: "/profile", label: "My Profile", icon: UserCircle },
+    { href: "/profile", label: "Profile", icon: UserCircle },
   ];
 
-  const initials = (user?.fullName || user?.username || "U").charAt(0).toUpperCase();
+  const initials = (user?.fullName || user?.username || "U")
+    .split(" ")
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
   const avatarSrc = (user as any)?.profilePicture;
+  const displayName = user?.fullName || user?.username || "User";
+  const roleLabel = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "";
 
   const isActive = (href: string) =>
     location === href || (href !== "/" && location.startsWith(href));
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
-      {/* Logo */}
-      <div className="px-5 pt-5 pb-4 flex items-center gap-3 border-b border-sidebar-border/50">
-        <AppLogo size="sm" />
-        <div>
-          <h2 className="font-bold text-sm leading-tight">SAHU CSC</h2>
-          <p className="text-[10px] text-sidebar-foreground/60">Management Platform</p>
+
+      {/* ── Top Header ─────────────────────────────────────────── */}
+      <div className="px-4 pt-5 pb-4 flex items-center gap-3 border-b border-white/10">
+        {/* Logo image — circular, prominent */}
+        <div className="relative flex-shrink-0">
+          <div className="w-11 h-11 rounded-full overflow-hidden ring-2 ring-white/20 shadow-md">
+            <AppLogo size="sm" className="w-full h-full" />
+          </div>
+        </div>
+        <div className="flex-1 min-w-0">
+          <h2 className="font-extrabold text-sm leading-tight tracking-wide text-white">SAHU CSC</h2>
+          <p className="text-[10px] text-white/50 font-medium tracking-wide mt-0.5">Management Platform</p>
         </div>
       </div>
 
-      {/* Main Nav */}
-      <div className="flex-1 overflow-y-auto py-3 px-2.5 space-y-0.5">
+      {/* ── Nav Items ──────────────────────────────────────────── */}
+      <div className="flex-1 overflow-y-auto py-3 px-3 space-y-0.5">
         {mainNavItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
           return (
             <Link key={item.href} href={item.href}>
-              <div className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-all group ${active ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold shadow-sm" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"}`}>
+              <div className={`
+                flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-150
+                ${active
+                  ? "bg-[#f97316] text-white font-semibold shadow-md shadow-orange-900/30"
+                  : "text-white/65 hover:text-white hover:bg-white/8"}
+              `}>
                 <div className="flex items-center gap-3">
-                  <Icon size={16} className={active ? "text-sidebar-primary-foreground" : "text-sidebar-foreground/50 group-hover:text-sidebar-foreground/80"} />
-                  <span className="text-[13px]">{item.label}</span>
+                  <Icon size={16} className={active ? "text-white" : "text-white/45"} />
+                  <span className="text-[13px] leading-none">{item.label}</span>
                 </div>
                 {item.badge !== undefined && item.badge > 0 && (
-                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${active ? "bg-white/30 text-white" : "bg-sidebar-primary text-sidebar-primary-foreground"}`}>
-                    {item.badge}
+                  <span className={`
+                    text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none
+                    ${active ? "bg-white/25 text-white" : "bg-[#f97316] text-white"}
+                  `}>
+                    {item.badge > 99 ? "99+" : item.badge}
                   </span>
                 )}
               </div>
@@ -120,7 +141,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {/* Admin Section */}
         {adminNavItems.length > 0 && (
           <>
-            <p className="text-sidebar-foreground/40 text-[9px] font-bold uppercase tracking-widest px-3 pt-4 pb-1.5">
+            <p className="text-white/30 text-[9px] font-bold uppercase tracking-[0.15em] px-3 pt-4 pb-1.5">
               Admin
             </p>
             {adminNavItems.map((item) => {
@@ -128,9 +149,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
               const active = isActive(item.href);
               return (
                 <Link key={item.href} href={item.href}>
-                  <div className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all group ${active ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"}`}>
-                    <Icon size={16} className={active ? "text-sidebar-primary-foreground" : "text-sidebar-foreground/50 group-hover:text-sidebar-foreground/80"} />
-                    <span className="text-[13px]">{item.label}</span>
+                  <div className={`
+                    flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-150
+                    ${active
+                      ? "bg-[#f97316] text-white font-semibold shadow-md shadow-orange-900/30"
+                      : "text-white/65 hover:text-white hover:bg-white/8"}
+                  `}>
+                    <Icon size={16} className={active ? "text-white" : "text-white/45"} />
+                    <span className="text-[13px] leading-none">{item.label}</span>
                   </div>
                 </Link>
               );
@@ -139,35 +165,48 @@ export function Layout({ children }: { children: React.ReactNode }) {
         )}
       </div>
 
-      {/* Version */}
-      <div className="px-4 pb-1 flex items-center justify-between">
-        <span className="text-[10px] text-sidebar-foreground/30 font-mono tracking-wide">SAHU CSC v{__APP_VERSION__}</span>
-        <span className="text-[10px] text-sidebar-foreground/25">© 2026</span>
+      {/* ── Version ────────────────────────────────────────────── */}
+      <div className="px-4 py-1.5 flex items-center justify-between">
+        <span className="text-[9px] text-white/20 font-mono tracking-wide uppercase">
+          SAHU CSC v{__APP_VERSION__}
+        </span>
+        <span className="text-[9px] text-white/20">© 2026</span>
       </div>
 
-      {/* User Footer */}
-      <div className="p-3 border-t border-sidebar-border/50">
-        <div className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-sidebar-accent/40 transition-colors">
-          <Link href="/profile" className="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer">
-            <Avatar className="h-8 w-8 border border-sidebar-border flex-shrink-0">
-              {avatarSrc ? <AvatarImage src={avatarSrc} alt="Profile" className="object-cover" /> : null}
-              <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground text-xs font-bold">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col min-w-0">
-              <span className="text-xs font-semibold leading-none mb-0.5 truncate">{user?.fullName || user?.username}</span>
-              <span className="text-[10px] text-sidebar-foreground/50 capitalize">{user?.role}</span>
-            </div>
-          </Link>
-          <Button
-            variant="ghost" size="icon"
-            onClick={() => logout()}
-            className="text-sidebar-foreground/40 hover:text-destructive hover:bg-destructive/10 h-7 w-7 flex-shrink-0"
-          >
-            <LogOut size={14} />
-          </Button>
-        </div>
+      {/* ── User Footer ────────────────────────────────────────── */}
+      <div className="mx-3 mb-3 mt-0.5 p-2.5 rounded-2xl bg-white/8 border border-white/10 flex items-center gap-2.5">
+
+        {/* Avatar / Profile picture */}
+        <Link href="/profile" className="flex-shrink-0 cursor-pointer">
+          <Avatar className="h-10 w-10 ring-2 ring-[#f97316]/60 shadow-sm">
+            {avatarSrc
+              ? <AvatarImage src={avatarSrc} alt={displayName} className="object-cover" />
+              : null}
+            <AvatarFallback className="bg-[#f97316] text-white text-sm font-black">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+        </Link>
+
+        {/* Name + role */}
+        <Link href="/profile" className="flex-1 min-w-0 cursor-pointer">
+          <p className="text-[13px] font-bold text-white leading-tight truncate">{displayName}</p>
+          <p className="text-[10px] text-white/45 mt-0.5 capitalize">{roleLabel}</p>
+        </Link>
+
+        {/* Logout button — arrow-in-box style */}
+        <button
+          onClick={() => logout()}
+          title="Logout"
+          className="
+            flex-shrink-0 w-8 h-8 rounded-xl border border-white/15 bg-white/5
+            flex items-center justify-center
+            text-white/40 hover:text-white hover:border-white/30 hover:bg-white/12
+            transition-all duration-150 cursor-pointer
+          "
+        >
+          <LogIn size={14} className="rotate-180" />
+        </button>
       </div>
     </div>
   );
@@ -190,28 +229,30 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <header className="bg-sidebar sticky top-0 z-20 md:hidden shadow-md">
           <div className="flex items-center justify-between px-4 h-14">
             <div className="flex items-center gap-3">
-              <AppLogo size="sm" />
+              <div className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-white/20">
+                <AppLogo size="sm" className="w-full h-full" />
+              </div>
               <div>
-                <h1 className="font-bold text-sm leading-tight text-sidebar-foreground">SAHU CSC</h1>
-                <p className="text-[10px] text-sidebar-foreground/60 leading-none">Management Platform</p>
+                <h1 className="font-extrabold text-sm leading-tight text-white tracking-wide">SAHU CSC</h1>
+                <p className="text-[9px] text-white/50 leading-none">Management Platform</p>
               </div>
             </div>
             <div className="flex items-center gap-1">
               <Link href="/notifications">
-                <Button variant="ghost" size="icon" className="relative h-9 w-9 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50">
+                <Button variant="ghost" size="icon" className="relative h-9 w-9 text-white/60 hover:text-white hover:bg-white/10">
                   <Bell size={18} />
                   {unreadCount > 0 && (
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-sidebar-primary rounded-full border border-sidebar" />
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#f97316] rounded-full border border-sidebar" />
                   )}
                 </Button>
               </Link>
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-9 w-9 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50">
+                  <Button variant="ghost" size="icon" className="h-9 w-9 text-white/60 hover:text-white hover:bg-white/10">
                     <Menu size={18} />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="p-0 w-64 border-0">
+                <SheetContent side="left" className="p-0 w-72 border-0">
                   <SidebarContent />
                 </SheetContent>
               </Sheet>
@@ -241,9 +282,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </Button>
             </Link>
             <Link href="/profile">
-              <Avatar className="h-8 w-8 border border-border cursor-pointer hover:opacity-80 transition-opacity">
+              <Avatar className="h-8 w-8 ring-2 ring-[#f97316]/50 cursor-pointer hover:opacity-80 transition-opacity">
                 {avatarSrc ? <AvatarImage src={avatarSrc} alt="Profile" className="object-cover" /> : null}
-                <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground text-sm font-bold">
+                <AvatarFallback className="bg-[#f97316] text-white text-sm font-black">
                   {initials}
                 </AvatarFallback>
               </Avatar>
@@ -251,7 +292,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        {/* Sync status + PWA install banners */}
+        {/* Sync + PWA banners */}
         <SyncStatusBar />
         <PWAInstallBanner />
 
@@ -268,12 +309,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
               const active = isActive(item.href);
               return (
                 <Link key={item.href} href={item.href} className="flex-1">
-                  <div className={`flex flex-col items-center justify-center h-full gap-1 relative transition-colors ${active ? "text-primary" : "text-muted-foreground"}`}>
+                  <div className={`flex flex-col items-center justify-center h-full gap-1 relative transition-colors ${active ? "text-[#f97316]" : "text-muted-foreground"}`}>
                     {active && (
-                      <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary rounded-full" />
+                      <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[#f97316] rounded-full" />
                     )}
                     <Icon size={20} strokeWidth={active ? 2.5 : 1.8} />
-                    <span className={`text-[10px] font-semibold leading-none ${active ? "text-primary" : "text-muted-foreground"}`}>
+                    <span className={`text-[10px] font-semibold leading-none ${active ? "text-[#f97316]" : "text-muted-foreground"}`}>
                       {item.label}
                     </span>
                   </div>
