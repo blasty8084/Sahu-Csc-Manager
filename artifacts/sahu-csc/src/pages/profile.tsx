@@ -377,7 +377,7 @@ export default function Profile() {
               </CardHeader>
               <CardContent>
                 <form onSubmit={onSaveProfile} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <Label>Full Name</Label>
                       <Input {...profileForm.register("fullName")} placeholder="Your full name" />
@@ -388,7 +388,7 @@ export default function Profile() {
                       <p className="text-xs text-muted-foreground">Username cannot be changed</p>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <Label>Email</Label>
                       <Input type="email" {...profileForm.register("email")} placeholder="your@email.com" />
@@ -438,7 +438,7 @@ export default function Profile() {
                       <Label>Current Password</Label>
                       <Input type="password" {...passwordForm.register("currentPassword")} placeholder="Enter current password" />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
                         <Label>New Password</Label>
                         <Input type="password" {...passwordForm.register("password")} placeholder="Min 6 characters" />

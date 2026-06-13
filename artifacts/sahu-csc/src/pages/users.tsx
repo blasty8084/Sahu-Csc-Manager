@@ -110,59 +110,96 @@ export default function Users() {
           <div className="space-y-3">
             {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}
           </div>
+        ) : users?.length === 0 ? (
+          <p className="text-center text-muted-foreground py-12">No users found</p>
         ) : (
-          <div className="border rounded-lg overflow-hidden bg-card">
-            <table className="w-full text-sm">
-              <thead className="border-b bg-muted/30">
-                <tr className="text-left">
-                  <th className="px-4 py-3 font-medium text-muted-foreground">User</th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground">Contact</th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground">Role</th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground">Joined</th>
-                  <th className="px-4 py-3"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {users?.length === 0 ? (
-                  <tr><td colSpan={6} className="text-center text-muted-foreground py-12">No users found</td></tr>
-                ) : users?.map((user: any) => (
-                  <tr key={user.id} className="hover:bg-muted/20 transition-colors" data-testid={`row-user-${user.id}`}>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback className="text-xs bg-primary/10 text-primary">{(user.fullName || user.username).charAt(0).toUpperCase()}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium">{user.fullName || user.username}</p>
-                          <p className="text-xs text-muted-foreground">@{user.username}</p>
-                        </div>
+          <>
+            {/* Mobile cards */}
+            <div className="space-y-3 sm:hidden">
+              {users?.map((user: any) => (
+                <div key={user.id} className="bg-card border rounded-xl p-4 space-y-3" data-testid={`row-user-${user.id}`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Avatar className="h-9 w-9 shrink-0">
+                        <AvatarFallback className="text-sm bg-primary/10 text-primary">{(user.fullName || user.username).charAt(0).toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{user.fullName || user.username}</p>
+                        <p className="text-xs text-muted-foreground">@{user.username}</p>
                       </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <p className="text-xs">{user.email}</p>
-                      {user.mobile && <p className="text-xs text-muted-foreground">{user.mobile}</p>}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`text-xs px-2 py-0.5 rounded font-medium ${ROLE_COLORS[user.role] ?? ""}`}>{user.role}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge variant={user.isActive ? "default" : "secondary"} className="text-xs">
-                        {user.isActive ? "Active" : "Inactive"}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(user.createdAt).toLocaleDateString("en-IN")}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(user)}><Pencil size={12} /></Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(user.id)}><Trash2 size={12} /></Button>
-                      </div>
-                    </td>
+                    </div>
+                    <div className="flex gap-1 shrink-0">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(user)}><Pencil size={13} /></Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteId(user.id)}><Trash2 size={13} /></Button>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`text-xs px-2 py-0.5 rounded font-medium ${ROLE_COLORS[user.role] ?? ""}`}>{user.role}</span>
+                    <Badge variant={user.isActive ? "default" : "secondary"} className="text-xs">
+                      {user.isActive ? "Active" : "Inactive"}
+                    </Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground space-y-0.5">
+                    <p>{user.email}</p>
+                    {user.mobile && <p>{user.mobile}</p>}
+                    <p>Joined {new Date(user.createdAt).toLocaleDateString("en-IN")}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden sm:block border rounded-lg overflow-hidden bg-card">
+              <table className="w-full text-sm">
+                <thead className="border-b bg-muted/30">
+                  <tr className="text-left">
+                    <th className="px-4 py-3 font-medium text-muted-foreground">User</th>
+                    <th className="px-4 py-3 font-medium text-muted-foreground">Contact</th>
+                    <th className="px-4 py-3 font-medium text-muted-foreground">Role</th>
+                    <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
+                    <th className="px-4 py-3 font-medium text-muted-foreground">Joined</th>
+                    <th className="px-4 py-3"></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {users?.map((user: any) => (
+                    <tr key={user.id} className="hover:bg-muted/20 transition-colors" data-testid={`row-user-${user.id}`}>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback className="text-xs bg-primary/10 text-primary">{(user.fullName || user.username).charAt(0).toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">{user.fullName || user.username}</p>
+                            <p className="text-xs text-muted-foreground">@{user.username}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <p className="text-xs">{user.email}</p>
+                        {user.mobile && <p className="text-xs text-muted-foreground">{user.mobile}</p>}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`text-xs px-2 py-0.5 rounded font-medium ${ROLE_COLORS[user.role] ?? ""}`}>{user.role}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant={user.isActive ? "default" : "secondary"} className="text-xs">
+                          {user.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(user.createdAt).toLocaleDateString("en-IN")}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(user)}><Pencil size={12} /></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(user.id)}><Trash2 size={12} /></Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 

@@ -73,8 +73,35 @@ export default function AuditLogs() {
           )}
         </div>
 
-        {/* Table */}
-        <div className="border rounded-lg overflow-hidden bg-card">
+        {/* Mobile cards */}
+        {isLoading ? (
+          <div className="space-y-3 sm:hidden">
+            {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}
+          </div>
+        ) : data?.logs?.length === 0 ? (
+          <p className="text-center text-muted-foreground py-12 sm:hidden">No audit logs found</p>
+        ) : (
+          <div className="space-y-2 sm:hidden">
+            {data?.logs?.map((log: any) => (
+              <div key={log.id} className="bg-card border rounded-xl p-3.5 space-y-2" data-testid={`row-audit-${log.id}`}>
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <span className={`text-xs px-2 py-0.5 rounded font-medium ${ACTION_COLORS[log.action] ?? "bg-muted text-muted-foreground"}`}>
+                    {log.action}
+                  </span>
+                  <span className="font-mono text-xs text-muted-foreground">{new Date(log.createdAt).toLocaleString("en-IN")}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm gap-2">
+                  <span className="font-medium">{log.username ?? `#${log.userId}`}</span>
+                  <span className="font-mono text-xs text-muted-foreground">{log.ipAddress}</span>
+                </div>
+                {log.details && <p className="text-xs text-muted-foreground truncate">{log.details}</p>}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Desktop table */}
+        <div className="hidden sm:block border rounded-lg overflow-hidden bg-card">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="border-b bg-muted/30">
@@ -119,6 +146,17 @@ export default function AuditLogs() {
             </div>
           )}
         </div>
+
+        {/* Mobile pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between sm:hidden">
+            <p className="text-xs text-muted-foreground">Page {page} of {totalPages}</p>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setPage(p => p - 1)} disabled={page <= 1}>Prev</Button>
+              <Button variant="outline" size="sm" onClick={() => setPage(p => p + 1)} disabled={page >= totalPages}>Next</Button>
+            </div>
+          </div>
+        )}
       </div>
     </Layout>
   );

@@ -113,7 +113,7 @@ export default function UsersOverview() {
       </div>
 
       <Dialog open={!!selectedUser} onOpenChange={close}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl w-[95vw] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex items-center justify-between">
               <DialogTitle className="flex items-center gap-2">
@@ -133,7 +133,8 @@ export default function UsersOverview() {
             <p className="text-center text-muted-foreground py-8">No transactions yet</p>
           ) : (
             <>
-              <table className="w-full text-sm">
+              <div className="overflow-x-auto -mx-1">
+              <table className="w-full text-sm min-w-[480px]">
                 <thead className="border-b bg-muted/30">
                   <tr className="text-left">
                     <th className="px-3 py-2 text-xs font-medium text-muted-foreground">Date</th>
@@ -163,6 +164,7 @@ export default function UsersOverview() {
                   ))}
                 </tbody>
               </table>
+              </div>
 
               {ledger && ledger.total > ledger.limit && (
                 <div className="flex items-center justify-between pt-2">

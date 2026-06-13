@@ -78,7 +78,7 @@ export default function Settings() {
                   <Label>Address</Label>
                   <Input {...form.register("businessAddress")} data-testid="input-business-address" />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label>Mobile</Label>
                     <Input {...form.register("businessMobile")} data-testid="input-business-mobile" />
@@ -95,7 +95,7 @@ export default function Settings() {
             <Card>
               <CardHeader className="pb-3"><CardTitle className="text-base">Preferences</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="space-y-1.5">
                     <Label>Language</Label>
                     <Select value={form.watch("language")} onValueChange={(v) => form.setValue("language", v)}>

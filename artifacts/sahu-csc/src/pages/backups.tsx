@@ -87,7 +87,8 @@ export default function Backups() {
           </div>
         ) : (
           <div className="border rounded-lg overflow-hidden bg-card">
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[480px]">
               <thead className="border-b bg-muted/30">
                 <tr className="text-left">
                   <th className="px-4 py-3 font-medium text-muted-foreground">Filename</th>
@@ -122,6 +123,7 @@ export default function Backups() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </div>
