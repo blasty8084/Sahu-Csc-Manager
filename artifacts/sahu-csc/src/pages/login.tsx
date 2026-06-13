@@ -284,42 +284,39 @@ function LoginFormContent({
 function MobileLogin(props: LoginFormContentProps) {
   return (
     <div
-      className="min-h-screen flex flex-col overflow-hidden"
+      className="h-screen flex flex-col overflow-hidden"
       style={{ background: "#0B1340" }}
     >
-      <div className="flex-shrink-0 pt-14 px-6 pb-8 flex flex-col items-center text-center">
-        <SLogo size={64} />
-        <div className="mt-4 space-y-0.5">
-          <h1 className="text-2xl font-black">
+      {/* Compact blue header — shrinks to fit */}
+      <div className="flex-shrink-0 pt-6 px-6 pb-4 flex flex-col items-center text-center">
+        <SLogo size={48} />
+        <div className="mt-2.5 space-y-0">
+          <h1 className="text-xl font-black">
             <span className="text-white">SAHU </span>
             <span style={{ color: "#F97316" }}>CSC</span>
           </h1>
-          <p className="text-white/50 text-sm">Management Platform</p>
+          <p className="text-white/50 text-xs">Management Platform</p>
         </div>
-        <div className="flex items-center gap-1.5 mt-4">
-          <div className="w-10 h-0.5 rounded-full" style={{ background: "#F97316" }} />
-          <div className="w-3 h-0.5 rounded-full" style={{ background: "#F97316", opacity: 0.4 }} />
-          <div className="w-1.5 h-0.5 rounded-full" style={{ background: "#F97316", opacity: 0.2 }} />
-        </div>
-        <h2 className="text-white text-xl font-bold mt-3">Welcome back!</h2>
-        <p className="text-white/45 text-sm mt-1">Sign in to continue to your dashboard</p>
+        <h2 className="text-white text-base font-bold mt-2">Welcome back!</h2>
+        <p className="text-white/45 text-xs mt-0.5">Sign in to continue to your dashboard</p>
       </div>
 
+      {/* White card fills the remaining height exactly */}
       <motion.div
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
         transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-        className="flex-1 bg-white rounded-t-3xl shadow-2xl overflow-y-auto"
+        className="flex-1 bg-white rounded-t-3xl shadow-2xl flex flex-col overflow-hidden"
       >
-        <div className="px-6 pt-6 pb-10">
-          <div className="flex flex-col items-center mb-5">
+        <div className="flex-1 overflow-y-auto px-6 pt-5 pb-5">
+          <div className="flex flex-col items-center mb-4">
             <div
-              className="w-12 h-12 rounded-full flex items-center justify-center shadow-sm"
+              className="w-10 h-10 rounded-full flex items-center justify-center shadow-sm"
               style={{ background: "#FEE4D8" }}
             >
-              <User className="w-6 h-6" style={{ color: "#F97316" }} />
+              <User className="w-5 h-5" style={{ color: "#F97316" }} />
             </div>
-            <h3 className="text-gray-900 font-bold text-lg mt-2.5">
+            <h3 className="text-gray-900 font-bold text-base mt-2">
               Login to your account
             </h3>
             <p className="text-gray-500 text-xs mt-0.5">
@@ -329,7 +326,7 @@ function MobileLogin(props: LoginFormContentProps) {
 
           <LoginFormContent {...props} />
 
-          <p className="text-center text-xs text-gray-500 mt-5">
+          <p className="text-center text-xs text-gray-500 mt-4">
             Don't have an account?{" "}
             <Link href="/register">
               <span className="font-bold cursor-pointer" style={{ color: "#F97316" }}>Register Now</span>
@@ -343,10 +340,12 @@ function MobileLogin(props: LoginFormContentProps) {
 
 function DesktopLogin(props: LoginFormContentProps) {
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#0B1340" }}>
-      <div className="flex flex-1">
-        <div className="w-[60%] flex flex-col justify-between px-16 py-12">
-          <div className="flex items-center gap-3">
+    <div className="h-screen overflow-hidden flex flex-col" style={{ background: "#0B1340" }}>
+      {/* Main row fills entire height */}
+      <div className="flex flex-1 min-h-0">
+        {/* Left panel */}
+        <div className="w-[58%] flex flex-col px-12 py-8 overflow-hidden">
+          <div className="flex items-center gap-3 flex-shrink-0">
             <CircularLogo />
             <div>
               <div>
@@ -357,79 +356,70 @@ function DesktopLogin(props: LoginFormContentProps) {
             </div>
           </div>
 
-          <div className="mt-10 flex-1 flex flex-col justify-center">
-            <h1 className="text-5xl font-black leading-tight">
+          <div className="flex-1 flex flex-col justify-center min-h-0 mt-6">
+            <h1 className="text-4xl font-black leading-tight flex-shrink-0">
               <span className="text-white">One Platform.</span>
               <br />
               <span style={{ color: "#F97316" }}>Many Services.</span>
             </h1>
-            <p className="text-white/45 mt-4 text-base max-w-md leading-relaxed">
+            <p className="text-white/45 mt-3 text-sm max-w-md leading-relaxed flex-shrink-0">
               Manage all your CSC services, transactions and reports in one
               secure place.
             </p>
 
-            <div className="space-y-4 mt-8">
+            <div className="space-y-3 mt-6 flex-shrink-0">
               {[
-                {
-                  icon: Shield,
-                  title: "Secure & Reliable",
-                  desc: "Bank-level security to protect your data",
-                },
-                {
-                  icon: Zap,
-                  title: "Fast & Efficient",
-                  desc: "Quick access to all CSC services",
-                },
-                {
-                  icon: Users,
-                  title: "Trusted by Operators",
-                  desc: "Join thousands of CSC operators across India",
-                },
+                { icon: Shield, title: "Secure & Reliable", desc: "Bank-level security to protect your data" },
+                { icon: Zap, title: "Fast & Efficient", desc: "Quick access to all CSC services" },
+                { icon: Users, title: "Trusted by Operators", desc: "Join thousands of CSC operators across India" },
               ].map(({ icon: Icon, title, desc }) => (
-                <div key={title} className="flex items-center gap-4">
+                <div key={title} className="flex items-center gap-3">
                   <div
-                    className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm"
+                    className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm"
                     style={{ background: "#1a2560", border: "1px solid rgba(249,115,22,0.2)" }}
                   >
-                    <Icon className="w-5 h-5" style={{ color: "#F97316" }} />
+                    <Icon className="w-4 h-4" style={{ color: "#F97316" }} />
                   </div>
                   <div>
                     <p className="text-white font-semibold text-sm">{title}</p>
-                    <p className="text-white/40 text-xs mt-0.5">{desc}</p>
+                    <p className="text-white/40 text-xs">{desc}</p>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          <CSCBuilding />
+          <div className="flex-shrink-0">
+            <CSCBuilding />
+          </div>
         </div>
 
-        <div className="w-[40%] flex items-center justify-center px-10 py-12">
+        {/* Right panel — login card centred, never scrolls */}
+        <div className="w-[42%] flex items-center justify-center px-8 py-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
-            className="w-full max-w-sm bg-white rounded-3xl shadow-2xl px-8 py-8"
+            className="w-full max-w-sm bg-white rounded-3xl shadow-2xl px-7 py-6"
           >
-            <div className="flex flex-col items-center mb-5">
+            <div className="flex flex-col items-center mb-4">
               <div
-                className="w-14 h-14 rounded-full flex items-center justify-center shadow-sm"
+                className="w-12 h-12 rounded-full flex items-center justify-center shadow-sm"
                 style={{ background: "#FEE4D8" }}
               >
-                <User className="w-7 h-7" style={{ color: "#F97316" }} />
+                <User className="w-6 h-6" style={{ color: "#F97316" }} />
               </div>
-              <h3 className="text-gray-900 font-bold text-xl mt-3">
+              <h3 className="text-gray-900 font-bold text-lg mt-2.5">
                 Login to your account
               </h3>
-              <p className="text-gray-500 text-xs mt-1">
+              <p className="text-gray-500 text-xs mt-0.5">
                 Enter your credentials to continue
               </p>
             </div>
 
             <LoginFormContent {...props} />
 
-            <p className="text-center text-xs text-gray-500 mt-5">
+            <p className="text-center text-xs text-gray-500 mt-4">
               Don't have an account?{" "}
               <Link href="/register">
                 <span className="font-bold cursor-pointer" style={{ color: "#F97316" }}>Register Now</span>
@@ -439,10 +429,9 @@ function DesktopLogin(props: LoginFormContentProps) {
         </div>
       </div>
 
-      <div
-        style={{ borderTop: "1px solid #1a2560", background: "#080e2e" }}
-      >
-        <div className="flex items-center justify-around py-3.5 px-8 max-w-4xl mx-auto">
+      {/* Footer bar — always visible at bottom */}
+      <div className="flex-shrink-0" style={{ borderTop: "1px solid #1a2560", background: "#080e2e" }}>
+        <div className="flex items-center justify-around py-2.5 px-8 max-w-4xl mx-auto">
           {[
             { icon: Shield, label: "100% Secure" },
             { icon: Zap, label: "24x7 Support" },
@@ -450,7 +439,7 @@ function DesktopLogin(props: LoginFormContentProps) {
             { icon: Shield, label: "Trusted Network" },
           ].map(({ icon: Icon, label }) => (
             <div key={label} className="flex items-center gap-2">
-              <Icon className="w-4 h-4 flex-shrink-0" style={{ color: "#F97316" }} />
+              <Icon className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#F97316" }} />
               <span className="text-white/50 text-xs font-medium">{label}</span>
             </div>
           ))}
