@@ -453,6 +453,8 @@ Full config in `infrastructure/twa/twa-config.json`.
 - **`parseDevice` must be called once per route handler**: esbuild treats duplicate `const` declarations as a build error. In the login handler, call `parseDevice` once before all failure/success branches.
 - **Idle timeout applies globally**: `useIdleTimer` is wired inside `Layout`, so it covers every authenticated page. Do not add it again to individual pages.
 - **`DELETE /api/sessions/all` returns `{ redirect: true }`**: The frontend checks this flag and calls `logout()` to clear the client-side auth state and redirect to login.
+- **Mobile blank white screen**: `index.html` contains an inline navy loading spinner that is visible before React mounts — prevents blank white page while JS loads on slow mobile connections. The Vite server sends `Cache-Control: no-store` headers to stop browsers from caching stale `index.html`.
+- **`pike.replit.dev` URL does not work on mobile**: The dev preview URL only works inside the Replit environment. For a stable mobile-accessible URL, publish/deploy the app — this creates a permanent `*.replit.app` domain.
 
 ---
 
