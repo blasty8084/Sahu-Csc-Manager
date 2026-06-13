@@ -186,40 +186,57 @@ export function Sidebar() {
 
       {/* ── User Footer ────────────────────────────── */}
       <div
-        className="mx-3 mb-3 px-3 py-3 rounded-xl flex items-center gap-3"
+        className="mx-3 mb-3 rounded-xl overflow-hidden"
         style={{ background: "rgba(255,255,255,0.06)" }}
       >
-        {/* Avatar */}
-        <div
-          className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-sm"
-          style={{ background: "#f97316" }}
-        >
-          S
-        </div>
-        {/* Name + role */}
-        <div className="flex-1 min-w-0">
-          <div
-            className="text-[13px] font-semibold truncate"
-            style={{ color: "white" }}
-          >
-            SAHU Admin
+        {/* User info row */}
+        <div className="flex items-center gap-3 px-3 pt-3 pb-2">
+          {/* Profile picture */}
+          <div className="relative flex-shrink-0">
+            <img
+              src="https://i.pravatar.cc/80?img=12"
+              alt="Profile"
+              className="w-9 h-9 rounded-full object-cover"
+              style={{ border: "2px solid rgba(249,115,22,0.6)" }}
+            />
+            {/* Online dot */}
+            <span
+              className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full"
+              style={{ background: "#22c55e", border: "2px solid #0d1f3c" }}
+            />
           </div>
-          <div className="text-[11px]" style={{ color: "rgba(255,255,255,0.45)" }}>
-            Admin
+          {/* Name + role */}
+          <div className="flex-1 min-w-0">
+            <div className="text-[13px] font-semibold truncate" style={{ color: "white" }}>
+              SAHU Admin
+            </div>
+            <div className="text-[11px]" style={{ color: "rgba(255,255,255,0.45)" }}>
+              Admin
+            </div>
           </div>
         </div>
-        {/* Logout icon */}
+
+        {/* Logout button — full-width strip */}
         <div
-          className="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer"
-          style={{ color: "rgba(255,255,255,0.35)" }}
-          onMouseEnter={(e) =>
-            ((e.currentTarget as HTMLElement).style.color = "#f97316")
-          }
-          onMouseLeave={(e) =>
-            ((e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.35)")
-          }
+          className="flex items-center justify-center gap-2 mx-2 mb-2 py-2 rounded-lg cursor-pointer transition-all"
+          style={{
+            background: "rgba(239,68,68,0.12)",
+            border: "1px solid rgba(239,68,68,0.25)",
+            color: "rgba(239,68,68,0.8)",
+          }}
+          onMouseEnter={(e) => {
+            const el = e.currentTarget as HTMLElement;
+            el.style.background = "rgba(239,68,68,0.22)";
+            el.style.color = "#ef4444";
+          }}
+          onMouseLeave={(e) => {
+            const el = e.currentTarget as HTMLElement;
+            el.style.background = "rgba(239,68,68,0.12)";
+            el.style.color = "rgba(239,68,68,0.8)";
+          }}
         >
-          <LogOut size={15} />
+          <LogOut size={13} strokeWidth={2} />
+          <span className="text-[12px] font-medium">Logout</span>
         </div>
       </div>
     </div>
