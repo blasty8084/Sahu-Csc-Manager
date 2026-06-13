@@ -102,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const user = liveUser || offlineUser || null;
-  const isLoading = liveLoading && !offlineChecked;
+  const isLoading = liveLoading || !offlineChecked;
 
   return (
     <AuthContext.Provider value={{ user, isLoading, login: handleLogin, logout: handleLogout }}>
