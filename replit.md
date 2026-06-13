@@ -8,10 +8,17 @@ A full-stack CSC (Common Service Center) business management platform for tracki
 
 | Workflow | Command | Port | Purpose |
 |----------|---------|------|---------|
-| `artifacts/api-server: API Server` | `pnpm --filter @workspace/api-server run dev` | 8080 | Express REST API |
-| `artifacts/sahu-csc: web` | `pnpm --filter @workspace/sahu-csc run dev` | 21700 | React + Vite frontend |
+| `Start application` | Runs API (8080) + Frontend (5000) together | 5000 → :80 | **Main workflow — use this** |
 | `Seed Database` | `pnpm --filter @workspace/api-server run seed` | — | Seed/reseed sample data |
-| `Database Restore` | `pnpm --filter @workspace/api-server run restore` | — | Restore from backup file |
+
+> **Note:** `Start application` runs both the Express API (port 8080) and the Vite frontend (port 5000) in a single workflow. Port 5000 is mapped to external port 80 (Replit proxy). Always use the `Start application` workflow — do NOT run separate API/frontend workflows as they cause port conflicts.
+
+### Startup command (in `.replit`)
+```bash
+fuser -k 5000/tcp 2>/dev/null; fuser -k 8080/tcp 2>/dev/null
+PORT=8080 pnpm --filter @workspace/api-server run dev &
+PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run dev
+```
 
 ---
 
@@ -321,6 +328,7 @@ Full config in `infrastructure/twa/twa-config.json`.
 | **Notifications** | Auto-created on key events (login, failed login, backup, system); read/unread tracking | All users |
 | **Profile** | Profile photo, bio, address, password change, push notification toggle | All users |
 | **App & Offline** | Network status, sync queue, storage usage, install status, push notifications, device caps | All users |
+| **Server Health** | Live API server status, DB connection + latency, VAPID key status, memory & CPU — at `/server-health` | Admin only |
 | **Users Overview** | Admin view of all users' ledger balances and summaries | Admin only |
 | **User Management** | Create/edit/deactivate users, change roles | Admin only |
 | **Audit Logs** | Full audit trail of all actions with user, IP, timestamp | Admin only |
@@ -344,7 +352,10 @@ Full config in `infrastructure/twa/twa-config.json`.
 - `drizzle-kit push` can empty tables on destructive schema changes — always re-seed after schema changes.
 - Seed script uses `onConflictDoNothing()` — safe to run multiple times. Ledger entries are only inserted if the table is empty.
 - VAPID keys are auto-generated ephemerally if not set as env secrets — push subscriptions break on server restart without persistent keys.
-- Port 8080 (API) and 21700 (Frontend) must be free before starting workflows. If a workflow fails with `EADDRINUSE`, kill the occupying process with `fuser -k <port>/tcp`.
+- Port 8080 (API) and **5000** (Frontend) must be free before starting workflows. If a workflow fails with `EADDRINUSE`, kill the occupying process with `fuser -k <port>/tcp`.
+- **502 on mobile / preview**: Usually means the server is still starting up (takes ~15–20 seconds). Wait for the Replit preview pane to load first, then open the link on your phone. Never use `localhost` on mobile — always use the `.replit.dev` public URL.
+- **VAPID key persistence**: `ensureVapidKeys()` now sets `VAPID_KEYS_FROM_ENV=true` when keys come from Replit Secrets — the `/server-health` page uses this flag to show "Persistent" vs "Ephemeral" status.
+- **`/api/healthz`** returns full diagnostics (server uptime, memory, DB latency, VAPID status) — no auth required, safe to call from monitoring tools.
 
 ---
 

@@ -26,6 +26,7 @@
 17. [Environment Variables](#17-environment-variables)
 18. [Known Gotchas & Conventions](#18-known-gotchas--conventions)
 19. [Future Work Items](#19-future-work-items)
+20. [Bug Fixes & Replit Migration (June 2026)](#20-bug-fixes--replit-migration-june-2026)
 
 ---
 
@@ -652,6 +653,94 @@ ARCHITECTURE.md                         Added Section 6 (PWA & TWA)
 ### Deployment
 - Deploying to Replit gives you a stable HTTPS domain required for TWA and push notifications
 - `assetlinks.json` SHA-256 fingerprint must be updated after generating the APK via PWABuilder
+
+---
+
+## 20. Bug Fixes & Replit Migration (June 2026)
+
+> Applied during migration to Replit hosting environment. All items below were diagnosed and resolved.
+
+---
+
+### Bug Fix: 502 Bad Gateway on Mobile / Preview
+
+**Symptom:** Accessing the `.replit.dev` URL on a mobile phone showed "This page isn't working — HTTP ERROR 502".
+
+**Root cause:** The 502 occurred during the ~15–20 second window when the server was restarting (workflow restart clears ports with `fuser -k`). Replit's proxy returns 502 while port 5000 is not yet bound.
+
+**Fix applied:**
+- Workflow start command now clears both ports (`fuser -k 5000/tcp; fuser -k 8080/tcp`) before starting processes, reducing stale-process interference.
+- `waitForPort = 5000` in `.replit` ensures Replit marks the workflow "ready" only after Vite binds port 5000.
+- **User guidance**: Wait ~20 seconds after pressing Run before accessing the URL on a phone. Never use `localhost` on mobile — always use the `.replit.dev` public URL from the Replit preview pane.
+
+---
+
+### Bug Fix: Duplicate Workflow Port Conflicts
+
+**Symptom:** App worked in preview pane but returned 502 intermittently. Multiple workflows were running simultaneously (`artifacts/api-server: API Server` + `artifacts/sahu-csc: web` + `Start application`), all trying to bind the same ports.
+
+**Root cause:** Replit automatically created separate artifact workflows (`artifacts/api-server: API Server` on port 8080, `artifacts/sahu-csc: web` on port 21700/5000) that conflicted with the combined `Start application` workflow.
+
+**Fix applied:**
+- Consolidated to a single `Start application` workflow that runs both API and frontend in one shell command.
+- Port mapping confirmed: `localPort = 5000 → externalPort = 80` (Replit proxy).
+- Frontend port corrected from 21700 to **5000** in the combined workflow.
+- Extra conflicting workflows identified and removed from `.replit`.
+
+---
+
+### Feature: Server Health Page (`/server-health`)
+
+**Added:** Full-stack diagnostic page accessible at `/server-health` (admin only, in sidebar under admin section).
+
+**Backend — `GET /api/healthz` (enhanced):**
+
+| Field | Details |
+|-------|---------|
+| `status` | `"ok"` / `"degraded"` / `"error"` — overall system health |
+| `server.uptime` | Process uptime in seconds |
+| `server.nodeVersion` | Node.js version string |
+| `server.memory` | RSS, heap used/total, external bytes |
+| `server.system` | Total/free system RAM, CPU count, load averages (1m/5m/15m) |
+| `database.status` | `"ok"` / `"error"` — result of `SELECT version()` probe |
+| `database.latencyMs` | Milliseconds for the DB probe round-trip |
+| `database.version` | PostgreSQL version string (e.g. `"PostgreSQL 16.10"`) |
+| `vapid.status` | `"ok"` (persistent) / `"ephemeral"` (auto-generated) / `"disabled"` (missing) |
+| `vapid.persistent` | `true` when keys came from Replit Secrets (not auto-generated) |
+
+**Frontend — `artifacts/sahu-csc/src/pages/server-health.tsx`:**
+- 4 cards: Overall status banner, API Server (memory + CPU), Database, VAPID/Push
+- Colour-coded badges: 🟢 Healthy / 🟡 Degraded or Ephemeral / 🔴 Error / ⚫ Disabled
+- Auto-refreshes every 30 seconds; manual Refresh button
+- Quick Fixes section with copy-paste shell commands for common issues
+- Added to sidebar under Admin section with `HeartPulse` icon
+
+**Route added:** `<Route path="/server-health">{() => <ProtectedRoute component={ServerHealth} />}</Route>`
+
+---
+
+### Bug Fix: VAPID Persistence Detection
+
+**Symptom:** The `/server-health` page always showed VAPID as "Ephemeral" even when keys were set in Replit Secrets.
+
+**Root cause:** `ensureVapidKeys()` did not distinguish between keys loaded from env secrets vs. auto-generated at startup. Both paths set the same `process.env.VAPID_PUBLIC_KEY` variable, so there was no way to tell them apart at health-check time.
+
+**Fix applied (`artifacts/api-server/src/lib/vapid.ts`):**
+```ts
+if (existingPublic && existingPrivate) {
+  process.env.VAPID_KEYS_FROM_ENV = "true";  // ← added
+  logger.info("VAPID keys already configured");
+  return;
+}
+```
+The health endpoint reads `process.env.VAPID_KEYS_FROM_ENV` to determine `persistent: true/false` and sets `vapid.status = "ok"` vs `"ephemeral"` accordingly.
+
+---
+
+### Documentation Updates (this session)
+
+- `replit.md` — Workflows table updated to reflect single `Start application` workflow; frontend port corrected (21700 → 5000); Server Health page added to Product Features table; new Gotchas entries for 502 on mobile, VAPID persistence flag, and `/api/healthz` diagnostics.
+- `CHANGELOG.md` — This section added (section 20).
 
 ---
 
