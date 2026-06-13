@@ -2,12 +2,15 @@ import express, { type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import session from "express-session";
+import ConnectPgSimple from "connect-pg-simple";
 import helmet from "helmet";
 import hpp from "hpp";
 import rateLimit from "express-rate-limit";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { ensureVapidKeys } from "./lib/vapid";
+
+const PgSession = ConnectPgSimple(session);
 
 ensureVapidKeys().catch((e) => logger.error({ err: e }, "VAPID init failed"));
 
@@ -52,6 +55,11 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(
   session({
+    store: new PgSession({
+      conString: process.env.DATABASE_URL,
+      tableName: "session",
+      pruneSessionInterval: 60 * 60, // prune expired sessions every hour
+    }),
     secret: process.env.SESSION_SECRET ?? "sahu-csc-secret-key-change-in-production",
     resave: false,
     saveUninitialized: false,
