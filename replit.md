@@ -8,15 +8,17 @@ A full-stack CSC (Common Service Center) business management platform for tracki
 
 | Workflow | Command | Port | Purpose |
 |----------|---------|------|---------|
-| `Start application` | Runs API (8080) + Frontend (5000) together | 5000 → :80 | **Main workflow — use this** |
+| `Start application` | Runs API (8082) + Frontend (5000) together | 5000 → :80 | **Main workflow — use this** |
 | `Seed Database` | `pnpm --filter @workspace/api-server run seed` | — | Seed/reseed sample data |
 
-> **Note:** `Start application` runs both the Express API (port 8080) and the Vite frontend (port 5000) in a single workflow. Port 5000 is mapped to external port 80 (Replit proxy). Always use the `Start application` workflow — do NOT run separate API/frontend workflows as they cause port conflicts.
+> **Note:** `Start application` runs both the Express API (port **8082**) and the Vite frontend (port 5000) in a single workflow. Port 5000 is mapped to external port 80 (Replit proxy). Always use the `Start application` workflow — do NOT run separate API/frontend workflows as they cause port conflicts.
+>
+> **Port 8080 is held by a Replit artifact workflow** — the API therefore runs on **8082**. The Vite proxy in `vite.config.ts` already points to 8082.
 
 ### Startup command (in `.replit`)
 ```bash
-fuser -k 5000/tcp 2>/dev/null; fuser -k 8080/tcp 2>/dev/null
-PORT=8080 pnpm --filter @workspace/api-server run dev &
+fuser -k 5000/tcp 2>/dev/null; fuser -k 8082/tcp 2>/dev/null
+PORT=8082 pnpm --filter @workspace/api-server run dev &
 PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run dev
 ```
 
@@ -35,8 +37,8 @@ PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run dev
 
 ```bash
 # Development
-pnpm --filter @workspace/api-server run dev      # API server
-pnpm --filter @workspace/sahu-csc run dev         # Frontend
+pnpm --filter @workspace/api-server run dev      # API server (port 8082)
+pnpm --filter @workspace/sahu-csc run dev         # Frontend (port 5000)
 
 # Database
 pnpm --filter @workspace/db run push              # Push schema changes to DB
@@ -79,23 +81,24 @@ pnpm run build                                    # Typecheck + build all packag
 artifacts/
   api-server/src/
     routes/         — Express route handlers
-      auth.ts       — Login, logout, session
-      ledger.ts     — Ledger CRUD (per-user filtered)
-      aeps.ts       — AePS daily sessions + transactions (per-user filtered)
-      reports.ts    — Daily / monthly reports (per-user filtered)
+      auth.ts       — Login, logout, session; full audit logging for all failure scenarios
+      ledger.ts     — Ledger CRUD (per-user filtered); requirePermission enforced on all routes
+      aeps.ts       — AePS daily sessions + transactions; requirePermission enforced on all routes
+      reports.ts    — Daily / monthly reports; requirePermission enforced on all routes
       services.ts   — CSC services catalog
-      users.ts      — User management (admin only)
+      users.ts      — User management (admin only); descriptive audit log for role/status changes
       admin.ts      — Admin oversight: users-overview, per-user ledger, AePS overview
+      sessions.ts   — List sessions, revoke by ID, revoke others, revoke ALL (logout everywhere)
       notifications.ts
       audit.ts
       settings.ts
       profile.ts
       preferences.ts
       push.ts       — Push notification subscribe/unsubscribe/list
-      password-reset.ts
+      password-reset.ts — OTP-based reset; enforces 8+ chars, upper, lower, number
       health.ts
     lib/
-      auth.ts       — requireAuth / requireRole middleware, session helpers
+      auth.ts       — requireAuth / requireRole / requirePermission middleware; parseDevice with deviceType
       logger.ts     — Pino structured logger
       notify.ts     — Auto-create notifications helper
       push.ts       — web-push send helpers (sendPushToUser, sendPushToAll)
@@ -120,11 +123,12 @@ artifacts/
       audit-logs.tsx      — Full audit trail (admin)
       settings.tsx        — Business info, theme, backup config (admin)
       backups.tsx         — Backup and restore (admin)
+      sessions.tsx        — Active sessions page: device cards, revoke, logout others, logout ALL
       pwa-status.tsx      — App & Offline Status page (network, sync, storage, push)
       offline.tsx         — Offline fallback page
       not-found.tsx
     components/
-      layout.tsx              — Main sidebar + mobile nav + PWA install banner + sync bar
+      layout.tsx              — Main sidebar + mobile nav + PWA install banner + sync bar + idle timeout dialog
       sync-status-bar.tsx     — 🟢/🟡/🔴 global sync status indicator
       pwa-install-banner.tsx  — Install prompt banner
       app-logo.tsx
@@ -136,8 +140,8 @@ artifacts/
       use-pwa.ts                — Install prompt, badge, periodic sync, share, wake lock
       use-sync.ts               — Sync queue state (pending count, last sync, status)
       use-push-notifications.ts — Push subscription subscribe/unsubscribe
+      use-idle-timer.ts         — Auto-logout after 30 min inactivity; 2-min warning; isWarning + remaining + resetTimer
       use-device.tsx
-      use-idle-timer.ts         — Auto-logout after 30 min inactivity
       use-wake-lock.ts
       use-file-handler.ts
       use-mobile.tsx
@@ -160,6 +164,7 @@ lib/
     user_preferences.ts
     push_subscriptions.ts — Push notification subscriptions (endpoint, p256dh, auth, userId)
     password_reset_tokens.ts
+    user_sessions.ts      — V2 multi-device sessions (sessionId, userId, deviceInfo, browser, os, ip, rememberMe, isActive, expiresAt)
   api-spec/openapi.yaml   — OpenAPI spec (source of truth)
   api-client-react/src/
     generated/            — Auto-generated React Query hooks + Zod schemas (do not edit)
@@ -185,6 +190,7 @@ artifacts/sahu-csc/public/
 | Table | Key Columns | Notes |
 |-------|-------------|-------|
 | `users` | id, username, email, role, active_session_token | role: admin / operator |
+| `user_sessions` | sessionId, userId, deviceInfo, browser, os, ipAddress, rememberMe, isActive, expiresAt | V2 multi-device sessions |
 | `ledger` | date, credit, debit, balance, created_by | Per-user; running balance computed at insert |
 | `aeps_daily` | date, opening_balance, created_by | Unique per (date, created_by) |
 | `aeps_transactions` | session_id, amount, type | Linked to aeps_daily session |
@@ -205,6 +211,88 @@ artifacts/sahu-csc/public/
 | `user_session` | Cached auth session for offline login | 24 hours |
 | `cached_reports` | Previously generated reports | Configurable |
 | `pending_notifications` | Notifications queued offline | Cleared when read |
+
+---
+
+## Authentication & Security System (v2)
+
+### Session Management
+- **Multi-device sessions**: Each login creates a row in `user_sessions` with device info, IP, browser, OS, and expiry.
+- **Session durations**: Standard = 8 hours, Remember Me = 30 days.
+- **Session endpoints**:
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/sessions` | List all active sessions for current user |
+| `DELETE` | `/api/sessions/:id` | Revoke a specific session by DB row ID |
+| `DELETE` | `/api/sessions/others` | Revoke all sessions except the current one |
+| `DELETE` | `/api/sessions/all` | Revoke ALL sessions + destroy current session → redirects to login |
+
+- **V1 compat**: `requireAuth` validates via `user_sessions` first, falls back to legacy `activeSessionToken` on users table.
+
+### Account Security
+- **Account locking**: After **5 failed login attempts**, account is locked for **15 minutes**.
+- **Auto-unlock**: If lock window has expired, account is automatically unlocked on next login attempt.
+- **Idle timeout**: Frontend automatically logs out after **30 minutes of inactivity**. A warning dialog appears **2 minutes before** expiry with a live countdown and "Stay Logged In" / "Logout Now" options.
+
+### Password Policy
+Applies at **registration** and **password reset**:
+- Minimum **8 characters**
+- At least one **uppercase letter**
+- At least one **lowercase letter**
+- At least one **number**
+
+### Role-Based Access Control (RBAC)
+
+`requirePermission(permission)` middleware is applied to all data routes:
+
+| Route group | Required permission |
+|---|---|
+| `GET /api/ledger/*` | `ledger:view` |
+| `POST /api/ledger` | `ledger:create` |
+| `PATCH /api/ledger/:id`, `DELETE /api/ledger/:id` | `ledger:edit` |
+| `GET /api/aeps/*` | `aeps:view` |
+| `POST /api/aeps/*`, `PATCH /api/aeps/*`, `DELETE /api/aeps/*` | `aeps:manage` |
+| `GET /api/reports/*` (daily, monthly, aeps, service-breakdown) | `reports:view` |
+| `GET /api/reports/export` | `reports:export` |
+| `GET /api/dashboard` | `reports:view` |
+
+**Built-in role permissions:**
+
+| Role | Permissions |
+|------|------------|
+| `admin` | `["*"]` — all permissions |
+| `operator` | `ledger:view`, `ledger:create`, `ledger:edit`, `aeps:view`, `aeps:manage`, `reports:view`, `reports:export`, `services:view`, `profile:view`, `notifications:view` |
+| `user` | `ledger:view`, `reports:view`, `services:view`, `profile:view`, `notifications:view` (read-only) |
+
+### Audit Logging
+
+All security events are logged to `audit_logs` with user ID, IP address, and device info:
+
+| Audit action | When it fires |
+|---|---|
+| `login.success` | Successful login |
+| `login.failed_inactive` | Login blocked — account suspended/deleted/inactive |
+| `login.failed_locked` | Login blocked — account currently locked (logs minutes remaining) |
+| `login.failed_password` | Wrong password (logs attempt count e.g. `2/5`) |
+| `login.failed_max_attempts` | Account just locked after hitting max attempts |
+| `logout` | User logged out |
+| `session.revoke` | Single session revoked |
+| `session.revoke_others` | All other sessions revoked |
+| `session.revoke_all` | All sessions revoked (logged out everywhere) |
+| `user.create` | Admin created a new user |
+| `user.update` | User profile updated |
+| `user.role_change` | Admin changed a user's role (logs `old_role → new_role`) |
+| `user.delete` | Admin deleted a user |
+| `password.reset` | Password successfully reset via OTP |
+
+### Device Detection (`parseDevice`)
+
+`lib/auth.ts` → `parseDevice(userAgent)` returns:
+- `browser`: Chrome, Firefox, Edge, Safari, Opera, Samsung Browser, UC Browser
+- `os`: Windows, macOS, Android, iOS, Linux, ChromeOS
+- `deviceInfo`: `"Chrome on Windows"` (combined string stored in session)
+- `deviceType`: `"mobile" | "tablet" | "desktop"` (derived from UA patterns)
 
 ---
 
@@ -306,6 +394,9 @@ Full config in `infrastructure/twa/twa-config.json`.
 
 - **Contract-first API**: OpenAPI spec → Orval codegen → typed React Query hooks. Never edit `lib/api-client-react/src/generated/` directly.
 - **Session-based auth**: express-session + bcrypt. No JWTs — simpler for single-center CSC use case.
+- **V2 multi-device sessions**: `user_sessions` table stores every active login. `requireAuth` validates `sessionId` from `user_sessions` first, falls back to `activeSessionToken` on `users` table for backward compat.
+- **RBAC via `requirePermission`**: Admin has wildcard `["*"]`; operator has full data permissions; `user` role is read-only. Middleware applied at route level — not just controller logic.
+- **Audit log everything security-related**: Every failed login scenario (inactive, locked, wrong password, max attempts), every session revocation, every role change, every admin action is logged with IP + device info.
 - **Per-user data isolation**: `getUserFilter()` in ledger/reports/aeps always filters by `userId` — no admin exception for personal data. Admin oversight uses separate `/api/admin/*` endpoints.
 - **Money as Drizzle `numeric`**: Returns as string from DB — always `parseFloat()` before returning from routes.
 - **Running balance at insert time**: Computed from `SUM(credit) - SUM(debit)` of all prior entries for that user.
@@ -313,6 +404,8 @@ Full config in `infrastructure/twa/twa-config.json`.
 - **Offline-first IndexedDB**: v2 with 5 stores. `pending_ledger` auto-syncs on reconnect via `SyncEngine`. `user_session` enables offline auth for 24 hours.
 - **VAPID auto-init**: `ensureVapidKeys()` called at Express startup; uses env secrets if present, otherwise generates ephemeral keys.
 - **Seed script**: Compiled by esbuild alongside the main bundle (`src/scripts/seed.ts` → `dist/scripts/seed.mjs`). Safe to re-run — all inserts use `onConflictDoNothing()`.
+- **Idle timeout in Layout**: `useIdleTimer` hook called in `Layout` component (not individual pages) so timeout applies globally across all pages. `handleIdle` callback calls `logout()` directly.
+- **`parseDevice` called once per request**: In `auth.ts` login handler, `parseDevice` is called once before all failure/success branches to avoid esbuild duplicate-const errors.
 
 ---
 
@@ -327,11 +420,12 @@ Full config in `infrastructure/twa/twa-config.json`.
 | **Reports** | Daily & monthly bar charts, service breakdown pie chart, Excel export, cached offline | All users |
 | **Notifications** | Auto-created on key events (login, failed login, backup, system); read/unread tracking | All users |
 | **Profile** | Profile photo, bio, address, password change, push notification toggle | All users |
+| **Active Sessions** | View all devices, revoke individual sessions, logout other devices, logout everywhere | All users |
 | **App & Offline** | Network status, sync queue, storage usage, install status, push notifications, device caps | All users |
 | **Server Health** | Live API server status, DB connection + latency, VAPID key status, memory & CPU — at `/server-health` | Admin only |
 | **Users Overview** | Admin view of all users' ledger balances and summaries | Admin only |
-| **User Management** | Create/edit/deactivate users, change roles | Admin only |
-| **Audit Logs** | Full audit trail of all actions with user, IP, timestamp | Admin only |
+| **User Management** | Create/edit/deactivate users, change roles (role changes are audit-logged) | Admin only |
+| **Audit Logs** | Full audit trail including login failures, role changes, session events, all admin actions | Admin only |
 | **Settings** | Business info, language, theme, auto-backup config | Admin only |
 | **Backups** | Manual pg_dump backups, restore from file | Admin only |
 | **PWA Install** | Installable on desktop (Chrome/Edge) and Android | All users |
@@ -352,10 +446,13 @@ Full config in `infrastructure/twa/twa-config.json`.
 - `drizzle-kit push` can empty tables on destructive schema changes — always re-seed after schema changes.
 - Seed script uses `onConflictDoNothing()` — safe to run multiple times. Ledger entries are only inserted if the table is empty.
 - VAPID keys are auto-generated ephemerally if not set as env secrets — push subscriptions break on server restart without persistent keys.
-- Port 8080 (API) and **5000** (Frontend) must be free before starting workflows. If a workflow fails with `EADDRINUSE`, kill the occupying process with `fuser -k <port>/tcp`.
+- **API port is 8082** (not 8080) — Replit holds 8080 via an artifact workflow. The `Start application` command and the Vite proxy in `vite.config.ts` are already set to 8082.
 - **502 on mobile / preview**: Usually means the server is still starting up (takes ~15–20 seconds). Wait for the Replit preview pane to load first, then open the link on your phone. Never use `localhost` on mobile — always use the `.replit.dev` public URL.
 - **VAPID key persistence**: `ensureVapidKeys()` now sets `VAPID_KEYS_FROM_ENV=true` when keys come from Replit Secrets — the `/server-health` page uses this flag to show "Persistent" vs "Ephemeral" status.
 - **`/api/healthz`** returns full diagnostics (server uptime, memory, DB latency, VAPID status) — no auth required, safe to call from monitoring tools.
+- **`parseDevice` must be called once per route handler**: esbuild treats duplicate `const` declarations as a build error. In the login handler, call `parseDevice` once before all failure/success branches.
+- **Idle timeout applies globally**: `useIdleTimer` is wired inside `Layout`, so it covers every authenticated page. Do not add it again to individual pages.
+- **`DELETE /api/sessions/all` returns `{ redirect: true }`**: The frontend checks this flag and calls `logout()` to clear the client-side auth state and redirect to login.
 
 ---
 
