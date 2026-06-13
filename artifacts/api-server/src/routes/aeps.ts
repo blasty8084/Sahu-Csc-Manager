@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db, aepsDailyTable, aepsTransactionsTable } from "@workspace/db";
 import { eq, and, sum, count, desc, gte, lte, ilike, sql } from "drizzle-orm";
-import { requireAuth, requireRole, auditLog, getClientIp } from "../lib/auth";
+import { requireAuth, requireRole, requirePermission, auditLog, getClientIp } from "../lib/auth";
 import { z } from "zod";
 
 const router: IRouter = Router();
@@ -25,7 +25,7 @@ function fmt(n: any) {
 }
 
 // GET /aeps/session?date=YYYY-MM-DD  — current user's session for that date
-router.get("/aeps/session", requireAuth, async (req, res): Promise<void> => {
+router.get("/aeps/session", requireAuth, requirePermission("aeps:view"), async (req, res): Promise<void> => {
   const userId = req.session.userId!;
   const date = (req.query.date as string) || new Date().toISOString().split("T")[0];
 
@@ -77,7 +77,7 @@ router.get("/aeps/session", requireAuth, async (req, res): Promise<void> => {
 });
 
 // GET /api/aeps/transactions — paginated list of all transactions for current user
-router.get("/aeps/transactions", requireAuth, async (req, res): Promise<void> => {
+router.get("/aeps/transactions", requireAuth, requirePermission("aeps:view"), async (req, res): Promise<void> => {
   const userId = req.session.userId!;
   const page = Math.max(1, parseInt((req.query.page as string) || "1", 10));
   const limit = Math.min(50, Math.max(1, parseInt((req.query.limit as string) || "20", 10)));
@@ -150,7 +150,7 @@ router.get("/aeps/transactions", requireAuth, async (req, res): Promise<void> =>
 });
 
 // POST /aeps/session — create or update the current user's day-open balance
-router.post("/aeps/session", requireAuth, async (req, res): Promise<void> => {
+router.post("/aeps/session", requireAuth, requirePermission("aeps:manage"), async (req, res): Promise<void> => {
   const parsed = UpsertSessionBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
@@ -181,7 +181,7 @@ router.post("/aeps/session", requireAuth, async (req, res): Promise<void> => {
 });
 
 // POST /aeps/transaction — add a withdrawal or deposit for current user
-router.post("/aeps/transaction", requireAuth, async (req, res): Promise<void> => {
+router.post("/aeps/transaction", requireAuth, requirePermission("aeps:manage"), async (req, res): Promise<void> => {
   const parsed = AddTransactionBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
@@ -223,7 +223,7 @@ const EditTransactionBody = z.object({
   description: z.string().optional(),
 });
 
-router.patch("/aeps/transaction/:id", requireAuth, async (req, res): Promise<void> => {
+router.patch("/aeps/transaction/:id", requireAuth, requirePermission("aeps:manage"), async (req, res): Promise<void> => {
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(rawId, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
@@ -260,7 +260,7 @@ router.patch("/aeps/transaction/:id", requireAuth, async (req, res): Promise<voi
 });
 
 // DELETE /aeps/transaction/:id
-router.delete("/aeps/transaction/:id", requireAuth, async (req, res): Promise<void> => {
+router.delete("/aeps/transaction/:id", requireAuth, requirePermission("aeps:manage"), async (req, res): Promise<void> => {
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(rawId, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }

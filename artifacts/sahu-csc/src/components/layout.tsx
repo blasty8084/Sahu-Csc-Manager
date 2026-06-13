@@ -1,19 +1,34 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useListNotifications } from "@workspace/api-client-react";
+import { useIdleTimer } from "@/hooks/use-idle-timer";
 import {
   LayoutDashboard, BookOpen, Briefcase, BarChart3, Bell,
   History, Users, Settings, Database, LogOut, Menu,
   Fingerprint, UserCircle, LayoutGrid, WifiOff, ArrowDownToLine, HeartPulse, MonitorSmartphone,
+  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { AppLogo } from "@/components/app-logo";
 import { PWAInstallBanner } from "@/components/pwa-install-banner";
 import { SyncStatusBar, SyncDot } from "@/components/sync-status-bar";
+
+function formatCountdown(ms: number): string {
+  const totalSeconds = Math.ceil(ms / 1000);
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  if (mins > 0) return `${mins}:${String(secs).padStart(2, "0")}`;
+  return `${secs}s`;
+}
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -23,6 +38,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const unreadCount = Array.isArray(notificationsData) ? notificationsData.length : 0;
 
   const isAdmin = user?.role === "admin";
+
+  const handleIdle = useCallback(() => {
+    logout();
+  }, [logout]);
+
+  const { isWarning, remaining, resetTimer } = useIdleTimer(
+    30 * 60 * 1000,
+    2 * 60 * 1000,
+    handleIdle
+  );
 
   const mainNavItems = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -161,7 +186,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </div>
 
       <div className="flex-1 flex flex-col md:ml-64">
-        {/* Mobile Top Header — dark navy matching reference */}
+        {/* Mobile Top Header */}
         <header className="bg-sidebar sticky top-0 z-20 md:hidden shadow-md">
           <div className="flex items-center justify-between px-4 h-14">
             <div className="flex items-center gap-3">
@@ -258,6 +283,37 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </nav>
       </div>
+
+      {/* Idle Timeout Warning Dialog */}
+      <AlertDialog open={isWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-amber-500" />
+              Session About to Expire
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              You've been inactive for a while. For your security, you'll be automatically
+              logged out in{" "}
+              <strong className="text-foreground font-mono text-base">
+                {formatCountdown(remaining)}
+              </strong>
+              .
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              className="bg-destructive/10 text-destructive hover:bg-destructive/20 border-0"
+              onClick={() => logout()}
+            >
+              Logout Now
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={resetTimer}>
+              Stay Logged In
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

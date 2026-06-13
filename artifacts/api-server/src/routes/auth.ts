@@ -140,8 +140,12 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     return;
   }
 
+  const clientIp = getClientIp(req);
+  const { browser, os, deviceInfo } = parseDevice(req.headers["user-agent"]);
+
   // Account status gate
   if (!user.isActive || user.status === "DELETED" || user.status === "INACTIVE" || user.status === "SUSPENDED") {
+    await auditLog(user.id, "login.failed_inactive", `Login blocked — account status: ${user.status} from ${deviceInfo}`, clientIp);
     res.status(401).json({ error: "Account is not active. Please contact administrator." });
     return;
   }
@@ -150,6 +154,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   if (user.status === "LOCKED" && user.lockedUntil) {
     if (new Date() < user.lockedUntil) {
       const minutesLeft = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60_000);
+      await auditLog(user.id, "login.failed_locked", `Login blocked — account locked, ${minutesLeft}m remaining, from ${deviceInfo}`, clientIp);
       res.status(401).json({
         error: `Account temporarily locked. Try again in ${minutesLeft} minute${minutesLeft !== 1 ? "s" : ""}.`,
         locked: true,
@@ -176,6 +181,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
         .update(usersTable)
         .set({ failedLoginAttempts: attempts, status: "LOCKED", lockedUntil })
         .where(eq(usersTable.id, user.id));
+      await auditLog(user.id, "login.failed_max_attempts", `Account locked after ${MAX_ATTEMPTS} failed attempts from ${deviceInfo}`, clientIp);
       await createNotification(
         "Account Locked",
         `${user.username}'s account locked after ${MAX_ATTEMPTS} failed attempts`,
@@ -191,6 +197,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
         .update(usersTable)
         .set({ failedLoginAttempts: attempts })
         .where(eq(usersTable.id, user.id));
+      await auditLog(user.id, "login.failed_password", `Wrong password attempt ${attempts}/${MAX_ATTEMPTS} from ${deviceInfo}`, clientIp);
       await createNotification(
         "Failed Login Attempt",
         `Failed login for user: ${user.username} (attempt ${attempts}/${MAX_ATTEMPTS})`,
@@ -206,7 +213,6 @@ router.post("/auth/login", async (req, res): Promise<void> => {
 
   // ── Success ──────────────────────────────────────────────────────────────────
   const sessionId = randomUUID();
-  const { browser, os, deviceInfo } = parseDevice(req.headers["user-agent"]);
   const sessionDuration = rememberMe ? 30 * 24 * 60 * 60 * 1000 : 8 * 60 * 60 * 1000;
   const expiresAt = new Date(Date.now() + sessionDuration);
 

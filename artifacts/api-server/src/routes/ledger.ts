@@ -7,7 +7,7 @@ import {
   ListLedgerEntriesQueryParams,
   GetLedgerSummaryQueryParams,
 } from "@workspace/api-zod";
-import { requireAuth, requireRole, auditLog, getClientIp } from "../lib/auth";
+import { requireAuth, requireRole, requirePermission, auditLog, getClientIp } from "../lib/auth";
 
 const router: IRouter = Router();
 
@@ -32,7 +32,7 @@ function getUserFilter(req: any) {
   return eq(ledgerTable.createdBy, userId);
 }
 
-router.get("/ledger/balance", requireAuth, async (req, res): Promise<void> => {
+router.get("/ledger/balance", requireAuth, requirePermission("ledger:view"), async (req, res): Promise<void> => {
   const userFilter = getUserFilter(req);
   const result = await db
     .select({ totalCredits: sum(ledgerTable.credit), totalDebits: sum(ledgerTable.debit) })
@@ -48,7 +48,7 @@ router.get("/ledger/balance", requireAuth, async (req, res): Promise<void> => {
   });
 });
 
-router.get("/ledger/summary", requireAuth, async (req, res): Promise<void> => {
+router.get("/ledger/summary", requireAuth, requirePermission("ledger:view"), async (req, res): Promise<void> => {
   const params = GetLedgerSummaryQueryParams.safeParse(req.query);
   const period = params.success ? params.data.period ?? "today" : "today";
 
@@ -96,7 +96,7 @@ router.get("/ledger/summary", requireAuth, async (req, res): Promise<void> => {
   });
 });
 
-router.get("/ledger", requireAuth, async (req, res): Promise<void> => {
+router.get("/ledger", requireAuth, requirePermission("ledger:view"), async (req, res): Promise<void> => {
   const params = ListLedgerEntriesQueryParams.safeParse(req.query);
   const page = params.success && params.data.page ? params.data.page : 1;
   const limit = params.success && params.data.limit ? params.data.limit : 20;
@@ -138,7 +138,7 @@ router.get("/ledger", requireAuth, async (req, res): Promise<void> => {
   });
 });
 
-router.post("/ledger", requireAuth, async (req, res): Promise<void> => {
+router.post("/ledger", requireAuth, requirePermission("ledger:create"), async (req, res): Promise<void> => {
   const parsed = CreateLedgerEntryBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
@@ -171,7 +171,7 @@ router.post("/ledger", requireAuth, async (req, res): Promise<void> => {
   res.status(201).json(formatEntry(entry));
 });
 
-router.get("/ledger/:id", requireAuth, async (req, res): Promise<void> => {
+router.get("/ledger/:id", requireAuth, requirePermission("ledger:view"), async (req, res): Promise<void> => {
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(rawId, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
@@ -195,7 +195,7 @@ router.get("/ledger/:id", requireAuth, async (req, res): Promise<void> => {
   res.json(formatEntry(entry, entry.createdByName));
 });
 
-router.patch("/ledger/:id", requireAuth, async (req, res): Promise<void> => {
+router.patch("/ledger/:id", requireAuth, requirePermission("ledger:edit"), async (req, res): Promise<void> => {
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(rawId, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
@@ -229,7 +229,7 @@ router.delete("/ledger/all", requireRole("admin"), async (req, res): Promise<voi
   res.sendStatus(204);
 });
 
-router.delete("/ledger/:id", requireAuth, async (req, res): Promise<void> => {
+router.delete("/ledger/:id", requireAuth, requirePermission("ledger:edit"), async (req, res): Promise<void> => {
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(rawId, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }

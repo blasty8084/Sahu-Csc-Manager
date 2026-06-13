@@ -4,3 +4,4 @@
 - [Advanced PWA injectManifest](pwa-injectmanifest.md) — switched from generateSW to injectManifest for push/periodic sync; custom sw.ts; Uint8Array.buffer cast needed for PushManager.subscribe applicationServerKey
 - [API port conflict fix](api-port-conflict.md) — Replit artifact workflow holds port 8080; Start application uses port 8082, Vite proxy updated to match
 - [V2 Auth multi-device sessions](v2-auth-sessions.md) — user_sessions table; requireAuth validates sessionId via user_sessions, falls back to V1 activeSessionToken
+- [Auth route parseDevice placement](auth-parsdevice.md) — parseDevice must be called once before all failure/success branches to avoid duplicate-const errors; esbuild treats duplicate const as a build error

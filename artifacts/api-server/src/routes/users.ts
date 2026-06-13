@@ -89,7 +89,17 @@ router.patch("/users/:id", requireRole("admin"), async (req, res): Promise<void>
   if (parsed.data.password) updates.passwordHash = await hashPassword(parsed.data.password);
 
   const [updated] = await db.update(usersTable).set(updates).where(eq(usersTable.id, id)).returning();
-  await auditLog(req.session.userId!, "user.update", `Updated user ${id}`, getClientIp(req));
+
+  const changes: string[] = [];
+  if (updates.role && updates.role !== existing.role) changes.push(`role: ${existing.role} → ${updates.role}`);
+  if (updates.status && updates.status !== existing.status) changes.push(`status: ${existing.status} → ${updates.status}`);
+  if (updates.isActive !== undefined && updates.isActive !== existing.isActive) changes.push(`active: ${existing.isActive} → ${updates.isActive}`);
+  if (updates.passwordHash) changes.push("password changed by admin");
+
+  const detail = changes.length > 0 ? `Updated user ${existing.username} (${changes.join(", ")})` : `Updated user ${existing.username}`;
+  const action = updates.role && updates.role !== existing.role ? "user.role_change" : "user.update";
+  await auditLog(req.session.userId!, action, detail, getClientIp(req));
+
   res.json(fmt(updated));
 });
 

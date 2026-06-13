@@ -61,6 +61,21 @@ router.delete("/sessions/others", requireAuth, async (req, res): Promise<void> =
   res.json({ message: "All other sessions revoked" });
 });
 
+// DELETE /api/sessions/all — revoke ALL sessions (including current) and logout
+router.delete("/sessions/all", requireAuth, async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+
+  await db
+    .update(userSessionsTable)
+    .set({ isActive: false })
+    .where(eq(userSessionsTable.userId, userId));
+
+  await auditLog(userId, "session.revoke_all", "Revoked all sessions (logged out everywhere)", getClientIp(req));
+
+  req.session.destroy(() => {});
+  res.json({ message: "All sessions revoked", redirect: true });
+});
+
 // DELETE /api/sessions/:id — revoke a specific session by DB row id
 router.delete("/sessions/:id", requireAuth, async (req, res): Promise<void> => {
   const userId = req.session.userId!;

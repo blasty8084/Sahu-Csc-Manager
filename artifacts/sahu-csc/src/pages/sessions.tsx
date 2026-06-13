@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   Monitor, Smartphone, Tablet, Globe, Clock, MapPin,
-  Trash2, LogOut, ShieldCheck, Loader2, RefreshCw,
+  Trash2, LogOut, ShieldCheck, Loader2, RefreshCw, ShieldAlert,
 } from "lucide-react";
 
 interface SessionEntry {
@@ -32,8 +32,8 @@ interface SessionEntry {
 
 function deviceIcon(os: string) {
   const lower = os.toLowerCase();
-  if (/android|ios|iphone|ipad/i.test(lower)) return Smartphone;
-  if (/tablet/i.test(lower)) return Tablet;
+  if (/android.*mobile|iphone|ipod|windows phone/i.test(lower)) return Smartphone;
+  if (/ipad|tablet|android(?!.*mobile)/i.test(lower)) return Tablet;
   return Monitor;
 }
 
@@ -49,6 +49,19 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleString("en-IN", {
     day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
   });
+}
+
+function formatExpiry(iso: string) {
+  const expiry = new Date(iso);
+  const now = new Date();
+  const diff = expiry.getTime() - now.getTime();
+  if (diff <= 0) return "Expired";
+  const days = Math.floor(diff / 86400000);
+  const hours = Math.floor((diff % 86400000) / 3600000);
+  if (days > 0) return `Expires in ${days}d ${hours}h`;
+  const mins = Math.floor((diff % 3600000) / 60000);
+  if (hours > 0) return `Expires in ${hours}h ${mins}m`;
+  return `Expires in ${mins}m`;
 }
 
 async function apiFetch(path: string, options?: RequestInit) {
@@ -69,6 +82,7 @@ export default function Sessions() {
   const { user, logout } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [revokeOthersDialog, setRevokeOthersDialog] = useState(false);
   const [revokeAllDialog, setRevokeAllDialog] = useState(false);
   const [revokeId, setRevokeId] = useState<number | null>(null);
 
@@ -80,7 +94,7 @@ export default function Sessions() {
 
   const revokeMutation = useMutation({
     mutationFn: (id: number) => apiFetch(`/sessions/${id}`, { method: "DELETE" }),
-    onSuccess: (data: any, id) => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["sessions"] });
       toast({ title: "Session revoked", description: "The device has been logged out." });
       if (data?.redirect) logout();
@@ -93,6 +107,15 @@ export default function Sessions() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sessions"] });
       toast({ title: "All other sessions revoked", description: "Only this device remains logged in." });
+    },
+    onError: (err: any) => toast({ variant: "destructive", title: "Error", description: err.message }),
+  });
+
+  const revokeAllMutation = useMutation({
+    mutationFn: () => apiFetch("/sessions/all", { method: "DELETE" }),
+    onSuccess: () => {
+      toast({ title: "Logged out everywhere", description: "All sessions have been revoked." });
+      logout();
     },
     onError: (err: any) => toast({ variant: "destructive", title: "Error", description: err.message }),
   });
@@ -117,25 +140,63 @@ export default function Sessions() {
           </Button>
         </div>
 
-        {/* Revoke all other button */}
-        {otherSessions.length > 0 && (
-          <div className="flex items-center justify-between p-4 rounded-xl border border-destructive/20 bg-destructive/5">
-            <div>
-              <p className="font-semibold text-sm">Sign out of all other devices</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {otherSessions.length} other session{otherSessions.length !== 1 ? "s" : ""} active
-              </p>
+        {/* Security summary */}
+        <div className="grid grid-cols-3 gap-3">
+          <div className="p-3 rounded-xl border bg-card text-center">
+            <p className="text-2xl font-bold text-primary">{sessions.length}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Active Sessions</p>
+          </div>
+          <div className="p-3 rounded-xl border bg-card text-center">
+            <p className="text-2xl font-bold capitalize">{user?.role}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Account Role</p>
+          </div>
+          <div className="p-3 rounded-xl border bg-card text-center">
+            <p className="text-2xl font-bold text-green-600">{currentSession?.rememberMe ? "30d" : "8h"}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Session Length</p>
+          </div>
+        </div>
+
+        {/* Bulk actions */}
+        {sessions.length > 0 && (
+          <div className="space-y-2">
+            {otherSessions.length > 0 && (
+              <div className="flex items-center justify-between p-4 rounded-xl border border-orange-200 bg-orange-50 dark:border-orange-900/40 dark:bg-orange-950/20">
+                <div>
+                  <p className="font-semibold text-sm">Sign out of all other devices</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {otherSessions.length} other session{otherSessions.length !== 1 ? "s" : ""} active
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setRevokeOthersDialog(true)}
+                  disabled={revokeOthersMutation.isPending}
+                  className="gap-1.5 border-orange-300 text-orange-700 hover:bg-orange-100 dark:border-orange-700 dark:text-orange-400"
+                >
+                  {revokeOthersMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <LogOut className="w-3.5 h-3.5" />}
+                  Logout Others
+                </Button>
+              </div>
+            )}
+            <div className="flex items-center justify-between p-4 rounded-xl border border-destructive/20 bg-destructive/5">
+              <div>
+                <p className="font-semibold text-sm text-destructive">Sign out of all devices</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  You will be logged out everywhere including this device
+                </p>
+              </div>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setRevokeAllDialog(true)}
+                disabled={revokeAllMutation.isPending}
+                className="gap-1.5"
+              >
+                {revokeAllMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ShieldAlert className="w-3.5 h-3.5" />}
+                Logout All
+              </Button>
             </div>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => setRevokeAllDialog(true)}
-              disabled={revokeOthersMutation.isPending}
-              className="gap-1.5"
-            >
-              {revokeOthersMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <LogOut className="w-3.5 h-3.5" />}
-              Logout Others
-            </Button>
           </div>
         )}
 
@@ -157,7 +218,7 @@ export default function Sessions() {
               <CardDescription className="text-xs">You are currently using this session</CardDescription>
             </CardHeader>
             <CardContent>
-              <SessionCard session={currentSession} onRevoke={null} />
+              <SessionCard session={currentSession} />
             </CardContent>
           </Card>
         )}
@@ -173,7 +234,7 @@ export default function Sessions() {
                 <CardContent className="pt-4">
                   <div className="flex items-start gap-3">
                     <div className="flex-1">
-                      <SessionCard session={s} onRevoke={null} />
+                      <SessionCard session={s} />
                     </div>
                     <Button
                       variant="ghost"
@@ -205,8 +266,9 @@ export default function Sessions() {
         <div className="p-4 rounded-xl bg-muted/50 border border-border/50">
           <p className="text-xs text-muted-foreground leading-relaxed">
             <strong className="text-foreground">Security tip:</strong> If you see any sessions you don't recognise,
-            revoke them immediately and change your password. Sessions expire automatically —
-            standard sessions after 8 hours, "Remember Me" sessions after 30 days.
+            revoke them immediately and change your password. Standard sessions expire after <strong>8 hours</strong>,
+            "Remember Me" sessions after <strong>30 days</strong>. Your account locks after{" "}
+            <strong>5 failed login attempts</strong> for 15 minutes.
           </p>
         </div>
       </div>
@@ -232,8 +294,8 @@ export default function Sessions() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Revoke all others dialog */}
-      <AlertDialog open={revokeAllDialog} onOpenChange={setRevokeAllDialog}>
+      {/* Revoke others dialog */}
+      <AlertDialog open={revokeOthersDialog} onOpenChange={setRevokeOthersDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Logout All Other Devices</AlertDialogTitle>
@@ -246,9 +308,31 @@ export default function Sessions() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive hover:bg-destructive/90"
-              onClick={() => { revokeOthersMutation.mutate(); setRevokeAllDialog(false); }}
+              onClick={() => { revokeOthersMutation.mutate(); setRevokeOthersDialog(false); }}
             >
               Logout Others
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Revoke ALL dialog */}
+      <AlertDialog open={revokeAllDialog} onOpenChange={setRevokeAllDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Logout Everywhere</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will sign out <strong>all {sessions.length} session{sessions.length !== 1 ? "s" : ""}</strong> including
+              this device. You will be redirected to the login page immediately.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90"
+              onClick={() => { revokeAllMutation.mutate(); setRevokeAllDialog(false); }}
+            >
+              Logout Everywhere
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -257,7 +341,7 @@ export default function Sessions() {
   );
 }
 
-function SessionCard({ session, onRevoke }: { session: SessionEntry; onRevoke: null }) {
+function SessionCard({ session }: { session: SessionEntry }) {
   const DevIcon = deviceIcon(session.os);
   return (
     <div className="flex items-start gap-3">
@@ -287,6 +371,7 @@ function SessionCard({ session, onRevoke }: { session: SessionEntry; onRevoke: n
             {formatDate(session.createdAt)}
           </span>
         </div>
+        <p className="text-[10px] text-muted-foreground/60 mt-0.5">{formatExpiry(session.expiresAt)}</p>
       </div>
     </div>
   );

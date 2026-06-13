@@ -42,7 +42,12 @@ export function getClientIp(req: Request): string {
   return req.socket.remoteAddress ?? "unknown";
 }
 
-export function parseDevice(userAgent: string = ""): { browser: string; os: string; deviceInfo: string } {
+export function parseDevice(userAgent: string = ""): {
+  browser: string;
+  os: string;
+  deviceInfo: string;
+  deviceType: "mobile" | "tablet" | "desktop";
+} {
   let browser = "Unknown Browser";
   let os = "Unknown OS";
 
@@ -51,14 +56,24 @@ export function parseDevice(userAgent: string = ""): { browser: string; os: stri
   else if (/android/i.test(userAgent)) os = "Android";
   else if (/iphone|ipad|ios/i.test(userAgent)) os = "iOS";
   else if (/linux/i.test(userAgent)) os = "Linux";
+  else if (/cros/i.test(userAgent)) os = "ChromeOS";
 
   if (/edg\//i.test(userAgent)) browser = "Edge";
   else if (/chrome/i.test(userAgent)) browser = "Chrome";
   else if (/firefox/i.test(userAgent)) browser = "Firefox";
   else if (/safari/i.test(userAgent)) browser = "Safari";
   else if (/opera|opr\//i.test(userAgent)) browser = "Opera";
+  else if (/samsung/i.test(userAgent)) browser = "Samsung Browser";
+  else if (/ucbrowser/i.test(userAgent)) browser = "UC Browser";
 
-  return { browser, os, deviceInfo: `${browser} on ${os}` };
+  let deviceType: "mobile" | "tablet" | "desktop" = "desktop";
+  if (/ipad|tablet|playbook|silk/i.test(userAgent)) {
+    deviceType = "tablet";
+  } else if (/android(?!.*tablet)|iphone|ipod|blackberry|windows phone|mobile/i.test(userAgent)) {
+    deviceType = "mobile";
+  }
+
+  return { browser, os, deviceInfo: `${browser} on ${os}`, deviceType };
 }
 
 // ─── requireAuth middleware ────────────────────────────────────────────────────

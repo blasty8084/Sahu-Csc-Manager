@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { db, ledgerTable, aepsDailyTable, aepsTransactionsTable, usersTable } from "@workspace/db";
 import { and, gte, lte, eq, sql, sum, count, desc } from "drizzle-orm";
 import { GetDailyReportQueryParams, GetMonthlyReportQueryParams, GetServiceBreakdownQueryParams, ExportReportQueryParams } from "@workspace/api-zod";
-import { requireAuth } from "../lib/auth";
+import { requireAuth, requirePermission } from "../lib/auth";
 import * as XLSX from "xlsx";
 
 const router: IRouter = Router();
@@ -92,7 +92,7 @@ async function getAepsData(startDate: string, endDate: string) {
   return { totalWithdrawals, totalDeposits, totalTransactions, sessions: sessionList };
 }
 
-router.get("/reports/daily", requireAuth, async (req, res): Promise<void> => {
+router.get("/reports/daily", requireAuth, requirePermission("reports:view"), async (req, res): Promise<void> => {
   const params = GetDailyReportQueryParams.safeParse(req.query);
   const date = params.success && params.data.date ? params.data.date as string : new Date().toISOString().split("T")[0];
 
@@ -128,7 +128,7 @@ router.get("/reports/daily", requireAuth, async (req, res): Promise<void> => {
   });
 });
 
-router.get("/reports/monthly", requireAuth, async (req, res): Promise<void> => {
+router.get("/reports/monthly", requireAuth, requirePermission("reports:view"), async (req, res): Promise<void> => {
   const params = GetMonthlyReportQueryParams.safeParse(req.query);
   const now = new Date();
   const year = params.success && params.data.year ? params.data.year : now.getFullYear();
@@ -184,7 +184,7 @@ router.get("/reports/monthly", requireAuth, async (req, res): Promise<void> => {
   });
 });
 
-router.get("/reports/aeps", requireAuth, async (req, res): Promise<void> => {
+router.get("/reports/aeps", requireAuth, requirePermission("reports:view"), async (req, res): Promise<void> => {
   const now = new Date();
   const startDate = (req.query.startDate as string) || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
   const endDate = (req.query.endDate as string) || now.toISOString().split("T")[0];
@@ -201,7 +201,7 @@ router.get("/reports/aeps", requireAuth, async (req, res): Promise<void> => {
   });
 });
 
-router.get("/reports/service-breakdown", requireAuth, async (req, res): Promise<void> => {
+router.get("/reports/service-breakdown", requireAuth, requirePermission("reports:view"), async (req, res): Promise<void> => {
   const params = GetServiceBreakdownQueryParams.safeParse(req.query);
   const now = new Date();
   const startDate = params.success && params.data.startDate
@@ -216,7 +216,7 @@ router.get("/reports/service-breakdown", requireAuth, async (req, res): Promise<
   res.json(data);
 });
 
-router.get("/reports/export", requireAuth, async (req, res): Promise<void> => {
+router.get("/reports/export", requireAuth, requirePermission("reports:export"), async (req, res): Promise<void> => {
   const params = ExportReportQueryParams.safeParse(req.query);
   const now = new Date();
   const startDate = params.success && params.data.startDate
@@ -267,7 +267,7 @@ router.get("/reports/export", requireAuth, async (req, res): Promise<void> => {
   res.send(buffer);
 });
 
-router.get("/dashboard", requireAuth, async (req, res): Promise<void> => {
+router.get("/dashboard", requireAuth, requirePermission("reports:view"), async (req, res): Promise<void> => {
   const today = new Date().toISOString().split("T")[0];
   const now = new Date();
   const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
