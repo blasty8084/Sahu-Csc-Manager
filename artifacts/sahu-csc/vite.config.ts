@@ -255,6 +255,12 @@ export default defineConfig({
     proxy: {
       "/api": { target: "http://localhost:8082", changeOrigin: true },
     },
+    headers: {
+      // Prevent browsers (and mobile PWA) from caching index.html — ensures
+      // every load picks up fresh JS bundle references after a deploy.
+      "Cache-Control": "no-store, no-cache, must-revalidate",
+      "Pragma": "no-cache",
+    },
   },
   preview: {
     port,
