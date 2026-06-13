@@ -3,12 +3,12 @@ import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { motion } from "framer-motion";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { LoginLogo } from "@/components/app-logo";
-import { CheckCircle2, XCircle, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { CheckCircle2, XCircle, ArrowLeft, Eye, EyeOff, Lock } from "lucide-react";
 
 const schema = z.object({
   identifier: z.string().min(1, "Enter your username, email, or mobile"),
@@ -34,7 +34,6 @@ export default function ResetPassword() {
     defaultValues: { identifier: "", otp: "", password: "", confirmPassword: "" },
   });
 
-  // OTP box key handling
   const handleOtpInput = (index: number, value: string) => {
     const digit = value.replace(/\D/g, "").slice(-1);
     const next = [...otpDigits];
@@ -83,180 +82,225 @@ export default function ResetPassword() {
     }
   };
 
+  /* ── Success screen ── */
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
-        <div className="w-full max-w-md">
-          <div className="mb-8 text-center">
-            <LoginLogo />
-            <h1 className="text-3xl font-bold text-foreground">SAHU CSC</h1>
-            <p className="text-muted-foreground mt-1">Password Recovery</p>
+      <div className="h-screen overflow-hidden flex flex-col" style={{ background: "#0B1340" }}>
+        <div className="flex-shrink-0 pt-6 px-6 pb-4 flex flex-col items-center text-center">
+          <LoginLogo size={56} />
+          <div className="mt-2.5">
+            <h1 className="text-xl font-black">
+              <span className="text-white">SAHU </span>
+              <span style={{ color: "#F97316" }}>CSC</span>
+            </h1>
+            <p className="text-white/50 text-xs">Password Recovery</p>
           </div>
-          <Card className="border-border/50 shadow-lg">
-            <CardContent className="pt-8 space-y-5">
-              <div className="flex flex-col items-center gap-3 py-4">
-                <CheckCircle2 className="w-14 h-14 text-emerald-500" />
-                <div className="text-center">
-                  <p className="font-semibold text-foreground text-lg">Password reset successfully!</p>
-                  <p className="text-sm text-muted-foreground mt-1">Redirecting to login in 3 seconds…</p>
-                </div>
-              </div>
-              <Link href="/login">
-                <Button className="w-full">Go to Login Now</Button>
-              </Link>
-            </CardContent>
-          </Card>
         </div>
+
+        <motion.div
+          initial={{ y: "100%" }}
+          animate={{ y: 0 }}
+          transition={{ duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="flex-1 bg-white rounded-t-3xl shadow-2xl flex flex-col items-center justify-center px-6 pb-8"
+        >
+          <CheckCircle2 className="w-16 h-16 text-emerald-500 mb-4" />
+          <p className="font-bold text-gray-900 text-xl">Password reset!</p>
+          <p className="text-sm text-gray-500 mt-1 text-center">Redirecting to login in 3 seconds…</p>
+          <Link href="/login" className="w-full mt-6">
+            <Button
+              className="w-full h-11 font-bold text-white border-0"
+              style={{ background: "linear-gradient(135deg, #1a2560, #0f1a4a)" }}
+            >
+              Go to Login Now
+            </Button>
+          </Link>
+        </motion.div>
       </div>
     );
   }
 
+  /* ── Reset form ── */
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
-      <div className="w-full max-w-md">
-        <div className="mb-8 text-center">
-          <LoginLogo />
-          <h1 className="text-3xl font-bold text-foreground">SAHU CSC</h1>
-          <p className="text-muted-foreground mt-1">Password Recovery</p>
+    <div className="h-screen overflow-hidden flex flex-col" style={{ background: "#0B1340" }}>
+      {/* Compact navy header */}
+      <div className="flex-shrink-0 pt-6 px-6 pb-4 flex flex-col items-center text-center">
+        <LoginLogo size={56} />
+        <div className="mt-2.5">
+          <h1 className="text-xl font-black">
+            <span className="text-white">SAHU </span>
+            <span style={{ color: "#F97316" }}>CSC</span>
+          </h1>
+          <p className="text-white/50 text-xs">Password Recovery</p>
         </div>
+      </div>
 
-        <Card className="border-border/50 shadow-lg">
-          <CardHeader className="text-center space-y-1">
-            <CardTitle className="text-xl">Reset Password</CardTitle>
-            <CardDescription>Enter your username, the OTP you received, and your new password</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+      {/* White card — fills remaining height */}
+      <motion.div
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
+        className="flex-1 bg-white rounded-t-3xl shadow-2xl flex flex-col overflow-hidden"
+      >
+        <div className="flex-1 overflow-y-auto px-6 pt-6 pb-6">
+          {/* Card header */}
+          <div className="flex flex-col items-center mb-5">
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center shadow-sm"
+              style={{ background: "#FEE4D8" }}
+            >
+              <Lock className="w-5 h-5" style={{ color: "#F97316" }} />
+            </div>
+            <h2 className="text-gray-900 font-bold text-lg mt-2">Reset Password</h2>
+            <p className="text-gray-500 text-xs mt-0.5 text-center max-w-xs">
+              Enter your username, the OTP you received, and your new password
+            </p>
+          </div>
 
-                {/* Identifier */}
-                <FormField
-                  control={form.control}
-                  name="identifier"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Username, Email or Mobile</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter your identifier" autoFocus autoComplete="username" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 
-                {/* OTP boxes */}
-                <FormField
-                  control={form.control}
-                  name="otp"
-                  render={({ fieldState }) => (
-                    <FormItem>
-                      <FormLabel>One-Time Password (OTP)</FormLabel>
-                      <div className="flex gap-2 justify-between" onPaste={handleOtpPaste}>
-                        {otpDigits.map((digit, i) => (
-                          <input
-                            key={i}
-                            ref={(el) => { otpRefs.current[i] = el; }}
-                            type="text"
-                            inputMode="numeric"
-                            maxLength={1}
-                            value={digit}
-                            onChange={(e) => handleOtpInput(i, e.target.value)}
-                            onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                            className="w-12 h-14 text-center text-2xl font-bold border-2 rounded-lg bg-background outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
-                            style={{ borderColor: fieldState.error ? "rgb(239,68,68)" : undefined }}
-                          />
-                        ))}
-                      </div>
-                      {fieldState.error && (
-                        <p className="text-sm font-medium text-destructive">{fieldState.error.message}</p>
-                      )}
-                    </FormItem>
-                  )}
-                />
-
-                {/* New password */}
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>New Password</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Input
-                            type={showPassword ? "text" : "password"}
-                            placeholder="Min 6 characters"
-                            autoComplete="new-password"
-                            {...field}
-                          />
-                          <button
-                            type="button"
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                            onClick={() => setShowPassword((v) => !v)}
-                          >
-                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                          </button>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Confirm password */}
-                <FormField
-                  control={form.control}
-                  name="confirmPassword"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Confirm Password</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Input
-                            type={showConfirm ? "text" : "password"}
-                            placeholder="Re-enter new password"
-                            autoComplete="new-password"
-                            {...field}
-                          />
-                          <button
-                            type="button"
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                            onClick={() => setShowConfirm((v) => !v)}
-                          >
-                            {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                          </button>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Server error */}
-                {serverError && (
-                  <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-3">
-                    <XCircle className="w-4 h-4 flex-shrink-0" />
-                    {serverError}
-                  </div>
+              {/* Identifier */}
+              <FormField
+                control={form.control}
+                name="identifier"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs font-semibold text-gray-600">Username, Email or Mobile</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Enter your identifier"
+                        className="h-11 text-gray-900 placeholder:text-gray-400 border-gray-200 bg-white focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:border-blue-400"
+                        autoFocus
+                        autoComplete="username"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
                 )}
+              />
 
-                <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+              {/* OTP boxes */}
+              <FormField
+                control={form.control}
+                name="otp"
+                render={({ fieldState }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs font-semibold text-gray-600">One-Time Password (OTP)</FormLabel>
+                    <div className="flex gap-2 justify-between" onPaste={handleOtpPaste}>
+                      {otpDigits.map((digit, i) => (
+                        <input
+                          key={i}
+                          ref={(el) => { otpRefs.current[i] = el; }}
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={1}
+                          value={digit}
+                          onChange={(e) => handleOtpInput(i, e.target.value)}
+                          onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                          className="flex-1 h-12 text-center text-xl font-bold border-2 rounded-lg bg-white outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 text-gray-900"
+                          style={{ borderColor: fieldState.error ? "rgb(239,68,68)" : "#e5e7eb" }}
+                        />
+                      ))}
+                    </div>
+                    {fieldState.error && (
+                      <p className="text-xs font-medium text-red-500 mt-1">{fieldState.error.message}</p>
+                    )}
+                  </FormItem>
+                )}
+              />
+
+              {/* New password */}
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs font-semibold text-gray-600">New Password</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Min 8 characters"
+                          className="h-11 pr-11 text-gray-900 placeholder:text-gray-400 border-gray-200 bg-white focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:border-blue-400"
+                          autoComplete="new-password"
+                          {...field}
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                          onClick={() => setShowPassword((v) => !v)}
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </FormControl>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+
+              {/* Confirm password */}
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs font-semibold text-gray-600">Confirm Password</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          type={showConfirm ? "text" : "password"}
+                          placeholder="Re-enter new password"
+                          className="h-11 pr-11 text-gray-900 placeholder:text-gray-400 border-gray-200 bg-white focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:border-blue-400"
+                          autoComplete="new-password"
+                          {...field}
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                          onClick={() => setShowConfirm((v) => !v)}
+                        >
+                          {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </FormControl>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+
+              {/* Server error */}
+              {serverError && (
+                <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
+                  <XCircle className="w-4 h-4 flex-shrink-0" />
+                  {serverError}
+                </div>
+              )}
+
+              <motion.div whileHover={{ scale: 1.015 }} whileTap={{ scale: 0.985 }}>
+                <Button
+                  type="submit"
+                  disabled={form.formState.isSubmitting}
+                  className="w-full h-11 font-bold text-white border-0"
+                  style={{ background: "linear-gradient(135deg, #1a2560, #0f1a4a)" }}
+                >
                   {form.formState.isSubmitting ? "Resetting…" : "Reset Password"}
                 </Button>
+              </motion.div>
 
-                <div className="text-center">
-                  <Link href="/login">
-                    <button type="button" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                      <ArrowLeft className="w-3.5 h-3.5" />
-                      Back to login
-                    </button>
-                  </Link>
-                </div>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
-      </div>
+              <div className="text-center">
+                <Link href="/login">
+                  <button type="button" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors">
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    Back to login
+                  </button>
+                </Link>
+              </div>
+            </form>
+          </Form>
+        </div>
+      </motion.div>
     </div>
   );
 }

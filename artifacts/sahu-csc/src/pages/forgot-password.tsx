@@ -3,12 +3,12 @@ import { Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { motion } from "framer-motion";
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { LoginLogo } from "@/components/app-logo";
-import { ArrowLeft, Copy, CheckCircle2, Clock, RefreshCw } from "lucide-react";
+import { ArrowLeft, Copy, CheckCircle2, Clock, RefreshCw, Loader2, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const schema = z.object({
@@ -68,114 +68,175 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
-      <div className="w-full max-w-md">
-        <div className="mb-8 text-center">
-          <LoginLogo />
-          <h1 className="text-3xl font-bold text-foreground">SAHU CSC</h1>
-          <p className="text-muted-foreground mt-1">Password Recovery</p>
+    <div className="h-screen overflow-hidden flex flex-col" style={{ background: "#0B1340" }}>
+      {/* Compact navy header */}
+      <div className="flex-shrink-0 pt-6 px-6 pb-4 flex flex-col items-center text-center">
+        <LoginLogo size={56} />
+        <div className="mt-2.5">
+          <h1 className="text-xl font-black">
+            <span className="text-white">SAHU </span>
+            <span style={{ color: "#F97316" }}>CSC</span>
+          </h1>
+          <p className="text-white/50 text-xs">Password Recovery</p>
         </div>
+      </div>
 
-        <Card className="border-border/50 shadow-lg">
-          <CardHeader className="text-center space-y-1">
-            <CardTitle className="text-xl">Forgot Password</CardTitle>
-            <CardDescription>
+      {/* White card — fills remaining height */}
+      <motion.div
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
+        className="flex-1 bg-white rounded-t-3xl shadow-2xl flex flex-col overflow-hidden"
+      >
+        <div className="flex-1 overflow-y-auto px-6 pt-6 pb-6">
+          {/* Card header */}
+          <div className="flex flex-col items-center mb-5">
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center shadow-sm"
+              style={{ background: "#FEE4D8" }}
+            >
+              <User className="w-5 h-5" style={{ color: "#F97316" }} />
+            </div>
+            <h2 className="text-gray-900 font-bold text-lg mt-2">
+              {otpInfo ? "OTP Generated" : "Forgot Password"}
+            </h2>
+            <p className="text-gray-500 text-xs mt-0.5 text-center max-w-xs">
               {otpInfo
                 ? "Share this OTP with the user to reset their password"
                 : "Enter the account identifier to generate a one-time password"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {!otpInfo ? (
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="identifier"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Username, Email or Mobile</FormLabel>
+            </p>
+          </div>
+
+          {!otpInfo ? (
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="identifier"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                         <FormControl>
-                          <Input placeholder="Enter account identifier" autoFocus {...field} />
+                          <Input
+                            placeholder="Username, Email or Mobile"
+                            className="pl-10 h-11 text-gray-900 placeholder:text-gray-400 border-gray-200 bg-white focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:border-blue-400"
+                            autoFocus
+                            {...field}
+                          />
                         </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-                    {form.formState.isSubmitting ? "Generating OTP…" : "Generate OTP"}
-                  </Button>
-                </form>
-              </Form>
-            ) : (
-              <div className="space-y-5">
-                {/* Account info */}
-                <div className="rounded-lg bg-muted/60 border px-4 py-3 text-sm flex justify-between items-center">
-                  <span className="text-muted-foreground">Account</span>
-                  <span className="font-semibold">{otpInfo.username}</span>
-                </div>
+                      </div>
+                      <FormMessage className="text-xs" />
+                    </FormItem>
+                  )}
+                />
 
-                {/* OTP display */}
-                <div className="rounded-xl border-2 border-primary/20 bg-primary/5 p-6 text-center space-y-3">
-                  <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">One-Time Password</p>
-                  <div className="flex justify-center gap-2">
-                    {otpInfo.otp.split("").map((digit, i) => (
-                      <span
-                        key={i}
-                        className="w-11 h-14 flex items-center justify-center text-3xl font-bold bg-background border-2 border-border rounded-lg shadow-sm text-foreground"
-                      >
-                        {digit}
+                <motion.div whileHover={{ scale: 1.015 }} whileTap={{ scale: 0.985 }}>
+                  <Button
+                    type="submit"
+                    disabled={form.formState.isSubmitting}
+                    className="w-full h-11 font-bold text-white border-0"
+                    style={{ background: "linear-gradient(135deg, #1a2560, #0f1a4a)" }}
+                  >
+                    {form.formState.isSubmitting ? (
+                      <span className="flex items-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Generating OTP…
                       </span>
-                    ))}
-                  </div>
-                  <div className="flex items-center justify-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>Expires at {expiryDisplay} · valid for 15 minutes</span>
-                  </div>
-                </div>
-
-                {/* Copy button */}
-                <Button variant="outline" className="w-full gap-2" onClick={copyOtp}>
-                  {copied
-                    ? <><CheckCircle2 className="w-4 h-4 text-emerald-600" /> Copied!</>
-                    : <><Copy className="w-4 h-4" /> Copy OTP</>}
-                </Button>
-
-                {/* Instructions */}
-                <div className="rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 px-4 py-3">
-                  <p className="text-xs text-blue-800 dark:text-blue-300 leading-relaxed">
-                    Share this 6-digit OTP with <strong>{otpInfo.username}</strong> via WhatsApp or verbally.
-                    They will enter it on the Reset Password page along with their username and new password.
-                    The OTP works only once.
-                  </p>
-                </div>
-
-                {/* Go to reset page */}
-                <Link href="/reset-password">
-                  <Button className="w-full gap-2">
-                    Go to Reset Password →
+                    ) : "Generate OTP"}
                   </Button>
-                </Link>
+                </motion.div>
 
-                {/* Generate new */}
-                <Button variant="ghost" size="sm" className="w-full gap-2 text-muted-foreground" onClick={handleReset}>
-                  <RefreshCw className="w-4 h-4" />
-                  Generate for a different user
-                </Button>
+                <div className="text-center pt-1">
+                  <Link href="/login">
+                    <button type="button" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors">
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      Back to login
+                    </button>
+                  </Link>
+                </div>
+              </form>
+            </Form>
+          ) : (
+            <div className="space-y-4">
+              {/* Account info */}
+              <div className="rounded-lg bg-gray-50 border border-gray-200 px-4 py-3 text-sm flex justify-between items-center">
+                <span className="text-gray-500">Account</span>
+                <span className="font-semibold text-gray-900">{otpInfo.username}</span>
               </div>
-            )}
 
-            <div className="text-center pt-1">
-              <Link href="/login">
-                <button className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  Back to login
-                </button>
+              {/* OTP display */}
+              <div
+                className="rounded-xl border-2 p-5 text-center space-y-3"
+                style={{ borderColor: "rgba(249,115,22,0.25)", background: "rgba(249,115,22,0.04)" }}
+              >
+                <p className="text-xs font-semibold uppercase tracking-widest text-gray-500">One-Time Password</p>
+                <div className="flex justify-center gap-2">
+                  {otpInfo.otp.split("").map((digit, i) => (
+                    <span
+                      key={i}
+                      className="w-10 h-12 flex items-center justify-center text-2xl font-bold bg-white border-2 border-gray-200 rounded-lg shadow-sm text-gray-900"
+                    >
+                      {digit}
+                    </span>
+                  ))}
+                </div>
+                <div className="flex items-center justify-center gap-1.5 text-xs text-amber-600">
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>Expires at {expiryDisplay} · valid 15 minutes</span>
+                </div>
+              </div>
+
+              {/* Copy button */}
+              <Button
+                variant="outline"
+                className="w-full gap-2 h-11 border-gray-200"
+                onClick={copyOtp}
+              >
+                {copied
+                  ? <><CheckCircle2 className="w-4 h-4 text-emerald-600" /> Copied!</>
+                  : <><Copy className="w-4 h-4" /> Copy OTP</>}
+              </Button>
+
+              {/* Instructions */}
+              <div className="rounded-lg bg-blue-50 border border-blue-200 px-4 py-3">
+                <p className="text-xs text-blue-800 leading-relaxed">
+                  Share this 6-digit OTP with <strong>{otpInfo.username}</strong> via WhatsApp or verbally.
+                  They enter it on the Reset Password page along with their new password. Works only once.
+                </p>
+              </div>
+
+              {/* Go to reset page */}
+              <Link href="/reset-password">
+                <Button
+                  className="w-full h-11 font-bold text-white border-0"
+                  style={{ background: "linear-gradient(135deg, #1a2560, #0f1a4a)" }}
+                >
+                  Go to Reset Password →
+                </Button>
               </Link>
+
+              {/* Generate new */}
+              <button
+                onClick={handleReset}
+                className="w-full flex items-center justify-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors py-1"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                Generate for a different user
+              </button>
+
+              <div className="text-center">
+                <Link href="/login">
+                  <button type="button" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors">
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    Back to login
+                  </button>
+                </Link>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          )}
+        </div>
+      </motion.div>
     </div>
   );
 }

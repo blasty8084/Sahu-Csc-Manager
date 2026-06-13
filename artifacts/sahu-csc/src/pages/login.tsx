@@ -7,16 +7,11 @@ import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { LoginLogo } from "@/components/app-logo";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import {
   Lock,
   Eye,
@@ -25,7 +20,6 @@ import {
   Zap,
   Users,
   Loader2,
-  User,
   Smartphone,
 } from "lucide-react";
 
@@ -35,47 +29,6 @@ const loginSchema = z.object({
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
-
-function SLogo({ size = 56 }: { size?: number }) {
-  return (
-    <div
-      style={{
-        width: size,
-        height: size,
-        borderRadius: size * 0.18,
-        background: "linear-gradient(135deg, #F97316, #ea6a0a)",
-      }}
-      className="flex items-center justify-center shadow-xl"
-    >
-      <span
-        style={{
-          fontSize: size * 0.52,
-          color: "#fff",
-          fontWeight: 900,
-          fontFamily: "Georgia, serif",
-          textShadow: "0 2px 4px rgba(0,0,0,0.3)",
-        }}
-      >
-        S
-      </span>
-    </div>
-  );
-}
-
-function CircularLogo() {
-  return (
-    <div
-      className="w-10 h-10 rounded-full flex items-center justify-center shadow-md"
-      style={{ background: "linear-gradient(135deg, #F97316, #ea6a0a)", border: "2px solid rgba(249,115,22,0.4)" }}
-    >
-      <span
-        style={{ fontFamily: "Georgia, serif", fontWeight: 900, fontSize: 16, color: "#fff" }}
-      >
-        S
-      </span>
-    </div>
-  );
-}
 
 function CSCBuilding() {
   return (
@@ -263,16 +216,11 @@ function LoginFormContent({
           </span>
         </div>
 
-        {/* Bottom links */}
-        <div className="flex items-center justify-between pt-0.5">
+        {/* Bottom link */}
+        <div className="text-center pt-0.5">
           <Link href="/reset-password">
             <span className="text-xs font-semibold cursor-pointer transition-colors" style={{ color: "#2563eb" }}>
-              Have an OTP? Reset →
-            </span>
-          </Link>
-          <Link href="/register">
-            <span className="text-xs font-semibold cursor-pointer transition-colors" style={{ color: "#F97316" }}>
-              Register Now
+              Have an OTP? Reset password →
             </span>
           </Link>
         </div>
@@ -289,7 +237,7 @@ function MobileLogin(props: LoginFormContentProps) {
     >
       {/* Compact blue header — shrinks to fit */}
       <div className="flex-shrink-0 pt-6 px-6 pb-4 flex flex-col items-center text-center">
-        <SLogo size={48} />
+        <LoginLogo size={52} />
         <div className="mt-2.5 space-y-0">
           <h1 className="text-xl font-black">
             <span className="text-white">SAHU </span>
@@ -310,13 +258,7 @@ function MobileLogin(props: LoginFormContentProps) {
       >
         <div className="flex-1 overflow-y-auto px-6 pt-5 pb-5">
           <div className="flex flex-col items-center mb-4">
-            <div
-              className="w-10 h-10 rounded-full flex items-center justify-center shadow-sm"
-              style={{ background: "#FEE4D8" }}
-            >
-              <User className="w-5 h-5" style={{ color: "#F97316" }} />
-            </div>
-            <h3 className="text-gray-900 font-bold text-base mt-2">
+            <h3 className="text-gray-900 font-bold text-base">
               Login to your account
             </h3>
             <p className="text-gray-500 text-xs mt-0.5">
@@ -325,13 +267,6 @@ function MobileLogin(props: LoginFormContentProps) {
           </div>
 
           <LoginFormContent {...props} />
-
-          <p className="text-center text-xs text-gray-500 mt-4">
-            Don't have an account?{" "}
-            <Link href="/register">
-              <span className="font-bold cursor-pointer" style={{ color: "#F97316" }}>Register Now</span>
-            </Link>
-          </p>
         </div>
       </motion.div>
     </div>
@@ -346,7 +281,7 @@ function DesktopLogin(props: LoginFormContentProps) {
         {/* Left panel */}
         <div className="w-[58%] flex flex-col px-12 py-8 overflow-hidden">
           <div className="flex items-center gap-3 flex-shrink-0">
-            <CircularLogo />
+            <LoginLogo size={36} />
             <div>
               <div>
                 <span className="text-white font-black text-lg">SAHU </span>
@@ -403,13 +338,7 @@ function DesktopLogin(props: LoginFormContentProps) {
             className="w-full max-w-sm bg-white rounded-3xl shadow-2xl px-7 py-6"
           >
             <div className="flex flex-col items-center mb-4">
-              <div
-                className="w-12 h-12 rounded-full flex items-center justify-center shadow-sm"
-                style={{ background: "#FEE4D8" }}
-              >
-                <User className="w-6 h-6" style={{ color: "#F97316" }} />
-              </div>
-              <h3 className="text-gray-900 font-bold text-lg mt-2.5">
+              <h3 className="text-gray-900 font-bold text-lg">
                 Login to your account
               </h3>
               <p className="text-gray-500 text-xs mt-0.5">
@@ -418,13 +347,6 @@ function DesktopLogin(props: LoginFormContentProps) {
             </div>
 
             <LoginFormContent {...props} />
-
-            <p className="text-center text-xs text-gray-500 mt-4">
-              Don't have an account?{" "}
-              <Link href="/register">
-                <span className="font-bold cursor-pointer" style={{ color: "#F97316" }}>Register Now</span>
-              </Link>
-            </p>
           </motion.div>
         </div>
       </div>

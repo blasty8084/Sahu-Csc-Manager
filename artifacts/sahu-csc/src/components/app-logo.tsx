@@ -7,7 +7,7 @@ interface AppLogoProps {
 
 export function AppLogo({ size = "sm", className = "" }: AppLogoProps) {
   const [imgError, setImgError] = useState(false);
-  const logoUrl = `${import.meta.env.BASE_URL}logo.png`;
+  const logoUrl = `${import.meta.env.BASE_URL}sahu-logo.png`;
 
   const dim = size === "lg" ? "w-16 h-16 rounded-full" : "w-9 h-9 rounded-full";
   const textSize = size === "lg" ? "text-2xl" : "text-base";
@@ -30,24 +30,28 @@ export function AppLogo({ size = "sm", className = "" }: AppLogoProps) {
   );
 }
 
-export function LoginLogo() {
+export function LoginLogo({ size = 72 }: { size?: number }) {
   const [imgError, setImgError] = useState(false);
-  const logoUrl = `${import.meta.env.BASE_URL}logo.png`;
+  const logoUrl = `${import.meta.env.BASE_URL}sahu-logo.png`;
 
   if (!imgError) {
     return (
       <img
         src={logoUrl}
         alt="SAHU CSC Logo"
-        className="mx-auto w-20 h-20 rounded-full object-cover mb-4 shadow-md"
+        style={{ width: size, height: size }}
+        className="rounded-full object-cover shadow-lg"
         onError={() => setImgError(true)}
       />
     );
   }
 
   return (
-    <div className="mx-auto w-16 h-16 bg-primary rounded-xl flex items-center justify-center mb-4">
-      <span className="text-primary-foreground font-bold text-2xl">S</span>
+    <div
+      className="rounded-full flex items-center justify-center shadow-lg bg-orange-500"
+      style={{ width: size, height: size }}
+    >
+      <span className="text-white font-black" style={{ fontSize: size * 0.45 }}>S</span>
     </div>
   );
 }
