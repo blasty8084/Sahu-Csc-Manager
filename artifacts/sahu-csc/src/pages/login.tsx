@@ -270,18 +270,11 @@ function LoginFormContent({
               Have an OTP? Reset →
             </span>
           </Link>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="text-xs text-gray-400 cursor-not-allowed select-none" style={{ pointerEvents: "all" }}>
-                  Register Now
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="top">
-                <p className="text-xs">Contact admin to create an account</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <Link href="/register">
+            <span className="text-xs font-semibold cursor-pointer transition-colors" style={{ color: "#F97316" }}>
+              Register Now
+            </span>
+          </Link>
         </div>
       </form>
     </Form>
@@ -338,21 +331,9 @@ function MobileLogin(props: LoginFormContentProps) {
 
           <p className="text-center text-xs text-gray-500 mt-5">
             Don't have an account?{" "}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span
-                    className="font-bold cursor-not-allowed"
-                    style={{ color: "#F97316", pointerEvents: "all" }}
-                  >
-                    Register Now
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent side="top">
-                  <p className="text-xs">Contact admin to create an account</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <Link href="/register">
+              <span className="font-bold cursor-pointer" style={{ color: "#F97316" }}>Register Now</span>
+            </Link>
           </p>
         </div>
       </motion.div>
@@ -450,21 +431,9 @@ function DesktopLogin(props: LoginFormContentProps) {
 
             <p className="text-center text-xs text-gray-500 mt-5">
               Don't have an account?{" "}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span
-                      className="font-bold cursor-not-allowed"
-                      style={{ color: "#F97316", pointerEvents: "all" }}
-                    >
-                      Register Now
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    <p className="text-xs">Contact admin to create an account</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <Link href="/register">
+                <span className="font-bold cursor-pointer" style={{ color: "#F97316" }}>Register Now</span>
+              </Link>
             </p>
           </motion.div>
         </div>
@@ -521,17 +490,31 @@ export default function Login() {
       localStorage.removeItem("savedIdentifier");
     }
     try {
-      await login(values);
+      await login({ ...values, rememberMe });
       toast({
         title: "Login successful",
         description: "Welcome back to the SAHU CSC Platform.",
       });
-    } catch {
-      toast({
-        variant: "destructive",
-        title: "Login failed",
-        description: "Please check your credentials and try again.",
-      });
+    } catch (err: any) {
+      if (err?.locked) {
+        toast({
+          variant: "destructive",
+          title: "Account Locked",
+          description: err.message ?? "Your account is temporarily locked. Please try again later.",
+        });
+      } else if (err?.attemptsLeft !== undefined) {
+        toast({
+          variant: "destructive",
+          title: "Login failed",
+          description: `${err.message ?? "Invalid credentials."} (${err.attemptsLeft} attempt${err.attemptsLeft !== 1 ? "s" : ""} remaining)`,
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Login failed",
+          description: err?.message ?? "Please check your credentials and try again.",
+        });
+      }
     }
   };
 

@@ -5,7 +5,7 @@ import { useListNotifications } from "@workspace/api-client-react";
 import {
   LayoutDashboard, BookOpen, Briefcase, BarChart3, Bell,
   History, Users, Settings, Database, LogOut, Menu,
-  Fingerprint, UserCircle, LayoutGrid, WifiOff, ArrowDownToLine, HeartPulse,
+  Fingerprint, UserCircle, LayoutGrid, WifiOff, ArrowDownToLine, HeartPulse, MonitorSmartphone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -32,6 +32,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/reports", label: "Reports", icon: BarChart3 },
     { href: "/notifications", label: "Notifications", icon: Bell, badge: unreadCount },
     { href: "/profile", label: "My Profile", icon: UserCircle },
+    { href: "/sessions", label: "Active Sessions", icon: MonitorSmartphone },
     { href: "/pwa-status", label: "App & Offline", icon: WifiOff },
     { href: "/download-app", label: "Download App", icon: ArrowDownToLine },
   ];

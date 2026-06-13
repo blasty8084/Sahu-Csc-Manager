@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, boolean, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -11,9 +11,14 @@ export const usersTable = pgTable("users", {
   passwordHash: text("password_hash").notNull(),
   role: text("role").notNull().default("operator"), // admin, operator, user
   isActive: boolean("is_active").notNull().default(true),
-  profilePicture: text("profile_picture"), // base64 data URL or file path
+  // V2: extended account status (ACTIVE | INACTIVE | SUSPENDED | LOCKED | DELETED)
+  status: text("status").notNull().default("ACTIVE"),
+  failedLoginAttempts: integer("failed_login_attempts").notNull().default(0),
+  lockedUntil: timestamp("locked_until", { withTimezone: true }),
+  profilePicture: text("profile_picture"),
   bio: text("bio"),
   address: text("address"),
+  // kept for backward-compat; V2 multi-device uses user_sessions table instead
   activeSessionToken: text("active_session_token"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),

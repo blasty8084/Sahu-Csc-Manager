@@ -2,3 +2,5 @@
 - [Seed via pg module](db-push-data-loss.md) — use pg@8.20.0 + bcryptjs@3.0.3 directly since tsx is not available in scripts
 - [Offline PWA architecture](offline-pwa.md) — IndexedDB queue for offline ledger entries, sync engine, Workbox strategy map
 - [Advanced PWA injectManifest](pwa-injectmanifest.md) — switched from generateSW to injectManifest for push/periodic sync; custom sw.ts; Uint8Array.buffer cast needed for PushManager.subscribe applicationServerKey
+- [API port conflict fix](api-port-conflict.md) — Replit artifact workflow holds port 8080; Start application uses port 8082, Vite proxy updated to match
+- [V2 Auth multi-device sessions](v2-auth-sessions.md) — user_sessions table; requireAuth validates sessionId via user_sessions, falls back to V1 activeSessionToken

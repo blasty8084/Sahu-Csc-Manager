@@ -15,6 +15,7 @@ function fmt(u: any) {
     fullName: u.fullName ?? null,
     role: u.role,
     isActive: u.isActive,
+    status: u.status ?? "ACTIVE",
     profilePicture: u.profilePicture ?? null,
     bio: u.bio ?? null,
     address: u.address ?? null,
@@ -40,6 +41,8 @@ router.post("/users", requireRole("admin"), async (req, res): Promise<void> => {
     passwordHash,
     role: parsed.data.role,
     isActive: true,
+    status: "ACTIVE",
+    failedLoginAttempts: 0,
   }).returning();
 
   await auditLog(req.session.userId!, "user.create", `Created user: ${u.username}`, getClientIp(req));
@@ -63,7 +66,26 @@ router.patch("/users/:id", requireRole("admin"), async (req, res): Promise<void>
   if (parsed.data.mobile !== undefined) updates.mobile = parsed.data.mobile;
   if (parsed.data.fullName !== undefined) updates.fullName = parsed.data.fullName;
   if (parsed.data.role !== undefined) updates.role = parsed.data.role;
-  if (parsed.data.isActive !== undefined) updates.isActive = parsed.data.isActive;
+  if (parsed.data.isActive !== undefined) {
+    updates.isActive = parsed.data.isActive;
+    // Keep status in sync with isActive for backward compat
+    if (!parsed.data.isActive && existing.status === "ACTIVE") updates.status = "INACTIVE";
+    if (parsed.data.isActive && (existing.status === "INACTIVE")) updates.status = "ACTIVE";
+  }
+  // Allow admin to directly set status (e.g. SUSPENDED, ACTIVE, LOCKED unlock)
+  if ((req.body as any).status !== undefined) {
+    const validStatuses = ["ACTIVE", "INACTIVE", "SUSPENDED", "LOCKED", "DELETED"];
+    if (validStatuses.includes((req.body as any).status)) {
+      updates.status = (req.body as any).status;
+      if (updates.status === "ACTIVE") {
+        updates.isActive = true;
+        updates.failedLoginAttempts = 0;
+        updates.lockedUntil = null;
+      } else if (updates.status !== "INACTIVE") {
+        updates.isActive = false;
+      }
+    }
+  }
   if (parsed.data.password) updates.passwordHash = await hashPassword(parsed.data.password);
 
   const [updated] = await db.update(usersTable).set(updates).where(eq(usersTable.id, id)).returning();

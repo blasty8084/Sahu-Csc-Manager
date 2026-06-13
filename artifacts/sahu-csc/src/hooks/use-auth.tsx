@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, ReactNode } from "react";
-import { useGetMe, useLogin, useLogout } from "@workspace/api-client-react";
+import { useGetMe, useLogout } from "@workspace/api-client-react";
 import type { AuthUser, LoginInput } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
 import {
@@ -8,11 +8,16 @@ import {
   clearUserSession,
   type UserSession,
 } from "@/lib/offline-db";
+import { useQueryClient } from "@tanstack/react-query";
+
+export interface LoginData extends LoginInput {
+  rememberMe?: boolean;
+}
 
 interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
-  login: (data: LoginInput) => Promise<void>;
+  login: (data: LoginData) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -20,11 +25,11 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
   const {
     data: liveUser,
     isLoading: liveLoading,
     refetch,
-    isError,
   } = useGetMe({
     query: {
       retry: false,
@@ -39,9 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!navigator.onLine && !liveUser) {
       getCachedUserSession()
         .then((session) => {
-          if (session) {
-            setOfflineUser(session as unknown as AuthUser);
-          }
+          if (session) setOfflineUser(session as unknown as AuthUser);
         })
         .catch(() => {})
         .finally(() => setOfflineChecked(true));
@@ -66,11 +69,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [liveUser]);
 
-  const loginMutation = useLogin();
   const logoutMutation = useLogout();
 
-  const handleLogin = async (data: LoginInput) => {
-    await loginMutation.mutateAsync({ data });
+  const handleLogin = async (data: LoginData) => {
+    const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+    const response = await fetch(`${base}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      let errBody: any = {};
+      try { errBody = await response.json(); } catch { /* ignore */ }
+      const err: any = new Error(errBody.error ?? "Login failed");
+      err.locked = errBody.locked;
+      err.lockedUntil = errBody.lockedUntil;
+      err.attemptsLeft = errBody.attemptsLeft;
+      throw err;
+    }
+    await queryClient.invalidateQueries();
     await refetch();
     setLocation("/");
   };
@@ -87,14 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isLoading = liveLoading && !offlineChecked;
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isLoading,
-        login: handleLogin,
-        logout: handleLogout,
-      }}
-    >
+    <AuthContext.Provider value={{ user, isLoading, login: handleLogin, logout: handleLogout }}>
       {children}
     </AuthContext.Provider>
   );
@@ -102,8 +113,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 }
