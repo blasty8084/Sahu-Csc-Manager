@@ -65,6 +65,7 @@ pnpm run build                                    # Typecheck + build all packag
 | Frontend | React + Vite + Tailwind CSS v4 + shadcn/ui |
 | Theme | Navy (`#0b2c60`) + Saffron (`#f97316`) |
 | API | Express 5, express-session, helmet, hpp, express-rate-limit |
+| Session store | connect-pg-simple (PostgreSQL-backed, survives server restarts) |
 | Database | PostgreSQL + Drizzle ORM |
 | Validation | Zod (`zod/v4`), drizzle-zod |
 | API contracts | OpenAPI spec → Orval codegen → typed React Query hooks |
@@ -191,6 +192,7 @@ artifacts/sahu-csc/public/
 |-------|-------------|-------|
 | `users` | id, username, email, role, active_session_token | role: admin / operator |
 | `user_sessions` | sessionId, userId, deviceInfo, browser, os, ipAddress, rememberMe, isActive, expiresAt | V2 multi-device sessions |
+| `session` | sid, sess, expire | Express session store (connect-pg-simple, auto-created) — survives server restarts |
 | `ledger` | date, credit, debit, balance, created_by | Per-user; running balance computed at insert |
 | `aeps_daily` | date, opening_balance, created_by | Unique per (date, created_by) |
 | `aeps_transactions` | session_id, amount, type | Linked to aeps_daily session |
@@ -217,6 +219,7 @@ artifacts/sahu-csc/public/
 ## Authentication & Security System (v2)
 
 ### Session Management
+- **PostgreSQL session store**: `express-session` uses `connect-pg-simple` — session data is stored in the `session` table in PostgreSQL, not in server memory. Sessions survive API server restarts without logging users out.
 - **Multi-device sessions**: Each login creates a row in `user_sessions` with device info, IP, browser, OS, and expiry.
 - **Session durations**: Standard = 8 hours, Remember Me = 30 days.
 - **Session endpoints**:
@@ -394,6 +397,7 @@ Full config in `infrastructure/twa/twa-config.json`.
 
 - **Contract-first API**: OpenAPI spec → Orval codegen → typed React Query hooks. Never edit `lib/api-client-react/src/generated/` directly.
 - **Session-based auth**: express-session + bcrypt. No JWTs — simpler for single-center CSC use case.
+- **PostgreSQL session store**: `connect-pg-simple` stores express-session data in the `session` DB table. Sessions survive server restarts — users stay logged in. The table is auto-created by connect-pg-simple on first startup.
 - **V2 multi-device sessions**: `user_sessions` table stores every active login. `requireAuth` validates `sessionId` from `user_sessions` first, falls back to `activeSessionToken` on `users` table for backward compat.
 - **RBAC via `requirePermission`**: Admin has wildcard `["*"]`; operator has full data permissions; `user` role is read-only. Middleware applied at route level — not just controller logic.
 - **Audit log everything security-related**: Every failed login scenario (inactive, locked, wrong password, max attempts), every session revocation, every role change, every admin action is logged with IP + device info.
@@ -402,10 +406,13 @@ Full config in `infrastructure/twa/twa-config.json`.
 - **Running balance at insert time**: Computed from `SUM(credit) - SUM(debit)` of all prior entries for that user.
 - **AePS sessions**: Unique per `(date, created_by)` — each user has their own daily session.
 - **Offline-first IndexedDB**: v2 with 5 stores. `pending_ledger` auto-syncs on reconnect via `SyncEngine`. `user_session` enables offline auth for 24 hours.
+- **Auth loading guard uses `||`**: In `use-auth.tsx`, `isLoading = liveLoading || !offlineChecked`. Using `&&` caused auto-logout on refresh because the offline check completed before the live fetch, briefly showing the user as unauthenticated.
 - **VAPID auto-init**: `ensureVapidKeys()` called at Express startup; uses env secrets if present, otherwise generates ephemeral keys.
 - **Seed script**: Compiled by esbuild alongside the main bundle (`src/scripts/seed.ts` → `dist/scripts/seed.mjs`). Safe to re-run — all inserts use `onConflictDoNothing()`.
 - **Idle timeout in Layout**: `useIdleTimer` hook called in `Layout` component (not individual pages) so timeout applies globally across all pages. `handleIdle` callback calls `logout()` directly.
 - **`parseDevice` called once per request**: In `auth.ts` login handler, `parseDevice` is called once before all failure/success branches to avoid esbuild duplicate-const errors.
+- **Responsive design pattern**: Data-heavy pages use a dual-render approach — mobile cards (`sm:hidden`) and desktop tables (`hidden sm:block`) rendered from the same data. Form grids use `grid-cols-1 sm:grid-cols-2` so fields stack on mobile and sit side-by-side on desktop. Dialog tables use `overflow-x-auto` with `min-w-[480px]` to enable horizontal scroll on narrow screens.
+- **Login page uses `h-screen`**: Both mobile and desktop login layouts use `h-screen overflow-hidden` (not `min-h-screen`) so the full page fits the viewport with no scrolling required on any device.
 
 ---
 
@@ -455,6 +462,10 @@ Full config in `infrastructure/twa/twa-config.json`.
 - **`DELETE /api/sessions/all` returns `{ redirect: true }`**: The frontend checks this flag and calls `logout()` to clear the client-side auth state and redirect to login.
 - **Mobile blank white screen**: `index.html` contains an inline navy loading spinner that is visible before React mounts — prevents blank white page while JS loads on slow mobile connections. The Vite server sends `Cache-Control: no-store` headers to stop browsers from caching stale `index.html`.
 - **`pike.replit.dev` URL does not work on mobile**: The dev preview URL only works inside the Replit environment. For a stable mobile-accessible URL, publish/deploy the app — this creates a permanent `*.replit.app` domain.
+- **`session` table is auto-created**: `connect-pg-simple` creates the `session` table in PostgreSQL on first API startup — no migration needed. Do NOT drop this table manually or all logged-in users will be immediately logged out.
+- **Auth `isLoading` must use `||` not `&&`**: In `use-auth.tsx`, the guard is `isLoading = liveLoading || !offlineChecked`. Using `&&` causes the app to briefly consider the user unauthenticated on page refresh (offline check completes before live fetch), triggering an incorrect logout redirect.
+- **Login page `h-screen` must not be changed to `min-h-screen`**: Both `MobileLogin` and `DesktopLogin` use `h-screen overflow-hidden` to keep all content within the viewport without scrolling. Changing to `min-h-screen` causes the page to scroll on short screens.
+- **Responsive table pattern**: For pages with data tables, always render both a mobile card list (`sm:hidden`) and a desktop table (`hidden sm:block`). Do not use `overflow-x-auto` alone as a mobile solution — it produces poor UX on phones. Tables inside dialogs use `overflow-x-auto` with `min-w-[480px]` since the dialog already constrains width.
 
 ---
 
