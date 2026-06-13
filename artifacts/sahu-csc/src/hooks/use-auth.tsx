@@ -94,14 +94,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const handleLogout = async () => {
-    try {
-      await logoutMutation.mutateAsync();
-    } catch {
-      // If API call fails (session already expired, network error) proceed with client-side cleanup anyway
-    }
+    await logoutMutation.mutateAsync();
     await clearUserSession().catch(() => {});
     setOfflineUser(null);
-    await refetch().catch(() => {});
+    await refetch();
     setLocation("/login");
   };
 

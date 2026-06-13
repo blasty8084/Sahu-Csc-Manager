@@ -146,34 +146,28 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* User Footer */}
-      <div className="px-3 pb-3 pt-2 border-t border-sidebar-border/50">
-        {/* Profile row */}
-        <Link href="/profile">
-          <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-sidebar-accent/40 transition-colors cursor-pointer">
-            <div className="relative flex-shrink-0">
-              <Avatar className="h-8 w-8 border-2 border-sidebar-primary/50">
-                {avatarSrc ? <AvatarImage src={avatarSrc} alt="Profile" className="object-cover" /> : null}
-                <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground text-xs font-bold">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-              <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-green-500 border-2 border-[hsl(var(--sidebar-background,221_47%_11%))]" />
-            </div>
+      <div className="p-3 border-t border-sidebar-border/50">
+        <div className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-sidebar-accent/40 transition-colors">
+          <Link href="/profile" className="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer">
+            <Avatar className="h-8 w-8 border border-sidebar-border flex-shrink-0">
+              {avatarSrc ? <AvatarImage src={avatarSrc} alt="Profile" className="object-cover" /> : null}
+              <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground text-xs font-bold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
             <div className="flex flex-col min-w-0">
               <span className="text-xs font-semibold leading-none mb-0.5 truncate">{user?.fullName || user?.username}</span>
               <span className="text-[10px] text-sidebar-foreground/50 capitalize">{user?.role}</span>
             </div>
-          </div>
-        </Link>
-        {/* Logout strip button */}
-        <Button
-          variant="ghost"
-          onClick={() => logout()}
-          className="w-full mt-1.5 h-8 gap-2 text-destructive/70 hover:text-destructive hover:bg-destructive/10 border border-destructive/20 hover:border-destructive/40 rounded-xl text-[12px] font-medium"
-        >
-          <LogOut size={13} />
-          Logout
-        </Button>
+          </Link>
+          <Button
+            variant="ghost" size="icon"
+            onClick={() => logout()}
+            className="text-sidebar-foreground/40 hover:text-destructive hover:bg-destructive/10 h-7 w-7 flex-shrink-0"
+          >
+            <LogOut size={14} />
+          </Button>
+        </div>
       </div>
     </div>
   );
