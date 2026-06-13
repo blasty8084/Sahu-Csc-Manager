@@ -5,7 +5,7 @@ import { useListNotifications } from "@workspace/api-client-react";
 import {
   LayoutDashboard, BookOpen, Briefcase, BarChart3, Bell,
   History, Users, Settings, Database, LogOut, Menu,
-  Fingerprint, UserCircle, LayoutGrid, WifiOff, ArrowDownToLine,
+  Fingerprint, UserCircle, LayoutGrid, WifiOff, ArrowDownToLine, HeartPulse,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -42,6 +42,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/audit-logs", label: "Audit Logs", icon: History },
     { href: "/backups", label: "Backups", icon: Database },
     { href: "/settings", label: "Settings", icon: Settings },
+    { href: "/server-health", label: "Server Health", icon: HeartPulse },
   ] : [];
 
   const bottomNavItems = [

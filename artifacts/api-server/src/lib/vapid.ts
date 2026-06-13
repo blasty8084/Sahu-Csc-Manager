@@ -6,6 +6,7 @@ export async function ensureVapidKeys(): Promise<void> {
   const existingPrivate = process.env.VAPID_PRIVATE_KEY;
 
   if (existingPublic && existingPrivate) {
+    process.env.VAPID_KEYS_FROM_ENV = "true";
     logger.info("VAPID keys already configured");
     return;
   }

@@ -28,6 +28,7 @@ import AePS from "@/pages/aeps";
 import Profile from "@/pages/profile";
 import Offline from "@/pages/offline";
 import PwaStatus from "@/pages/pwa-status";
+import ServerHealth from "@/pages/server-health";
 import DownloadApp from "@/pages/download-app";
 import { Redirect } from "wouter";
 import { useListNotifications } from "@workspace/api-client-react";
@@ -209,6 +210,7 @@ function Router() {
       <Route path="/settings">{() => <ProtectedRoute component={Settings} adminOnly />}</Route>
       <Route path="/backups">{() => <ProtectedRoute component={Backups} adminOnly />}</Route>
       <Route path="/pwa-status">{() => <ProtectedRoute component={PwaStatus} />}</Route>
+      <Route path="/server-health">{() => <ProtectedRoute component={ServerHealth} />}</Route>
       <Route path="/download-app">{() => <ProtectedRoute component={DownloadApp} />}</Route>
       <Route path="/share-target" component={ShareTargetHandler} />
       <Route path="/offline" component={Offline} />
