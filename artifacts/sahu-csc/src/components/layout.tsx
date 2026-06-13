@@ -157,7 +157,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   {initials}
                 </AvatarFallback>
               </Avatar>
-              <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-green-500 border-2 border-sidebar" />
+              <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-green-500 border-2 border-[hsl(var(--sidebar-background,221_47%_11%))]" />
             </div>
             <div className="flex flex-col min-w-0">
               <span className="text-xs font-semibold leading-none mb-0.5 truncate">{user?.fullName || user?.username}</span>

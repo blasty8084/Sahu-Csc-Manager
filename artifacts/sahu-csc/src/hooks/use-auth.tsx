@@ -100,8 +100,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // If API call fails (session already expired, network error) proceed with client-side cleanup anyway
     }
     await clearUserSession().catch(() => {});
-    queryClient.clear();
     setOfflineUser(null);
+    await refetch().catch(() => {});
     setLocation("/login");
   };
 
