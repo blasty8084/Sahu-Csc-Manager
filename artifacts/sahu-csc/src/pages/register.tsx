@@ -6,10 +6,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { LoginLogo } from "@/components/app-logo";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Eye, EyeOff, Lock, Mail, Smartphone, User, UserPlus, Loader2, CheckCircle2, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, Smartphone, User, UserPlus, Loader2, CheckCircle2, ArrowLeft, Shield } from "lucide-react";
 
 const registerSchema = z
   .object({
@@ -291,37 +292,51 @@ export default function Register() {
 
   if (isMobile) {
     return (
-      <div className="min-h-screen flex flex-col" style={{ background: "#0B1340" }}>
-        <div className="flex-shrink-0 pt-12 px-6 pb-6 flex flex-col items-center text-center">
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-xl" style={{ background: "linear-gradient(135deg, #F97316, #ea6a0a)" }}>
-            <span style={{ fontSize: 26, color: "#fff", fontWeight: 900, fontFamily: "Georgia, serif" }}>S</span>
+      <div className="h-screen flex flex-col overflow-hidden" style={{ background: "#0B1340" }}>
+        {/* Compact navy header with logo */}
+        <div className="flex-shrink-0 pt-6 px-6 pb-4 flex flex-col items-center text-center relative">
+          <Link href="/login">
+            <button className="absolute left-4 top-6 w-9 h-9 rounded-xl flex items-center justify-center transition-colors" style={{ background: "rgba(255,255,255,0.15)" }}>
+              <ArrowLeft className="w-4 h-4 text-white" />
+            </button>
+          </Link>
+          <LoginLogo size={52} />
+          <div className="mt-2.5 space-y-0">
+            <h1 className="text-xl font-black">
+              <span className="text-white">SAHU </span>
+              <span style={{ color: "#F97316" }}>CSC</span>
+            </h1>
+            <p className="text-white/50 text-xs">Management Platform</p>
           </div>
-          <h1 className="text-2xl font-black mt-3"><span className="text-white">SAHU </span><span style={{ color: "#F97316" }}>CSC</span></h1>
-          <p className="text-white/50 text-sm">Create a new account</p>
         </div>
+
+        {/* White card — fills remaining height */}
         <motion.div
           initial={{ y: "100%" }}
           animate={{ y: 0 }}
-          transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="flex-1 bg-white rounded-t-3xl shadow-2xl overflow-y-auto"
+          transition={{ duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="flex-1 bg-white rounded-t-3xl shadow-2xl flex flex-col overflow-hidden"
         >
-          <div className="px-6 pt-6 pb-10">
-            <div className="flex items-center gap-2 mb-4">
-              <Link href="/login">
-                <button className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors">
-                  <ArrowLeft className="w-4 h-4" />
-                </button>
-              </Link>
-              <div>
-                <h3 className="text-gray-900 font-bold text-lg">Register Account</h3>
-                <p className="text-gray-500 text-xs">Fill in your details to get started</p>
-              </div>
+          <div className="flex-1 overflow-y-auto px-6 pt-5 pb-8">
+            <div className="flex flex-col items-center mb-5">
+              <h3 className="text-gray-900 font-bold text-base">Create your account</h3>
+              <p className="text-gray-500 text-xs mt-0.5">Join SAHU CSC and get started</p>
             </div>
             <RegisterForm />
+            {/* Security badge */}
+            <div className="mt-5 flex items-center gap-3 p-3 rounded-2xl border border-gray-100 bg-gray-50">
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "#e8eef8" }}>
+                <Shield className="w-4 h-4" style={{ color: "#0b2c60" }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-gray-800">Your data is 100% secure with us</p>
+                <p className="text-xs text-gray-500 mt-0.5">We respect your privacy and keep your data safe.</p>
+              </div>
+            </div>
             <p className="text-center text-xs text-gray-500 mt-4">
               Already have an account?{" "}
               <Link href="/login">
-                <span className="font-bold cursor-pointer" style={{ color: "#F97316" }}>Sign in →</span>
+                <span className="font-bold cursor-pointer" style={{ color: "#0b2c60" }}>Login here →</span>
               </Link>
             </p>
           </div>
@@ -335,9 +350,7 @@ export default function Register() {
       {/* Left panel */}
       <div className="w-[45%] flex flex-col justify-center px-16 py-12">
         <div className="flex items-center gap-3 mb-10">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #F97316, #ea6a0a)" }}>
-            <span style={{ fontSize: 18, color: "#fff", fontWeight: 900, fontFamily: "Georgia, serif" }}>S</span>
-          </div>
+          <LoginLogo size={36} />
           <div>
             <span className="text-white font-black text-lg">SAHU </span>
             <span className="font-black text-lg" style={{ color: "#F97316" }}>CSC</span>

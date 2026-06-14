@@ -21,6 +21,8 @@ import {
   Users,
   Loader2,
   Smartphone,
+  UserPlus,
+  ArrowRight,
 } from "lucide-react";
 
 const loginSchema = z.object({
@@ -183,7 +185,7 @@ function LoginFormContent({
             <span className="text-sm text-gray-600">Remember me</span>
           </label>
           <Link href="/forgot-password">
-            <span className="text-sm font-semibold cursor-pointer transition-colors" style={{ color: "#F97316" }}>
+            <span className="text-sm font-semibold cursor-pointer transition-colors" style={{ color: "#0b2c60" }}>
               Forgot Password?
             </span>
           </Link>
@@ -256,7 +258,7 @@ function MobileLogin(props: LoginFormContentProps) {
         transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
         className="flex-1 bg-white rounded-t-3xl shadow-2xl flex flex-col overflow-hidden"
       >
-        <div className="flex-1 overflow-y-auto px-6 pt-5 pb-5">
+        <div className="flex-1 overflow-y-auto px-6 pt-5 pb-6">
           <div className="flex flex-col items-center mb-4">
             <h3 className="text-gray-900 font-bold text-base">
               Login to your account
@@ -267,6 +269,37 @@ function MobileLogin(props: LoginFormContentProps) {
           </div>
 
           <LoginFormContent {...props} />
+
+          {/* Or divider */}
+          <div className="flex items-center gap-3 mt-5">
+            <div className="flex-1 h-px bg-gray-200" />
+            <span className="text-xs text-gray-400 font-medium">or</span>
+            <div className="flex-1 h-px bg-gray-200" />
+          </div>
+
+          {/* Register CTA */}
+          <Link href="/register">
+            <div
+              className="mt-3 flex items-center gap-3 px-4 py-3.5 rounded-2xl border-2 border-dashed cursor-pointer"
+              style={{ borderColor: "#bfdbfe", background: "#eff6ff" }}
+            >
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "#dbeafe" }}>
+                <UserPlus className="w-5 h-5" style={{ color: "#0b2c60" }} />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-gray-500">Don't have an account?</p>
+                <p className="text-sm font-bold flex items-center gap-1 mt-0.5" style={{ color: "#0b2c60" }}>
+                  Register here <ArrowRight className="w-3.5 h-3.5" />
+                </p>
+              </div>
+            </div>
+          </Link>
+
+          {/* Footer */}
+          <div className="mt-5 flex items-center justify-center gap-1.5">
+            <Lock className="w-3 h-3 text-gray-400" />
+            <p className="text-xs text-gray-400 tracking-wide">Trusted. Secure. Reliable.</p>
+          </div>
         </div>
       </motion.div>
     </div>
