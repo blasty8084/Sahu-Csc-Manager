@@ -157,7 +157,7 @@ export default function ResetPassword() {
           </div>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
 
               {/* Identifier */}
               <FormField
@@ -169,7 +169,7 @@ export default function ResetPassword() {
                     <FormControl>
                       <Input
                         placeholder="Enter your identifier"
-                        className="h-11 text-gray-900 placeholder:text-gray-400 border-gray-200 bg-white focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:border-blue-400"
+                        className="h-10 text-gray-900 placeholder:text-gray-400 border-gray-200 bg-white focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:border-blue-400"
                         autoFocus
                         autoComplete="username"
                         {...field}
@@ -180,14 +180,14 @@ export default function ResetPassword() {
                 )}
               />
 
-              {/* OTP boxes */}
+              {/* OTP boxes — fixed small size, centred */}
               <FormField
                 control={form.control}
                 name="otp"
                 render={({ fieldState }) => (
                   <FormItem>
                     <FormLabel className="text-xs font-semibold text-gray-600">One-Time Password (OTP)</FormLabel>
-                    <div className="flex gap-2 justify-between" onPaste={handleOtpPaste}>
+                    <div className="flex gap-2 justify-center" onPaste={handleOtpPaste}>
                       {otpDigits.map((digit, i) => (
                         <input
                           key={i}
@@ -198,7 +198,7 @@ export default function ResetPassword() {
                           value={digit}
                           onChange={(e) => handleOtpInput(i, e.target.value)}
                           onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                          className="flex-1 h-12 text-center text-xl font-bold border-2 rounded-lg bg-white outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 text-gray-900"
+                          className="w-10 h-10 text-center text-base font-bold border-2 rounded-lg bg-white outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 text-gray-900"
                           style={{ borderColor: fieldState.error ? "rgb(239,68,68)" : "#e5e7eb" }}
                         />
                       ))}
@@ -222,7 +222,7 @@ export default function ResetPassword() {
                         <Input
                           type={showPassword ? "text" : "password"}
                           placeholder="Min 8 characters"
-                          className="h-11 pr-11 text-gray-900 placeholder:text-gray-400 border-gray-200 bg-white focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:border-blue-400"
+                          className="h-10 pr-11 text-gray-900 placeholder:text-gray-400 border-gray-200 bg-white focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:border-blue-400"
                           autoComplete="new-password"
                           {...field}
                         />
@@ -252,7 +252,7 @@ export default function ResetPassword() {
                         <Input
                           type={showConfirm ? "text" : "password"}
                           placeholder="Re-enter new password"
-                          className="h-11 pr-11 text-gray-900 placeholder:text-gray-400 border-gray-200 bg-white focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:border-blue-400"
+                          className="h-10 pr-11 text-gray-900 placeholder:text-gray-400 border-gray-200 bg-white focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:border-blue-400"
                           autoComplete="new-password"
                           {...field}
                         />
@@ -272,8 +272,8 @@ export default function ResetPassword() {
 
               {/* Server error */}
               {serverError && (
-                <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
-                  <XCircle className="w-4 h-4 flex-shrink-0" />
+                <div className="flex items-center gap-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-2.5">
+                  <XCircle className="w-3.5 h-3.5 flex-shrink-0" />
                   {serverError}
                 </div>
               )}
@@ -282,14 +282,14 @@ export default function ResetPassword() {
                 <Button
                   type="submit"
                   disabled={form.formState.isSubmitting}
-                  className="w-full h-11 font-bold text-white border-0"
+                  className="w-full h-10 font-bold text-white border-0"
                   style={{ background: "linear-gradient(135deg, #1a2560, #0f1a4a)" }}
                 >
                   {form.formState.isSubmitting ? "Resetting…" : "Reset Password"}
                 </Button>
               </motion.div>
 
-              <div className="text-center">
+              <div className="text-center pt-0.5">
                 <Link href="/login">
                   <button type="button" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors">
                     <ArrowLeft className="w-3.5 h-3.5" />
