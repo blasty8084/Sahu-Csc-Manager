@@ -111,7 +111,9 @@ artifacts/
 
   sahu-csc/src/
     pages/
-      login.tsx / forgot-password.tsx / reset-password.tsx
+      login.tsx           — Mobile: navy header + white card, "Register here" CTA, "Trusted. Secure. Reliable." footer
+      register.tsx        — Mobile: LoginLogo header + white card, PasswordStrength meter, security badge
+      forgot-password.tsx / reset-password.tsx
       dashboard.tsx       — Real-time stats + offline cache fallback
       ledger.tsx          — Transactions with offline queue support
       aeps.tsx            — AePS cash management (per-user)
@@ -132,7 +134,7 @@ artifacts/
       layout.tsx              — Main sidebar + mobile nav + PWA install banner + sync bar + idle timeout dialog
       sync-status-bar.tsx     — 🟢/🟡/🔴 global sync status indicator
       pwa-install-banner.tsx  — Install prompt banner
-      app-logo.tsx
+      app-logo.tsx            — AppLogo (sidebar) + LoginLogo (auth pages); both use public/sahu-logo.png
       theme-provider.tsx
       ui/                     — shadcn/ui components
     hooks/
@@ -179,6 +181,7 @@ infrastructure/
     twa-config.json       — Android TWA config for Bubblewrap CLI with setup instructions
 
 artifacts/sahu-csc/public/
+  sahu-logo.png                 — Primary brand logo used by AppLogo + LoginLogo components
   pwa-96x96.png / pwa-144x144.png / pwa-192x192.png / pwa-512x512.png
   apple-touch-icon.png
   .well-known/assetlinks.json   — Digital Asset Links for Android TWA
@@ -413,6 +416,10 @@ Full config in `infrastructure/twa/twa-config.json`.
 - **`parseDevice` called once per request**: In `auth.ts` login handler, `parseDevice` is called once before all failure/success branches to avoid esbuild duplicate-const errors.
 - **Responsive design pattern**: Data-heavy pages use a dual-render approach — mobile cards (`sm:hidden`) and desktop tables (`hidden sm:block`) rendered from the same data. Form grids use `grid-cols-1 sm:grid-cols-2` so fields stack on mobile and sit side-by-side on desktop. Dialog tables use `overflow-x-auto` with `min-w-[480px]` to enable horizontal scroll on narrow screens.
 - **Login page uses `h-screen`**: Both mobile and desktop login layouts use `h-screen overflow-hidden` (not `min-h-screen`) so the full page fits the viewport with no scrolling required on any device.
+- **Register page uses `h-screen` on mobile**: `register.tsx` mobile layout matches `forgot-password.tsx` — `h-screen overflow-hidden flex flex-col` with compact `LoginLogo` header + `flex-1` white card that `overflow-y-auto` scrolls the form. Desktop uses `min-h-screen`.
+- **App logo is `sahu-logo.png`**: Both `AppLogo` (sidebar/header) and `LoginLogo` (auth pages) in `app-logo.tsx` render `public/sahu-logo.png`. Never use inline SVG or text-box placeholders for the brand logo.
+- **Login mobile "Register here" card**: A dashed blue CTA card at the bottom of the mobile login white card links to `/register`. Placed after the OTP reset link, before the "Trusted. Secure. Reliable." footer.
+- **"Forgot Password?" is navy, not orange**: The link in `LoginFormContent` uses `#0b2c60` (navy) to match the security-focused design language. Do not change it to `#F97316` (saffron).
 
 ---
 
@@ -435,6 +442,7 @@ Full config in `infrastructure/twa/twa-config.json`.
 | **Audit Logs** | Full audit trail including login failures, role changes, session events, all admin actions | Admin only |
 | **Settings** | Business info, language, theme, auto-backup config | Admin only |
 | **Backups** | Manual pg_dump backups, restore from file | Admin only |
+| **Registration** | Self-registration form with password strength meter, security badge, links to login | Public |
 | **PWA Install** | Installable on desktop (Chrome/Edge) and Android | All users |
 
 ---
