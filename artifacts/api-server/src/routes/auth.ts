@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, userSessionsTable } from "@workspace/db";
+import { db, usersTable, userSessionsTable, settingsTable } from "@workspace/db";
 import { eq, or, and } from "drizzle-orm";
 import { z } from "zod/v4";
 import { LoginBody } from "@workspace/api-zod";
@@ -13,6 +13,7 @@ import {
 } from "../lib/auth";
 import { createNotification } from "../lib/notify";
 import { randomUUID } from "crypto";
+import { cacheGet, cacheSet } from "../lib/registration-cache";
 
 const router: IRouter = Router();
 
@@ -56,6 +57,19 @@ function fmtUser(user: any) {
 
 // ─── POST /auth/register ──────────────────────────────────────────────────────
 router.post("/auth/register", async (req, res): Promise<void> => {
+  // Check registration toggle server-side (never trust frontend)
+  const cached = cacheGet("registration_open");
+  let isOpen = cached === "true";
+  if (cached === null) {
+    const [row] = await db.select().from(settingsTable).where(eq(settingsTable.key, "registration_open"));
+    isOpen = row?.value === "true";
+    cacheSet("registration_open", isOpen ? "true" : "false", 60_000);
+  }
+  if (!isOpen) {
+    res.status(403).json({ error: "Registration is currently closed. Contact your administrator." });
+    return;
+  }
+
   const parsed = RegisterBody.safeParse(req.body);
   if (!parsed.success) {
     const firstIssue = parsed.error.issues?.[0];
@@ -97,20 +111,20 @@ router.post("/auth/register", async (req, res): Promise<void> => {
       fullName: data.fullName ?? null,
       passwordHash,
       role: "operator",
-      isActive: true,
-      status: "ACTIVE",
+      isActive: false,
+      status: "PENDING",
       failedLoginAttempts: 0,
     })
     .returning();
 
-  await auditLog(user.id, "register", `New user registered: ${user.username}`, getClientIp(req));
+  await auditLog(user.id, "REGISTER_REQUEST", `New registration submitted: ${user.username}`, getClientIp(req));
   await createNotification(
-    "New User Registration",
-    `${user.username} created a new account`,
+    "New Registration Request",
+    `${user.username} submitted a registration request — pending approval`,
     "info"
   );
 
-  res.status(201).json(fmtUser(user));
+  res.status(201).json({ pending: true, message: "Registration submitted. Awaiting admin approval." });
 });
 
 // ─── POST /auth/login ─────────────────────────────────────────────────────────
@@ -144,6 +158,11 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   const { browser, os, deviceInfo } = parseDevice(req.headers["user-agent"]);
 
   // Account status gate
+  if (user.status === "PENDING") {
+    await auditLog(user.id, "login.failed_inactive", `Login blocked — account pending approval from ${deviceInfo}`, clientIp);
+    res.status(403).json({ error: "Your account is pending admin approval. Please wait for an administrator to approve your request.", pending: true });
+    return;
+  }
   if (!user.isActive || user.status === "DELETED" || user.status === "INACTIVE" || user.status === "SUSPENDED") {
     await auditLog(user.id, "login.failed_inactive", `Login blocked — account status: ${user.status} from ${deviceInfo}`, clientIp);
     res.status(401).json({ error: "Account is not active. Please contact administrator." });

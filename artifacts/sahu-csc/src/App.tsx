@@ -13,6 +13,8 @@ import NotFound from "@/pages/not-found";
 
 import Login from "@/pages/login";
 import Register from "@/pages/register";
+import RegistrationClosed from "@/pages/register-closed";
+import RegisterPending from "@/pages/register-pending";
 import ForgotPassword from "@/pages/forgot-password";
 import ResetPassword from "@/pages/reset-password";
 import Sessions from "@/pages/sessions";
@@ -197,6 +199,8 @@ function Router() {
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/register/closed" component={RegistrationClosed} />
+      <Route path="/register/pending" component={RegisterPending} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/">{() => <ProtectedRoute component={Dashboard} />}</Route>

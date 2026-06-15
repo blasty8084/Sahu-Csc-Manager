@@ -9,6 +9,7 @@ import {
   Fingerprint, UserCircle, LayoutGrid, WifiOff, ArrowDownToLine, HeartPulse, MonitorSmartphone,
   Clock, LogIn,
 } from "lucide-react";
+import { usePendingCount } from "@/hooks/use-pending-count";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -39,6 +40,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const isAdmin = user?.role === "admin";
 
+  const { data: pendingCountData } = usePendingCount();
+  const pendingCount = isAdmin ? (pendingCountData?.count ?? 0) : 0;
+
   const handleIdle = useCallback(() => {
     logout();
   }, [logout]);
@@ -64,7 +68,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const adminNavItems = isAdmin ? [
     { href: "/users-overview", label: "Users Overview", icon: LayoutGrid },
-    { href: "/users", label: "User Management", icon: Users },
+    { href: "/users", label: "User Management", icon: Users, badge: pendingCount },
     { href: "/audit-logs", label: "Audit Logs", icon: History },
     { href: "/backups", label: "Backups", icon: Database },
     { href: "/settings", label: "Settings", icon: Settings },

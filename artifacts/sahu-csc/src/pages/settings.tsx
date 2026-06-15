@@ -5,13 +5,86 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/components/theme-provider";
 import { useForm } from "react-hook-form";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useRegistrationStatus } from "@/hooks/use-registration-status";
+import { UserPlus, Lock } from "lucide-react";
+
+function RegistrationControlCard() {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const { data: regStatus, isLoading: regLoading } = useRegistrationStatus();
+  const [toggling, setToggling] = useState(false);
+  const isOpen = regStatus?.open ?? false;
+
+  const toggleRegistration = async (open: boolean) => {
+    setToggling(true);
+    try {
+      const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+      const res = await fetch(`${base}/api/admin/settings/registration`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ open }),
+      });
+      if (!res.ok) throw new Error();
+      qc.invalidateQueries({ queryKey: ["registration-status"] });
+      toast({
+        title: open ? "Registration Opened" : "Registration Closed",
+        description: open
+          ? "New users can now register. All registrations require approval."
+          : "New registrations are disabled. Existing accounts unaffected.",
+      });
+    } catch {
+      toast({ title: "Failed to update registration setting", variant: "destructive" });
+    } finally {
+      setToggling(false);
+    }
+  };
+
+  return (
+    <Card className={isOpen ? "border-green-200" : "border-red-200"}>
+      <CardHeader className="pb-3">
+        <div className="flex items-center gap-2">
+          {isOpen
+            ? <UserPlus className="w-4 h-4 text-green-600" />
+            : <Lock className="w-4 h-4 text-red-500" />}
+          <CardTitle className="text-base">Registration Control</CardTitle>
+        </div>
+        <CardDescription>
+          Control whether new users can self-register. All registrations require admin approval before login is granted.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {regLoading ? (
+          <div className="flex items-center gap-3"><Skeleton className="h-6 w-10 rounded-full" /><Skeleton className="h-4 w-48" /></div>
+        ) : (
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium">{isOpen ? "Registrations Open" : "Registrations Closed"}</Label>
+              <p className="text-xs text-muted-foreground">
+                {isOpen
+                  ? "New users can submit registration requests."
+                  : "The registration page will show a 'closed' message."}
+              </p>
+            </div>
+            <Switch
+              checked={isOpen}
+              onCheckedChange={toggleRegistration}
+              disabled={toggling}
+              data-testid="switch-registration"
+            />
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function Settings() {
   const { toast } = useToast();
@@ -66,6 +139,9 @@ export default function Settings() {
           </div>
         ) : (
           <form onSubmit={onSubmit} className="space-y-6">
+            {/* Registration Control */}
+            <RegistrationControlCard />
+
             {/* Business Info */}
             <Card>
               <CardHeader className="pb-3"><CardTitle className="text-base">Business Information</CardTitle></CardHeader>

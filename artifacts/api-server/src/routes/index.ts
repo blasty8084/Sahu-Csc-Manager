@@ -14,6 +14,7 @@ import preferencesRouter from "./preferences";
 import passwordResetRouter from "./password-reset";
 import pushRouter from "./push";
 import sessionsRouter from "./sessions";
+import adminRegistrationRouter from "./admin-registration";
 
 const router: IRouter = Router();
 
@@ -32,5 +33,6 @@ router.use(reportsRouter);
 router.use(aepsRouter);
 router.use(pushRouter);
 router.use(sessionsRouter);
+router.use(adminRegistrationRouter);
 
 export default router;

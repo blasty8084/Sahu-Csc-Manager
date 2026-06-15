@@ -9,11 +9,14 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { usePendingCount } from "@/hooks/use-pending-count";
+import { Plus, Pencil, Trash2, CheckCircle2, XCircle, Clock, Users as UsersIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
+import { useQuery } from "@tanstack/react-query";
 
 interface UserForm {
   username: string;
@@ -31,14 +34,38 @@ const ROLE_COLORS: Record<string, string> = {
   user: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300",
 };
 
+type Tab = "pending" | "active" | "all";
+
+function usePendingUsers() {
+  return useQuery<any[]>({
+    queryKey: ["admin-pending-users"],
+    queryFn: async () => {
+      const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+      const res = await fetch(`${base}/api/admin/users/pending`, { credentials: "include" });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    staleTime: 20_000,
+    refetchInterval: 30_000,
+  });
+}
+
 export default function Users() {
   const { toast } = useToast();
   const qc = useQueryClient();
+  const [tab, setTab] = useState<Tab>("pending");
   const [showForm, setShowForm] = useState(false);
   const [editUser, setEditUser] = useState<any>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<any>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [actionLoading, setActionLoading] = useState<number | null>(null);
 
-  const { data: users, isLoading } = useListUsers();
+  const { data: users, isLoading: usersLoading } = useListUsers();
+  const { data: pendingUsers, isLoading: pendingLoading } = usePendingUsers();
+  const { data: pendingCountData } = usePendingCount();
+  const pendingCount = pendingCountData?.count ?? pendingUsers?.length ?? 0;
+
   const createMut = useCreateUser();
   const updateMut = useUpdateUser();
   const deleteMut = useDeleteUser();
@@ -47,7 +74,11 @@ export default function Users() {
     defaultValues: { username: "", email: "", mobile: "", fullName: "", password: "", role: "operator", isActive: true }
   });
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: getListUsersQueryKey() });
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: getListUsersQueryKey() });
+    qc.invalidateQueries({ queryKey: ["admin-pending-users"] });
+    qc.invalidateQueries({ queryKey: ["admin-pending-count"] });
+  };
 
   const openCreate = () => {
     setEditUser(null);
@@ -93,30 +124,191 @@ export default function Users() {
     }
   };
 
+  const approveUser = async (user: any) => {
+    setActionLoading(user.id);
+    try {
+      const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+      const res = await fetch(`${base}/api/admin/users/${user.id}/approve`, { method: "PATCH", credentials: "include" });
+      if (!res.ok) throw new Error();
+      toast({ title: `✅ ${user.username} approved`, description: "They can now log in." });
+      invalidate();
+    } catch {
+      toast({ title: "Failed to approve user", variant: "destructive" });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const confirmReject = async () => {
+    if (!rejectTarget) return;
+    setActionLoading(rejectTarget.id);
+    try {
+      const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+      const res = await fetch(`${base}/api/admin/users/${rejectTarget.id}/reject`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ reason: rejectReason }),
+      });
+      if (!res.ok) throw new Error();
+      toast({ title: `❌ ${rejectTarget.username} rejected` });
+      setRejectTarget(null);
+      setRejectReason("");
+      invalidate();
+    } catch {
+      toast({ title: "Failed to reject user", variant: "destructive" });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const activeUsers = (users ?? []).filter((u: any) => u.status === "ACTIVE" || u.isActive);
+  const displayedUsers = tab === "pending" ? (pendingUsers ?? []) : tab === "active" ? activeUsers : (users ?? []);
+  const isLoading = tab === "pending" ? pendingLoading : usersLoading;
+
   return (
     <Layout>
       <div className="space-y-5">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold">User Management</h2>
-            <p className="text-sm text-muted-foreground">{users?.length ?? 0} users registered</p>
+            <p className="text-sm text-muted-foreground">{users?.length ?? 0} users total</p>
           </div>
           <Button size="sm" onClick={openCreate} data-testid="button-new-user">
             <Plus size={14} className="mr-1.5" />Add User
           </Button>
         </div>
 
+        {/* Tabs */}
+        <div className="flex gap-1 border-b border-border">
+          {([
+            { key: "pending", label: "Pending", count: pendingCount },
+            { key: "active", label: "Active", count: activeUsers.length },
+            { key: "all", label: "All Users", count: users?.length ?? 0 },
+          ] as { key: Tab; label: string; count: number }[]).map(({ key, label, count }) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+                tab === key ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {label}
+              {count > 0 && (
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none ${
+                  key === "pending" ? "bg-red-500 text-white" : "bg-muted text-muted-foreground"
+                }`}>
+                  {count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
         {isLoading ? (
-          <div className="space-y-3">
-            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}
+          <div className="space-y-3">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
+        ) : displayedUsers.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+            {tab === "pending" ? (
+              <>
+                <div className="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center">
+                  <CheckCircle2 className="w-7 h-7 text-green-500" />
+                </div>
+                <p className="font-semibold text-gray-700">No pending registrations</p>
+                <p className="text-sm text-muted-foreground">All registration requests have been reviewed.</p>
+              </>
+            ) : (
+              <>
+                <UsersIcon className="w-10 h-10 text-muted-foreground/40" />
+                <p className="text-muted-foreground">No users found</p>
+              </>
+            )}
           </div>
-        ) : users?.length === 0 ? (
-          <p className="text-center text-muted-foreground py-12">No users found</p>
-        ) : (
+        ) : tab === "pending" ? (
+          /* Pending tab — special approve/reject UI */
           <>
-            {/* Mobile cards */}
             <div className="space-y-3 sm:hidden">
-              {users?.map((user: any) => (
+              {displayedUsers.map((user: any) => (
+                <div key={user.id} className="bg-card border border-amber-200 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                        <Clock className="w-4 h-4 text-amber-600" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{user.fullName || user.username}</p>
+                        <p className="text-xs text-muted-foreground">@{user.username}</p>
+                      </div>
+                    </div>
+                    <Badge className="bg-amber-100 text-amber-700 text-[10px] border-0 shrink-0">Pending</Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground space-y-0.5">
+                    <p>{user.email}</p>
+                    {user.mobile && <p>{user.mobile}</p>}
+                    <p>Registered {new Date(user.createdAt).toLocaleDateString("en-IN")}</p>
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700 text-white h-9" onClick={() => approveUser(user)} disabled={actionLoading === user.id}>
+                      <CheckCircle2 size={13} className="mr-1.5" />Approve
+                    </Button>
+                    <Button size="sm" variant="outline" className="flex-1 border-red-200 text-red-600 hover:bg-red-50 h-9" onClick={() => { setRejectTarget(user); setRejectReason(""); }} disabled={actionLoading === user.id}>
+                      <XCircle size={13} className="mr-1.5" />Reject
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="hidden sm:block border rounded-lg overflow-hidden bg-card">
+              <table className="w-full text-sm">
+                <thead className="border-b bg-muted/30">
+                  <tr className="text-left">
+                    <th className="px-4 py-3 font-medium text-muted-foreground">User</th>
+                    <th className="px-4 py-3 font-medium text-muted-foreground">Contact</th>
+                    <th className="px-4 py-3 font-medium text-muted-foreground">Registered</th>
+                    <th className="px-4 py-3 font-medium text-muted-foreground">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {displayedUsers.map((user: any) => (
+                    <tr key={user.id} className="hover:bg-muted/20 transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
+                            <Clock className="w-4 h-4 text-amber-600" />
+                          </div>
+                          <div>
+                            <p className="font-medium">{user.fullName || user.username}</p>
+                            <p className="text-xs text-muted-foreground">@{user.username}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <p className="text-xs">{user.email}</p>
+                        {user.mobile && <p className="text-xs text-muted-foreground">{user.mobile}</p>}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(user.createdAt).toLocaleDateString("en-IN")}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex gap-2">
+                          <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white h-8 px-3 text-xs" onClick={() => approveUser(user)} disabled={actionLoading === user.id}>
+                            <CheckCircle2 size={12} className="mr-1" />Approve
+                          </Button>
+                          <Button size="sm" variant="outline" className="border-red-200 text-red-600 hover:bg-red-50 h-8 px-3 text-xs" onClick={() => { setRejectTarget(user); setRejectReason(""); }} disabled={actionLoading === user.id}>
+                            <XCircle size={12} className="mr-1" />Reject
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        ) : (
+          /* Active / All tabs — existing UI */
+          <>
+            <div className="space-y-3 sm:hidden">
+              {displayedUsers.map((user: any) => (
                 <div key={user.id} className="bg-card border rounded-xl p-4 space-y-3" data-testid={`row-user-${user.id}`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 min-w-0">
@@ -135,9 +327,7 @@ export default function Users() {
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className={`text-xs px-2 py-0.5 rounded font-medium ${ROLE_COLORS[user.role] ?? ""}`}>{user.role}</span>
-                    <Badge variant={user.isActive ? "default" : "secondary"} className="text-xs">
-                      {user.isActive ? "Active" : "Inactive"}
-                    </Badge>
+                    <Badge variant={user.isActive ? "default" : "secondary"} className="text-xs">{user.isActive ? "Active" : "Inactive"}</Badge>
                   </div>
                   <div className="text-xs text-muted-foreground space-y-0.5">
                     <p>{user.email}</p>
@@ -147,8 +337,6 @@ export default function Users() {
                 </div>
               ))}
             </div>
-
-            {/* Desktop table */}
             <div className="hidden sm:block border rounded-lg overflow-hidden bg-card">
               <table className="w-full text-sm">
                 <thead className="border-b bg-muted/30">
@@ -162,7 +350,7 @@ export default function Users() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {users?.map((user: any) => (
+                  {displayedUsers.map((user: any) => (
                     <tr key={user.id} className="hover:bg-muted/20 transition-colors" data-testid={`row-user-${user.id}`}>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
@@ -183,9 +371,7 @@ export default function Users() {
                         <span className={`text-xs px-2 py-0.5 rounded font-medium ${ROLE_COLORS[user.role] ?? ""}`}>{user.role}</span>
                       </td>
                       <td className="px-4 py-3">
-                        <Badge variant={user.isActive ? "default" : "secondary"} className="text-xs">
-                          {user.isActive ? "Active" : "Inactive"}
-                        </Badge>
+                        <Badge variant={user.isActive ? "default" : "secondary"} className="text-xs">{user.isActive ? "Active" : "Inactive"}</Badge>
                       </td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(user.createdAt).toLocaleDateString("en-IN")}</td>
                       <td className="px-4 py-3">
@@ -203,6 +389,7 @@ export default function Users() {
         )}
       </div>
 
+      {/* Create/Edit User Dialog */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>{editUser ? "Edit User" : "Add User"}</DialogTitle></DialogHeader>
@@ -254,6 +441,7 @@ export default function Users() {
         </DialogContent>
       </Dialog>
 
+      {/* Delete Dialog */}
       <Dialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>Delete User?</DialogTitle></DialogHeader>
@@ -261,6 +449,33 @@ export default function Users() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteId(null)}>Cancel</Button>
             <Button variant="destructive" onClick={confirmDelete} disabled={deleteMut.isPending}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Dialog */}
+      <Dialog open={rejectTarget !== null} onOpenChange={() => { setRejectTarget(null); setRejectReason(""); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Reject Registration</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Rejecting <strong>@{rejectTarget?.username}</strong>. This will permanently decline their registration.
+            </p>
+            <div className="space-y-1.5">
+              <Label className="text-sm">Reason <span className="text-muted-foreground font-normal">(optional)</span></Label>
+              <Textarea
+                placeholder="e.g. Duplicate account, incomplete information..."
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                className="resize-none h-20"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setRejectTarget(null); setRejectReason(""); }}>Cancel</Button>
+            <Button variant="destructive" onClick={confirmReject} disabled={actionLoading === rejectTarget?.id}>
+              {actionLoading === rejectTarget?.id ? "Rejecting..." : "Confirm Reject"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

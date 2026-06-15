@@ -15,6 +15,7 @@ export const usersTable = pgTable("users", {
   status: text("status").notNull().default("ACTIVE"),
   failedLoginAttempts: integer("failed_login_attempts").notNull().default(0),
   lockedUntil: timestamp("locked_until", { withTimezone: true }),
+  rejectionReason: text("rejection_reason"),
   profilePicture: text("profile_picture"),
   bio: text("bio"),
   address: text("address"),

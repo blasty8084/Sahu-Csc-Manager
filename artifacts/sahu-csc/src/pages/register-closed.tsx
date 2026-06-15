@@ -1,0 +1,109 @@
+import { Link } from "wouter";
+import { motion } from "framer-motion";
+import { ShieldX, Phone, ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { LoginLogo } from "@/components/app-logo";
+import { useIsMobile } from "@/hooks/use-mobile";
+
+function ClosedCard() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className="flex flex-col items-center text-center gap-5"
+    >
+      <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ background: "rgba(239,68,68,0.1)" }}>
+        <ShieldX className="w-10 h-10 text-red-500" />
+      </div>
+
+      <div>
+        <h2 className="text-xl font-bold text-gray-900">Registration Closed</h2>
+        <p className="text-gray-500 text-sm mt-2 max-w-xs leading-relaxed">
+          New registrations are currently closed. To get access, contact your distributor or administrator.
+        </p>
+      </div>
+
+      <div className="w-full border border-dashed border-blue-200 rounded-2xl p-4 bg-blue-50 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "#e8eef8" }}>
+          <Phone className="w-5 h-5" style={{ color: "#0b2c60" }} />
+        </div>
+        <div className="text-left">
+          <p className="text-xs font-bold text-gray-800">Contact Distributor</p>
+          <p className="text-xs text-gray-500 mt-0.5">Ask your CSC distributor to enable registration or create your account.</p>
+        </div>
+      </div>
+
+      <Link href="/login">
+        <Button className="w-full h-11 font-semibold" style={{ background: "linear-gradient(135deg, #1a2560, #0f1a4a)" }}>
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Login
+        </Button>
+      </Link>
+    </motion.div>
+  );
+}
+
+export default function RegistrationClosed() {
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <div className="h-screen flex flex-col overflow-hidden" style={{ background: "#0B1340" }}>
+        <div className="flex-shrink-0 pt-6 px-6 pb-4 flex flex-col items-center text-center relative">
+          <Link href="/login">
+            <button className="absolute left-4 top-6 w-9 h-9 rounded-xl flex items-center justify-center transition-colors" style={{ background: "rgba(255,255,255,0.15)" }}>
+              <ArrowLeft className="w-4 h-4 text-white" />
+            </button>
+          </Link>
+          <LoginLogo size={52} />
+          <div className="mt-2.5">
+            <h1 className="text-xl font-black">
+              <span className="text-white">SAHU </span>
+              <span style={{ color: "#F97316" }}>CSC</span>
+            </h1>
+            <p className="text-white/50 text-xs">Management Platform</p>
+          </div>
+        </div>
+        <motion.div
+          initial={{ y: "100%" }}
+          animate={{ y: 0 }}
+          transition={{ duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="flex-1 bg-white rounded-t-3xl shadow-2xl flex flex-col overflow-hidden"
+        >
+          <div className="flex-1 overflow-y-auto px-6 pt-8 pb-8">
+            <ClosedCard />
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex" style={{ background: "#0B1340" }}>
+      <div className="w-[45%] flex flex-col justify-center px-16 py-12">
+        <div className="flex items-center gap-3 mb-10">
+          <LoginLogo size={36} />
+          <div>
+            <span className="text-white font-black text-lg">SAHU </span>
+            <span className="font-black text-lg" style={{ color: "#F97316" }}>CSC</span>
+            <p className="text-white/40 text-xs -mt-0.5">Management Platform</p>
+          </div>
+        </div>
+        <h1 className="text-4xl font-black leading-tight">
+          <span className="text-white">Registration</span>
+          <br />
+          <span style={{ color: "#F97316" }}>Currently Closed.</span>
+        </h1>
+        <p className="text-white/45 mt-4 max-w-sm leading-relaxed">
+          New sign-ups are temporarily disabled. Contact your CSC distributor to get access.
+        </p>
+      </div>
+      <div className="w-[55%] flex items-center justify-center px-10 py-12">
+        <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl px-8 py-10">
+          <ClosedCard />
+        </div>
+      </div>
+    </div>
+  );
+}
