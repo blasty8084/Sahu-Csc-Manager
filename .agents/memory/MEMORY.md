@@ -7,3 +7,4 @@
 - [Auth route parseDevice placement](auth-parsdevice.md) — parseDevice must be called once before all failure/success branches to avoid duplicate-const errors; esbuild treats duplicate const as a build error
 - [App logo file](app-logo.md) — primary logo is sahu-logo.png in public/; AppLogo and LoginLogo in app-logo.tsx both reference it; never use inline SVG/text-box placeholders
 - [Login & Register mobile design](login-register-design.md) — h-screen + compact navy header + slide-up white card; "Forgot Password?" navy not orange; "Register here" dashed blue card on login mobile
+- [Session store pool fix](session-store-pool.md) — connect-pg-simple must use shared `pool` from @workspace/db, not conString; conString creates a silent-fail separate pool; session table must exist (create manually or set createTableIfMissing: true)

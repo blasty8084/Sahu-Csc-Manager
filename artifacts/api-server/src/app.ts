@@ -9,6 +9,7 @@ import rateLimit from "express-rate-limit";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { ensureVapidKeys } from "./lib/vapid";
+import { pool } from "@workspace/db";
 
 const PgSession = ConnectPgSimple(session);
 
@@ -56,8 +57,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use(
   session({
     store: new PgSession({
-      conString: process.env.DATABASE_URL,
+      pool,
       tableName: "session",
+      createTableIfMissing: true,
       pruneSessionInterval: 60 * 60, // prune expired sessions every hour
     }),
     secret: process.env.SESSION_SECRET ?? "sahu-csc-secret-key-change-in-production",
