@@ -27,6 +27,7 @@
 18. [Known Gotchas & Conventions](#18-known-gotchas--conventions)
 19. [Future Work Items](#19-future-work-items)
 20. [Bug Fixes & Replit Migration (June 2026)](#20-bug-fixes--replit-migration-june-2026)
+21. [Architecture Documentation Overhaul (June 2026)](#21-architecture-documentation-overhaul-june-2026)
 
 ---
 
@@ -737,10 +738,105 @@ The health endpoint reads `process.env.VAPID_KEYS_FROM_ENV` to determine `persis
 
 ---
 
+### Bug Fix: Login Redirect Loop — Session Not Persisting
+
+**Symptom:** Login returned HTTP 200 with the user object, but the frontend immediately stayed on (or redirected back to) the login page. Every call to `GET /api/auth/me` after login returned 401 "Not authenticated". The `session` DB table had 0 rows even after successful login.
+
+**Root cause:** `connect-pg-simple` was configured with `conString: process.env.DATABASE_URL` in `app.ts`. This mode creates a **separate, internal `pg.Pool`** that silently failed to connect in the Replit environment. Sessions were never written to the database, so the session cookie held no server-side data.
+
+**Fix applied (`artifacts/api-server/src/app.ts`):**
+```ts
+// Before (broken — silent pool failure in Replit):
+store: new PgSession({ conString: process.env.DATABASE_URL, tableName: "session" })
+
+// After (correct — shared working pool):
+import { pool } from "@workspace/db";
+store: new PgSession({
+  pool,                        // reuse the shared, already-working pool
+  tableName: "session",
+  createTableIfMissing: true,  // auto-creates session table on first startup
+  pruneSessionInterval: 3600,
+})
+```
+
+**Session table:** Also created manually on first deploy via SQL:
+```sql
+CREATE TABLE "session" (
+  "sid" varchar NOT NULL COLLATE "default",
+  "sess" json NOT NULL,
+  "expire" timestamp(6) NOT NULL,
+  CONSTRAINT "session_pkey" PRIMARY KEY ("sid")
+);
+CREATE INDEX "IDX_session_expire" ON "session" ("expire");
+```
+With `createTableIfMissing: true`, this is handled automatically on all subsequent restarts.
+
+---
+
+### Bug Fix: Port 8082 vs 8080
+
+**Symptom:** API server started successfully on port 8080 but was immediately killed — Replit's artifact workflow `artifacts/api-server: API Server` also binds port 8080.
+
+**Fix:** The `Start application` workflow passes `PORT=8082` to the API server. The Vite proxy in `vite.config.ts` was updated to forward `/api` → `localhost:8082`. Documented in `replit.md` Gotchas.
+
+---
+
 ### Documentation Updates (this session)
 
-- `replit.md` — Workflows table updated to reflect single `Start application` workflow; frontend port corrected (21700 → 5000); Server Health page added to Product Features table; new Gotchas entries for 502 on mobile, VAPID persistence flag, and `/api/healthz` diagnostics.
+- `replit.md` — Workflows table updated to reflect single `Start application` workflow; frontend port corrected (21700 → 5000); Server Health page added to Product Features table; new Gotchas entries for 502 on mobile, VAPID persistence flag, `/api/healthz` diagnostics, API port 8082.
 - `CHANGELOG.md` — This section added (section 20).
+
+---
+
+## 21. Architecture Documentation Overhaul (June 2026)
+
+### Summary
+
+`ARCHITECTURE.md` was significantly out of date relative to the actual codebase. A full rewrite brought it in sync with all features implemented through June 2026.
+
+### Changes covered in the overhaul
+
+**New tables documented:**
+- `session` (express-session store, managed by connect-pg-simple)
+- `user_sessions` (V2 multi-device session tracking)
+- `password_reset_tokens` (OTP-based password reset)
+- Full column listings for all 12 tables (previously only key columns shown)
+
+**New API routes documented (previously missing):**
+- `POST /auth/register` — self-registration endpoint
+- `POST /auth/forgot-password` + `POST /auth/reset-password` — OTP password reset
+- `GET/DELETE /sessions/:id` — multi-device session management
+- `GET /admin/users-overview`, `GET /admin/users-overview/:userId/ledger`, `GET /admin/aeps-overview`
+- `GET /push/vapid-public-key`, `POST /push/subscribe`, `DELETE /push/unsubscribe`
+- `GET /api/healthz` — full diagnostics (server, DB, VAPID)
+- `GET /reports/aeps`, `GET /reports/service-breakdown`
+
+**V2 Auth flow documented:**
+- Account locking (5 attempts → 15-minute lock, auto-unlock)
+- `requirePermission()` middleware + full permissions map per role
+- `parseDevice()` — called once per request before all branches
+- V2 `requireAuth` flow (validates `user_sessions` table, falls back to V1 `activeSessionToken`)
+- Idle timeout (30 min) + 2-min warning dialog (via `useIdleTimer` in Layout)
+
+**Frontend pages added:**
+- `register.tsx`, `forgot-password.tsx`, `reset-password.tsx`
+- `sessions.tsx` (multi-device session management)
+- `pwa-status.tsx` (App & Offline Status)
+- `server-health.tsx` (API diagnostics, admin only)
+- `users-overview.tsx` (admin balance overview)
+- `offline.tsx`, `not-found.tsx`
+
+**Section 14 (Replit Environment) added:**
+- Port map table
+- Session store critical fix explanation + SQL
+- IndexedDB store reference table
+- Common troubleshooting table
+
+**Caching strategies updated** to reflect per-resource granular Workbox config (replaced single `api-cache` entry).
+
+**RBAC section updated** to reflect `requirePermission` pattern instead of simple `requireRole`.
+
+**Seed data corrected** — 22 services across 5 categories (previously listed as 10 across 4 categories).
 
 ---
 
