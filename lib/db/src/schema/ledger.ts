@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, integer, numeric } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, integer, numeric, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -14,7 +14,12 @@ export const ledgerTable = pgTable("ledger", {
   createdBy: integer("created_by").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
-});
+}, (t) => [
+  index("idx_ledger_created_by").on(t.createdBy),
+  index("idx_ledger_date").on(t.date),
+  index("idx_ledger_created_by_date").on(t.createdBy, t.date),
+  index("idx_ledger_service_type").on(t.serviceType),
+]);
 
 export const insertLedgerSchema = createInsertSchema(ledgerTable).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertLedger = z.infer<typeof insertLedgerSchema>;
