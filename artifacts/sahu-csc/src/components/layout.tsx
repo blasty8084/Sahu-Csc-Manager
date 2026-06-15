@@ -2,104 +2,59 @@ import React, { useCallback } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useUnreadCount } from "@/hooks/use-notifications";
-import { useIdleTimer } from "@/hooks/use-idle-timer";
 import {
   LayoutDashboard, BookOpen, Briefcase, BarChart3, Bell,
   History, Users, Settings, Database, Menu,
   Fingerprint, UserCircle, LayoutGrid, WifiOff, ArrowDownToLine, HeartPulse, MonitorSmartphone,
-  Clock, LogIn,
+  LogIn,
 } from "lucide-react";
 import { usePendingCount } from "@/hooks/use-pending-count";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel,
-  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
-  AlertDialogHeader, AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { AppLogo } from "@/components/app-logo";
 import { PWAInstallBanner } from "@/components/pwa-install-banner";
 import { SyncStatusBar, SyncDot } from "@/components/sync-status-bar";
 
-function formatCountdown(ms: number): string {
-  const totalSeconds = Math.ceil(ms / 1000);
-  const mins = Math.floor(totalSeconds / 60);
-  const secs = totalSeconds % 60;
-  if (mins > 0) return `${mins}:${String(secs).padStart(2, "0")}`;
-  return `${secs}s`;
+type NavItem = {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>;
+  badge?: number;
+};
+
+interface SidebarNavProps {
+  mainNavItems: NavItem[];
+  adminNavItems: NavItem[];
+  initials: string;
+  avatarSrc?: string;
+  displayName: string;
+  roleLabel: string;
+  location: string;
+  onLogout: () => void;
 }
 
-export function Layout({ children }: { children: React.ReactNode }) {
-  const [location] = useLocation();
-  const { user, logout } = useAuth();
-
-  const { data: unreadCount = 0 } = useUnreadCount();
-
-  const isAdmin = user?.role === "admin";
-
-  const { data: pendingCountData } = usePendingCount();
-  const pendingCount = isAdmin ? (pendingCountData?.count ?? 0) : 0;
-
-  const handleIdle = useCallback(() => {
-    logout();
-  }, [logout]);
-
-  const { isWarning, remaining, resetTimer } = useIdleTimer(
-    30 * 60 * 1000,
-    2 * 60 * 1000,
-    handleIdle
-  );
-
-  const mainNavItems = [
-    { href: "/", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/ledger", label: "Ledger", icon: BookOpen },
-    { href: "/aeps", label: "AePS Cash", icon: Fingerprint },
-    { href: "/services", label: "Services", icon: Briefcase },
-    { href: "/reports", label: "Reports", icon: BarChart3 },
-    { href: "/notifications", label: "Notifications", icon: Bell, badge: unreadCount },
-    { href: "/profile", label: "My Profile", icon: UserCircle },
-    { href: "/sessions", label: "Active Sessions", icon: MonitorSmartphone },
-    { href: "/pwa-status", label: "App & Offline", icon: WifiOff },
-    { href: "/download-app", label: "Download App", icon: ArrowDownToLine },
-  ];
-
-  const adminNavItems = isAdmin ? [
-    { href: "/users-overview", label: "Users Overview", icon: LayoutGrid },
-    { href: "/users", label: "User Management", icon: Users, badge: pendingCount },
-    { href: "/audit-logs", label: "Audit Logs", icon: History },
-    { href: "/backups", label: "Backups", icon: Database },
-    { href: "/settings", label: "Settings", icon: Settings },
-    { href: "/server-health", label: "Server Health", icon: HeartPulse },
-  ] : [];
-
-  const bottomNavItems = [
-    { href: "/", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/ledger", label: "Ledger", icon: BookOpen },
-    { href: "/aeps", label: "AePS", icon: Fingerprint },
-    { href: "/profile", label: "Profile", icon: UserCircle },
-  ];
-
-  const initials = (user?.fullName || user?.username || "U")
-    .split(" ")
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-  const avatarSrc = (user as any)?.profilePicture;
-  const displayName = user?.fullName || user?.username || "User";
-  const roleLabel = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "";
-
+// Extracted as module-level component — stable reference prevents React from
+// destroying+recreating sidebar DOM on every Layout re-render.
+function SidebarNav({
+  mainNavItems,
+  adminNavItems,
+  initials,
+  avatarSrc,
+  displayName,
+  roleLabel,
+  location,
+  onLogout,
+}: SidebarNavProps) {
   const isActive = (href: string) =>
     location === href || (href !== "/" && location.startsWith(href));
 
-  const SidebarContent = () => (
+  return (
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
 
       {/* ── Top Header ─────────────────────────────────────────── */}
       <div className="px-4 pt-5 pb-4 flex items-center gap-3 border-b border-white/10">
-        {/* Logo image — circular, prominent */}
         <div className="relative flex-shrink-0">
           <div className="w-11 h-11 rounded-full overflow-hidden ring-2 ring-white/20 shadow-md">
             <AppLogo size="sm" className="w-full h-full" />
@@ -119,7 +74,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
           return (
             <Link key={item.href} href={item.href}>
               <div className={`
-                flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-150
+                flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer
+                transition-colors duration-100
                 ${active
                   ? "bg-[#f97316] text-white font-semibold shadow-md shadow-orange-900/30"
                   : "text-white/65 hover:text-white hover:bg-white/8"}
@@ -141,7 +97,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
           );
         })}
 
-        {/* Admin Section */}
         {adminNavItems.length > 0 && (
           <>
             <p className="text-white/30 text-[9px] font-bold uppercase tracking-[0.15em] px-3 pt-4 pb-1.5">
@@ -153,13 +108,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
               return (
                 <Link key={item.href} href={item.href}>
                   <div className={`
-                    flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-150
+                    flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer
+                    transition-colors duration-100
                     ${active
                       ? "bg-[#f97316] text-white font-semibold shadow-md shadow-orange-900/30"
                       : "text-white/65 hover:text-white hover:bg-white/8"}
                   `}>
                     <Icon size={16} className={active ? "text-white" : "text-white/45"} />
                     <span className="text-[13px] leading-none">{item.label}</span>
+                    {item.badge !== undefined && item.badge > 0 && (
+                      <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none bg-[#f97316] text-white">
+                        {item.badge > 99 ? "99+" : item.badge}
+                      </span>
+                    )}
                   </div>
                 </Link>
               );
@@ -178,34 +139,28 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/* ── User Footer ────────────────────────────────────────── */}
       <div className="mx-3 mb-3 mt-0.5 p-2.5 rounded-2xl bg-white/8 border border-white/10 flex items-center gap-2.5">
-
-        {/* Avatar / Profile picture */}
         <Link href="/profile" className="flex-shrink-0 cursor-pointer">
           <Avatar className="h-10 w-10 ring-2 ring-[#f97316]/60 shadow-sm">
-            {avatarSrc
-              ? <AvatarImage src={avatarSrc} alt={displayName} className="object-cover" />
-              : null}
+            {avatarSrc ? <AvatarImage src={avatarSrc} alt={displayName} className="object-cover" /> : null}
             <AvatarFallback className="bg-[#f97316] text-white text-sm font-black">
               {initials}
             </AvatarFallback>
           </Avatar>
         </Link>
 
-        {/* Name + role */}
         <Link href="/profile" className="flex-1 min-w-0 cursor-pointer">
           <p className="text-[13px] font-bold text-white leading-tight truncate">{displayName}</p>
           <p className="text-[10px] text-white/45 mt-0.5 capitalize">{roleLabel}</p>
         </Link>
 
-        {/* Logout button — arrow-in-box style */}
         <button
-          onClick={() => logout()}
+          onClick={onLogout}
           title="Logout"
           className="
             flex-shrink-0 w-8 h-8 rounded-xl border border-white/15 bg-white/5
             flex items-center justify-center
             text-white/40 hover:text-white hover:border-white/30 hover:bg-white/12
-            transition-all duration-150 cursor-pointer
+            transition-colors duration-100 cursor-pointer
           "
         >
           <LogIn size={14} className="rotate-180" />
@@ -213,6 +168,50 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </div>
     </div>
   );
+}
+
+export function Layout({ children }: { children: React.ReactNode }) {
+  const [location] = useLocation();
+  const { user, logout } = useAuth();
+
+  const { data: unreadCount = 0 } = useUnreadCount();
+  const isAdmin = user?.role === "admin";
+  const { data: pendingCountData } = usePendingCount();
+  const pendingCount = isAdmin ? (pendingCountData?.count ?? 0) : 0;
+
+  const handleLogout = useCallback(() => { logout(); }, [logout]);
+
+  const mainNavItems: NavItem[] = [
+    { href: "/", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/ledger", label: "Ledger", icon: BookOpen },
+    { href: "/aeps", label: "AePS Cash", icon: Fingerprint },
+    { href: "/services", label: "Services", icon: Briefcase },
+    { href: "/reports", label: "Reports", icon: BarChart3 },
+    { href: "/notifications", label: "Notifications", icon: Bell, badge: unreadCount },
+    { href: "/profile", label: "My Profile", icon: UserCircle },
+    { href: "/sessions", label: "Active Sessions", icon: MonitorSmartphone },
+    { href: "/pwa-status", label: "App & Offline", icon: WifiOff },
+    { href: "/download-app", label: "Download App", icon: ArrowDownToLine },
+  ];
+
+  const adminNavItems: NavItem[] = isAdmin ? [
+    { href: "/users-overview", label: "Users Overview", icon: LayoutGrid },
+    { href: "/users", label: "User Management", icon: Users, badge: pendingCount },
+    { href: "/audit-logs", label: "Audit Logs", icon: History },
+    { href: "/backups", label: "Backups", icon: Database },
+    { href: "/settings", label: "Settings", icon: Settings },
+    { href: "/server-health", label: "Server Health", icon: HeartPulse },
+  ] : [];
+
+  const initials = (user?.fullName || user?.username || "U")
+    .split(" ")
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+  const avatarSrc = (user as any)?.profilePicture;
+  const displayName = user?.fullName || user?.username || "User";
+  const roleLabel = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "";
 
   const pageTitle = (() => {
     if (location === "/") return "Dashboard";
@@ -224,7 +223,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-muted/20 flex flex-col md:flex-row">
       {/* Desktop Sidebar */}
       <div className="hidden md:block w-64 fixed inset-y-0 z-10">
-        <SidebarContent />
+        <SidebarNav
+          mainNavItems={mainNavItems}
+          adminNavItems={adminNavItems}
+          initials={initials}
+          avatarSrc={avatarSrc}
+          displayName={displayName}
+          roleLabel={roleLabel}
+          location={location}
+          onLogout={handleLogout}
+        />
       </div>
 
       <div className="flex-1 flex flex-col md:ml-64">
@@ -256,7 +264,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="p-0 w-72 border-0">
-                  <SidebarContent />
+                  <SidebarNav
+                    mainNavItems={mainNavItems}
+                    adminNavItems={adminNavItems}
+                    initials={initials}
+                    avatarSrc={avatarSrc}
+                    displayName={displayName}
+                    roleLabel={roleLabel}
+                    location={location}
+                    onLogout={handleLogout}
+                  />
                 </SheetContent>
               </Sheet>
             </div>
@@ -285,7 +302,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </Button>
             </Link>
             <Link href="/profile">
-              <Avatar className="h-8 w-8 ring-2 ring-[#f97316]/50 cursor-pointer hover:opacity-80 transition-opacity">
+              <Avatar className="h-8 w-8 ring-2 ring-[#f97316]/50 cursor-pointer hover:opacity-80 transition-opacity duration-100">
                 {avatarSrc ? <AvatarImage src={avatarSrc} alt="Profile" className="object-cover" /> : null}
                 <AvatarFallback className="bg-[#f97316] text-white text-sm font-black">
                   {initials}
@@ -307,12 +324,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {/* Mobile Bottom Navigation */}
         <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-background border-t border-border shadow-[0_-2px_12px_rgba(0,0,0,0.08)]">
           <div className="flex items-stretch h-16">
-            {bottomNavItems.map((item) => {
+            {[
+              { href: "/", label: "Dashboard", icon: LayoutDashboard },
+              { href: "/ledger", label: "Ledger", icon: BookOpen },
+              { href: "/aeps", label: "AePS", icon: Fingerprint },
+              { href: "/profile", label: "Profile", icon: UserCircle },
+            ].map((item) => {
               const Icon = item.icon;
-              const active = isActive(item.href);
+              const active = location === item.href || (item.href !== "/" && location.startsWith(item.href));
               return (
                 <Link key={item.href} href={item.href} className="flex-1">
-                  <div className={`flex flex-col items-center justify-center h-full gap-1 relative transition-colors ${active ? "text-[#f97316]" : "text-muted-foreground"}`}>
+                  <div className={`flex flex-col items-center justify-center h-full gap-1 relative transition-colors duration-100 ${active ? "text-[#f97316]" : "text-muted-foreground"}`}>
                     {active && (
                       <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[#f97316] rounded-full" />
                     )}
@@ -327,37 +349,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </nav>
       </div>
-
-      {/* Idle Timeout Warning Dialog */}
-      <AlertDialog open={isWarning}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <Clock className="w-5 h-5 text-amber-500" />
-              Session About to Expire
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              You've been inactive for a while. For your security, you'll be automatically
-              logged out in{" "}
-              <strong className="text-foreground font-mono text-base">
-                {formatCountdown(remaining)}
-              </strong>
-              .
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel
-              className="bg-destructive/10 text-destructive hover:bg-destructive/20 border-0"
-              onClick={() => logout()}
-            >
-              Logout Now
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={resetTimer}>
-              Stay Logged In
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

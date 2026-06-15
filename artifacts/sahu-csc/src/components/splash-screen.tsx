@@ -42,6 +42,7 @@ export function SplashScreen({ visible, onDone }: SplashScreenProps) {
                 borderRightColor: "rgba(249,115,22,0.25)",
                 borderBottomColor: "transparent",
                 borderLeftColor: "rgba(249,115,22,0.1)",
+                willChange: "transform",
               }}
             />
             {/* Inner glow ring */}

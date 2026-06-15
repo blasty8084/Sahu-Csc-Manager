@@ -181,6 +181,7 @@ function LoadingScreen() {
             border: "2px solid transparent",
             borderTopColor: "#F97316",
             borderRightColor: "rgba(249,115,22,0.2)",
+            willChange: "transform",
           }}
         />
         {/* Circular logo */}
@@ -248,11 +249,11 @@ function Router() {
     <AnimatePresence mode="wait" initial={false}>
       <motion.div
         key={location}
-        initial={{ opacity: 0, y: 7 }}
+        initial={{ opacity: 0, y: 5 }}
         animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -7 }}
-        transition={{ duration: 0.2, ease: "easeOut" }}
-        style={{ minHeight: "100vh" }}
+        exit={{ opacity: 0, y: -5 }}
+        transition={{ duration: 0.15, ease: "easeOut" }}
+        style={{ minHeight: "100vh", willChange: "opacity, transform" }}
       >
         <Switch>
           <Route path="/login" component={Login} />

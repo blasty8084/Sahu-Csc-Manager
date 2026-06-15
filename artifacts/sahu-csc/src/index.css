@@ -204,9 +204,35 @@
 @layer base {
   * {
     @apply border-border;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeSpeed;
+  }
+
+  /* GPU-accelerate all spinning animations */
+  .animate-spin {
+    will-change: transform;
+    backface-visibility: hidden;
+  }
+
+  /* Promote fixed/sticky chrome to their own compositor layers */
+  header, nav, aside {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+
+  /* Fast tap response on touch devices */
+  button, a, [role="button"] {
+    touch-action: manipulation;
+  }
+
+  /* Smooth scroll everywhere */
+  * {
+    scroll-behavior: smooth;
   }
 }
