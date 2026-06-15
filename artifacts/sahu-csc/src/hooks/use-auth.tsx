@@ -29,7 +29,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const {
     data: liveUser,
     isLoading: liveLoading,
-    refetch,
   } = useGetMe({
     query: {
       retry: false,
@@ -88,14 +87,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       err.attemptsLeft = errBody.attemptsLeft;
       throw err;
     }
-    await refetch();
+    // Login response already contains full user data — set it directly in
+    // the cache. This avoids a second /auth/me round-trip and bypasses any
+    // Replit-proxy cookie-forwarding timing issues.
+    const userData: AuthUser = await response.json();
+    queryClient.setQueryData(["auth/me"], userData);
   };
 
   const handleLogout = async () => {
-    await logoutMutation.mutateAsync();
+    try { await logoutMutation.mutateAsync(); } catch { /* ignore */ }
     await clearUserSession().catch(() => {});
     setOfflineUser(null);
-    await refetch();
+    queryClient.setQueryData(["auth/me"], null);
+    queryClient.clear();
     setLocation("/login");
   };
 
