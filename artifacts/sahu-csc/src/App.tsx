@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
@@ -9,6 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescript
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useIdleTimer } from "@/hooks/use-idle-timer";
+import { SplashScreen } from "@/components/splash-screen";
 import NotFound from "@/pages/not-found";
 
 import Login from "@/pages/login";
@@ -38,7 +40,7 @@ import { Redirect } from "wouter";
 import { useListNotifications } from "@workspace/api-client-react";
 import { updateAppBadge } from "@/lib/pwa-badge";
 
-// ─── QueryClient — detects SESSION_REPLACED from any failed request ───────────
+// ─── QueryClient ──────────────────────────────────────────────────────────────
 function detectSessionReplaced(error: any) {
   const msg: string = error?.message ?? String(error ?? "");
   if (msg.includes("SESSION_REPLACED")) {
@@ -76,7 +78,7 @@ function ShareTargetHandler() {
   return null;
 }
 
-// ─── Idle / session-replaced manager (only rendered when logged in) ──────────
+// ─── Idle / session-replaced manager ─────────────────────────────────────────
 function SessionManager() {
   const { user, logout } = useAuth();
   const [, setLocation] = useLocation();
@@ -101,7 +103,6 @@ function SessionManager() {
   useEffect(() => { setShowWarning(user ? isWarning : false); }, [isWarning, user]);
   useEffect(() => { setDisplaySec(Math.max(0, Math.ceil(remaining / 1000))); }, [remaining]);
 
-  // SESSION_REPLACED: another device logged in
   useEffect(() => {
     const handler = () => {
       queryClient.clear();
@@ -158,6 +159,58 @@ function SessionManager() {
   );
 }
 
+// ─── Circular loading screen ──────────────────────────────────────────────────
+function LoadingScreen() {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center"
+      style={{ background: "#0B1340" }}
+    >
+      <motion.div
+        initial={{ scale: 0.7, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.4, ease: [0.34, 1.4, 0.64, 1] }}
+        className="relative flex items-center justify-center"
+      >
+        {/* Spinning ring */}
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1.4, repeat: Infinity, ease: "linear" }}
+          className="absolute w-24 h-24 rounded-full"
+          style={{
+            border: "2px solid transparent",
+            borderTopColor: "#F97316",
+            borderRightColor: "rgba(249,115,22,0.2)",
+          }}
+        />
+        {/* Circular logo */}
+        <div
+          className="w-20 h-20 rounded-full overflow-hidden shadow-xl"
+          style={{ border: "2.5px solid rgba(255,255,255,0.15)" }}
+        >
+          <img
+            src="/sahu-logo.png"
+            alt="SAHU CSC"
+            className="w-full h-full object-cover"
+          />
+        </div>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.25, duration: 0.4 }}
+        className="mt-5 text-center"
+      >
+        <p className="text-white font-black text-base tracking-wide">
+          SAHU <span style={{ color: "#F97316" }}>CSC</span>
+        </p>
+        <p className="text-white/35 text-xs mt-0.5">Loading...</p>
+      </motion.div>
+    </div>
+  );
+}
+
 // ─── Route protection ─────────────────────────────────────────────────────────
 function ProtectedRoute({ component: Component, adminOnly = false, ...rest }: any) {
   const { user, isLoading } = useAuth();
@@ -169,13 +222,7 @@ function ProtectedRoute({ component: Component, adminOnly = false, ...rest }: an
     }
   }, [user, isLoading, location, setLocation]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-background">
-        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
+  if (isLoading) return <LoadingScreen />;
 
   if (!user) return null;
 
@@ -193,58 +240,86 @@ function ProtectedRoute({ component: Component, adminOnly = false, ...rest }: an
   return <Component {...rest} />;
 }
 
-// ─── Router ───────────────────────────────────────────────────────────────────
+// ─── Router with page transitions ────────────────────────────────────────────
 function Router() {
+  const [location] = useLocation();
+
   return (
-    <Switch>
-      <Route path="/login" component={Login} />
-      <Route path="/register" component={Register} />
-      <Route path="/register/closed" component={RegistrationClosed} />
-      <Route path="/register/pending" component={RegisterPending} />
-      <Route path="/forgot-password" component={ForgotPassword} />
-      <Route path="/reset-password" component={ResetPassword} />
-      <Route path="/">{() => <ProtectedRoute component={Dashboard} />}</Route>
-      <Route path="/ledger">{() => <ProtectedRoute component={Ledger} />}</Route>
-      <Route path="/services">{() => <ProtectedRoute component={Services} />}</Route>
-      <Route path="/reports">{() => <ProtectedRoute component={Reports} />}</Route>
-      <Route path="/aeps">{() => <ProtectedRoute component={AePS} />}</Route>
-      <Route path="/notifications">{() => <ProtectedRoute component={Notifications} />}</Route>
-      <Route path="/profile">{() => <ProtectedRoute component={Profile} />}</Route>
-      <Route path="/preferences">{() => <Redirect to="/profile" />}</Route>
-      <Route path="/users">{() => <ProtectedRoute component={Users} adminOnly />}</Route>
-      <Route path="/users-overview">{() => <ProtectedRoute component={UsersOverview} adminOnly />}</Route>
-      <Route path="/audit-logs">{() => <ProtectedRoute component={AuditLogs} adminOnly />}</Route>
-      <Route path="/settings">{() => <ProtectedRoute component={Settings} adminOnly />}</Route>
-      <Route path="/backups">{() => <ProtectedRoute component={Backups} adminOnly />}</Route>
-      <Route path="/sessions">{() => <ProtectedRoute component={Sessions} />}</Route>
-      <Route path="/pwa-status">{() => <ProtectedRoute component={PwaStatus} />}</Route>
-      <Route path="/server-health">{() => <ProtectedRoute component={ServerHealth} />}</Route>
-      <Route path="/download-app">{() => <ProtectedRoute component={DownloadApp} />}</Route>
-      <Route path="/share-target" component={ShareTargetHandler} />
-      <Route path="/offline" component={Offline} />
-      <Route path="/open-file">{() => <ProtectedRoute component={Ledger} />}</Route>
-      <Route component={NotFound} />
-    </Switch>
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={location}
+        initial={{ opacity: 0, y: 7 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -7 }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
+        style={{ minHeight: "100vh" }}
+      >
+        <Switch>
+          <Route path="/login" component={Login} />
+          <Route path="/register" component={Register} />
+          <Route path="/register/closed" component={RegistrationClosed} />
+          <Route path="/register/pending" component={RegisterPending} />
+          <Route path="/forgot-password" component={ForgotPassword} />
+          <Route path="/reset-password" component={ResetPassword} />
+          <Route path="/">{() => <ProtectedRoute component={Dashboard} />}</Route>
+          <Route path="/ledger">{() => <ProtectedRoute component={Ledger} />}</Route>
+          <Route path="/services">{() => <ProtectedRoute component={Services} />}</Route>
+          <Route path="/reports">{() => <ProtectedRoute component={Reports} />}</Route>
+          <Route path="/aeps">{() => <ProtectedRoute component={AePS} />}</Route>
+          <Route path="/notifications">{() => <ProtectedRoute component={Notifications} />}</Route>
+          <Route path="/profile">{() => <ProtectedRoute component={Profile} />}</Route>
+          <Route path="/preferences">{() => <Redirect to="/profile" />}</Route>
+          <Route path="/users">{() => <ProtectedRoute component={Users} adminOnly />}</Route>
+          <Route path="/users-overview">{() => <ProtectedRoute component={UsersOverview} adminOnly />}</Route>
+          <Route path="/audit-logs">{() => <ProtectedRoute component={AuditLogs} adminOnly />}</Route>
+          <Route path="/settings">{() => <ProtectedRoute component={Settings} adminOnly />}</Route>
+          <Route path="/backups">{() => <ProtectedRoute component={Backups} adminOnly />}</Route>
+          <Route path="/sessions">{() => <ProtectedRoute component={Sessions} />}</Route>
+          <Route path="/pwa-status">{() => <ProtectedRoute component={PwaStatus} />}</Route>
+          <Route path="/server-health">{() => <ProtectedRoute component={ServerHealth} />}</Route>
+          <Route path="/download-app">{() => <ProtectedRoute component={DownloadApp} />}</Route>
+          <Route path="/share-target" component={ShareTargetHandler} />
+          <Route path="/offline" component={Offline} />
+          <Route path="/open-file">{() => <ProtectedRoute component={Ledger} />}</Route>
+          <Route component={NotFound} />
+        </Switch>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
 // ─── App root ─────────────────────────────────────────────────────────────────
 function App() {
+  const [showSplash, setShowSplash] = useState(() => {
+    if (typeof sessionStorage !== "undefined") {
+      return !sessionStorage.getItem("sahu-splash-shown");
+    }
+    return true;
+  });
+
+  const handleSplashDone = useCallback(() => {
+    setShowSplash(false);
+    sessionStorage.setItem("sahu-splash-shown", "1");
+  }, []);
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <ThemeProvider defaultTheme="light" storageKey="sahu-csc-theme">
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <AuthProvider>
-              <BadgeUpdater />
-              <SessionManager />
-              <Router />
-            </AuthProvider>
-          </WouterRouter>
-        </ThemeProvider>
-        <Toaster />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <>
+      <SplashScreen visible={showSplash} onDone={handleSplashDone} />
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <ThemeProvider defaultTheme="light" storageKey="sahu-csc-theme">
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <AuthProvider>
+                <BadgeUpdater />
+                <SessionManager />
+                <Router />
+              </AuthProvider>
+            </WouterRouter>
+          </ThemeProvider>
+          <Toaster />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </>
   );
 }
 
