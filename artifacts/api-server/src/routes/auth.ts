@@ -12,6 +12,14 @@ import {
   parseDevice,
 } from "../lib/auth";
 import { createNotification } from "../lib/notify";
+import {
+  notifyLoginSuccess,
+  notifyLoginFailed,
+  notifyAccountLocked,
+  notifyPasswordChanged,
+  notifyPasswordReset,
+  notifyNewRegistration,
+} from "../services/notificationTemplates";
 import { randomUUID } from "crypto";
 import { cacheGet, cacheSet } from "../lib/registration-cache";
 
@@ -118,10 +126,9 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     .returning();
 
   await auditLog(user.id, "REGISTER_REQUEST", `New registration submitted: ${user.username}`, getClientIp(req));
-  await createNotification(
+  await notifyNewRegistration(
     "New Registration Request",
-    `${user.username} submitted a registration request — pending approval`,
-    "info"
+    `${user.username} submitted a registration request — pending approval`
   );
 
   res.status(201).json({ pending: true, message: "Registration submitted. Awaiting admin approval." });
@@ -201,11 +208,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
         .set({ failedLoginAttempts: attempts, status: "LOCKED", lockedUntil })
         .where(eq(usersTable.id, user.id));
       await auditLog(user.id, "login.failed_max_attempts", `Account locked after ${MAX_ATTEMPTS} failed attempts from ${deviceInfo}`, clientIp);
-      await createNotification(
-        "Account Locked",
-        `${user.username}'s account locked after ${MAX_ATTEMPTS} failed attempts`,
-        "warning"
-      );
+      await notifyAccountLocked(user.id, clientIp, attempts);
       res.status(401).json({
         error: `Too many failed attempts. Account locked for ${LOCK_MINUTES} minutes.`,
         locked: true,
@@ -217,11 +220,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
         .set({ failedLoginAttempts: attempts })
         .where(eq(usersTable.id, user.id));
       await auditLog(user.id, "login.failed_password", `Wrong password attempt ${attempts}/${MAX_ATTEMPTS} from ${deviceInfo}`, clientIp);
-      await createNotification(
-        "Failed Login Attempt",
-        `Failed login for user: ${user.username} (attempt ${attempts}/${MAX_ATTEMPTS})`,
-        "warning"
-      );
+      await notifyLoginFailed(user.id, clientIp, deviceInfo, attempts, MAX_ATTEMPTS);
       res.status(401).json({
         error: "Invalid credentials",
         attemptsLeft: MAX_ATTEMPTS - attempts,
@@ -260,12 +259,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   req.session.cookie.maxAge = sessionDuration;
 
   await auditLog(user.id, "login", `Logged in from ${deviceInfo}`, getClientIp(req));
-  await createNotification(
-    "User Login",
-    `${user.username} logged in from ${deviceInfo}`,
-    "info",
-    user.id
-  );
+  await notifyLoginSuccess(user.id, clientIp, deviceInfo);
 
   res.json(fmtUser(user));
 });

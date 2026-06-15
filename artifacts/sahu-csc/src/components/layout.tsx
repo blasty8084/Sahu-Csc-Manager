@@ -1,7 +1,7 @@
 import React, { useCallback } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { useListNotifications } from "@workspace/api-client-react";
+import { useUnreadCount } from "@/hooks/use-notifications";
 import { useIdleTimer } from "@/hooks/use-idle-timer";
 import {
   LayoutDashboard, BookOpen, Briefcase, BarChart3, Bell,
@@ -35,8 +35,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, logout } = useAuth();
 
-  const { data: notificationsData } = useListNotifications({ unreadOnly: true });
-  const unreadCount = Array.isArray(notificationsData) ? notificationsData.length : 0;
+  const { data: unreadCount = 0 } = useUnreadCount();
 
   const isAdmin = user?.role === "admin";
 

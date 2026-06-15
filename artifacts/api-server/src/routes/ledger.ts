@@ -8,6 +8,7 @@ import {
   GetLedgerSummaryQueryParams,
 } from "@workspace/api-zod";
 import { requireAuth, requireRole, requirePermission, auditLog, getClientIp } from "../lib/auth";
+import { notifyLargeTransaction } from "../services/notificationTemplates";
 
 const router: IRouter = Router();
 
@@ -168,6 +169,12 @@ router.post("/ledger", requireAuth, requirePermission("ledger:create"), async (r
     .returning();
 
   await auditLog(userId, "ledger.create", `Created ledger entry for ${customerName}`, getClientIp(req));
+
+  const amount = (credit ?? 0) + (debit ?? 0);
+  if (amount >= 10000) {
+    notifyLargeTransaction(userId, amount, entry.id).catch(() => {});
+  }
+
   res.status(201).json(formatEntry(entry));
 });
 

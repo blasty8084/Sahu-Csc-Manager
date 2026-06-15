@@ -1,94 +1,205 @@
-import { useListNotifications, useMarkNotificationRead, useMarkAllNotificationsRead, useDeleteNotification, getListNotificationsQueryKey } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Bell, CheckCheck, Trash2, Info, AlertTriangle, CheckCircle, XCircle } from "lucide-react";
+import {
+  Bell, CheckCheck, Trash2, Info, AlertTriangle, CheckCircle,
+  XCircle, Shield, Cpu, TrendingUp, Search, Filter,
+} from "lucide-react";
 
-const typeConfig: Record<string, { icon: React.ReactNode; badge: string }> = {
-  info: { icon: <Info size={16} className="text-blue-500" />, badge: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" },
-  warning: { icon: <AlertTriangle size={16} className="text-amber-500" />, badge: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300" },
-  success: { icon: <CheckCircle size={16} className="text-emerald-500" />, badge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300" },
-  error: { icon: <XCircle size={16} className="text-red-500" />, badge: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300" },
+const TYPE_CONFIG: Record<string, { icon: React.ReactNode; badge: string; label: string }> = {
+  info:     { icon: <Info size={15} className="text-blue-500" />,     badge: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",       label: "Info" },
+  warning:  { icon: <AlertTriangle size={15} className="text-amber-500" />, badge: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",   label: "Warning" },
+  success:  { icon: <CheckCircle size={15} className="text-emerald-500" />, badge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300", label: "Success" },
+  error:    { icon: <XCircle size={15} className="text-red-500" />,    badge: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",           label: "Error" },
+  security: { icon: <Shield size={15} className="text-red-600" />,     badge: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",           label: "Security" },
+  system:   { icon: <Cpu size={15} className="text-purple-500" />,     badge: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300", label: "System" },
+  business: { icon: <TrendingUp size={15} className="text-amber-600" />, badge: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",  label: "Business" },
 };
+
+const PRIORITY_CONFIG: Record<string, { dot: string; label: string }> = {
+  LOW:      { dot: "bg-slate-400",   label: "Low" },
+  MEDIUM:   { dot: "bg-blue-500",    label: "Medium" },
+  HIGH:     { dot: "bg-amber-500",   label: "High" },
+  CRITICAL: { dot: "bg-red-600",     label: "Critical" },
+};
+
+const TABS = [
+  { key: "all",      label: "All" },
+  { key: "unread",   label: "Unread" },
+  { key: "security", label: "Security" },
+  { key: "business", label: "Business" },
+  { key: "system",   label: "System" },
+];
+
+async function fetchNotifications(tab: string, search: string, page: number) {
+  const params = new URLSearchParams({ tab, page: String(page), limit: "20" });
+  if (search) params.set("search", search);
+  const res = await fetch(`/api/notifications?${params}`, { credentials: "include" });
+  if (!res.ok) throw new Error("Failed to fetch");
+  return res.json();
+}
+
+async function markRead(id: number) {
+  await fetch(`/api/notifications/${id}/read`, { method: "PATCH", credentials: "include" });
+}
+
+async function markAllRead() {
+  await fetch(`/api/notifications/read-all`, { method: "POST", credentials: "include" });
+}
+
+async function deleteNotif(id: number) {
+  await fetch(`/api/notifications/${id}`, { method: "DELETE", credentials: "include" });
+}
+
+async function deleteRead() {
+  await fetch(`/api/notifications/bulk`, {
+    method: "DELETE",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ filter: "read" }),
+  });
+}
 
 export default function Notifications() {
   const { toast } = useToast();
   const qc = useQueryClient();
-  const { data: notifications, isLoading } = useListNotifications({});
-  const markRead = useMarkNotificationRead();
-  const markAll = useMarkAllNotificationsRead();
-  const del = useDeleteNotification();
+  const [tab, setTab] = useState("all");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [searchInput, setSearchInput] = useState("");
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: getListNotificationsQueryKey({}) });
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ["notifications-page", tab, search, page],
+    queryFn: () => fetchNotifications(tab, search, page),
+    staleTime: 15_000,
+  });
 
-  const unreadCount = notifications?.filter((n: any) => !n.isRead).length ?? 0;
+  const notifications: any[] = data?.notifications ?? [];
+  const total: number = data?.total ?? 0;
+  const totalPages = Math.ceil(total / 20);
 
-  const handleMarkAll = async () => {
-    try {
-      await markAll.mutateAsync();
-      invalidate();
-      toast({ title: "All notifications marked as read" });
-    } catch {
-      toast({ title: "Failed", variant: "destructive" });
-    }
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ["notifications-page"] });
+    qc.invalidateQueries({ queryKey: ["notifications", "unread-count"] });
   };
 
+  const handleTab = (t: string) => { setTab(t); setPage(1); };
+  const handleSearch = () => { setSearch(searchInput); setPage(1); };
+
   const handleMarkRead = async (id: number) => {
-    await markRead.mutateAsync({ id });
+    await markRead(id);
     invalidate();
   };
 
+  const handleMarkAll = async () => {
+    await markAllRead();
+    invalidate();
+    toast({ title: "All notifications marked as read" });
+  };
+
   const handleDelete = async (id: number) => {
-    await del.mutateAsync({ id });
+    await deleteNotif(id);
     invalidate();
     toast({ title: "Notification deleted" });
   };
 
+  const handleDeleteRead = async () => {
+    await deleteRead();
+    invalidate();
+    toast({ title: "Read notifications cleared" });
+  };
+
+  const unreadCount = tab === "all" ? notifications.filter((n) => !n.isRead).length : 0;
+
   return (
     <Layout>
-      <div className="space-y-5 max-w-2xl">
+      <div className="space-y-4 max-w-2xl">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <h2 className="text-xl font-bold">Notifications</h2>
-            {unreadCount > 0 && (
-              <Badge className="bg-primary text-primary-foreground">{unreadCount} unread</Badge>
+            {total > 0 && (
+              <Badge variant="secondary" className="text-xs">{total}</Badge>
             )}
           </div>
-          {unreadCount > 0 && (
-            <Button variant="outline" size="sm" onClick={handleMarkAll} disabled={markAll.isPending} data-testid="button-mark-all-read">
-              <CheckCheck size={14} className="mr-1.5" />Mark all read
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleMarkAll} className="text-xs h-8">
+              <CheckCheck size={13} className="mr-1" />Mark all read
             </Button>
-          )}
+            <Button variant="outline" size="sm" onClick={handleDeleteRead} className="text-xs h-8 text-muted-foreground">
+              <Trash2 size={13} className="mr-1" />Clear read
+            </Button>
+          </div>
         </div>
 
-        {isLoading ? (
-          <div className="space-y-3">
-            {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}
+        {/* Search */}
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              className="pl-8 h-9 text-sm"
+              placeholder="Search notifications…"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            />
           </div>
-        ) : notifications?.length === 0 ? (
+          <Button size="sm" variant="outline" className="h-9" onClick={handleSearch}>
+            <Filter size={13} />
+          </Button>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-1 overflow-x-auto pb-1 no-scrollbar">
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => handleTab(t.key)}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors
+                ${tab === t.key
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* List */}
+        {isLoading ? (
+          <div className="space-y-2">
+            {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}
+          </div>
+        ) : notifications.length === 0 ? (
           <div className="text-center py-16">
-            <Bell size={40} className="mx-auto text-muted-foreground/40 mb-3" />
-            <p className="text-muted-foreground">No notifications</p>
+            <Bell size={40} className="mx-auto text-muted-foreground/30 mb-3" />
+            <p className="text-muted-foreground text-sm">No notifications</p>
           </div>
         ) : (
           <div className="space-y-2">
-            {notifications?.map((n: any) => {
-              const config = typeConfig[n.type] ?? typeConfig.info;
+            {notifications.map((n: any) => {
+              const tc = TYPE_CONFIG[n.type] ?? TYPE_CONFIG.info;
+              const pc = PRIORITY_CONFIG[n.priority] ?? PRIORITY_CONFIG.MEDIUM;
               return (
                 <div
                   key={n.id}
-                  className={`flex items-start gap-3 p-4 rounded-lg border transition-colors ${!n.isRead ? "bg-card border-primary/20 shadow-sm" : "bg-muted/20 border-border"}`}
-                  data-testid={`notification-${n.id}`}
+                  className={`flex items-start gap-3 p-4 rounded-lg border transition-colors
+                    ${!n.isRead
+                      ? "bg-card border-l-4 border-l-primary border-t-border border-r-border border-b-border shadow-sm"
+                      : "bg-muted/20 border-border opacity-80"}`}
                 >
-                  <div className="mt-0.5 flex-shrink-0">{config.icon}</div>
+                  <div className="mt-0.5 flex-shrink-0">{tc.icon}</div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className={`font-medium text-sm ${!n.isRead ? "" : "text-muted-foreground"}`}>{n.title}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{n.message}</p>
+                      <div className="min-w-0">
+                        <p className={`font-medium text-sm truncate ${!n.isRead ? "" : "text-muted-foreground"}`}>
+                          {n.title}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.message}</p>
                       </div>
                       <div className="flex items-center gap-1 flex-shrink-0">
                         {!n.isRead && (
@@ -101,15 +212,33 @@ export default function Notifications() {
                         </Button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${config.badge}`}>{n.type}</span>
-                      <span className="text-xs text-muted-foreground">{new Date(n.createdAt).toLocaleString("en-IN")}</span>
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${tc.badge}`}>{tc.label}</span>
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <span className={`w-1.5 h-1.5 rounded-full ${pc.dot}`} />
+                        {pc.label}
+                      </span>
+                      <span className="text-xs text-muted-foreground ml-auto">
+                        {new Date(n.createdAt).toLocaleString("en-IN", { dateStyle: "short", timeStyle: "short" })}
+                      </span>
                       {!n.isRead && <span className="w-2 h-2 bg-primary rounded-full" />}
                     </div>
+                    {n.link && (
+                      <a href={n.link} className="text-xs text-primary underline mt-1 block">View →</a>
+                    )}
                   </div>
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-3 pt-2">
+            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Prev</Button>
+            <span className="text-sm text-muted-foreground">Page {page} of {totalPages}</span>
+            <Button variant="outline" size="sm" disabled={page >= totalPages || isFetching} onClick={() => setPage(p => p + 1)}>Next</Button>
           </div>
         )}
       </div>

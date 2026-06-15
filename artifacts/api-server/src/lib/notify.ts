@@ -1,31 +1,22 @@
-import { db, notificationsTable, usersTable } from "@workspace/db";
-import { logger } from "./logger";
-import { sendPushToUser, sendPushToAll } from "./push";
-import { eq } from "drizzle-orm";
+import { createNotification as _createNotification } from "../services/notificationService";
+import type { NotificationType, NotificationPriority } from "../services/notificationService";
+
+export { createNotification as _svcCreateNotification } from "../services/notificationService";
 
 export async function createNotification(
   title: string,
   message: string,
-  type: "info" | "warning" | "success" | "error" = "info",
-  userId?: number
+  type: NotificationType = "info",
+  userId?: number,
+  opts?: { priority?: NotificationPriority; link?: string; meta?: Record<string, unknown> }
 ): Promise<void> {
-  try {
-    await db.insert(notificationsTable).values({ title, message, type, userId: userId ?? null, isRead: false });
-
-    // Fire push notification to the target user (or all users if broadcast)
-    const payload = {
-      title,
-      body: message,
-      url: "/notifications",
-      tag: `sahu-notif-${type}`,
-    };
-
-    if (userId !== undefined) {
-      sendPushToUser(userId, payload).catch(() => {});
-    } else {
-      sendPushToAll(payload).catch(() => {});
-    }
-  } catch (err) {
-    logger.error({ err }, "Failed to create notification");
-  }
+  await _createNotification({
+    title,
+    message,
+    type,
+    priority: opts?.priority ?? "MEDIUM",
+    userId,
+    link: opts?.link,
+    meta: opts?.meta,
+  });
 }
