@@ -20,7 +20,10 @@ store: new PgSession({
 }),
 ```
 
-Also ensure the `session` table exists. `createTableIfMissing: true` handles this automatically on first store operation. If needed, create manually:
+## esbuild Bundling Issue
+`connect-pg-simple` reads `table.sql` from its package directory at runtime using `fs.readFile`. When esbuild bundles it, the file path resolution breaks — `createTableIfMissing: true` throws `ENOENT: table.sql not found`. Fix: add `"connect-pg-simple"` to the `external` array in `build.mjs`.
+
+Also ensure the `session` table exists in the DB. If `createTableIfMissing` fails due to bundling, create manually:
 ```sql
 CREATE TABLE IF NOT EXISTS "session" (
   "sid" varchar NOT NULL COLLATE "default",

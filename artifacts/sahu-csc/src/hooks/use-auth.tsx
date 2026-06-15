@@ -88,9 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       err.attemptsLeft = errBody.attemptsLeft;
       throw err;
     }
-    await queryClient.invalidateQueries();
     await refetch();
-    setLocation("/");
   };
 
   const handleLogout = async () => {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -405,9 +405,10 @@ function DesktopLogin(props: LoginFormContentProps) {
 }
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const [, setLocation] = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
@@ -415,6 +416,10 @@ export default function Login() {
     resolver: zodResolver(loginSchema),
     defaultValues: { identifier: "", password: "" },
   });
+
+  useEffect(() => {
+    if (user) setLocation("/");
+  }, [user]);
 
   useEffect(() => {
     const saved = localStorage.getItem("rememberMe") === "true";
