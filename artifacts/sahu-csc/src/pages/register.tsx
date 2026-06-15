@@ -11,7 +11,7 @@ import { LoginLogo } from "@/components/app-logo";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Eye, EyeOff, Lock, Mail, Smartphone, User, UserPlus, Loader2, CheckCircle2, ArrowLeft, Shield } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, Smartphone, User, UserPlus, Loader2, CheckCircle2, ArrowLeft, Shield, LogIn, ArrowRight } from "lucide-react";
 import RegistrationClosed from "./register-closed";
 
 const registerSchema = z
@@ -303,10 +303,31 @@ function RegisterContent() {
             </div>
           </div>
           <RegisterForm />
-          <p className="text-center text-xs text-gray-500 mt-4">
-            Already have an account?{" "}
-            <Link href="/login"><span className="font-bold cursor-pointer" style={{ color: "#F97316" }}>Sign in →</span></Link>
-          </p>
+
+          {/* Or divider */}
+          <div className="flex items-center gap-3 mt-5">
+            <div className="flex-1 h-px bg-gray-200" />
+            <span className="text-xs text-gray-400 font-medium">or</span>
+            <div className="flex-1 h-px bg-gray-200" />
+          </div>
+
+          {/* Login CTA */}
+          <Link href="/login">
+            <div
+              className="mt-3 flex items-center gap-3 px-4 py-3.5 rounded-2xl border-2 border-dashed cursor-pointer transition-colors hover:bg-blue-100"
+              style={{ borderColor: "#bfdbfe", background: "#eff6ff" }}
+            >
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "#dbeafe" }}>
+                <LogIn className="w-5 h-5" style={{ color: "#0b2c60" }} />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-gray-500">Already have an account?</p>
+                <p className="text-sm font-bold flex items-center gap-1 mt-0.5" style={{ color: "#0b2c60" }}>
+                  Login here <ArrowRight className="w-3.5 h-3.5" />
+                </p>
+              </div>
+            </div>
+          </Link>
         </motion.div>
       </div>
     </div>
