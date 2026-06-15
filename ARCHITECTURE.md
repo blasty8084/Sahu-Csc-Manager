@@ -1096,6 +1096,9 @@ The seed script (`artifacts/api-server/src/scripts/seed.ts`) is safe to re-run (
 | **`parseDevice` called once per request** | In `auth.ts` login handler, `parseDevice` is called once before all failure/success branches — esbuild treats duplicate `const` declarations as a build error. |
 | **`isLoading = liveLoading || !offlineChecked`** | In `use-auth.tsx`, uses `||` not `&&` — prevents auto-logout on page refresh when offline check completes before live fetch. |
 | **`DELETE /sessions/all` returns `{ redirect: true }`** | Frontend checks this flag and calls `logout()` to clear client-side auth state before redirecting to login. |
+| **`connect-pg-simple` must be in esbuild `external`** | `connect-pg-simple` reads `table.sql` from `node_modules` at runtime via `path.join(__dirname, 'table.sql')`. When bundled by esbuild the path breaks and sessions silently fail. Listed in `build.mjs` `external` array — do not remove it. |
+| **Login sets auth cache via `setQueryData`** | After a successful login, `use-auth.tsx` calls `queryClient.setQueryData(["auth/me"], userData)` directly from the login response body. No separate `/api/auth/me` refetch is needed or performed. Doing a refetch instead causes a race condition through the Replit proxy (cookie not yet forwarded → 401 → user reset to null → redirect cancelled). |
+| **`login.tsx` redirect guard** | A `useEffect` in `login.tsx` watches the `user` value and calls `setLocation("/")` as soon as it becomes truthy. This ensures redirect works on both fresh login and browser back-navigation to the login page when already authenticated. |
 | **AePS sessions are per-user** | `aeps_daily` unique constraint is `(date, created_by)` — each user has their own daily session, unlike the previous single-session-per-day model. |
 | **TWA assetlinks.json** | Update `public/.well-known/assetlinks.json` with your Android `package_name` and `sha256_cert_fingerprints` before submitting to Google Play. |
 

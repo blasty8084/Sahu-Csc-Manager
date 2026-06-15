@@ -28,6 +28,7 @@
 19. [Future Work Items](#19-future-work-items)
 20. [Bug Fixes & Replit Migration (June 2026)](#20-bug-fixes--replit-migration-june-2026)
 21. [Architecture Documentation Overhaul (June 2026)](#21-architecture-documentation-overhaul-june-2026)
+22. [Login Redirect & Session Persistence Fixes (June 2026)](#22-login-redirect--session-persistence-fixes-june-2026)
 
 ---
 
@@ -837,6 +838,81 @@ With `createTableIfMissing: true`, this is handled automatically on all subseque
 **RBAC section updated** to reflect `requirePermission` pattern instead of simple `requireRole`.
 
 **Seed data corrected** — 22 services across 5 categories (previously listed as 10 across 4 categories).
+
+---
+
+## 22. Login Redirect & Session Persistence Fixes (June 2026)
+
+> Applied during debugging of the login-stays-on-login-page issue in the Replit environment.
+
+---
+
+### Bug Fix: `connect-pg-simple` Bundled by esbuild → `table.sql ENOENT`
+
+**Symptom:** API started without errors, login returned HTTP 200, but `GET /api/auth/me` always returned 401 "Not authenticated". The `session` table in PostgreSQL had 0 rows even after successful login.
+
+**Root cause:** `connect-pg-simple` internally reads a bundled SQL file (`table.sql`) from `node_modules` using `path.join(__dirname, 'table.sql')`. When esbuild bundled the package into `dist/index.mjs`, the relative path to `table.sql` was broken — the file did not exist alongside the bundle. `connect-pg-simple` silently swallowed the error and never created or wrote to the session table.
+
+**Fix applied (`artifacts/api-server/build.mjs`):**
+```js
+// Added to the external array:
+external: [
+  // ...existing externals...
+  "connect-pg-simple",   // ← reads table.sql from node_modules at runtime; must not be bundled
+],
+```
+
+With `connect-pg-simple` marked external, Node resolves it from `node_modules` at runtime and `table.sql` is found correctly.
+
+---
+
+### Bug Fix: Login Redirect Race Condition — Replaced Refetch with `setQueryData`
+
+**Symptom:** Login toast appeared, cookie was set, but the frontend stayed on the login page and did not redirect to `/`. No redirect happened even though the server returned HTTP 200 with the user object.
+
+**Root cause:** The original `handleLogin` in `use-auth.tsx` called `queryClient.invalidateQueries(["auth/me"])` then `refetch()`. In the Replit proxy environment the subsequent `GET /api/auth/me` call was sometimes completing before the session cookie propagated through the proxy layer, returning a brief 401 "Not authenticated" response. This reset `user` to null, which cancelled the redirect.
+
+**Fix applied (`artifacts/sahu-csc/src/hooks/use-auth.tsx`):**
+```ts
+// Before (broken — race condition with refetch in Replit proxy):
+await queryClient.invalidateQueries({ queryKey: ["auth/me"] });
+await refetch();
+
+// After (correct — set cache directly from login response body):
+queryClient.setQueryData(["auth/me"], userData);   // userData = parsed login response body
+```
+
+The login endpoint already returns the full user object — this is set directly into the React Query cache, so no additional network round-trip is needed. The `user` state updates immediately and triggers the redirect.
+
+**Logout** was updated to mirror this pattern:
+```ts
+queryClient.setQueryData(["auth/me"], null);
+queryClient.clear();
+```
+
+---
+
+### Fix: Login Page `useEffect` Redirect Guard
+
+**Added to `artifacts/sahu-csc/src/pages/login.tsx`:**
+```tsx
+useEffect(() => {
+  if (user) setLocation("/");
+}, [user, setLocation]);
+```
+
+This `useEffect` serves as a safety net — if `user` is already set (e.g., browser back-navigation after login), the page immediately redirects to the dashboard without showing the login form.
+
+---
+
+### Summary Table
+
+| Fix | File | What Changed |
+|-----|------|-------------|
+| `connect-pg-simple` esbuild external | `artifacts/api-server/build.mjs` | Added to `external` array |
+| Login `setQueryData` | `artifacts/sahu-csc/src/hooks/use-auth.tsx` | Login sets cache directly from response body; no refetch |
+| Logout `setQueryData` | `artifacts/sahu-csc/src/hooks/use-auth.tsx` | Logout clears `["auth/me"]` cache entry directly |
+| Login redirect guard | `artifacts/sahu-csc/src/pages/login.tsx` | `useEffect` redirects when `user` becomes truthy |
 
 ---
 
