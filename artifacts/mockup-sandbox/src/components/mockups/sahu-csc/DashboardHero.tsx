@@ -5,28 +5,121 @@ const logoSrc = "/sahu-logo.png";
 
 function WalletIllustration() {
   return (
-    <div className="relative w-32 h-32 flex items-end justify-center select-none pointer-events-none">
-      {/* Coins stack */}
-      <div className="absolute bottom-0 right-0 flex flex-col items-center gap-0.5">
-        {[0,1,2].map(i => (
-          <div key={i} className="w-10 h-3 rounded-full bg-gradient-to-b from-yellow-300 to-yellow-500 border border-yellow-400/60 shadow-sm" style={{ zIndex: i }} />
-        ))}
+    <div
+      className="relative select-none pointer-events-none"
+      style={{ width: 148, height: 140 }}
+    >
+      {/* ── Cash bills sticking out of wallet top ── */}
+      {/* Bill 1 — back, taller */}
+      <div
+        className="absolute"
+        style={{
+          bottom: 58, left: 22,
+          width: 68, height: 60,
+          background: "linear-gradient(175deg, #4ade80 0%, #16a34a 60%, #14532d 100%)",
+          borderRadius: "8px 8px 0 0",
+          boxShadow: "0 -4px 12px rgba(22,163,74,0.4)",
+          zIndex: 1,
+        }}
+      >
+        {/* bill lines */}
+        <div style={{ position:"absolute", top:10, left:8, right:8, height:2, background:"rgba(255,255,255,0.25)", borderRadius:2 }} />
+        <div style={{ position:"absolute", top:18, left:8, right:8, height:2, background:"rgba(255,255,255,0.15)", borderRadius:2 }} />
+        <div style={{ position:"absolute", top:26, left:8, right:24, height:2, background:"rgba(255,255,255,0.12)", borderRadius:2 }} />
+        <div style={{ position:"absolute", top:8, right:8, width:20, height:20, borderRadius:"50%", border:"2px solid rgba(255,255,255,0.3)" }} />
       </div>
-      {/* Wallet body */}
-      <div className="relative z-10 mr-6 mb-1">
-        {/* Main wallet */}
-        <div className="w-20 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 shadow-xl relative overflow-visible">
-          {/* Wallet flap */}
-          <div className="absolute -top-3 left-0 w-20 h-7 rounded-t-xl bg-gradient-to-br from-blue-400 to-blue-600 shadow-md" />
-          {/* Coin latch */}
-          <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-yellow-400 border-2 border-yellow-300 shadow" />
-          {/* Cash sticking out */}
-          <div className="absolute -top-5 left-2 flex gap-0.5">
-            <div className="w-12 h-8 rounded-t-md bg-gradient-to-b from-green-300 to-green-500 opacity-90 shadow" />
-            <div className="w-10 h-6 rounded-t-md bg-gradient-to-b from-green-400 to-green-600 opacity-80 shadow" />
-          </div>
+      {/* Bill 2 — front, shorter, slightly offset */}
+      <div
+        className="absolute"
+        style={{
+          bottom: 58, left: 36,
+          width: 56, height: 46,
+          background: "linear-gradient(175deg, #86efac 0%, #22c55e 55%, #166534 100%)",
+          borderRadius: "8px 8px 0 0",
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3)",
+          zIndex: 2,
+        }}
+      >
+        <div style={{ position:"absolute", top:8, left:7, right:7, height:1.5, background:"rgba(255,255,255,0.3)", borderRadius:2 }} />
+        <div style={{ position:"absolute", top:15, left:7, right:7, height:1.5, background:"rgba(255,255,255,0.2)", borderRadius:2 }} />
+      </div>
+
+      {/* ── Wallet body ── */}
+      {/* Flap (top part of wallet, slightly darker) */}
+      <div
+        className="absolute"
+        style={{
+          bottom: 38, left: 6,
+          width: 104, height: 30,
+          background: "linear-gradient(160deg, #2563eb 0%, #1d4ed8 100%)",
+          borderRadius: "12px 12px 0 0",
+          zIndex: 3,
+          boxShadow: "0 -2px 8px rgba(29,78,216,0.35)",
+        }}
+      />
+      {/* Main wallet rectangle */}
+      <div
+        className="absolute"
+        style={{
+          bottom: 18, left: 6,
+          width: 104, height: 50,
+          background: "linear-gradient(150deg, #3b82f6 0%, #1e40af 55%, #1e3a8a 100%)",
+          borderRadius: "0 0 14px 14px",
+          zIndex: 4,
+          boxShadow: "0 8px 24px rgba(30,64,175,0.55), 0 2px 8px rgba(0,0,0,0.3)",
+        }}
+      >
+        {/* Horizontal stitching lines */}
+        <div style={{ position:"absolute", top:12, left:12, right:12, height:1, background:"rgba(255,255,255,0.12)", borderRadius:2 }} />
+        <div style={{ position:"absolute", top:22, left:12, right:12, height:1, background:"rgba(255,255,255,0.08)", borderRadius:2 }} />
+        {/* Coin latch button */}
+        <div
+          style={{
+            position:"absolute", top:10, right:12,
+            width:22, height:22, borderRadius:"50%",
+            background: "linear-gradient(135deg, #fde68a 0%, #f59e0b 50%, #d97706 100%)",
+            border: "2px solid #fbbf24",
+            boxShadow: "0 2px 6px rgba(245,158,11,0.5)",
+          }}
+        >
+          <div style={{ position:"absolute", inset:4, borderRadius:"50%", background:"rgba(255,255,255,0.35)" }} />
         </div>
       </div>
+
+      {/* ── Coin stack ── right side, in front */}
+      {[0, 1, 2, 3].map((i) => (
+        <div
+          key={i}
+          className="absolute"
+          style={{
+            bottom: 14 + i * 8,
+            right: 4,
+            width: 40,
+            height: 16,
+            borderRadius: "50%",
+            background: i === 3
+              ? "linear-gradient(180deg, #fde68a 0%, #f59e0b 100%)"
+              : "linear-gradient(180deg, #fbbf24 0%, #d97706 100%)",
+            border: "1.5px solid #f59e0b",
+            boxShadow: i === 0
+              ? "0 4px 10px rgba(245,158,11,0.5)"
+              : "none",
+            zIndex: 5 + i,
+          }}
+        />
+      ))}
+
+      {/* Shine highlight on wallet */}
+      <div
+        className="absolute"
+        style={{
+          bottom: 46, left: 6, width: 104, height: 22,
+          background: "linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 100%)",
+          borderRadius: "12px 12px 0 0",
+          zIndex: 6,
+          pointerEvents: "none",
+        }}
+      />
     </div>
   );
 }
@@ -55,121 +148,164 @@ export function DashboardHero() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex justify-center">
-      <div className="w-full max-w-[390px] bg-white relative overflow-hidden">
+      <div className="w-full max-w-[390px] bg-gray-100 relative overflow-hidden">
 
-        {/* ── Hero Card ──────────────────────────────────────────── */}
-        <div className="relative overflow-hidden pb-8"
+        {/* ── Hero Card ────────────────────────────────────────────── */}
+        <div
+          className="relative overflow-hidden"
           style={{
-            background: "linear-gradient(135deg, #0b1e4a 0%, #0f2d6b 35%, #1a3fa0 65%, #1e4fc0 100%)",
+            background: "linear-gradient(135deg, #0c1f4e 0%, #0f2d70 40%, #1a3fab 72%, #2048c8 100%)",
             borderBottomLeftRadius: "2.5rem",
-            borderBottomRightRadius: "0",
+            paddingBottom: "2rem",
           }}
         >
-          {/* Decorative circular pattern (top-right) */}
-          <div className="absolute top-0 right-0 opacity-10 pointer-events-none">
-            <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
-              <circle cx="160" cy="40" r="80" stroke="white" strokeWidth="0.8" />
-              <circle cx="160" cy="40" r="60" stroke="white" strokeWidth="0.8" />
-              <circle cx="160" cy="40" r="40" stroke="white" strokeWidth="0.8" />
-              <circle cx="160" cy="40" r="20" stroke="white" strokeWidth="0.8" />
+          {/* Decorative rings — top right */}
+          <div className="absolute top-0 right-0 pointer-events-none" style={{ opacity: 0.12 }}>
+            <svg width="220" height="220" viewBox="0 0 220 220" fill="none">
+              <circle cx="180" cy="40" r="100" stroke="white" strokeWidth="0.8" />
+              <circle cx="180" cy="40" r="75"  stroke="white" strokeWidth="0.8" />
+              <circle cx="180" cy="40" r="52"  stroke="white" strokeWidth="0.8" />
+              <circle cx="180" cy="40" r="30"  stroke="white" strokeWidth="0.8" />
+              <circle cx="180" cy="40" r="12"  stroke="white" strokeWidth="0.8" />
             </svg>
           </div>
-          {/* Decorative circles (bottom-left) */}
-          <div className="absolute bottom-0 left-0 opacity-5 pointer-events-none">
-            <svg width="160" height="160" viewBox="0 0 160 160" fill="none">
-              <circle cx="0" cy="160" r="100" stroke="white" strokeWidth="1" />
-              <circle cx="0" cy="160" r="70" stroke="white" strokeWidth="1" />
-              <circle cx="0" cy="160" r="45" stroke="white" strokeWidth="1" />
+          {/* Decorative rings — bottom left */}
+          <div className="absolute bottom-0 left-0 pointer-events-none" style={{ opacity: 0.07 }}>
+            <svg width="180" height="180" viewBox="0 0 180 180" fill="none">
+              <circle cx="0" cy="180" r="120" stroke="white" strokeWidth="1.2" />
+              <circle cx="0" cy="180" r="85"  stroke="white" strokeWidth="1.2" />
+              <circle cx="0" cy="180" r="55"  stroke="white" strokeWidth="1.2" />
+              <circle cx="0" cy="180" r="30"  stroke="white" strokeWidth="1.2" />
             </svg>
           </div>
-          {/* Dotted grid */}
-          <div className="absolute inset-0 opacity-5 pointer-events-none"
+          {/* Dot grid */}
+          <div
+            className="absolute inset-0 pointer-events-none"
             style={{
-              backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)",
-              backgroundSize: "24px 24px",
+              backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.18) 1px, transparent 1px)",
+              backgroundSize: "22px 22px",
+              opacity: 0.045,
             }}
           />
 
-          {/* Top row: Logo + Title + Actions */}
-          <div className="relative z-10 flex items-center gap-3 px-5 pt-10 pb-4">
-            {/* Logo */}
-            <div className="w-12 h-12 rounded-full overflow-hidden ring-2 ring-white/30 shadow-lg flex-shrink-0 bg-white">
-              <img src={logoSrc} alt="SAHU CSC" className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
+          {/* Top row: Logo + Title + Bell + Menu */}
+          <div className="relative z-10 flex items-center gap-3 px-5 pt-11 pb-4">
+            {/* Logo with ring */}
+            <div
+              className="flex-shrink-0 rounded-full bg-white overflow-hidden"
+              style={{
+                width: 52, height: 52,
+                boxShadow: "0 0 0 2px rgba(255,255,255,0.25), 0 0 0 4px rgba(255,255,255,0.10)",
+              }}
+            >
+              <img
+                src={logoSrc}
+                alt="SAHU CSC"
+                style={{ width:"100%", height:"100%", objectFit:"cover" }}
+                onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+              />
             </div>
-            {/* Title */}
+            {/* Title block */}
             <div className="flex-1 min-w-0">
-              <h1 className="text-white font-extrabold text-base leading-tight tracking-wide">SAHU CSC</h1>
-              <p className="text-white/60 text-[11px] font-medium tracking-wide">Management Platform</p>
+              <h1 className="text-white font-extrabold text-[15px] leading-tight tracking-wide">
+                SAHU <span style={{ color: "#fb923c" }}>CSC</span>
+              </h1>
+              <p className="text-white/55 text-[11px] font-medium tracking-wide">Management Platform</p>
             </div>
-            {/* Action icons */}
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <button className="relative w-9 h-9 rounded-full border border-white/30 flex items-center justify-center text-white hover:bg-white/10 transition-colors">
-                <Bell size={16} />
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center leading-none">3</span>
+            {/* Bell + Menu */}
+            <div className="flex items-center gap-2.5 flex-shrink-0">
+              <button
+                className="relative flex items-center justify-center text-white"
+                style={{
+                  width: 40, height: 40, borderRadius: "50%",
+                  background: "rgba(255,255,255,0.1)",
+                  border: "1.5px solid rgba(255,255,255,0.3)",
+                }}
+              >
+                <Bell size={17} />
+                <span
+                  className="absolute text-white font-bold flex items-center justify-center"
+                  style={{
+                    top: -4, right: -4, minWidth: 18, height: 18, borderRadius: 9,
+                    background: "#ef4444", fontSize: 9, paddingInline: 3,
+                    border: "1.5px solid #0f2d70",
+                  }}
+                >3</span>
               </button>
-              <button className="w-9 h-9 rounded-full border border-white/30 flex items-center justify-center text-white hover:bg-white/10 transition-colors">
-                <Menu size={16} />
+              <button
+                className="flex items-center justify-center text-white"
+                style={{
+                  width: 40, height: 40, borderRadius: "50%",
+                  background: "rgba(255,255,255,0.1)",
+                  border: "1.5px solid rgba(255,255,255,0.3)",
+                }}
+              >
+                <Menu size={17} />
               </button>
             </div>
           </div>
 
           {/* Greeting row + Wallet illustration */}
-          <div className="relative z-10 flex items-end justify-between px-5 pb-4">
+          <div className="relative z-10 flex items-end justify-between px-5" style={{ paddingBottom: 12 }}>
             <div>
-              <p className="text-white/70 text-sm font-medium mb-0.5">
-                {greeting}, 👋
-              </p>
-              <h2 className="text-white font-extrabold text-2xl leading-tight">SAHU Admin</h2>
+              <p className="text-white/70 text-sm font-medium mb-1">{greeting}, 👋</p>
+              <h2 className="text-white font-extrabold leading-tight" style={{ fontSize: 28 }}>SAHU Admin</h2>
             </div>
-            {/* Wallet illustration — right side, bleeds slightly */}
-            <div className="flex-shrink-0 -mr-3 -mb-2">
+            <div className="flex-shrink-0" style={{ marginRight: -8, marginBottom: -8 }}>
               <WalletIllustration />
             </div>
           </div>
 
-          {/* Current Balance pill */}
-          <div className="relative z-10 mx-5">
-            <div className="bg-white/15 backdrop-blur-sm border border-white/20 rounded-2xl px-4 py-3 flex items-center gap-3">
-              {/* Wallet icon circle */}
-              <div className="w-10 h-10 rounded-full bg-white/20 border border-white/30 flex items-center justify-center flex-shrink-0">
-                <Wallet size={18} className="text-white" />
+          {/* Balance pill — frosted glass */}
+          <div className="relative z-10 px-5">
+            <div
+              className="flex items-center gap-3"
+              style={{
+                background: "rgba(255,255,255,0.14)",
+                border: "1px solid rgba(255,255,255,0.22)",
+                borderRadius: 20,
+                padding: "10px 14px",
+                backdropFilter: "blur(10px)",
+              }}
+            >
+              {/* Dark solid icon circle — matches reference */}
+              <div
+                className="flex-shrink-0 flex items-center justify-center"
+                style={{
+                  width: 44, height: 44, borderRadius: "50%",
+                  background: "rgba(11,30,74,0.75)",
+                  border: "1.5px solid rgba(255,255,255,0.18)",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+                }}
+              >
+                <Wallet size={20} className="text-white" />
               </div>
-              {/* Balance info */}
               <div className="flex-1 min-w-0">
-                <p className="text-white/70 text-[10px] font-semibold uppercase tracking-wider mb-0.5">Current Balance</p>
-                <p className="text-white font-extrabold text-xl leading-tight">
+                <p className="text-white/65 font-semibold uppercase tracking-wider" style={{ fontSize: 10, marginBottom: 2 }}>
+                  Current Balance
+                </p>
+                <p className="text-white font-extrabold leading-tight" style={{ fontSize: 22 }}>
                   {balanceVisible
                     ? `₹${currentBalance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`
                     : "₹ ••••••"}
                 </p>
               </div>
-              {/* Eye toggle */}
               <button
                 onClick={() => setBalanceVisible(v => !v)}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-cyan-300 hover:bg-white/10 transition-colors flex-shrink-0"
+                style={{ width: 32, height: 32, borderRadius: "50%", flexShrink: 0 }}
+                className="flex items-center justify-center text-cyan-300 hover:bg-white/10 transition-colors"
               >
-                {balanceVisible ? <Eye size={18} /> : <EyeOff size={18} />}
+                {balanceVisible ? <Eye size={19} /> : <EyeOff size={19} />}
               </button>
             </div>
           </div>
-
-          {/* Curved bottom scoop — bottom-left only */}
-          <div
-            className="absolute bottom-0 right-0 bg-gray-100"
-            style={{
-              width: "60px",
-              height: "40px",
-              borderTopLeftRadius: "2.5rem",
-            }}
-          />
         </div>
 
-        {/* ── White content area ──────────────────────────────────── */}
+        {/* ── White/gray content area ─────────────────────────────── */}
         <div className="bg-gray-100 px-4 pt-4 pb-4 space-y-4">
-
           {/* Date row */}
-          <div className="flex items-center gap-2 text-gray-500">
-            <CalendarDays size={15} className="text-gray-400 flex-shrink-0" />
+          <div className="flex items-center gap-2">
+            <CalendarDays size={14} className="text-gray-400 flex-shrink-0" />
             <p className="text-xs font-medium text-gray-500">{today}</p>
           </div>
 
@@ -185,6 +321,33 @@ export function DashboardHero() {
                 <p className={`text-[10px] font-semibold mt-1 truncate ${s.up ? "text-emerald-500" : "text-rose-500"}`}>
                   {s.change}
                 </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Quick Actions label */}
+          <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">Quick Actions</p>
+          <div className="grid grid-cols-4 gap-2">
+            {[
+              { label: "New Entry", bg: "#1a2040", iconColor: "#fff", textColor: "#fff" },
+              { label: "AePS",     bg: "#fff7ed", iconColor: "#f97316", textColor: "#c2410c" },
+              { label: "Services", bg: "#eff6ff", iconColor: "#3b82f6", textColor: "#1d4ed8" },
+              { label: "Reports",  bg: "#faf5ff", iconColor: "#a855f7", textColor: "#7e22ce" },
+            ].map(a => (
+              <div
+                key={a.label}
+                className="flex flex-col items-center gap-1.5 py-3.5 rounded-2xl cursor-pointer"
+                style={{ background: a.bg }}
+              >
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center"
+                  style={{ background: a.bg === "#1a2040" ? "rgba(255,255,255,0.15)" : `${a.iconColor}22` }}
+                >
+                  <span style={{ color: a.iconColor, fontSize: 16 }}>◎</span>
+                </div>
+                <span style={{ color: a.textColor, fontSize: 10, fontWeight: 600, textAlign: "center", lineHeight: 1.2 }}>
+                  {a.label}
+                </span>
               </div>
             ))}
           </div>

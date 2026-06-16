@@ -22,60 +22,79 @@ const DASHBOARD_CACHE_KEY = "dashboard-data";
 // ─── Wallet Illustration ───────────────────────────────────────────────────────
 function WalletIllustration() {
   return (
-    <div className="relative w-28 h-28 flex items-end justify-center select-none pointer-events-none">
-      {/* Coins */}
-      <div className="absolute bottom-0 right-1 flex flex-col items-center" style={{ gap: "2px" }}>
-        {[0, 1, 2].map((i) => (
-          <div
-            key={i}
-            className="w-9 h-3 rounded-full shadow-sm"
-            style={{
-              background: "linear-gradient(180deg, #fde68a 0%, #d97706 100%)",
-              border: "1px solid #f59e0b",
-              zIndex: i,
-            }}
-          />
-        ))}
+    <div className="relative select-none pointer-events-none" style={{ width: 148, height: 140 }}>
+      {/* Cash bill 1 — back, taller */}
+      <div className="absolute" style={{
+        bottom: 58, left: 22, width: 68, height: 60,
+        background: "linear-gradient(175deg, #4ade80 0%, #16a34a 60%, #14532d 100%)",
+        borderRadius: "8px 8px 0 0",
+        boxShadow: "0 -4px 12px rgba(22,163,74,0.4)",
+        zIndex: 1,
+      }}>
+        <div style={{ position:"absolute", top:10, left:8, right:8, height:2, background:"rgba(255,255,255,0.25)", borderRadius:2 }} />
+        <div style={{ position:"absolute", top:18, left:8, right:8, height:2, background:"rgba(255,255,255,0.15)", borderRadius:2 }} />
+        <div style={{ position:"absolute", top:26, left:8, right:24, height:2, background:"rgba(255,255,255,0.12)", borderRadius:2 }} />
+        <div style={{ position:"absolute", top:8, right:8, width:20, height:20, borderRadius:"50%", border:"2px solid rgba(255,255,255,0.3)" }} />
       </div>
-      {/* Wallet body */}
-      <div className="relative z-10 mr-5 mb-2">
-        {/* Cash bills sticking out */}
-        <div className="absolute -top-5 left-1.5 flex gap-0.5">
-          <div
-            className="w-12 h-8 rounded-t-lg shadow-md"
-            style={{ background: "linear-gradient(180deg, #86efac 0%, #16a34a 100%)", opacity: 0.9 }}
-          />
-          <div
-            className="w-10 h-6 rounded-t-md shadow"
-            style={{ background: "linear-gradient(180deg, #4ade80 0%, #15803d 100%)", opacity: 0.8 }}
-          />
-        </div>
-        {/* Wallet flap */}
-        <div
-          className="absolute -top-3 left-0 w-20 h-6 rounded-t-xl shadow-md"
-          style={{ background: "linear-gradient(135deg, #60a5fa 0%, #2563eb 100%)" }}
-        />
-        {/* Wallet main */}
-        <div
-          className="w-20 h-14 rounded-b-xl rounded-tr-xl shadow-xl relative overflow-hidden"
-          style={{ background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)" }}
-        >
-          {/* Coin latch */}
-          <div
-            className="absolute top-2.5 right-2 w-5 h-5 rounded-full shadow"
-            style={{
-              background: "linear-gradient(135deg, #fde68a 0%, #d97706 100%)",
-              border: "2px solid #fbbf24",
-            }}
-          />
-          {/* Texture lines */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="h-full w-full" style={{
-              backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 4px, rgba(255,255,255,0.3) 4px, rgba(255,255,255,0.3) 5px)",
-            }} />
-          </div>
+      {/* Cash bill 2 — front, shorter */}
+      <div className="absolute" style={{
+        bottom: 58, left: 36, width: 56, height: 46,
+        background: "linear-gradient(175deg, #86efac 0%, #22c55e 55%, #166534 100%)",
+        borderRadius: "8px 8px 0 0",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3)",
+        zIndex: 2,
+      }}>
+        <div style={{ position:"absolute", top:8, left:7, right:7, height:1.5, background:"rgba(255,255,255,0.3)", borderRadius:2 }} />
+        <div style={{ position:"absolute", top:15, left:7, right:7, height:1.5, background:"rgba(255,255,255,0.2)", borderRadius:2 }} />
+      </div>
+      {/* Wallet flap */}
+      <div className="absolute" style={{
+        bottom: 38, left: 6, width: 104, height: 30,
+        background: "linear-gradient(160deg, #2563eb 0%, #1d4ed8 100%)",
+        borderRadius: "12px 12px 0 0",
+        zIndex: 3,
+        boxShadow: "0 -2px 8px rgba(29,78,216,0.35)",
+      }} />
+      {/* Wallet main body */}
+      <div className="absolute" style={{
+        bottom: 18, left: 6, width: 104, height: 50,
+        background: "linear-gradient(150deg, #3b82f6 0%, #1e40af 55%, #1e3a8a 100%)",
+        borderRadius: "0 0 14px 14px",
+        zIndex: 4,
+        boxShadow: "0 8px 24px rgba(30,64,175,0.55), 0 2px 8px rgba(0,0,0,0.3)",
+      }}>
+        <div style={{ position:"absolute", top:12, left:12, right:12, height:1, background:"rgba(255,255,255,0.12)", borderRadius:2 }} />
+        <div style={{ position:"absolute", top:22, left:12, right:12, height:1, background:"rgba(255,255,255,0.08)", borderRadius:2 }} />
+        {/* Gold coin latch */}
+        <div style={{
+          position:"absolute", top:10, right:12, width:22, height:22, borderRadius:"50%",
+          background: "linear-gradient(135deg, #fde68a 0%, #f59e0b 50%, #d97706 100%)",
+          border: "2px solid #fbbf24",
+          boxShadow: "0 2px 6px rgba(245,158,11,0.5)",
+        }}>
+          <div style={{ position:"absolute", inset:4, borderRadius:"50%", background:"rgba(255,255,255,0.35)" }} />
         </div>
       </div>
+      {/* Coin stack — right side */}
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className="absolute" style={{
+          bottom: 14 + i * 8, right: 4, width: 40, height: 16,
+          borderRadius: "50%",
+          background: i === 3
+            ? "linear-gradient(180deg, #fde68a 0%, #f59e0b 100%)"
+            : "linear-gradient(180deg, #fbbf24 0%, #d97706 100%)",
+          border: "1.5px solid #f59e0b",
+          boxShadow: i === 0 ? "0 4px 10px rgba(245,158,11,0.5)" : "none",
+          zIndex: 5 + i,
+        }} />
+      ))}
+      {/* Shine highlight */}
+      <div className="absolute" style={{
+        bottom: 46, left: 6, width: 104, height: 22,
+        background: "linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 100%)",
+        borderRadius: "12px 12px 0 0",
+        zIndex: 6, pointerEvents: "none",
+      }} />
     </div>
   );
 }
@@ -277,12 +296,18 @@ function MobileDashboard() {
         {/* Balance pill */}
         <div className="relative z-10 mx-4">
           <div className="rounded-2xl px-4 py-3 flex items-center gap-3"
-            style={{ background: "rgba(255,255,255,0.13)", border: "1px solid rgba(255,255,255,0.18)", backdropFilter: "blur(8px)" }}
+            style={{ background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.22)", backdropFilter: "blur(10px)" }}
           >
-            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: "rgba(255,255,255,0.18)", border: "1px solid rgba(255,255,255,0.25)" }}
+            {/* Dark navy solid circle — matches reference */}
+            <div className="flex-shrink-0 flex items-center justify-center"
+              style={{
+                width: 44, height: 44, borderRadius: "50%",
+                background: "rgba(11,30,74,0.75)",
+                border: "1.5px solid rgba(255,255,255,0.18)",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+              }}
             >
-              <Wallet size={18} className="text-white" />
+              <Wallet size={20} className="text-white" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-white/65 text-[10px] font-semibold uppercase tracking-wider mb-0.5">Current Balance</p>
