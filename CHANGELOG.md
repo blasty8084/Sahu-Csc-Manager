@@ -29,6 +29,9 @@
 20. [Bug Fixes & Replit Migration (June 2026)](#20-bug-fixes--replit-migration-june-2026)
 21. [Architecture Documentation Overhaul (June 2026)](#21-architecture-documentation-overhaul-june-2026)
 22. [Login Redirect & Session Persistence Fixes (June 2026)](#22-login-redirect--session-persistence-fixes-june-2026)
+23. [Bottom Navigation Bar Fixed to Viewport (June 2026)](#23-bottom-navigation-bar-fixed-to-viewport-june-2026)
+24. [v2 Auth — Admin-Controlled Registration & Approval Flow (June 2026)](#24-v2-auth--admin-controlled-registration--approval-flow-june-2026)
+25. [Performance — Lazy Loading & Code Splitting (June 2026)](#25-performance--lazy-loading--code-splitting-june-2026)
 
 ---
 
@@ -958,6 +961,267 @@ Framer Motion uses GPU acceleration for `opacity` and `y` animations internally 
 | Fix | File | What Changed |
 |-----|------|-------------|
 | Remove `willChange` from page-transition wrapper | `artifacts/sahu-csc/src/App.tsx` | Removed `willChange: "opacity, transform"` from `motion.div` style prop |
+
+---
+
+## 24. v2 Auth — Admin-Controlled Registration & Approval Flow (June 2026)
+
+> Full implementation of the v2 authentication specification.
+
+---
+
+### Overview
+
+The auth system was upgraded from a simple open-registration model to a full admin-controlled approval workflow. New users register and enter a `PENDING` state; an admin must approve them before they can log in. Registration itself can be toggled on/off by an admin at any time.
+
+---
+
+### 24.1 User Status System
+
+The `users` table now has an extended `status` column replacing the old `is_active` boolean:
+
+| Status | Meaning |
+|--------|---------|
+| `PENDING` | Newly registered — awaiting admin approval |
+| `ACTIVE` | Approved and can log in |
+| `INACTIVE` | Deactivated by admin (soft disable) |
+| `SUSPENDED` | Temporarily blocked by admin |
+| `LOCKED` | Auto-locked after 5 failed login attempts (15-minute cooldown) |
+| `DELETED` | Rejected at signup or permanently removed (treated as non-existent at login) |
+
+**Schema additions to `users` table:**
+
+```sql
+status                TEXT NOT NULL DEFAULT 'ACTIVE'          -- v2 extended status
+failed_login_attempts INTEGER NOT NULL DEFAULT 0
+locked_until          TIMESTAMP WITH TIME ZONE
+rejection_reason      TEXT                                    -- set on REJECTED
+```
+
+`is_active` is kept for backward-compat; set to `true` when `status = 'ACTIVE'`, `false` otherwise.
+
+---
+
+### 24.2 Registration Toggle
+
+Admin can open or close public self-registration from the Settings page.
+
+**Storage:** `settings` table, `key = 'registration_open'`, `value = 'true' | 'false'`
+
+**Caching:** In-memory `Map` in `lib/registration-cache.ts` — TTL 60 s for the flag, 30 s for the pending count. No Redis dependency — this is a lightweight in-process cache that survives normal request load and resets on server restart (re-reads DB on cache miss).
+
+**New API endpoints (in `routes/admin-registration.ts`):**
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/settings/registration-status` | Public | Returns `{ open: boolean }` — read from cache, fallback to DB |
+| `PATCH` | `/api/admin/settings/registration` | Admin | `{ open: boolean }` — toggles the flag, invalidates cache, writes audit log |
+| `GET` | `/api/admin/users/pending-count` | Admin | Returns `{ count: number }` — cached 30 s |
+| `GET` | `/api/admin/users/pending` | Admin | Paginated list of `PENDING` users |
+| `PATCH` | `/api/admin/users/:id/approve` | Admin | Sets status → `ACTIVE`, invalidates pending cache, writes audit log |
+| `PATCH` | `/api/admin/users/:id/reject` | Admin | `{ reason?: string }` — sets status → `DELETED`, stores reason, writes audit log |
+
+**Audit log actions added:**
+
+| Action | When |
+|--------|------|
+| `REGISTER_REQUEST` | User submits registration form |
+| `APPROVED` | Admin approves a pending user |
+| `REJECTED` | Admin rejects a pending user (reason stored in meta) |
+| `REGISTRATION_ENABLED` | Admin opens public registration |
+| `REGISTRATION_DISABLED` | Admin closes public registration |
+
+---
+
+### 24.3 Registration Form Flow
+
+**Route:** `/register`
+
+1. Frontend calls `GET /api/settings/registration-status`
+2. If `open = false` → renders `register-closed.tsx` (full-page "Registration Closed" message) — the form is **never shown**, not even briefly
+3. If `open = true` → renders registration form with:
+   - Username (3–30 chars, alphanumeric + underscore, uniqueness checked via `GET /api/auth/check-availability?field=username&value=…`)
+   - Full Name, Email (unique), Mobile (unique, Indian 10-digit format)
+   - Password + Confirm Password (min 8 chars, 1 uppercase, 1 lowercase, 1 digit)
+   - Zod validation on both frontend (real-time) and backend (API)
+4. On submit → `POST /api/auth/register`:
+   - Server re-checks `registration_open` — never trusts the frontend
+   - Creates user with `status = 'PENDING'`
+   - Invalidates pending-count cache
+5. After submit → redirects to `/register/pending` (waiting-for-approval page)
+
+**New pages:**
+
+| Page | Route | Purpose |
+|------|-------|---------|
+| `register-closed.tsx` | `/register` (when closed) | "Registration Closed" message — no form shown |
+| `register-pending.tsx` | `/register/pending` | "Account submitted — awaiting approval" confirmation |
+
+---
+
+### 24.4 Admin Approval Flow
+
+**Pending badge in sidebar:**
+- `use-pending-count` hook polls `GET /api/admin/users/pending-count` every 30 s
+- Red badge on the "Users" sidebar item shows live count
+- Badge disappears when count reaches 0
+- Cache invalidated on every approve/reject — badge updates immediately after action
+
+**Users page (`users.tsx`) tabs:**
+
+```
+[ Pending (3) ]  [ Active ]  [ All ]
+```
+
+- Pending tab: table of pending users with Approve ✅ and Reject ❌ buttons
+- Reject opens an inline modal with optional reason field
+- On approve → `PATCH /api/admin/users/:id/approve` → status `ACTIVE`
+- On reject → `PATCH /api/admin/users/:id/reject` + reason → status `DELETED`
+- Both actions trigger toast + list refresh + pending count refresh
+
+**Settings page (`settings.tsx`) Registration Control card:**
+- Toggle switch to open/close registration
+- Shows current status ("Open" / "Closed") with colour indicator
+- Confirmation dialog before disabling: "Disabling registration will prevent new operators from signing up. Confirm?"
+
+---
+
+### 24.5 Login Status Blocking
+
+The login handler in `routes/auth.ts` blocks by status **before** checking the password:
+
+| User status | HTTP code | Frontend message |
+|-------------|-----------|-----------------|
+| `PENDING` | 403 | "Your account is pending admin approval." |
+| `INACTIVE` | 403 | "Account inactive. Contact admin." |
+| `SUSPENDED` | 403 | "Account suspended. Contact admin." |
+| `DELETED` | 401 | Generic "Invalid credentials" (same as not found — no enumeration) |
+| `LOCKED` (lock still active) | 403 | "Account locked. Try again in X minutes." |
+| `LOCKED` (lock expired) | — | Auto-unlock: resets status → `ACTIVE`, `failedLoginAttempts = 0`, continues |
+| `ACTIVE` | — | Proceed to password check |
+
+**Account locking:**
+- Wrong password increments `failed_login_attempts` in the DB
+- At attempt 5 → sets `status = 'LOCKED'`, `locked_until = NOW() + 15 minutes`
+- Lock auto-expires: if `locked_until < NOW()` the next login attempt unlocks the account regardless of the cookie or session
+- Lock resets on successful login: `failed_login_attempts = 0`, `locked_until = null`, `status = 'ACTIVE'`
+
+---
+
+### 24.6 New Hooks (Frontend)
+
+| Hook | File | Purpose |
+|------|------|---------|
+| `useRegistrationStatus` | `hooks/use-registration-status.ts` | `GET /api/settings/registration-status` — used by `/register` to gate the form |
+| `usePendingCount` | `hooks/use-pending-count.ts` | `GET /api/admin/users/pending-count` — polled every 30 s for sidebar badge |
+
+---
+
+### 24.7 Summary — Files Changed / Added
+
+| File | Change |
+|------|--------|
+| `lib/db/src/schema/users.ts` | Added `status`, `failedLoginAttempts`, `lockedUntil`, `rejectionReason` columns |
+| `artifacts/api-server/src/routes/admin-registration.ts` | New file — all admin approval + registration toggle routes |
+| `artifacts/api-server/src/lib/registration-cache.ts` | New file — in-process TTL cache (Map-based) |
+| `artifacts/api-server/src/routes/auth.ts` | Status-blocking login, PENDING registration, check-availability endpoint |
+| `artifacts/api-server/src/routes/index.ts` | Mounted `adminRegistrationRouter` |
+| `artifacts/sahu-csc/src/pages/register.tsx` | Checks registration status; gates form on `open = true` |
+| `artifacts/sahu-csc/src/pages/register-closed.tsx` | New page — full-screen "Registration Closed" message |
+| `artifacts/sahu-csc/src/pages/register-pending.tsx` | New page — "Account submitted, awaiting approval" |
+| `artifacts/sahu-csc/src/pages/users.tsx` | Pending tab, approve/reject actions, reject modal |
+| `artifacts/sahu-csc/src/pages/settings.tsx` | Registration Control toggle card |
+| `artifacts/sahu-csc/src/hooks/use-pending-count.ts` | New hook — 30-s polling for sidebar badge |
+| `artifacts/sahu-csc/src/hooks/use-registration-status.ts` | New hook — registration open/closed status |
+
+---
+
+## 25. Performance — Lazy Loading & Code Splitting (June 2026)
+
+> Applied to reduce initial JS bundle size and time-to-first-paint.
+
+---
+
+### Problem
+
+All 18+ pages were statically imported at the top of `App.tsx`. This caused the entire application — including heavy pages like Reports (Recharts charts), Audit Logs, Backups, and Admin pages — to be bundled and sent to the browser on every first load, even for users who only ever visit Dashboard and Ledger.
+
+The build output was a single large chunk with no vendor separation, meaning any code change invalidated every cached asset.
+
+The splash screen held the app hidden for a hardcoded 2.4 seconds even after React had fully mounted.
+
+Google Fonts was loaded as a render-blocking `<link rel="stylesheet">`.
+
+---
+
+### Changes Applied
+
+#### 1. Lazy-loaded pages (`artifacts/sahu-csc/src/App.tsx`)
+
+All pages except the three that are needed on first paint (`Login`, `NotFound`, `Offline`) are now loaded with `React.lazy()`:
+
+```tsx
+const Dashboard  = lazy(() => import("@/pages/dashboard"));
+const Reports    = lazy(() => import("@/pages/reports"));
+const AuditLogs  = lazy(() => import("@/pages/audit-logs"));
+// … all other pages
+```
+
+The `<Switch>` inside `Router` is wrapped in `<Suspense fallback={<PageLoader />}>`. `PageLoader` is a tiny CSS-only spinner (no Framer Motion import) — it appears only on first navigation to a page while its chunk loads.
+
+**Impact:** Initial bundle now contains only React, the router, auth hooks, and the three static pages. Reports, Recharts, and all admin pages are deferred until first visit.
+
+#### 2. Manual vendor chunk splitting (`artifacts/sahu-csc/vite.config.ts`)
+
+```ts
+build: {
+  rollupOptions: {
+    output: {
+      manualChunks: {
+        "vendor-react":  ["react", "react-dom"],
+        "vendor-query":  ["@tanstack/react-query"],
+        "vendor-motion": ["framer-motion"],
+        "vendor-router": ["wouter"],
+        "vendor-charts": ["recharts"],          // only loaded when Reports page is visited
+        "vendor-ui":     ["lucide-react"],
+      },
+    },
+  },
+},
+```
+
+Each vendor chunk is independently cached by the browser. A change to app code no longer invalidates the React or Recharts cache entries.
+
+#### 3. Splash screen duration reduced (`artifacts/sahu-csc/src/components/splash-screen.tsx`)
+
+| Before | After |
+|--------|-------|
+| 2 400 ms | 1 200 ms |
+
+Splash is already skipped on all return visits within the same browser session (via `sessionStorage`).
+
+#### 4. Non-blocking Google Fonts (`artifacts/sahu-csc/index.html`)
+
+Changed from render-blocking `<link rel="stylesheet">` to the `media="print" → onload="this.media='all'"` pattern:
+
+```html
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?...">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?..." media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?..."></noscript>
+```
+
+Text renders immediately in the system fallback font while Inter downloads in the background.
+
+---
+
+### Summary
+
+| Change | File | Impact |
+|--------|------|--------|
+| Lazy-loaded 18 pages | `App.tsx` | Initial bundle dramatically reduced |
+| Manual vendor chunks | `vite.config.ts` | Vendor libs cached independently |
+| Splash 2400 → 1200 ms | `splash-screen.tsx` | −1.2 s on first session load |
+| Non-blocking fonts | `index.html` | Text visible before Inter loads |
 
 ---
 

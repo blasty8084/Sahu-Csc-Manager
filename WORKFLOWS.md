@@ -358,7 +358,7 @@ When a new agent session starts on this project, do the following before writing
 
 1. **Read this file** (`WORKFLOWS.md`) — understand how the app starts
 2. **Read `replit.md`** — full project overview, tech stack, credentials, gotchas
-3. **Read `CHANGELOG.md` Sections 20–23** — recent bug fixes applied during Replit migration
+3. **Read `CHANGELOG.md` Sections 20–25** — recent bug fixes, v2 auth, and performance changes
 4. **Check workflow status** — use `getWorkflowStatus("Start application")` to confirm the app is running
 5. **Verify ports** — `curl http://localhost:5000/` and `curl http://localhost:8082/api/healthz` must return 200 before making changes
 

@@ -193,7 +193,7 @@ artifacts/sahu-csc/public/
 
 | Table | Key Columns | Notes |
 |-------|-------------|-------|
-| `users` | id, username, email, role, active_session_token | role: admin / operator |
+| `users` | id, username, email, role, status, failed_login_attempts, locked_until, rejection_reason | role: admin/operator/user; status: ACTIVE/PENDING/INACTIVE/SUSPENDED/LOCKED/DELETED |
 | `user_sessions` | sessionId, userId, deviceInfo, browser, os, ipAddress, rememberMe, isActive, expiresAt | V2 multi-device sessions |
 | `session` | sid, sess, expire | Express session store (connect-pg-simple, auto-created) — survives server restarts |
 | `ledger` | date, credit, debit, balance, created_by | Per-user; running balance computed at insert |
@@ -221,6 +221,52 @@ artifacts/sahu-csc/public/
 
 ## Authentication & Security System (v2)
 
+### Registration Control (Admin Toggle)
+
+Public self-registration can be opened or closed by an admin from the Settings page.
+
+- **Storage**: `settings` table, `key = 'registration_open'`, `value = 'true' | 'false'`
+- **Cache**: In-process `Map` in `lib/registration-cache.ts` — TTL 60 s for the flag, 30 s for pending count. Resets on server restart; re-reads DB on miss.
+- **Endpoints**:
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/settings/registration-status` | Public | `{ open: boolean }` — cached, fallback to DB |
+| `PATCH` | `/api/admin/settings/registration` | Admin | Toggle flag + invalidate cache + audit log |
+
+- **Frontend**: `/register` calls the status endpoint first. If `open = false` → shows `register-closed.tsx` full-screen message (form is **never rendered**, even briefly).
+
+### Registration & Approval Flow
+
+New user registrations enter a **PENDING** state and require admin approval before the account can log in.
+
+1. User submits `/register` → `POST /api/auth/register` → user created with `status = 'PENDING'`
+2. User redirected to `/register/pending` ("awaiting approval" page)
+3. Admin sees red badge on "Users" sidebar item with pending count (polled every 30 s)
+4. Admin opens Users → Pending tab → Approve ✅ or Reject ❌ (with optional reason)
+5. Approve → `status = 'ACTIVE'` — user can now log in
+6. Reject → `status = 'DELETED'` — `rejection_reason` stored — login returns generic 401
+
+**Admin endpoints:**
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/admin/users/pending-count` | Admin | `{ count }` — cached 30 s |
+| `GET` | `/api/admin/users/pending` | Admin | Paginated list of PENDING users |
+| `PATCH` | `/api/admin/users/:id/approve` | Admin | status → ACTIVE + invalidate pending cache |
+| `PATCH` | `/api/admin/users/:id/reject` | Admin | `{ reason? }` → status → DELETED |
+
+### User Status System
+
+| Status | Meaning | Login result |
+|--------|---------|-------------|
+| `PENDING` | Awaiting admin approval | 403 "pending approval" |
+| `ACTIVE` | Normal active account | Proceed to password check |
+| `INACTIVE` | Disabled by admin | 403 "inactive" |
+| `SUSPENDED` | Temporarily blocked | 403 "suspended" |
+| `LOCKED` | Auto-locked (5 bad passwords) | 403 "locked, X min remaining" (auto-unlocks when timer expires) |
+| `DELETED` | Rejected or removed | 401 generic (no enumeration) |
+
 ### Session Management
 - **PostgreSQL session store**: `express-session` uses `connect-pg-simple` — session data is stored in the `session` table in PostgreSQL, not in server memory. Sessions survive API server restarts without logging users out.
 - **Multi-device sessions**: Each login creates a row in `user_sessions` with device info, IP, browser, OS, and expiry.
@@ -237,8 +283,8 @@ artifacts/sahu-csc/public/
 - **V1 compat**: `requireAuth` validates via `user_sessions` first, falls back to legacy `activeSessionToken` on users table.
 
 ### Account Security
-- **Account locking**: After **5 failed login attempts**, account is locked for **15 minutes**.
-- **Auto-unlock**: If lock window has expired, account is automatically unlocked on next login attempt.
+- **Account locking**: After **5 failed login attempts**, account is locked for **15 minutes** (`locked_until` set in DB).
+- **Auto-unlock**: If `locked_until < NOW()` on next attempt, account automatically resets to `ACTIVE` — no admin action needed.
 - **Idle timeout**: Frontend automatically logs out after **30 minutes of inactivity**. A warning dialog appears **2 minutes before** expiry with a live countdown and "Stay Logged In" / "Logout Now" options.
 
 ### Password Policy
@@ -291,6 +337,11 @@ All security events are logged to `audit_logs` with user ID, IP address, and dev
 | `user.role_change` | Admin changed a user's role (logs `old_role → new_role`) |
 | `user.delete` | Admin deleted a user |
 | `password.reset` | Password successfully reset via OTP |
+| `REGISTER_REQUEST` | New user submitted registration form |
+| `APPROVED` | Admin approved a pending user |
+| `REJECTED` | Admin rejected a pending user (reason in meta) |
+| `REGISTRATION_ENABLED` | Admin opened public registration |
+| `REGISTRATION_DISABLED` | Admin closed public registration |
 
 ### Device Detection (`parseDevice`)
 
@@ -399,6 +450,9 @@ Full config in `infrastructure/twa/twa-config.json`.
 ## Architecture Decisions
 
 - **Page transitions must not use `willChange: transform`**: The Framer Motion page-transition `motion.div` in `App.tsx` uses `style={{ minHeight: "100vh" }}` (no `willChange`). Any `willChange: transform` on an ancestor would create a new containing block for `position: fixed` descendants, breaking the bottom nav's viewport pinning. Framer Motion handles GPU compositing for `opacity`/`y` animations internally — the explicit hint is not needed.
+- **Registration open/closed is not a deploy-time setting**: It is a runtime value stored in the `settings` table and toggled by admin from the UI at `/settings`. It is cached in-process for 60 s and re-read from DB on cache miss or server restart.
+- **New users register as `PENDING`**: `POST /api/auth/register` always sets `status = 'PENDING'`. `PENDING` users cannot log in (403). An admin must approve them via the Users → Pending tab before they can access the app.
+- **Pages use React.lazy — wrap new pages in lazy()**: The initial JS bundle only includes Login, NotFound, and Offline. All other pages are lazy-loaded on first navigation. New pages must be added as `const MyPage = lazy(() => import("@/pages/my-page"))` in `App.tsx`.
 - **Contract-first API**: OpenAPI spec → Orval codegen → typed React Query hooks. Never edit `lib/api-client-react/src/generated/` directly.
 - **Session-based auth**: express-session + bcrypt. No JWTs — simpler for single-center CSC use case.
 - **PostgreSQL session store**: `connect-pg-simple` stores express-session data in the `session` DB table. Sessions survive server restarts — users stay logged in. The table is auto-created by connect-pg-simple on first startup.
@@ -445,7 +499,8 @@ Full config in `infrastructure/twa/twa-config.json`.
 | **Audit Logs** | Full audit trail including login failures, role changes, session events, all admin actions | Admin only |
 | **Settings** | Business info, language, theme, auto-backup config | Admin only |
 | **Backups** | Manual pg_dump backups, restore from file | Admin only |
-| **Registration** | Self-registration form with password strength meter, security badge, links to login | Public |
+| **Registration** | Self-registration form (when open) or "Registration Closed" page; PENDING status after submit; approval required before login | Public |
+| **Admin Approval** | Pending badge in sidebar, Pending tab in Users page, approve/reject with optional reason | Admin only |
 | **PWA Install** | Installable on desktop (Chrome/Edge) and Android | All users |
 
 ---
@@ -480,6 +535,11 @@ Full config in `infrastructure/twa/twa-config.json`.
 - **Login page `h-screen` must not be changed to `min-h-screen`**: Both `MobileLogin` and `DesktopLogin` use `h-screen overflow-hidden` to keep all content within the viewport without scrolling. Changing to `min-h-screen` causes the page to scroll on short screens.
 - **Responsive table pattern**: For pages with data tables, always render both a mobile card list (`sm:hidden`) and a desktop table (`hidden sm:block`). Do not use `overflow-x-auto` alone as a mobile solution — it produces poor UX on phones. Tables inside dialogs use `overflow-x-auto` with `min-w-[480px]` since the dialog already constrains width.
 - **`willChange: transform` on an ancestor breaks `position: fixed`**: The page-transition `motion.div` in `App.tsx` must NOT have `willChange: "opacity, transform"` or any active CSS transform. When a parent has `willChange: transform`, it becomes a new containing block for `position: fixed` children — making them position relative to that div instead of the viewport. The bottom nav has correct `fixed bottom-0` CSS; never add `willChange: transform` to any of its ancestor elements. Framer Motion handles GPU compositing internally without needing an explicit `willChange` hint.
+- **Registration status is in-memory cached (60 s TTL)**: `GET /api/settings/registration-status` reads from an in-process `Map` cache before hitting the DB. After a server restart the cache is empty and the first request re-reads from the `settings` table — this is intentional. Do not add a layer that bypasses the DB read on cache miss.
+- **Pending count cache invalidates on approve/reject**: `admin:pending_approvals` cache key is deleted via `cacheDel()` after every approve or reject action. The sidebar badge will show the accurate count on the next 30-s poll. Do not rely on the cache count being real-time.
+- **Registration toggle writes to `settings` table**: The `registration_open` key lives in the same `settings` table used for business name, theme, etc. Do not confuse it with Replit env secrets or a separate config file.
+- **All pages are lazy-loaded except Login/NotFound/Offline**: `App.tsx` uses `React.lazy()` for all 18+ pages. Adding a new page requires using `lazy(() => import(...))`, not a static import, to keep the initial bundle small.
+- **Vendor chunks are split in production build**: `vite.config.ts` `rollupOptions.output.manualChunks` splits React, Framer Motion, Recharts, TanStack Query, Wouter, and Lucide into separate cached chunks. Do not remove these entries — they are the reason vendor assets are cached independently of app code.
 
 ---
 
