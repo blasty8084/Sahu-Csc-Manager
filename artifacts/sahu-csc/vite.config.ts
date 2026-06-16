@@ -233,6 +233,20 @@ export default defineConfig({
           ),
         ]
       : []),
+    {
+      name: "html-no-cache",
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          const url = req.url ?? "";
+          const isHtml = url === "/" || url.startsWith("/?") || url.endsWith(".html");
+          if (isHtml) {
+            res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+            res.setHeader("Pragma", "no-cache");
+          }
+          next();
+        });
+      },
+    },
   ],
   resolve: {
     alias: {
@@ -266,12 +280,6 @@ export default defineConfig({
     fs: { strict: true },
     proxy: {
       "/api": { target: "http://localhost:8082", changeOrigin: true },
-    },
-    headers: {
-      // Prevent browsers (and mobile PWA) from caching index.html — ensures
-      // every load picks up fresh JS bundle references after a deploy.
-      "Cache-Control": "no-store, no-cache, must-revalidate",
-      "Pragma": "no-cache",
     },
   },
   preview: {

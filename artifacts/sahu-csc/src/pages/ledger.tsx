@@ -211,15 +211,19 @@ export default function Ledger() {
         {/* Balance Summary */}
         <div className="grid grid-cols-3 gap-2 md:gap-3">
           {[
-            { label: "Balance", value: balance?.balance ?? 0, color: "text-primary" },
-            { label: "Credits", value: balance?.totalCredits ?? 0, color: "text-emerald-600" },
-            { label: "Debits", value: balance?.totalDebits ?? 0, color: "text-red-600" },
+            { label: "Balance", value: balance?.balance, color: "text-primary" },
+            { label: "Credits", value: balance?.totalCredits, color: "text-emerald-600" },
+            { label: "Debits", value: balance?.totalDebits, color: "text-red-600" },
           ].map((item) => (
             <div key={item.label} className="bg-card border rounded-xl p-3 md:p-4">
               <p className="text-[10px] md:text-xs text-muted-foreground font-medium">{item.label}</p>
-              <p className={`text-sm md:text-xl font-bold mt-0.5 md:mt-1 ${item.color} truncate`}>
-                ₹{(item.value).toLocaleString("en-IN", { minimumFractionDigits: 0 })}
-              </p>
+              {item.value === undefined ? (
+                <Skeleton className="h-5 md:h-7 w-16 md:w-24 mt-0.5 md:mt-1" />
+              ) : (
+                <p className={`text-sm md:text-xl font-bold mt-0.5 md:mt-1 ${item.color} truncate`}>
+                  ₹{(item.value ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 0 })}
+                </p>
+              )}
             </div>
           ))}
         </div>
@@ -392,8 +396,17 @@ export default function Ledger() {
               </thead>
               <tbody className="divide-y divide-border">
                 {isLoading ? (
-                  [...Array(5)].map((_, i) => (
-                    <tr key={i}><td colSpan={8} className="px-4 py-3"><Skeleton className="h-8 w-full" /></td></tr>
+                  [...Array(6)].map((_, i) => (
+                    <tr key={i} className="border-b border-border">
+                      <td className="px-4 py-3"><Skeleton className="h-3.5 w-20 rounded-full" /></td>
+                      <td className="px-4 py-3"><Skeleton className="h-3.5 rounded-full" style={{ width: `${80 + (i * 27) % 60}px` }} /></td>
+                      <td className="px-4 py-3"><Skeleton className="h-5 w-24 rounded-full" /></td>
+                      <td className="px-4 py-3 text-right"><Skeleton className="h-3.5 w-16 rounded-full ml-auto" /></td>
+                      <td className="px-4 py-3 text-right"><Skeleton className="h-3.5 w-16 rounded-full ml-auto" /></td>
+                      <td className="px-4 py-3 text-right"><Skeleton className="h-3.5 w-20 rounded-full ml-auto" /></td>
+                      <td className="px-4 py-3"><Skeleton className="h-3.5 w-28 rounded-full" /></td>
+                      <td className="px-4 py-3"><div className="flex gap-1"><Skeleton className="h-7 w-7 rounded" /><Skeleton className="h-7 w-7 rounded" /></div></td>
+                    </tr>
                   ))
                 ) : !data?.entries?.length ? (
                   <tr>

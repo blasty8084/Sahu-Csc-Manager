@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useIdleTimer } from "@/hooks/use-idle-timer";
 import { SplashScreen } from "@/components/splash-screen";
+import { PageSkeleton } from "@/components/page-skeleton";
 import { useListNotifications } from "@workspace/api-client-react";
 import { updateAppBadge } from "@/lib/pwa-badge";
 import { Redirect } from "wouter";
@@ -213,21 +214,6 @@ function LoadingScreen() {
   );
 }
 
-// ─── Lightweight page-transition fallback (tiny CSS spinner, no framer-motion) ─
-function PageLoader() {
-  return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <div
-        style={{
-          width: 32, height: 32, borderRadius: "50%",
-          border: "3px solid rgba(249,115,22,0.25)",
-          borderTopColor: "#f97316",
-          animation: "spin 0.7s linear infinite",
-        }}
-      />
-    </div>
-  );
-}
 
 // ─── Route protection ─────────────────────────────────────────────────────────
 function ProtectedRoute({ component: Component, adminOnly = false, ...rest }: any) {
@@ -272,7 +258,7 @@ function Router() {
         transition={{ duration: 0.15, ease: "easeOut" }}
         style={{ minHeight: "100vh" }}
       >
-        <Suspense fallback={<PageLoader />}>
+        <Suspense fallback={<PageSkeleton />}>
           <Switch>
             <Route path="/login" component={Login} />
             <Route path="/register" component={Register} />
