@@ -253,6 +253,23 @@ export function Layout({ children }: { children: React.ReactNode }) {
     return seg.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   })();
 
+  const firstName = displayName.split(" ")[0];
+  const greeting = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return "Good morning";
+    if (h < 17) return "Good afternoon";
+    return "Good evening";
+  })();
+  const greetingEmoji = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return "☀️";
+    if (h < 17) return "👋";
+    return "🌙";
+  })();
+  const shortDate = new Date().toLocaleDateString("en-IN", {
+    weekday: "short", day: "numeric", month: "short",
+  });
+
   return (
     <div className="min-h-screen bg-muted/20 flex flex-col md:flex-row">
       {/* Desktop Sidebar */}
@@ -272,32 +289,96 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </div>
 
       <div className="flex-1 flex flex-col md:ml-64">
-        {/* Mobile Top Header */}
-        <header className="bg-sidebar sticky top-0 z-20 md:hidden shadow-md">
-          <div className="flex items-center justify-between px-4 h-14">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-white/20">
-                <AppLogo size="sm" className="w-full h-full" />
+        {/* Mobile Top Header — Redesigned */}
+        <header className="sticky top-0 z-20 md:hidden">
+          {/* Top accent stripe: navy → saffron */}
+          <div style={{ height: 3, background: "linear-gradient(90deg, #0b2c60 0%, #1e4fa8 35%, #f97316 70%, #fb923c 100%)" }} />
+
+          {/* Main header bar */}
+          <div
+            className="flex items-center justify-between px-4 bg-white"
+            style={{
+              height: 60,
+              boxShadow: "0 1px 0 rgba(0,0,0,0.06), 0 4px 20px rgba(11,44,96,0.08)",
+            }}
+          >
+            {/* ── Left: logo badge + brand ── */}
+            <div className="flex items-center gap-2.5">
+              <div
+                className="flex items-center justify-center rounded-2xl flex-shrink-0"
+                style={{
+                  width: 38, height: 38,
+                  background: "linear-gradient(135deg, #0b2c60 0%, #1a4a9e 100%)",
+                  boxShadow: "0 2px 8px rgba(11,44,96,0.30)",
+                }}
+              >
+                <div className="flex flex-col items-center">
+                  <span style={{ fontSize: 11, fontWeight: 900, color: "#fff", letterSpacing: "0.05em", lineHeight: 1 }}>CSC</span>
+                  <div style={{ width: 20, height: 1.5, background: "#f97316", borderRadius: 1, marginTop: 2 }} />
+                </div>
               </div>
               <div>
-                <h1 className="font-extrabold text-sm leading-tight text-white tracking-wide">SAHU CSC</h1>
-                <p className="text-[9px] text-white/50 leading-none">Management Platform</p>
+                <div className="flex items-center gap-1">
+                  <span style={{ fontSize: 15, fontWeight: 900, color: "#0b2c60", letterSpacing: "0.02em", lineHeight: 1 }}>SAHU</span>
+                  <span style={{ fontSize: 15, fontWeight: 900, color: "#f97316", letterSpacing: "0.02em", lineHeight: 1 }}>CSC</span>
+                </div>
+                <span style={{ fontSize: 9.5, color: "#94a3b8", fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", lineHeight: 1, marginTop: 2, display: "block" }}>
+                  Management Platform
+                </span>
               </div>
             </div>
-            <div className="flex items-center gap-1">
+
+            {/* ── Right: bell + avatar chip (opens nav drawer) ── */}
+            <div className="flex items-center gap-2">
+              {/* Notification bell */}
               <Link href="/notifications">
-                <Button variant="ghost" size="icon" className="relative h-9 w-9 text-white/60 hover:text-white hover:bg-white/10">
-                  <Bell size={18} />
+                <button
+                  className="relative flex items-center justify-center rounded-xl"
+                  style={{ width: 38, height: 38, background: "#f1f5f9", border: "1px solid #e2e8f0" }}
+                >
+                  <Bell size={17} color="#475569" />
                   {unreadCount > 0 && (
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#f97316] rounded-full border border-sidebar" />
+                    <span
+                      className="absolute"
+                      style={{ top: 8, right: 8, width: 8, height: 8, borderRadius: "50%", background: "#f97316", border: "2px solid white" }}
+                    />
                   )}
-                </Button>
+                </button>
               </Link>
+
+              {/* Avatar chip — tapping opens the nav drawer */}
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-9 w-9 text-white/60 hover:text-white hover:bg-white/10">
-                    <Menu size={18} />
-                  </Button>
+                  <button
+                    className="flex items-center gap-2 rounded-xl"
+                    style={{
+                      padding: "4px 10px 4px 4px",
+                      background: "linear-gradient(135deg, rgba(11,44,96,0.07), rgba(249,115,22,0.06))",
+                      border: "1px solid rgba(11,44,96,0.12)",
+                    }}
+                  >
+                    {avatarSrc ? (
+                      <img
+                        src={avatarSrc}
+                        alt={displayName}
+                        className="object-cover rounded-lg"
+                        style={{ width: 30, height: 30 }}
+                      />
+                    ) : (
+                      <div
+                        className="flex items-center justify-center rounded-lg"
+                        style={{
+                          width: 30, height: 30,
+                          background: "linear-gradient(135deg, #f97316, #ea580c)",
+                          boxShadow: "0 2px 6px rgba(249,115,22,0.40)",
+                          color: "#fff", fontSize: 10, fontWeight: 900,
+                        }}
+                      >
+                        {initials}
+                      </div>
+                    )}
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "#0b2c60" }}>{firstName}</span>
+                  </button>
                 </SheetTrigger>
                 <SheetContent side="left" className="p-0 w-72 border-0">
                   <SidebarNav
@@ -315,6 +396,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </SheetContent>
               </Sheet>
             </div>
+          </div>
+
+          {/* Greeting sub-bar */}
+          <div
+            className="flex items-center justify-between px-4"
+            style={{ height: 44, background: "linear-gradient(135deg, #0b2c60 0%, #0f3872 100%)" }}
+          >
+            <div className="flex items-center gap-2">
+              <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.90)" }}>
+                {greeting}, {firstName}
+              </span>
+              <span style={{ fontSize: 14 }}>{greetingEmoji}</span>
+            </div>
+            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.40)", fontWeight: 500 }}>{shortDate}</span>
           </div>
         </header>
 
