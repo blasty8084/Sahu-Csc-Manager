@@ -7,105 +7,21 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useNetworkStatus } from "@/hooks/use-network-status";
 import { useEffect, useState } from "react";
 import { setCacheItem, getCacheItem } from "@/lib/offline-db";
-import { useUnreadCount } from "@/hooks/use-notifications";
-import { AppLogo } from "@/components/app-logo";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
   Wallet, TrendingUp, TrendingDown, Activity,
   Plus, Fingerprint, Briefcase, BarChart2,
-  ChevronRight, WifiOff, Bell, Menu, CalendarDays,
-  LayoutDashboard, BookOpen, UserCircle,
+  ChevronRight, WifiOff,
 } from "lucide-react";
 
 const DASHBOARD_CACHE_KEY = "dashboard-data";
-
-// ─── Wallet Illustration ───────────────────────────────────────────────────────
-function WalletIllustration() {
-  return (
-    <div className="relative select-none pointer-events-none" style={{ width: 148, height: 140 }}>
-      {/* Cash bill 1 — back, taller */}
-      <div className="absolute" style={{
-        bottom: 58, left: 22, width: 68, height: 60,
-        background: "linear-gradient(175deg, #4ade80 0%, #16a34a 60%, #14532d 100%)",
-        borderRadius: "8px 8px 0 0",
-        boxShadow: "0 -4px 12px rgba(22,163,74,0.4)",
-        zIndex: 1,
-      }}>
-        <div style={{ position:"absolute", top:10, left:8, right:8, height:2, background:"rgba(255,255,255,0.25)", borderRadius:2 }} />
-        <div style={{ position:"absolute", top:18, left:8, right:8, height:2, background:"rgba(255,255,255,0.15)", borderRadius:2 }} />
-        <div style={{ position:"absolute", top:26, left:8, right:24, height:2, background:"rgba(255,255,255,0.12)", borderRadius:2 }} />
-        <div style={{ position:"absolute", top:8, right:8, width:20, height:20, borderRadius:"50%", border:"2px solid rgba(255,255,255,0.3)" }} />
-      </div>
-      {/* Cash bill 2 — front, shorter */}
-      <div className="absolute" style={{
-        bottom: 58, left: 36, width: 56, height: 46,
-        background: "linear-gradient(175deg, #86efac 0%, #22c55e 55%, #166534 100%)",
-        borderRadius: "8px 8px 0 0",
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3)",
-        zIndex: 2,
-      }}>
-        <div style={{ position:"absolute", top:8, left:7, right:7, height:1.5, background:"rgba(255,255,255,0.3)", borderRadius:2 }} />
-        <div style={{ position:"absolute", top:15, left:7, right:7, height:1.5, background:"rgba(255,255,255,0.2)", borderRadius:2 }} />
-      </div>
-      {/* Wallet flap */}
-      <div className="absolute" style={{
-        bottom: 38, left: 6, width: 104, height: 30,
-        background: "linear-gradient(160deg, #2563eb 0%, #1d4ed8 100%)",
-        borderRadius: "12px 12px 0 0",
-        zIndex: 3,
-        boxShadow: "0 -2px 8px rgba(29,78,216,0.35)",
-      }} />
-      {/* Wallet main body */}
-      <div className="absolute" style={{
-        bottom: 18, left: 6, width: 104, height: 50,
-        background: "linear-gradient(150deg, #3b82f6 0%, #1e40af 55%, #1e3a8a 100%)",
-        borderRadius: "0 0 14px 14px",
-        zIndex: 4,
-        boxShadow: "0 8px 24px rgba(30,64,175,0.55), 0 2px 8px rgba(0,0,0,0.3)",
-      }}>
-        <div style={{ position:"absolute", top:12, left:12, right:12, height:1, background:"rgba(255,255,255,0.12)", borderRadius:2 }} />
-        <div style={{ position:"absolute", top:22, left:12, right:12, height:1, background:"rgba(255,255,255,0.08)", borderRadius:2 }} />
-        {/* Gold coin latch */}
-        <div style={{
-          position:"absolute", top:10, right:12, width:22, height:22, borderRadius:"50%",
-          background: "linear-gradient(135deg, #fde68a 0%, #f59e0b 50%, #d97706 100%)",
-          border: "2px solid #fbbf24",
-          boxShadow: "0 2px 6px rgba(245,158,11,0.5)",
-        }}>
-          <div style={{ position:"absolute", inset:4, borderRadius:"50%", background:"rgba(255,255,255,0.35)" }} />
-        </div>
-      </div>
-      {/* Coin stack — right side */}
-      {[0, 1, 2, 3].map((i) => (
-        <div key={i} className="absolute" style={{
-          bottom: 14 + i * 8, right: 4, width: 40, height: 16,
-          borderRadius: "50%",
-          background: i === 3
-            ? "linear-gradient(180deg, #fde68a 0%, #f59e0b 100%)"
-            : "linear-gradient(180deg, #fbbf24 0%, #d97706 100%)",
-          border: "1.5px solid #f59e0b",
-          boxShadow: i === 0 ? "0 4px 10px rgba(245,158,11,0.5)" : "none",
-          zIndex: 5 + i,
-        }} />
-      ))}
-      {/* Shine highlight */}
-      <div className="absolute" style={{
-        bottom: 46, left: 6, width: 104, height: 22,
-        background: "linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 100%)",
-        borderRadius: "12px 12px 0 0",
-        zIndex: 6, pointerEvents: "none",
-      }} />
-    </div>
-  );
-}
 
 // ─── Mobile Dashboard ──────────────────────────────────────────────────────────
 function MobileDashboard() {
   const { user } = useAuth();
   const { isOffline } = useNetworkStatus();
   const { data: liveData, isLoading } = useGetDashboard();
-  const { data: unreadCount = 0 } = useUnreadCount();
   const [cachedData, setCachedData] = useState<any>(null);
+
   useEffect(() => {
     if (liveData) {
       setCacheItem(DASHBOARD_CACHE_KEY, liveData, 30 * 60 * 1000).catch(() => {});
@@ -131,7 +47,6 @@ function MobileDashboard() {
     return "Good evening";
   })();
 
-  const displayName = user?.fullName || user?.username || "User";
   const statCards = [
     {
       label: "Balance",
@@ -175,224 +90,107 @@ function MobileDashboard() {
   ];
 
   return (
-    <div className="space-y-0">
-      {/* ── Hero Card ── breaks out of the p-4 layout padding with negative margins ── */}
-      <div className="-mx-4 -mt-4 relative overflow-hidden pb-8"
-        style={{
-          background: "linear-gradient(135deg, #0b1e4a 0%, #0f2d6b 40%, #1a3fa0 70%, #1e4fc0 100%)",
-          borderBottomLeftRadius: "2rem",
-        }}
-      >
-        {/* Decorative circular rings — top right */}
-        <div className="absolute top-0 right-0 opacity-10 pointer-events-none" aria-hidden>
-          <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
-            <circle cx="170" cy="30" r="90" stroke="white" strokeWidth="0.8" />
-            <circle cx="170" cy="30" r="65" stroke="white" strokeWidth="0.8" />
-            <circle cx="170" cy="30" r="42" stroke="white" strokeWidth="0.8" />
-            <circle cx="170" cy="30" r="22" stroke="white" strokeWidth="0.8" />
-          </svg>
+    <div className="space-y-5">
+      {/* Offline indicator */}
+      {isOffline && cachedData && (
+        <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/20 rounded-xl px-3 py-2">
+          <WifiOff size={13} className="text-destructive flex-shrink-0" />
+          <p className="text-xs text-destructive font-medium">Offline — showing cached data</p>
         </div>
-        {/* Decorative rings — bottom left */}
-        <div className="absolute bottom-0 left-0 opacity-[0.06] pointer-events-none" aria-hidden>
-          <svg width="150" height="150" viewBox="0 0 150 150" fill="none">
-            <circle cx="0" cy="150" r="100" stroke="white" strokeWidth="1" />
-            <circle cx="0" cy="150" r="68" stroke="white" strokeWidth="1" />
-            <circle cx="0" cy="150" r="40" stroke="white" strokeWidth="1" />
-          </svg>
-        </div>
-        {/* Dot grid texture */}
-        <div
-          className="absolute inset-0 opacity-[0.055] pointer-events-none"
-          aria-hidden
-          style={{
-            backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)",
-            backgroundSize: "22px 22px",
-          }}
-        />
-
-        {/* Top row: Logo + Title + Bell + Menu */}
-        <div className="relative z-10 flex items-center gap-3 px-4 pt-10 pb-4">
-          <div className="w-12 h-12 rounded-full overflow-hidden ring-2 ring-white/25 shadow-lg bg-white flex-shrink-0">
-            <AppLogo size="sm" className="w-full h-full object-cover" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-white font-extrabold text-[15px] leading-tight tracking-wide">SAHU CSC</h1>
-            <p className="text-white/55 text-[11px] font-medium tracking-wide">Management Platform</p>
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <Link href="/notifications">
-              <button className="relative w-9 h-9 rounded-full border border-white/30 flex items-center justify-center text-white hover:bg-white/10 active:bg-white/20 transition-colors">
-                <Bell size={16} />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center leading-none px-0.5">
-                    {unreadCount > 9 ? "9+" : unreadCount}
-                  </span>
-                )}
-              </button>
-            </Link>
-            <Sheet>
-              <SheetTrigger asChild>
-                <button className="w-9 h-9 rounded-full border border-white/30 flex items-center justify-center text-white hover:bg-white/10 active:bg-white/20 transition-colors">
-                  <Menu size={16} />
-                </button>
-              </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-72 border-0">
-                {/* Minimal nav in sheet */}
-                <div
-                  className="flex flex-col h-full text-white"
-                  style={{ background: "linear-gradient(160deg, #0b1e4a 0%, #1a3fa0 100%)" }}
-                >
-                  <div className="flex items-center gap-3 px-5 pt-8 pb-5 border-b border-white/10">
-                    <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white/20 bg-white">
-                      <AppLogo size="sm" className="w-full h-full" />
-                    </div>
-                    <div>
-                      <p className="font-extrabold text-sm">SAHU CSC</p>
-                      <p className="text-white/50 text-[10px]">Management Platform</p>
-                    </div>
-                  </div>
-                  <div className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
-                    {[
-                      { href: "/", label: "Dashboard", Icon: LayoutDashboard },
-                      { href: "/ledger", label: "Ledger", Icon: BookOpen },
-                      { href: "/aeps", label: "AePS Cash", Icon: Fingerprint },
-                      { href: "/services", label: "Services", Icon: Briefcase },
-                      { href: "/reports", label: "Reports", Icon: BarChart2 },
-                      { href: "/notifications", label: "Notifications", Icon: Bell },
-                      { href: "/profile", label: "My Profile", Icon: UserCircle },
-                    ].map(({ href, label, Icon }) => (
-                      <Link key={href} href={href}>
-                        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer">
-                          <Icon size={16} />
-                          <span className="text-[13px]">{label}</span>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                  <div className="px-4 pb-6 text-[10px] text-white/20 text-center">
-                    SAHU CSC © 2026
-                  </div>
-                </div>
-              </SheetContent>
-            </Sheet>
-          </div>
-        </div>
-
-        {/* Greeting row + wallet illustration */}
-        <div className="relative z-10 flex items-end justify-between px-4 pb-4">
-          <div>
-            <p className="text-white/65 text-[13px] font-medium mb-0.5">{greeting}, 👋</p>
-            <h2 className="text-white font-extrabold text-[26px] leading-tight">{displayName}</h2>
-          </div>
-          <div className="flex-shrink-0 -mr-2 -mb-1">
-            <WalletIllustration />
-          </div>
-        </div>
-
+      )}
+      {/* Greeting */}
+      <div>
+        <p className="text-muted-foreground text-xs">{today}</p>
+        <h2 className="text-xl font-bold text-foreground">
+          {greeting}, {user?.fullName || user?.username} 👋
+        </h2>
       </div>
 
-      {/* ── Content below hero ── */}
-      <div className="space-y-5 pt-4">
-        {/* Offline indicator */}
-        {isOffline && cachedData && (
-          <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/20 rounded-xl px-3 py-2">
-            <WifiOff size={13} className="text-destructive flex-shrink-0" />
-            <p className="text-xs text-destructive font-medium">Offline — showing cached data</p>
-          </div>
-        )}
-
-        {/* Date row */}
-        <div className="flex items-center gap-2">
-          <CalendarDays size={14} className="text-muted-foreground flex-shrink-0" />
-          <p className="text-muted-foreground text-xs font-medium">{today}</p>
-        </div>
-
-        {/* 2×2 Stat Cards */}
-        <div className="grid grid-cols-2 gap-3">
-          {statCards.map((s) => (
-            <div key={s.label} className="bg-card rounded-2xl p-4 border border-border shadow-sm">
-              <div className={`w-10 h-10 rounded-xl ${s.iconBg} flex items-center justify-center mb-3`}>
-                <s.Icon className="w-5 h-5 text-white" />
-              </div>
-              <p className="text-muted-foreground text-xs mb-1">{s.label}</p>
-              {isLoading ? (
-                <Skeleton className="h-6 w-20 mb-1" />
-              ) : (
-                <p className="text-foreground text-xl font-bold leading-tight">{s.value}</p>
-              )}
-              <p className={`text-[10px] font-semibold mt-1 truncate ${s.up ? "text-emerald-500" : "text-rose-500"}`}>
-                {s.change}
-              </p>
+      {/* 2×2 Stat Cards */}
+      <div className="grid grid-cols-2 gap-3">
+        {statCards.map((s) => (
+          <div key={s.label} className="bg-card rounded-2xl p-4 border border-border shadow-sm">
+            <div className={`w-10 h-10 rounded-xl ${s.iconBg} flex items-center justify-center mb-3`}>
+              <s.Icon className="w-5 h-5 text-white" />
             </div>
+            <p className="text-muted-foreground text-xs mb-1">{s.label}</p>
+            {isLoading ? (
+              <Skeleton className="h-6 w-20 mb-1" />
+            ) : (
+              <p className="text-foreground text-xl font-bold leading-tight">{s.value}</p>
+            )}
+            <p className={`text-[10px] font-semibold mt-1 truncate ${s.up ? "text-emerald-500" : "text-rose-500"}`}>
+              {s.change}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* Quick Actions */}
+      <div>
+        <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest mb-3">
+          Quick Actions
+        </p>
+        <div className="grid grid-cols-4 gap-2">
+          {quickActions.map((a) => (
+            <Link key={a.label} href={a.href}>
+              <div className={`flex flex-col items-center gap-2 ${a.bg} rounded-2xl py-4 px-1 cursor-pointer active:scale-95 transition-transform`}>
+                <div className={`w-9 h-9 rounded-xl ${a.iconBg} flex items-center justify-center`}>
+                  <a.Icon className={`w-4.5 h-4.5 ${a.iconColor}`} />
+                </div>
+                <span className={`${a.text} text-[10px] font-semibold text-center leading-tight`}>
+                  {a.label}
+                </span>
+              </div>
+            </Link>
           ))}
         </div>
+      </div>
 
-        {/* Quick Actions */}
-        <div>
-          <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest mb-3">
-            Quick Actions
+      {/* Top Services Today */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest">
+            Top Services Today
           </p>
-          <div className="grid grid-cols-4 gap-2">
-            {quickActions.map((a) => (
-              <Link key={a.label} href={a.href}>
-                <div className={`flex flex-col items-center gap-2 ${a.bg} rounded-2xl py-4 px-1 cursor-pointer active:scale-95 transition-transform`}>
-                  <div className={`w-9 h-9 rounded-xl ${a.iconBg} flex items-center justify-center`}>
-                    <a.Icon className={`w-4.5 h-4.5 ${a.iconColor}`} />
-                  </div>
-                  <span className={`${a.text} text-[10px] font-semibold text-center leading-tight`}>
-                    {a.label}
+          <Link href="/services">
+            <span className="text-primary text-xs font-semibold">See all</span>
+          </Link>
+        </div>
+
+        {isLoading ? (
+          <div className="space-y-2">
+            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}
+          </div>
+        ) : !data?.topServicesMonth?.length ? (
+          <div className="bg-card rounded-2xl p-6 text-center border border-border">
+            <p className="text-muted-foreground text-sm">No service data yet</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {data.topServicesMonth.slice(0, 5).map((svc: { serviceType: string; count: number; revenue: number }, i: number) => {
+              const colors = [
+                "bg-teal-100 text-teal-700",
+                "bg-yellow-100 text-yellow-700",
+                "bg-green-100 text-green-700",
+                "bg-blue-100 text-blue-700",
+                "bg-purple-100 text-purple-700",
+              ];
+              return (
+                <div key={svc.serviceType} className="bg-card rounded-xl px-4 py-3 flex items-center gap-3 border border-border shadow-sm">
+                  <span className="text-muted-foreground text-sm font-bold w-4 flex-shrink-0">{i + 1}</span>
+                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full flex-1 ${colors[i] ?? colors[0]}`}>
+                    {svc.serviceType}
                   </span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        {/* Top Services Today */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest">
-              Top Services Today
-            </p>
-            <Link href="/services">
-              <span className="text-primary text-xs font-semibold">See all</span>
-            </Link>
-          </div>
-
-          {isLoading ? (
-            <div className="space-y-2">
-              {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}
-            </div>
-          ) : !data?.topServicesMonth?.length ? (
-            <div className="bg-card rounded-2xl p-6 text-center border border-border">
-              <p className="text-muted-foreground text-sm">No service data yet</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {data.topServicesMonth.slice(0, 5).map((svc: { serviceType: string; count: number; revenue: number }, i: number) => {
-                const colors = [
-                  "bg-teal-100 text-teal-700",
-                  "bg-yellow-100 text-yellow-700",
-                  "bg-green-100 text-green-700",
-                  "bg-blue-100 text-blue-700",
-                  "bg-purple-100 text-purple-700",
-                ];
-                return (
-                  <div key={svc.serviceType} className="bg-card rounded-xl px-4 py-3 flex items-center gap-3 border border-border shadow-sm">
-                    <span className="text-muted-foreground text-sm font-bold w-4 flex-shrink-0">{i + 1}</span>
-                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full flex-1 ${colors[i] ?? colors[0]}`}>
-                      {svc.serviceType}
-                    </span>
-                    <div className="flex-shrink-0 text-right">
-                      <p className="text-foreground text-xs font-bold">{svc.count} txns</p>
-                      <p className="text-muted-foreground text-[10px]">₹{svc.revenue.toLocaleString("en-IN")}</p>
-                    </div>
+                  <div className="flex-shrink-0 text-right">
+                    <p className="text-foreground text-xs font-bold">{svc.count} txns</p>
+                    <p className="text-muted-foreground text-[10px]">₹{svc.revenue.toLocaleString("en-IN")}</p>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -457,11 +255,12 @@ function DesktopDashboard() {
     },
   ];
 
+  // Build a simple weekly bar structure relative to today's income
   const todayIncome = data?.todayCredits ?? 0;
   const todayExpense = data?.todayDebits ?? 0;
   const peak = Math.max(todayIncome, 1);
   const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const today = new Date().getDay();
+  const today = new Date().getDay(); // 0=Sun
   const todayIndex = today === 0 ? 6 : today - 1;
   const weekBars = dayLabels.map((day, i) => {
     if (i === todayIndex) return { day, income: todayIncome, expense: todayExpense };
@@ -472,6 +271,7 @@ function DesktopDashboard() {
 
   return (
     <div className="space-y-5">
+      {/* Offline indicator */}
       {isOffline && (
         <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/20 rounded-xl px-4 py-2">
           <WifiOff size={13} className="text-destructive flex-shrink-0" />
@@ -480,6 +280,7 @@ function DesktopDashboard() {
           </p>
         </div>
       )}
+      {/* 4 Stat Cards */}
       <div className="grid grid-cols-4 gap-4">
         {statCards.map((s) => (
           <div key={s.label} className="bg-card rounded-2xl p-4 border border-border shadow-sm">
@@ -502,7 +303,9 @@ function DesktopDashboard() {
         ))}
       </div>
 
+      {/* Weekly Overview + Top Services */}
       <div className="grid grid-cols-3 gap-4">
+        {/* Weekly Overview — 2 cols */}
         <div className="col-span-2 bg-card rounded-2xl border border-border shadow-sm p-5">
           <div className="flex items-center justify-between mb-1">
             <div>
@@ -539,6 +342,7 @@ function DesktopDashboard() {
           </div>
         </div>
 
+        {/* Top Services — 1 col */}
         <div className="bg-card rounded-2xl border border-border shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-foreground text-sm font-bold">Top Services</h2>
@@ -578,6 +382,7 @@ function DesktopDashboard() {
         </div>
       </div>
 
+      {/* Recent Transactions Table */}
       <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
         <div className="px-5 py-3.5 border-b border-border flex items-center justify-between">
           <div>
@@ -659,7 +464,7 @@ export default function Dashboard() {
   const isMobile = useIsMobile();
 
   return (
-    <Layout hideHeader={isMobile}>
+    <Layout>
       {isMobile ? <MobileDashboard /> : <DesktopDashboard />}
     </Layout>
   );

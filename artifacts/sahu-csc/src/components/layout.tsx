@@ -199,7 +199,7 @@ function SidebarNav({
   );
 }
 
-export function Layout({ children, hideHeader }: { children: React.ReactNode; hideHeader?: boolean }) {
+export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, logout } = useAuth();
   const { theme, setTheme } = useTheme();
@@ -273,7 +273,7 @@ export function Layout({ children, hideHeader }: { children: React.ReactNode; hi
 
       <div className="flex-1 flex flex-col md:ml-64">
         {/* Mobile Top Header */}
-        <header className={`bg-sidebar sticky top-0 z-20 md:hidden shadow-md${hideHeader ? " hidden" : ""}`}>
+        <header className="bg-sidebar sticky top-0 z-20 md:hidden shadow-md">
           <div className="flex items-center justify-between px-4 h-14">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-white/20">
