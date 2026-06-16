@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { AppLogo } from "@/components/app-logo";
 import { PWAInstallBanner } from "@/components/pwa-install-banner";
 import { SyncStatusBar, SyncDot } from "@/components/sync-status-bar";
+import { prefetch } from "@/lib/prefetch";
 
 type NavItem = {
   href: string;
@@ -73,13 +74,18 @@ function SidebarNav({
           const active = isActive(item.href);
           return (
             <Link key={item.href} href={item.href}>
-              <div className={`
-                flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer
-                transition-colors duration-100
-                ${active
-                  ? "bg-[#f97316] text-white font-semibold shadow-md shadow-orange-900/30"
-                  : "text-white/65 hover:text-white hover:bg-white/8"}
-              `}>
+              <div
+                className={`
+                  flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer
+                  transition-colors duration-100
+                  ${active
+                    ? "bg-[#f97316] text-white font-semibold shadow-md shadow-orange-900/30"
+                    : "text-white/65 hover:text-white hover:bg-white/8"}
+                `}
+                onMouseEnter={() => prefetch(item.href)}
+                onFocus={() => prefetch(item.href)}
+                onTouchStart={() => prefetch(item.href)}
+              >
                 <div className="flex items-center gap-3">
                   <Icon size={16} className={active ? "text-white" : "text-white/45"} />
                   <span className="text-[13px] leading-none">{item.label}</span>
@@ -107,13 +113,18 @@ function SidebarNav({
               const active = isActive(item.href);
               return (
                 <Link key={item.href} href={item.href}>
-                  <div className={`
-                    flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer
-                    transition-colors duration-100
-                    ${active
-                      ? "bg-[#f97316] text-white font-semibold shadow-md shadow-orange-900/30"
-                      : "text-white/65 hover:text-white hover:bg-white/8"}
-                  `}>
+                  <div
+                    className={`
+                      flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer
+                      transition-colors duration-100
+                      ${active
+                        ? "bg-[#f97316] text-white font-semibold shadow-md shadow-orange-900/30"
+                        : "text-white/65 hover:text-white hover:bg-white/8"}
+                    `}
+                    onMouseEnter={() => prefetch(item.href)}
+                    onFocus={() => prefetch(item.href)}
+                    onTouchStart={() => prefetch(item.href)}
+                  >
                     <Icon size={16} className={active ? "text-white" : "text-white/45"} />
                     <span className="text-[13px] leading-none">{item.label}</span>
                     {item.badge !== undefined && item.badge > 0 && (
@@ -334,7 +345,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
               const active = location === item.href || (item.href !== "/" && location.startsWith(item.href));
               return (
                 <Link key={item.href} href={item.href} className="flex-1">
-                  <div className={`flex flex-col items-center justify-center h-full gap-1 relative transition-colors duration-100 ${active ? "text-[#f97316]" : "text-muted-foreground"}`}>
+                  <div
+                    className={`flex flex-col items-center justify-center h-full gap-1 relative transition-colors duration-100 ${active ? "text-[#f97316]" : "text-muted-foreground"}`}
+                    onMouseEnter={() => prefetch(item.href)}
+                    onFocus={() => prefetch(item.href)}
+                    onTouchStart={() => prefetch(item.href)}
+                  >
                     {active && (
                       <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[#f97316] rounded-full" />
                     )}
