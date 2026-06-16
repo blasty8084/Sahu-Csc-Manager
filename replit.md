@@ -423,6 +423,17 @@ Full config in `infrastructure/twa/twa-config.json`.
 - **App logo is `sahu-logo.png`**: Both `AppLogo` (sidebar/header) and `LoginLogo` (auth pages) in `app-logo.tsx` render `public/sahu-logo.png`. Never use inline SVG or text-box placeholders for the brand logo.
 - **Login mobile "Register here" card**: A dashed blue CTA card at the bottom of the mobile login white card links to `/register`. Placed after the OTP reset link, before the "Trusted. Secure. Reliable." footer.
 - **"Forgot Password?" is navy, not orange**: The link in `LoginFormContent` uses `#0b2c60` (navy) to match the security-focused design language. Do not change it to `#F97316` (saffron).
+- **Mobile header design language (v2)**: The mobile header (`md:hidden` block in `layout.tsx`) uses a 3-layer structure: (1) 3px gradient accent stripe (navy `#0b2c60` → saffron `#f97316`), (2) white frosted main bar (60px, `bg-white`, box-shadow) with a navy rounded-square CSC badge logo + two-tone "SAHU" (navy) / "CSC" (saffron) brand text on the left; bell button + avatar chip on the right, (3) navy gradient greeting sub-bar (44px, `linear-gradient(135deg, #0b2c60, #0f3872)`) showing time-based greeting + short date. The avatar chip replaces the old hamburger icon and opens the `Sheet` nav drawer — do not add a separate hamburger. `firstName`, `greeting`, `greetingEmoji`, and `shortDate` are computed inside the `Layout` component.
+- **Mobile dashboard card design language**: Stat cards use a 3px colored top accent stripe (`s.accent` gradient) + white `bg-white` card body with `box-shadow` instead of a Tailwind `border`. Icon badges use `s.iconGradient` (CSS gradient) with a matching colored `box-shadow` drop shadow. Quick action cards are white rounded-2xl cards with gradient icon badges (42px, borderRadius 13) and navy label text. Never use flat `bg-*` Tailwind backgrounds for icon badges in these cards — always use `background: gradient` inline style so the gradient renders correctly.
+
+---
+
+## Changelog
+
+| Date | Change |
+|------|--------|
+| 2026-06-16 | **Mobile header v2**: Replaced flat navy bar with 3-layer frosted design — gradient accent stripe, white main bar, navy greeting sub-bar. Avatar chip replaces hamburger to open nav drawer. |
+| 2026-06-16 | **Dashboard mobile cards v2**: Stat cards upgraded with gradient accent stripe + gradient icon badge + shadow. Quick actions upgraded to white card + gradient icon badge pattern. |
 
 ---
 

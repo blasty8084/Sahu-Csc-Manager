@@ -36,16 +36,6 @@ function MobileDashboard() {
 
   const data = liveData ?? cachedData;
 
-  const today = new Date().toLocaleDateString("en-IN", {
-    weekday: "long", day: "numeric", month: "long", year: "numeric",
-  });
-
-  const greeting = (() => {
-    const h = new Date().getHours();
-    if (h < 12) return "Good morning";
-    if (h < 17) return "Good afternoon";
-    return "Good evening";
-  })();
 
   const statCards = [
     {
@@ -53,7 +43,8 @@ function MobileDashboard() {
       value: isLoading ? null : `₹${(data?.currentBalance ?? 0).toLocaleString("en-IN")}`,
       change: data && data.currentBalance > 0 ? "Running balance" : "No entries yet",
       up: true,
-      iconBg: "bg-[#1a2040]",
+      accent: "linear-gradient(90deg, #0b2c60, #1a4a9e)",
+      iconGradient: "linear-gradient(135deg, #0b2c60 0%, #1a4a9e 100%)",
       Icon: Wallet,
     },
     {
@@ -61,15 +52,17 @@ function MobileDashboard() {
       value: isLoading ? null : `₹${(data?.todayCredits ?? 0).toLocaleString("en-IN")}`,
       change: `${data?.todayTransactions ?? 0} transactions`,
       up: true,
-      iconBg: "bg-emerald-500",
+      accent: "linear-gradient(90deg, #10b981, #34d399)",
+      iconGradient: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
       Icon: TrendingUp,
     },
     {
       label: "Today's Expense",
       value: isLoading ? null : `₹${(data?.todayDebits ?? 0).toLocaleString("en-IN")}`,
-      change: `This month: ₹${(data?.monthDebits ?? 0).toLocaleString("en-IN")}`,
+      change: `Month: ₹${(data?.monthDebits ?? 0).toLocaleString("en-IN")}`,
       up: false,
-      iconBg: "bg-orange-500",
+      accent: "linear-gradient(90deg, #f97316, #fb923c)",
+      iconGradient: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
       Icon: TrendingDown,
     },
     {
@@ -77,16 +70,33 @@ function MobileDashboard() {
       value: isLoading ? null : String(data?.todayTransactions ?? 0),
       change: `Month: ₹${(data?.netProfitMonth ?? 0).toLocaleString("en-IN")} net`,
       up: (data?.netProfitMonth ?? 0) >= 0,
-      iconBg: "bg-purple-600",
+      accent: "linear-gradient(90deg, #8b5cf6, #a78bfa)",
+      iconGradient: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
       Icon: Activity,
     },
   ];
 
   const quickActions = [
-    { label: "New Entry", href: "/ledger", Icon: Plus, bg: "bg-[#1a2040]", text: "text-white", iconColor: "text-white", iconBg: "bg-white/20" },
-    { label: "AePS", href: "/aeps", Icon: Fingerprint, bg: "bg-orange-50", text: "text-orange-700", iconColor: "text-orange-500", iconBg: "bg-orange-100" },
-    { label: "Services", href: "/services", Icon: Briefcase, bg: "bg-blue-50", text: "text-blue-700", iconColor: "text-blue-500", iconBg: "bg-blue-100" },
-    { label: "Reports", href: "/reports", Icon: BarChart2, bg: "bg-purple-50", text: "text-purple-700", iconColor: "text-purple-500", iconBg: "bg-purple-100" },
+    {
+      label: "New Entry", href: "/ledger", Icon: Plus,
+      iconGradient: "linear-gradient(135deg, #0b2c60 0%, #1a4a9e 100%)",
+      iconShadow: "rgba(11,44,96,0.35)",
+    },
+    {
+      label: "AePS", href: "/aeps", Icon: Fingerprint,
+      iconGradient: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
+      iconShadow: "rgba(249,115,22,0.35)",
+    },
+    {
+      label: "Services", href: "/services", Icon: Briefcase,
+      iconGradient: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
+      iconShadow: "rgba(59,130,246,0.35)",
+    },
+    {
+      label: "Reports", href: "/reports", Icon: BarChart2,
+      iconGradient: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
+      iconShadow: "rgba(139,92,246,0.35)",
+    },
   ];
 
   return (
@@ -98,47 +108,70 @@ function MobileDashboard() {
           <p className="text-xs text-destructive font-medium">Offline — showing cached data</p>
         </div>
       )}
-      {/* Greeting */}
-      <div>
-        <p className="text-muted-foreground text-xs">{today}</p>
-        <h2 className="text-xl font-bold text-foreground">
-          {greeting}, {user?.fullName || user?.username} 👋
-        </h2>
-      </div>
 
       {/* 2×2 Stat Cards */}
       <div className="grid grid-cols-2 gap-3">
         {statCards.map((s) => (
-          <div key={s.label} className="bg-card rounded-2xl p-4 border border-border shadow-sm">
-            <div className={`w-10 h-10 rounded-xl ${s.iconBg} flex items-center justify-center mb-3`}>
-              <s.Icon className="w-5 h-5 text-white" />
+          <div
+            key={s.label}
+            className="bg-white rounded-2xl overflow-hidden"
+            style={{ boxShadow: "0 2px 12px rgba(11,44,96,0.08), 0 1px 3px rgba(0,0,0,0.04)" }}
+          >
+            {/* Accent stripe */}
+            <div style={{ height: 3, background: s.accent }} />
+            <div className="p-3.5">
+              <div className="flex items-start justify-between mb-2.5">
+                <p style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                  {s.label}
+                </p>
+                <div
+                  style={{
+                    width: 30, height: 30, borderRadius: 9,
+                    background: s.iconGradient,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    boxShadow: `0 3px 8px ${s.accent.includes("0b2c60") ? "rgba(11,44,96,0.30)" : s.accent.includes("10b981") ? "rgba(16,185,129,0.30)" : s.accent.includes("f97316") ? "rgba(249,115,22,0.30)" : "rgba(139,92,246,0.30)"}`,
+                    flexShrink: 0,
+                  }}
+                >
+                  <s.Icon size={14} color="#fff" />
+                </div>
+              </div>
+              {isLoading ? (
+                <Skeleton className="h-6 w-20 mb-1" />
+              ) : (
+                <p style={{ fontSize: 19, fontWeight: 900, color: "#0b2c60", lineHeight: 1.1 }}>{s.value}</p>
+              )}
+              <p style={{ fontSize: 10, fontWeight: 600, marginTop: 5, color: s.up ? "#10b981" : "#f43f5e" }} className="truncate">
+                {s.change}
+              </p>
             </div>
-            <p className="text-muted-foreground text-xs mb-1">{s.label}</p>
-            {isLoading ? (
-              <Skeleton className="h-6 w-20 mb-1" />
-            ) : (
-              <p className="text-foreground text-xl font-bold leading-tight">{s.value}</p>
-            )}
-            <p className={`text-[10px] font-semibold mt-1 truncate ${s.up ? "text-emerald-500" : "text-rose-500"}`}>
-              {s.change}
-            </p>
           </div>
         ))}
       </div>
 
       {/* Quick Actions */}
       <div>
-        <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest mb-3">
+        <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 10 }}>
           Quick Actions
         </p>
         <div className="grid grid-cols-4 gap-2">
           {quickActions.map((a) => (
             <Link key={a.label} href={a.href}>
-              <div className={`flex flex-col items-center gap-2 ${a.bg} rounded-2xl py-4 px-1 cursor-pointer active:scale-95 transition-transform`}>
-                <div className={`w-9 h-9 rounded-xl ${a.iconBg} flex items-center justify-center`}>
-                  <a.Icon className={`w-4.5 h-4.5 ${a.iconColor}`} />
+              <div
+                className="flex flex-col items-center gap-2.5 py-4 px-1 rounded-2xl cursor-pointer active:scale-95 transition-transform bg-white"
+                style={{ boxShadow: "0 2px 10px rgba(11,44,96,0.07), 0 1px 3px rgba(0,0,0,0.04)" }}
+              >
+                <div
+                  style={{
+                    width: 42, height: 42, borderRadius: 13,
+                    background: a.iconGradient,
+                    boxShadow: `0 4px 12px ${a.iconShadow}`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}
+                >
+                  <a.Icon size={18} color="#fff" />
                 </div>
-                <span className={`${a.text} text-[10px] font-semibold text-center leading-tight`}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: "#0b2c60", textAlign: "center", lineHeight: 1.2 }}>
                   {a.label}
                 </span>
               </div>

@@ -11,3 +11,4 @@
 - [connect-pg-simple esbuild external](session-store-pool.md) — must be in `external` in build.mjs; esbuild bundling breaks its internal `table.sql` path lookup and sessions silently never persist
 - [Login redirect via setQueryData](login-redirect-setquerydata.md) — after login, set auth cache directly from response body; refetch causes race condition through Replit proxy; login.tsx useEffect fires redirect when user becomes truthy
 - [willChange breaks position fixed](willchange-fixed-nav.md) — page-transition motion.div must NOT have willChange: transform; it creates a new CSS containing block breaking position: fixed on the bottom nav
+- [Mobile UI design language v2](mobile-design-language.md) — 3-layer header (accent stripe + white bar + navy sub-bar), gradient icon badges with box-shadow, white card + colored top stripe for stat cards; all documented in replit.md Architecture Decisions
