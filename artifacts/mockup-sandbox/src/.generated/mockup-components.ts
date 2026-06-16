@@ -7,5 +7,6 @@ export const modules: ModuleMap = {
   "./components/mockups/sahu-csc/Register.tsx": () => import("../components/mockups/sahu-csc/Register.tsx"),
   "./components/mockups/sahu-csc/Tablet.tsx": () => import("../components/mockups/sahu-csc/Tablet.tsx"),
   "./components/mockups/sahu-header/Minimal.tsx": () => import("../components/mockups/sahu-header/Minimal.tsx"),
+  "./components/mockups/sahu-header/MobileNew.tsx": () => import("../components/mockups/sahu-header/MobileNew.tsx"),
   "./components/mockups/sahu-header/Modern.tsx": () => import("../components/mockups/sahu-header/Modern.tsx")
 };
