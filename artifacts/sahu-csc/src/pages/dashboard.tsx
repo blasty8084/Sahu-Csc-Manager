@@ -13,7 +13,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
   Wallet, TrendingUp, TrendingDown, Activity,
   Plus, Fingerprint, Briefcase, BarChart2,
-  ChevronRight, WifiOff, Bell, Menu, Eye, EyeOff, CalendarDays,
+  ChevronRight, WifiOff, Bell, Menu, CalendarDays,
   LayoutDashboard, BookOpen, UserCircle,
 } from "lucide-react";
 
@@ -106,8 +106,6 @@ function MobileDashboard() {
   const { data: liveData, isLoading } = useGetDashboard();
   const { data: unreadCount = 0 } = useUnreadCount();
   const [cachedData, setCachedData] = useState<any>(null);
-  const [balanceVisible, setBalanceVisible] = useState(true);
-
   useEffect(() => {
     if (liveData) {
       setCacheItem(DASHBOARD_CACHE_KEY, liveData, 30 * 60 * 1000).catch(() => {});
@@ -134,8 +132,6 @@ function MobileDashboard() {
   })();
 
   const displayName = user?.fullName || user?.username || "User";
-  const currentBalance = data?.currentBalance ?? 0;
-
   const statCards = [
     {
       label: "Balance",
@@ -293,42 +289,6 @@ function MobileDashboard() {
           </div>
         </div>
 
-        {/* Balance pill */}
-        <div className="relative z-10 mx-4">
-          <div className="rounded-2xl px-4 py-3 flex items-center gap-3"
-            style={{ background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.22)", backdropFilter: "blur(10px)" }}
-          >
-            {/* Dark navy solid circle — matches reference */}
-            <div className="flex-shrink-0 flex items-center justify-center"
-              style={{
-                width: 44, height: 44, borderRadius: "50%",
-                background: "rgba(11,30,74,0.75)",
-                border: "1.5px solid rgba(255,255,255,0.18)",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
-              }}
-            >
-              <Wallet size={20} className="text-white" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-white/65 text-[10px] font-semibold uppercase tracking-wider mb-0.5">Current Balance</p>
-              {isLoading ? (
-                <Skeleton className="h-6 w-28 bg-white/20" />
-              ) : (
-                <p className="text-white font-extrabold text-xl leading-tight">
-                  {balanceVisible
-                    ? `₹${currentBalance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`
-                    : "₹ ••••••"}
-                </p>
-              )}
-            </div>
-            <button
-              onClick={() => setBalanceVisible((v) => !v)}
-              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-cyan-300 hover:bg-white/10 active:bg-white/20 transition-colors"
-            >
-              {balanceVisible ? <Eye size={18} /> : <EyeOff size={18} />}
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* ── Content below hero ── */}

@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Bell, Menu, Wallet, Eye, EyeOff, TrendingUp, TrendingDown, Activity, CalendarDays } from "lucide-react";
+import { Bell, Menu, TrendingUp, TrendingDown, Activity, CalendarDays, Wallet } from "lucide-react";
 
 const logoSrc = "/sahu-logo.png";
 
@@ -125,8 +124,6 @@ function WalletIllustration() {
 }
 
 export function DashboardHero() {
-  const [balanceVisible, setBalanceVisible] = useState(true);
-
   const greeting = (() => {
     const h = new Date().getHours();
     if (h < 12) return "Good morning";
@@ -256,49 +253,6 @@ export function DashboardHero() {
             </div>
           </div>
 
-          {/* Balance pill — frosted glass */}
-          <div className="relative z-10 px-5">
-            <div
-              className="flex items-center gap-3"
-              style={{
-                background: "rgba(255,255,255,0.14)",
-                border: "1px solid rgba(255,255,255,0.22)",
-                borderRadius: 20,
-                padding: "10px 14px",
-                backdropFilter: "blur(10px)",
-              }}
-            >
-              {/* Dark solid icon circle — matches reference */}
-              <div
-                className="flex-shrink-0 flex items-center justify-center"
-                style={{
-                  width: 44, height: 44, borderRadius: "50%",
-                  background: "rgba(11,30,74,0.75)",
-                  border: "1.5px solid rgba(255,255,255,0.18)",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
-                }}
-              >
-                <Wallet size={20} className="text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-white/65 font-semibold uppercase tracking-wider" style={{ fontSize: 10, marginBottom: 2 }}>
-                  Current Balance
-                </p>
-                <p className="text-white font-extrabold leading-tight" style={{ fontSize: 22 }}>
-                  {balanceVisible
-                    ? `₹${currentBalance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`
-                    : "₹ ••••••"}
-                </p>
-              </div>
-              <button
-                onClick={() => setBalanceVisible(v => !v)}
-                style={{ width: 32, height: 32, borderRadius: "50%", flexShrink: 0 }}
-                className="flex items-center justify-center text-cyan-300 hover:bg-white/10 transition-colors"
-              >
-                {balanceVisible ? <Eye size={19} /> : <EyeOff size={19} />}
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* ── White/gray content area ─────────────────────────────── */}
