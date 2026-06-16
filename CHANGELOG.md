@@ -29,6 +29,9 @@
 20. [Bug Fixes & Replit Migration (June 2026)](#20-bug-fixes--replit-migration-june-2026)
 21. [Architecture Documentation Overhaul (June 2026)](#21-architecture-documentation-overhaul-june-2026)
 22. [Login Redirect & Session Persistence Fixes (June 2026)](#22-login-redirect--session-persistence-fixes-june-2026)
+23. [Users Page — Cash Overview Tab Consolidation (June 2026)](#23-users-page--cash-overview-tab-consolidation-june-2026)
+24. [LoadingScreen Multi-Phase Timeout (June 2026)](#24-loadingscreen-multi-phase-timeout-june-2026)
+25. [Seed Database Workflow (June 2026)](#25-seed-database-workflow-june-2026)
 
 ---
 
@@ -655,6 +658,52 @@ ARCHITECTURE.md                         Added Section 6 (PWA & TWA)
 ### Deployment
 - Deploying to Replit gives you a stable HTTPS domain required for TWA and push notifications
 - `assetlinks.json` SHA-256 fingerprint must be updated after generating the APK via PWABuilder
+
+---
+
+## 23. Users Page — Cash Overview Tab Consolidation (June 2026)
+
+The separate `users-overview.tsx` page (admin cash overview of all users) was merged into `users.tsx` as a fourth tab, reducing navigation clutter and keeping all user-related admin tools in one place.
+
+### Changes
+- **`artifacts/sahu-csc/src/pages/users.tsx`** — added "Cash Overview" tab (4th tab) that renders inline what was previously the full `/users-overview` page
+- **`artifacts/sahu-csc/src/pages/users-overview.tsx`** — deleted
+- **`artifacts/sahu-csc/src/App.tsx`** — old `/users-overview` route now redirects to `/users`
+- **`artifacts/sahu-csc/src/components/layout.tsx`** — removed standalone "Users Overview" nav entry; cash overview is now accessed via the Users page tab
+- Updated prefetch logic to point to the consolidated page
+
+---
+
+## 24. LoadingScreen Multi-Phase Timeout (June 2026)
+
+The auth loading screen previously spun indefinitely if the API was slow or unreachable. A three-phase timeout was added so users always get feedback and a recovery path.
+
+### How it works
+
+`use-auth.tsx` — `AuthProvider` now tracks a `loadingPhase` state (`"loading" | "slow" | "timeout"`) exported via context:
+
+| Timer | Phase change | Effect |
+|-------|-------------|--------|
+| 4 seconds | `"loading"` → `"slow"` | Message changes to "Server is starting up…" |
+| 12 seconds | `"slow"` → `"timeout"` | Spinner stops; "Retry" button appears; `offlineChecked` forced `true` to unblock `isLoading` |
+
+`App.tsx` — `LoadingScreen` accepts a `phase` prop and renders phase-appropriate UI:
+- **loading**: normal spinner + "Loading..."
+- **slow**: spinning ring + "Server is starting up… This may take a few seconds"
+- **timeout**: static ring + "Server is taking too long to respond" + saffron **Retry** button (`window.location.reload()`)
+
+At timeout, forcing `offlineChecked = true` unblocks `isLoading`, allowing the app to redirect to `/login` even without a server response.
+
+---
+
+## 25. Seed Database Workflow (June 2026)
+
+Added a `Seed Database` workflow to the Replit workflow panel (visible under the Run button dropdown).
+
+**Command:** `pnpm --filter @workspace/api-server run seed`  
+**Output type:** console (one-shot, exits after completion)
+
+The seed script compiles `src/scripts/seed.ts` via esbuild to `dist/scripts/seed.mjs` and runs it. Using `npx tsx` directly would fail because the script imports `@workspace/db` — a workspace package that requires pnpm's workspace resolution and the esbuild compile step.
 
 ---
 

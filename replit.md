@@ -9,7 +9,7 @@ A full-stack CSC (Common Service Center) business management platform for tracki
 | Workflow | Command | Port | Purpose |
 |----------|---------|------|---------|
 | `Start application` | Runs API (8082) + Frontend (5000) together | 5000 → :80 | **Main workflow — use this** |
-| `Seed Database` | `pnpm --filter @workspace/api-server run seed` | — | Seed/reseed sample data |
+| `Seed Database` | `pnpm --filter @workspace/api-server run seed` | — | Seed/reseed sample data (one-shot, exits when done) |
 
 > **Note:** `Start application` runs both the Express API (port **8082**) and the Vite frontend (port 5000) in a single workflow. Port 5000 is mapped to external port 80 (Replit proxy). Always use the `Start application` workflow — do NOT run separate API/frontend workflows as they cause port conflicts.
 >
@@ -440,7 +440,7 @@ Full config in `infrastructure/twa/twa-config.json`.
 | **Active Sessions** | View all devices, revoke individual sessions, logout other devices, logout everywhere | All users |
 | **App & Offline** | Network status, sync queue, storage usage, install status, push notifications, device caps | All users |
 | **Server Health** | Live API server status, DB connection + latency, VAPID key status, memory & CPU — at `/server-health` | Admin only |
-| **Users Overview** | Admin view of all users' ledger balances and summaries | Admin only |
+| **Users / Cash Overview** | User management + Cash Overview tab: all users' ledger balances (admin) | Admin only |
 | **User Management** | Create/edit/deactivate users, change roles (role changes are audit-logged) | Admin only |
 | **Audit Logs** | Full audit trail including login failures, role changes, session events, all admin actions | Admin only |
 | **Settings** | Business info, language, theme, auto-backup config | Admin only |
@@ -477,6 +477,7 @@ Full config in `infrastructure/twa/twa-config.json`.
 - **`connect-pg-simple` must NOT be bundled by esbuild**: It reads `table.sql` via `path.join(__dirname, 'table.sql')` at runtime. Bundling breaks that path — sessions silently fail. It is listed in `external` in `artifacts/api-server/build.mjs`. Do not remove it.
 - **Login redirect uses `setQueryData`, not refetch**: After login, `use-auth.tsx` sets `queryClient.setQueryData(["auth/me"], userData)` directly from the login response body. A `useEffect` in `login.tsx` then fires `setLocation("/")` when `user` becomes truthy. Never replace this with an invalidate+refetch pattern — the Replit proxy introduces a delay before the session cookie is forwarded, which causes a transient 401 that cancels the redirect.
 - **Auth `isLoading` must use `||` not `&&`**: In `use-auth.tsx`, the guard is `isLoading = liveLoading || !offlineChecked`. Using `&&` causes the app to briefly consider the user unauthenticated on page refresh (offline check completes before live fetch), triggering an incorrect logout redirect.
+- **LoadingScreen has a 3-phase timeout**: `AuthProvider` exposes `loadingPhase: "loading" | "slow" | "timeout"`. After 4 s → "slow" (message changes). After 12 s → "timeout" (spinner stops, Retry button shown, `offlineChecked` forced `true` to unblock redirect to login). Forcing `offlineChecked` at timeout is intentional — it ensures the app does not hang forever if the API never responds.
 - **Login page `h-screen` must not be changed to `min-h-screen`**: Both `MobileLogin` and `DesktopLogin` use `h-screen overflow-hidden` to keep all content within the viewport without scrolling. Changing to `min-h-screen` causes the page to scroll on short screens.
 - **Responsive table pattern**: For pages with data tables, always render both a mobile card list (`sm:hidden`) and a desktop table (`hidden sm:block`). Do not use `overflow-x-auto` alone as a mobile solution — it produces poor UX on phones. Tables inside dialogs use `overflow-x-auto` with `min-w-[480px]` since the dialog already constrains width.
 - **`willChange: transform` on an ancestor breaks `position: fixed`**: The page-transition `motion.div` in `App.tsx` must NOT have `willChange: "opacity, transform"` or any active CSS transform. When a parent has `willChange: transform`, it becomes a new containing block for `position: fixed` children — making them position relative to that div instead of the viewport. The bottom nav has correct `fixed bottom-0` CSS; never add `willChange: transform` to any of its ancestor elements. Framer Motion handles GPU compositing internally without needing an explicit `willChange` hint.
