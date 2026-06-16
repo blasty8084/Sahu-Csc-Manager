@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, lazy, Suspense } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -11,34 +11,37 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useIdleTimer } from "@/hooks/use-idle-timer";
 import { SplashScreen } from "@/components/splash-screen";
-import NotFound from "@/pages/not-found";
-
-import Login from "@/pages/login";
-import Register from "@/pages/register";
-import RegistrationClosed from "@/pages/register-closed";
-import RegisterPending from "@/pages/register-pending";
-import ForgotPassword from "@/pages/forgot-password";
-import ResetPassword from "@/pages/reset-password";
-import Sessions from "@/pages/sessions";
-import Dashboard from "@/pages/dashboard";
-import Ledger from "@/pages/ledger";
-import Services from "@/pages/services";
-import Reports from "@/pages/reports";
-import Notifications from "@/pages/notifications";
-import AuditLogs from "@/pages/audit-logs";
-import Users from "@/pages/users";
-import UsersOverview from "@/pages/users-overview";
-import Settings from "@/pages/settings";
-import Backups from "@/pages/backups";
-import AePS from "@/pages/aeps";
-import Profile from "@/pages/profile";
-import Offline from "@/pages/offline";
-import PwaStatus from "@/pages/pwa-status";
-import ServerHealth from "@/pages/server-health";
-import DownloadApp from "@/pages/download-app";
-import { Redirect } from "wouter";
 import { useListNotifications } from "@workspace/api-client-react";
 import { updateAppBadge } from "@/lib/pwa-badge";
+import { Redirect } from "wouter";
+
+// ─── Static imports (tiny / needed on first paint) ───────────────────────────
+import Login from "@/pages/login";
+import NotFound from "@/pages/not-found";
+import Offline from "@/pages/offline";
+
+// ─── Lazy-loaded pages (each becomes its own JS chunk) ───────────────────────
+const Register           = lazy(() => import("@/pages/register"));
+const RegistrationClosed = lazy(() => import("@/pages/register-closed"));
+const RegisterPending    = lazy(() => import("@/pages/register-pending"));
+const ForgotPassword     = lazy(() => import("@/pages/forgot-password"));
+const ResetPassword      = lazy(() => import("@/pages/reset-password"));
+const Sessions           = lazy(() => import("@/pages/sessions"));
+const Dashboard          = lazy(() => import("@/pages/dashboard"));
+const Ledger             = lazy(() => import("@/pages/ledger"));
+const Services           = lazy(() => import("@/pages/services"));
+const Reports            = lazy(() => import("@/pages/reports"));
+const Notifications      = lazy(() => import("@/pages/notifications"));
+const AuditLogs          = lazy(() => import("@/pages/audit-logs"));
+const Users              = lazy(() => import("@/pages/users"));
+const UsersOverview      = lazy(() => import("@/pages/users-overview"));
+const Settings           = lazy(() => import("@/pages/settings"));
+const Backups            = lazy(() => import("@/pages/backups"));
+const AePS               = lazy(() => import("@/pages/aeps"));
+const Profile            = lazy(() => import("@/pages/profile"));
+const PwaStatus          = lazy(() => import("@/pages/pwa-status"));
+const ServerHealth       = lazy(() => import("@/pages/server-health"));
+const DownloadApp        = lazy(() => import("@/pages/download-app"));
 
 // ─── QueryClient ──────────────────────────────────────────────────────────────
 function detectSessionReplaced(error: any) {
@@ -159,7 +162,7 @@ function SessionManager() {
   );
 }
 
-// ─── Circular loading screen ──────────────────────────────────────────────────
+// ─── Full-screen loading (used while auth is resolving) ───────────────────────
 function LoadingScreen() {
   return (
     <div
@@ -172,7 +175,6 @@ function LoadingScreen() {
         transition={{ duration: 0.4, ease: [0.34, 1.4, 0.64, 1] }}
         className="relative flex items-center justify-center"
       >
-        {/* Spinning ring */}
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1.4, repeat: Infinity, ease: "linear" }}
@@ -184,7 +186,6 @@ function LoadingScreen() {
             willChange: "transform",
           }}
         />
-        {/* Circular logo */}
         <div
           className="w-20 h-20 rounded-full overflow-hidden shadow-xl"
           style={{ border: "2.5px solid rgba(255,255,255,0.15)" }}
@@ -208,6 +209,22 @@ function LoadingScreen() {
         </p>
         <p className="text-white/35 text-xs mt-0.5">Loading...</p>
       </motion.div>
+    </div>
+  );
+}
+
+// ─── Lightweight page-transition fallback (tiny CSS spinner, no framer-motion) ─
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <div
+        style={{
+          width: 32, height: 32, borderRadius: "50%",
+          border: "3px solid rgba(249,115,22,0.25)",
+          borderTopColor: "#f97316",
+          animation: "spin 0.7s linear infinite",
+        }}
+      />
     </div>
   );
 }
@@ -255,35 +272,37 @@ function Router() {
         transition={{ duration: 0.15, ease: "easeOut" }}
         style={{ minHeight: "100vh" }}
       >
-        <Switch>
-          <Route path="/login" component={Login} />
-          <Route path="/register" component={Register} />
-          <Route path="/register/closed" component={RegistrationClosed} />
-          <Route path="/register/pending" component={RegisterPending} />
-          <Route path="/forgot-password" component={ForgotPassword} />
-          <Route path="/reset-password" component={ResetPassword} />
-          <Route path="/">{() => <ProtectedRoute component={Dashboard} />}</Route>
-          <Route path="/ledger">{() => <ProtectedRoute component={Ledger} />}</Route>
-          <Route path="/services">{() => <ProtectedRoute component={Services} />}</Route>
-          <Route path="/reports">{() => <ProtectedRoute component={Reports} />}</Route>
-          <Route path="/aeps">{() => <ProtectedRoute component={AePS} />}</Route>
-          <Route path="/notifications">{() => <ProtectedRoute component={Notifications} />}</Route>
-          <Route path="/profile">{() => <ProtectedRoute component={Profile} />}</Route>
-          <Route path="/preferences">{() => <Redirect to="/profile" />}</Route>
-          <Route path="/users">{() => <ProtectedRoute component={Users} adminOnly />}</Route>
-          <Route path="/users-overview">{() => <ProtectedRoute component={UsersOverview} adminOnly />}</Route>
-          <Route path="/audit-logs">{() => <ProtectedRoute component={AuditLogs} adminOnly />}</Route>
-          <Route path="/settings">{() => <ProtectedRoute component={Settings} adminOnly />}</Route>
-          <Route path="/backups">{() => <ProtectedRoute component={Backups} adminOnly />}</Route>
-          <Route path="/sessions">{() => <ProtectedRoute component={Sessions} />}</Route>
-          <Route path="/pwa-status">{() => <ProtectedRoute component={PwaStatus} />}</Route>
-          <Route path="/server-health">{() => <ProtectedRoute component={ServerHealth} />}</Route>
-          <Route path="/download-app">{() => <ProtectedRoute component={DownloadApp} />}</Route>
-          <Route path="/share-target" component={ShareTargetHandler} />
-          <Route path="/offline" component={Offline} />
-          <Route path="/open-file">{() => <ProtectedRoute component={Ledger} />}</Route>
-          <Route component={NotFound} />
-        </Switch>
+        <Suspense fallback={<PageLoader />}>
+          <Switch>
+            <Route path="/login" component={Login} />
+            <Route path="/register" component={Register} />
+            <Route path="/register/closed" component={RegistrationClosed} />
+            <Route path="/register/pending" component={RegisterPending} />
+            <Route path="/forgot-password" component={ForgotPassword} />
+            <Route path="/reset-password" component={ResetPassword} />
+            <Route path="/">{() => <ProtectedRoute component={Dashboard} />}</Route>
+            <Route path="/ledger">{() => <ProtectedRoute component={Ledger} />}</Route>
+            <Route path="/services">{() => <ProtectedRoute component={Services} />}</Route>
+            <Route path="/reports">{() => <ProtectedRoute component={Reports} />}</Route>
+            <Route path="/aeps">{() => <ProtectedRoute component={AePS} />}</Route>
+            <Route path="/notifications">{() => <ProtectedRoute component={Notifications} />}</Route>
+            <Route path="/profile">{() => <ProtectedRoute component={Profile} />}</Route>
+            <Route path="/preferences">{() => <Redirect to="/profile" />}</Route>
+            <Route path="/users">{() => <ProtectedRoute component={Users} adminOnly />}</Route>
+            <Route path="/users-overview">{() => <ProtectedRoute component={UsersOverview} adminOnly />}</Route>
+            <Route path="/audit-logs">{() => <ProtectedRoute component={AuditLogs} adminOnly />}</Route>
+            <Route path="/settings">{() => <ProtectedRoute component={Settings} adminOnly />}</Route>
+            <Route path="/backups">{() => <ProtectedRoute component={Backups} adminOnly />}</Route>
+            <Route path="/sessions">{() => <ProtectedRoute component={Sessions} />}</Route>
+            <Route path="/pwa-status">{() => <ProtectedRoute component={PwaStatus} />}</Route>
+            <Route path="/server-health">{() => <ProtectedRoute component={ServerHealth} adminOnly />}</Route>
+            <Route path="/download-app">{() => <ProtectedRoute component={DownloadApp} />}</Route>
+            <Route path="/share-target" component={ShareTargetHandler} />
+            <Route path="/offline" component={Offline} />
+            <Route path="/open-file">{() => <ProtectedRoute component={Ledger} />}</Route>
+            <Route component={NotFound} />
+          </Switch>
+        </Suspense>
       </motion.div>
     </AnimatePresence>
   );

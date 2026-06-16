@@ -9,7 +9,7 @@ interface SplashScreenProps {
 export function SplashScreen({ visible, onDone }: SplashScreenProps) {
   useEffect(() => {
     if (!visible) return;
-    const t = setTimeout(onDone, 2400);
+    const t = setTimeout(onDone, 1200);
     return () => clearTimeout(t);
   }, [visible, onDone]);
 
