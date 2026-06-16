@@ -916,6 +916,51 @@ This `useEffect` serves as a safety net — if `user` is already set (e.g., brow
 
 ---
 
+## 23. Bottom Navigation Bar Fixed to Viewport (June 2026)
+
+> Applied after Replit environment migration.
+
+---
+
+### Bug Fix: Mobile Bottom Nav Scrolled With Page Instead of Staying Fixed
+
+**Symptom:** The mobile bottom navigation bar (Dashboard / Ledger / AePS / Profile) scrolled away with the page content instead of staying pinned at the bottom of the viewport.
+
+**Root cause:** In `App.tsx`, the `Router` component wrapped every page in a Framer Motion `<motion.div>` for page-transition animations:
+
+```tsx
+<motion.div
+  key={location}
+  initial={{ opacity: 0, y: 5 }}
+  animate={{ opacity: 1, y: 0 }}
+  exit={{ opacity: 0, y: -5 }}
+  transition={{ duration: 0.15, ease: "easeOut" }}
+  style={{ minHeight: "100vh", willChange: "opacity, transform" }}  // ← culprit
+>
+```
+
+The `willChange: "opacity, transform"` CSS property causes the browser to promote the element to its own compositor layer. A **side effect** of this promotion is that the element becomes a new **containing block** for any `position: fixed` descendants. This is specified CSS behaviour — `position: fixed` is only relative to the viewport when no ancestor has `transform`, `perspective`, `filter`, or `willChange` applied. Because the bottom `<nav>` (with `position: fixed bottom-0`) lived inside this `motion.div`, it was positioned relative to that div rather than the viewport, and therefore scrolled with the content.
+
+**Why the nav already had correct CSS:** The `<nav>` in `layout.tsx` already had `className="md:hidden fixed bottom-0 left-0 right-0 z-30"` and `<main>` already had `pb-24`. The CSS was always correct — the containing block was the problem.
+
+**Fix applied (`artifacts/sahu-csc/src/App.tsx`):**
+
+```tsx
+// Before (broken — willChange: transform creates new containing block for position: fixed):
+style={{ minHeight: "100vh", willChange: "opacity, transform" }}
+
+// After (correct — Framer Motion handles GPU compositing internally):
+style={{ minHeight: "100vh" }}
+```
+
+Framer Motion uses GPU acceleration for `opacity` and `y` animations internally without needing an explicit `willChange` hint. Removing it has no effect on animation quality or performance, but restores correct `position: fixed` behaviour for the bottom nav and any other fixed elements in the app.
+
+| Fix | File | What Changed |
+|-----|------|-------------|
+| Remove `willChange` from page-transition wrapper | `artifacts/sahu-csc/src/App.tsx` | Removed `willChange: "opacity, transform"` from `motion.div` style prop |
+
+---
+
 ## 19. Future Work Items
 
 The following features are architected or partially wired but not yet fully active:

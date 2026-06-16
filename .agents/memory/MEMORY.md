@@ -10,3 +10,4 @@
 - [Session store pool fix](session-store-pool.md) — connect-pg-simple must use shared `pool` from @workspace/db, not conString; conString creates a silent-fail separate pool; session table must exist (create manually or set createTableIfMissing: true)
 - [connect-pg-simple esbuild external](session-store-pool.md) — must be in `external` in build.mjs; esbuild bundling breaks its internal `table.sql` path lookup and sessions silently never persist
 - [Login redirect via setQueryData](login-redirect-setquerydata.md) — after login, set auth cache directly from response body; refetch causes race condition through Replit proxy; login.tsx useEffect fires redirect when user becomes truthy
+- [willChange breaks position fixed](willchange-fixed-nav.md) — page-transition motion.div must NOT have willChange: transform; it creates a new CSS containing block breaking position: fixed on the bottom nav

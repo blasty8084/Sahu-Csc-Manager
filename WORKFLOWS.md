@@ -358,7 +358,7 @@ When a new agent session starts on this project, do the following before writing
 
 1. **Read this file** (`WORKFLOWS.md`) — understand how the app starts
 2. **Read `replit.md`** — full project overview, tech stack, credentials, gotchas
-3. **Read `CHANGELOG.md` Sections 20–22** — recent bug fixes applied during Replit migration
+3. **Read `CHANGELOG.md` Sections 20–23** — recent bug fixes applied during Replit migration
 4. **Check workflow status** — use `getWorkflowStatus("Start application")` to confirm the app is running
 5. **Verify ports** — `curl http://localhost:5000/` and `curl http://localhost:8082/api/healthz` must return 200 before making changes
 
@@ -368,3 +368,4 @@ When a new agent session starts on this project, do the following before writing
 - Start separate `api-server` or `sahu-csc` workflows alongside `Start application` — port conflicts will cause 502 errors
 - Use port 21700 for the frontend — the correct frontend port is **5000**
 - Remove `connect-pg-simple` from `externals` in `build.mjs` — esbuild bundling it causes a `table.sql ENOENT` error that silently breaks all session persistence
+- Add `willChange: transform` to any ancestor of the bottom `<nav>` — this breaks `position: fixed` and causes the nav to scroll with the page (see CHANGELOG section 23)

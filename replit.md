@@ -398,6 +398,7 @@ Full config in `infrastructure/twa/twa-config.json`.
 
 ## Architecture Decisions
 
+- **Page transitions must not use `willChange: transform`**: The Framer Motion page-transition `motion.div` in `App.tsx` uses `style={{ minHeight: "100vh" }}` (no `willChange`). Any `willChange: transform` on an ancestor would create a new containing block for `position: fixed` descendants, breaking the bottom nav's viewport pinning. Framer Motion handles GPU compositing for `opacity`/`y` animations internally — the explicit hint is not needed.
 - **Contract-first API**: OpenAPI spec → Orval codegen → typed React Query hooks. Never edit `lib/api-client-react/src/generated/` directly.
 - **Session-based auth**: express-session + bcrypt. No JWTs — simpler for single-center CSC use case.
 - **PostgreSQL session store**: `connect-pg-simple` stores express-session data in the `session` DB table. Sessions survive server restarts — users stay logged in. The table is auto-created by connect-pg-simple on first startup.
@@ -478,6 +479,7 @@ Full config in `infrastructure/twa/twa-config.json`.
 - **Auth `isLoading` must use `||` not `&&`**: In `use-auth.tsx`, the guard is `isLoading = liveLoading || !offlineChecked`. Using `&&` causes the app to briefly consider the user unauthenticated on page refresh (offline check completes before live fetch), triggering an incorrect logout redirect.
 - **Login page `h-screen` must not be changed to `min-h-screen`**: Both `MobileLogin` and `DesktopLogin` use `h-screen overflow-hidden` to keep all content within the viewport without scrolling. Changing to `min-h-screen` causes the page to scroll on short screens.
 - **Responsive table pattern**: For pages with data tables, always render both a mobile card list (`sm:hidden`) and a desktop table (`hidden sm:block`). Do not use `overflow-x-auto` alone as a mobile solution — it produces poor UX on phones. Tables inside dialogs use `overflow-x-auto` with `min-w-[480px]` since the dialog already constrains width.
+- **`willChange: transform` on an ancestor breaks `position: fixed`**: The page-transition `motion.div` in `App.tsx` must NOT have `willChange: "opacity, transform"` or any active CSS transform. When a parent has `willChange: transform`, it becomes a new containing block for `position: fixed` children — making them position relative to that div instead of the viewport. The bottom nav has correct `fixed bottom-0` CSS; never add `willChange: transform` to any of its ancestor elements. Framer Motion handles GPU compositing internally without needing an explicit `willChange` hint.
 
 ---
 
