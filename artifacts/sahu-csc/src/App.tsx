@@ -253,7 +253,7 @@ function Router() {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -5 }}
         transition={{ duration: 0.15, ease: "easeOut" }}
-        style={{ minHeight: "100vh", willChange: "opacity, transform" }}
+        style={{ minHeight: "100vh" }}
       >
         <Switch>
           <Route path="/login" component={Login} />
