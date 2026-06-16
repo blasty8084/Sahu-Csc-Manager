@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from "@ta
 import { motion, AnimatePresence } from "framer-motion";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider, useAuth } from "@/hooks/use-auth";
+import { AuthProvider, useAuth, type LoadingPhase } from "@/hooks/use-auth";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -163,7 +163,7 @@ function SessionManager() {
 }
 
 // ─── Full-screen loading (used while auth is resolving) ───────────────────────
-function LoadingScreen() {
+function LoadingScreen({ phase = "loading" }: { phase?: LoadingPhase }) {
   return (
     <div
       className="fixed inset-0 z-50 flex flex-col items-center justify-center"
@@ -175,26 +175,31 @@ function LoadingScreen() {
         transition={{ duration: 0.4, ease: [0.34, 1.4, 0.64, 1] }}
         className="relative flex items-center justify-center"
       >
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1.4, repeat: Infinity, ease: "linear" }}
-          className="absolute w-24 h-24 rounded-full"
-          style={{
-            border: "2px solid transparent",
-            borderTopColor: "#F97316",
-            borderRightColor: "rgba(249,115,22,0.2)",
-            willChange: "transform",
-          }}
-        />
+        {/* Spinner — stops spinning on timeout */}
+        {phase !== "timeout" && (
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1.4, repeat: Infinity, ease: "linear" }}
+            className="absolute w-24 h-24 rounded-full"
+            style={{
+              border: "2px solid transparent",
+              borderTopColor: "#F97316",
+              borderRightColor: "rgba(249,115,22,0.2)",
+              willChange: "transform",
+            }}
+          />
+        )}
+        {phase === "timeout" && (
+          <div
+            className="absolute w-24 h-24 rounded-full"
+            style={{ border: "2px solid rgba(249,115,22,0.25)" }}
+          />
+        )}
         <div
           className="w-20 h-20 rounded-full overflow-hidden shadow-xl"
           style={{ border: "2.5px solid rgba(255,255,255,0.15)" }}
         >
-          <img
-            src="/sahu-logo.png"
-            alt="SAHU CSC"
-            className="w-full h-full object-cover"
-          />
+          <img src="/sahu-logo.png" alt="SAHU CSC" className="w-full h-full object-cover" />
         </div>
       </motion.div>
 
@@ -202,12 +207,43 @@ function LoadingScreen() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.25, duration: 0.4 }}
-        className="mt-5 text-center"
+        className="mt-5 text-center space-y-2"
       >
         <p className="text-white font-black text-base tracking-wide">
           SAHU <span style={{ color: "#F97316" }}>CSC</span>
         </p>
-        <p className="text-white/35 text-xs mt-0.5">Loading...</p>
+
+        {phase === "loading" && (
+          <p className="text-white/35 text-xs">Loading...</p>
+        )}
+
+        {phase === "slow" && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="space-y-1"
+          >
+            <p className="text-white/60 text-xs">Server is starting up…</p>
+            <p className="text-white/30 text-[10px]">This may take a few seconds</p>
+          </motion.div>
+        )}
+
+        {phase === "timeout" && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="space-y-3"
+          >
+            <p className="text-white/60 text-xs">Server is taking too long to respond</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="text-xs font-semibold px-4 py-1.5 rounded-full"
+              style={{ background: "#F97316", color: "#fff" }}
+            >
+              Retry
+            </button>
+          </motion.div>
+        )}
       </motion.div>
     </div>
   );
@@ -216,7 +252,7 @@ function LoadingScreen() {
 
 // ─── Route protection ─────────────────────────────────────────────────────────
 function ProtectedRoute({ component: Component, adminOnly = false, ...rest }: any) {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, loadingPhase } = useAuth();
   const [location, setLocation] = useLocation();
 
   React.useEffect(() => {
@@ -225,7 +261,7 @@ function ProtectedRoute({ component: Component, adminOnly = false, ...rest }: an
     }
   }, [user, isLoading, location, setLocation]);
 
-  if (isLoading) return <LoadingScreen />;
+  if (isLoading) return <LoadingScreen phase={loadingPhase} />;
 
   if (!user) return null;
 

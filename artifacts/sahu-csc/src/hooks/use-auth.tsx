@@ -14,9 +14,12 @@ export interface LoginData extends LoginInput {
   rememberMe?: boolean;
 }
 
+export type LoadingPhase = "loading" | "slow" | "timeout";
+
 interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
+  loadingPhase: LoadingPhase;
   login: (data: LoginData) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -38,6 +41,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const [offlineUser, setOfflineUser] = React.useState<AuthUser | null>(null);
   const [offlineChecked, setOfflineChecked] = React.useState(false);
+  const [loadingPhase, setLoadingPhase] = React.useState<LoadingPhase>("loading");
+
+  // After 4s still loading → show "slow" message; after 12s → force past loading
+  useEffect(() => {
+    if (!liveLoading && offlineChecked) return;
+    const slowTimer = setTimeout(() => setLoadingPhase("slow"), 4_000);
+    const timeoutTimer = setTimeout(() => {
+      setLoadingPhase("timeout");
+      setOfflineChecked(true); // unblock isLoading so the app can redirect to login
+    }, 12_000);
+    return () => { clearTimeout(slowTimer); clearTimeout(timeoutTimer); };
+  }, [liveLoading, offlineChecked]);
 
   useEffect(() => {
     if (!navigator.onLine && !liveUser) {
@@ -107,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isLoading = liveLoading || !offlineChecked;
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login: handleLogin, logout: handleLogout }}>
+    <AuthContext.Provider value={{ user, isLoading, loadingPhase, login: handleLogin, logout: handleLogout }}>
       {children}
     </AuthContext.Provider>
   );
