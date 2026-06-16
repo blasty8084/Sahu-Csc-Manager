@@ -35,7 +35,6 @@ const Reports            = lazy(() => import("@/pages/reports"));
 const Notifications      = lazy(() => import("@/pages/notifications"));
 const AuditLogs          = lazy(() => import("@/pages/audit-logs"));
 const Users              = lazy(() => import("@/pages/users"));
-const UsersOverview      = lazy(() => import("@/pages/users-overview"));
 const Settings           = lazy(() => import("@/pages/settings"));
 const Backups            = lazy(() => import("@/pages/backups"));
 const AePS               = lazy(() => import("@/pages/aeps"));
@@ -275,7 +274,7 @@ function Router() {
             <Route path="/profile">{() => <ProtectedRoute component={Profile} />}</Route>
             <Route path="/preferences">{() => <Redirect to="/profile" />}</Route>
             <Route path="/users">{() => <ProtectedRoute component={Users} adminOnly />}</Route>
-            <Route path="/users-overview">{() => <ProtectedRoute component={UsersOverview} adminOnly />}</Route>
+            <Route path="/users-overview">{() => <Redirect to="/users" />}</Route>
             <Route path="/audit-logs">{() => <ProtectedRoute component={AuditLogs} adminOnly />}</Route>
             <Route path="/settings">{() => <ProtectedRoute component={Settings} adminOnly />}</Route>
             <Route path="/backups">{() => <ProtectedRoute component={Backups} adminOnly />}</Route>

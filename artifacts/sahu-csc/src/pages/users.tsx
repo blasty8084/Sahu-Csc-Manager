@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useListUsers, useCreateUser, useUpdateUser, useDeleteUser, getListUsersQueryKey, UserInputRole } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { customFetch } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,9 +15,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { usePendingCount } from "@/hooks/use-pending-count";
-import { Plus, Pencil, Trash2, CheckCircle2, XCircle, Clock, Users as UsersIcon } from "lucide-react";
+import {
+  Plus, Pencil, Trash2, CheckCircle2, XCircle, Clock,
+  Users as UsersIcon, TrendingUp, TrendingDown, Wallet, Receipt, ChevronRight,
+} from "lucide-react";
 import { useForm } from "react-hook-form";
-import { useQuery } from "@tanstack/react-query";
 
 interface UserForm {
   username: string;
@@ -34,7 +37,11 @@ const ROLE_COLORS: Record<string, string> = {
   user: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300",
 };
 
-type Tab = "pending" | "active" | "all";
+type Tab = "pending" | "active" | "all" | "overview";
+
+function fmt(n: number) {
+  return `₹${Math.abs(n).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+}
 
 function usePendingUsers() {
   return useQuery<any[]>({
@@ -48,6 +55,162 @@ function usePendingUsers() {
     staleTime: 20_000,
     refetchInterval: 30_000,
   });
+}
+
+function useUsersOverview() {
+  return useQuery({
+    queryKey: ["admin", "users-overview"],
+    queryFn: () => customFetch<any[]>("/api/admin/users-overview"),
+  });
+}
+
+function useUserLedger(userId: number | null, page: number) {
+  return useQuery({
+    queryKey: ["admin", "user-ledger", userId, page],
+    queryFn: () => customFetch<any>(`/api/admin/users-overview/${userId}/ledger?page=${page}&limit=15`),
+    enabled: userId !== null,
+  });
+}
+
+function CashOverviewTab() {
+  const { data: users, isLoading } = useUsersOverview();
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [page, setPage] = useState(1);
+  const { data: ledger, isLoading: ledgerLoading } = useUserLedger(selectedUser?.userId ?? null, page);
+
+  const openUser = (u: any) => { setSelectedUser(u); setPage(1); };
+  const close = () => { setSelectedUser(null); setPage(1); };
+
+  return (
+    <>
+      {isLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-40 rounded-xl" />)}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {users?.map((u: any) => (
+            <div
+              key={u.userId}
+              className="bg-card border rounded-xl p-5 space-y-4 hover:shadow-md transition-shadow cursor-pointer"
+              onClick={() => openUser(u)}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-10 w-10">
+                    <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                      {(u.fullName || u.username).charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-semibold leading-tight">{u.fullName || u.username}</p>
+                    <p className="text-xs text-muted-foreground">@{u.username}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs px-2 py-0.5 rounded font-medium ${ROLE_COLORS[u.role] ?? ""}`}>{u.role}</span>
+                  {!u.isActive && <Badge variant="secondary" className="text-xs">Inactive</Badge>}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="bg-muted/40 rounded-lg p-2">
+                  <Wallet size={14} className="mx-auto text-primary mb-1" />
+                  <p className={`text-sm font-bold ${u.balance >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                    {u.balance < 0 ? "-" : ""}{fmt(u.balance)}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">Balance</p>
+                </div>
+                <div className="bg-muted/40 rounded-lg p-2">
+                  <TrendingUp size={14} className="mx-auto text-green-500 mb-1" />
+                  <p className="text-sm font-bold text-green-600 dark:text-green-400">{fmt(u.totalCredits)}</p>
+                  <p className="text-[10px] text-muted-foreground">Credits</p>
+                </div>
+                <div className="bg-muted/40 rounded-lg p-2">
+                  <TrendingDown size={14} className="mx-auto text-red-500 mb-1" />
+                  <p className="text-sm font-bold text-red-600 dark:text-red-400">{fmt(u.totalDebits)}</p>
+                  <p className="text-[10px] text-muted-foreground">Debits</p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span className="flex items-center gap-1"><Receipt size={11} /> {u.totalTransactions} transactions</span>
+                {u.lastEntry && <span>Last: {u.lastEntry.date}</span>}
+                <ChevronRight size={14} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <Dialog open={!!selectedUser} onOpenChange={close}>
+        <DialogContent className="max-w-2xl w-[95vw] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Avatar className="h-7 w-7">
+                <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                  {(selectedUser?.fullName || selectedUser?.username || "U").charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              {selectedUser?.fullName || selectedUser?.username}'s Ledger
+            </DialogTitle>
+          </DialogHeader>
+
+          {ledgerLoading ? (
+            <div className="space-y-2">{[...Array(5)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
+          ) : ledger?.entries?.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">No transactions yet</p>
+          ) : (
+            <>
+              <div className="overflow-x-auto -mx-1">
+                <table className="w-full text-sm min-w-[480px]">
+                  <thead className="border-b bg-muted/30">
+                    <tr className="text-left">
+                      <th className="px-3 py-2 text-xs font-medium text-muted-foreground">Date</th>
+                      <th className="px-3 py-2 text-xs font-medium text-muted-foreground">Customer</th>
+                      <th className="px-3 py-2 text-xs font-medium text-muted-foreground">Service</th>
+                      <th className="px-3 py-2 text-xs font-medium text-muted-foreground text-right">Credit</th>
+                      <th className="px-3 py-2 text-xs font-medium text-muted-foreground text-right">Debit</th>
+                      <th className="px-3 py-2 text-xs font-medium text-muted-foreground text-right">Balance</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {ledger?.entries?.map((e: any) => (
+                      <tr key={e.id} className="hover:bg-muted/20">
+                        <td className="px-3 py-2 text-xs text-muted-foreground">{e.date}</td>
+                        <td className="px-3 py-2 text-xs">{e.customerName}</td>
+                        <td className="px-3 py-2 text-xs text-muted-foreground">{e.serviceType}</td>
+                        <td className="px-3 py-2 text-xs text-right text-green-600 dark:text-green-400">
+                          {e.credit > 0 ? fmt(e.credit) : "—"}
+                        </td>
+                        <td className="px-3 py-2 text-xs text-right text-red-600 dark:text-red-400">
+                          {e.debit > 0 ? fmt(e.debit) : "—"}
+                        </td>
+                        <td className={`px-3 py-2 text-xs text-right font-medium ${e.balance >= 0 ? "text-foreground" : "text-red-600"}`}>
+                          {fmt(e.balance)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {ledger && ledger.total > ledger.limit && (
+                <div className="flex items-center justify-between pt-2">
+                  <span className="text-xs text-muted-foreground">{ledger.total} total entries</span>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="h-7 text-xs" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Prev</Button>
+                    <span className="text-xs self-center">Page {page}</span>
+                    <Button variant="outline" size="sm" className="h-7 text-xs" disabled={page * ledger.limit >= ledger.total} onClick={() => setPage(p => p + 1)}>Next</Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
+  );
 }
 
 export default function Users() {
@@ -174,22 +337,25 @@ export default function Users() {
             <h2 className="text-xl font-bold">User Management</h2>
             <p className="text-sm text-muted-foreground">{users?.length ?? 0} users total</p>
           </div>
-          <Button size="sm" onClick={openCreate} data-testid="button-new-user">
-            <Plus size={14} className="mr-1.5" />Add User
-          </Button>
+          {tab !== "overview" && (
+            <Button size="sm" onClick={openCreate} data-testid="button-new-user">
+              <Plus size={14} className="mr-1.5" />Add User
+            </Button>
+          )}
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 border-b border-border">
+        <div className="flex gap-1 border-b border-border overflow-x-auto">
           {([
             { key: "pending", label: "Pending", count: pendingCount },
             { key: "active", label: "Active", count: activeUsers.length },
             { key: "all", label: "All Users", count: users?.length ?? 0 },
+            { key: "overview", label: "Cash Overview", count: 0 },
           ] as { key: Tab; label: string; count: number }[]).map(({ key, label, count }) => (
             <button
               key={key}
               onClick={() => setTab(key)}
-              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${
                 tab === key ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -205,7 +371,10 @@ export default function Users() {
           ))}
         </div>
 
-        {isLoading ? (
+        {/* Cash Overview Tab */}
+        {tab === "overview" ? (
+          <CashOverviewTab />
+        ) : isLoading ? (
           <div className="space-y-3">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
         ) : displayedUsers.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
@@ -225,8 +394,8 @@ export default function Users() {
             )}
           </div>
         ) : tab === "pending" ? (
-          /* Pending tab — special approve/reject UI */
           <>
+            {/* Pending — mobile cards */}
             <div className="space-y-3 sm:hidden">
               {displayedUsers.map((user: any) => (
                 <div key={user.id} className="bg-card border border-amber-200 rounded-xl p-4 space-y-3">
@@ -259,6 +428,7 @@ export default function Users() {
               ))}
             </div>
 
+            {/* Pending — desktop table */}
             <div className="hidden sm:block border rounded-lg overflow-hidden bg-card">
               <table className="w-full text-sm">
                 <thead className="border-b bg-muted/30">
@@ -305,8 +475,8 @@ export default function Users() {
             </div>
           </>
         ) : (
-          /* Active / All tabs — existing UI */
           <>
+            {/* Active / All — mobile cards */}
             <div className="space-y-3 sm:hidden">
               {displayedUsers.map((user: any) => (
                 <div key={user.id} className="bg-card border rounded-xl p-4 space-y-3" data-testid={`row-user-${user.id}`}>
@@ -337,6 +507,8 @@ export default function Users() {
                 </div>
               ))}
             </div>
+
+            {/* Active / All — desktop table */}
             <div className="hidden sm:block border rounded-lg overflow-hidden bg-card">
               <table className="w-full text-sm">
                 <thead className="border-b bg-muted/30">
@@ -473,9 +645,7 @@ export default function Users() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setRejectTarget(null); setRejectReason(""); }}>Cancel</Button>
-            <Button variant="destructive" onClick={confirmReject} disabled={actionLoading === rejectTarget?.id}>
-              {actionLoading === rejectTarget?.id ? "Rejecting..." : "Confirm Reject"}
-            </Button>
+            <Button variant="destructive" onClick={confirmReject} disabled={actionLoading === rejectTarget?.id}>Reject</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

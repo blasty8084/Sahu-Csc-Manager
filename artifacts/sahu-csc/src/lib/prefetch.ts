@@ -10,7 +10,6 @@ const routeImports: Record<string, () => Promise<unknown>> = {
   "/pwa-status":     () => import("@/pages/pwa-status"),
   "/download-app":   () => import("@/pages/download-app"),
   "/users":          () => import("@/pages/users"),
-  "/users-overview": () => import("@/pages/users-overview"),
   "/audit-logs":     () => import("@/pages/audit-logs"),
   "/settings":       () => import("@/pages/settings"),
   "/backups":        () => import("@/pages/backups"),

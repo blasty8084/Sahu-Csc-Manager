@@ -6,7 +6,7 @@ import { useTheme } from "@/components/theme-provider";
 import {
   LayoutDashboard, BookOpen, Briefcase, BarChart3, Bell,
   History, Users, Settings, Database, Menu,
-  Fingerprint, UserCircle, LayoutGrid, WifiOff, ArrowDownToLine, HeartPulse, MonitorSmartphone,
+  Fingerprint, UserCircle, WifiOff, ArrowDownToLine, HeartPulse, MonitorSmartphone,
   LogIn, Sun, Moon,
 } from "lucide-react";
 import { usePendingCount } from "@/hooks/use-pending-count";
@@ -230,7 +230,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
   ];
 
   const adminNavItems: NavItem[] = isAdmin ? [
-    { href: "/users-overview", label: "Users Overview", icon: LayoutGrid },
     { href: "/users", label: "User Management", icon: Users, badge: pendingCount },
     { href: "/audit-logs", label: "Audit Logs", icon: History },
     { href: "/backups", label: "Backups", icon: Database },
