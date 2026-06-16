@@ -2,11 +2,12 @@ import React, { useCallback } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useUnreadCount } from "@/hooks/use-notifications";
+import { useTheme } from "@/components/theme-provider";
 import {
   LayoutDashboard, BookOpen, Briefcase, BarChart3, Bell,
   History, Users, Settings, Database, Menu,
   Fingerprint, UserCircle, LayoutGrid, WifiOff, ArrowDownToLine, HeartPulse, MonitorSmartphone,
-  LogIn,
+  LogIn, Sun, Moon,
 } from "lucide-react";
 import { usePendingCount } from "@/hooks/use-pending-count";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,8 @@ interface SidebarNavProps {
   roleLabel: string;
   location: string;
   onLogout: () => void;
+  onToggleTheme: () => void;
+  isDark: boolean;
 }
 
 // Extracted as module-level component — stable reference prevents React from
@@ -47,6 +50,8 @@ function SidebarNav({
   roleLabel,
   location,
   onLogout,
+  onToggleTheme,
+  isDark,
 }: SidebarNavProps) {
   const isActive = (href: string) =>
     location === href || (href !== "/" && location.startsWith(href));
@@ -87,8 +92,8 @@ function SidebarNav({
                 onTouchStart={() => prefetch(item.href)}
               >
                 <div className="flex items-center gap-3">
-                  <Icon size={16} className={active ? "text-white" : "text-white/45"} />
-                  <span className="text-[13px] leading-none">{item.label}</span>
+                  <Icon size={15} className={active ? "text-white" : "text-white/45"} />
+                  <span className="text-[12px] leading-none">{item.label}</span>
                 </div>
                 {item.badge !== undefined && item.badge > 0 && (
                   <span className={`
@@ -125,8 +130,8 @@ function SidebarNav({
                     onFocus={() => prefetch(item.href)}
                     onTouchStart={() => prefetch(item.href)}
                   >
-                    <Icon size={16} className={active ? "text-white" : "text-white/45"} />
-                    <span className="text-[13px] leading-none">{item.label}</span>
+                    <Icon size={15} className={active ? "text-white" : "text-white/45"} />
+                    <span className="text-[12px] leading-none">{item.label}</span>
                     {item.badge !== undefined && item.badge > 0 && (
                       <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none bg-[#f97316] text-white">
                         {item.badge > 99 ? "99+" : item.badge}
@@ -160,9 +165,22 @@ function SidebarNav({
         </Link>
 
         <Link href="/profile" className="flex-1 min-w-0 cursor-pointer">
-          <p className="text-[13px] font-bold text-white leading-tight truncate">{displayName}</p>
+          <p className="text-[12px] font-bold text-white leading-tight truncate">{displayName}</p>
           <p className="text-[10px] text-white/45 mt-0.5 capitalize">{roleLabel}</p>
         </Link>
+
+        <button
+          onClick={onToggleTheme}
+          title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+          className="
+            flex-shrink-0 w-8 h-8 rounded-xl border border-white/15 bg-white/5
+            flex items-center justify-center
+            text-white/40 hover:text-white hover:border-white/30 hover:bg-white/12
+            transition-colors duration-100 cursor-pointer
+          "
+        >
+          {isDark ? <Sun size={13} /> : <Moon size={13} />}
+        </button>
 
         <button
           onClick={onLogout}
@@ -174,7 +192,7 @@ function SidebarNav({
             transition-colors duration-100 cursor-pointer
           "
         >
-          <LogIn size={14} className="rotate-180" />
+          <LogIn size={13} className="rotate-180" />
         </button>
       </div>
     </div>
@@ -184,6 +202,7 @@ function SidebarNav({
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, logout } = useAuth();
+  const { theme, setTheme } = useTheme();
 
   const { data: unreadCount = 0 } = useUnreadCount();
   const isAdmin = user?.role === "admin";
@@ -191,6 +210,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const pendingCount = isAdmin ? (pendingCountData?.count ?? 0) : 0;
 
   const handleLogout = useCallback(() => { logout(); }, [logout]);
+
+  const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const handleToggleTheme = useCallback(() => {
+    setTheme(isDark ? "light" : "dark");
+  }, [isDark, setTheme]);
 
   const mainNavItems: NavItem[] = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -243,6 +267,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
           roleLabel={roleLabel}
           location={location}
           onLogout={handleLogout}
+          onToggleTheme={handleToggleTheme}
+          isDark={isDark}
         />
       </div>
 
@@ -284,6 +310,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     roleLabel={roleLabel}
                     location={location}
                     onLogout={handleLogout}
+                    onToggleTheme={handleToggleTheme}
+                    isDark={isDark}
                   />
                 </SheetContent>
               </Sheet>
@@ -301,6 +329,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
           <div className="flex items-center gap-3">
             <SyncDot />
+            <button
+              onClick={handleToggleTheme}
+              title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+              className="h-8 w-8 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors duration-100"
+            >
+              {isDark ? <Sun size={15} /> : <Moon size={15} />}
+            </button>
             <Link href="/notifications">
               <Button variant="outline" size="sm" className="gap-2 relative bg-background hover:bg-muted">
                 <Bell size={15} />
