@@ -60,15 +60,15 @@ function SidebarNav({
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
 
       {/* ── Top Header ─────────────────────────────────────────── */}
-      <div className="px-4 pt-5 pb-4 flex items-center gap-3 border-b border-white/10">
+      <div className="px-4 pt-5 pb-4 flex items-center gap-3 border-b border-slate-200">
         <div className="relative flex-shrink-0">
-          <div className="w-11 h-11 rounded-full overflow-hidden ring-2 ring-white/20 shadow-md">
+          <div className="w-11 h-11 rounded-full overflow-hidden ring-2 ring-slate-200 shadow-md">
             <AppLogo size="sm" className="w-full h-full" />
           </div>
         </div>
         <div className="flex-1 min-w-0">
-          <h2 className="font-extrabold text-sm leading-tight tracking-wide text-white">SAHU CSC</h2>
-          <p className="text-[10px] text-white/50 font-medium tracking-wide mt-0.5">Management Platform</p>
+          <h2 className="font-extrabold text-sm leading-tight tracking-wide text-slate-900">SAHU CSC</h2>
+          <p className="text-[10px] text-slate-500 font-medium tracking-wide mt-0.5">Management Platform</p>
         </div>
       </div>
 
@@ -85,14 +85,14 @@ function SidebarNav({
                   transition-colors duration-100
                   ${active
                     ? "bg-[#f97316] text-white font-semibold shadow-md shadow-orange-900/30"
-                    : "text-white/65 hover:text-white hover:bg-white/8"}
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"}
                 `}
                 onMouseEnter={() => prefetch(item.href)}
                 onFocus={() => prefetch(item.href)}
                 onTouchStart={() => prefetch(item.href)}
               >
                 <div className="flex items-center gap-3">
-                  <Icon size={15} className={active ? "text-white" : "text-white/45"} />
+                  <Icon size={15} className={active ? "text-white" : "text-slate-400"} />
                   <span className="text-[12px] leading-none">{item.label}</span>
                 </div>
                 {item.badge !== undefined && item.badge > 0 && (
@@ -110,7 +110,7 @@ function SidebarNav({
 
         {adminNavItems.length > 0 && (
           <>
-            <p className="text-white/30 text-[9px] font-bold uppercase tracking-[0.15em] px-3 pt-4 pb-1.5">
+            <p className="text-slate-400 text-[9px] font-bold uppercase tracking-[0.15em] px-3 pt-4 pb-1.5">
               Admin
             </p>
             {adminNavItems.map((item) => {
@@ -124,13 +124,13 @@ function SidebarNav({
                       transition-colors duration-100
                       ${active
                         ? "bg-[#f97316] text-white font-semibold shadow-md shadow-orange-900/30"
-                        : "text-white/65 hover:text-white hover:bg-white/8"}
+                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"}
                     `}
                     onMouseEnter={() => prefetch(item.href)}
                     onFocus={() => prefetch(item.href)}
                     onTouchStart={() => prefetch(item.href)}
                   >
-                    <Icon size={15} className={active ? "text-white" : "text-white/45"} />
+                    <Icon size={15} className={active ? "text-white" : "text-slate-400"} />
                     <span className="text-[12px] leading-none">{item.label}</span>
                     {item.badge !== undefined && item.badge > 0 && (
                       <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none bg-[#f97316] text-white">
@@ -147,14 +147,14 @@ function SidebarNav({
 
       {/* ── Version ────────────────────────────────────────────── */}
       <div className="px-4 py-1.5 flex items-center justify-between">
-        <span className="text-[9px] text-white/20 font-mono tracking-wide uppercase">
+        <span className="text-[9px] text-slate-400 font-mono tracking-wide uppercase">
           SAHU CSC v{__APP_VERSION__}
         </span>
-        <span className="text-[9px] text-white/20">© 2026</span>
+        <span className="text-[9px] text-slate-400">© 2026</span>
       </div>
 
       {/* ── User Footer ────────────────────────────────────────── */}
-      <div className="mx-3 mb-3 mt-0.5 p-2.5 rounded-2xl bg-white/8 border border-white/10 flex items-center gap-2.5">
+      <div className="mx-3 mb-3 mt-0.5 p-2.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center gap-2.5">
         <Link href="/profile" className="flex-shrink-0 cursor-pointer">
           <Avatar className="h-10 w-10 ring-2 ring-[#f97316]/60 shadow-sm">
             {avatarSrc ? <AvatarImage src={avatarSrc} alt={displayName} className="object-cover" /> : null}
@@ -165,17 +165,17 @@ function SidebarNav({
         </Link>
 
         <Link href="/profile" className="flex-1 min-w-0 cursor-pointer">
-          <p className="text-[12px] font-bold text-white leading-tight truncate">{displayName}</p>
-          <p className="text-[10px] text-white/45 mt-0.5 capitalize">{roleLabel}</p>
+          <p className="text-[12px] font-bold text-slate-900 leading-tight truncate">{displayName}</p>
+          <p className="text-[10px] text-slate-500 mt-0.5 capitalize">{roleLabel}</p>
         </Link>
 
         <button
           onClick={onToggleTheme}
           title={isDark ? "Switch to light mode" : "Switch to dark mode"}
           className="
-            flex-shrink-0 w-8 h-8 rounded-xl border border-white/15 bg-white/5
+            flex-shrink-0 w-8 h-8 rounded-xl border border-slate-200 bg-white
             flex items-center justify-center
-            text-white/40 hover:text-white hover:border-white/30 hover:bg-white/12
+            text-slate-500 hover:text-slate-900 hover:border-slate-300 hover:bg-slate-100
             transition-colors duration-100 cursor-pointer
           "
         >
@@ -186,9 +186,9 @@ function SidebarNav({
           onClick={onLogout}
           title="Logout"
           className="
-            flex-shrink-0 w-8 h-8 rounded-xl border border-white/15 bg-white/5
+            flex-shrink-0 w-8 h-8 rounded-xl border border-slate-200 bg-white
             flex items-center justify-center
-            text-white/40 hover:text-white hover:border-white/30 hover:bg-white/12
+            text-slate-500 hover:text-slate-900 hover:border-slate-300 hover:bg-slate-100
             transition-colors duration-100 cursor-pointer
           "
         >
