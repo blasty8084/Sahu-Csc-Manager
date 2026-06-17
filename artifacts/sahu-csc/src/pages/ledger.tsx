@@ -379,7 +379,7 @@ export default function Ledger() {
                         style={{
                           width: 36, height: 36, borderRadius: 10, flexShrink: 0,
                           background: altGradient,
-                          boxShadow: `0 3px 8px ${avatarShadow}`,
+                          boxShadow: "0 3px 8px rgba(11,44,96,0.22)",
                           display: "flex", alignItems: "center", justifyContent: "center",
                           color: "#fff", fontSize: 14, fontWeight: 800,
                         }}

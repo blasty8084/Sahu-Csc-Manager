@@ -208,30 +208,47 @@ function DailyTab() {
         <div className="space-y-4">
           {/* Summary Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <Card className="col-span-2 sm:col-span-1 bg-primary/5 border-primary/20">
-              <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground mb-1">Opening Balance</p>
-                <p className="text-xl font-bold text-primary">₹{fmt(session.openingBalance)}</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800">
-              <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground mb-1">Withdrawals</p>
-                <p className="text-xl font-bold text-red-600">₹{fmt(session.totalWithdrawals)}</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800">
-              <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground mb-1">Deposits</p>
-                <p className="text-xl font-bold text-green-600">₹{fmt(session.totalDeposits)}</p>
-              </CardContent>
-            </Card>
-            <Card className={session.currentBalance < 0 ? "bg-red-50 dark:bg-red-950/20 border-red-300" : "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200"}>
-              <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground mb-1">Current Balance</p>
-                <p className={`text-xl font-bold ${session.currentBalance < 0 ? "text-red-600" : "text-emerald-600"}`}>₹{fmt(session.currentBalance)}</p>
-              </CardContent>
-            </Card>
+            {[
+              {
+                label: "Opening Balance", value: session.openingBalance,
+                accent: "linear-gradient(90deg, #0b2c60, #1a4a9e)", color: "#0b2c60",
+                span: "col-span-2 sm:col-span-1",
+              },
+              {
+                label: "Withdrawals", value: session.totalWithdrawals,
+                accent: "linear-gradient(90deg, #f43f5e, #fb7185)", color: "#e11d48",
+                span: "",
+              },
+              {
+                label: "Deposits", value: session.totalDeposits,
+                accent: "linear-gradient(90deg, #10b981, #34d399)", color: "#059669",
+                span: "",
+              },
+              {
+                label: "Current Balance", value: session.currentBalance,
+                accent: session.currentBalance < 0
+                  ? "linear-gradient(90deg, #f43f5e, #fb7185)"
+                  : "linear-gradient(90deg, #10b981, #34d399)",
+                color: session.currentBalance < 0 ? "#e11d48" : "#059669",
+                span: "",
+              },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className={`bg-white rounded-xl overflow-hidden ${item.span}`}
+                style={{ boxShadow: "0 2px 12px rgba(11,44,96,0.08), 0 1px 3px rgba(0,0,0,0.04)" }}
+              >
+                <div style={{ height: 3, background: item.accent }} />
+                <div className="p-4">
+                  <p style={{ fontSize: 10, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
+                    {item.label}
+                  </p>
+                  <p style={{ fontSize: 20, fontWeight: 900, color: item.color, lineHeight: 1.1 }}>
+                    ₹{fmt(item.value)}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
 
           <p className="text-xs text-muted-foreground">
@@ -257,81 +274,138 @@ function DailyTab() {
           </div>
 
           {/* Transaction list */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">
-                Transactions — {session.date}
-                <span className="ml-2 text-muted-foreground font-normal text-sm">({session.transactions.length} entries)</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {session.transactions.length === 0 ? (
-                <div className="py-10 text-center text-muted-foreground text-sm">
-                  No transactions yet. Use the buttons above to record AePS activity.
-                </div>
-              ) : (
-                <div className="divide-y divide-border">
-                  {/* Opening row */}
-                  <div className="flex items-center justify-between px-4 py-3 bg-muted/30">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">OB</div>
-                      <div>
-                        <p className="text-sm font-medium">Day Opening Balance</p>
-                        {session.notes && <p className="text-xs text-muted-foreground">{session.notes}</p>}
-                      </div>
-                    </div>
-                    <p className="font-bold text-primary text-sm">₹{fmt(session.openingBalance)}</p>
-                  </div>
+          <div
+            className="bg-white rounded-2xl overflow-hidden"
+            style={{ boxShadow: "0 2px 12px rgba(11,44,96,0.08), 0 1px 3px rgba(0,0,0,0.04)" }}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3.5" style={{ borderBottom: "1px solid rgba(11,44,96,0.07)" }}>
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 700, color: "#0b2c60" }}>
+                  Transactions — {session.date}
+                </p>
+                <p style={{ fontSize: 10, color: "#94a3b8", marginTop: 1 }}>{session.transactions.length} entries</p>
+              </div>
+            </div>
 
-                  {/* Transaction rows */}
-                  {session.transactions.map((tx, idx) => (
-                    <div key={tx.id} className="flex items-center justify-between px-4 py-3 hover:bg-muted/20 transition-colors">
+            {session.transactions.length === 0 ? (
+              <div className="py-10 text-center text-muted-foreground text-sm">
+                No transactions yet. Use the buttons above to record AePS activity.
+              </div>
+            ) : (
+              <div>
+                {/* Opening row */}
+                <div
+                  className="flex items-center justify-between px-4 py-3"
+                  style={{ background: "rgba(11,44,96,0.03)", borderBottom: "1px solid rgba(11,44,96,0.06)" }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      style={{
+                        width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+                        background: "linear-gradient(135deg, #0b2c60, #1a4a9e)",
+                        boxShadow: "0 3px 8px rgba(11,44,96,0.25)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        color: "#fff", fontSize: 9, fontWeight: 900, letterSpacing: "0.04em",
+                      }}
+                    >
+                      OB
+                    </div>
+                    <div>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: "#0b2c60" }}>Day Opening Balance</p>
+                      {session.notes && <p style={{ fontSize: 10, color: "#94a3b8" }}>{session.notes}</p>}
+                    </div>
+                  </div>
+                  <p style={{ fontSize: 14, fontWeight: 800, color: "#0b2c60" }}>₹{fmt(session.openingBalance)}</p>
+                </div>
+
+                {/* Transaction rows */}
+                {session.transactions.map((tx, idx) => {
+                  const isWd = tx.type === "withdrawal";
+                  return (
+                    <div
+                      key={tx.id}
+                      className="flex items-center justify-between px-4 py-3 transition-colors hover:bg-slate-50"
+                      style={{ borderBottom: "1px solid rgba(11,44,96,0.05)" }}
+                    >
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className={`w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-xs font-bold ${tx.type === "withdrawal" ? "bg-red-100 text-red-600 dark:bg-red-900/30" : "bg-green-100 text-green-600 dark:bg-green-900/30"}`}>
+                        <div
+                          style={{
+                            width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+                            background: isWd
+                              ? "linear-gradient(135deg, #f43f5e, #e11d48)"
+                              : "linear-gradient(135deg, #10b981, #059669)",
+                            boxShadow: isWd
+                              ? "0 3px 8px rgba(244,63,94,0.30)"
+                              : "0 3px 8px rgba(16,185,129,0.30)",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            color: "#fff", fontSize: 11, fontWeight: 800,
+                          }}
+                        >
                           {idx + 1}
                         </div>
                         <div className="min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <p className="text-sm font-medium truncate">{tx.customerName}</p>
-                            <Badge variant={tx.type === "withdrawal" ? "destructive" : "default"} className={`text-[10px] px-1.5 h-4 shrink-0 ${tx.type === "deposit" ? "bg-green-600" : ""}`}>
-                              {tx.type === "withdrawal" ? "Withdrawal" : "Deposit"}
-                            </Badge>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <p style={{ fontSize: 13, fontWeight: 600, color: "#0b2c60" }} className="truncate">
+                              {tx.customerName}
+                            </p>
+                            <span
+                              style={{
+                                fontSize: 9, fontWeight: 700,
+                                color: isWd ? "#e11d48" : "#059669",
+                                background: isWd ? "rgba(244,63,94,0.10)" : "rgba(16,185,129,0.10)",
+                                borderRadius: 5, padding: "2px 6px",
+                              }}
+                            >
+                              {isWd ? "Withdrawal" : "Deposit"}
+                            </span>
                           </div>
-                          {tx.description && <p className="text-xs text-muted-foreground truncate">{tx.description}</p>}
-                          <p className="text-xs text-muted-foreground">
+                          {tx.description && (
+                            <p style={{ fontSize: 10, color: "#94a3b8" }} className="truncate">{tx.description}</p>
+                          )}
+                          <p style={{ fontSize: 10, color: "#94a3b8" }}>
                             {new Date(tx.createdAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
                           </p>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <div className="flex items-center gap-1.5 shrink-0 ml-2">
                         <div className="text-right mr-1">
-                          <p className={`text-sm font-semibold ${tx.type === "withdrawal" ? "text-red-600" : "text-green-600"}`}>
-                            {tx.type === "withdrawal" ? "−" : "+"}₹{fmt(tx.amount)}
+                          <p style={{ fontSize: 13, fontWeight: 800, color: isWd ? "#e11d48" : "#059669" }}>
+                            {isWd ? "−" : "+"}₹{fmt(tx.amount)}
                           </p>
-                          <p className={`text-xs font-medium ${tx.balance < 0 ? "text-red-500" : "text-muted-foreground"}`}>
+                          <p style={{ fontSize: 10, fontWeight: 500, color: tx.balance < 0 ? "#e11d48" : "#94a3b8" }}>
                             Bal: ₹{fmt(tx.balance)}
                           </p>
                         </div>
-                        <Button variant="outline" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => openEditDialog(tx)} title="Edit">
-                          <Pencil size={14} />
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-700" onClick={() => openEditDialog(tx)}>
+                          <Pencil size={13} />
                         </Button>
-                        <Button variant="outline" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive hover:text-destructive-foreground border-destructive/30" onClick={() => setDeletingTx(tx)} title="Delete">
-                          <Trash2 size={14} />
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeletingTx(tx)}>
+                          <Trash2 size={13} />
                         </Button>
                       </div>
                     </div>
-                  ))}
+                  );
+                })}
 
-                  {/* Closing balance */}
-                  <div className={`flex items-center justify-between px-4 py-3 font-semibold ${session.currentBalance < 0 ? "bg-red-50 dark:bg-red-950/20" : "bg-emerald-50 dark:bg-emerald-950/20"}`}>
-                    <span className="text-sm">Closing Balance</span>
-                    <span className={`text-base ${session.currentBalance < 0 ? "text-red-600" : "text-emerald-600"}`}>₹{fmt(session.currentBalance)}</span>
-                  </div>
+                {/* Closing balance */}
+                <div
+                  className="flex items-center justify-between px-4 py-3.5"
+                  style={{
+                    background: session.currentBalance < 0
+                      ? "rgba(244,63,94,0.05)"
+                      : "rgba(16,185,129,0.06)",
+                  }}
+                >
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "#0b2c60" }}>Closing Balance</span>
+                  <span style={{ fontSize: 15, fontWeight: 900, color: session.currentBalance < 0 ? "#e11d48" : "#059669" }}>
+                    ₹{fmt(session.currentBalance)}
+                  </span>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -601,20 +675,25 @@ function AllTransactionsTab() {
       {/* Summary strip (current page) */}
       {data && data.transactions.length > 0 && (
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ArrowDownLeft size={15} className="text-red-500" />
-              <span className="text-xs text-muted-foreground">Withdrawals (this page)</span>
+          {[
+            { label: "Withdrawals (this page)", value: totalW, accent: "linear-gradient(90deg, #f43f5e, #fb7185)", color: "#e11d48", Icon: ArrowDownLeft },
+            { label: "Deposits (this page)", value: totalD, accent: "linear-gradient(90deg, #10b981, #34d399)", color: "#059669", Icon: ArrowUpRight },
+          ].map((item) => (
+            <div
+              key={item.label}
+              className="bg-white rounded-xl overflow-hidden"
+              style={{ boxShadow: "0 2px 10px rgba(11,44,96,0.08), 0 1px 3px rgba(0,0,0,0.04)" }}
+            >
+              <div style={{ height: 3, background: item.accent }} />
+              <div className="px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <item.Icon size={14} style={{ color: item.color, flexShrink: 0 }} />
+                  <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 600 }}>{item.label}</span>
+                </div>
+                <span style={{ fontSize: 14, fontWeight: 800, color: item.color }}>₹{fmt(item.value)}</span>
+              </div>
             </div>
-            <span className="font-bold text-red-600 text-sm">₹{fmt(totalW)}</span>
-          </div>
-          <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-xl px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ArrowUpRight size={15} className="text-green-500" />
-              <span className="text-xs text-muted-foreground">Deposits (this page)</span>
-            </div>
-            <span className="font-bold text-green-600 text-sm">₹{fmt(totalD)}</span>
-          </div>
+          ))}
         </div>
       )}
 
@@ -644,25 +723,46 @@ function AllTransactionsTab() {
               {hasFilters && <Button variant="outline" size="sm" onClick={clearFilters}>Clear Filters</Button>}
             </div>
           ) : (
-            <div className="divide-y divide-border">
-              {data.transactions.map((tx) => (
-                <div key={tx.id} className="flex items-center justify-between px-4 py-3 hover:bg-muted/20 transition-colors group">
+            <div>
+              {data.transactions.map((tx) => {
+                const isWd = tx.type === "withdrawal";
+                return (
+                <div
+                  key={tx.id}
+                  className="flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors"
+                  style={{ borderBottom: "1px solid rgba(11,44,96,0.05)" }}
+                >
                   {/* Left: icon + info */}
                   <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className={`w-9 h-9 shrink-0 rounded-full flex items-center justify-center ${tx.type === "withdrawal" ? "bg-red-100 dark:bg-red-900/30" : "bg-green-100 dark:bg-green-900/30"}`}>
-                      {tx.type === "withdrawal"
-                        ? <ArrowDownLeft size={16} className="text-red-600" />
-                        : <ArrowUpRight size={16} className="text-green-600" />}
+                    <div
+                      style={{
+                        width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                        background: isWd
+                          ? "linear-gradient(135deg, #f43f5e, #e11d48)"
+                          : "linear-gradient(135deg, #10b981, #059669)",
+                        boxShadow: isWd
+                          ? "0 3px 8px rgba(244,63,94,0.28)"
+                          : "0 3px 8px rgba(16,185,129,0.28)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}
+                    >
+                      {isWd
+                        ? <ArrowDownLeft size={16} color="#fff" />
+                        : <ArrowUpRight size={16} color="#fff" />}
                     </div>
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm font-medium truncate">{tx.customerName}</p>
-                        <Badge
-                          variant={tx.type === "withdrawal" ? "destructive" : "default"}
-                          className={`text-[10px] px-1.5 h-4 shrink-0 ${tx.type === "deposit" ? "bg-green-600" : ""}`}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p style={{ fontSize: 13, fontWeight: 600, color: "#0b2c60" }} className="truncate">{tx.customerName}</p>
+                        <span
+                          style={{
+                            fontSize: 9, fontWeight: 700,
+                            color: isWd ? "#e11d48" : "#059669",
+                            background: isWd ? "rgba(244,63,94,0.10)" : "rgba(16,185,129,0.10)",
+                            borderRadius: 5, padding: "2px 6px",
+                          }}
                         >
-                          {tx.type === "withdrawal" ? "Withdrawal" : "Deposit"}
-                        </Badge>
+                          {isWd ? "Withdrawal" : "Deposit"}
+                        </span>
                       </div>
                       <p className="text-xs text-muted-foreground">
                         {tx.date} &nbsp;·&nbsp; {new Date(tx.createdAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
@@ -672,21 +772,20 @@ function AllTransactionsTab() {
                   </div>
 
                   {/* Right: amount + actions */}
-                  <div className="flex items-center gap-2 shrink-0 ml-3">
-                    <p className={`text-sm font-semibold tabular-nums ${tx.type === "withdrawal" ? "text-red-600" : "text-green-600"}`}>
-                      {tx.type === "withdrawal" ? "−" : "+"}₹{fmt(tx.amount)}
+                  <div className="flex items-center gap-1.5 shrink-0 ml-3">
+                    <p style={{ fontSize: 13, fontWeight: 800, color: isWd ? "#e11d48" : "#059669" }}>
+                      {isWd ? "−" : "+"}₹{fmt(tx.amount)}
                     </p>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => openEditDialog(tx)} title="Edit">
-                        <Pencil size={13} />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:bg-destructive/10" onClick={() => setDeletingTx(tx)} title="Delete">
-                        <Trash2 size={13} />
-                      </Button>
-                    </div>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-700" onClick={() => openEditDialog(tx)}>
+                      <Pencil size={13} />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeletingTx(tx)}>
+                      <Trash2 size={13} />
+                    </Button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
