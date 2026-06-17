@@ -20,6 +20,47 @@ function createTransporter() {
   });
 }
 
+function buildOtpText(
+  otp: string,
+  purpose: "registration" | "password_reset",
+  expiresAt: Date
+): string {
+  const purposeLabel =
+    purpose === "registration" ? "Email Verification" : "Password Reset";
+  const purposeDesc =
+    purpose === "registration"
+      ? "You requested to create a SAHU CSC account. Use the OTP below to verify your email address."
+      : "You requested to reset your SAHU CSC password. Use the OTP below to continue.";
+  const expiryTime = expiresAt.toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  return [
+    "SAHU CSC — Management Platform",
+    "=".repeat(40),
+    "",
+    `${purposeLabel.toUpperCase()}`,
+    "",
+    purposeDesc,
+    "",
+    "Your One-Time Password:",
+    "",
+    `    ${otp}`,
+    "",
+    `This code expires at ${expiryTime} (valid for 10 minutes).`,
+    "",
+    "Enter this code in the SAHU CSC app to continue.",
+    "Do NOT share this code with anyone. Our team will never ask for it.",
+    "",
+    "If you did not request this, you can safely ignore this email.",
+    "",
+    "-".repeat(40),
+    "SAHU CSC · Common Service Center · Odisha, India",
+    "This is an automated message. Please do not reply.",
+  ].join("\n");
+}
+
 function buildOtpHtml(
   otp: string,
   purpose: "registration" | "password_reset",
@@ -125,6 +166,7 @@ export async function sendOtpEmail(
     from: `"SAHU CSC" <${fromEmail}>`,
     to,
     subject: subjects[purpose] ?? "SAHU CSC — One-Time Password",
+    text: buildOtpText(otp, purpose, expiresAt),
     html: buildOtpHtml(otp, purpose, expiresAt),
   });
 }
