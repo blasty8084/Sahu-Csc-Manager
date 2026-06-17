@@ -49,7 +49,7 @@ const registerSchema = z
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
-const RESEND_COOLDOWN = 60;
+const RESEND_COOLDOWN = 120;
 
 function maskEmail(email: string): string {
   const [local, domain] = email.split("@");

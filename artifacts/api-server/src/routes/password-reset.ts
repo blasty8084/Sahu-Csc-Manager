@@ -23,12 +23,17 @@ function hashOtp(otp: string): string {
   return crypto.createHash("sha256").update(otp).digest("hex");
 }
 
-// ─── POST /auth/send-otp ───────────────────────────────────────────────────────
-const SendOtpBody = z.object({
-  email: z.string().email("Invalid email address"),
-  purpose: z.enum(["registration", "password_reset"]),
-});
+function maskEmail(email: string): string {
+  const [local, domain] = email.split("@");
+  if (!local || !domain) return email;
+  if (local.length <= 2) return `${local[0]}***@${domain}`;
+  return `${local.slice(0, 2)}${"*".repeat(Math.min(local.length - 2, 4))}@${domain}`;
+}
 
+// ─── POST /auth/send-otp ───────────────────────────────────────────────────────
+// registration : requires { email, purpose }
+// password_reset: accepts { identifier, purpose } (username / email / mobile)
+//                 OR { email, purpose } for backward compat
 router.post("/auth/send-otp", async (req, res): Promise<void> => {
   if (!isSmtpConfigured()) {
     res.status(503).json({
@@ -37,23 +42,65 @@ router.post("/auth/send-otp", async (req, res): Promise<void> => {
     return;
   }
 
-  const parsed = SendOtpBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.issues?.[0]?.message ?? "Validation failed" });
+  const { email: rawEmail, identifier, purpose } = req.body as {
+    email?: string;
+    identifier?: string;
+    purpose?: string;
+  };
+
+  if (!purpose || !["registration", "password_reset"].includes(purpose)) {
+    res.status(400).json({ error: "purpose must be 'registration' or 'password_reset'" });
     return;
   }
 
-  const { email, purpose } = parsed.data;
   const clientIp = getClientIp(req);
-  const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MS);
 
-  // Rate limit: max 3 OTPs per email per purpose per 15 min
+  // ── Resolve email ──────────────────────────────────────────────────────────
+  let resolvedEmail: string | null = null;
+
+  if (purpose === "password_reset") {
+    const lookup = identifier ?? rawEmail;
+    if (!lookup || !lookup.trim()) {
+      res.status(400).json({ error: "Please enter your username or email address." });
+      return;
+    }
+    const term = lookup.trim();
+    const [user] = await db
+      .select({ id: usersTable.id, email: usersTable.email, isActive: usersTable.isActive, status: usersTable.status })
+      .from(usersTable)
+      .where(or(eq(usersTable.username, term), eq(usersTable.email, term), eq(usersTable.mobile, term)));
+
+    if (!user || !user.isActive || user.status === "DELETED" || user.status === "INACTIVE") {
+      // Silent — do not confirm account existence
+      res.json({ message: "If an account exists for that username or email, an OTP has been sent.", maskedEmail: null });
+      return;
+    }
+    resolvedEmail = user.email;
+  } else {
+    // registration — email required
+    if (!rawEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail)) {
+      res.status(400).json({ error: "Enter a valid email address." });
+      return;
+    }
+    resolvedEmail = rawEmail.toLowerCase().trim();
+
+    const [existing] = await db
+      .select({ id: usersTable.id })
+      .from(usersTable)
+      .where(eq(usersTable.email, resolvedEmail));
+    if (existing) {
+      res.status(409).json({ error: "This email is already registered. Please log in." });
+      return;
+    }
+  }
+
+  const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MS);
   const [rateRow] = await db
     .select({ cnt: count() })
     .from(emailOtpsTable)
     .where(
       and(
-        eq(emailOtpsTable.email, email),
+        eq(emailOtpsTable.email, resolvedEmail),
         eq(emailOtpsTable.purpose, purpose),
         gt(emailOtpsTable.createdAt, windowStart)
       )
@@ -67,77 +114,74 @@ router.post("/auth/send-otp", async (req, res): Promise<void> => {
     return;
   }
 
-  // For password_reset: silently succeed even if email not found (prevent enumeration)
-  if (purpose === "password_reset") {
-    const [user] = await db
-      .select({ id: usersTable.id, isActive: usersTable.isActive })
-      .from(usersTable)
-      .where(eq(usersTable.email, email));
-
-    if (!user || !user.isActive) {
-      // Return success shape without confirming existence
-      res.json({ message: "If an account with that email exists, an OTP has been sent." });
-      return;
-    }
-  }
-
-  // For registration: check email is not already registered
-  if (purpose === "registration") {
-    const [existing] = await db
-      .select({ id: usersTable.id })
-      .from(usersTable)
-      .where(eq(usersTable.email, email));
-    if (existing) {
-      res.status(409).json({ error: "This email is already registered. Please log in." });
-      return;
-    }
-  }
-
   const otp = generateNumericOtp();
   const otpHash = hashOtp(otp);
   const expiresAt = new Date(Date.now() + OTP_EXPIRY_MS);
 
   await db.insert(emailOtpsTable).values({
-    email,
+    email: resolvedEmail,
     purpose,
     otpHash,
     expiresAt,
     ipAddress: clientIp,
   });
 
-  // Send email — never log OTP plaintext
   try {
-    await sendOtpEmail(email, otp, purpose, expiresAt);
+    await sendOtpEmail(resolvedEmail, otp, purpose as "registration" | "password_reset", expiresAt);
   } catch (err) {
-    logger.error({ err, purpose, email: email.replace(/(.{2}).+(@.+)/, "$1***$2") }, "Failed to send OTP email");
+    logger.error({ err, purpose, email: maskEmail(resolvedEmail) }, "Failed to send OTP email");
     res.status(502).json({ error: "Failed to send email. Please check SMTP configuration or try again." });
     return;
   }
 
-  res.json({ message: "OTP sent to your email address. It expires in 10 minutes." });
+  res.json({
+    message: "OTP sent. It expires in 10 minutes.",
+    maskedEmail: maskEmail(resolvedEmail),
+  });
 });
 
 // ─── POST /auth/verify-otp ────────────────────────────────────────────────────
-// Supports two modes:
-//  1. Email-based (new):  { email, otp, purpose }
-//  2. Identifier-based (legacy):  { identifier, otp }
+// Modes:
+//  1. { identifier, otp, purpose }  — resolves username/email/mobile → email (new)
+//  2. { email, otp, purpose }       — direct email lookup (new)
+//  3. { identifier, otp }           — legacy admin-OTP via passwordResetTokens table
 router.post("/auth/verify-otp", async (req, res): Promise<void> => {
-  const { email, otp, purpose, identifier } = req.body as {
+  const { email: rawEmail, otp, purpose, identifier } = req.body as {
     email?: string;
     otp?: string;
     purpose?: string;
     identifier?: string;
   };
 
-  // ── New email+purpose mode ──────────────────────────────────────────────────
-  if (email && purpose) {
-    if (!otp || otp.length !== 6 || !/^\d{6}$/.test(otp)) {
+  const hasPurpose = !!purpose && ["registration", "password_reset"].includes(purpose);
+
+  // ── Mode 1 & 2: email-OTP flow ───────────────────────────────────────────────
+  if (hasPurpose) {
+    if (!otp || !/^\d{6}$/.test(otp)) {
+      res.json({ valid: false, reason: "missing" });
+      return;
+    }
+
+    // Resolve email — direct or via identifier lookup
+    let email = rawEmail;
+    if (!email && identifier && purpose === "password_reset") {
+      const term = identifier.trim();
+      const [u] = await db
+        .select({ email: usersTable.email, isActive: usersTable.isActive })
+        .from(usersTable)
+        .where(or(eq(usersTable.username, term), eq(usersTable.email, term), eq(usersTable.mobile, term)));
+      if (!u || !u.isActive) {
+        res.json({ valid: false, reason: "invalid" });
+        return;
+      }
+      email = u.email;
+    }
+    if (!email) {
       res.json({ valid: false, reason: "missing" });
       return;
     }
 
     const otpHash = hashOtp(otp);
-
     const [record] = await db
       .select()
       .from(emailOtpsTable)
@@ -161,7 +205,6 @@ router.post("/auth/verify-otp", async (req, res): Promise<void> => {
       return;
     }
 
-    // For password_reset: generate a verified token so reset-password can proceed
     if (purpose === "password_reset") {
       const verifiedToken = randomUUID();
       await db
@@ -172,13 +215,12 @@ router.post("/auth/verify-otp", async (req, res): Promise<void> => {
       return;
     }
 
-    // For registration: just confirm validity (actual use happens at register time)
-    // Do NOT mark as used here — register endpoint will mark it used
+    // registration — do NOT mark used here; register endpoint does it
     res.json({ valid: true });
     return;
   }
 
-  // ── Legacy identifier mode (backward compat) ────────────────────────────────
+  // ── Mode 3: legacy admin-OTP via passwordResetTokens ────────────────────────
   if (!identifier || !otp || otp.length !== 6) {
     res.json({ valid: false, reason: "missing" });
     return;
@@ -187,13 +229,7 @@ router.post("/auth/verify-otp", async (req, res): Promise<void> => {
   const [user] = await db
     .select({ id: usersTable.id, username: usersTable.username })
     .from(usersTable)
-    .where(
-      or(
-        eq(usersTable.username, identifier),
-        eq(usersTable.email, identifier),
-        eq(usersTable.mobile, identifier)
-      )
-    );
+    .where(or(eq(usersTable.username, identifier), eq(usersTable.email, identifier), eq(usersTable.mobile, identifier)));
 
   if (!user) { res.json({ valid: false, reason: "invalid" }); return; }
 

@@ -425,6 +425,11 @@ Full config in `infrastructure/twa/twa-config.json`.
 - **"Forgot Password?" is navy, not orange**: The link in `LoginFormContent` uses `#0b2c60` (navy) to match the security-focused design language. Do not change it to `#F97316` (saffron).
 - **Mobile header design language (v2)**: The mobile header (`md:hidden` block in `layout.tsx`) uses a 3-layer structure: (1) 3px gradient accent stripe (navy `#0b2c60` → saffron `#f97316`), (2) white frosted main bar (60px, `bg-white`, box-shadow) with a navy rounded-square CSC badge logo + two-tone "SAHU" (navy) / "CSC" (saffron) brand text on the left; bell button + avatar chip on the right, (3) navy gradient greeting sub-bar (44px, `linear-gradient(135deg, #0b2c60, #0f3872)`) showing time-based greeting + short date. The avatar chip replaces the old hamburger icon and opens the `Sheet` nav drawer — do not add a separate hamburger. `firstName`, `greeting`, `greetingEmoji`, and `shortDate` are computed inside the `Layout` component.
 - **Mobile dashboard card design language**: Stat cards use a 3px colored top accent stripe (`s.accent` gradient) + white `bg-white` card body with `box-shadow` instead of a Tailwind `border`. Icon badges use `s.iconGradient` (CSS gradient) with a matching colored `box-shadow` drop shadow. Quick action cards are white rounded-2xl cards with gradient icon badges (42px, borderRadius 13) and navy label text. Never use flat `bg-*` Tailwind backgrounds for icon badges in these cards — always use `background: gradient` inline style so the gradient renders correctly.
+- **Forgot-password is a merged 4-step page**: `/forgot-password` covers the entire reset flow — identifier → OTP → new password → success. `/reset-password` simply redirects to `/forgot-password`. Do not split the flow back into two pages.
+- **Password reset accepts username/email/mobile**: `POST /api/auth/send-otp { identifier, purpose: "password_reset" }` resolves the identifier to an email server-side via `OR` query on username/email/mobile columns. Returns `{ maskedEmail }`. The frontend never needs to know the actual email — it re-sends `identifier` to `verify-otp` which resolves internally. For `registration` purpose, `email` is still required.
+- **OTP resend timer is 120 seconds everywhere**: Both `forgot-password.tsx` and `register.tsx` use `RESEND_COOLDOWN = 120`. Do not change to 60.
+- **send-otp silent success on unknown identifier**: For `password_reset`, if the identifier does not resolve to an active account, `send-otp` returns HTTP 200 with `{ maskedEmail: null }` — never 404. This prevents account enumeration. The frontend always advances to the OTP step regardless.
+- **verify-otp resolves identifier internally**: `POST /api/auth/verify-otp { identifier, otp, purpose: "password_reset" }` performs the same username/email/mobile lookup as `send-otp`, then checks the `email_otps` table. The frontend never sends the raw resolved email.
 
 ---
 
@@ -432,6 +437,7 @@ Full config in `infrastructure/twa/twa-config.json`.
 
 | Date | Change |
 |------|--------|
+| 2026-06-17 | **Merged forgot-password flow**: `/forgot-password` is now a single 4-step page (identifier → OTP → new password → success). `/reset-password` redirects to it. Accepts username, email, or mobile as identifier. OTP resend timer raised to 120s on both forgot-password and register pages. |
 | 2026-06-16 | **Mobile header v2**: Replaced flat navy bar with 3-layer frosted design — gradient accent stripe, white main bar, navy greeting sub-bar. Avatar chip replaces hamburger to open nav drawer. |
 | 2026-06-16 | **Dashboard mobile cards v2**: Stat cards upgraded with gradient accent stripe + gradient icon badge + shadow. Quick actions upgraded to white card + gradient icon badge pattern. |
 
