@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRegistrationStatus } from "@/hooks/use-registration-status";
@@ -11,8 +11,14 @@ import { LoginLogo } from "@/components/app-logo";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Eye, EyeOff, Lock, Mail, Smartphone, User, UserPlus, Loader2, CheckCircle2, ArrowLeft, Shield, LogIn, ArrowRight } from "lucide-react";
+import {
+  Eye, EyeOff, Lock, Mail, Smartphone, User, UserPlus,
+  Loader2, CheckCircle2, ArrowLeft, Shield, LogIn, ArrowRight,
+  ShieldCheck, RefreshCw, XCircle,
+} from "lucide-react";
 import RegistrationClosed from "./register-closed";
+
+type RegisterStep = "form" | "otp";
 
 const registerSchema = z
   .object({
@@ -42,6 +48,15 @@ const registerSchema = z
   });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
+
+const RESEND_COOLDOWN = 60;
+
+function maskEmail(email: string): string {
+  const [local, domain] = email.split("@");
+  if (!local || !domain) return email;
+  if (local.length <= 2) return `${local[0]}***@${domain}`;
+  return `${local.slice(0, 2)}${"*".repeat(Math.min(local.length - 2, 4))}@${domain}`;
+}
 
 function PasswordStrength({ password }: { password: string }) {
   const checks = [
@@ -78,6 +93,19 @@ function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
+  // Multi-step state
+  const [step, setStep] = useState<RegisterStep>("form");
+  const [formValues, setFormValues] = useState<RegisterFormValues | null>(null);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [otpError, setOtpError] = useState<string | null>(null);
+
+  // OTP state
+  const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", "", "", ""]);
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [resendSeconds, setResendSeconds] = useState(RESEND_COOLDOWN);
+  const resendTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: { username: "", fullName: "", email: "", mobile: "", password: "", confirmPassword: "" },
@@ -85,17 +113,105 @@ function RegisterForm() {
 
   const password = form.watch("password");
 
-  const onSubmit = async (values: RegisterFormValues) => {
+  const startResendTimer = useCallback(() => {
+    setResendSeconds(RESEND_COOLDOWN);
+    if (resendTimerRef.current) clearInterval(resendTimerRef.current);
+    resendTimerRef.current = setInterval(() => {
+      setResendSeconds((s) => {
+        if (s <= 1) { clearInterval(resendTimerRef.current!); return 0; }
+        return s - 1;
+      });
+    }, 1000);
+  }, []);
+
+  useEffect(() => () => { if (resendTimerRef.current) clearInterval(resendTimerRef.current); }, []);
+
+  const sendOtp = async (email: string): Promise<boolean> => {
     const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
-    const body: Record<string, string> = {
-      username: values.username,
-      email: values.email,
-      password: values.password,
-    };
-    if (values.fullName) body.fullName = values.fullName;
-    if (values.mobile) body.mobile = values.mobile;
+    const res = await fetch(`${base}/api/auth/send-otp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, purpose: "registration" }),
+      credentials: "include",
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      if (res.status === 429) {
+        setOtpError("Too many requests. Please wait 15 minutes before requesting a new code.");
+      } else if (res.status === 409) {
+        form.setError("email", { message: data.error ?? "Email already registered" });
+      } else {
+        setOtpError(data.error ?? "Failed to send OTP. Please try again.");
+      }
+      return false;
+    }
+    return true;
+  };
+
+  const onFormSubmit = async (values: RegisterFormValues) => {
+    setSendingOtp(true);
+    setOtpError(null);
+    try {
+      const ok = await sendOtp(values.email);
+      if (!ok) return;
+      setFormValues(values);
+      setOtpDigits(["", "", "", "", "", ""]);
+      setStep("otp");
+      startResendTimer();
+      setTimeout(() => otpRefs.current[0]?.focus(), 100);
+    } catch {
+      setOtpError("Network error. Please try again.");
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const handleOtpInput = (index: number, value: string) => {
+    const digit = value.replace(/\D/g, "").slice(-1);
+    const next = [...otpDigits];
+    next[index] = digit;
+    setOtpDigits(next);
+    setOtpError(null);
+    if (digit && index < 5) otpRefs.current[index + 1]?.focus();
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !otpDigits[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (!pasted) return;
+    e.preventDefault();
+    const digits = pasted.split("").concat(Array(6).fill("")).slice(0, 6);
+    setOtpDigits(digits);
+    setOtpError(null);
+    const nextEmpty = digits.findIndex((d) => !d);
+    otpRefs.current[nextEmpty === -1 ? 5 : nextEmpty]?.focus();
+    if (pasted.length === 6) {
+      setTimeout(() => submitWithOtp(pasted), 80);
+    }
+  };
+
+  const submitWithOtp = async (otp: string) => {
+    if (!formValues) return;
+    if (otp.length !== 6 || !/^\d{6}$/.test(otp)) return;
+    setSubmitting(true);
+    setOtpError(null);
+    const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
 
     try {
+      const body: Record<string, string> = {
+        username: formValues.username,
+        email: formValues.email,
+        password: formValues.password,
+        emailOtp: otp,
+      };
+      if (formValues.fullName) body.fullName = formValues.fullName;
+      if (formValues.mobile) body.mobile = formValues.mobile;
+
       const res = await fetch(`${base}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -103,113 +219,219 @@ function RegisterForm() {
         body: JSON.stringify(body),
       });
       const data = await res.json();
+
       if (!res.ok) {
-        if (res.status === 403) {
-          setLocation("/register/closed");
-          return;
+        if (res.status === 403) { setLocation("/register/closed"); return; }
+        if (res.status === 400 && data.error?.toLowerCase().includes("otp")) {
+          setOtpError(data.error);
+        } else if (res.status === 409) {
+          setOtpError(data.error ?? "An account with these details already exists.");
+        } else {
+          toast({ variant: "destructive", title: "Registration failed", description: data.error ?? "Please try again." });
         }
-        toast({ variant: "destructive", title: "Registration failed", description: data.error ?? "Please try again." });
         return;
       }
-      if (data.pending) {
-        setLocation("/register/pending");
-        return;
-      }
+
+      if (data.pending) { setLocation("/register/pending"); return; }
       setLocation("/login");
     } catch {
       toast({ variant: "destructive", title: "Network error", description: "Could not connect. Please try again." });
+    } finally {
+      setSubmitting(false);
     }
   };
 
+  const handleOtpSubmit = () => submitWithOtp(otpDigits.join(""));
+
+  const handleResend = async () => {
+    if (resendSeconds > 0 || !formValues) return;
+    setOtpError(null);
+    setOtpDigits(["", "", "", "", "", ""]);
+    const ok = await sendOtp(formValues.email);
+    if (ok) {
+      startResendTimer();
+      toast({ title: "OTP resent", description: "A new code has been sent to your email." });
+      setTimeout(() => otpRefs.current[0]?.focus(), 100);
+    }
+  };
+
+  const otpComplete = otpDigits.every((d) => d !== "");
+
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3.5">
-        <FormField control={form.control} name="username" render={({ field }) => (
-          <FormItem>
-            <FormLabel className="text-xs font-semibold text-gray-600">Username *</FormLabel>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-              <FormControl><Input placeholder="e.g. sahu_csc" className="pl-10 h-11 border-gray-200 bg-white" {...field} /></FormControl>
-            </div>
-            <FormMessage className="text-xs" />
-          </FormItem>
-        )} />
+    <AnimatePresence mode="wait">
+      {step === "form" && (
+        <motion.div key="form-step" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.22 }}>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onFormSubmit)} className="space-y-3.5">
+              <FormField control={form.control} name="username" render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs font-semibold text-gray-600">Username *</FormLabel>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    <FormControl><Input placeholder="e.g. sahu_csc" className="pl-10 h-11 border-gray-200 bg-white" {...field} /></FormControl>
+                  </div>
+                  <FormMessage className="text-xs" />
+                </FormItem>
+              )} />
 
-        <FormField control={form.control} name="fullName" render={({ field }) => (
-          <FormItem>
-            <FormLabel className="text-xs font-semibold text-gray-600">Full Name</FormLabel>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-              <FormControl><Input placeholder="Your full name" className="pl-10 h-11 border-gray-200 bg-white" {...field} /></FormControl>
-            </div>
-            <FormMessage className="text-xs" />
-          </FormItem>
-        )} />
+              <FormField control={form.control} name="fullName" render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs font-semibold text-gray-600">Full Name</FormLabel>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    <FormControl><Input placeholder="Your full name" className="pl-10 h-11 border-gray-200 bg-white" {...field} /></FormControl>
+                  </div>
+                  <FormMessage className="text-xs" />
+                </FormItem>
+              )} />
 
-        <FormField control={form.control} name="email" render={({ field }) => (
-          <FormItem>
-            <FormLabel className="text-xs font-semibold text-gray-600">Email *</FormLabel>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-              <FormControl><Input type="email" placeholder="you@example.com" className="pl-10 h-11 border-gray-200 bg-white" {...field} /></FormControl>
-            </div>
-            <FormMessage className="text-xs" />
-          </FormItem>
-        )} />
+              <FormField control={form.control} name="email" render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs font-semibold text-gray-600">Email * <span className="text-gray-400 font-normal">(OTP will be sent here)</span></FormLabel>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    <FormControl><Input type="email" placeholder="you@example.com" className="pl-10 h-11 border-gray-200 bg-white" {...field} /></FormControl>
+                  </div>
+                  <FormMessage className="text-xs" />
+                </FormItem>
+              )} />
 
-        <FormField control={form.control} name="mobile" render={({ field }) => (
-          <FormItem>
-            <FormLabel className="text-xs font-semibold text-gray-600">Mobile Number</FormLabel>
-            <div className="relative">
-              <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-              <FormControl><Input type="tel" placeholder="10-digit mobile (optional)" className="pl-10 h-11 border-gray-200 bg-white" maxLength={10} {...field} /></FormControl>
-            </div>
-            <FormMessage className="text-xs" />
-          </FormItem>
-        )} />
+              <FormField control={form.control} name="mobile" render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs font-semibold text-gray-600">Mobile Number</FormLabel>
+                  <div className="relative">
+                    <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    <FormControl><Input type="tel" placeholder="10-digit mobile (optional)" className="pl-10 h-11 border-gray-200 bg-white" maxLength={10} {...field} /></FormControl>
+                  </div>
+                  <FormMessage className="text-xs" />
+                </FormItem>
+              )} />
 
-        <FormField control={form.control} name="password" render={({ field }) => (
-          <FormItem>
-            <FormLabel className="text-xs font-semibold text-gray-600">Password *</FormLabel>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-              <FormControl>
-                <Input type={showPassword ? "text" : "password"} placeholder="Create a strong password" className="pl-10 pr-11 h-11 border-gray-200 bg-white" {...field} />
-              </FormControl>
-              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-            <PasswordStrength password={password} />
-            <FormMessage className="text-xs" />
-          </FormItem>
-        )} />
+              <FormField control={form.control} name="password" render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs font-semibold text-gray-600">Password *</FormLabel>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    <FormControl>
+                      <Input type={showPassword ? "text" : "password"} placeholder="Create a strong password" className="pl-10 pr-11 h-11 border-gray-200 bg-white" {...field} />
+                    </FormControl>
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  <PasswordStrength password={password} />
+                  <FormMessage className="text-xs" />
+                </FormItem>
+              )} />
 
-        <FormField control={form.control} name="confirmPassword" render={({ field }) => (
-          <FormItem>
-            <FormLabel className="text-xs font-semibold text-gray-600">Confirm Password *</FormLabel>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-              <FormControl>
-                <Input type={showConfirm ? "text" : "password"} placeholder="Re-enter your password" className="pl-10 pr-11 h-11 border-gray-200 bg-white" {...field} />
-              </FormControl>
-              <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-            <FormMessage className="text-xs" />
-          </FormItem>
-        )} />
+              <FormField control={form.control} name="confirmPassword" render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs font-semibold text-gray-600">Confirm Password *</FormLabel>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    <FormControl>
+                      <Input type={showConfirm ? "text" : "password"} placeholder="Re-enter your password" className="pl-10 pr-11 h-11 border-gray-200 bg-white" {...field} />
+                    </FormControl>
+                    <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                      {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  <FormMessage className="text-xs" />
+                </FormItem>
+              )} />
 
-        <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} className="pt-1">
-          <Button type="submit" disabled={form.formState.isSubmitting} className="w-full h-12 font-bold text-base text-white" style={{ background: "linear-gradient(135deg, #1a2560, #0f1a4a)" }}>
-            {form.formState.isSubmitting
-              ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Submitting...</span>
-              : <span className="flex items-center gap-2"><UserPlus className="w-4 h-4" />Create Account</span>}
-          </Button>
+              {otpError && (
+                <div className="flex items-start gap-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-2.5">
+                  <XCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                  {otpError}
+                </div>
+              )}
+
+              <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} className="pt-1">
+                <Button type="submit" disabled={sendingOtp} className="w-full h-12 font-bold text-base text-white" style={{ background: "linear-gradient(135deg, #1a2560, #0f1a4a)" }}>
+                  {sendingOtp
+                    ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Sending OTP…</span>
+                    : <span className="flex items-center gap-2"><Mail className="w-4 h-4" />Continue — Send OTP</span>}
+                </Button>
+              </motion.div>
+            </form>
+          </Form>
         </motion.div>
-      </form>
-    </Form>
+      )}
+
+      {step === "otp" && formValues && (
+        <motion.div key="otp-step" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.22 }}>
+          <div className="flex flex-col items-center mb-6">
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm mb-3" style={{ background: "#dcfce7" }}>
+              <ShieldCheck className="w-6 h-6 text-emerald-600" />
+            </div>
+            <h3 className="text-gray-900 font-bold text-base">Verify your email</h3>
+            <p className="text-gray-500 text-xs mt-1 text-center max-w-xs">
+              We sent a 6-digit code to{" "}
+              <span className="font-semibold text-gray-700">{maskEmail(formValues.email)}</span>
+            </p>
+            <p className="text-gray-400 text-[10px] mt-0.5">Check your inbox and spam folder</p>
+          </div>
+
+          <div className="flex gap-2 justify-center mb-5" onPaste={handleOtpPaste}>
+            {otpDigits.map((digit, i) => (
+              <input
+                key={i}
+                ref={(el) => { otpRefs.current[i] = el; }}
+                type="text"
+                inputMode="numeric"
+                maxLength={1}
+                value={digit}
+                onChange={(e) => handleOtpInput(i, e.target.value)}
+                onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                className="w-11 h-12 text-center text-xl font-bold border-2 rounded-xl bg-white outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 text-gray-900"
+                style={{ borderColor: otpError ? "rgb(239,68,68)" : digit ? "#0b2c60" : "#e5e7eb" }}
+              />
+            ))}
+          </div>
+
+          {otpError && (
+            <div className="flex items-start gap-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-2.5 mb-4">
+              <XCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+              {otpError}
+            </div>
+          )}
+
+          <Button
+            onClick={handleOtpSubmit}
+            disabled={submitting || !otpComplete}
+            className="w-full h-12 font-bold text-base text-white mb-4"
+            style={{ background: "linear-gradient(135deg, #1a2560, #0f1a4a)" }}
+          >
+            {submitting
+              ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Creating Account…</span>
+              : <span className="flex items-center gap-2"><UserPlus className="w-4 h-4" />Verify & Create Account</span>}
+          </Button>
+
+          <div className="flex flex-col items-center gap-3">
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={resendSeconds > 0}
+              className="flex items-center gap-1.5 text-sm transition-colors"
+              style={{ color: resendSeconds > 0 ? "#9ca3af" : "#0b2c60" }}
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              {resendSeconds > 0 ? `Resend in ${resendSeconds}s` : "Resend OTP"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { setStep("form"); setOtpError(null); }}
+              className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              Edit my details
+            </button>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -283,7 +505,7 @@ function RegisterContent() {
         </h1>
         <p className="text-white/45 mt-4 max-w-sm leading-relaxed">Create your account to manage services, track transactions, and grow your CSC business.</p>
         <div className="mt-8 space-y-3">
-          {["Free to register", "Instant access after approval", "Secure & encrypted data"].map((item) => (
+          {["Free to register", "Email-verified for security", "Instant access after approval"].map((item) => (
             <div key={item} className="flex items-center gap-3">
               <CheckCircle2 className="w-5 h-5 flex-shrink-0" style={{ color: "#F97316" }} />
               <span className="text-white/70 text-sm">{item}</span>
@@ -299,19 +521,17 @@ function RegisterContent() {
             </Link>
             <div>
               <h3 className="text-gray-900 font-bold text-xl">Create Account</h3>
-              <p className="text-gray-500 text-xs">All fields marked * are required</p>
+              <p className="text-gray-500 text-xs">Email verification required</p>
             </div>
           </div>
           <RegisterForm />
 
-          {/* Or divider */}
           <div className="flex items-center gap-3 mt-5">
             <div className="flex-1 h-px bg-gray-200" />
             <span className="text-xs text-gray-400 font-medium">or</span>
             <div className="flex-1 h-px bg-gray-200" />
           </div>
 
-          {/* Login CTA */}
           <Link href="/login">
             <div
               className="mt-3 flex items-center gap-3 px-4 py-3.5 rounded-2xl border-2 border-dashed cursor-pointer transition-colors hover:bg-blue-100"

@@ -1,71 +1,194 @@
-import React, { useState } from "react";
-import { Link } from "wouter";
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { LoginLogo } from "@/components/app-logo";
-import { ArrowLeft, Copy, CheckCircle2, Clock, RefreshCw, Loader2, User } from "lucide-react";
+import {
+  ArrowLeft,
+  Loader2,
+  Mail,
+  ShieldCheck,
+  RefreshCw,
+  XCircle,
+  CheckCircle2,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-const schema = z.object({
-  identifier: z.string().min(1, "Enter username, email, or mobile"),
+type Step = "email" | "otp";
+
+const emailSchema = z.object({
+  email: z.string().email("Enter a valid email address"),
 });
+
+const RESEND_COOLDOWN = 60;
+
+function maskEmail(email: string): string {
+  const [local, domain] = email.split("@");
+  if (!local || !domain) return email;
+  if (local.length <= 2) return `${local[0]}***@${domain}`;
+  return `${local.slice(0, 2)}${"*".repeat(Math.min(local.length - 2, 4))}@${domain}`;
+}
 
 export default function ForgotPassword() {
   const { toast } = useToast();
-  const [otpInfo, setOtpInfo] = useState<{
-    otp: string;
-    username: string;
-    expiresAt: string;
-  } | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [, setLocation] = useLocation();
 
-  const form = useForm<z.infer<typeof schema>>({
-    resolver: zodResolver(schema),
-    defaultValues: { identifier: "" },
+  const [step, setStep] = useState<Step>("email");
+  const [email, setEmail] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
+
+  // OTP state
+  const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", "", "", ""]);
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [resendSeconds, setResendSeconds] = useState(RESEND_COOLDOWN);
+  const resendTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const emailForm = useForm<z.infer<typeof emailSchema>>({
+    resolver: zodResolver(emailSchema),
+    defaultValues: { email: "" },
   });
 
-  const onSubmit = async (values: z.infer<typeof schema>) => {
-    try {
-      const res = await fetch(`${import.meta.env.BASE_URL}api/auth/forgot-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
-        credentials: "include",
+  // Start resend countdown
+  const startResendTimer = useCallback(() => {
+    setResendSeconds(RESEND_COOLDOWN);
+    if (resendTimerRef.current) clearInterval(resendTimerRef.current);
+    resendTimerRef.current = setInterval(() => {
+      setResendSeconds((s) => {
+        if (s <= 1) {
+          clearInterval(resendTimerRef.current!);
+          return 0;
+        }
+        return s - 1;
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Request failed");
-      if (!data.otp) {
-        toast({ title: "Not found", description: "No active account found for that identifier.", variant: "destructive" });
-        return;
+    }, 1000);
+  }, []);
+
+  useEffect(() => () => { if (resendTimerRef.current) clearInterval(resendTimerRef.current); }, []);
+
+  const sendOtp = async (targetEmail: string): Promise<boolean> => {
+    const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+    const res = await fetch(`${base}/api/auth/send-otp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: targetEmail, purpose: "password_reset" }),
+      credentials: "include",
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      if (res.status === 429) {
+        setServerError("Too many OTP requests. Please wait 15 minutes before trying again.");
+      } else {
+        setServerError(data.error ?? "Failed to send OTP. Please try again.");
       }
-      setOtpInfo({ otp: data.otp, username: data.username, expiresAt: data.expiresAt });
-    } catch (err: any) {
-      toast({ variant: "destructive", title: "Error", description: err.message });
+      return false;
+    }
+    return true;
+  };
+
+  const onEmailSubmit = async (values: z.infer<typeof emailSchema>) => {
+    setServerError(null);
+    setSubmitting(true);
+    try {
+      await sendOtp(values.email);
+      // Always advance to OTP step to prevent email enumeration
+      setEmail(values.email);
+      setOtpDigits(["", "", "", "", "", ""]);
+      setStep("otp");
+      startResendTimer();
+      setTimeout(() => otpRefs.current[0]?.focus(), 100);
+    } catch {
+      setServerError("Network error. Please check your connection and try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const copyOtp = async () => {
-    if (!otpInfo) return;
-    await navigator.clipboard.writeText(otpInfo.otp);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-    toast({ title: "OTP copied!" });
+  const handleOtpInput = (index: number, value: string) => {
+    const digit = value.replace(/\D/g, "").slice(-1);
+    const next = [...otpDigits];
+    next[index] = digit;
+    setOtpDigits(next);
+    setServerError(null);
+    if (digit && index < 5) otpRefs.current[index + 1]?.focus();
   };
 
-  const expiryDisplay = otpInfo
-    ? new Date(otpInfo.expiresAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })
-    : "";
-
-  const handleReset = () => {
-    setOtpInfo(null);
-    form.reset();
-    setCopied(false);
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !otpDigits[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
   };
+
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (!pasted) return;
+    e.preventDefault();
+    const digits = pasted.split("").concat(Array(6).fill("")).slice(0, 6);
+    setOtpDigits(digits);
+    setServerError(null);
+    const nextEmpty = digits.findIndex((d) => !d);
+    otpRefs.current[nextEmpty === -1 ? 5 : nextEmpty]?.focus();
+    if (pasted.length === 6) {
+      setTimeout(() => verifyOtp(pasted), 80);
+    }
+  };
+
+  const verifyOtp = async (otp: string) => {
+    if (otp.length !== 6 || !/^\d{6}$/.test(otp)) return;
+    setServerError(null);
+    setSubmitting(true);
+    try {
+      const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+      const res = await fetch(`${base}/api/auth/verify-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp, purpose: "password_reset" }),
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok || !data.valid) {
+        const reasonMap: Record<string, string> = {
+          expired: "OTP has expired. Request a new one.",
+          invalid: "Incorrect OTP. Please check and try again.",
+          used: "This OTP has already been used.",
+          missing: "Please enter all 6 digits.",
+        };
+        setServerError(reasonMap[data.reason] ?? "Invalid OTP. Please try again.");
+        return;
+      }
+      // Store resetToken in sessionStorage for reset-password page
+      sessionStorage.setItem("sahu-reset-token", data.resetToken);
+      sessionStorage.setItem("sahu-reset-email", email);
+      setLocation("/reset-password");
+    } catch {
+      setServerError("Network error. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleOtpSubmit = () => {
+    verifyOtp(otpDigits.join(""));
+  };
+
+  const handleResend = async () => {
+    if (resendSeconds > 0) return;
+    setServerError(null);
+    setOtpDigits(["", "", "", "", "", ""]);
+    const ok = await sendOtp(email);
+    if (ok) {
+      startResendTimer();
+      toast({ title: "OTP resent", description: "A new OTP has been sent to your email." });
+      setTimeout(() => otpRefs.current[0]?.focus(), 100);
+    }
+  };
+
+  const otpComplete = otpDigits.every((d) => d !== "");
 
   return (
     <div className="h-screen overflow-hidden flex flex-col" style={{ background: "#0B1340" }}>
@@ -81,7 +204,7 @@ export default function ForgotPassword() {
         </div>
       </div>
 
-      {/* White card — fills remaining height */}
+      {/* White card */}
       <motion.div
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
@@ -89,152 +212,185 @@ export default function ForgotPassword() {
         className="flex-1 bg-white rounded-t-3xl shadow-2xl flex flex-col overflow-hidden"
       >
         <div className="flex-1 overflow-y-auto px-6 pt-6 pb-6">
-          {/* Card header */}
-          <div className="flex flex-col items-center mb-5">
-            <div
-              className="w-10 h-10 rounded-full flex items-center justify-center shadow-sm"
-              style={{ background: "#FEE4D8" }}
-            >
-              <User className="w-5 h-5" style={{ color: "#F97316" }} />
-            </div>
-            <h2 className="text-gray-900 font-bold text-lg mt-2">
-              {otpInfo ? "OTP Generated" : "Forgot Password"}
-            </h2>
-            <p className="text-gray-500 text-xs mt-0.5 text-center max-w-xs">
-              {otpInfo
-                ? "Share this OTP with the user to reset their password"
-                : "Enter the account identifier to generate a one-time password"}
-            </p>
-          </div>
 
-          {!otpInfo ? (
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="identifier"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                        <FormControl>
-                          <Input
-                            placeholder="Username, Email or Mobile"
-                            className="pl-10 h-11 text-gray-900 placeholder:text-gray-400 border-gray-200 bg-white focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:border-blue-400"
-                            autoFocus
-                            {...field}
-                          />
-                        </FormControl>
-                      </div>
-                      <FormMessage className="text-xs" />
-                    </FormItem>
-                  )}
-                />
+          <AnimatePresence mode="wait">
 
-                <motion.div whileHover={{ scale: 1.015 }} whileTap={{ scale: 0.985 }}>
-                  <Button
-                    type="submit"
-                    disabled={form.formState.isSubmitting}
-                    className="w-full h-11 font-bold text-white border-0"
-                    style={{ background: "linear-gradient(135deg, #1a2560, #0f1a4a)" }}
-                  >
-                    {form.formState.isSubmitting ? (
-                      <span className="flex items-center gap-2">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Generating OTP…
-                      </span>
-                    ) : "Generate OTP"}
-                  </Button>
-                </motion.div>
-
-                <div className="text-center pt-1">
-                  <Link href="/login">
-                    <button type="button" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors">
-                      <ArrowLeft className="w-3.5 h-3.5" />
-                      Back to login
-                    </button>
-                  </Link>
-                </div>
-              </form>
-            </Form>
-          ) : (
-            <div className="space-y-4">
-              {/* Account info */}
-              <div className="rounded-lg bg-gray-50 border border-gray-200 px-4 py-3 text-sm flex justify-between items-center">
-                <span className="text-gray-500">Account</span>
-                <span className="font-semibold text-gray-900">{otpInfo.username}</span>
-              </div>
-
-              {/* OTP display */}
-              <div
-                className="rounded-xl border-2 p-5 text-center space-y-3"
-                style={{ borderColor: "rgba(249,115,22,0.25)", background: "rgba(249,115,22,0.04)" }}
+            {/* ── Step: email ── */}
+            {step === "email" && (
+              <motion.div
+                key="email-step"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.22 }}
               >
-                <p className="text-xs font-semibold uppercase tracking-widest text-gray-500">One-Time Password</p>
-                <div className="flex justify-center gap-2">
-                  {otpInfo.otp.split("").map((digit, i) => (
-                    <span
-                      key={i}
-                      className="w-10 h-12 flex items-center justify-center text-2xl font-bold bg-white border-2 border-gray-200 rounded-lg shadow-sm text-gray-900"
+                <div className="flex flex-col items-center mb-6">
+                  <div
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm mb-3"
+                    style={{ background: "#e8eef8" }}
+                  >
+                    <Mail className="w-6 h-6" style={{ color: "#0b2c60" }} />
+                  </div>
+                  <h2 className="text-gray-900 font-bold text-lg">Forgot Password?</h2>
+                  <p className="text-gray-500 text-xs mt-1 text-center max-w-xs">
+                    Enter your registered email address. We'll send a 6-digit code to reset your password.
+                  </p>
+                </div>
+
+                <Form {...emailForm}>
+                  <form onSubmit={emailForm.handleSubmit(onEmailSubmit)} className="space-y-4">
+                    <FormField
+                      control={emailForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="relative">
+                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                            <FormControl>
+                              <Input
+                                type="email"
+                                placeholder="you@example.com"
+                                className="pl-10 h-11 text-gray-900 placeholder:text-gray-400 border-gray-200 bg-white focus-visible:ring-2 focus-visible:ring-blue-400"
+                                autoFocus
+                                autoComplete="email"
+                                {...field}
+                              />
+                            </FormControl>
+                          </div>
+                          <FormMessage className="text-xs" />
+                        </FormItem>
+                      )}
+                    />
+
+                    {serverError && (
+                      <div className="flex items-start gap-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-2.5">
+                        <XCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                        {serverError}
+                      </div>
+                    )}
+
+                    <Button
+                      type="submit"
+                      disabled={submitting}
+                      className="w-full h-11 font-bold text-white border-0"
+                      style={{ background: "linear-gradient(135deg, #1a2560, #0f1a4a)" }}
                     >
-                      {digit}
-                    </span>
+                      {submitting ? (
+                        <span className="flex items-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Sending OTP…
+                        </span>
+                      ) : "Send OTP to Email"}
+                    </Button>
+
+                    <div className="text-center pt-1">
+                      <Link href="/login">
+                        <button type="button" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors">
+                          <ArrowLeft className="w-3.5 h-3.5" />
+                          Back to login
+                        </button>
+                      </Link>
+                    </div>
+                  </form>
+                </Form>
+              </motion.div>
+            )}
+
+            {/* ── Step: OTP ── */}
+            {step === "otp" && (
+              <motion.div
+                key="otp-step"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.22 }}
+              >
+                <div className="flex flex-col items-center mb-6">
+                  <div
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm mb-3"
+                    style={{ background: "#dcfce7" }}
+                  >
+                    <ShieldCheck className="w-6 h-6 text-emerald-600" />
+                  </div>
+                  <h2 className="text-gray-900 font-bold text-lg">Enter OTP</h2>
+                  <p className="text-gray-500 text-xs mt-1 text-center max-w-xs">
+                    We sent a 6-digit code to{" "}
+                    <span className="font-semibold text-gray-700">{maskEmail(email)}</span>
+                  </p>
+                  <p className="text-gray-400 text-[10px] mt-0.5">Check your inbox and spam folder</p>
+                </div>
+
+                {/* OTP digit boxes */}
+                <div className="flex gap-2 justify-center mb-5" onPaste={handleOtpPaste}>
+                  {otpDigits.map((digit, i) => (
+                    <input
+                      key={i}
+                      ref={(el) => { otpRefs.current[i] = el; }}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => handleOtpInput(i, e.target.value)}
+                      onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                      className="w-11 h-12 text-center text-xl font-bold border-2 rounded-xl bg-white outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 text-gray-900"
+                      style={{ borderColor: serverError ? "rgb(239,68,68)" : digit ? "#0b2c60" : "#e5e7eb" }}
+                    />
                   ))}
                 </div>
-                <div className="flex items-center justify-center gap-1.5 text-xs text-amber-600">
-                  <Clock className="w-3.5 h-3.5" />
-                  <span>Expires at {expiryDisplay} · valid 15 minutes</span>
-                </div>
-              </div>
 
-              {/* Copy button */}
-              <Button
-                variant="outline"
-                className="w-full gap-2 h-11 border-gray-200"
-                onClick={copyOtp}
-              >
-                {copied
-                  ? <><CheckCircle2 className="w-4 h-4 text-emerald-600" /> Copied!</>
-                  : <><Copy className="w-4 h-4" /> Copy OTP</>}
-              </Button>
+                {serverError && (
+                  <div className="flex items-start gap-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-2.5 mb-4">
+                    <XCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                    {serverError}
+                  </div>
+                )}
 
-              {/* Instructions */}
-              <div className="rounded-lg bg-blue-50 border border-blue-200 px-4 py-3">
-                <p className="text-xs text-blue-800 leading-relaxed">
-                  Share this 6-digit OTP with <strong>{otpInfo.username}</strong> via WhatsApp or verbally.
-                  They enter it on the Reset Password page along with their new password. Works only once.
-                </p>
-              </div>
-
-              {/* Go to reset page */}
-              <Link href="/reset-password">
                 <Button
-                  className="w-full h-11 font-bold text-white border-0"
+                  onClick={handleOtpSubmit}
+                  disabled={submitting || !otpComplete}
+                  className="w-full h-11 font-bold text-white border-0 mb-4"
                   style={{ background: "linear-gradient(135deg, #1a2560, #0f1a4a)" }}
                 >
-                  Go to Reset Password →
+                  {submitting ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Verifying…
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4" />
+                      Verify OTP
+                    </span>
+                  )}
                 </Button>
-              </Link>
 
-              {/* Generate new */}
-              <button
-                onClick={handleReset}
-                className="w-full flex items-center justify-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors py-1"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                Generate for a different user
-              </button>
-
-              <div className="text-center">
-                <Link href="/login">
-                  <button type="button" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors">
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    Back to login
+                {/* Resend + change email */}
+                <div className="flex flex-col items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleResend}
+                    disabled={resendSeconds > 0}
+                    className="flex items-center gap-1.5 text-sm transition-colors"
+                    style={{ color: resendSeconds > 0 ? "#9ca3af" : "#0b2c60" }}
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    {resendSeconds > 0
+                      ? `Resend OTP in ${resendSeconds}s`
+                      : "Resend OTP"}
                   </button>
-                </Link>
-              </div>
-            </div>
-          )}
+
+                  <button
+                    type="button"
+                    onClick={() => { setStep("email"); setServerError(null); }}
+                    className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    Use a different email
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </motion.div>
     </div>

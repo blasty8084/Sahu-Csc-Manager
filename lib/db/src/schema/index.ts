@@ -10,3 +10,4 @@ export * from "./user_notification_preferences";
 export * from "./password_reset_tokens";
 export * from "./push_subscriptions";
 export * from "./user_sessions";
+export * from "./email_otps";

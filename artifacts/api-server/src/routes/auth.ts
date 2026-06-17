@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, userSessionsTable, settingsTable } from "@workspace/db";
-import { eq, or, and } from "drizzle-orm";
+import { db, usersTable, userSessionsTable, settingsTable, emailOtpsTable } from "@workspace/db";
+import { eq, or, and, isNull, desc } from "drizzle-orm";
 import { z } from "zod/v4";
 import { LoginBody } from "@workspace/api-zod";
 import {
@@ -16,17 +16,20 @@ import {
   notifyLoginSuccess,
   notifyLoginFailed,
   notifyAccountLocked,
-  notifyPasswordChanged,
-  notifyPasswordReset,
   notifyNewRegistration,
 } from "../services/notificationTemplates";
 import { randomUUID } from "crypto";
+import crypto from "node:crypto";
 import { cacheGet, cacheSet } from "../lib/registration-cache";
 
 const router: IRouter = Router();
 
 const MAX_ATTEMPTS = 5;
 const LOCK_MINUTES = 15;
+
+function hashOtp(otp: string): string {
+  return crypto.createHash("sha256").update(otp).digest("hex");
+}
 
 const RegisterBody = z.object({
   username: z
@@ -46,6 +49,7 @@ const RegisterBody = z.object({
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
     .regex(/[a-z]/, "Password must contain at least one lowercase letter")
     .regex(/[0-9]/, "Password must contain at least one number"),
+  emailOtp: z.string().length(6, "OTP must be exactly 6 digits").regex(/^\d{6}$/, "OTP must be numeric"),
 });
 
 function fmtUser(user: any) {
@@ -65,7 +69,7 @@ function fmtUser(user: any) {
 
 // ─── POST /auth/register ──────────────────────────────────────────────────────
 router.post("/auth/register", async (req, res): Promise<void> => {
-  // Check registration toggle server-side (never trust frontend)
+  // Check registration toggle server-side
   const cached = cacheGet("registration_open");
   let isOpen = cached === "true";
   if (cached === null) {
@@ -85,6 +89,31 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     return;
   }
   const data = parsed.data;
+
+  // ── Verify email OTP before doing anything else ───────────────────────────
+  const otpHash = hashOtp(data.emailOtp);
+  const [otpRecord] = await db
+    .select()
+    .from(emailOtpsTable)
+    .where(
+      and(
+        eq(emailOtpsTable.email, data.email),
+        eq(emailOtpsTable.purpose, "registration"),
+        eq(emailOtpsTable.otpHash, otpHash),
+        isNull(emailOtpsTable.usedAt)
+      )
+    )
+    .orderBy(desc(emailOtpsTable.createdAt))
+    .limit(1);
+
+  if (!otpRecord) {
+    res.status(400).json({ error: "Invalid OTP. Please request a new verification code." });
+    return;
+  }
+  if (new Date() > otpRecord.expiresAt) {
+    res.status(400).json({ error: "OTP has expired. Please request a new verification code." });
+    return;
+  }
 
   // Check uniqueness
   const conditions: any[] = [
@@ -109,6 +138,12 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     return;
   }
 
+  // Mark OTP as used before inserting user
+  await db
+    .update(emailOtpsTable)
+    .set({ usedAt: new Date() })
+    .where(eq(emailOtpsTable.id, otpRecord.id));
+
   const passwordHash = await hashPassword(data.password);
   const [user] = await db
     .insert(usersTable)
@@ -125,7 +160,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     })
     .returning();
 
-  await auditLog(user.id, "REGISTER_REQUEST", `New registration submitted: ${user.username}`, getClientIp(req));
+  await auditLog(user.id, "REGISTER_REQUEST", `New registration submitted: ${user.username} (email verified)`, getClientIp(req));
   await notifyNewRegistration(
     "New Registration Request",
     `${user.username} submitted a registration request — pending approval`
@@ -164,7 +199,6 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   const clientIp = getClientIp(req);
   const { browser, os, deviceInfo } = parseDevice(req.headers["user-agent"]);
 
-  // Account status gate
   if (user.status === "PENDING") {
     await auditLog(user.id, "login.failed_inactive", `Login blocked — account pending approval from ${deviceInfo}`, clientIp);
     res.status(403).json({ error: "Your account is pending admin approval. Please wait for an administrator to approve your request.", pending: true });
@@ -176,7 +210,6 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     return;
   }
 
-  // Locked check — auto-unlock if lock window has passed
   if (user.status === "LOCKED" && user.lockedUntil) {
     if (new Date() < user.lockedUntil) {
       const minutesLeft = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60_000);
@@ -188,7 +221,6 @@ router.post("/auth/login", async (req, res): Promise<void> => {
       });
       return;
     }
-    // Lock expired — auto-unlock
     await db
       .update(usersTable)
       .set({ status: "ACTIVE", failedLoginAttempts: 0, lockedUntil: null })
@@ -197,7 +229,6 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     user.failedLoginAttempts = 0;
   }
 
-  // Password check
   const valid = await comparePassword(password, user.passwordHash);
   if (!valid) {
     const attempts = (user.failedLoginAttempts ?? 0) + 1;
@@ -229,18 +260,15 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     return;
   }
 
-  // ── Success ──────────────────────────────────────────────────────────────────
   const sessionId = randomUUID();
   const sessionDuration = rememberMe ? 30 * 24 * 60 * 60 * 1000 : 8 * 60 * 60 * 1000;
   const expiresAt = new Date(Date.now() + sessionDuration);
 
-  // Reset failed attempts + store activeSessionToken for V1 compat
   await db
     .update(usersTable)
     .set({ failedLoginAttempts: 0, status: "ACTIVE", lockedUntil: null, activeSessionToken: sessionId })
     .where(eq(usersTable.id, user.id));
 
-  // Create V2 session record
   await db.insert(userSessionsTable).values({
     userId: user.id,
     sessionId,
@@ -254,8 +282,8 @@ router.post("/auth/login", async (req, res): Promise<void> => {
 
   req.session.userId = user.id;
   req.session.userRole = user.role;
-  req.session.sessionToken = sessionId; // V1 compat
-  req.session.sessionId = sessionId;    // V2
+  req.session.sessionToken = sessionId;
+  req.session.sessionId = sessionId;
   req.session.cookie.maxAge = sessionDuration;
 
   await auditLog(user.id, "login", `Logged in from ${deviceInfo}`, getClientIp(req));
