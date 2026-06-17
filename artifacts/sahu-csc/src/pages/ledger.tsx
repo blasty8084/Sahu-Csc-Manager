@@ -211,19 +211,30 @@ export default function Ledger() {
         {/* Balance Summary */}
         <div className="grid grid-cols-3 gap-2 md:gap-3">
           {[
-            { label: "Balance", value: balance?.balance, color: "text-primary" },
-            { label: "Credits", value: balance?.totalCredits, color: "text-emerald-600" },
-            { label: "Debits", value: balance?.totalDebits, color: "text-red-600" },
+            { label: "Balance", value: balance?.balance, accent: "linear-gradient(90deg, #0b2c60, #1a4a9e)", valColor: "#0b2c60" },
+            { label: "Credits", value: balance?.totalCredits, accent: "linear-gradient(90deg, #10b981, #34d399)", valColor: "#059669" },
+            { label: "Debits", value: balance?.totalDebits, accent: "linear-gradient(90deg, #f43f5e, #fb7185)", valColor: "#e11d48" },
           ].map((item) => (
-            <div key={item.label} className="bg-card border rounded-xl p-3 md:p-4">
-              <p className="text-[10px] md:text-xs text-muted-foreground font-medium">{item.label}</p>
-              {item.value === undefined ? (
-                <Skeleton className="h-5 md:h-7 w-16 md:w-24 mt-0.5 md:mt-1" />
-              ) : (
-                <p className={`text-sm md:text-xl font-bold mt-0.5 md:mt-1 ${item.color} truncate`}>
-                  ₹{(item.value ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 0 })}
-                </p>
-              )}
+            <div
+              key={item.label}
+              className="bg-white rounded-xl overflow-hidden md:border md:border-border md:rounded-xl md:bg-card"
+              style={{ boxShadow: "0 2px 10px rgba(11,44,96,0.08), 0 1px 3px rgba(0,0,0,0.04)" }}
+            >
+              {/* Mobile accent stripe */}
+              <div className="md:hidden" style={{ height: 3, background: item.accent }} />
+              <div className="p-3 md:p-4">
+                <p className="text-[10px] md:text-xs text-muted-foreground font-semibold uppercase tracking-wide">{item.label}</p>
+                {item.value === undefined ? (
+                  <Skeleton className="h-5 md:h-7 w-16 md:w-24 mt-1" />
+                ) : (
+                  <p
+                    className="text-sm md:text-xl font-bold mt-1 truncate"
+                    style={{ color: item.valColor }}
+                  >
+                    ₹{(item.value ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 0 })}
+                  </p>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -331,50 +342,118 @@ export default function Ledger() {
               No entries found. Tap <strong>+</strong> to add your first entry.
             </div>
           ) : (
-            data.entries.map((entry: any) => (
-              <div key={entry.id} className="bg-card border rounded-xl p-4" data-testid={`row-ledger-${entry.id}`}>
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-semibold text-sm truncate">{entry.customerName}</p>
-                      <Badge variant="outline" className="text-[10px] py-0 h-4 flex-shrink-0">{entry.serviceType}</Badge>
+            data.entries.map((entry: any, i: number) => {
+              const isCredit = entry.credit > 0;
+              const isDebit = entry.debit > 0;
+              const accentGradient = isCredit
+                ? "linear-gradient(180deg, #10b981, #059669)"
+                : isDebit
+                ? "linear-gradient(180deg, #f43f5e, #e11d48)"
+                : "linear-gradient(180deg, #0b2c60, #1a4a9e)";
+              const initial = (entry.customerName || "?").charAt(0).toUpperCase();
+              const avatarColors = [
+                "linear-gradient(135deg,#3b82f6,#1d4ed8)",
+                "linear-gradient(135deg,#8b5cf6,#7c3aed)",
+                "linear-gradient(135deg,#f97316,#ea580c)",
+                "linear-gradient(135deg,#14b8a6,#0d9488)",
+                "linear-gradient(135deg,#ec4899,#db2777)",
+                "linear-gradient(135deg,#84cc16,#65a30d)",
+              ];
+              const altGradient = avatarColors[i % avatarColors.length];
+
+              return (
+                <div
+                  key={entry.id}
+                  className="bg-white rounded-xl overflow-hidden flex"
+                  style={{ boxShadow: "0 2px 10px rgba(11,44,96,0.08), 0 1px 3px rgba(0,0,0,0.04)" }}
+                  data-testid={`row-ledger-${entry.id}`}
+                >
+                  {/* Left accent stripe */}
+                  <div style={{ width: 4, background: accentGradient, flexShrink: 0 }} />
+
+                  <div className="flex-1 p-3.5 min-w-0">
+                    {/* Top row: avatar + name + service + actions */}
+                    <div className="flex items-start gap-2.5">
+                      {/* Avatar */}
+                      <div
+                        style={{
+                          width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                          background: altGradient,
+                          boxShadow: `0 3px 8px ${avatarShadow}`,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          color: "#fff", fontSize: 14, fontWeight: 800,
+                        }}
+                      >
+                        {initial}
+                      </div>
+
+                      {/* Name + service + date */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p style={{ fontSize: 13, fontWeight: 700, color: "#0b2c60" }} className="truncate">
+                            {entry.customerName}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                          <span
+                            style={{
+                              fontSize: 9, fontWeight: 700, color: "#0b2c60",
+                              background: "rgba(11,44,96,0.08)", borderRadius: 5,
+                              padding: "2px 6px", letterSpacing: "0.03em",
+                            }}
+                          >
+                            {entry.serviceType}
+                          </span>
+                          <span style={{ fontSize: 10, color: "#94a3b8", fontFamily: "monospace" }}>{entry.date}</span>
+                          {entry.description && (
+                            <span style={{ fontSize: 10, color: "#94a3b8" }} className="truncate">· {entry.description}</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Edit/delete */}
+                      <div className="flex gap-0.5 flex-shrink-0">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(entry)}>
+                          <Pencil size={12} />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(entry.id)}>
+                          <Trash2 size={12} />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <p className="text-xs text-muted-foreground font-mono">{entry.date}</p>
-                      {entry.description && (
-                        <p className="text-xs text-muted-foreground truncate">· {entry.description}</p>
+
+                    {/* Bottom row: credit / debit / balance */}
+                    <div
+                      className="flex items-center gap-3 mt-3 pt-2.5"
+                      style={{ borderTop: "1px solid rgba(11,44,96,0.07)" }}
+                    >
+                      {entry.credit > 0 && (
+                        <div className="flex-1">
+                          <p style={{ fontSize: 9, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>Credit</p>
+                          <p style={{ fontSize: 13, fontWeight: 800, color: "#059669", marginTop: 1 }}>
+                            +₹{entry.credit.toLocaleString("en-IN")}
+                          </p>
+                        </div>
                       )}
+                      {entry.debit > 0 && (
+                        <div className="flex-1">
+                          <p style={{ fontSize: 9, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>Debit</p>
+                          <p style={{ fontSize: 13, fontWeight: 800, color: "#e11d48", marginTop: 1 }}>
+                            -₹{entry.debit.toLocaleString("en-IN")}
+                          </p>
+                        </div>
+                      )}
+                      <div className="ml-auto text-right">
+                        <p style={{ fontSize: 9, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>Balance</p>
+                        <p style={{ fontSize: 13, fontWeight: 800, color: "#0b2c60", marginTop: 1 }}>
+                          ₹{Number(entry.balance).toLocaleString("en-IN")}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex gap-1 flex-shrink-0">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(entry)}>
-                      <Pencil size={12} />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(entry.id)}>
-                      <Trash2 size={12} />
-                    </Button>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 mt-2.5 pt-2.5 border-t border-border">
-                  {entry.credit > 0 && (
-                    <div className="flex-1">
-                      <p className="text-[10px] text-muted-foreground">Credit</p>
-                      <p className="text-sm font-bold text-emerald-600">+₹{entry.credit.toLocaleString("en-IN")}</p>
-                    </div>
-                  )}
-                  {entry.debit > 0 && (
-                    <div className="flex-1">
-                      <p className="text-[10px] text-muted-foreground">Debit</p>
-                      <p className="text-sm font-bold text-red-600">-₹{entry.debit.toLocaleString("en-IN")}</p>
-                    </div>
-                  )}
-                  <div className="text-right">
-                    <p className="text-[10px] text-muted-foreground">Balance</p>
-                    <p className="text-sm font-bold">₹{entry.balance.toLocaleString("en-IN")}</p>
-                  </div>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 
