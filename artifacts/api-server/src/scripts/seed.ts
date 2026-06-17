@@ -146,14 +146,25 @@ async function seed() {
   }
   console.log("✅ Settings seeded");
 
-  // Welcome notification
-  await db.insert(notificationsTable).values({
-    title: "Welcome to SAHU CSC!",
-    message: "Your Common Service Center management platform is ready. Start by adding ledger entries.",
-    type: "success",
-    isRead: false,
-  });
-  console.log("✅ Welcome notification created");
+  // Welcome notification — only insert once
+  const { eq } = await import("drizzle-orm");
+  const existingWelcome = await db
+    .select()
+    .from(notificationsTable)
+    .where(eq(notificationsTable.title, "Welcome to SAHU CSC!"))
+    .limit(1);
+
+  if (existingWelcome.length === 0) {
+    await db.insert(notificationsTable).values({
+      title: "Welcome to SAHU CSC!",
+      message: "Your Common Service Center management platform is ready. Start by adding ledger entries.",
+      type: "success",
+      isRead: false,
+    });
+    console.log("✅ Welcome notification created");
+  } else {
+    console.log("ℹ️  Welcome notification already exists, skipping");
+  }
 
   console.log("\n🎉 Seed complete!");
   console.log("   Login: admin / admin123");
