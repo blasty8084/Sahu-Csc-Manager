@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useIdleTimer } from "@/hooks/use-idle-timer";
 import { SplashScreen } from "@/components/splash-screen";
+import { PageSkeleton } from "@/components/page-skeleton";
 import { useListNotifications } from "@workspace/api-client-react";
 import { updateAppBadge } from "@/lib/pwa-badge";
 import { Redirect } from "wouter";
@@ -161,183 +162,140 @@ function SessionManager() {
   );
 }
 
-// ─── Full-screen loading (used while auth is resolving + Suspense fallback) ────
+// ─── Full-screen loading (used while auth is resolving) ───────────────────────
 function LoadingScreen({ phase = "loading" }: { phase?: LoadingPhase }) {
-  const [count, setCount] = React.useState(0);
-
-  // 0 → 100 counter: fast start, decelerates near the end
-  React.useEffect(() => {
-    if (phase === "timeout") return;
-    let current = 0;
-    const tick = () => {
-      // Ease-out: big steps early, tiny steps near 100
-      const remaining = 100 - current;
-      const step = Math.max(1, Math.ceil(remaining * 0.045));
-      current = Math.min(100, current + step);
-      setCount(current);
-      if (current < 100) {
-        setTimeout(tick, 28 + (current / 100) * 38); // slows as it approaches 100
-      }
-    };
-    const id = setTimeout(tick, 120);
-    return () => clearTimeout(id);
-  }, [phase]);
-
-  const circumference = 2 * Math.PI * 44; // radius 44
-  const strokeDashoffset = circumference - (count / 100) * circumference;
-
   return (
     <div
       className="fixed inset-0 z-50 flex flex-col items-center justify-center select-none"
       style={{ background: "linear-gradient(160deg, #080f2e 0%, #0b2c60 60%, #0f1f4a 100%)" }}
     >
-      {/* Radial glow */}
+      {/* Radial glow behind logo */}
       <div
-        className="absolute pointer-events-none"
+        className="absolute"
         style={{
-          width: 320, height: 320, borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(249,115,22,0.10) 0%, transparent 68%)",
+          width: 260, height: 260,
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(249,115,22,0.10) 0%, transparent 70%)",
+          pointerEvents: "none",
         }}
       />
 
-      {/* Circular progress + logo */}
+      {/* Logo + spinner */}
       <motion.div
-        initial={{ scale: 0.72, opacity: 0 }}
+        initial={{ scale: 0.7, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.45, ease: [0.34, 1.4, 0.64, 1] }}
         className="relative flex items-center justify-center"
-        style={{ width: 140, height: 140 }}
       >
-        {/* SVG circular progress ring */}
-        <svg
-          width="140" height="140"
-          style={{ position: "absolute", top: 0, left: 0, transform: "rotate(-90deg)" }}
-        >
-          {/* Track */}
-          <circle
-            cx="70" cy="70" r="44"
-            fill="none"
-            stroke="rgba(255,255,255,0.07)"
-            strokeWidth="3"
+        {/* Outer ring — stops on timeout */}
+        {phase !== "timeout" ? (
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            className="absolute w-32 h-32 rounded-full"
+            style={{
+              border: "2.5px solid transparent",
+              borderTopColor: "#F97316",
+              borderRightColor: "rgba(249,115,22,0.22)",
+              borderBottomColor: "transparent",
+              borderLeftColor: "rgba(249,115,22,0.08)",
+              willChange: "transform",
+            }}
           />
-          {/* Progress arc */}
-          {phase !== "timeout" && (
-            <circle
-              cx="70" cy="70" r="44"
-              fill="none"
-              stroke="url(#arcGrad)"
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeDasharray={circumference}
-              strokeDashoffset={strokeDashoffset}
-              style={{ transition: "stroke-dashoffset 0.08s linear" }}
-            />
-          )}
-          <defs>
-            <linearGradient id="arcGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#f97316" />
-              <stop offset="100%" stopColor="#fb923c" />
-            </linearGradient>
-          </defs>
-        </svg>
+        ) : (
+          <div
+            className="absolute w-32 h-32 rounded-full"
+            style={{ border: "2.5px solid rgba(249,115,22,0.20)" }}
+          />
+        )}
 
-        {/* Logo circle */}
+        {/* Inner glow ring */}
         <div
-          className="rounded-full overflow-hidden"
+          className="absolute w-28 h-28 rounded-full"
+          style={{ background: "radial-gradient(circle, rgba(249,115,22,0.09) 0%, transparent 70%)" }}
+        />
+
+        {/* Logo */}
+        <div
+          className="w-24 h-24 rounded-full overflow-hidden"
           style={{
-            width: 96, height: 96,
-            border: "3px solid rgba(255,255,255,0.13)",
-            boxShadow: "0 0 28px rgba(249,115,22,0.18), 0 8px 28px rgba(0,0,0,0.5)",
+            border: "3px solid rgba(255,255,255,0.15)",
+            boxShadow: "0 0 32px rgba(249,115,22,0.20), 0 8px 32px rgba(0,0,0,0.50)",
           }}
         >
           <img src="/sahu-logo.png" alt="SAHU CSC" className="w-full h-full object-cover" />
         </div>
       </motion.div>
 
-      {/* Brand name */}
+      {/* Brand name + status */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.28, duration: 0.4 }}
-        className="mt-6 text-center"
+        transition={{ delay: 0.3, duration: 0.4 }}
+        className="mt-7 text-center"
       >
         <h1 className="text-2xl font-black tracking-wide">
           <span className="text-white">SAHU </span>
           <span style={{ color: "#F97316" }}>CSC</span>
         </h1>
-        <p style={{ color: "rgba(255,255,255,0.28)", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", marginTop: 2 }}>
+        <p className="text-white/35 text-[10px] tracking-widest uppercase mt-0.5">
           Management Platform
         </p>
+
+        <div className="mt-4 min-h-[36px] flex flex-col items-center justify-center">
+          {phase === "loading" && (
+            <motion.div className="flex items-center gap-1.5">
+              {[0, 1, 2].map((i) => (
+                <motion.div
+                  key={i}
+                  className="rounded-full"
+                  style={{ width: 5, height: 5, background: "rgba(249,115,22,0.7)" }}
+                  animate={{ opacity: [0.3, 1, 0.3], scale: [0.8, 1.1, 0.8] }}
+                  transition={{ duration: 1.1, repeat: Infinity, delay: i * 0.18 }}
+                />
+              ))}
+            </motion.div>
+          )}
+
+          {phase === "slow" && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-1 text-center">
+              <p className="text-white/60 text-xs">Server is starting up…</p>
+              <p className="text-white/30 text-[10px]">This may take a few seconds</p>
+            </motion.div>
+          )}
+
+          {phase === "timeout" && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3 text-center">
+              <p className="text-white/55 text-xs">Server is taking too long</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="text-xs font-bold px-5 py-2 rounded-full"
+                style={{ background: "linear-gradient(90deg, #f97316, #fb923c)", color: "#fff", boxShadow: "0 4px 14px rgba(249,115,22,0.4)" }}
+              >
+                Retry
+              </button>
+            </motion.div>
+          )}
+        </div>
       </motion.div>
 
-      {/* Counter / status block */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.35, duration: 0.4 }}
-        className="mt-6 flex flex-col items-center gap-2"
-      >
-        {phase !== "timeout" && (
-          <>
-            {/* Big percent number */}
-            <p
-              className="tabular-nums font-black"
-              style={{ fontSize: 38, lineHeight: 1, color: "#fff", letterSpacing: "-0.02em" }}
-            >
-              {count}
-              <span style={{ fontSize: 18, color: "#f97316", marginLeft: 2 }}>%</span>
-            </p>
+      {/* Bottom progress bar */}
+      {phase !== "timeout" && (
+        <div
+          className="absolute overflow-hidden rounded-full"
+          style={{ bottom: 56, width: 56, height: 2, background: "rgba(255,255,255,0.08)" }}
+        >
+          <motion.div
+            className="w-full h-full rounded-full"
+            style={{ background: "linear-gradient(90deg, #F97316, rgba(249,115,22,0.35))" }}
+            animate={{ x: ["-100%", "0%", "100%"] }}
+            transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+          />
+        </div>
+      )}
 
-            {/* Thin progress bar */}
-            <div
-              className="rounded-full overflow-hidden"
-              style={{ width: 120, height: 2, background: "rgba(255,255,255,0.08)" }}
-            >
-              <div
-                className="h-full rounded-full"
-                style={{
-                  width: `${count}%`,
-                  background: "linear-gradient(90deg, #f97316, #fb923c)",
-                  transition: "width 0.08s linear",
-                }}
-              />
-            </div>
-
-            {/* Phase label */}
-            {phase === "slow" ? (
-              <p style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", marginTop: 2 }}>
-                Server starting up…
-              </p>
-            ) : (
-              <p style={{ fontSize: 10, color: "rgba(255,255,255,0.28)" }}>Loading…</p>
-            )}
-          </>
-        )}
-
-        {phase === "timeout" && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center gap-3">
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.50)" }}>Server is taking too long</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="font-bold rounded-full"
-              style={{
-                fontSize: 12, padding: "8px 24px",
-                background: "linear-gradient(90deg, #f97316, #fb923c)",
-                color: "#fff",
-                boxShadow: "0 4px 14px rgba(249,115,22,0.4)",
-              }}
-            >
-              Retry
-            </button>
-          </motion.div>
-        )}
-      </motion.div>
-
-      {/* Footer tag */}
-      <p
-        className="absolute"
-        style={{ bottom: 28, fontSize: 10, letterSpacing: "0.1em", color: "rgba(255,255,255,0.14)" }}
-      >
+      {/* Version tag */}
+      <p className="absolute text-white/18 text-[10px] tracking-wider" style={{ bottom: 28 }}>
         CSC · Odisha
       </p>
     </div>
@@ -388,7 +346,7 @@ function Router() {
         transition={{ duration: 0.15, ease: "easeOut" }}
         style={{ minHeight: "100vh" }}
       >
-        <Suspense fallback={<LoadingScreen />}>
+        <Suspense fallback={<PageSkeleton />}>
           <Switch>
             <Route path="/login" component={Login} />
             <Route path="/register" component={Register} />
