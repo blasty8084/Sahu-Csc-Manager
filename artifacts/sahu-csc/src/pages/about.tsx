@@ -14,6 +14,14 @@ const CHANGELOG = [
   {
     date: "2026-06-18",
     changes: [
+      "Udhari Khata: full customer credit ledger (You Gave / You Got, WhatsApp reminder, PDF export)",
+      "Dashboard Udhari summary card — To Collect / To Pay at a glance",
+      "Seeded demo ledger entries removed — ledger starts clean",
+    ],
+  },
+  {
+    date: "2026-06-18",
+    changes: [
       "Auto receipt number (CSC-YYYY-NNNN) added to all ledger entries",
       "Service type dropdown now scrollable — all 22 services accessible",
       "Docs & System Requirements page added",
