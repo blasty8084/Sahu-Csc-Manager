@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 async function seed() {
   console.log("🌱 Seeding database...");
 
-  // Admin user
+  // Admin user — always reset password so re-seeding restores credentials
   const passwordHash = await bcrypt.hash("admin123", 12);
   const [admin] = await db
     .insert(usersTable)
@@ -17,16 +17,17 @@ async function seed() {
       role: "admin",
       isActive: true,
     })
-    .onConflictDoNothing()
+    .onConflictDoUpdate({
+      target: usersTable.username,
+      set: { passwordHash, isActive: true },
+    })
     .returning();
 
   if (admin) {
-    console.log("✅ Admin user created (username: admin, password: admin123)");
-  } else {
-    console.log("ℹ️  Admin user already exists");
+    console.log("✅ Admin user created/reset (username: admin, password: admin123)");
   }
 
-  // Operator user
+  // Operator user — always reset password so re-seeding restores credentials
   const opHash = await bcrypt.hash("operator123", 12);
   await db.insert(usersTable).values({
     username: "operator",
@@ -36,7 +37,10 @@ async function seed() {
     passwordHash: opHash,
     role: "operator",
     isActive: true,
-  }).onConflictDoNothing();
+  }).onConflictDoUpdate({
+    target: usersTable.username,
+    set: { passwordHash: opHash, isActive: true },
+  });
 
   // Services
   const services = [

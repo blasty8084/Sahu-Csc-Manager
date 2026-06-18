@@ -220,7 +220,7 @@ function LoginFormContent({
 
         {/* Bottom link */}
         <div className="text-center pt-0.5">
-          <Link href="/reset-password">
+          <Link href="/forgot-password">
             <span className="text-xs font-semibold cursor-pointer transition-colors" style={{ color: "#2563eb" }}>
               Have an OTP? Reset password →
             </span>

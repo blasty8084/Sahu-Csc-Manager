@@ -9,7 +9,7 @@ A full-stack CSC (Common Service Center) business management platform for tracki
 | Workflow | Command | Port | Purpose |
 |----------|---------|------|---------|
 | `Start application` | Runs API (8082) + Frontend (5000) together | 5000 → :80 | **Main workflow — use this** |
-| `Seed Database` | `pnpm --filter @workspace/api-server run seed` | — | Seed/reseed sample data (one-shot, exits when done) |
+| `Seed Database` | `pnpm --filter @workspace/api-server run seed` | — | Seed/reseed sample data; **always resets admin + operator passwords** to defaults (one-shot, exits when done) |
 
 > **Note:** `Start application` runs both the Express API (port **8082**) and the Vite frontend (port 5000) in a single workflow. Port 5000 is mapped to external port 80 (Replit proxy). Always use the `Start application` workflow — do NOT run separate API/frontend workflows as they cause port conflicts.
 >
