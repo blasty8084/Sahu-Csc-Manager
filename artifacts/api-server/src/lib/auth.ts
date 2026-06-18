@@ -23,8 +23,9 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "services:view",
     "profile:view", "profile:edit",
     "notifications:view",
+    "udhari:view", "udhari:manage",
   ],
-  user: ["ledger:view", "reports:view", "services:view", "profile:view", "notifications:view"],
+  user: ["ledger:view", "reports:view", "services:view", "profile:view", "notifications:view", "udhari:view"],
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

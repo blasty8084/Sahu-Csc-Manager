@@ -415,6 +415,99 @@ export interface Backup {
   createdAt: string;
 }
 
+export interface UdhariCustomer {
+  id: number;
+  name: string;
+  /** @nullable */
+  mobile?: string | null;
+  /** @nullable */
+  address?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  balance: number;
+  createdBy: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UdhariCustomerInput {
+  name: string;
+  mobile?: string;
+  address?: string;
+  notes?: string;
+}
+
+export interface UdhariCustomerUpdate {
+  name?: string;
+  /** @nullable */
+  mobile?: string | null;
+  /** @nullable */
+  address?: string | null;
+  /** @nullable */
+  notes?: string | null;
+}
+
+export type UdhariEntryType = typeof UdhariEntryType[keyof typeof UdhariEntryType];
+
+
+export const UdhariEntryType = {
+  gave: 'gave',
+  got: 'got',
+} as const;
+
+export interface UdhariEntry {
+  id: number;
+  customerId: number;
+  date: string;
+  type: UdhariEntryType;
+  amount: number;
+  note: string;
+  createdBy: number;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export type UdhariEntryInputType = typeof UdhariEntryInputType[keyof typeof UdhariEntryInputType];
+
+
+export const UdhariEntryInputType = {
+  gave: 'gave',
+  got: 'got',
+} as const;
+
+export interface UdhariEntryInput {
+  date: string;
+  type: UdhariEntryInputType;
+  amount: number;
+  note?: string;
+}
+
+export type UdhariEntryUpdateType = typeof UdhariEntryUpdateType[keyof typeof UdhariEntryUpdateType];
+
+
+export const UdhariEntryUpdateType = {
+  gave: 'gave',
+  got: 'got',
+} as const;
+
+export interface UdhariEntryUpdate {
+  date?: string;
+  type?: UdhariEntryUpdateType;
+  amount?: number;
+  note?: string;
+}
+
+export interface UdhariEntryResponse {
+  entry: UdhariEntry;
+  customer: UdhariCustomer;
+}
+
+export interface UdhariSummary {
+  toCollect: number;
+  toPay: number;
+  totalCustomers: number;
+}
+
 export interface DashboardSummary {
   currentBalance: number;
   todayCredits: number;
@@ -496,4 +589,21 @@ endDate?: string;
 page?: number;
 limit?: number;
 };
+
+export type ListUdhariCustomersParams = {
+/**
+ * Search by name or mobile
+ */
+q?: string;
+sort?: ListUdhariCustomersSort;
+};
+
+export type ListUdhariCustomersSort = typeof ListUdhariCustomersSort[keyof typeof ListUdhariCustomersSort];
+
+
+export const ListUdhariCustomersSort = {
+  recent: 'recent',
+  balance_desc: 'balance_desc',
+  alpha: 'alpha',
+} as const;
 

@@ -7,7 +7,7 @@ import {
   LayoutDashboard, BookOpen, Briefcase, BarChart3, Bell,
   History, Users, Settings, Database, Menu,
   Fingerprint, UserCircle, WifiOff, ArrowDownToLine, HeartPulse, MonitorSmartphone,
-  LogIn, Sun, Moon, Info,
+  LogIn, Sun, Moon, Info, HandCoins,
 } from "lucide-react";
 import { usePendingCount } from "@/hooks/use-pending-count";
 import { Button } from "@/components/ui/button";
@@ -219,6 +219,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const mainNavItems: NavItem[] = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
     { href: "/ledger", label: "Ledger", icon: BookOpen },
+    { href: "/udhari", label: "Udhari Khata", icon: HandCoins },
     { href: "/aeps", label: "AePS Cash", icon: Fingerprint },
     { href: "/services", label: "Services", icon: Briefcase },
     { href: "/reports", label: "Reports", icon: BarChart3 },

@@ -34,6 +34,8 @@ tags:
     description: Backup and restore operations
   - name: dashboard
     description: Dashboard summary data
+  - name: udhari
+    description: Udhari Khata - Customer Credit Ledger
 
 paths:
   /healthz:
@@ -801,6 +803,218 @@ paths:
               schema:
                 $ref: "#/components/schemas/DashboardSummary"
 
+  # Udhari Khata
+  /udhari/summary:
+    get:
+      operationId: getUdhariSummary
+      tags: [udhari]
+      summary: Get Udhari Khata summary totals
+      responses:
+        "200":
+          description: Summary totals
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UdhariSummary"
+
+  /udhari/customers:
+    get:
+      operationId: listUdhariCustomers
+      tags: [udhari]
+      summary: List all customers
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+          description: Search by name or mobile
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum: [recent, balance_desc, alpha]
+      responses:
+        "200":
+          description: List of customers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UdhariCustomer"
+    post:
+      operationId: createUdhariCustomer
+      tags: [udhari]
+      summary: Create a new customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UdhariCustomerInput"
+      responses:
+        "201":
+          description: Customer created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UdhariCustomer"
+
+  /udhari/customers/{customerId}:
+    get:
+      operationId: getUdhariCustomer
+      tags: [udhari]
+      summary: Get a single customer
+      parameters:
+        - in: path
+          name: customerId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Customer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UdhariCustomer"
+    patch:
+      operationId: updateUdhariCustomer
+      tags: [udhari]
+      summary: Update a customer
+      parameters:
+        - in: path
+          name: customerId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UdhariCustomerUpdate"
+      responses:
+        "200":
+          description: Updated customer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UdhariCustomer"
+    delete:
+      operationId: deleteUdhariCustomer
+      tags: [udhari]
+      summary: Delete a customer
+      parameters:
+        - in: path
+          name: customerId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /udhari/customers/{customerId}/entries:
+    get:
+      operationId: listUdhariEntries
+      tags: [udhari]
+      summary: List entries for a customer
+      parameters:
+        - in: path
+          name: customerId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UdhariEntry"
+    post:
+      operationId: createUdhariEntry
+      tags: [udhari]
+      summary: Add an entry for a customer
+      parameters:
+        - in: path
+          name: customerId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UdhariEntryInput"
+      responses:
+        "201":
+          description: Entry created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UdhariEntryResponse"
+
+  /udhari/customers/{customerId}/entries/{entryId}:
+    patch:
+      operationId: updateUdhariEntry
+      tags: [udhari]
+      summary: Update an entry
+      parameters:
+        - in: path
+          name: customerId
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: entryId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UdhariEntryUpdate"
+      responses:
+        "200":
+          description: Updated entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UdhariEntryResponse"
+    delete:
+      operationId: deleteUdhariEntry
+      tags: [udhari]
+      summary: Delete an entry
+      parameters:
+        - in: path
+          name: customerId
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: entryId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UdhariEntryResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -1335,6 +1549,126 @@ components:
           type: integer
         createdAt:
           type: string
+
+    # Udhari Khata
+    UdhariCustomer:
+      type: object
+      required: [id, name, balance, createdBy, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        mobile:
+          type: ["string", "null"]
+        address:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        balance:
+          type: number
+        createdBy:
+          type: integer
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    UdhariCustomerInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        mobile:
+          type: string
+        address:
+          type: string
+        notes:
+          type: string
+
+    UdhariCustomerUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        mobile:
+          type: ["string", "null"]
+        address:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+
+    UdhariEntry:
+      type: object
+      required: [id, customerId, date, type, amount, note, createdBy, createdAt]
+      properties:
+        id:
+          type: integer
+        customerId:
+          type: integer
+        date:
+          type: string
+        type:
+          type: string
+          enum: [gave, got]
+        amount:
+          type: number
+        note:
+          type: string
+        createdBy:
+          type: integer
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    UdhariEntryInput:
+      type: object
+      required: [date, type, amount]
+      properties:
+        date:
+          type: string
+        type:
+          type: string
+          enum: [gave, got]
+        amount:
+          type: number
+        note:
+          type: string
+
+    UdhariEntryUpdate:
+      type: object
+      properties:
+        date:
+          type: string
+        type:
+          type: string
+          enum: [gave, got]
+        amount:
+          type: number
+        note:
+          type: string
+
+    UdhariEntryResponse:
+      type: object
+      required: [entry, customer]
+      properties:
+        entry:
+          $ref: "#/components/schemas/UdhariEntry"
+        customer:
+          $ref: "#/components/schemas/UdhariCustomer"
+
+    UdhariSummary:
+      type: object
+      required: [toCollect, toPay, totalCustomers]
+      properties:
+        toCollect:
+          type: number
+        toPay:
+          type: number
+        totalCustomers:
+          type: integer
 
     # Dashboard
     DashboardSummary:

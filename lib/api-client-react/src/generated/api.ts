@@ -42,6 +42,7 @@ import type {
   ListAuditLogsParams,
   ListLedgerEntriesParams,
   ListNotificationsParams,
+  ListUdhariCustomersParams,
   LoginInput,
   MessageResponse,
   MonthlyReport,
@@ -52,6 +53,14 @@ import type {
   ServiceUpdate,
   Settings,
   SettingsUpdate,
+  UdhariCustomer,
+  UdhariCustomerInput,
+  UdhariCustomerUpdate,
+  UdhariEntry,
+  UdhariEntryInput,
+  UdhariEntryResponse,
+  UdhariEntryUpdate,
+  UdhariSummary,
   UpdatePreferencesInput,
   UpdateProfileInput,
   User,
@@ -3076,4 +3085,750 @@ export function useGetDashboard<TData = Awaited<ReturnType<typeof getDashboard>>
 
 
 
+
+export const getGetUdhariSummaryUrl = () => {
+
+
+
+
+  return `/api/udhari/summary`
+}
+
+/**
+ * @summary Get Udhari Khata summary totals
+ */
+export const getUdhariSummary = async ( options?: RequestInit): Promise<UdhariSummary> => {
+
+  return customFetch<UdhariSummary>(getGetUdhariSummaryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetUdhariSummaryQueryKey = () => {
+    return [
+    `/api/udhari/summary`
+    ] as const;
+    }
+
+
+export const getGetUdhariSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getUdhariSummary>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUdhariSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetUdhariSummaryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getUdhariSummary>>> = ({ signal }) => getUdhariSummary({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getUdhariSummary>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetUdhariSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getUdhariSummary>>>
+export type GetUdhariSummaryQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get Udhari Khata summary totals
+ */
+
+export function useGetUdhariSummary<TData = Awaited<ReturnType<typeof getUdhariSummary>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUdhariSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetUdhariSummaryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListUdhariCustomersUrl = (params?: ListUdhariCustomersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/udhari/customers?${stringifiedParams}` : `/api/udhari/customers`
+}
+
+/**
+ * @summary List all customers
+ */
+export const listUdhariCustomers = async (params?: ListUdhariCustomersParams, options?: RequestInit): Promise<UdhariCustomer[]> => {
+
+  return customFetch<UdhariCustomer[]>(getListUdhariCustomersUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListUdhariCustomersQueryKey = (params?: ListUdhariCustomersParams,) => {
+    return [
+    `/api/udhari/customers`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListUdhariCustomersQueryOptions = <TData = Awaited<ReturnType<typeof listUdhariCustomers>>, TError = ErrorType<unknown>>(params?: ListUdhariCustomersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listUdhariCustomers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListUdhariCustomersQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listUdhariCustomers>>> = ({ signal }) => listUdhariCustomers(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listUdhariCustomers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListUdhariCustomersQueryResult = NonNullable<Awaited<ReturnType<typeof listUdhariCustomers>>>
+export type ListUdhariCustomersQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all customers
+ */
+
+export function useListUdhariCustomers<TData = Awaited<ReturnType<typeof listUdhariCustomers>>, TError = ErrorType<unknown>>(
+ params?: ListUdhariCustomersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listUdhariCustomers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListUdhariCustomersQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateUdhariCustomerUrl = () => {
+
+
+
+
+  return `/api/udhari/customers`
+}
+
+/**
+ * @summary Create a new customer
+ */
+export const createUdhariCustomer = async (udhariCustomerInput: UdhariCustomerInput, options?: RequestInit): Promise<UdhariCustomer> => {
+
+  return customFetch<UdhariCustomer>(getCreateUdhariCustomerUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      udhariCustomerInput,)
+  }
+);}
+
+
+
+
+export const getCreateUdhariCustomerMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createUdhariCustomer>>, TError,{data: BodyType<UdhariCustomerInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createUdhariCustomer>>, TError,{data: BodyType<UdhariCustomerInput>}, TContext> => {
+
+const mutationKey = ['createUdhariCustomer'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createUdhariCustomer>>, {data: BodyType<UdhariCustomerInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createUdhariCustomer(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateUdhariCustomerMutationResult = NonNullable<Awaited<ReturnType<typeof createUdhariCustomer>>>
+    export type CreateUdhariCustomerMutationBody = BodyType<UdhariCustomerInput>
+    export type CreateUdhariCustomerMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a new customer
+ */
+export const useCreateUdhariCustomer = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createUdhariCustomer>>, TError,{data: BodyType<UdhariCustomerInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createUdhariCustomer>>,
+        TError,
+        {data: BodyType<UdhariCustomerInput>},
+        TContext
+      > => {
+      return useMutation(getCreateUdhariCustomerMutationOptions(options));
+    }
+
+export const getGetUdhariCustomerUrl = (customerId: number,) => {
+
+
+
+
+  return `/api/udhari/customers/${customerId}`
+}
+
+/**
+ * @summary Get a single customer
+ */
+export const getUdhariCustomer = async (customerId: number, options?: RequestInit): Promise<UdhariCustomer> => {
+
+  return customFetch<UdhariCustomer>(getGetUdhariCustomerUrl(customerId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetUdhariCustomerQueryKey = (customerId: number,) => {
+    return [
+    `/api/udhari/customers/${customerId}`
+    ] as const;
+    }
+
+
+export const getGetUdhariCustomerQueryOptions = <TData = Awaited<ReturnType<typeof getUdhariCustomer>>, TError = ErrorType<unknown>>(customerId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUdhariCustomer>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetUdhariCustomerQueryKey(customerId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getUdhariCustomer>>> = ({ signal }) => getUdhariCustomer(customerId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(customerId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getUdhariCustomer>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetUdhariCustomerQueryResult = NonNullable<Awaited<ReturnType<typeof getUdhariCustomer>>>
+export type GetUdhariCustomerQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get a single customer
+ */
+
+export function useGetUdhariCustomer<TData = Awaited<ReturnType<typeof getUdhariCustomer>>, TError = ErrorType<unknown>>(
+ customerId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUdhariCustomer>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetUdhariCustomerQueryOptions(customerId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateUdhariCustomerUrl = (customerId: number,) => {
+
+
+
+
+  return `/api/udhari/customers/${customerId}`
+}
+
+/**
+ * @summary Update a customer
+ */
+export const updateUdhariCustomer = async (customerId: number,
+    udhariCustomerUpdate: UdhariCustomerUpdate, options?: RequestInit): Promise<UdhariCustomer> => {
+
+  return customFetch<UdhariCustomer>(getUpdateUdhariCustomerUrl(customerId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      udhariCustomerUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateUdhariCustomerMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateUdhariCustomer>>, TError,{customerId: number;data: BodyType<UdhariCustomerUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateUdhariCustomer>>, TError,{customerId: number;data: BodyType<UdhariCustomerUpdate>}, TContext> => {
+
+const mutationKey = ['updateUdhariCustomer'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateUdhariCustomer>>, {customerId: number;data: BodyType<UdhariCustomerUpdate>}> = (props) => {
+          const {customerId,data} = props ?? {};
+
+          return  updateUdhariCustomer(customerId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateUdhariCustomerMutationResult = NonNullable<Awaited<ReturnType<typeof updateUdhariCustomer>>>
+    export type UpdateUdhariCustomerMutationBody = BodyType<UdhariCustomerUpdate>
+    export type UpdateUdhariCustomerMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update a customer
+ */
+export const useUpdateUdhariCustomer = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateUdhariCustomer>>, TError,{customerId: number;data: BodyType<UdhariCustomerUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateUdhariCustomer>>,
+        TError,
+        {customerId: number;data: BodyType<UdhariCustomerUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateUdhariCustomerMutationOptions(options));
+    }
+
+export const getDeleteUdhariCustomerUrl = (customerId: number,) => {
+
+
+
+
+  return `/api/udhari/customers/${customerId}`
+}
+
+/**
+ * @summary Delete a customer
+ */
+export const deleteUdhariCustomer = async (customerId: number, options?: RequestInit): Promise<MessageResponse> => {
+
+  return customFetch<MessageResponse>(getDeleteUdhariCustomerUrl(customerId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteUdhariCustomerMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteUdhariCustomer>>, TError,{customerId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteUdhariCustomer>>, TError,{customerId: number}, TContext> => {
+
+const mutationKey = ['deleteUdhariCustomer'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteUdhariCustomer>>, {customerId: number}> = (props) => {
+          const {customerId} = props ?? {};
+
+          return  deleteUdhariCustomer(customerId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteUdhariCustomerMutationResult = NonNullable<Awaited<ReturnType<typeof deleteUdhariCustomer>>>
+
+    export type DeleteUdhariCustomerMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a customer
+ */
+export const useDeleteUdhariCustomer = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteUdhariCustomer>>, TError,{customerId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteUdhariCustomer>>,
+        TError,
+        {customerId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteUdhariCustomerMutationOptions(options));
+    }
+
+export const getListUdhariEntriesUrl = (customerId: number,) => {
+
+
+
+
+  return `/api/udhari/customers/${customerId}/entries`
+}
+
+/**
+ * @summary List entries for a customer
+ */
+export const listUdhariEntries = async (customerId: number, options?: RequestInit): Promise<UdhariEntry[]> => {
+
+  return customFetch<UdhariEntry[]>(getListUdhariEntriesUrl(customerId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListUdhariEntriesQueryKey = (customerId: number,) => {
+    return [
+    `/api/udhari/customers/${customerId}/entries`
+    ] as const;
+    }
+
+
+export const getListUdhariEntriesQueryOptions = <TData = Awaited<ReturnType<typeof listUdhariEntries>>, TError = ErrorType<unknown>>(customerId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listUdhariEntries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListUdhariEntriesQueryKey(customerId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listUdhariEntries>>> = ({ signal }) => listUdhariEntries(customerId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(customerId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listUdhariEntries>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListUdhariEntriesQueryResult = NonNullable<Awaited<ReturnType<typeof listUdhariEntries>>>
+export type ListUdhariEntriesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List entries for a customer
+ */
+
+export function useListUdhariEntries<TData = Awaited<ReturnType<typeof listUdhariEntries>>, TError = ErrorType<unknown>>(
+ customerId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listUdhariEntries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListUdhariEntriesQueryOptions(customerId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateUdhariEntryUrl = (customerId: number,) => {
+
+
+
+
+  return `/api/udhari/customers/${customerId}/entries`
+}
+
+/**
+ * @summary Add an entry for a customer
+ */
+export const createUdhariEntry = async (customerId: number,
+    udhariEntryInput: UdhariEntryInput, options?: RequestInit): Promise<UdhariEntryResponse> => {
+
+  return customFetch<UdhariEntryResponse>(getCreateUdhariEntryUrl(customerId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      udhariEntryInput,)
+  }
+);}
+
+
+
+
+export const getCreateUdhariEntryMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createUdhariEntry>>, TError,{customerId: number;data: BodyType<UdhariEntryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createUdhariEntry>>, TError,{customerId: number;data: BodyType<UdhariEntryInput>}, TContext> => {
+
+const mutationKey = ['createUdhariEntry'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createUdhariEntry>>, {customerId: number;data: BodyType<UdhariEntryInput>}> = (props) => {
+          const {customerId,data} = props ?? {};
+
+          return  createUdhariEntry(customerId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateUdhariEntryMutationResult = NonNullable<Awaited<ReturnType<typeof createUdhariEntry>>>
+    export type CreateUdhariEntryMutationBody = BodyType<UdhariEntryInput>
+    export type CreateUdhariEntryMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Add an entry for a customer
+ */
+export const useCreateUdhariEntry = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createUdhariEntry>>, TError,{customerId: number;data: BodyType<UdhariEntryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createUdhariEntry>>,
+        TError,
+        {customerId: number;data: BodyType<UdhariEntryInput>},
+        TContext
+      > => {
+      return useMutation(getCreateUdhariEntryMutationOptions(options));
+    }
+
+export const getUpdateUdhariEntryUrl = (customerId: number,
+    entryId: number,) => {
+
+
+
+
+  return `/api/udhari/customers/${customerId}/entries/${entryId}`
+}
+
+/**
+ * @summary Update an entry
+ */
+export const updateUdhariEntry = async (customerId: number,
+    entryId: number,
+    udhariEntryUpdate: UdhariEntryUpdate, options?: RequestInit): Promise<UdhariEntryResponse> => {
+
+  return customFetch<UdhariEntryResponse>(getUpdateUdhariEntryUrl(customerId,entryId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      udhariEntryUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateUdhariEntryMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateUdhariEntry>>, TError,{customerId: number;entryId: number;data: BodyType<UdhariEntryUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateUdhariEntry>>, TError,{customerId: number;entryId: number;data: BodyType<UdhariEntryUpdate>}, TContext> => {
+
+const mutationKey = ['updateUdhariEntry'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateUdhariEntry>>, {customerId: number;entryId: number;data: BodyType<UdhariEntryUpdate>}> = (props) => {
+          const {customerId,entryId,data} = props ?? {};
+
+          return  updateUdhariEntry(customerId,entryId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateUdhariEntryMutationResult = NonNullable<Awaited<ReturnType<typeof updateUdhariEntry>>>
+    export type UpdateUdhariEntryMutationBody = BodyType<UdhariEntryUpdate>
+    export type UpdateUdhariEntryMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update an entry
+ */
+export const useUpdateUdhariEntry = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateUdhariEntry>>, TError,{customerId: number;entryId: number;data: BodyType<UdhariEntryUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateUdhariEntry>>,
+        TError,
+        {customerId: number;entryId: number;data: BodyType<UdhariEntryUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateUdhariEntryMutationOptions(options));
+    }
+
+export const getDeleteUdhariEntryUrl = (customerId: number,
+    entryId: number,) => {
+
+
+
+
+  return `/api/udhari/customers/${customerId}/entries/${entryId}`
+}
+
+/**
+ * @summary Delete an entry
+ */
+export const deleteUdhariEntry = async (customerId: number,
+    entryId: number, options?: RequestInit): Promise<UdhariEntryResponse> => {
+
+  return customFetch<UdhariEntryResponse>(getDeleteUdhariEntryUrl(customerId,entryId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteUdhariEntryMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteUdhariEntry>>, TError,{customerId: number;entryId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteUdhariEntry>>, TError,{customerId: number;entryId: number}, TContext> => {
+
+const mutationKey = ['deleteUdhariEntry'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteUdhariEntry>>, {customerId: number;entryId: number}> = (props) => {
+          const {customerId,entryId} = props ?? {};
+
+          return  deleteUdhariEntry(customerId,entryId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteUdhariEntryMutationResult = NonNullable<Awaited<ReturnType<typeof deleteUdhariEntry>>>
+
+    export type DeleteUdhariEntryMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete an entry
+ */
+export const useDeleteUdhariEntry = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteUdhariEntry>>, TError,{customerId: number;entryId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteUdhariEntry>>,
+        TError,
+        {customerId: number;entryId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteUdhariEntryMutationOptions(options));
+    }
 

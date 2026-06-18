@@ -15,6 +15,7 @@ import passwordResetRouter from "./password-reset";
 import pushRouter from "./push";
 import sessionsRouter from "./sessions";
 import adminRegistrationRouter from "./admin-registration";
+import udhariRouter from "./udhari";
 
 const router: IRouter = Router();
 
@@ -34,5 +35,6 @@ router.use(aepsRouter);
 router.use(pushRouter);
 router.use(sessionsRouter);
 router.use(adminRegistrationRouter);
+router.use(udhariRouter);
 
 export default router;

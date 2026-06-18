@@ -437,6 +437,7 @@ Full config in `infrastructure/twa/twa-config.json`.
 
 | Date | Change |
 |------|--------|
+| 2026-06-18 | **Udhari Khata module**: Full customer credit ledger — `udhari_customers` + `udhari_entries` DB tables, Express CRUD routes, OpenAPI spec, Orval-generated React Query hooks, customer list page (`/udhari`), per-customer ledger page (`/udhari/:id`), "You Gave"/"You Got" entry buttons, WhatsApp reminder, PDF/print export, dashboard summary card, `HandCoins` nav icon. Permissions: `udhari:view` + `udhari:manage`. |
 | 2026-06-17 | **Merged forgot-password flow**: `/forgot-password` is now a single 4-step page (identifier → OTP → new password → success). `/reset-password` redirects to it. Accepts username, email, or mobile as identifier. OTP resend timer raised to 120s on both forgot-password and register pages. |
 | 2026-06-16 | **Mobile header v2**: Replaced flat navy bar with 3-layer frosted design — gradient accent stripe, white main bar, navy greeting sub-bar. Avatar chip replaces hamburger to open nav drawer. |
 | 2026-06-16 | **Dashboard mobile cards v2**: Stat cards upgraded with gradient accent stripe + gradient icon badge + shadow. Quick actions upgraded to white card + gradient icon badge pattern. |
@@ -447,7 +448,8 @@ Full config in `infrastructure/twa/twa-config.json`.
 
 | Feature | Description | Access |
 |---------|-------------|--------|
-| **Dashboard** | Today's stats, running balance, recent transactions, top services | All users |
+| **Dashboard** | Today's stats, running balance, recent transactions, top services, Udhari summary card | All users |
+| **Udhari Khata** | Customer credit ledger — customer list, per-customer balance, "You Gave"/"You Got" entries, WhatsApp reminder, PDF/print export | All users |
 | **Ledger** | Double-entry ledger with running balance, filters, pagination, offline entry, Excel export | All users |
 | **AePS Cash** | Daily AePS session tracking with transactions, opening/closing balance | All users |
 | **Services** | 22 pre-seeded CSC services across 5 categories; admin can add/edit | All / Admin |

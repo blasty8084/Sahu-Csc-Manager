@@ -43,6 +43,8 @@ const PwaStatus          = lazy(() => import("@/pages/pwa-status"));
 const ServerHealth       = lazy(() => import("@/pages/server-health"));
 const DownloadApp        = lazy(() => import("@/pages/download-app"));
 const About              = lazy(() => import("@/pages/about"));
+const Udhari             = lazy(() => import("@/pages/udhari"));
+const UdhariCustomer     = lazy(() => import("@/pages/udhari-customer"));
 
 // ─── QueryClient ──────────────────────────────────────────────────────────────
 function detectSessionReplaced(error: any) {
@@ -373,6 +375,8 @@ function Router() {
             <Route path="/server-health">{() => <ProtectedRoute component={ServerHealth} adminOnly />}</Route>
             <Route path="/download-app">{() => <ProtectedRoute component={DownloadApp} />}</Route>
             <Route path="/about">{() => <ProtectedRoute component={About} />}</Route>
+            <Route path="/udhari">{() => <ProtectedRoute component={Udhari} />}</Route>
+            <Route path="/udhari/:customerId">{() => <ProtectedRoute component={UdhariCustomer} />}</Route>
             <Route path="/share-target" component={ShareTargetHandler} />
             <Route path="/offline" component={Offline} />
             <Route path="/open-file">{() => <ProtectedRoute component={Ledger} />}</Route>

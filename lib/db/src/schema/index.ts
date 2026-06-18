@@ -11,3 +11,4 @@ export * from "./password_reset_tokens";
 export * from "./push_subscriptions";
 export * from "./user_sessions";
 export * from "./email_otps";
+export * from "./udhari";

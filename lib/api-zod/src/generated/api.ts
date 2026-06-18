@@ -672,3 +672,216 @@ export const GetDashboardResponse = zod.object({
 })
 
 
+/**
+ * @summary Get Udhari Khata summary totals
+ */
+export const GetUdhariSummaryResponse = zod.object({
+  "toCollect": zod.number(),
+  "toPay": zod.number(),
+  "totalCustomers": zod.number()
+})
+
+
+/**
+ * @summary List all customers
+ */
+export const ListUdhariCustomersQueryParams = zod.object({
+  "q": zod.coerce.string().optional().describe('Search by name or mobile'),
+  "sort": zod.enum(['recent', 'balance_desc', 'alpha']).optional()
+})
+
+export const ListUdhariCustomersResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "mobile": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "balance": zod.number(),
+  "createdBy": zod.number(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+export const ListUdhariCustomersResponse = zod.array(ListUdhariCustomersResponseItem)
+
+
+/**
+ * @summary Create a new customer
+ */
+export const CreateUdhariCustomerBody = zod.object({
+  "name": zod.string(),
+  "mobile": zod.string().optional(),
+  "address": zod.string().optional(),
+  "notes": zod.string().optional()
+})
+
+
+/**
+ * @summary Get a single customer
+ */
+export const GetUdhariCustomerParams = zod.object({
+  "customerId": zod.coerce.number()
+})
+
+export const GetUdhariCustomerResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "mobile": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "balance": zod.number(),
+  "createdBy": zod.number(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * @summary Update a customer
+ */
+export const UpdateUdhariCustomerParams = zod.object({
+  "customerId": zod.coerce.number()
+})
+
+export const UpdateUdhariCustomerBody = zod.object({
+  "name": zod.string().optional(),
+  "mobile": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "notes": zod.string().nullish()
+})
+
+export const UpdateUdhariCustomerResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "mobile": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "balance": zod.number(),
+  "createdBy": zod.number(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * @summary Delete a customer
+ */
+export const DeleteUdhariCustomerParams = zod.object({
+  "customerId": zod.coerce.number()
+})
+
+export const DeleteUdhariCustomerResponse = zod.object({
+  "message": zod.string()
+})
+
+
+/**
+ * @summary List entries for a customer
+ */
+export const ListUdhariEntriesParams = zod.object({
+  "customerId": zod.coerce.number()
+})
+
+export const ListUdhariEntriesResponseItem = zod.object({
+  "id": zod.number(),
+  "customerId": zod.number(),
+  "date": zod.string(),
+  "type": zod.enum(['gave', 'got']),
+  "amount": zod.number(),
+  "note": zod.string(),
+  "createdBy": zod.number(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string().optional()
+})
+export const ListUdhariEntriesResponse = zod.array(ListUdhariEntriesResponseItem)
+
+
+/**
+ * @summary Add an entry for a customer
+ */
+export const CreateUdhariEntryParams = zod.object({
+  "customerId": zod.coerce.number()
+})
+
+export const CreateUdhariEntryBody = zod.object({
+  "date": zod.string(),
+  "type": zod.enum(['gave', 'got']),
+  "amount": zod.number(),
+  "note": zod.string().optional()
+})
+
+
+/**
+ * @summary Update an entry
+ */
+export const UpdateUdhariEntryParams = zod.object({
+  "customerId": zod.coerce.number(),
+  "entryId": zod.coerce.number()
+})
+
+export const UpdateUdhariEntryBody = zod.object({
+  "date": zod.string().optional(),
+  "type": zod.enum(['gave', 'got']).optional(),
+  "amount": zod.number().optional(),
+  "note": zod.string().optional()
+})
+
+export const UpdateUdhariEntryResponse = zod.object({
+  "entry": zod.object({
+  "id": zod.number(),
+  "customerId": zod.number(),
+  "date": zod.string(),
+  "type": zod.enum(['gave', 'got']),
+  "amount": zod.number(),
+  "note": zod.string(),
+  "createdBy": zod.number(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string().optional()
+}),
+  "customer": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "mobile": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "balance": zod.number(),
+  "createdBy": zod.number(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+})
+
+
+/**
+ * @summary Delete an entry
+ */
+export const DeleteUdhariEntryParams = zod.object({
+  "customerId": zod.coerce.number(),
+  "entryId": zod.coerce.number()
+})
+
+export const DeleteUdhariEntryResponse = zod.object({
+  "entry": zod.object({
+  "id": zod.number(),
+  "customerId": zod.number(),
+  "date": zod.string(),
+  "type": zod.enum(['gave', 'got']),
+  "amount": zod.number(),
+  "note": zod.string(),
+  "createdBy": zod.number(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string().optional()
+}),
+  "customer": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "mobile": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "balance": zod.number(),
+  "createdBy": zod.number(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+})
+
+
