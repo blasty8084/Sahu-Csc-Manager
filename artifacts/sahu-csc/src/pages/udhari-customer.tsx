@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
@@ -68,6 +69,7 @@ interface EntryFormProps {
 }
 function EntryFormDialog({ customerId, mode, existing, open, onClose }: EntryFormProps) {
   const { toast } = useToast();
+  const qc = useQueryClient();
   const isEdit = !!existing;
   const [form, setForm] = useState({
     date: existing?.date ?? today(),
@@ -78,6 +80,13 @@ function EntryFormDialog({ customerId, mode, existing, open, onClose }: EntryFor
   const create = useCreateUdhariEntry();
   const update = useUpdateUdhariEntry();
 
+  const invalidateAll = () => {
+    qc.invalidateQueries({ queryKey: [`/api/udhari/customers/${customerId}/entries`] });
+    qc.invalidateQueries({ queryKey: [`/api/udhari/customers/${customerId}`] });
+    qc.invalidateQueries({ queryKey: ["/api/udhari/customers"] });
+    qc.invalidateQueries({ queryKey: ["/api/udhari/summary"] });
+  };
+
   const handleSave = async () => {
     const amt = parseFloat(form.amount);
     if (!form.amount || isNaN(amt) || amt <= 0) {
@@ -86,9 +95,11 @@ function EntryFormDialog({ customerId, mode, existing, open, onClose }: EntryFor
     try {
       if (isEdit) {
         await update.mutateAsync({ customerId, entryId: existing.id, data: { date: form.date, type: form.type as any, amount: amt, note: form.note } });
+        invalidateAll();
         toast({ title: "Entry updated" });
       } else {
         await create.mutateAsync({ customerId, data: { date: form.date, type: form.type as any, amount: amt, note: form.note } });
+        invalidateAll();
         toast({ title: form.type === "gave" ? "₹ You Gave recorded" : "₹ You Got recorded" });
       }
       onClose();
@@ -148,6 +159,7 @@ function EntryFormDialog({ customerId, mode, existing, open, onClose }: EntryFor
 // ─── Edit Customer Dialog ──────────────────────────────────────────────────────
 function EditCustomerDialog({ customer, open, onClose }: { customer: any; open: boolean; onClose: () => void }) {
   const { toast } = useToast();
+  const qc = useQueryClient();
   const [form, setForm] = useState({ name: customer.name, mobile: customer.mobile ?? "", address: customer.address ?? "" });
   const update = useUpdateUdhariCustomer();
 
@@ -155,6 +167,8 @@ function EditCustomerDialog({ customer, open, onClose }: { customer: any; open: 
     if (!form.name.trim()) { toast({ title: "Name required", variant: "destructive" }); return; }
     try {
       await update.mutateAsync({ customerId: customer.id, data: { name: form.name.trim(), mobile: form.mobile || null, address: form.address || null } });
+      qc.invalidateQueries({ queryKey: [`/api/udhari/customers/${customer.id}`] });
+      qc.invalidateQueries({ queryKey: ["/api/udhari/customers"] });
       toast({ title: "Customer updated" });
       onClose();
     } catch { toast({ title: "Failed to update", variant: "destructive" }); }
@@ -320,10 +334,13 @@ export default function UdhariCustomer() {
 
   const deleteCustomer = useDeleteUdhariCustomer();
   const deleteEntry = useDeleteUdhariEntry();
+  const qcMain = useQueryClient();
 
   const handleDeleteCustomer = async () => {
     try {
       await deleteCustomer.mutateAsync({ customerId: id });
+      qcMain.invalidateQueries({ queryKey: ["/api/udhari/customers"] });
+      qcMain.invalidateQueries({ queryKey: ["/api/udhari/summary"] });
       toast({ title: "Customer deleted" });
       setLocation("/udhari");
     } catch { toast({ title: "Failed to delete", variant: "destructive" }); }
@@ -333,6 +350,10 @@ export default function UdhariCustomer() {
     if (!deleteEntryId) return;
     try {
       await deleteEntry.mutateAsync({ customerId: id, entryId: deleteEntryId });
+      qcMain.invalidateQueries({ queryKey: [`/api/udhari/customers/${id}/entries`] });
+      qcMain.invalidateQueries({ queryKey: [`/api/udhari/customers/${id}`] });
+      qcMain.invalidateQueries({ queryKey: ["/api/udhari/customers"] });
+      qcMain.invalidateQueries({ queryKey: ["/api/udhari/summary"] });
       toast({ title: "Entry deleted" });
       setDeleteEntryId(null);
     } catch { toast({ title: "Failed to delete", variant: "destructive" }); }
