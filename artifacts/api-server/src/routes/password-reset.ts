@@ -70,9 +70,12 @@ router.post("/auth/send-otp", async (req, res): Promise<void> => {
       .from(usersTable)
       .where(or(eq(usersTable.username, term), eq(usersTable.email, term), eq(usersTable.mobile, term)));
 
-    if (!user || !user.isActive || user.status === "DELETED" || user.status === "INACTIVE") {
-      // Silent — do not confirm account existence
-      res.json({ message: "If an account exists for that username or email, an OTP has been sent.", maskedEmail: null });
+    if (!user) {
+      res.status(404).json({ error: "No account found with that username, email, or mobile number. Please register first.", notRegistered: true });
+      return;
+    }
+    if (!user.isActive || user.status === "DELETED" || user.status === "INACTIVE") {
+      res.status(403).json({ error: "This account has been deactivated. Please contact the administrator." });
       return;
     }
     resolvedEmail = user.email;

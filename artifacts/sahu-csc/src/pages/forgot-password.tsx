@@ -51,6 +51,7 @@ export default function ForgotPassword() {
   const [resetToken, setResetToken] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [notRegistered, setNotRegistered] = useState(false);
 
   // OTP state
   const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", "", "", ""]);
@@ -100,12 +101,16 @@ export default function ForgotPassword() {
     const id = identifier.trim();
     if (!id) { setServerError("Enter your username, email, or mobile number."); return; }
     setServerError(null);
+    setNotRegistered(false);
     setSubmitting(true);
     try {
       const res = await apiPost("send-otp", { identifier: id, purpose: "password_reset" });
       const data = await res.json();
       if (!res.ok) {
-        if (res.status === 429) {
+        if (res.status === 404 && data.notRegistered) {
+          setNotRegistered(true);
+          setServerError(data.error ?? "Account not found. Please register first.");
+        } else if (res.status === 429) {
           setServerError("Too many OTP requests. Please wait 15 minutes before trying again.");
         } else {
           setServerError(data.error ?? "Failed to send OTP. Please try again.");
@@ -326,9 +331,22 @@ export default function ForgotPassword() {
                   </div>
 
                   {serverError && (
-                    <div className="flex items-start gap-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-2.5">
-                      <XCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                      {serverError}
+                    <div className={`flex flex-col gap-2 text-xs rounded-lg p-3 border ${notRegistered ? "bg-amber-50 border-amber-200 text-amber-800" : "bg-red-50 border-red-200 text-red-600"}`}>
+                      <div className="flex items-start gap-2">
+                        <XCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                        <span>{serverError}</span>
+                      </div>
+                      {notRegistered && (
+                        <Link href="/register">
+                          <button
+                            type="button"
+                            className="w-full h-9 rounded-lg font-semibold text-xs border-0 text-white"
+                            style={{ background: "linear-gradient(135deg, #f97316, #ea580c)" }}
+                          >
+                            Register a New Account →
+                          </button>
+                        </Link>
+                      )}
                     </div>
                   )}
 
