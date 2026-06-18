@@ -1,4 +1,4 @@
-import { db, usersTable, servicesTable, ledgerTable, notificationsTable, settingsTable } from "@workspace/db";
+import { db, usersTable, servicesTable, notificationsTable, settingsTable } from "@workspace/db";
 import bcrypt from "bcryptjs";
 import { eq, sql } from "drizzle-orm";
 
@@ -72,63 +72,6 @@ async function seed() {
     await db.insert(servicesTable).values({ ...s, isActive: true }).onConflictDoNothing();
   }
   console.log("✅ Services seeded");
-
-  // ── Ledger (skip entirely if any entries already exist) ───────────────────
-  const [ledgerCheck] = await db.select({ count: sql<number>`count(*)::int` }).from(ledgerTable);
-  if ((ledgerCheck?.count ?? 0) === 0) {
-    const [adminUser] = await db.select().from(usersTable).where(eq(usersTable.username, "admin")).limit(1);
-    if (!adminUser) { console.log("❌ No admin user found"); return; }
-
-    const today = new Date();
-    let runningBalance = 0;
-    const sampleServices = ["PAN Card", "Aadhaar Update", "Electricity Bill", "Mobile Recharge", "Income Certificate", "Photo Print"];
-    const entries = [];
-
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split("T")[0];
-      const txCount = Math.floor(Math.random() * 5) + 1;
-
-      for (let j = 0; j < txCount; j++) {
-        const serviceType = sampleServices[Math.floor(Math.random() * sampleServices.length)];
-        const credit = Math.floor(Math.random() * 300) + 20;
-        runningBalance += credit;
-        entries.push({
-          date: dateStr,
-          customerName: `Customer ${Math.floor(Math.random() * 100) + 1}`,
-          serviceType,
-          credit: String(credit),
-          debit: "0",
-          description: `${serviceType} service`,
-          balance: String(runningBalance),
-          createdBy: adminUser.id,
-        });
-      }
-
-      if (i % 7 === 0) {
-        const debit = Math.floor(Math.random() * 500) + 100;
-        runningBalance -= debit;
-        entries.push({
-          date: dateStr,
-          customerName: "Office Expense",
-          serviceType: "Other Services",
-          credit: "0",
-          debit: String(debit),
-          description: "Office supplies / expenses",
-          balance: String(runningBalance),
-          createdBy: adminUser.id,
-        });
-      }
-    }
-
-    for (const entry of entries) {
-      await db.insert(ledgerTable).values(entry);
-    }
-    console.log(`✅ ${entries.length} ledger entries seeded`);
-  } else {
-    console.log(`ℹ️  Ledger already has ${ledgerCheck?.count} entries, skipping`);
-  }
 
   // ── Settings (skip each key if it already exists) ─────────────────────────
   const defaults: Record<string, string> = {
