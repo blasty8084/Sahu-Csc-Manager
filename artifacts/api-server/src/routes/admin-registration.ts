@@ -83,7 +83,8 @@ router.patch("/admin/settings/registration", requireRole("admin"), async (req, r
   await createNotification(
     "Registration Setting Changed",
     `Public registration has been ${open ? "enabled" : "disabled"} by admin.`,
-    "info"
+    "info",
+    req.session.userId!
   );
 
   res.json({ success: true, open });
@@ -132,7 +133,7 @@ router.patch("/admin/users/:id/approve", requireRole("admin"), async (req, res):
 
   invalidatePendingCache();
   await auditLog(req.session.userId!, "APPROVED", `Approved user: ${user.username}`, getClientIp(req));
-  await createNotification("User Approved", `${user.username}'s account has been approved.`, "success");
+  await createNotification("Account Approved", `Your account has been approved. You can now log in.`, "success", id);
 
   res.json({ success: true, message: "User approved", user: fmtUser(updated) });
 });

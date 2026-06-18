@@ -115,13 +115,24 @@ export async function notifyBackupFailed(adminUserId: number, error: string) {
 }
 
 export async function notifyNewRegistration(title: string, message: string) {
-  await createNotification({
-    title,
-    message,
-    type: "info",
-    priority: "MEDIUM",
-    link: `/users`,
-  });
+  const { db, usersTable } = await import("@workspace/db");
+  const { eq } = await import("drizzle-orm");
+  const admins = await db
+    .select({ id: usersTable.id })
+    .from(usersTable)
+    .where(eq(usersTable.role, "admin"));
+  await Promise.all(
+    admins.map((a) =>
+      createNotification({
+        userId: a.id,
+        title,
+        message,
+        type: "info",
+        priority: "MEDIUM",
+        link: `/users`,
+      })
+    )
+  );
 }
 
 export async function notifyProfileUpdated(userId: number) {

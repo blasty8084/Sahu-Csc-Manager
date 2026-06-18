@@ -100,7 +100,7 @@ router.post("/backups", requireRole("admin"), async (req, res): Promise<void> =>
 
     const [backup] = await db.insert(backupsTable).values({ filename, size }).returning();
     await auditLog(req.session.userId!, "backup.create", `Created backup: ${filename}`, getClientIp(req));
-    await createNotification("Backup Created", `Database backup ${filename} created successfully`, "success");
+    await createNotification("Backup Created", `Database backup ${filename} created successfully`, "success", req.session.userId!);
 
     res.status(201).json({
       id: backup.id,
@@ -133,7 +133,7 @@ router.post("/backups/:id/restore", requireRole("admin"), async (req, res): Prom
   try {
     execSync(`psql "${dbUrl}" -f "${filepath}"`);
     await auditLog(req.session.userId!, "backup.restore", `Restored backup: ${backup.filename}`, getClientIp(req));
-    await createNotification("Backup Restored", `Database restored from ${backup.filename}`, "success");
+    await createNotification("Backup Restored", `Database restored from ${backup.filename}`, "success", req.session.userId!);
     res.json({ message: `Backup ${backup.filename} restored successfully` });
   } catch (err: any) {
     res.status(500).json({ error: `Restore failed: ${err.message}` });

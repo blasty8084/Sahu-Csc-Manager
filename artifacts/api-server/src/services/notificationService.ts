@@ -110,7 +110,12 @@ export async function createSystemNotification(payload: SystemNotificationPayloa
     return userIds.length;
   }
 
-  const users = await db.select({ id: (await import("@workspace/db")).usersTable.id }).from((await import("@workspace/db")).usersTable);
+  const { usersTable: ut } = await import("@workspace/db");
+  const { and: _and, eq: _eq } = await import("drizzle-orm");
+  const users = await db
+    .select({ id: ut.id })
+    .from(ut)
+    .where(_and(_eq(ut.isActive, true), _eq(ut.status, "ACTIVE")));
   await Promise.all(users.map((u) => createNotification({ ...rest, userId: u.id })));
   return users.length;
 }

@@ -191,7 +191,6 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     );
 
   if (!user) {
-    await createNotification("Failed Login Attempt", `Failed login for: ${identifier}`, "warning");
     res.status(401).json({ error: "Invalid credentials" });
     return;
   }

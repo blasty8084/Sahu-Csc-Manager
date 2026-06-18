@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db, pushSubscriptionsTable } from "@workspace/db";
 import { requireAuth } from "../lib/auth";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { pushEnabled, VAPID_PUBLIC_KEY } from "../lib/push";
 
 const router = Router();
@@ -49,10 +49,16 @@ router.delete("/push/unsubscribe", requireAuth, async (req: any, res): Promise<v
     res.status(400).json({ error: "endpoint required" });
     return;
   }
+  const userId = req.session.userId!;
   try {
     await db
       .delete(pushSubscriptionsTable)
-      .where(eq(pushSubscriptionsTable.endpoint, endpoint));
+      .where(
+        and(
+          eq(pushSubscriptionsTable.endpoint, endpoint),
+          eq(pushSubscriptionsTable.userId, userId)
+        )
+      );
     res.json({ success: true });
   } catch {
     res.status(500).json({ error: "Failed to remove subscription" });
