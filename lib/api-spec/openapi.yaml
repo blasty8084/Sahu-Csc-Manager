@@ -803,6 +803,28 @@ paths:
               schema:
                 $ref: "#/components/schemas/DashboardSummary"
 
+  # Receipts
+  /receipts/verify/{token}:
+    get:
+      operationId: verifyReceipt
+      tags: [ledger]
+      summary: Verify and retrieve receipt data by token (public, no auth required)
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Receipt data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReceiptData"
+        "404":
+          description: Receipt not found
+
   # Udhari Khata
   /udhari/summary:
     get:
@@ -1177,7 +1199,36 @@ components:
           type: integer
         createdByName:
           type: ["string", "null"]
+        receiptNumber:
+          type: ["string", "null"]
+        receiptToken:
+          type: ["string", "null"]
         createdAt:
+          type: string
+
+    ReceiptData:
+      type: object
+      required: [receiptNumber, date, customerName, serviceType, credit, debit, description, createdAt, businessName]
+      properties:
+        receiptNumber:
+          type: string
+        date:
+          type: string
+        customerName:
+          type: string
+        serviceType:
+          type: string
+        credit:
+          type: number
+        debit:
+          type: number
+        description:
+          type: string
+        createdByName:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        businessName:
           type: string
 
     LedgerEntryInput:

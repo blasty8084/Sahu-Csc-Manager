@@ -40,6 +40,7 @@ export * from './messageResponse';
 export * from './monthlyReport';
 export * from './notification';
 export * from './notificationType';
+export * from './receiptData';
 export * from './service';
 export * from './serviceBreakdown';
 export * from './serviceInput';

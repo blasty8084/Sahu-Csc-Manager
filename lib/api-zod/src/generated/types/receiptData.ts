@@ -6,21 +6,16 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface LedgerEntry {
-  id: number;
+export interface ReceiptData {
+  receiptNumber: string;
   date: string;
   customerName: string;
   serviceType: string;
   credit: number;
   debit: number;
   description: string;
-  balance: number;
-  createdBy: number;
   /** @nullable */
   createdByName?: string | null;
-  /** @nullable */
-  receiptNumber?: string | null;
-  /** @nullable */
-  receiptToken?: string | null;
   createdAt: string;
+  businessName: string;
 }

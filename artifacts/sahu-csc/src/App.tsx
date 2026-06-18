@@ -45,6 +45,7 @@ const DownloadApp        = lazy(() => import("@/pages/download-app"));
 const About              = lazy(() => import("@/pages/about"));
 const Udhari             = lazy(() => import("@/pages/udhari"));
 const UdhariCustomer     = lazy(() => import("@/pages/udhari-customer"));
+const ReceiptsVerify     = lazy(() => import("@/pages/receipts-verify"));
 
 // ─── QueryClient ──────────────────────────────────────────────────────────────
 function detectSessionReplaced(error: any) {
@@ -377,6 +378,7 @@ function Router() {
             <Route path="/about">{() => <ProtectedRoute component={About} />}</Route>
             <Route path="/udhari">{() => <ProtectedRoute component={Udhari} />}</Route>
             <Route path="/udhari/:customerId">{() => <ProtectedRoute component={UdhariCustomer} />}</Route>
+            <Route path="/receipts/verify/:token" component={ReceiptsVerify} />
             <Route path="/share-target" component={ShareTargetHandler} />
             <Route path="/offline" component={Offline} />
             <Route path="/open-file">{() => <ProtectedRoute component={Ledger} />}</Route>

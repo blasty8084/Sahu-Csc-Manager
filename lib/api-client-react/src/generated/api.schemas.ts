@@ -151,7 +151,25 @@ export interface LedgerEntry {
   createdBy: number;
   /** @nullable */
   createdByName?: string | null;
+  /** @nullable */
+  receiptNumber?: string | null;
+  /** @nullable */
+  receiptToken?: string | null;
   createdAt: string;
+}
+
+export interface ReceiptData {
+  receiptNumber: string;
+  date: string;
+  customerName: string;
+  serviceType: string;
+  credit: number;
+  debit: number;
+  description: string;
+  /** @nullable */
+  createdByName?: string | null;
+  createdAt: string;
+  businessName: string;
 }
 
 export interface LedgerEntryInput {

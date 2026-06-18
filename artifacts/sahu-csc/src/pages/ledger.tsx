@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   useListLedgerEntries, useCreateLedgerEntry, useUpdateLedgerEntry, useDeleteLedgerEntry,
-  useGetBalance, useListServices,
+  useGetBalance, useListServices, useGetSettings,
   getListLedgerEntriesQueryKey, getGetBalanceQueryKey
 } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout";
@@ -17,10 +17,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNetworkStatus } from "@/hooks/use-network-status";
-import { Plus, Pencil, Trash2, Download, Filter, X, ChevronLeft, ChevronRight, Clock, WifiOff } from "lucide-react";
+import { Plus, Pencil, Trash2, Download, Filter, X, ChevronLeft, ChevronRight, Clock, WifiOff, Receipt } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { addPendingEntry, getAllPendingEntries, type PendingLedgerEntry } from "@/lib/offline-db";
 import { syncEngine } from "@/lib/sync-engine";
+import { ReceiptModal } from "@/components/receipt-modal";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -49,6 +50,7 @@ export default function Ledger() {
   const [editEntry, setEditEntry] = useState<any>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [showDeleteAll, setShowDeleteAll] = useState(false);
+  const [receiptEntry, setReceiptEntry] = useState<any>(null);
 
   const refreshPending = async () => {
     try {
@@ -80,6 +82,8 @@ export default function Ledger() {
   const { data, isLoading } = useListLedgerEntries(params);
   const { data: balance } = useGetBalance();
   const { data: services } = useListServices();
+  const { data: settings } = useGetSettings();
+  const businessName = (settings as any)?.businessName ?? "SAHU CSC";
   const createMut = useCreateLedgerEntry();
   const updateMut = useUpdateLedgerEntry();
   const deleteMut = useDeleteLedgerEntry();
@@ -414,8 +418,11 @@ export default function Ledger() {
                         </div>
                       </div>
 
-                      {/* Edit/delete */}
+                      {/* Edit/delete/receipt */}
                       <div className="flex gap-0.5 flex-shrink-0">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" title="Print Receipt" onClick={() => setReceiptEntry(entry)}>
+                          <Receipt size={12} />
+                        </Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(entry)}>
                           <Pencil size={12} />
                         </Button>
@@ -513,6 +520,7 @@ export default function Ledger() {
                       <td className="px-4 py-3 text-muted-foreground text-xs max-w-32 truncate">{entry.description}</td>
                       <td className="px-4 py-3">
                         <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Print Receipt" onClick={() => setReceiptEntry(entry)}><Receipt size={12} /></Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(entry)}><Pencil size={12} /></Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(entry.id)}><Trash2 size={12} /></Button>
                         </div>
@@ -622,6 +630,14 @@ export default function Ledger() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Receipt Modal */}
+      <ReceiptModal
+        entry={receiptEntry}
+        open={!!receiptEntry}
+        onClose={() => setReceiptEntry(null)}
+        businessName={businessName}
+      />
 
       {/* Delete All */}
       <AlertDialog open={showDeleteAll} onOpenChange={setShowDeleteAll}>

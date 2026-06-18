@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { db, ledgerTable, usersTable } from "@workspace/db";
-import { eq, and, gte, lte, like, desc, count, sum } from "drizzle-orm";
+import { db, ledgerTable, usersTable, receiptCountersTable } from "@workspace/db";
+import { eq, and, gte, lte, like, desc, count, sum, sql } from "drizzle-orm";
 import {
   CreateLedgerEntryBody,
   UpdateLedgerEntryBody,
@@ -9,6 +9,7 @@ import {
 } from "@workspace/api-zod";
 import { requireAuth, requireRole, requirePermission, auditLog, getClientIp } from "../lib/auth";
 import { notifyLargeTransaction } from "../services/notificationTemplates";
+import crypto from "crypto";
 
 const router: IRouter = Router();
 
@@ -24,6 +25,8 @@ function formatEntry(entry: any, createdByName?: string | null) {
     balance: parseFloat(entry.balance ?? "0"),
     createdBy: entry.createdBy,
     createdByName: createdByName ?? null,
+    receiptNumber: entry.receiptNumber ?? null,
+    receiptToken: entry.receiptToken ?? null,
     createdAt: entry.createdAt instanceof Date ? entry.createdAt.toISOString() : entry.createdAt,
   };
 }
@@ -31,6 +34,18 @@ function formatEntry(entry: any, createdByName?: string | null) {
 function getUserFilter(req: any) {
   const userId = req.session.userId!;
   return eq(ledgerTable.createdBy, userId);
+}
+
+async function generateReceiptNumber(year: number): Promise<string> {
+  const [row] = await db
+    .insert(receiptCountersTable)
+    .values({ year, lastCount: 1 })
+    .onConflictDoUpdate({
+      target: receiptCountersTable.year,
+      set: { lastCount: sql`${receiptCountersTable.lastCount} + 1` },
+    })
+    .returning({ lastCount: receiptCountersTable.lastCount });
+  return `CSC-${year}-${String(row.lastCount).padStart(4, "0")}`;
 }
 
 router.get("/ledger/balance", requireAuth, requirePermission("ledger:view"), async (req, res): Promise<void> => {
@@ -121,6 +136,7 @@ router.get("/ledger", requireAuth, requirePermission("ledger:view"), async (req,
       serviceType: ledgerTable.serviceType, credit: ledgerTable.credit, debit: ledgerTable.debit,
       description: ledgerTable.description, balance: ledgerTable.balance, createdBy: ledgerTable.createdBy,
       createdAt: ledgerTable.createdAt, createdByName: usersTable.username,
+      receiptNumber: ledgerTable.receiptNumber, receiptToken: ledgerTable.receiptToken,
     })
       .from(ledgerTable)
       .leftJoin(usersTable, eq(ledgerTable.createdBy, usersTable.id))
@@ -146,7 +162,6 @@ router.post("/ledger", requireAuth, requirePermission("ledger:create"), async (r
   const { date, customerName, serviceType, credit, debit, description } = parsed.data;
   const userId = req.session.userId!;
 
-  // Balance computed per-user (each user has their own running balance)
   const balanceResult = await db
     .select({ totalCredits: sum(ledgerTable.credit), totalDebits: sum(ledgerTable.debit) })
     .from(ledgerTable)
@@ -155,6 +170,10 @@ router.post("/ledger", requireAuth, requirePermission("ledger:create"), async (r
   const prevCredits = parseFloat(balanceResult[0]?.totalCredits ?? "0");
   const prevDebits = parseFloat(balanceResult[0]?.totalDebits ?? "0");
   const newBalance = prevCredits - prevDebits + (credit ?? 0) - (debit ?? 0);
+
+  const txYear = new Date(date).getFullYear();
+  const receiptNumber = await generateReceiptNumber(txYear);
+  const receiptToken = crypto.randomUUID();
 
   const [entry] = await db
     .insert(ledgerTable)
@@ -165,10 +184,12 @@ router.post("/ledger", requireAuth, requirePermission("ledger:create"), async (r
       description,
       balance: String(newBalance),
       createdBy: userId,
+      receiptNumber,
+      receiptToken,
     })
     .returning();
 
-  await auditLog(userId, "ledger.create", `Created ledger entry for ${customerName}`, getClientIp(req));
+  await auditLog(userId, "ledger.create", `Created ledger entry for ${customerName} (${receiptNumber})`, getClientIp(req));
 
   const amount = (credit ?? 0) + (debit ?? 0);
   if (amount >= 10000) {
@@ -188,6 +209,7 @@ router.get("/ledger/:id", requireAuth, requirePermission("ledger:view"), async (
     serviceType: ledgerTable.serviceType, credit: ledgerTable.credit, debit: ledgerTable.debit,
     description: ledgerTable.description, balance: ledgerTable.balance, createdBy: ledgerTable.createdBy,
     createdAt: ledgerTable.createdAt, createdByName: usersTable.username,
+    receiptNumber: ledgerTable.receiptNumber, receiptToken: ledgerTable.receiptToken,
   })
     .from(ledgerTable)
     .leftJoin(usersTable, eq(ledgerTable.createdBy, usersTable.id))

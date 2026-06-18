@@ -12,6 +12,8 @@ export const ledgerTable = pgTable("ledger", {
   description: text("description").notNull().default(""),
   balance: numeric("balance", { precision: 12, scale: 2 }).notNull().default("0"),
   createdBy: integer("created_by").notNull(),
+  receiptNumber: text("receipt_number").unique(),
+  receiptToken: text("receipt_token").unique(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 }, (t) => [

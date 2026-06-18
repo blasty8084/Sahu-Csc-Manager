@@ -179,6 +179,8 @@ export const ListLedgerEntriesResponse = zod.object({
   "balance": zod.number(),
   "createdBy": zod.number(),
   "createdByName": zod.string().nullish(),
+  "receiptNumber": zod.string().nullish(),
+  "receiptToken": zod.string().nullish(),
   "createdAt": zod.string()
 })),
   "total": zod.number(),
@@ -246,6 +248,8 @@ export const GetLedgerEntryResponse = zod.object({
   "balance": zod.number(),
   "createdBy": zod.number(),
   "createdByName": zod.string().nullish(),
+  "receiptNumber": zod.string().nullish(),
+  "receiptToken": zod.string().nullish(),
   "createdAt": zod.string()
 })
 
@@ -277,6 +281,8 @@ export const UpdateLedgerEntryResponse = zod.object({
   "balance": zod.number(),
   "createdBy": zod.number(),
   "createdByName": zod.string().nullish(),
+  "receiptNumber": zod.string().nullish(),
+  "receiptToken": zod.string().nullish(),
   "createdAt": zod.string()
 })
 
@@ -662,6 +668,8 @@ export const GetDashboardResponse = zod.object({
   "balance": zod.number(),
   "createdBy": zod.number(),
   "createdByName": zod.string().nullish(),
+  "receiptNumber": zod.string().nullish(),
+  "receiptToken": zod.string().nullish(),
   "createdAt": zod.string()
 })),
   "topServicesMonth": zod.array(zod.object({
@@ -669,6 +677,27 @@ export const GetDashboardResponse = zod.object({
   "count": zod.number(),
   "revenue": zod.number()
 }))
+})
+
+
+/**
+ * @summary Verify and retrieve receipt data by token (public, no auth required)
+ */
+export const VerifyReceiptParams = zod.object({
+  "token": zod.coerce.string()
+})
+
+export const VerifyReceiptResponse = zod.object({
+  "receiptNumber": zod.string(),
+  "date": zod.string(),
+  "customerName": zod.string(),
+  "serviceType": zod.string(),
+  "credit": zod.number(),
+  "debit": zod.number(),
+  "description": zod.string(),
+  "createdByName": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "businessName": zod.string()
 })
 
 

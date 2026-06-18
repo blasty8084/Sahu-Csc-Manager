@@ -16,6 +16,7 @@ import pushRouter from "./push";
 import sessionsRouter from "./sessions";
 import adminRegistrationRouter from "./admin-registration";
 import udhariRouter from "./udhari";
+import receiptsRouter from "./receipts";
 
 const router: IRouter = Router();
 
@@ -36,5 +37,6 @@ router.use(pushRouter);
 router.use(sessionsRouter);
 router.use(adminRegistrationRouter);
 router.use(udhariRouter);
+router.use(receiptsRouter);
 
 export default router;

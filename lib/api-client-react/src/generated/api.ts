@@ -47,6 +47,7 @@ import type {
   MessageResponse,
   MonthlyReport,
   Notification,
+  ReceiptData,
   Service,
   ServiceBreakdown,
   ServiceInput,
@@ -3074,6 +3075,83 @@ export function useGetDashboard<TData = Awaited<ReturnType<typeof getDashboard>>
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetDashboardQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getVerifyReceiptUrl = (token: string,) => {
+
+
+
+
+  return `/api/receipts/verify/${token}`
+}
+
+/**
+ * @summary Verify and retrieve receipt data by token (public, no auth required)
+ */
+export const verifyReceipt = async (token: string, options?: RequestInit): Promise<ReceiptData> => {
+
+  return customFetch<ReceiptData>(getVerifyReceiptUrl(token),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getVerifyReceiptQueryKey = (token: string,) => {
+    return [
+    `/api/receipts/verify/${token}`
+    ] as const;
+    }
+
+
+export const getVerifyReceiptQueryOptions = <TData = Awaited<ReturnType<typeof verifyReceipt>>, TError = ErrorType<void>>(token: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof verifyReceipt>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getVerifyReceiptQueryKey(token);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof verifyReceipt>>> = ({ signal }) => verifyReceipt(token, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(token), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof verifyReceipt>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type VerifyReceiptQueryResult = NonNullable<Awaited<ReturnType<typeof verifyReceipt>>>
+export type VerifyReceiptQueryError = ErrorType<void>
+
+
+/**
+ * @summary Verify and retrieve receipt data by token (public, no auth required)
+ */
+
+export function useVerifyReceipt<TData = Awaited<ReturnType<typeof verifyReceipt>>, TError = ErrorType<void>>(
+ token: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof verifyReceipt>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getVerifyReceiptQueryOptions(token,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
