@@ -1,11 +1,11 @@
 import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
+import { useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -20,10 +20,8 @@ import {
   useGetUdhariSummary,
 } from "@workspace/api-client-react";
 import {
-  Plus, Search, SortAsc, Users, TrendingUp, TrendingDown,
-  ChevronRight, Phone, BookOpen,
+  Plus, Search, SortAsc, Users, ChevronRight, Phone, BookOpen,
 } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function fmt(n: number) {
@@ -57,6 +55,7 @@ function BalanceBadge({ balance }: { balance: number }) {
 // ─── Add Customer Dialog ───────────────────────────────────────────────────────
 function AddCustomerDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { toast } = useToast();
+  const qc = useQueryClient();
   const [form, setForm] = useState({ name: "", mobile: "", address: "", notes: "" });
   const create = useCreateUdhariCustomer();
 
@@ -64,6 +63,9 @@ function AddCustomerDialog({ open, onClose }: { open: boolean; onClose: () => vo
     if (!form.name.trim()) { toast({ title: "Name is required", variant: "destructive" }); return; }
     try {
       await create.mutateAsync({ data: { name: form.name.trim(), mobile: form.mobile || undefined, address: form.address || undefined, notes: form.notes || undefined } });
+      // Immediately refresh the customer list and summary
+      qc.invalidateQueries({ queryKey: ["/api/udhari/customers"] });
+      qc.invalidateQueries({ queryKey: ["/api/udhari/summary"] });
       toast({ title: "Customer added!" });
       setForm({ name: "", mobile: "", address: "", notes: "" });
       onClose();
@@ -74,7 +76,7 @@ function AddCustomerDialog({ open, onClose }: { open: boolean; onClose: () => vo
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-md rounded-2xl md:rounded-lg">
         <DialogHeader>
           <DialogTitle className="text-base font-bold" style={{ color: "#0b2c60" }}>
             Add Customer
@@ -84,11 +86,12 @@ function AddCustomerDialog({ open, onClose }: { open: boolean; onClose: () => vo
           <div>
             <Label className="text-xs font-semibold">Name *</Label>
             <Input className="mt-1 h-9 text-sm" placeholder="Customer name" value={form.name}
-              onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
+              onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+              onKeyDown={(e) => e.key === "Enter" && handleSubmit()} />
           </div>
           <div>
             <Label className="text-xs font-semibold">Mobile (optional)</Label>
-            <Input className="mt-1 h-9 text-sm" placeholder="9xxxxxxxxx" value={form.mobile}
+            <Input className="mt-1 h-9 text-sm" inputMode="numeric" placeholder="9xxxxxxxxx" value={form.mobile}
               onChange={(e) => setForm((p) => ({ ...p, mobile: e.target.value }))} />
           </div>
           <div>
@@ -98,7 +101,7 @@ function AddCustomerDialog({ open, onClose }: { open: boolean; onClose: () => vo
               onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))} />
           </div>
         </div>
-        <DialogFooter className="gap-2 pt-1">
+        <DialogFooter className="gap-2 pt-1 flex-row justify-end">
           <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
           <Button size="sm" disabled={create.isPending} onClick={handleSubmit}
             style={{ background: "linear-gradient(135deg,#0b2c60,#1a4a9e)", color: "#fff" }}>
@@ -146,7 +149,6 @@ function CustomerCard({ c, onClick }: { c: any; onClick: () => void }) {
   const initials = c.name.slice(0, 2).toUpperCase();
   const color = c.balance > 0 ? "#ea580c" : c.balance < 0 ? "#059669" : "#94a3b8";
   const bg = c.balance > 0 ? "rgba(249,115,22,0.10)" : c.balance < 0 ? "rgba(16,185,129,0.10)" : "rgba(148,163,184,0.10)";
-
   return (
     <button onClick={onClick} className="w-full text-left bg-white rounded-2xl overflow-hidden flex items-center gap-3 px-4 py-3"
       style={{ boxShadow: "0 1px 8px rgba(11,44,96,0.07)" }}>
@@ -173,7 +175,6 @@ function CustomerRow({ c, onClick }: { c: any; onClick: () => void }) {
   const initials = c.name.slice(0, 2).toUpperCase();
   const color = c.balance > 0 ? "#ea580c" : c.balance < 0 ? "#059669" : "#94a3b8";
   const bg = c.balance > 0 ? "rgba(249,115,22,0.10)" : c.balance < 0 ? "rgba(16,185,129,0.10)" : "rgba(148,163,184,0.10)";
-
   return (
     <tr className="hover:bg-muted/20 transition-colors cursor-pointer" onClick={onClick}>
       <td className="px-5 py-3">
@@ -200,7 +201,6 @@ function CustomerRow({ c, onClick }: { c: any; onClick: () => void }) {
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function Udhari() {
   const [, setLocation] = useLocation();
-  const isMobile = useIsMobile();
   const [q, setQ] = useState("");
   const [sort, setSort] = useState("recent");
   const [showAdd, setShowAdd] = useState(false);
@@ -218,31 +218,27 @@ export default function Udhari() {
 
   return (
     <Layout>
-      <div className={isMobile ? "space-y-4 pb-6" : "space-y-5"}>
+      <div className="space-y-4 pb-6 sm:space-y-5 sm:pb-0">
+
         {/* Page header */}
         <div className="flex items-start justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-                style={{ background: "linear-gradient(135deg,#0b2c60,#1a4a9e)" }}>
-                <BookOpen size={14} color="#fff" />
-              </div>
-              <div>
-                <h1 className="font-black text-lg leading-tight" style={{ color: "#0b2c60" }}>
-                  Udhari Khata
-                </h1>
-                <p className="text-[11px] text-muted-foreground leading-none">
-                  Customer Credit Ledger
-                </p>
-              </div>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: "linear-gradient(135deg,#0b2c60,#1a4a9e)" }}>
+              <BookOpen size={14} color="#fff" />
+            </div>
+            <div>
+              <h1 className="font-black text-lg leading-tight" style={{ color: "#0b2c60" }}>
+                Udhari Khata
+              </h1>
+              <p className="text-[11px] text-muted-foreground leading-none">Customer Credit Ledger</p>
             </div>
           </div>
-          {!isMobile && (
-            <Button size="sm" onClick={() => setShowAdd(true)}
-              style={{ background: "linear-gradient(135deg,#0b2c60,#1a4a9e)", color: "#fff" }}>
-              <Plus size={14} className="mr-1" /> Add Customer
-            </Button>
-          )}
+          {/* Desktop add button */}
+          <Button size="sm" className="hidden sm:flex" onClick={() => setShowAdd(true)}
+            style={{ background: "linear-gradient(135deg,#0b2c60,#1a4a9e)", color: "#fff" }}>
+            <Plus size={14} className="mr-1" /> Add Customer
+          </Button>
         </div>
 
         {/* Summary */}
@@ -250,14 +246,14 @@ export default function Udhari() {
 
         {/* Search + Sort */}
         <div className="flex gap-2">
-          <div className="relative flex-1">
+          <div className="relative flex-1 min-w-0">
             <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input className="pl-8 h-9 text-sm" placeholder="Search by name or mobile…"
+            <Input className="pl-8 h-9 text-sm w-full" placeholder="Search by name or mobile…"
               value={q} onChange={(e) => setQ(e.target.value)} />
           </div>
           <Select value={sort} onValueChange={setSort}>
-            <SelectTrigger className="h-9 w-[140px] text-xs">
-              <SortAsc size={12} className="mr-1.5 text-muted-foreground" />
+            <SelectTrigger className="h-9 w-[130px] sm:w-[150px] text-xs flex-shrink-0">
+              <SortAsc size={12} className="mr-1 text-muted-foreground flex-shrink-0" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -268,62 +264,56 @@ export default function Udhari() {
           </Select>
         </div>
 
-        {/* List — Mobile */}
-        {isMobile && (
-          <div className="space-y-2">
-            {isLoading ? (
-              [...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-2xl" />)
-            ) : sorted.length === 0 ? (
-              <div className="text-center py-14">
-                <Users size={32} className="mx-auto text-muted-foreground/30 mb-3" />
-                <p className="text-sm font-semibold text-muted-foreground">No customers yet</p>
-                <p className="text-xs text-muted-foreground/60 mt-1">Tap + to add your first customer</p>
-              </div>
-            ) : (
-              sorted.map((c: any) => <CustomerCard key={c.id} c={c} onClick={() => go(c.id)} />)
-            )}
-          </div>
-        )}
+        {/* Mobile card list */}
+        <div className="space-y-2 sm:hidden">
+          {isLoading ? (
+            [...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-2xl" />)
+          ) : sorted.length === 0 ? (
+            <div className="text-center py-14">
+              <Users size={32} className="mx-auto text-muted-foreground/30 mb-3" />
+              <p className="text-sm font-semibold text-muted-foreground">No customers yet</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">Tap + to add your first customer</p>
+            </div>
+          ) : (
+            sorted.map((c: any) => <CustomerCard key={c.id} c={c} onClick={() => go(c.id)} />)
+          )}
+        </div>
 
-        {/* List — Desktop */}
-        {!isMobile && (
-          <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-            {isLoading ? (
-              <div className="p-5 space-y-3">
-                {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
-              </div>
-            ) : sorted.length === 0 ? (
-              <div className="text-center py-16">
-                <Users size={36} className="mx-auto text-muted-foreground/30 mb-3" />
-                <p className="text-sm font-semibold text-muted-foreground">No customers yet</p>
-                <p className="text-xs text-muted-foreground/60 mt-1">Click "Add Customer" to get started</p>
-              </div>
-            ) : (
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border bg-muted/30">
-                    {["CUSTOMER", "MOBILE", "BALANCE", "LAST ACTIVITY", ""].map((h) => (
-                      <th key={h} className="text-left px-5 py-2.5 text-[9px] font-bold text-muted-foreground uppercase tracking-wider">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/50">
-                  {sorted.map((c: any) => <CustomerRow key={c.id} c={c} onClick={() => go(c.id)} />)}
-                </tbody>
-              </table>
-            )}
-          </div>
-        )}
+        {/* Desktop table */}
+        <div className="hidden sm:block bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          {isLoading ? (
+            <div className="p-5 space-y-3">
+              {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+            </div>
+          ) : sorted.length === 0 ? (
+            <div className="text-center py-16">
+              <Users size={36} className="mx-auto text-muted-foreground/30 mb-3" />
+              <p className="text-sm font-semibold text-muted-foreground">No customers yet</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">Click "Add Customer" to get started</p>
+            </div>
+          ) : (
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border bg-muted/30">
+                  {["CUSTOMER", "MOBILE", "BALANCE", "LAST ACTIVITY", ""].map((h) => (
+                    <th key={h} className="text-left px-5 py-2.5 text-[9px] font-bold text-muted-foreground uppercase tracking-wider">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/50">
+                {sorted.map((c: any) => <CustomerRow key={c.id} c={c} onClick={() => go(c.id)} />)}
+              </tbody>
+            </table>
+          )}
+        </div>
 
         {/* Mobile FAB */}
-        {isMobile && (
-          <button
-            onClick={() => setShowAdd(true)}
-            className="fixed bottom-6 right-5 w-14 h-14 rounded-full flex items-center justify-center z-30 shadow-lg"
-            style={{ background: "linear-gradient(135deg,#0b2c60,#1a4a9e)", boxShadow: "0 4px 20px rgba(11,44,96,0.40)" }}>
-            <Plus size={24} color="#fff" />
-          </button>
-        )}
+        <button
+          onClick={() => setShowAdd(true)}
+          className="sm:hidden fixed bottom-20 right-5 w-14 h-14 rounded-full flex items-center justify-center z-30 shadow-lg"
+          style={{ background: "linear-gradient(135deg,#0b2c60,#1a4a9e)", boxShadow: "0 4px 20px rgba(11,44,96,0.40)" }}>
+          <Plus size={24} color="#fff" />
+        </button>
       </div>
 
       <AddCustomerDialog open={showAdd} onClose={() => setShowAdd(false)} />

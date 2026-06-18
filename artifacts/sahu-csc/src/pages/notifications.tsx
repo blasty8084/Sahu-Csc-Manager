@@ -36,28 +36,27 @@ const TABS = [
   { key: "system",   label: "System" },
 ];
 
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+
 async function fetchNotifications(tab: string, search: string, page: number) {
   const params = new URLSearchParams({ tab, page: String(page), limit: "20" });
   if (search) params.set("search", search);
-  const res = await fetch(`/api/notifications?${params}`, { credentials: "include" });
+  const res = await fetch(`${BASE}/api/notifications?${params}`, { credentials: "include" });
   if (!res.ok) throw new Error("Failed to fetch");
   return res.json();
 }
 
 async function markRead(id: number) {
-  await fetch(`/api/notifications/${id}/read`, { method: "PATCH", credentials: "include" });
+  await fetch(`${BASE}/api/notifications/${id}/read`, { method: "PATCH", credentials: "include" });
 }
-
 async function markAllRead() {
-  await fetch(`/api/notifications/read-all`, { method: "POST", credentials: "include" });
+  await fetch(`${BASE}/api/notifications/read-all`, { method: "POST", credentials: "include" });
 }
-
 async function deleteNotif(id: number) {
-  await fetch(`/api/notifications/${id}`, { method: "DELETE", credentials: "include" });
+  await fetch(`${BASE}/api/notifications/${id}`, { method: "DELETE", credentials: "include" });
 }
-
 async function deleteRead() {
-  await fetch(`/api/notifications/bulk`, {
+  await fetch(`${BASE}/api/notifications/bulk`, {
     method: "DELETE",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
@@ -91,64 +90,52 @@ export default function Notifications() {
   const handleTab = (t: string) => { setTab(t); setPage(1); };
   const handleSearch = () => { setSearch(searchInput); setPage(1); };
 
-  const handleMarkRead = async (id: number) => {
-    await markRead(id);
-    invalidate();
-  };
-
-  const handleMarkAll = async () => {
-    await markAllRead();
-    invalidate();
-    toast({ title: "All notifications marked as read" });
-  };
-
-  const handleDelete = async (id: number) => {
-    await deleteNotif(id);
-    invalidate();
-    toast({ title: "Notification deleted" });
-  };
-
-  const handleDeleteRead = async () => {
-    await deleteRead();
-    invalidate();
-    toast({ title: "Read notifications cleared" });
-  };
-
-  const unreadCount = tab === "all" ? notifications.filter((n) => !n.isRead).length : 0;
+  const handleMarkRead = async (id: number) => { await markRead(id); invalidate(); };
+  const handleMarkAll = async () => { await markAllRead(); invalidate(); toast({ title: "All notifications marked as read" }); };
+  const handleDelete = async (id: number) => { await deleteNotif(id); invalidate(); toast({ title: "Notification deleted" }); };
+  const handleDeleteRead = async () => { await deleteRead(); invalidate(); toast({ title: "Read notifications cleared" }); };
 
   return (
     <Layout>
-      <div className="space-y-4 max-w-2xl">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h2 className="text-xl font-bold">Notifications</h2>
+      <div className="space-y-4 w-full max-w-2xl mx-auto sm:mx-0">
+
+        {/* Header */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2 min-w-0">
+            <h2 className="text-xl font-bold truncate">Notifications</h2>
             {total > 0 && (
-              <Badge variant="secondary" className="text-xs">{total}</Badge>
+              <Badge variant="secondary" className="text-xs flex-shrink-0">{total}</Badge>
             )}
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleMarkAll} className="text-xs h-8">
-              <CheckCheck size={13} className="mr-1" />Mark all read
+          <div className="flex gap-2 flex-shrink-0">
+            <Button variant="outline" size="sm" onClick={handleMarkAll}
+              className="text-xs h-8 flex-1 sm:flex-none">
+              <CheckCheck size={13} className="mr-1 flex-shrink-0" />
+              <span className="hidden xs:inline">Mark all read</span>
+              <span className="xs:hidden">Mark read</span>
             </Button>
-            <Button variant="outline" size="sm" onClick={handleDeleteRead} className="text-xs h-8 text-muted-foreground">
-              <Trash2 size={13} className="mr-1" />Clear read
+            <Button variant="outline" size="sm" onClick={handleDeleteRead}
+              className="text-xs h-8 text-muted-foreground flex-1 sm:flex-none">
+              <Trash2 size={13} className="mr-1 flex-shrink-0" />
+              <span className="hidden xs:inline">Clear read</span>
+              <span className="xs:hidden">Clear</span>
             </Button>
           </div>
         </div>
 
         {/* Search */}
         <div className="flex gap-2">
-          <div className="relative flex-1">
+          <div className="relative flex-1 min-w-0">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
-              className="pl-8 h-9 text-sm"
+              className="pl-8 h-9 text-sm w-full"
               placeholder="Search notifications…"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
             />
           </div>
-          <Button size="sm" variant="outline" className="h-9" onClick={handleSearch}>
+          <Button size="sm" variant="outline" className="h-9 flex-shrink-0" onClick={handleSearch}>
             <Filter size={13} />
           </Button>
         </div>
@@ -159,7 +146,7 @@ export default function Notifications() {
             <button
               key={t.key}
               onClick={() => handleTab(t.key)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors
+              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors flex-shrink-0
                 ${tab === t.key
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
@@ -187,7 +174,7 @@ export default function Notifications() {
               return (
                 <div
                   key={n.id}
-                  className={`flex items-start gap-3 p-4 rounded-lg border transition-colors
+                  className={`flex items-start gap-3 p-3 sm:p-4 rounded-lg border transition-colors
                     ${!n.isRead
                       ? "bg-card border-l-4 border-l-primary border-t-border border-r-border border-b-border shadow-sm"
                       : "bg-muted/20 border-border opacity-80"}`}
@@ -195,13 +182,13 @@ export default function Notifications() {
                   <div className="mt-0.5 flex-shrink-0">{tc.icon}</div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <p className={`font-medium text-sm truncate ${!n.isRead ? "" : "text-muted-foreground"}`}>
                           {n.title}
                         </p>
-                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.message}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 break-words">{n.message}</p>
                       </div>
-                      <div className="flex items-center gap-1 flex-shrink-0">
+                      <div className="flex items-center gap-0.5 flex-shrink-0 ml-1">
                         {!n.isRead && (
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleMarkRead(n.id)} title="Mark as read">
                             <CheckCheck size={13} />
@@ -221,7 +208,7 @@ export default function Notifications() {
                       <span className="text-xs text-muted-foreground ml-auto">
                         {new Date(n.createdAt).toLocaleString("en-IN", { dateStyle: "short", timeStyle: "short" })}
                       </span>
-                      {!n.isRead && <span className="w-2 h-2 bg-primary rounded-full" />}
+                      {!n.isRead && <span className="w-2 h-2 bg-primary rounded-full flex-shrink-0" />}
                     </div>
                     {n.link && (
                       <a href={n.link} className="text-xs text-primary underline mt-1 block">View →</a>
