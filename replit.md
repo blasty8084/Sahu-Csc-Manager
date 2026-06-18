@@ -99,6 +99,7 @@ artifacts/
       push.ts       — Push notification subscribe/unsubscribe/list
       password-reset.ts — OTP-based reset; enforces 8+ chars, upper, lower, number
       udhari.ts     — Udhari Khata CRUD: customers + entries + summary; requirePermission enforced on all routes
+      receipts.ts   — Public receipt verify endpoint: GET /api/receipts/verify/:token (no auth required)
       health.ts
     lib/
       auth.ts       — requireAuth / requireRole / requirePermission middleware; parseDevice with deviceType
@@ -132,6 +133,7 @@ artifacts/
       backups.tsx         — Backup and restore (admin)
       sessions.tsx        — Active sessions page: device cards, revoke, logout others, logout ALL
       pwa-status.tsx      — App & Offline Status page (network, sync, storage, push)
+      receipts-verify.tsx — Public receipt verification page (/receipts/verify/:token); no auth required
       offline.tsx         — Offline fallback page
       not-found.tsx
     components/
@@ -139,6 +141,7 @@ artifacts/
       sync-status-bar.tsx     — 🟢/🟡/🔴 global sync status indicator
       pwa-install-banner.tsx  — Install prompt banner
       app-logo.tsx            — AppLogo (sidebar) + LoginLogo (auth pages); both use public/sahu-logo.png
+      receipt-modal.tsx       — Receipt preview dialog: QR code, Print popup, PDF (html2canvas+jsPDF), Web Share API
       theme-provider.tsx
       ui/                     — shadcn/ui components
     hooks/
@@ -201,7 +204,8 @@ artifacts/sahu-csc/public/
 | `users` | id, username, email, role, active_session_token | role: admin / operator |
 | `user_sessions` | sessionId, userId, deviceInfo, browser, os, ipAddress, rememberMe, isActive, expiresAt | V2 multi-device sessions |
 | `session` | sid, sess, expire | Express session store (connect-pg-simple, auto-created) — survives server restarts |
-| `ledger` | date, credit, debit, balance, created_by | Per-user; running balance computed at insert |
+| `ledger` | date, credit, debit, balance, created_by, receipt_number, receipt_token | Per-user; running balance computed at insert; receipt_number = CSC-YYYY-NNNN; receipt_token = UUID |
+| `receipt_counters` | year (PK), last_count | Atomic sequential counter per year for receipt numbering |
 | `aeps_daily` | date, opening_balance, created_by | Unique per (date, created_by) |
 | `aeps_transactions` | session_id, amount, type | Linked to aeps_daily session |
 | `udhari_customers` | id, name, phone, address, balance, created_by | Per-user customer list; balance auto-recalculated on entry change |
@@ -448,6 +452,11 @@ Full config in `infrastructure/twa/twa-config.json`.
 - **Udhari balance sign convention**: `balance > 0` = customer owes you (orange "To Collect"); `balance < 0` = you owe the customer (green "To Pay"); `balance = 0` = settled. The `type` field is `"gave"` (you gave credit → customer owes more) or `"got"` (you received payment → balance decreases).
 - **Udhari dashboard card is conditionally rendered**: `UdhariSummaryCard` returns `null` when `totalCustomers === 0` and both totals are zero — it only appears once the first customer is added.
 - **Seed script does not seed ledger entries**: As of v2, `seed.ts` seeds only users, services, settings, and notifications. Ledger starts clean. Running the seed on a fresh DB will not populate any ledger rows.
+- **Receipt number is atomic via `receipt_counters`**: `POST /api/ledger` uses a Drizzle `INSERT … ON CONFLICT DO UPDATE SET last_count = last_count + 1 RETURNING last_count` on `receipt_counters(year)` to generate collision-safe sequential numbers even under concurrent inserts. Year is derived from the transaction `date` field, not the wall clock, so a backdated entry increments the correct year's counter.
+- **Receipt token is a UUID, not sequential**: `receipt_token = crypto.randomUUID()` is stored on the ledger row. The QR code encodes `https://domain/receipts/verify/<uuid>` — the sequential receipt number is never in the URL, preventing enumeration of all receipts.
+- **`GET /api/receipts/verify/:token` is fully public**: No `requireAuth` — customers can scan the QR code without an account. The response exposes only: `receiptNumber`, `date`, `customerName`, `serviceType`, `credit`, `debit`, `description`, `createdByName`, `createdAt`, `businessName`. Never exposes `balance`, `createdBy` (user ID), or any account data.
+- **Receipt schema applied via raw SQL, not drizzle-kit push**: `drizzle-kit push` requires an interactive TTY and is not safe for non-interactive environments. `receipt_number`, `receipt_token` columns and the `receipt_counters` table were applied via `ALTER TABLE … ADD COLUMN IF NOT EXISTS` and `CREATE TABLE IF NOT EXISTS` direct SQL. Always use this approach for schema changes in automated/non-TTY contexts.
+- **Receipt PDF is client-side**: `html2canvas` captures the receipt DOM element at `scale: 2`; `jsPDF` renders it as A5. This keeps the backend stateless — no server memory overhead for PDF generation. The PDF filename is the receipt number (e.g. `CSC-2026-0001.pdf`).
 
 ---
 
@@ -455,6 +464,7 @@ Full config in `infrastructure/twa/twa-config.json`.
 
 | Date | Change |
 |------|--------|
+| 2026-06-18 | **Receipt & PDF module**: Every new ledger entry gets a sequential `CSC-YYYY-NNNN` receipt number (atomic counter via `receipt_counters` table) and a UUID `receipt_token`. `ReceiptModal` component: navy/saffron themed receipt card with QR code, Print popup (A5), PDF download (html2canvas + jsPDF), Web Share API. Public verify page at `/receipts/verify/:token` — no auth required, branded, scannable by customers. New `receipts.ts` API route (`GET /api/receipts/verify/:token`). Schema: `receipt_number` + `receipt_token` columns added to `ledger`; new `receipt_counters` table. OpenAPI spec + Orval codegen updated. |
 | 2026-06-18 | **v2.0.0** — **Udhari Khata module**: Full customer credit ledger — `udhari_customers` + `udhari_entries` DB tables, Express CRUD routes, OpenAPI spec, Orval-generated React Query hooks, customer list page (`/udhari`), per-customer ledger page (`/udhari/:id`), "You Gave"/"You Got" entry buttons, WhatsApp reminder, PDF/print export, dashboard summary card, `HandCoins` nav icon. Permissions: `udhari:view` + `udhari:manage`. Seeded demo ledger entries removed — ledger starts clean. Version bumped to 2.0.0. |
 | 2026-06-17 | **Merged forgot-password flow**: `/forgot-password` is now a single 4-step page (identifier → OTP → new password → success). `/reset-password` redirects to it. Accepts username, email, or mobile as identifier. OTP resend timer raised to 120s on both forgot-password and register pages. |
 | 2026-06-16 | **Mobile header v2**: Replaced flat navy bar with 3-layer frosted design — gradient accent stripe, white main bar, navy greeting sub-bar. Avatar chip replaces hamburger to open nav drawer. |
@@ -468,7 +478,7 @@ Full config in `infrastructure/twa/twa-config.json`.
 |---------|-------------|--------|
 | **Dashboard** | Today's stats, running balance, recent transactions, top services, Udhari summary card | All users |
 | **Udhari Khata** | Customer credit ledger — customer list, per-customer balance, "You Gave"/"You Got" entries, WhatsApp reminder, PDF/print export | All users |
-| **Ledger** | Double-entry ledger with running balance, filters, pagination, offline entry, Excel export | All users |
+| **Ledger** | Double-entry ledger with running balance, filters, pagination, offline entry, Excel export, receipt generation (CSC-YYYY-NNNN), QR-linked PDF receipt, print, Web Share | All users |
 | **AePS Cash** | Daily AePS session tracking with transactions, opening/closing balance | All users |
 | **Services** | 22 pre-seeded CSC services across 5 categories; admin can add/edit | All / Admin |
 | **Reports** | Daily & monthly bar charts, service breakdown pie chart, Excel export, cached offline | All users |
