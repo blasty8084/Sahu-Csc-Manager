@@ -306,7 +306,7 @@ export default function Ledger() {
             <Input className="h-9 text-sm" value={customerName} onChange={(e) => { setCustomerName(e.target.value); setPage(1); }} placeholder="Search customer..." />
             <Select value={serviceFilter} onValueChange={(v) => { setServiceFilter(v); setPage(1); }}>
               <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="All services" /></SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-60 overflow-y-auto">
                 <SelectItem value="all">All services</SelectItem>
                 {serviceTypes.map((s: string) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
               </SelectContent>
@@ -321,7 +321,7 @@ export default function Ledger() {
           <Input className="w-44 h-8 text-sm" value={customerName} onChange={(e) => { setCustomerName(e.target.value); setPage(1); }} placeholder="Customer name..." />
           <Select value={serviceFilter} onValueChange={(v) => { setServiceFilter(v); setPage(1); }}>
             <SelectTrigger className="w-40 h-8 text-sm"><SelectValue placeholder="All services" /></SelectTrigger>
-            <SelectContent>
+            <SelectContent className="max-h-60 overflow-y-auto">
               <SelectItem value="all">All services</SelectItem>
               {serviceTypes.map((s: string) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
@@ -568,7 +568,7 @@ export default function Ledger() {
                 <Label>Service Type</Label>
                 <Select value={form.watch("serviceType")} onValueChange={(v) => form.setValue("serviceType", v)}>
                   <SelectTrigger data-testid="select-service"><SelectValue placeholder="Select..." /></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-60 overflow-y-auto">
                     {serviceTypes.map((s: string) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                     <SelectItem value="Other">Other</SelectItem>
                   </SelectContent>
