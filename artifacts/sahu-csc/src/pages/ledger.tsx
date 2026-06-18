@@ -393,6 +393,9 @@ export default function Ledger() {
                           <p style={{ fontSize: 13, fontWeight: 700, color: "#0b2c60" }} className="truncate">
                             {entry.customerName}
                           </p>
+                          <span style={{ fontSize: 9, fontWeight: 700, color: "#f97316", background: "rgba(249,115,22,0.10)", borderRadius: 5, padding: "2px 6px", letterSpacing: "0.04em", fontFamily: "monospace", flexShrink: 0 }}>
+                            {`CSC-${new Date(entry.createdAt).getFullYear()}-${String(entry.id).padStart(4, "0")}`}
+                          </span>
                         </div>
                         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                           <span
@@ -463,6 +466,7 @@ export default function Ledger() {
             <table className="w-full text-sm">
               <thead className="border-b bg-muted/30">
                 <tr className="text-left">
+                  <th className="px-4 py-3 font-medium text-muted-foreground">Receipt No</th>
                   <th className="px-4 py-3 font-medium text-muted-foreground">Date</th>
                   <th className="px-4 py-3 font-medium text-muted-foreground">Customer</th>
                   <th className="px-4 py-3 font-medium text-muted-foreground">Service</th>
@@ -477,6 +481,7 @@ export default function Ledger() {
                 {isLoading ? (
                   [...Array(6)].map((_, i) => (
                     <tr key={i} className="border-b border-border">
+                      <td className="px-4 py-3"><Skeleton className="h-3.5 w-24 rounded-full" /></td>
                       <td className="px-4 py-3"><Skeleton className="h-3.5 w-20 rounded-full" /></td>
                       <td className="px-4 py-3"><Skeleton className="h-3.5 rounded-full" style={{ width: `${80 + (i * 27) % 60}px` }} /></td>
                       <td className="px-4 py-3"><Skeleton className="h-5 w-24 rounded-full" /></td>
@@ -489,13 +494,16 @@ export default function Ledger() {
                   ))
                 ) : !data?.entries?.length ? (
                   <tr>
-                    <td colSpan={8} className="text-center text-muted-foreground py-14 text-sm">
+                    <td colSpan={9} className="text-center text-muted-foreground py-14 text-sm">
                       No entries found. Click <strong>New Entry</strong> to start.
                     </td>
                   </tr>
                 ) : (
                   data.entries.map((entry: any) => (
                     <tr key={entry.id} className="hover:bg-muted/20 transition-colors" data-testid={`row-ledger-${entry.id}`}>
+                      <td className="px-4 py-3 font-mono text-xs font-semibold whitespace-nowrap" style={{ color: "#f97316" }}>
+                        {`CSC-${new Date(entry.createdAt).getFullYear()}-${String(entry.id).padStart(4, "0")}`}
+                      </td>
                       <td className="px-4 py-3 font-mono text-xs text-muted-foreground whitespace-nowrap">{entry.date}</td>
                       <td className="px-4 py-3 font-medium">{entry.customerName}</td>
                       <td className="px-4 py-3"><Badge variant="outline" className="text-xs">{entry.serviceType}</Badge></td>

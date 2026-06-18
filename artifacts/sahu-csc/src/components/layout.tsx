@@ -7,7 +7,7 @@ import {
   LayoutDashboard, BookOpen, Briefcase, BarChart3, Bell,
   History, Users, Settings, Database, Menu,
   Fingerprint, UserCircle, WifiOff, ArrowDownToLine, HeartPulse, MonitorSmartphone,
-  LogIn, Sun, Moon,
+  LogIn, Sun, Moon, Info,
 } from "lucide-react";
 import { usePendingCount } from "@/hooks/use-pending-count";
 import { Button } from "@/components/ui/button";
@@ -227,6 +227,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/sessions", label: "Active Sessions", icon: MonitorSmartphone },
     { href: "/pwa-status", label: "App & Offline", icon: WifiOff },
     { href: "/download-app", label: "Download App", icon: ArrowDownToLine },
+    { href: "/about", label: "About & Docs", icon: Info },
   ];
 
   const adminNavItems: NavItem[] = isAdmin ? [
