@@ -1,6 +1,7 @@
 # SAHU CSC — Common Service Center Management Platform
+**Version 2.0.0**
 
-A full-stack CSC (Common Service Center) business management platform for tracking services, ledger accounting, AePS cash management, and reporting. Built for Odisha / India rural service centers. Supports PWA installation, offline operation, and Android TWA packaging.
+A full-stack CSC (Common Service Center) business management platform for tracking services, ledger accounting, AePS cash management, Udhari Khata (customer credit ledger), and reporting. Built for Odisha / India rural service centers. Supports PWA installation, offline operation, and Android TWA packaging.
 
 ---
 
@@ -97,6 +98,7 @@ artifacts/
       preferences.ts
       push.ts       — Push notification subscribe/unsubscribe/list
       password-reset.ts — OTP-based reset; enforces 8+ chars, upper, lower, number
+      udhari.ts     — Udhari Khata CRUD: customers + entries + summary; requirePermission enforced on all routes
       health.ts
     lib/
       auth.ts       — requireAuth / requireRole / requirePermission middleware; parseDevice with deviceType
@@ -105,7 +107,7 @@ artifacts/
       push.ts       — web-push send helpers (sendPushToUser, sendPushToAll)
       vapid.ts      — VAPID key auto-generation on startup
     scripts/
-      seed.ts       — Database seeder (users, services, ledger, settings, notifications)
+      seed.ts       — Database seeder (users, services, settings, notifications) — no ledger entries seeded
       backup.ts     — pg_dump backup to /backups/
       restore.ts    — psql restore from backup file
 
@@ -114,9 +116,11 @@ artifacts/
       login.tsx           — Mobile: navy header + white card, "Register here" CTA, "Trusted. Secure. Reliable." footer
       register.tsx        — Mobile: LoginLogo header + white card, PasswordStrength meter, security badge
       forgot-password.tsx / reset-password.tsx
-      dashboard.tsx       — Real-time stats + offline cache fallback
+      dashboard.tsx       — Real-time stats + offline cache fallback + Udhari summary card
       ledger.tsx          — Transactions with offline queue support
       aeps.tsx            — AePS cash management (per-user)
+      udhari.tsx          — Udhari Khata customer list: search, sort, To Collect / To Pay banner, FAB
+      udhari-customer.tsx — Per-customer ledger: balance banner, You Gave/You Got, entry list, WhatsApp reminder, PDF export
       services.tsx
       reports.tsx         — Charts + Excel export + cached offline
       notifications.tsx
@@ -168,6 +172,7 @@ lib/
     push_subscriptions.ts — Push notification subscriptions (endpoint, p256dh, auth, userId)
     password_reset_tokens.ts
     user_sessions.ts      — V2 multi-device sessions (sessionId, userId, deviceInfo, browser, os, ip, rememberMe, isActive, expiresAt)
+    udhari.ts             — udhari_customers + udhari_entries tables
   api-spec/openapi.yaml   — OpenAPI spec (source of truth)
   api-client-react/src/
     generated/            — Auto-generated React Query hooks + Zod schemas (do not edit)
@@ -199,6 +204,8 @@ artifacts/sahu-csc/public/
 | `ledger` | date, credit, debit, balance, created_by | Per-user; running balance computed at insert |
 | `aeps_daily` | date, opening_balance, created_by | Unique per (date, created_by) |
 | `aeps_transactions` | session_id, amount, type | Linked to aeps_daily session |
+| `udhari_customers` | id, name, phone, address, balance, created_by | Per-user customer list; balance auto-recalculated on entry change |
+| `udhari_entries` | id, customer_id, date, type (gave/got), amount, note, created_by | Individual credit/debit entries per customer |
 | `push_subscriptions` | user_id, endpoint, p256dh, auth | VAPID push subscription storage |
 | `settings` | key, value | Key-value store for business config |
 | `notifications` | title, message, type, is_read, user_id | System notifications |
@@ -262,13 +269,15 @@ Applies at **registration** and **password reset**:
 | `GET /api/reports/*` (daily, monthly, aeps, service-breakdown) | `reports:view` |
 | `GET /api/reports/export` | `reports:export` |
 | `GET /api/dashboard` | `reports:view` |
+| `GET /api/udhari/summary`, `GET /api/udhari/customers`, `GET /api/udhari/customers/:id`, `GET /api/udhari/customers/:id/entries` | `udhari:view` |
+| `POST /api/udhari/customers`, `PATCH /api/udhari/customers/:id`, `DELETE /api/udhari/customers/:id`, `POST/PATCH/DELETE /api/udhari/customers/:id/entries/*` | `udhari:manage` |
 
 **Built-in role permissions:**
 
 | Role | Permissions |
 |------|------------|
 | `admin` | `["*"]` — all permissions |
-| `operator` | `ledger:view`, `ledger:create`, `ledger:edit`, `aeps:view`, `aeps:manage`, `reports:view`, `reports:export`, `services:view`, `profile:view`, `notifications:view` |
+| `operator` | `ledger:view`, `ledger:create`, `ledger:edit`, `aeps:view`, `aeps:manage`, `reports:view`, `reports:export`, `services:view`, `profile:view`, `notifications:view`, `udhari:view`, `udhari:manage` |
 | `user` | `ledger:view`, `reports:view`, `services:view`, `profile:view`, `notifications:view` (read-only) |
 
 ### Audit Logging
@@ -291,6 +300,10 @@ All security events are logged to `audit_logs` with user ID, IP address, and dev
 | `user.role_change` | Admin changed a user's role (logs `old_role → new_role`) |
 | `user.delete` | Admin deleted a user |
 | `password.reset` | Password successfully reset via OTP |
+| `udhari.customer.create` | New Udhari customer added |
+| `udhari.customer.update` | Udhari customer details updated |
+| `udhari.customer.delete` | Udhari customer (and all entries) deleted |
+| `udhari.entry.create` | New You Gave / You Got entry recorded |
 
 ### Device Detection (`parseDevice`)
 
@@ -315,6 +328,7 @@ All data is fully isolated per user:
 | Dashboard stats | ✅ |
 | Reports | ✅ |
 | Excel exports | ✅ |
+| Udhari customers & entries | ✅ |
 
 **Admin oversight** (does not mix with admin's own data):
 - `GET /api/admin/users-overview` — all users' balance summary
@@ -430,6 +444,10 @@ Full config in `infrastructure/twa/twa-config.json`.
 - **OTP resend timer is 120 seconds everywhere**: Both `forgot-password.tsx` and `register.tsx` use `RESEND_COOLDOWN = 120`. Do not change to 60.
 - **send-otp silent success on unknown identifier**: For `password_reset`, if the identifier does not resolve to an active account, `send-otp` returns HTTP 200 with `{ maskedEmail: null }` — never 404. This prevents account enumeration. The frontend always advances to the OTP step regardless.
 - **verify-otp resolves identifier internally**: `POST /api/auth/verify-otp { identifier, otp, purpose: "password_reset" }` performs the same username/email/mobile lookup as `send-otp`, then checks the `email_otps` table. The frontend never sends the raw resolved email.
+- **Udhari balance recalculated server-side**: After every entry insert, update, or delete, `recalcBalance(customerId)` runs a `SUM` query over all entries for that customer and writes the result back to `udhari_customers.balance`. Never trust a client-supplied balance.
+- **Udhari balance sign convention**: `balance > 0` = customer owes you (orange "To Collect"); `balance < 0` = you owe the customer (green "To Pay"); `balance = 0` = settled. The `type` field is `"gave"` (you gave credit → customer owes more) or `"got"` (you received payment → balance decreases).
+- **Udhari dashboard card is conditionally rendered**: `UdhariSummaryCard` returns `null` when `totalCustomers === 0` and both totals are zero — it only appears once the first customer is added.
+- **Seed script does not seed ledger entries**: As of v2, `seed.ts` seeds only users, services, settings, and notifications. Ledger starts clean. Running the seed on a fresh DB will not populate any ledger rows.
 
 ---
 
@@ -437,7 +455,7 @@ Full config in `infrastructure/twa/twa-config.json`.
 
 | Date | Change |
 |------|--------|
-| 2026-06-18 | **Udhari Khata module**: Full customer credit ledger — `udhari_customers` + `udhari_entries` DB tables, Express CRUD routes, OpenAPI spec, Orval-generated React Query hooks, customer list page (`/udhari`), per-customer ledger page (`/udhari/:id`), "You Gave"/"You Got" entry buttons, WhatsApp reminder, PDF/print export, dashboard summary card, `HandCoins` nav icon. Permissions: `udhari:view` + `udhari:manage`. |
+| 2026-06-18 | **v2.0.0** — **Udhari Khata module**: Full customer credit ledger — `udhari_customers` + `udhari_entries` DB tables, Express CRUD routes, OpenAPI spec, Orval-generated React Query hooks, customer list page (`/udhari`), per-customer ledger page (`/udhari/:id`), "You Gave"/"You Got" entry buttons, WhatsApp reminder, PDF/print export, dashboard summary card, `HandCoins` nav icon. Permissions: `udhari:view` + `udhari:manage`. Seeded demo ledger entries removed — ledger starts clean. Version bumped to 2.0.0. |
 | 2026-06-17 | **Merged forgot-password flow**: `/forgot-password` is now a single 4-step page (identifier → OTP → new password → success). `/reset-password` redirects to it. Accepts username, email, or mobile as identifier. OTP resend timer raised to 120s on both forgot-password and register pages. |
 | 2026-06-16 | **Mobile header v2**: Replaced flat navy bar with 3-layer frosted design — gradient accent stripe, white main bar, navy greeting sub-bar. Avatar chip replaces hamburger to open nav drawer. |
 | 2026-06-16 | **Dashboard mobile cards v2**: Stat cards upgraded with gradient accent stripe + gradient icon badge + shadow. Quick actions upgraded to white card + gradient icon badge pattern. |
@@ -481,7 +499,7 @@ Full config in `infrastructure/twa/twa-config.json`.
 - PWA service worker is active in dev mode (`devOptions: { enabled: true }`). If stale assets appear during development, clear site data in DevTools → Application → Clear storage.
 - TWA `assetlinks.json` requires the SHA-256 fingerprint of your Android signing key. Must be served live at `/.well-known/assetlinks.json` on your production domain.
 - `drizzle-kit push` can empty tables on destructive schema changes — always re-seed after schema changes.
-- Seed script uses `onConflictDoNothing()` — safe to run multiple times. Ledger entries are only inserted if the table is empty.
+- Seed script uses `onConflictDoNothing()` — safe to run multiple times. Ledger entries are **not** seeded (removed in v2.0.0) — ledger starts clean.
 - VAPID keys are auto-generated ephemerally if not set as env secrets — push subscriptions break on server restart without persistent keys.
 - **API port is 8082** (not 8080) — Replit holds 8080 via an artifact workflow. The `Start application` command and the Vite proxy in `vite.config.ts` are already set to 8082.
 - **502 on mobile / preview**: Usually means the server is still starting up (takes ~15–20 seconds). Wait for the Replit preview pane to load first, then open the link on your phone. Never use `localhost` on mobile — always use the `.replit.dev` public URL.
