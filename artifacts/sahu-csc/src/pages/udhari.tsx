@@ -63,7 +63,7 @@ function AddCustomerDialog({ open, onClose }: { open: boolean; onClose: () => vo
   const handleSubmit = async () => {
     if (!form.name.trim()) { toast({ title: "Name is required", variant: "destructive" }); return; }
     try {
-      await create.mutateAsync({ name: form.name.trim(), mobile: form.mobile || undefined, address: form.address || undefined, notes: form.notes || undefined });
+      await create.mutateAsync({ data: { name: form.name.trim(), mobile: form.mobile || undefined, address: form.address || undefined, notes: form.notes || undefined } });
       toast({ title: "Customer added!" });
       setForm({ name: "", mobile: "", address: "", notes: "" });
       onClose();

@@ -298,8 +298,8 @@ export default function UdhariCustomer() {
   const isMobile = useIsMobile();
   const { toast } = useToast();
 
-  const { data: customer, isLoading: custLoading } = useGetUdhariCustomer({ customerId: id });
-  const { data: entries = [], isLoading: entriesLoading } = useListUdhariEntries({ customerId: id });
+  const { data: customer, isLoading: custLoading } = useGetUdhariCustomer(id);
+  const { data: entries = [], isLoading: entriesLoading } = useListUdhariEntries(id);
 
   const [entryDialog, setEntryDialog] = useState<{ open: boolean; mode: "gave" | "got"; existing?: any }>({ open: false, mode: "gave" });
   const [editCustomer, setEditCustomer] = useState(false);

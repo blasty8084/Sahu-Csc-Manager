@@ -114,7 +114,7 @@ router.get("/admin/users/pending", requireRole("admin"), async (req, res): Promi
 
 // ─── PATCH /api/admin/users/:id/approve ─────────────────────────────────────
 router.patch("/admin/users/:id/approve", requireRole("admin"), async (req, res): Promise<void> => {
-  const id = parseInt(req.params.id, 10);
+  const id = parseInt(req.params.id as string, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
 
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, id));
@@ -139,7 +139,7 @@ router.patch("/admin/users/:id/approve", requireRole("admin"), async (req, res):
 
 // ─── PATCH /api/admin/users/:id/reject ──────────────────────────────────────
 router.patch("/admin/users/:id/reject", requireRole("admin"), async (req, res): Promise<void> => {
-  const id = parseInt(req.params.id, 10);
+  const id = parseInt(req.params.id as string, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
 
   const reason = typeof req.body.reason === "string" ? req.body.reason.trim() : null;
