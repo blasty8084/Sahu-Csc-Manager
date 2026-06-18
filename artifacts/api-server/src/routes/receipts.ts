@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, ledgerTable, usersTable, settingsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 
 const router: IRouter = Router();
 
@@ -36,9 +36,10 @@ router.get("/receipts/verify/:token", async (req, res): Promise<void> => {
   const settingsRows = await db
     .select({ key: settingsTable.key, value: settingsTable.value })
     .from(settingsTable)
-    .where(eq(settingsTable.key, "businessName"));
+    .where(inArray(settingsTable.key, ["businessName", "businessAddress", "businessMobile", "businessWebsite"]));
 
-  const businessName = settingsRows.find((r) => r.key === "businessName")?.value ?? "SAHU CSC";
+  const getSetting = (key: string, fallback = "") =>
+    settingsRows.find((r) => r.key === key)?.value ?? fallback;
 
   res.json({
     receiptNumber: entry.receiptNumber,
@@ -50,7 +51,10 @@ router.get("/receipts/verify/:token", async (req, res): Promise<void> => {
     description: entry.description,
     createdByName: entry.createdByName ?? null,
     createdAt: entry.createdAt instanceof Date ? entry.createdAt.toISOString() : entry.createdAt,
-    businessName,
+    businessName: getSetting("businessName", "SAHU CSC Center"),
+    businessAddress: getSetting("businessAddress", ""),
+    businessMobile: getSetting("businessMobile", ""),
+    businessWebsite: getSetting("businessWebsite", ""),
   });
 });
 

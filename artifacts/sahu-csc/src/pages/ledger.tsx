@@ -84,6 +84,9 @@ export default function Ledger() {
   const { data: services } = useListServices();
   const { data: settings } = useGetSettings();
   const businessName = (settings as any)?.businessName ?? "SAHU CSC";
+  const businessAddress = (settings as any)?.businessAddress ?? "";
+  const businessMobile = (settings as any)?.businessMobile ?? "";
+  const businessWebsite = (settings as any)?.businessWebsite ?? "";
   const createMut = useCreateLedgerEntry();
   const updateMut = useUpdateLedgerEntry();
   const deleteMut = useDeleteLedgerEntry();
@@ -637,6 +640,9 @@ export default function Ledger() {
         open={!!receiptEntry}
         onClose={() => setReceiptEntry(null)}
         businessName={businessName}
+        businessAddress={businessAddress}
+        businessMobile={businessMobile}
+        businessWebsite={businessWebsite}
       />
 
       {/* Delete All */}

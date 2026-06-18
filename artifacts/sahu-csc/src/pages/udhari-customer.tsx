@@ -18,6 +18,7 @@ import {
   useGetUdhariCustomer, useListUdhariEntries,
   useCreateUdhariEntry, useUpdateUdhariEntry, useDeleteUdhariEntry,
   useUpdateUdhariCustomer, useDeleteUdhariCustomer,
+  useGetSettings,
 } from "@workspace/api-client-react";
 import {
   ArrowLeft, Phone, Pencil, Trash2, MessageCircle,
@@ -305,6 +306,11 @@ export default function UdhariCustomer() {
 
   const { data: customer, isLoading: custLoading } = useGetUdhariCustomer(id);
   const { data: entries = [], isLoading: entriesLoading } = useListUdhariEntries(id);
+  const { data: bizSettings } = useGetSettings();
+  const businessName = (bizSettings as any)?.businessName ?? "SAHU CSC";
+  const businessAddress = (bizSettings as any)?.businessAddress ?? "";
+  const businessMobile = (bizSettings as any)?.businessMobile ?? "";
+  const businessWebsite = (bizSettings as any)?.businessWebsite ?? "";
 
   const [entryDialog, setEntryDialog] = useState<{ open: boolean; mode: "gave" | "got"; existing?: any }>({ open: false, mode: "gave" });
   const [editCustomer, setEditCustomer] = useState(false);
@@ -557,6 +563,10 @@ export default function UdhariCustomer() {
           };
         })() : null}
         onClose={() => setReceiptEntry(null)}
+        businessName={businessName}
+        businessAddress={businessAddress}
+        businessMobile={businessMobile}
+        businessWebsite={businessWebsite}
       />
     </Layout>
   );

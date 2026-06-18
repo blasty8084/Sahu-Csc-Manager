@@ -95,7 +95,7 @@ export default function Settings() {
 
   const form = useForm({
     defaultValues: {
-      businessName: "", businessAddress: "", businessMobile: "", businessEmail: "",
+      businessName: "", businessAddress: "", businessMobile: "", businessEmail: "", businessWebsite: "",
       language: "en", theme: "light", currency: "INR", autoBackup: false,
       backupFrequencyDays: 7,
     }
@@ -108,6 +108,7 @@ export default function Settings() {
         businessAddress: settings.businessAddress,
         businessMobile: settings.businessMobile,
         businessEmail: settings.businessEmail ?? "",
+        businessWebsite: (settings as any).businessWebsite ?? "",
         language: settings.language,
         theme: settings.theme,
         currency: settings.currency,
@@ -163,6 +164,10 @@ export default function Settings() {
                     <Label>Email</Label>
                     <Input type="email" {...form.register("businessEmail")} data-testid="input-business-email" />
                   </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Website</Label>
+                  <Input {...form.register("businessWebsite")} placeholder="e.g. sahucsc.in" data-testid="input-business-website" />
                 </div>
               </CardContent>
             </Card>

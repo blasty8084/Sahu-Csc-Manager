@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Fingerprint, Plus, Trash2, ArrowDownLeft, ArrowUpRight, Wallet, Pencil, ChevronLeft, ChevronRight, Filter, X, List, CalendarDays, Receipt } from "lucide-react";
 import { ReceiptModal } from "@/components/receipt-modal";
 import { useForm } from "react-hook-form";
+import { useGetSettings } from "@workspace/api-client-react";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -84,6 +85,11 @@ type AllTxResponse = {
 function DailyTab() {
   const { toast } = useToast();
   const qc = useQueryClient();
+  const { data: bizSettings } = useGetSettings();
+  const businessName = (bizSettings as any)?.businessName ?? "SAHU CSC";
+  const businessAddress = (bizSettings as any)?.businessAddress ?? "";
+  const businessMobile = (bizSettings as any)?.businessMobile ?? "";
+  const businessWebsite = (bizSettings as any)?.businessWebsite ?? "";
   const [selectedDate, setSelectedDate] = useState(todayStr());
   const [showOpenDialog, setShowOpenDialog] = useState(false);
   const [showTxDialog, setShowTxDialog] = useState(false);
@@ -571,6 +577,10 @@ function DailyTab() {
           createdAt: receiptTx.createdAt,
         } : null}
         onClose={() => setReceiptTx(null)}
+        businessName={businessName}
+        businessAddress={businessAddress}
+        businessMobile={businessMobile}
+        businessWebsite={businessWebsite}
       />
     </div>
   );
@@ -582,6 +592,11 @@ function DailyTab() {
 function AllTransactionsTab() {
   const { toast } = useToast();
   const qc = useQueryClient();
+  const { data: bizSettings } = useGetSettings();
+  const businessName = (bizSettings as any)?.businessName ?? "SAHU CSC";
+  const businessAddress = (bizSettings as any)?.businessAddress ?? "";
+  const businessMobile = (bizSettings as any)?.businessMobile ?? "";
+  const businessWebsite = (bizSettings as any)?.businessWebsite ?? "";
   const [page, setPage] = useState(1);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -923,6 +938,10 @@ function AllTransactionsTab() {
           createdAt: receiptTx.createdAt,
         } : null}
         onClose={() => setReceiptTx(null)}
+        businessName={businessName}
+        businessAddress={businessAddress}
+        businessMobile={businessMobile}
+        businessWebsite={businessWebsite}
       />
     </div>
   );
