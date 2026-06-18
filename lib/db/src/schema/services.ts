@@ -4,7 +4,7 @@ import { z } from "zod/v4";
 
 export const servicesTable = pgTable("services", {
   id: serial("id").primaryKey(),
-  name: text("name").notNull(),
+  name: text("name").notNull().unique(),
   description: text("description").notNull().default(""),
   price: numeric("price", { precision: 12, scale: 2 }).notNull().default("0"),
   category: text("category").notNull().default("General"),

@@ -1,12 +1,13 @@
 import { db, usersTable, servicesTable, ledgerTable, notificationsTable, settingsTable } from "@workspace/db";
 import bcrypt from "bcryptjs";
+import { eq, sql } from "drizzle-orm";
 
 async function seed() {
   console.log("🌱 Seeding database...");
 
-  // Admin user — always reset password so re-seeding restores credentials
+  // ── Users (always upsert to restore default passwords) ────────────────────
   const passwordHash = await bcrypt.hash("admin123", 12);
-  const [admin] = await db
+  await db
     .insert(usersTable)
     .values({
       username: "admin",
@@ -20,29 +21,28 @@ async function seed() {
     .onConflictDoUpdate({
       target: usersTable.username,
       set: { passwordHash, isActive: true },
-    })
-    .returning();
+    });
+  console.log("✅ Admin user created/reset (username: admin, password: admin123)");
 
-  if (admin) {
-    console.log("✅ Admin user created/reset (username: admin, password: admin123)");
-  }
-
-  // Operator user — always reset password so re-seeding restores credentials
   const opHash = await bcrypt.hash("operator123", 12);
-  await db.insert(usersTable).values({
-    username: "operator",
-    email: "operator@sahucsc.in",
-    mobile: "9876543211",
-    fullName: "CSC Operator",
-    passwordHash: opHash,
-    role: "operator",
-    isActive: true,
-  }).onConflictDoUpdate({
-    target: usersTable.username,
-    set: { passwordHash: opHash, isActive: true },
-  });
+  await db
+    .insert(usersTable)
+    .values({
+      username: "operator",
+      email: "operator@sahucsc.in",
+      mobile: "9876543211",
+      fullName: "CSC Operator",
+      passwordHash: opHash,
+      role: "operator",
+      isActive: true,
+    })
+    .onConflictDoUpdate({
+      target: usersTable.username,
+      set: { passwordHash: opHash, isActive: true },
+    });
+  console.log("✅ Operator user created/reset (username: operator, password: operator123)");
 
-  // Services
+  // ── Services (skip if name already exists — unique constraint enforces this) ─
   const services = [
     { name: "PAN Card", description: "PAN card application and correction", price: "107", category: "Government ID" },
     { name: "Aadhaar Update", description: "Aadhaar card update and correction", price: "50", category: "Government ID" },
@@ -73,67 +73,64 @@ async function seed() {
   }
   console.log("✅ Services seeded");
 
-  // Get admin ID for ledger entries
-  const [adminUser] = await db.select().from(usersTable).limit(1);
-  if (!adminUser) { console.log("❌ No admin user found"); return; }
+  // ── Ledger (skip entirely if any entries already exist) ───────────────────
+  const [ledgerCheck] = await db.select({ count: sql<number>`count(*)::int` }).from(ledgerTable);
+  if ((ledgerCheck?.count ?? 0) === 0) {
+    const [adminUser] = await db.select().from(usersTable).where(eq(usersTable.username, "admin")).limit(1);
+    if (!adminUser) { console.log("❌ No admin user found"); return; }
 
-  // Sample ledger entries for the last 30 days
-  const today = new Date();
-  let runningBalance = 0;
-  const sampleServices = ["PAN Card", "Aadhaar Update", "Electricity Bill", "Mobile Recharge", "Income Certificate", "Photo Print"];
+    const today = new Date();
+    let runningBalance = 0;
+    const sampleServices = ["PAN Card", "Aadhaar Update", "Electricity Bill", "Mobile Recharge", "Income Certificate", "Photo Print"];
+    const entries = [];
 
-  const entries = [];
-  for (let i = 29; i >= 0; i--) {
-    const date = new Date(today);
-    date.setDate(date.getDate() - i);
-    const dateStr = date.toISOString().split("T")[0];
-    const txCount = Math.floor(Math.random() * 5) + 1;
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split("T")[0];
+      const txCount = Math.floor(Math.random() * 5) + 1;
 
-    for (let j = 0; j < txCount; j++) {
-      const serviceType = sampleServices[Math.floor(Math.random() * sampleServices.length)];
-      const credit = Math.floor(Math.random() * 300) + 20;
-      runningBalance += credit;
-      entries.push({
-        date: dateStr,
-        customerName: `Customer ${Math.floor(Math.random() * 100) + 1}`,
-        serviceType,
-        credit: String(credit),
-        debit: "0",
-        description: `${serviceType} service`,
-        balance: String(runningBalance),
-        createdBy: adminUser.id,
-      });
+      for (let j = 0; j < txCount; j++) {
+        const serviceType = sampleServices[Math.floor(Math.random() * sampleServices.length)];
+        const credit = Math.floor(Math.random() * 300) + 20;
+        runningBalance += credit;
+        entries.push({
+          date: dateStr,
+          customerName: `Customer ${Math.floor(Math.random() * 100) + 1}`,
+          serviceType,
+          credit: String(credit),
+          debit: "0",
+          description: `${serviceType} service`,
+          balance: String(runningBalance),
+          createdBy: adminUser.id,
+        });
+      }
+
+      if (i % 7 === 0) {
+        const debit = Math.floor(Math.random() * 500) + 100;
+        runningBalance -= debit;
+        entries.push({
+          date: dateStr,
+          customerName: "Office Expense",
+          serviceType: "Other Services",
+          credit: "0",
+          debit: String(debit),
+          description: "Office supplies / expenses",
+          balance: String(runningBalance),
+          createdBy: adminUser.id,
+        });
+      }
     }
 
-    // Occasional expense
-    if (i % 7 === 0) {
-      const debit = Math.floor(Math.random() * 500) + 100;
-      runningBalance -= debit;
-      entries.push({
-        date: dateStr,
-        customerName: "Office Expense",
-        serviceType: "Other Services",
-        credit: "0",
-        debit: String(debit),
-        description: "Office supplies / expenses",
-        balance: String(runningBalance),
-        createdBy: adminUser.id,
-      });
-    }
-  }
-
-  // Check if already seeded
-  const existingCount = await db.select().from(ledgerTable).limit(1);
-  if (existingCount.length === 0) {
     for (const entry of entries) {
       await db.insert(ledgerTable).values(entry);
     }
     console.log(`✅ ${entries.length} ledger entries seeded`);
   } else {
-    console.log("ℹ️  Ledger already has data, skipping");
+    console.log(`ℹ️  Ledger already has ${ledgerCheck?.count} entries, skipping`);
   }
 
-  // Settings
+  // ── Settings (skip each key if it already exists) ─────────────────────────
   const defaults: Record<string, string> = {
     businessName: "SAHU CSC Center",
     businessAddress: "Village Road, Block HQ, Dist-XXX, Odisha - 000000",
@@ -150,15 +147,13 @@ async function seed() {
   }
   console.log("✅ Settings seeded");
 
-  // Welcome notification — only insert once
-  const { eq } = await import("drizzle-orm");
-  const existingWelcome = await db
-    .select()
+  // ── Welcome notification (skip if already exists) ─────────────────────────
+  const [existingWelcome] = await db
+    .select({ count: sql<number>`count(*)::int` })
     .from(notificationsTable)
-    .where(eq(notificationsTable.title, "Welcome to SAHU CSC!"))
-    .limit(1);
+    .where(eq(notificationsTable.title, "Welcome to SAHU CSC!"));
 
-  if (existingWelcome.length === 0) {
+  if ((existingWelcome?.count ?? 0) === 0) {
     await db.insert(notificationsTable).values({
       title: "Welcome to SAHU CSC!",
       message: "Your Common Service Center management platform is ready. Start by adding ledger entries.",
@@ -171,7 +166,7 @@ async function seed() {
   }
 
   console.log("\n🎉 Seed complete!");
-  console.log("   Login: admin / admin123");
+  console.log("   Login: admin / admin123 | operator / operator123");
 }
 
 seed().catch(console.error).finally(() => process.exit(0));
