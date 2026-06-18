@@ -14,7 +14,7 @@ interface ReceiptEntry {
   serviceType: string;
   credit: number;
   debit: number;
-  description: string;
+  description: string | null;
   balance: number;
   receiptNumber: string | null;
   receiptToken: string | null;

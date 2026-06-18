@@ -12,7 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Fingerprint, Plus, Trash2, ArrowDownLeft, ArrowUpRight, Wallet, Pencil, ChevronLeft, ChevronRight, Filter, X, List, CalendarDays } from "lucide-react";
+import { Fingerprint, Plus, Trash2, ArrowDownLeft, ArrowUpRight, Wallet, Pencil, ChevronLeft, ChevronRight, Filter, X, List, CalendarDays, Receipt } from "lucide-react";
+import { ReceiptModal } from "@/components/receipt-modal";
 import { useForm } from "react-hook-form";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -89,6 +90,7 @@ function DailyTab() {
   const [txType, setTxType] = useState<"withdrawal" | "deposit">("withdrawal");
   const [editingTx, setEditingTx] = useState<AepsTx | null>(null);
   const [deletingTx, setDeletingTx] = useState<AepsTx | null>(null);
+  const [receiptTx, setReceiptTx] = useState<AepsTx | null>(null);
 
   const sessionKey = ["aeps-session", selectedDate];
 
@@ -378,6 +380,9 @@ function DailyTab() {
                             Bal: ₹{fmt(tx.balance)}
                           </p>
                         </div>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-700" title="View Receipt" onClick={() => setReceiptTx(tx)}>
+                          <Receipt size={13} />
+                        </Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-700" onClick={() => openEditDialog(tx)}>
                           <Pencil size={13} />
                         </Button>
@@ -547,6 +552,26 @@ function DailyTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ── Receipt Modal ── */}
+      <ReceiptModal
+        open={receiptTx !== null}
+        entry={receiptTx ? {
+          id: receiptTx.id,
+          date: selectedDate,
+          customerName: receiptTx.customerName,
+          serviceType: "AePS Cash",
+          credit: receiptTx.type === "deposit" ? receiptTx.amount : 0,
+          debit: receiptTx.type === "withdrawal" ? receiptTx.amount : 0,
+          description: receiptTx.description,
+          balance: receiptTx.balance,
+          receiptNumber: null,
+          receiptToken: null,
+          createdByName: null,
+          createdAt: receiptTx.createdAt,
+        } : null}
+        onClose={() => setReceiptTx(null)}
+      />
     </div>
   );
 }
@@ -565,6 +590,7 @@ function AllTransactionsTab() {
   const [showFilters, setShowFilters] = useState(false);
   const [editingTx, setEditingTx] = useState<AllTx | null>(null);
   const [deletingTx, setDeletingTx] = useState<AllTx | null>(null);
+  const [receiptTx, setReceiptTx] = useState<AllTx | null>(null);
 
   const editForm = useForm({ defaultValues: { type: "withdrawal", amount: "", customerName: "", description: "" } });
 
@@ -776,6 +802,9 @@ function AllTransactionsTab() {
                     <p style={{ fontSize: 13, fontWeight: 800, color: isWd ? "#e11d48" : "#059669" }}>
                       {isWd ? "−" : "+"}₹{fmt(tx.amount)}
                     </p>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-700" title="View Receipt" onClick={() => setReceiptTx(tx)}>
+                      <Receipt size={13} />
+                    </Button>
                     <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-700" onClick={() => openEditDialog(tx)}>
                       <Pencil size={13} />
                     </Button>
@@ -875,6 +904,26 @@ function AllTransactionsTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ── Receipt Modal ── */}
+      <ReceiptModal
+        open={receiptTx !== null}
+        entry={receiptTx ? {
+          id: receiptTx.id,
+          date: receiptTx.date,
+          customerName: receiptTx.customerName,
+          serviceType: "AePS Cash",
+          credit: receiptTx.type === "deposit" ? receiptTx.amount : 0,
+          debit: receiptTx.type === "withdrawal" ? receiptTx.amount : 0,
+          description: receiptTx.description,
+          balance: 0,
+          receiptNumber: null,
+          receiptToken: null,
+          createdByName: null,
+          createdAt: receiptTx.createdAt,
+        } : null}
+        onClose={() => setReceiptTx(null)}
+      />
     </div>
   );
 }

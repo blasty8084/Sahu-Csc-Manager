@@ -21,8 +21,9 @@ import {
 } from "@workspace/api-client-react";
 import {
   ArrowLeft, Phone, Pencil, Trash2, MessageCircle,
-  ArrowUpRight, ArrowDownLeft, Plus, FileDown, MoreHorizontal,
+  ArrowUpRight, ArrowDownLeft, Plus, FileDown, MoreHorizontal, Receipt,
 } from "lucide-react";
+import { ReceiptModal } from "@/components/receipt-modal";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -194,7 +195,7 @@ function EditCustomerDialog({ customer, open, onClose }: { customer: any; open: 
 }
 
 // ─── Entry Row ─────────────────────────────────────────────────────────────────
-function EntryRow({ e, onEdit, onDelete }: { e: any; onEdit: () => void; onDelete: () => void }) {
+function EntryRow({ e, onEdit, onDelete, onReceipt }: { e: any; onEdit: () => void; onDelete: () => void; onReceipt: () => void }) {
   const isGave = e.type === "gave";
   const color = isGave ? "#ea580c" : "#059669";
   const bg = isGave ? "rgba(249,115,22,0.08)" : "rgba(16,185,129,0.08)";
@@ -218,6 +219,10 @@ function EntryRow({ e, onEdit, onDelete }: { e: any; onEdit: () => void; onDelet
         <p className="text-[10px] text-muted-foreground mt-1">{e.date}</p>
       </div>
       <div className="flex gap-1 flex-shrink-0">
+        <button onClick={onReceipt} title="View Receipt"
+          className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-muted transition-colors">
+          <Receipt size={11} className="text-muted-foreground" />
+        </button>
         <button onClick={onEdit}
           className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-muted transition-colors">
           <Pencil size={11} className="text-muted-foreground" />
@@ -305,6 +310,7 @@ export default function UdhariCustomer() {
   const [editCustomer, setEditCustomer] = useState(false);
   const [deleteCustomerConfirm, setDeleteCustomerConfirm] = useState(false);
   const [deleteEntryId, setDeleteEntryId] = useState<number | null>(null);
+  const [receiptEntry, setReceiptEntry] = useState<any>(null);
 
   const deleteCustomer = useDeleteUdhariCustomer();
   const deleteEntry = useDeleteUdhariEntry();
@@ -467,6 +473,7 @@ export default function UdhariCustomer() {
                   e={e}
                   onEdit={() => setEntryDialog({ open: true, mode: e.type, existing: e })}
                   onDelete={() => setDeleteEntryId(e.id)}
+                  onReceipt={() => setReceiptEntry({ entry: e, customer: c })}
                 />
               ))}
             </div>
@@ -526,6 +533,31 @@ export default function UdhariCustomer() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Receipt modal */}
+      <ReceiptModal
+        open={receiptEntry !== null}
+        entry={receiptEntry ? (() => {
+          const e = receiptEntry.entry;
+          const cust = receiptEntry.customer;
+          const isGave = e.type === "gave";
+          return {
+            id: e.id,
+            date: e.date,
+            customerName: cust.name,
+            serviceType: "Udhari Khata",
+            credit: isGave ? 0 : e.amount,
+            debit: isGave ? e.amount : 0,
+            description: e.note ?? null,
+            balance: 0,
+            receiptNumber: null,
+            receiptToken: null,
+            createdByName: null,
+            createdAt: e.createdAt ?? new Date().toISOString(),
+          };
+        })() : null}
+        onClose={() => setReceiptEntry(null)}
+      />
     </Layout>
   );
 }
