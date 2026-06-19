@@ -15,7 +15,7 @@ import {
   Pencil, ChevronLeft, ChevronRight, Filter, X, Receipt,
   CalendarDays, TrendingDown, TrendingUp, IndianRupee, ListFilter,
 } from "lucide-react";
-import { ReceiptModal } from "@/components/receipt-modal";
+import { AepsReceiptModal } from "@/components/aeps-receipt-modal";
 import { useForm } from "react-hook-form";
 import { useGetSettings } from "@workspace/api-client-react";
 
@@ -762,22 +762,18 @@ function DailyTab() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* ── Receipt Modal ── */}
-      <ReceiptModal
+      {/* ── AePS Receipt Modal ── */}
+      <AepsReceiptModal
         open={receiptTx !== null}
-        entry={receiptTx ? {
+        tx={receiptTx ? {
           id: receiptTx.id,
-          date: selectedDate,
+          type: receiptTx.type,
+          amount: receiptTx.amount,
           customerName: receiptTx.customerName,
-          serviceType: "AePS Cash",
-          credit: receiptTx.type === "deposit" ? receiptTx.amount : 0,
-          debit: receiptTx.type === "withdrawal" ? receiptTx.amount : 0,
           description: receiptTx.description,
           balance: receiptTx.balance,
-          receiptNumber: null,
-          receiptToken: null,
-          createdByName: null,
           createdAt: receiptTx.createdAt,
+          date: selectedDate,
         } : null}
         onClose={() => setReceiptTx(null)}
         businessName={businessName}
@@ -1152,22 +1148,18 @@ function AllTransactionsTab() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* ── Receipt Modal ── */}
-      <ReceiptModal
+      {/* ── AePS Receipt Modal ── */}
+      <AepsReceiptModal
         open={receiptTx !== null}
-        entry={receiptTx ? {
+        tx={receiptTx ? {
           id: receiptTx.id,
-          date: receiptTx.date,
+          type: receiptTx.type,
+          amount: receiptTx.amount,
           customerName: receiptTx.customerName,
-          serviceType: "AePS Cash",
-          credit: receiptTx.type === "deposit" ? receiptTx.amount : 0,
-          debit: receiptTx.type === "withdrawal" ? receiptTx.amount : 0,
           description: receiptTx.description,
           balance: 0,
-          receiptNumber: null,
-          receiptToken: null,
-          createdByName: null,
           createdAt: receiptTx.createdAt,
+          date: receiptTx.date,
         } : null}
         onClose={() => setReceiptTx(null)}
         businessName={businessName}
