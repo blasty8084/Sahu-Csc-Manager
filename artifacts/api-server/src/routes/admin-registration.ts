@@ -161,6 +161,11 @@ router.patch("/admin/users/:id/reject", requireRole("admin"), async (req, res): 
   invalidatePendingCache();
   await auditLog(req.session.userId!, "REJECTED", `Rejected user: ${user.username}${reason ? ` — reason: ${reason}` : ""}`, getClientIp(req));
 
+  const notifyMsg = reason
+    ? `Your registration has been declined. Reason: ${reason}`
+    : "Your registration has been declined. Please contact administrator for details.";
+  await createNotification("Registration Declined", notifyMsg, "warning", id);
+
   res.json({ success: true, message: "User rejected", user: fmtUser(updated) });
 });
 

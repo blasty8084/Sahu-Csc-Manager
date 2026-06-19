@@ -476,6 +476,14 @@ export default function Login() {
           title: "Account Locked",
           description: err.message ?? "Your account is temporarily locked. Please try again later.",
         });
+      } else if (err?.rejected) {
+        toast({
+          variant: "destructive",
+          title: "Registration Declined",
+          description: err.rejectionReason
+            ? `Your registration was declined. Reason: ${err.rejectionReason}`
+            : "Your registration was declined. Please contact administrator.",
+        });
       } else if (err?.attemptsLeft !== undefined) {
         toast({
           variant: "destructive",

@@ -205,7 +205,20 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   }
   if (!user.isActive || user.status === "DELETED" || user.status === "INACTIVE" || user.status === "SUSPENDED") {
     await auditLog(user.id, "login.failed_inactive", `Login blocked — account status: ${user.status} from ${deviceInfo}`, clientIp);
-    res.status(401).json({ error: "Account is not active. Please contact administrator." });
+    if (user.status === "DELETED" && user.rejectionReason) {
+      res.status(401).json({
+        error: `Your registration was declined. Reason: ${user.rejectionReason}`,
+        rejected: true,
+        rejectionReason: user.rejectionReason,
+      });
+    } else if (user.status === "DELETED") {
+      res.status(401).json({
+        error: "Your registration was declined. Please contact administrator.",
+        rejected: true,
+      });
+    } else {
+      res.status(401).json({ error: "Account is not active. Please contact administrator." });
+    }
     return;
   }
 

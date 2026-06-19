@@ -628,24 +628,27 @@ export default function Users() {
       {/* Reject Dialog */}
       <Dialog open={rejectTarget !== null} onOpenChange={() => { setRejectTarget(null); setRejectReason(""); }}>
         <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Reject Registration</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Decline Registration</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Rejecting <strong>@{rejectTarget?.username}</strong>. This will permanently decline their registration.
+              Declining <strong>@{rejectTarget?.username}</strong>. Their account will be removed and they will be notified.
             </p>
             <div className="space-y-1.5">
-              <Label className="text-sm">Reason <span className="text-muted-foreground font-normal">(optional)</span></Label>
+              <Label className="text-sm">Reason for declining</Label>
               <Textarea
-                placeholder="e.g. Duplicate account, incomplete information..."
+                placeholder="e.g. Duplicate account, incomplete information, not authorised..."
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
                 className="resize-none h-20"
               />
+              <p className="text-xs text-muted-foreground">
+                This reason will be shown to the user when they next try to log in.
+              </p>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setRejectTarget(null); setRejectReason(""); }}>Cancel</Button>
-            <Button variant="destructive" onClick={confirmReject} disabled={actionLoading === rejectTarget?.id}>Reject</Button>
+            <Button variant="destructive" onClick={confirmReject} disabled={actionLoading === rejectTarget?.id}>Decline</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
