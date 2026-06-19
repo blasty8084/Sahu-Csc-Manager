@@ -1,7 +1,10 @@
 # SAHU CSC — Change Log & Feature Documentation
+**Current version: 2.1.0 — June 2026**
 
 > Full record of every feature, change, and upgrade applied to the SAHU CSC platform.
 > Use this file as a reference for future development, onboarding, and audits.
+>
+> **v2.1.0 adds:** Udhari Khata (customer credit ledger) · Receipt system (CSC-YYYY-NNNN + QR + WhatsApp PDF sharing) · V2 multi-device sessions · RBAC `requirePermission` middleware · OTP password reset · Admin oversight pages · PWA Status page · Idle timeout (30 min) · Notification isolation fixes · UI Design System v2 (mobile header, gradient card language) · Canvas mockup exploration for Ledger / AePS / Add Entry / Udhari form redesigns
 
 ---
 
@@ -32,6 +35,17 @@
 23. [Users Page — Cash Overview Tab Consolidation (June 2026)](#23-users-page--cash-overview-tab-consolidation-june-2026)
 24. [LoadingScreen Multi-Phase Timeout (June 2026)](#24-loadingscreen-multi-phase-timeout-june-2026)
 25. [Seed Database Workflow (June 2026)](#25-seed-database-workflow-june-2026)
+26. [V2 Authentication & Multi-Device Sessions (June 2026)](#26-v2-authentication--multi-device-sessions-june-2026)
+27. [RBAC — requirePermission Middleware (June 2026)](#27-rbac--requirepermission-middleware-june-2026)
+28. [Udhari Khata System (June 2026)](#28-udhari-khata-system-june-2026)
+29. [Receipt System (June 2026)](#29-receipt-system-june-2026)
+30. [Admin Oversight Pages (June 2026)](#30-admin-oversight-pages-june-2026)
+31. [PWA Status Page & App & Offline Status (June 2026)](#31-pwa-status-page--app--offline-status-june-2026)
+32. [WhatsApp Receipt Sharing (June 2026)](#32-whatsapp-receipt-sharing-june-2026)
+33. [Notification System Isolation Fixes (June 2026)](#33-notification-system-isolation-fixes-june-2026)
+34. [UI Design System v2 — Mobile Header & Design Language (June 2026)](#34-ui-design-system-v2--mobile-header--design-language-june-2026)
+35. [Canvas UI Mockup Exploration — v2 Page Redesigns (June 2026)](#35-canvas-ui-mockup-exploration--v2-page-redesigns-june-2026)
+36. [Schema Tables — Full v2 Reference (June 2026)](#36-schema-tables--full-v2-reference-june-2026)
 
 ---
 
@@ -1031,3 +1045,386 @@ The following features are architected or partially wired but not yet fully acti
 - **Language support** — English, Hindi (`hi`), Odia (`or`) are listed in preferences but UI strings are currently English only; i18n library needed
 - **Cloud backup** — current backup is a metadata record only; wire to `pg_dump` / S3 for real backups
 - **TWA APK** — follow the 5-step publishing guide in `replit.md` after deploying
+
+---
+
+## 26. V2 Authentication & Multi-Device Sessions (June 2026)
+
+### Overview
+Full rebuild of the session and authentication system. V1 used a single `activeSessionToken` on the `users` table; V2 adds a dedicated `user_sessions` table that tracks every active login across all devices simultaneously.
+
+### New DB Table: `user_sessions`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | serial PK | |
+| `session_id` | text UNIQUE | UUID generated at login; also stored in express-session |
+| `user_id` | integer | FK → users.id |
+| `device_info` | text | `"Chrome on Windows"` — combined from UA parsing |
+| `browser` | text | Chrome, Firefox, Safari, Edge, etc. |
+| `os` | text | Windows, macOS, Android, iOS, Linux |
+| `ip_address` | text | X-Forwarded-For aware |
+| `remember_me` | boolean | Standard=8h, RememberMe=30 days |
+| `is_active` | boolean | Set to false on revoke |
+| `expires_at` | timestamptz | |
+| `last_activity` | timestamptz | Throttled update (at most once/minute) |
+| `created_at` | timestamptz | |
+
+### `requireAuth` V2 Fallback Chain
+1. Read `sessionId` from `req.session`
+2. Look up `user_sessions` by `sessionId` where `isActive=true` and not expired
+3. If found → set `req.session.userId` and continue
+4. If not found → fall back to V1 `activeSessionToken` on `users` table for backward compat
+5. If neither → 401 Unauthorized
+
+### Session Management API (`/api/sessions`)
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/sessions` | List all active sessions for current user |
+| `DELETE` | `/api/sessions/:id` | Revoke a specific session by DB row ID |
+| `DELETE` | `/api/sessions/others` | Revoke all sessions except the current one |
+| `DELETE` | `/api/sessions/all` | Revoke ALL sessions + destroy current session |
+
+`DELETE /sessions/all` returns `{ redirect: true }`. The frontend checks this flag and calls `logout()` to clear client-side auth state before redirecting to `/login`.
+
+### Sessions Page (`/sessions`)
+Frontend page `sessions.tsx` shows:
+- Device card per active session: browser, OS, IP, last active time, "This device" badge
+- Per-session revoke button
+- "Logout Other Devices" and "Logout Everywhere" bulk actions
+- Added to sidebar under Account section with `Monitor` icon
+
+### Account Locking
+- 5 failed login attempts → account locked for 15 minutes
+- `locked_until` timestamptz on `users` table; auto-unlocked if window has expired
+- `login.failed_max_attempts` audit log entry written when account is first locked
+- `login.failed_locked` written on every blocked attempt (includes minutes remaining)
+
+### Password Reset — OTP Flow (`/forgot-password`)
+4-step flow on a single page (`forgot-password.tsx`):
+1. **Step 1** — Enter username / email / mobile
+2. **Step 2** — Enter 6-digit OTP (token stored in `password_reset_tokens` table, short TTL)
+3. **Step 3** — Enter new password (must pass strength policy: 8+ chars, upper, lower, number)
+4. **Step 4** — Success screen with login redirect
+
+`/reset-password` redirects to `/forgot-password` — do not split back into two pages.
+
+---
+
+## 27. RBAC — `requirePermission` Middleware (June 2026)
+
+### Overview
+Replaced simple `requireRole(["admin"])` checks with a fine-grained `requirePermission(permission)` system. Each route group is guarded by the specific permission it needs, not just a role name.
+
+### Built-In Role Permissions
+| Role | Permissions |
+|---|---|
+| `admin` | `["*"]` — wildcard, all permissions |
+| `operator` | `ledger:view`, `ledger:create`, `ledger:edit`, `aeps:view`, `aeps:manage`, `reports:view`, `reports:export`, `services:view`, `profile:view`, `notifications:view`, `udhari:view`, `udhari:manage` |
+| `user` | `ledger:view`, `reports:view`, `services:view`, `profile:view`, `notifications:view` (read-only) |
+
+### Permission Map (by route group)
+| Route group | Required permission |
+|---|---|
+| `GET /api/ledger/*` | `ledger:view` |
+| `POST /api/ledger` | `ledger:create` |
+| `PATCH /api/ledger/:id`, `DELETE /api/ledger/:id` | `ledger:edit` |
+| `GET /api/aeps/*` | `aeps:view` |
+| `POST/PATCH/DELETE /api/aeps/*` | `aeps:manage` |
+| `GET /api/reports/*` | `reports:view` |
+| `GET /api/reports/export` | `reports:export` |
+| `GET /api/dashboard` | `reports:view` |
+| `GET /api/udhari/*` (read) | `udhari:view` |
+| `POST/PATCH/DELETE /api/udhari/*` | `udhari:manage` |
+
+### Middleware implementation (`lib/auth.ts`)
+```ts
+export function requirePermission(permission: string) {
+  return requireAuth, async (req, res, next) => {
+    const role = req.session.userRole;
+    const permissions = ROLE_PERMISSIONS[role] ?? [];
+    if (permissions.includes("*") || permissions.includes(permission)) return next();
+    res.status(403).json({ error: "Insufficient permissions" });
+  };
+}
+```
+
+### Idle Timeout (`use-idle-timer.ts`)
+Auto-logout after **30 minutes of inactivity** across the whole app:
+- Counts down from 30 min on every mouse/keyboard/touch event
+- Shows a 2-minute countdown warning dialog: "Stay Logged In" / "Logout Now"
+- `useIdleTimer` called in `Layout` component (not individual pages) so it applies globally
+- `handleIdle` callback calls `logout()` directly when timer expires
+
+---
+
+## 28. Udhari Khata System (June 2026)
+
+### Purpose
+"Udhari Khata" (उधारी खाता) is a per-user customer credit ledger. The CSC operator tracks money they gave to customers (credit extended) and money they received back. Each customer has a running balance showing the net amount owed.
+
+### Data Model
+
+#### `udhari_customers`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | serial PK | |
+| `name` | text | Required |
+| `phone` | text NULL | |
+| `address` | text NULL | |
+| `balance` | numeric(12,2) | Auto-recalculated on every entry change |
+| `created_by` | integer | FK → users.id — per-user isolation |
+| `created_at` | timestamptz | |
+| `updated_at` | timestamptz | |
+
+#### `udhari_entries`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | serial PK | |
+| `customer_id` | integer | FK → udhari_customers.id CASCADE |
+| `date` | text | ISO YYYY-MM-DD |
+| `type` | text | `gave` (CSC gave money) / `got` (CSC received) |
+| `amount` | numeric(12,2) | Always positive |
+| `note` | text NULL | |
+| `created_by` | integer | FK → users.id |
+| `created_at` | timestamptz | |
+| `updated_at` | timestamptz | |
+
+### API Endpoints (`/api/udhari`)
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/udhari/summary` | Total to_collect + to_pay across all customers |
+| `GET` | `/api/udhari/customers` | List all customers with balance |
+| `POST` | `/api/udhari/customers` | Create new customer |
+| `GET` | `/api/udhari/customers/:id` | Single customer detail |
+| `PATCH` | `/api/udhari/customers/:id` | Update customer info |
+| `DELETE` | `/api/udhari/customers/:id` | Delete customer + all entries |
+| `GET` | `/api/udhari/customers/:id/entries` | List entries for a customer |
+| `POST` | `/api/udhari/customers/:id/entries` | Add gave/got entry |
+| `PATCH` | `/api/udhari/customers/:id/entries/:entryId` | Edit entry |
+| `DELETE` | `/api/udhari/customers/:id/entries/:entryId` | Delete entry |
+
+### Frontend Pages
+
+#### `udhari.tsx` — Customer List
+- Summary banner: "To Collect ₹X · To Pay ₹Y" with gradient chips
+- Search by name, sort by name/balance/date
+- Customer cards with `BalanceBadge` (orange=to collect, green=to pay, grey=settled)
+- FAB to add new customer
+
+#### `udhari-customer.tsx` — Per-Customer Ledger
+- Balance banner: large balance chip (orange/green/grey) with customer name + phone
+- "You Gave / You Got" entry form as bottom-sheet dialog
+- Entry list with colored left stripe (orange=gave, green=got)
+- WhatsApp reminder button: opens `wa.me/<phone>?text=...` with pre-filled balance message
+- PDF export (html2canvas + jsPDF): generates A4 statement with customer info + all entries
+
+### Audit Logging
+| Action | When |
+|---|---|
+| `udhari.customer.create` | New customer added |
+| `udhari.customer.update` | Customer details edited |
+| `udhari.customer.delete` | Customer (+ all entries) deleted |
+| `udhari.entry.create` | New gave/got entry recorded |
+
+---
+
+## 29. Receipt System (June 2026)
+
+### Overview
+Every ledger transaction now gets a unique receipt number and a public shareable URL for verification.
+
+### New DB Tables
+
+#### `receipt_counters`
+| Column | Type | Notes |
+|---|---|---|
+| `year` | integer PK | Calendar year |
+| `last_count` | integer | Last used sequential counter for this year |
+
+Sequential counter is incremented atomically using an upsert:
+```sql
+INSERT INTO receipt_counters(year, last_count) VALUES($year, 1)
+ON CONFLICT(year) DO UPDATE SET last_count = receipt_counters.last_count + 1
+RETURNING last_count
+```
+
+#### New columns on `ledger`
+| Column | Type | Notes |
+|---|---|---|
+| `receipt_number` | text | `CSC-YYYY-NNNN` format (e.g. `CSC-2026-0042`) |
+| `receipt_token` | text UNIQUE | UUID used in public verification URL |
+
+### Public Verification URL
+`GET /api/receipts/verify/:token` — **no auth required**.
+Returns: receipt_number, date, customer_name, service_type, credit, debit, balance, business info.
+
+Frontend page `receipts-verify.tsx` at `/receipts/verify/:token`:
+- Shows a clean receipt card with all transaction details
+- Displays a QR code linking back to itself (for re-verification)
+- "No auth required" — sharable with customers
+
+### Receipt Modal (`receipt-modal.tsx`)
+Shown after creating a ledger entry. Contains:
+- Header: business name, receipt number, date, customer
+- Line items: service, amount, running balance
+- QR code linking to `/receipts/verify/:token`
+- 2×2 action button grid:
+  - **Print** — `window.print()` popup
+  - **PDF** — html2canvas + jsPDF → A4 PDF download
+  - **WhatsApp** — Web Share API (with PDF file on mobile) or `wa.me` link fallback on desktop
+  - **Share** — Web Share API (text/URL)
+
+### AePS Receipt Modal (`aeps-receipt-modal.tsx`)
+Same layout and 2×2 action grid for AePS withdrawal/deposit transactions.
+
+### Udhari Receipt Modal (`udhari-receipt-modal.tsx`)
+Receipt for "You Gave / You Got" entries. Orange/green gradient header, balance chip, customer info, WhatsApp reminder pre-filled with balance text.
+
+---
+
+## 30. Admin Oversight Pages (June 2026)
+
+### Admin API Routes (`/api/admin`)
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/admin/users-overview` | All users' balance summary (name, balance, total credits/debits) |
+| `GET` | `/api/admin/users-overview/:userId/ledger` | Full ledger for any user (admin only) |
+| `GET` | `/api/admin/aeps-overview` | AePS current balance for all users |
+
+### Users Page — Cash Overview Tab
+The old separate `/users-overview` page was consolidated into `users.tsx` as a 4th tab ("Cash Overview"). Old route `/users-overview` now redirects to `/users`. This reduces navigation depth and keeps all user-related admin tools in one place.
+
+---
+
+## 31. PWA Status Page & App & Offline Status (June 2026)
+
+### `/pwa-status` — App & Offline Status
+Full diagnostic page accessible from the sidebar. Live readings:
+- **Network**: Online / Offline / Slow (2G) with latency probe
+- **Sync queue**: Pending count, last sync time, manual sync trigger
+- **IndexedDB storage**: Usage per store, quota remaining
+- **App install status**: Installed / Installable / Not supported
+- **Push notifications**: Subscription active / inactive, subscribe/unsubscribe button
+- **Device capability checklist**: Service Worker, Push, Background Sync, Periodic Sync, Wake Lock, Share, File Handler, Badges
+- **Security summary**: Session info, VAPID status
+
+---
+
+## 32. WhatsApp Receipt Sharing (June 2026)
+
+All three receipt modals (Ledger, AePS, Udhari) include a WhatsApp share option:
+
+**Mobile (supports Web Share API with files):**
+```ts
+const file = new File([pdfBlob], "receipt.pdf", { type: "application/pdf" });
+await navigator.share({ title, text, files: [file] });
+```
+
+**Desktop fallback:**
+```ts
+window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+```
+
+**Receipts verify page** also has a WhatsApp share button for the verification link.
+
+---
+
+## 33. Notification System Isolation Fixes (June 2026)
+
+### Problem
+7 notification isolation bugs were found and fixed. Notifications were appearing in the wrong user's inbox or leaking across users.
+
+### Root Cause
+`createNotification()` was being called without a `userId` in some places, which caused those notifications to be broadcast to all users. Other places used the wrong user's ID.
+
+### Fix
+- `createNotification()` now **always** requires `userId` to be explicitly passed
+- `notifyNewRegistration()` fans out to all admin user IDs internally (no longer leaks to the registering user's inbox)
+- `null userId` is now reserved exclusively for true system-wide broadcasts (backup events, etc.)
+- All 7 call sites audited and corrected
+
+---
+
+## 34. UI Design System v2 — Mobile Header & Design Language (June 2026)
+
+### Mobile Header v2 (3-layer design)
+The mobile header in `layout.tsx` (`md:hidden` block) was redesigned with a 3-layer structure:
+
+**Layer 1** — 3px gradient accent stripe: navy `#0b2c60` → saffron `#f97316`
+
+**Layer 2** — White frosted main bar (60px):
+- Left: navy rounded-square CSC badge + two-tone "SAHU" (navy) / "CSC" (saffron) brand text
+- Right: notification bell + avatar chip (opens Sheet nav drawer — replaces old hamburger icon)
+
+**Layer 3** — Navy gradient greeting sub-bar (44px):
+- Time-based greeting + short date (computed in `Layout` component)
+
+### Mobile Dashboard Stat Cards
+- White `bg-white` card body with `box-shadow` instead of Tailwind `border`
+- 3px colored top accent stripe (`s.accent` gradient) at card top
+- Icon badges use CSS `background: gradient` inline style (not Tailwind `bg-*`) + matching `box-shadow` drop shadow
+- Quick action cards: white rounded-2xl with gradient icon badges (42px, borderRadius 13) + navy label
+
+### Font Size Bumps (Sidebar)
+| Element | Before | After |
+|---|---|---|
+| Nav labels | 12px | 14px |
+| Nav icons | 15px | 17px |
+| Admin section label | 9px | 10px |
+| User name/role | unchanged | bumped |
+
+### Login Page Design Language
+- `h-screen overflow-hidden` on both mobile and desktop — no scroll required
+- Mobile: navy gradient header + slide-up white card
+- "Forgot Password?" uses navy `#0b2c60` (not saffron)
+- "Register here" dashed blue CTA card at bottom of mobile white card
+- Register page: compact `LoginLogo` header + `flex-1 overflow-y-auto` white card
+
+---
+
+## 35. Canvas UI Mockup Exploration — v2 Page Redesigns (June 2026)
+
+Four mobile-viewport redesign mockups placed on the Replit canvas board for review before integrating into the main app. Built in the `artifacts/mockup-sandbox/` isolated preview server.
+
+### Components Created
+| Canvas Frame | Component Path | Preview URL pattern |
+|---|---|---|
+| Ledger Page | `mockups/ledger/LedgerPage.tsx` | `/__mockup/preview/ledger/LedgerPage` |
+| Add Entry Form | `mockups/addentry/AddEntryForm.tsx` | `/__mockup/preview/addentry/AddEntryForm` |
+| AePS Page | `mockups/aeps/AepsPage.tsx` | `/__mockup/preview/aeps/AepsPage` |
+| Udhari Entry Form | `mockups/udhari/UdhariForm.tsx` | `/__mockup/preview/udhari/UdhariForm` |
+
+### Design Direction
+- **Ledger Page**: Navy gradient hero header with live balance card; date-grouped transaction list; colored left stripe per row (green=credit, red=debit); saffron FAB; debounced search bar
+- **Add Entry Form**: Bottom-sheet dialog; Credit/Debit type toggle switches entire form color scheme (green/red); large bold amount input with gradient badge; gradient submit button
+- **AePS Page**: Hero header with daily cash balance card + opening/withdrawal/deposit mini stats; red/green action buttons embedded in header; focused transaction form overlay on tap
+- **Udhari Entry Form**: "You Gave / You Got" toggle (orange/green); colored header chip showing customer + current balance; live "new balance after this entry" preview; gradient submit
+
+### Status
+Mockups are live on the canvas (390×844 mobile viewport each). Pending user review and approval before graduating into the main app via `mockup-graduate` workflow.
+
+---
+
+## 36. Schema Tables — Full v2 Reference (June 2026)
+
+Complete list of all database tables as of v2.1.0:
+
+| Table | Purpose |
+|---|---|
+| `users` | User accounts (id, username, email, mobile, role, status, locking fields) |
+| `user_sessions` | V2 multi-device session tracking (one row per active login) |
+| `session` | Express session store (auto-managed by connect-pg-simple) |
+| `ledger` | Income/expense transactions with receipt_number + receipt_token |
+| `receipt_counters` | Atomic sequential counter per year for CSC-YYYY-NNNN numbering |
+| `aeps_daily` | AePS daily float session per user per day |
+| `aeps_transactions` | Individual AePS withdrawals/deposits |
+| `udhari_customers` | Udhari Khata customer list (per-user) |
+| `udhari_entries` | Gave/got entries per customer |
+| `services` | CSC service catalog (22 services, 5 categories) |
+| `notifications` | User + system notifications (null userId = broadcast) |
+| `audit_logs` | Immutable security + action audit trail |
+| `settings` | Global key-value config store |
+| `user_preferences` | Per-user UI preferences (theme, language, layout) |
+| `push_subscriptions` | VAPID Web Push subscription records |
+| `password_reset_tokens` | One-time OTP tokens for password reset |
+| `backups` | Backup metadata records |

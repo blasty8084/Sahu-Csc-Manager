@@ -1,4 +1,5 @@
 # SAHU CSC — Workflow Guide
+**Version 2.1.0 — June 2026**
 
 > **Read this first.**
 > This file is the single source of truth for how to start, seed, and troubleshoot the SAHU CSC platform. All workflow definitions live in `.replit`.
@@ -9,13 +10,15 @@
 
 ```
 monorepo root/
-├── artifacts/api-server/   — Express 5 API (TypeScript, esbuild, port 8082 in dev)
-├── artifacts/sahu-csc/     — React + Vite frontend PWA (port 5000 in dev)
-├── artifacts/mockup-sandbox/ — Vite component preview server (port 8081)
-├── lib/db/                 — Drizzle ORM schema + migrations
-├── lib/api-spec/           — OpenAPI spec (source of truth for codegen)
-└── lib/api-client-react/   — Auto-generated React Query hooks (Orval)
+├── artifacts/api-server/     — Express 5 API (TypeScript, esbuild, port 8082 in dev)
+├── artifacts/sahu-csc/       — React + Vite frontend PWA (port 5000 in dev)
+├── artifacts/mockup-sandbox/ — Vite component preview server for Canvas UI mockups
+├── lib/db/                   — Drizzle ORM schema + migrations
+├── lib/api-spec/             — OpenAPI spec (source of truth for codegen)
+└── lib/api-client-react/     — Auto-generated React Query hooks (Orval)
 ```
+
+**v2.1.0 features:** Ledger · AePS · Udhari Khata · Receipts (CSC-YYYY-NNNN + QR + WhatsApp PDF) · V2 multi-device sessions · RBAC requirePermission · OTP password reset · Admin oversight · PWA Status page · Idle timeout · Notification isolation fixes · Canvas UI mockup exploration
 
 ---
 

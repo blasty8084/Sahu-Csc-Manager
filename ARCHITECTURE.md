@@ -1,4 +1,5 @@
 # SAHU CSC — Complete App Logic & Architecture
+**Version 2.1.0 — June 2026**
 
 ## Table of Contents
 
@@ -37,6 +38,10 @@
 12. [Default Seed Data](#12-default-seed-data)
 13. [Known Gotchas & Conventions](#13-known-gotchas--conventions)
 14. [Replit Environment](#14-replit-environment)
+15. [Udhari Khata System](#15-udhari-khata-system)
+16. [Receipt System](#16-receipt-system)
+17. [Admin Oversight Routes](#17-admin-oversight-routes)
+18. [Complete Page & Route Reference (v2.1.0)](#18-complete-page--route-reference-v210)
 
 ---
 
@@ -44,17 +49,20 @@
 
 **SAHU CSC** is a multi-user business management platform for Common Service Centers (CSC) in rural India. It handles:
 
-- Daily transaction ledger with per-user running balances
-- AePS (Aadhaar Enabled Payment System) cash flow tracking
-- Service catalog management
+- Daily transaction ledger with per-user running balances + `CSC-YYYY-NNNN` receipt numbers + public QR receipt verification
+- AePS (Aadhaar Enabled Payment System) cash flow tracking with per-session receipts
+- **Udhari Khata** — per-user customer credit ledger ("You Gave / You Got") with WhatsApp reminder + PDF statement
+- Service catalog management (22 services, 5 categories)
 - Daily and monthly financial reports with Excel export
-- Multi-user accounts with role-based access and full data isolation
+- Multi-user accounts with fine-grained RBAC (`requirePermission`) and full per-user data isolation
 - Per-user profile, avatar, and UI preferences
 - Full audit trail of all sensitive actions
-- System-wide notifications and push notifications (VAPID)
-- Multi-device session management with V2 session tracking
-- Account locking after failed login attempts + idle auto-logout
+- System-wide notifications and push notifications (VAPID) with isolation guarantees
+- **V2 multi-device session management** — `user_sessions` table tracks every login; revoke by device
+- Account locking (5 attempts → 15 min) + idle auto-logout (30 min with 2-min warning dialog)
+- OTP-based password reset (4-step merged `/forgot-password` flow)
 - **PWA** (installable, offline-capable) and **TWA** (Android app via Digital Asset Links)
+- Admin oversight pages: cross-user balance summary, per-user ledger, AePS overview
 
 **Default Credentials**
 
@@ -1183,3 +1191,286 @@ With `createTableIfMissing: true` this is now handled automatically on server st
 | Stale UI / old JS bundle | Clear service worker: DevTools → Application → Storage → Clear site data. |
 | Push notifications break on restart | VAPID keys not in Replit Secrets — set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` as secrets. |
 | Port already in use (`EADDRINUSE`) | `fuser -k 5000/tcp; fuser -k 8082/tcp` then restart `Start application`. |
+
+---
+
+## 15. Udhari Khata System
+
+"Udhari Khata" (उधारी खाता) is a per-user customer credit ledger. Each operator maintains their own list of customers and tracks money extended / received back.
+
+### Data Model
+
+#### `udhari_customers`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | serial PK | |
+| `name` | text | Required |
+| `phone` | text NULL | |
+| `address` | text NULL | |
+| `balance` | numeric(12,2) | Auto-recalculated on every entry change: `SUM(gave) - SUM(got)` |
+| `created_by` | integer | FK → users.id — strict per-user isolation |
+| `created_at` | timestamptz | |
+| `updated_at` | timestamptz | |
+
+Balance semantics:
+- `balance > 0` → "To Collect" (CSC has given more than received)
+- `balance < 0` → "To Pay" (CSC has received more than given)
+- `balance = 0` → Settled
+
+#### `udhari_entries`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | serial PK | |
+| `customer_id` | integer | FK → udhari_customers.id CASCADE DELETE |
+| `date` | text | ISO YYYY-MM-DD |
+| `type` | text | `gave` / `got` |
+| `amount` | numeric(12,2) | Always positive |
+| `note` | text NULL | |
+| `created_by` | integer | FK → users.id |
+| `created_at` | timestamptz | |
+| `updated_at` | timestamptz | |
+
+### API Routes (`/api/udhari`)
+All routes guarded by `requirePermission("udhari:view")` (reads) or `requirePermission("udhari:manage")` (writes).
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/udhari/summary` | `{ total_to_collect, total_to_pay, customer_count }` for current user |
+| `GET` | `/api/udhari/customers` | Paginated customer list with balances |
+| `POST` | `/api/udhari/customers` | Create customer |
+| `GET` | `/api/udhari/customers/:id` | Single customer |
+| `PATCH` | `/api/udhari/customers/:id` | Update name/phone/address/notes |
+| `DELETE` | `/api/udhari/customers/:id` | Delete customer + all entries (CASCADE) |
+| `GET` | `/api/udhari/customers/:id/entries` | Entry list for one customer |
+| `POST` | `/api/udhari/customers/:id/entries` | Add gave/got entry; recalculates customer balance |
+| `PATCH` | `/api/udhari/customers/:id/entries/:entryId` | Edit entry; recalculates customer balance |
+| `DELETE` | `/api/udhari/customers/:id/entries/:entryId` | Delete entry; recalculates customer balance |
+
+### Balance Recalculation
+On every entry create / update / delete:
+```sql
+UPDATE udhari_customers
+SET balance = (
+  SELECT COALESCE(SUM(CASE WHEN type='gave' THEN amount ELSE -amount END), 0)
+  FROM udhari_entries WHERE customer_id = :id
+)
+WHERE id = :id
+```
+
+### Frontend Pages
+
+**`udhari.tsx`** — Customer list:
+- Summary banner at top: "To Collect ₹X" (orange) / "To Pay ₹Y" (green) chips
+- Search by name, sort by name / balance / last active
+- Customer cards with `BalanceBadge` component
+- FAB to add new customer; Add Customer dialog
+
+**`udhari-customer.tsx`** — Per-customer ledger:
+- Balance banner: large amount chip with direction (orange=owed to you, green=you owe)
+- Entry list grouped, each row with colored left stripe (orange=gave, green=got)
+- "Add Entry" bottom-sheet: "You Gave / You Got" toggle → amount → date → note
+- WhatsApp reminder: `wa.me/<phone>?text=...` with pre-filled balance message
+- PDF export: html2canvas + jsPDF → A4 statement
+- Udhari receipt modal after each entry
+
+---
+
+## 16. Receipt System
+
+Every ledger transaction gets a unique sequential receipt number and a public verification URL.
+
+### Receipt Numbering
+
+**Format:** `CSC-YYYY-NNNN` (e.g. `CSC-2026-0042`)
+
+**Atomic counter** via `receipt_counters` table:
+```sql
+INSERT INTO receipt_counters(year, last_count) VALUES(:year, 1)
+ON CONFLICT(year) DO UPDATE SET last_count = receipt_counters.last_count + 1
+RETURNING last_count
+```
+The counter resets at the start of each calendar year.
+
+**Schema — `receipt_counters`:**
+| Column | Type | Notes |
+|---|---|---|
+| `year` | integer PK | Calendar year |
+| `last_count` | integer | Last used sequential number this year |
+
+**New columns on `ledger`:**
+| Column | Type | Notes |
+|---|---|---|
+| `receipt_number` | text | `CSC-YYYY-NNNN` |
+| `receipt_token` | text UNIQUE | UUID — used in public verification URL |
+
+> Note: These columns were added via raw `ALTER TABLE` (not drizzle-kit push) because drizzle-kit push requires a TTY and would block in the Replit shell. Use raw SQL for any new `ALTER TABLE` in production.
+
+### Public Verification Endpoint
+`GET /api/receipts/verify/:token` — **no authentication required**.
+
+Returns:
+```json
+{
+  "receiptNumber": "CSC-2026-0042",
+  "date": "2026-06-19",
+  "customerName": "Ramesh Kumar",
+  "serviceType": "Aadhar Update",
+  "credit": 150,
+  "debit": 0,
+  "balance": 4850,
+  "businessName": "SAHU CSC",
+  "businessAddress": "...",
+  "businessMobile": "..."
+}
+```
+
+### Receipt Modal Components
+
+**`receipt-modal.tsx`** — Used by `ledger.tsx`:
+- Business header, receipt number, date, QR code (links to `/receipts/verify/:token`)
+- 2×2 action grid: Print / PDF / WhatsApp / Share
+
+**`aeps-receipt-modal.tsx`** — Used by `aeps.tsx`:
+- Same layout adapted for AePS withdrawal/deposit
+
+**`udhari-receipt-modal.tsx`** — Used by `udhari-customer.tsx`:
+- Orange/green gradient header, customer name, balance chip, QR code
+- WhatsApp reminder pre-filled with customer balance text
+
+### WhatsApp Sharing Strategy
+```ts
+// Mobile: Web Share API with PDF file attachment
+if (navigator.canShare?.({ files: [pdfFile] })) {
+  await navigator.share({ title, text, files: [pdfFile] });
+}
+// Desktop fallback: open wa.me link
+else {
+  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+}
+```
+
+### Public Receipt Verify Page
+`receipts-verify.tsx` — served at `/receipts/verify/:token`:
+- No authentication required — shareable with customers
+- Shows receipt card: business info, transaction details, amount, balance
+- QR code for re-verification
+- WhatsApp share button for the verification URL
+
+---
+
+## 17. Admin Oversight Routes
+
+Three read-only admin routes that give the admin user a cross-user view without mixing admin's own personal data.
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `GET` | `/api/admin/users-overview` | admin only | All users' name + balance + credit/debit totals |
+| `GET` | `/api/admin/users-overview/:userId/ledger` | admin only | Full ledger for any specific user |
+| `GET` | `/api/admin/aeps-overview` | admin only | AePS current cash balance for all users |
+
+These are rendered inside **`users.tsx`** as a 4th tab ("Cash Overview") — the old standalone `/users-overview` route now redirects to `/users`.
+
+---
+
+## 18. Complete Page & Route Reference (v2.1.0)
+
+### Frontend Routes
+
+| Path | Page | Auth | Notes |
+|---|---|---|---|
+| `/` | `dashboard.tsx` | ✅ | Real-time stats + offline cache fallback |
+| `/login` | `login.tsx` | public | Mobile: navy header + white card + Register CTA |
+| `/register` | `register.tsx` | public | Self-registration + PasswordStrength meter |
+| `/forgot-password` | `forgot-password.tsx` | public | 4-step OTP reset flow (merged) |
+| `/reset-password` | redirects to `/forgot-password` | public | |
+| `/ledger` | `ledger.tsx` | ✅ | Transactions + offline queue + receipt modal |
+| `/aeps` | `aeps.tsx` | ✅ | Daily AePS cash sessions + transactions |
+| `/udhari` | `udhari.tsx` | ✅ | Udhari customer list + summary banner |
+| `/udhari/:id` | `udhari-customer.tsx` | ✅ | Per-customer ledger + WhatsApp + PDF |
+| `/services` | `services.tsx` | ✅ | Service catalog |
+| `/reports` | `reports.tsx` | ✅ | Charts + Excel export + cached offline |
+| `/notifications` | `notifications.tsx` | ✅ | Notification inbox |
+| `/profile` | `profile.tsx` | ✅ | Profile photo, bio, password change |
+| `/sessions` | `sessions.tsx` | ✅ | Active sessions: device cards, revoke, logout ALL |
+| `/pwa-status` | `pwa-status.tsx` | ✅ | Network, sync, storage, push, device checklist |
+| `/users` | `users.tsx` | admin | 4 tabs: Users / Roles / Activity / Cash Overview |
+| `/audit-logs` | `audit-logs.tsx` | admin | Full audit trail |
+| `/settings` | `settings.tsx` | admin | Business info, theme, backup config |
+| `/backups` | `backups.tsx` | admin | Backup and restore |
+| `/server-health` | `server-health.tsx` | admin | Live API + DB + VAPID diagnostics |
+| `/receipts/verify/:token` | `receipts-verify.tsx` | public | Public receipt verification (no auth) |
+| `/offline` | `offline.tsx` | public | Offline fallback page |
+
+### Complete API Route Reference (v2.1.0)
+
+| Group | Method | Path | Permission |
+|---|---|---|---|
+| **Auth** | POST | `/api/auth/login` | public |
+| | POST | `/api/auth/logout` | authenticated |
+| | GET | `/api/auth/me` | authenticated |
+| | POST | `/api/auth/register` | public |
+| | POST | `/api/auth/forgot-password` | public |
+| | POST | `/api/auth/reset-password` | public |
+| **Sessions** | GET | `/api/sessions` | authenticated |
+| | DELETE | `/api/sessions/:id` | authenticated |
+| | DELETE | `/api/sessions/others` | authenticated |
+| | DELETE | `/api/sessions/all` | authenticated |
+| **Ledger** | GET | `/api/ledger` | `ledger:view` |
+| | POST | `/api/ledger` | `ledger:create` |
+| | PATCH | `/api/ledger/:id` | `ledger:edit` |
+| | DELETE | `/api/ledger/:id` | `ledger:edit` |
+| | DELETE | `/api/ledger/all` | admin |
+| | GET | `/api/ledger/balance` | `ledger:view` |
+| | GET | `/api/ledger/summary` | `ledger:view` |
+| **AePS** | GET | `/api/aeps/session` | `aeps:view` |
+| | POST | `/api/aeps/session` | `aeps:manage` |
+| | POST | `/api/aeps/transaction` | `aeps:manage` |
+| | PATCH | `/api/aeps/transaction/:id` | `aeps:manage` |
+| | DELETE | `/api/aeps/transaction/:id` | `aeps:manage` |
+| **Udhari** | GET | `/api/udhari/summary` | `udhari:view` |
+| | GET | `/api/udhari/customers` | `udhari:view` |
+| | POST | `/api/udhari/customers` | `udhari:manage` |
+| | GET | `/api/udhari/customers/:id` | `udhari:view` |
+| | PATCH | `/api/udhari/customers/:id` | `udhari:manage` |
+| | DELETE | `/api/udhari/customers/:id` | `udhari:manage` |
+| | GET | `/api/udhari/customers/:id/entries` | `udhari:view` |
+| | POST | `/api/udhari/customers/:id/entries` | `udhari:manage` |
+| | PATCH | `/api/udhari/customers/:id/entries/:entryId` | `udhari:manage` |
+| | DELETE | `/api/udhari/customers/:id/entries/:entryId` | `udhari:manage` |
+| **Receipts** | GET | `/api/receipts/verify/:token` | public |
+| **Reports** | GET | `/api/reports/daily` | `reports:view` |
+| | GET | `/api/reports/monthly` | `reports:view` |
+| | GET | `/api/reports/aeps` | `reports:view` |
+| | GET | `/api/reports/service-breakdown` | `reports:view` |
+| | GET | `/api/reports/export` | `reports:export` |
+| | GET | `/api/dashboard` | `reports:view` |
+| **Services** | GET | `/api/services` | `services:view` |
+| | POST | `/api/services` | admin |
+| | PATCH | `/api/services/:id` | admin |
+| | DELETE | `/api/services/:id` | admin |
+| **Users** | GET | `/api/users` | admin |
+| | POST | `/api/users` | admin |
+| | PATCH | `/api/users/:id` | admin |
+| | DELETE | `/api/users/:id` | admin |
+| **Admin** | GET | `/api/admin/users-overview` | admin |
+| | GET | `/api/admin/users-overview/:userId/ledger` | admin |
+| | GET | `/api/admin/aeps-overview` | admin |
+| **Profile** | GET | `/api/profile` | `profile:view` |
+| | PATCH | `/api/profile` | `profile:view` |
+| | POST | `/api/profile/avatar` | `profile:view` |
+| | DELETE | `/api/profile/avatar` | `profile:view` |
+| **Preferences** | GET | `/api/preferences` | authenticated |
+| | PATCH | `/api/preferences` | authenticated |
+| **Notifications** | GET | `/api/notifications` | `notifications:view` |
+| | PATCH | `/api/notifications/:id/read` | `notifications:view` |
+| | POST | `/api/notifications/read-all` | `notifications:view` |
+| | DELETE | `/api/notifications/:id` | `notifications:view` |
+| **Push** | GET | `/api/push/vapid-public-key` | authenticated |
+| | POST | `/api/push/subscribe` | authenticated |
+| | DELETE | `/api/push/unsubscribe` | authenticated |
+| **Audit** | GET | `/api/audit-logs` | admin |
+| **Settings** | GET | `/api/settings` | authenticated |
+| | PATCH | `/api/settings` | admin |
+| **Password Reset** | POST | `/api/auth/forgot-password` | public |
+| | POST | `/api/auth/reset-password` | public |
+| **Health** | GET | `/api/healthz` | public |
