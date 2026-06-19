@@ -115,7 +115,7 @@ export function UdhariReceiptModal({
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #fff; }
-        @page { size: A5; margin: 0; }
+        @page { size: A4; margin: 0; }
         @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
         svg { display: block; }
       </style>
@@ -136,7 +136,7 @@ export function UdhariReceiptModal({
       ]);
       const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false });
       const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a5" });
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
