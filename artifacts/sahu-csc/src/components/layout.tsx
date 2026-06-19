@@ -67,8 +67,8 @@ function SidebarNav({
           </div>
         </div>
         <div className="flex-1 min-w-0">
-          <h2 className="font-extrabold text-sm leading-tight tracking-wide text-white">SAHU CSC</h2>
-          <p className="text-[10px] text-white/50 font-medium tracking-wide mt-0.5">Management Platform</p>
+          <h2 className="font-extrabold text-base leading-tight tracking-wide text-white">SAHU CSC</h2>
+          <p className="text-[11px] text-white/50 font-medium tracking-wide mt-0.5">Management Platform</p>
         </div>
       </div>
 
@@ -92,12 +92,12 @@ function SidebarNav({
                 onTouchStart={() => prefetch(item.href)}
               >
                 <div className="flex items-center gap-3">
-                  <Icon size={15} className={active ? "text-white" : "text-white/45"} />
-                  <span className="text-[12px] leading-none">{item.label}</span>
+                  <Icon size={17} className={active ? "text-white" : "text-white/45"} />
+                  <span className="text-[14px] leading-none">{item.label}</span>
                 </div>
                 {item.badge !== undefined && item.badge > 0 && (
                   <span className={`
-                    text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none
+                    text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none
                     ${active ? "bg-white/25 text-white" : "bg-[#f97316] text-white"}
                   `}>
                     {item.badge > 99 ? "99+" : item.badge}
@@ -110,7 +110,7 @@ function SidebarNav({
 
         {adminNavItems.length > 0 && (
           <>
-            <p className="text-white/30 text-[9px] font-bold uppercase tracking-[0.15em] px-3 pt-4 pb-1.5">
+            <p className="text-white/30 text-[10px] font-bold uppercase tracking-[0.15em] px-3 pt-4 pb-1.5">
               Admin
             </p>
             {adminNavItems.map((item) => {
@@ -130,10 +130,10 @@ function SidebarNav({
                     onFocus={() => prefetch(item.href)}
                     onTouchStart={() => prefetch(item.href)}
                   >
-                    <Icon size={15} className={active ? "text-white" : "text-white/45"} />
-                    <span className="text-[12px] leading-none">{item.label}</span>
+                    <Icon size={17} className={active ? "text-white" : "text-white/45"} />
+                    <span className="text-[14px] leading-none">{item.label}</span>
                     {item.badge !== undefined && item.badge > 0 && (
-                      <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none bg-[#f97316] text-white">
+                      <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none bg-[#f97316] text-white">
                         {item.badge > 99 ? "99+" : item.badge}
                       </span>
                     )}
@@ -165,8 +165,8 @@ function SidebarNav({
         </Link>
 
         <Link href="/profile" className="flex-1 min-w-0 cursor-pointer">
-          <p className="text-[12px] font-bold text-white leading-tight truncate">{displayName}</p>
-          <p className="text-[10px] text-white/45 mt-0.5 capitalize">{roleLabel}</p>
+          <p className="text-[13px] font-bold text-white leading-tight truncate">{displayName}</p>
+          <p className="text-[11px] text-white/45 mt-0.5 capitalize">{roleLabel}</p>
         </Link>
 
         <button
