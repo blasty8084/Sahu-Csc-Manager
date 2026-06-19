@@ -24,6 +24,7 @@ import {
 import {
   ArrowLeft, Phone, Pencil, Trash2, MessageCircle,
   ArrowUpRight, ArrowDownLeft, Plus, FileDown, MoreHorizontal, Receipt,
+  X, Calendar, FileText, CheckCircle2,
 } from "lucide-react";
 import { UdhariReceiptModal } from "@/components/udhari-receipt-modal";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -66,8 +67,9 @@ interface EntryFormProps {
   existing?: any;
   open: boolean;
   onClose: () => void;
+  customer?: any;
 }
-function EntryFormDialog({ customerId, mode, existing, open, onClose }: EntryFormProps) {
+function EntryFormDialog({ customerId, mode, existing, open, onClose, customer }: EntryFormProps) {
   const { toast } = useToast();
   const qc = useQueryClient();
   const isEdit = !!existing;
@@ -75,7 +77,7 @@ function EntryFormDialog({ customerId, mode, existing, open, onClose }: EntryFor
     date: existing?.date ?? today(),
     amount: existing ? String(existing.amount) : "",
     note: existing?.note ?? "",
-    type: existing?.type ?? mode,
+    type: (existing?.type ?? mode) as "gave" | "got",
   });
   const create = useCreateUdhariEntry();
   const update = useUpdateUdhariEntry();
@@ -94,11 +96,11 @@ function EntryFormDialog({ customerId, mode, existing, open, onClose }: EntryFor
     }
     try {
       if (isEdit) {
-        await update.mutateAsync({ customerId, entryId: existing.id, data: { date: form.date, type: form.type as any, amount: amt, note: form.note } });
+        await update.mutateAsync({ customerId, entryId: existing.id, data: { date: form.date, type: form.type, amount: amt, note: form.note } });
         invalidateAll();
         toast({ title: "Entry updated" });
       } else {
-        await create.mutateAsync({ customerId, data: { date: form.date, type: form.type as any, amount: amt, note: form.note } });
+        await create.mutateAsync({ customerId, data: { date: form.date, type: form.type, amount: amt, note: form.note } });
         invalidateAll();
         toast({ title: form.type === "gave" ? "₹ You Gave recorded" : "₹ You Got recorded" });
       }
@@ -108,49 +110,125 @@ function EntryFormDialog({ customerId, mode, existing, open, onClose }: EntryFor
     }
   };
 
-  const typeColor = form.type === "gave" ? "#ea580c" : "#059669";
-  const typeLabel = form.type === "gave" ? "You Gave (Customer owes more)" : "You Got (Customer paid back)";
+  const isGave = form.type === "gave";
+  const accentColor = isGave ? "#ea580c" : "#059669";
+  const headerGrad = isGave ? "linear-gradient(145deg,#7c2d12,#ea580c)" : "linear-gradient(145deg,#064e3b,#059669)";
+  const accentBg = isGave ? "rgba(234,88,12,0.08)" : "rgba(5,150,105,0.08)";
+  const accentBorder = isGave ? "rgba(234,88,12,0.2)" : "rgba(5,150,105,0.2)";
+  const amtGrad = isGave ? "linear-gradient(135deg,#7c2d12,#ea580c)" : "linear-gradient(135deg,#064e3b,#059669)";
+
+  // Live balance preview
+  const currentBalance = customer?.balance ?? 0;
+  const entryAmt = parseFloat(form.amount) || 0;
+  const previewBalance = isGave ? currentBalance + entryAmt : currentBalance - entryAmt;
+  const previewLabel = previewBalance > 0 ? `₹${previewBalance.toLocaleString("en-IN")} to collect` : previewBalance < 0 ? `₹${Math.abs(previewBalance).toLocaleString("en-IN")} to pay` : "Settled ✓";
+  const previewColor = previewBalance > 0 ? "#ea580c" : previewBalance < 0 ? "#059669" : "#64748b";
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="text-sm font-bold flex items-center gap-2">
-            <span className="w-6 h-6 rounded-full flex items-center justify-center"
-              style={{ background: `${typeColor}18` }}>
-              {form.type === "gave"
-                ? <ArrowUpRight size={13} style={{ color: typeColor }} />
-                : <ArrowDownLeft size={13} style={{ color: typeColor }} />}
-            </span>
-            <span style={{ color: typeColor }}>{isEdit ? "Edit Entry" : (form.type === "gave" ? "You Gave" : "You Got")}</span>
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3 py-1">
-          <div>
-            <Label className="text-xs font-semibold">Amount (₹) *</Label>
-            <Input className="mt-1 h-10 text-lg font-bold" type="number" min="0" step="0.01"
-              placeholder="0.00" value={form.amount}
-              onChange={(e) => setForm((p) => ({ ...p, amount: e.target.value }))} />
-          </div>
-          <div>
-            <Label className="text-xs font-semibold">Date</Label>
-            <Input className="mt-1 h-9 text-sm" type="date" value={form.date}
-              onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))} />
-          </div>
-          <div>
-            <Label className="text-xs font-semibold">Note (optional)</Label>
-            <Textarea className="mt-1 text-sm resize-none" rows={2} placeholder="What was this for?"
-              value={form.note} onChange={(e) => setForm((p) => ({ ...p, note: e.target.value }))} />
-          </div>
-          <p className="text-[10px] text-muted-foreground">{typeLabel}</p>
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-sm rounded-2xl p-0 overflow-hidden gap-0">
+        {/* Drag handle */}
+        <div className="flex justify-center pt-3 pb-0 md:hidden">
+          <div style={{ width: 40, height: 4, borderRadius: 2, background: "#e2e8f0" }} />
         </div>
-        <DialogFooter className="gap-2">
-          <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
-          <Button size="sm" disabled={create.isPending || update.isPending} onClick={handleSave}
-            style={{ background: `linear-gradient(135deg,${typeColor},${typeColor}cc)`, color: "#fff" }}>
-            {create.isPending || update.isPending ? "Saving…" : "Save"}
-          </Button>
-        </DialogFooter>
+
+        {/* Colored gradient header card */}
+        <div style={{ background: headerGrad, margin: "12px 16px 0", borderRadius: 18, padding: "14px 16px", position: "relative", overflow: "hidden" }}>
+          <div style={{ position: "absolute", top: -16, right: -16, width: 70, height: 70, borderRadius: "50%", background: "rgba(255,255,255,0.1)", pointerEvents: "none" }} />
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", position: "relative" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 38, height: 38, borderRadius: 11, background: "rgba(255,255,255,0.15)", border: "1.5px solid rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {isGave ? <ArrowUpRight size={18} color="#fff" strokeWidth={2.5} /> : <ArrowDownLeft size={18} color="#fff" strokeWidth={2.5} />}
+              </div>
+              <div>
+                <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" }}>Udhari Khata</p>
+                <h3 style={{ color: "#fff", fontSize: 16, fontWeight: 900, lineHeight: 1.1, marginTop: 2 }}>
+                  {isEdit ? "Edit Entry" : (isGave ? "You Gave" : "You Got")}
+                </h3>
+              </div>
+            </div>
+            <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", outline: "none" }}>
+              <X size={13} color="#fff" />
+            </button>
+          </div>
+          {/* Customer chip */}
+          {customer && (
+            <div style={{ marginTop: 10, background: "rgba(255,255,255,0.12)", borderRadius: 10, padding: "7px 12px", display: "flex", alignItems: "center", gap: 8, position: "relative" }}>
+              <div style={{ width: 24, height: 24, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <span style={{ fontSize: 11, fontWeight: 800, color: "#fff" }}>{customer.name?.charAt(0).toUpperCase()}</span>
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>Customer</p>
+                <p style={{ color: "#fff", fontSize: 12, fontWeight: 800, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{customer.name}</p>
+              </div>
+              <div style={{ background: "rgba(255,255,255,0.15)", borderRadius: 6, padding: "3px 8px", flexShrink: 0 }}>
+                <span style={{ fontSize: 10, fontWeight: 900, color: "#fff" }}>
+                  {currentBalance > 0 ? `₹${currentBalance.toLocaleString("en-IN")} owed` : currentBalance < 0 ? `₹${Math.abs(currentBalance).toLocaleString("en-IN")} to pay` : "Settled"}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="px-4 pt-3 pb-5 space-y-3">
+          {/* You Gave / You Got toggle — hide on edit */}
+          {!isEdit && (
+            <div style={{ background: "#f1f5f9", borderRadius: 14, padding: 4, display: "flex", gap: 4 }}>
+              {(["gave", "got"] as const).map(t => (
+                <button key={t} type="button" onClick={() => setForm(p => ({ ...p, type: t }))}
+                  style={{ flex: 1, height: 42, borderRadius: 11, border: "none", cursor: "pointer", fontWeight: 800, fontSize: 13, background: form.type === t ? (t === "gave" ? "#ea580c" : "#059669") : "transparent", color: form.type === t ? "#fff" : "#94a3b8", transition: "all 0.15s", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, boxShadow: form.type === t ? `0 2px 10px ${t === "gave" ? "rgba(234,88,12,0.35)" : "rgba(5,150,105,0.35)"}` : "none" }}>
+                  {t === "gave" ? <><ArrowUpRight size={14} strokeWidth={2.5} /> You Gave</> : <><ArrowDownLeft size={14} strokeWidth={2.5} /> You Got</>}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Amount */}
+          <div style={{ background: accentBg, border: `2px solid ${accentBorder}`, borderRadius: 16, padding: "13px 16px", display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: amtGrad, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: `0 4px 12px ${accentColor}35` }}>
+              <span style={{ fontSize: 16, fontWeight: 900, color: "#fff" }}>₹</span>
+            </div>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 2 }}>
+                {isGave ? "Amount You Gave" : "Amount You Got"}
+              </p>
+              <input type="number" min="0" step="0.01" value={form.amount}
+                onChange={e => setForm(p => ({ ...p, amount: e.target.value }))}
+                placeholder="0.00"
+                style={{ width: "100%", fontSize: 28, fontWeight: 900, color: accentColor, background: "transparent", border: "none", outline: "none", padding: 0 }} />
+            </div>
+          </div>
+
+          {/* Date */}
+          <div style={{ position: "relative" }}>
+            <Calendar size={14} color="#94a3b8" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
+            <input type="date" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))}
+              style={{ width: "100%", height: 44, paddingLeft: 36, paddingRight: 12, borderRadius: 12, border: "1.5px solid #e2e8f0", background: "#fafafa", fontSize: 14, color: "#0b2c60", outline: "none", boxSizing: "border-box", fontWeight: 600 }} />
+          </div>
+
+          {/* Note */}
+          <div style={{ position: "relative" }}>
+            <FileText size={14} color="#94a3b8" style={{ position: "absolute", left: 12, top: 13 }} />
+            <textarea value={form.note} onChange={e => setForm(p => ({ ...p, note: e.target.value }))} rows={2}
+              placeholder="Add a note (optional)"
+              style={{ width: "100%", paddingLeft: 36, paddingRight: 12, paddingTop: 12, paddingBottom: 12, borderRadius: 12, border: "1.5px solid #e2e8f0", background: "#fafafa", fontSize: 13, color: "#0b2c60", outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit" }} />
+          </div>
+
+          {/* Balance preview */}
+          {customer && entryAmt > 0 && (
+            <div style={{ background: "#f8fafc", borderRadius: 12, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", border: "1px solid #e2e8f0" }}>
+              <p style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>New balance after this entry</p>
+              <p style={{ fontSize: 14, fontWeight: 900, color: previewColor }}>{previewLabel}</p>
+            </div>
+          )}
+
+          {/* Submit */}
+          <button type="button" onClick={handleSave} disabled={create.isPending || update.isPending}
+            style={{ width: "100%", height: 52, borderRadius: 16, border: "none", cursor: "pointer", background: isGave ? "linear-gradient(135deg,#7c2d12,#ea580c)" : "linear-gradient(135deg,#064e3b,#059669)", color: "#fff", fontSize: 16, fontWeight: 900, letterSpacing: "0.02em", boxShadow: `0 6px 20px ${accentColor}40`, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, opacity: (create.isPending || update.isPending) ? 0.7 : 1 }}>
+            <CheckCircle2 size={18} strokeWidth={2.5} />
+            {create.isPending || update.isPending ? "Saving…" : `Save — ${isGave ? "You Gave" : "You Got"}`}
+          </button>
+        </div>
       </DialogContent>
     </Dialog>
   );
@@ -516,6 +594,7 @@ export default function UdhariCustomer() {
           existing={entryDialog.existing}
           open={entryDialog.open}
           onClose={() => setEntryDialog({ open: false, mode: "gave" })}
+          customer={c}
         />
       )}
 

@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNetworkStatus } from "@/hooks/use-network-status";
-import { Plus, Pencil, Trash2, Download, Filter, X, ChevronLeft, ChevronRight, Clock, WifiOff, Receipt } from "lucide-react";
+import { Plus, Pencil, Trash2, Download, Filter, X, ChevronLeft, ChevronRight, Clock, WifiOff, Receipt, Search, IndianRupee, User, FileText, Calendar, CheckCircle2, ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { addPendingEntry, getAllPendingEntries, type PendingLedgerEntry } from "@/lib/offline-db";
 import { syncEngine } from "@/lib/sync-engine";
@@ -51,6 +51,8 @@ export default function Ledger() {
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [showDeleteAll, setShowDeleteAll] = useState(false);
   const [receiptEntry, setReceiptEntry] = useState<any>(null);
+  const [entryType, setEntryType] = useState<"credit" | "debit">("credit");
+  const [rawAmount, setRawAmount] = useState("0");
 
   const refreshPending = async () => {
     try {
@@ -117,12 +119,17 @@ export default function Ledger() {
 
   const openCreate = () => {
     setEditEntry(null);
+    setEntryType("credit");
+    setRawAmount("0");
     form.reset({ date: new Date().toISOString().split("T")[0], customerName: "", serviceType: "", credit: 0, debit: 0, description: "" });
     setShowForm(true);
   };
 
   const openEdit = (entry: any) => {
     setEditEntry(entry);
+    const etype = entry.credit > 0 ? "credit" : "debit";
+    setEntryType(etype);
+    setRawAmount(String(entry.credit > 0 ? entry.credit : entry.debit));
     form.reset({ date: entry.date, customerName: entry.customerName, serviceType: entry.serviceType, credit: entry.credit, debit: entry.debit, description: entry.description });
     setShowForm(true);
   };
@@ -182,64 +189,133 @@ export default function Ledger() {
   const serviceTypes = services?.map((s: any) => s.name) ?? [];
   const totalPages = Math.ceil((data?.total ?? 0) / 15);
 
+  // Sync rawAmount + entryType → form credit/debit fields
+  useEffect(() => {
+    const amt = parseFloat(rawAmount) || 0;
+    if (entryType === "credit") {
+      form.setValue("credit", amt);
+      form.setValue("debit", 0);
+    } else {
+      form.setValue("credit", 0);
+      form.setValue("debit", amt);
+    }
+  }, [entryType, rawAmount]);
+
+  // Accent colors for Add Entry form
+  const accentColor = entryType === "credit" ? "#059669" : "#e11d48";
+  const accentGrad = entryType === "credit"
+    ? "linear-gradient(135deg, #064e3b, #059669)"
+    : "linear-gradient(135deg, #881337, #e11d48)";
+  const accentBg = entryType === "credit" ? "rgba(5,150,105,0.08)" : "rgba(225,29,72,0.08)";
+
+  // Date grouping helpers for mobile
+  const groupByDate = (entries: any[]) => {
+    const groups: Record<string, any[]> = {};
+    entries?.forEach((e: any) => {
+      if (!groups[e.date]) groups[e.date] = [];
+      groups[e.date].push(e);
+    });
+    return Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0]));
+  };
+  const fmtDateGroup = (d: string) => {
+    const today = new Date().toISOString().split("T")[0];
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
+    if (d === today) return "Today";
+    if (d === yesterday) return "Yesterday";
+    return new Date(d + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short", weekday: "short" });
+  };
+
   return (
     <Layout>
       <div className="space-y-4">
-        {/* Header */}
-        <div className="flex items-center justify-between gap-3">
+        {/* ── MOBILE: Navy gradient hero header ── */}
+        <div className="md:hidden rounded-2xl overflow-hidden" style={{ background: "linear-gradient(145deg,#0b2c60 0%,#1a4a9e 100%)", padding: "20px 20px 24px", position: "relative" }}>
+          <div style={{ position: "absolute", top: -30, right: -30, width: 120, height: 120, borderRadius: "50%", background: "rgba(249,115,22,0.12)", pointerEvents: "none" }} />
+          <div style={{ position: "absolute", bottom: -20, left: 20, width: 80, height: 80, borderRadius: "50%", background: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
+          {/* Top row */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18, position: "relative" }}>
+            <div>
+              <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" }}>My Ledger</p>
+              <h1 style={{ color: "#fff", fontSize: 20, fontWeight: 900, lineHeight: 1.1, marginTop: 2 }}>Transaction Book</h1>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <a href="/api/reports/export" target="_blank" style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }}>
+                <Download size={15} color="#fff" />
+              </a>
+              <button onClick={() => setShowDeleteAll(true)} style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(249,115,22,0.18)", border: "1px solid rgba(249,115,22,0.35)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", outline: "none" }}>
+                <Trash2 size={15} color="#f97316" />
+              </button>
+            </div>
+          </div>
+          {/* Balance card */}
+          <div style={{ background: "rgba(255,255,255,0.08)", borderRadius: 16, padding: "14px 16px", border: "1px solid rgba(255,255,255,0.12)", position: "relative" }}>
+            <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Current Balance</p>
+            {balance === undefined
+              ? <div style={{ height: 30, background: "rgba(255,255,255,0.1)", borderRadius: 8, marginBottom: 12, width: "55%" }} />
+              : <p style={{ color: "#fff", fontSize: 26, fontWeight: 900, lineHeight: 1, marginBottom: 12 }}>₹{(balance?.balance ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p>}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              <div style={{ background: "rgba(16,185,129,0.15)", borderRadius: 10, padding: "8px 10px", border: "1px solid rgba(16,185,129,0.25)" }}>
+                <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>Credits</p>
+                {balance === undefined
+                  ? <div style={{ height: 16, background: "rgba(255,255,255,0.12)", borderRadius: 4, marginTop: 4, width: "70%" }} />
+                  : <p style={{ color: "#34d399", fontSize: 15, fontWeight: 900, marginTop: 2 }}>+₹{(balance?.totalCredits ?? 0).toLocaleString("en-IN")}</p>}
+              </div>
+              <div style={{ background: "rgba(244,63,94,0.15)", borderRadius: 10, padding: "8px 10px", border: "1px solid rgba(244,63,94,0.25)" }}>
+                <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>Debits</p>
+                {balance === undefined
+                  ? <div style={{ height: 16, background: "rgba(255,255,255,0.12)", borderRadius: 4, marginTop: 4, width: "70%" }} />
+                  : <p style={{ color: "#fb7185", fontSize: 15, fontWeight: 900, marginTop: 2 }}>−₹{(balance?.totalDebits ?? 0).toLocaleString("en-IN")}</p>}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── MOBILE: Search bar ── */}
+        <div className="md:hidden" style={{ position: "relative" }}>
+          <Search size={14} color="#94a3b8" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
+          <input
+            value={customerName}
+            onChange={(e) => { setCustomerName(e.target.value); setPage(1); }}
+            placeholder="Search customer or service…"
+            style={{ width: "100%", height: 44, paddingLeft: 34, paddingRight: 46, borderRadius: 14, border: "1.5px solid #e2e8f0", background: "#fff", fontSize: 13, color: "#0b2c60", outline: "none", boxSizing: "border-box", fontWeight: 500, boxShadow: "0 1px 6px rgba(11,44,96,0.06)" }}
+          />
+          <button onClick={() => setShowFilters(!showFilters)} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", width: 30, height: 30, borderRadius: 8, background: hasFilters ? "#0b2c60" : "#f1f5f9", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", outline: "none" }}>
+            <Filter size={13} color={hasFilters ? "#fff" : "#64748b"} />
+          </button>
+        </div>
+
+        {/* ── DESKTOP: Header ── */}
+        <div className="hidden md:flex items-center justify-between gap-3">
           <div>
             <h2 className="text-lg md:text-xl font-bold">Ledger</h2>
             <p className="text-xs text-muted-foreground">{data?.total ?? 0} transactions</p>
           </div>
           <div className="flex gap-2">
-            {/* Mobile: icon-only buttons */}
-            <Button variant="outline" size="sm" className="md:hidden" onClick={() => setShowFilters(!showFilters)}>
-              <Filter size={15} />
-              {hasFilters && <span className="ml-1 w-1.5 h-1.5 bg-primary rounded-full" />}
-            </Button>
-            <Button asChild variant="outline" size="sm" className="hidden md:inline-flex">
+            <Button asChild variant="outline" size="sm">
               <a href="/api/reports/export" target="_blank"><Download size={14} className="mr-1.5" />Export</a>
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="hidden md:inline-flex text-destructive border-destructive/30 hover:bg-destructive hover:text-destructive-foreground"
-              onClick={() => setShowDeleteAll(true)}
-            >
+            <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive hover:text-destructive-foreground" onClick={() => setShowDeleteAll(true)}>
               <Trash2 size={14} className="mr-1.5" />Delete All
             </Button>
             <Button size="sm" onClick={openCreate} data-testid="button-new-entry">
-              <Plus size={14} className="md:mr-1.5" />
-              <span className="hidden md:inline">New Entry</span>
+              <Plus size={14} className="mr-1.5" />New Entry
             </Button>
           </div>
         </div>
 
-        {/* Balance Summary */}
-        <div className="grid grid-cols-3 gap-2 md:gap-3">
+        {/* ── DESKTOP: Balance Summary ── */}
+        <div className="hidden md:grid grid-cols-3 gap-3">
           {[
-            { label: "Balance", value: balance?.balance, accent: "linear-gradient(90deg, #0b2c60, #1a4a9e)", valColor: "#0b2c60" },
-            { label: "Credits", value: balance?.totalCredits, accent: "linear-gradient(90deg, #10b981, #34d399)", valColor: "#059669" },
-            { label: "Debits", value: balance?.totalDebits, accent: "linear-gradient(90deg, #f43f5e, #fb7185)", valColor: "#e11d48" },
+            { label: "Balance", value: balance?.balance, accent: "linear-gradient(90deg,#0b2c60,#1a4a9e)", valColor: "#0b2c60" },
+            { label: "Credits", value: balance?.totalCredits, accent: "linear-gradient(90deg,#10b981,#34d399)", valColor: "#059669" },
+            { label: "Debits", value: balance?.totalDebits, accent: "linear-gradient(90deg,#f43f5e,#fb7185)", valColor: "#e11d48" },
           ].map((item) => (
-            <div
-              key={item.label}
-              className="bg-white rounded-xl overflow-hidden md:border md:border-border md:rounded-xl md:bg-card"
-              style={{ boxShadow: "0 2px 10px rgba(11,44,96,0.08), 0 1px 3px rgba(0,0,0,0.04)" }}
-            >
-              {/* Mobile accent stripe */}
-              <div className="md:hidden" style={{ height: 3, background: item.accent }} />
-              <div className="p-3 md:p-4">
-                <p className="text-[10px] md:text-xs text-muted-foreground font-semibold uppercase tracking-wide">{item.label}</p>
-                {item.value === undefined ? (
-                  <Skeleton className="h-5 md:h-7 w-16 md:w-24 mt-1" />
-                ) : (
-                  <p
-                    className="text-sm md:text-xl font-bold mt-1 truncate"
-                    style={{ color: item.valColor }}
-                  >
-                    ₹{(item.value ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 0 })}
-                  </p>
+            <div key={item.label} className="border border-border rounded-xl bg-card overflow-hidden">
+              <div style={{ height: 3, background: item.accent }} />
+              <div className="p-4">
+                <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide">{item.label}</p>
+                {item.value === undefined ? <Skeleton className="h-7 w-24 mt-1" /> : (
+                  <p className="text-xl font-bold mt-1" style={{ color: item.valColor }}>₹{(item.value ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 0 })}</p>
                 )}
               </div>
             </div>
@@ -340,133 +416,65 @@ export default function Ledger() {
           )}
         </div>
 
-        {/* MOBILE: Card List */}
-        <div className="md:hidden space-y-2">
+        {/* ── MOBILE: Date-grouped card list ── */}
+        <div className="md:hidden space-y-1 pb-24">
           {isLoading ? (
-            [...Array(5)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)
+            [...Array(5)].map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)
           ) : !data?.entries?.length ? (
             <div className="text-center text-muted-foreground py-16 text-sm">
               No entries found. Tap <strong>+</strong> to add your first entry.
             </div>
           ) : (
-            data.entries.map((entry: any, i: number) => {
-              const isCredit = entry.credit > 0;
-              const isDebit = entry.debit > 0;
-              const accentGradient = isCredit
-                ? "linear-gradient(180deg, #10b981, #059669)"
-                : isDebit
-                ? "linear-gradient(180deg, #f43f5e, #e11d48)"
-                : "linear-gradient(180deg, #0b2c60, #1a4a9e)";
-              const initial = (entry.customerName || "?").charAt(0).toUpperCase();
-              const avatarColors = [
-                "linear-gradient(135deg,#3b82f6,#1d4ed8)",
-                "linear-gradient(135deg,#8b5cf6,#7c3aed)",
-                "linear-gradient(135deg,#f97316,#ea580c)",
-                "linear-gradient(135deg,#14b8a6,#0d9488)",
-                "linear-gradient(135deg,#ec4899,#db2777)",
-                "linear-gradient(135deg,#84cc16,#65a30d)",
-              ];
-              const altGradient = avatarColors[i % avatarColors.length];
-
-              return (
-                <div
-                  key={entry.id}
-                  className="bg-white rounded-xl overflow-hidden flex"
-                  style={{ boxShadow: "0 2px 10px rgba(11,44,96,0.08), 0 1px 3px rgba(0,0,0,0.04)" }}
-                  data-testid={`row-ledger-${entry.id}`}
-                >
-                  {/* Left accent stripe */}
-                  <div style={{ width: 4, background: accentGradient, flexShrink: 0 }} />
-
-                  <div className="flex-1 p-3.5 min-w-0">
-                    {/* Top row: avatar + name + service + actions */}
-                    <div className="flex items-start gap-2.5">
-                      {/* Avatar */}
-                      <div
-                        style={{
-                          width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                          background: altGradient,
-                          boxShadow: "0 3px 8px rgba(11,44,96,0.22)",
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          color: "#fff", fontSize: 14, fontWeight: 800,
-                        }}
-                      >
-                        {initial}
-                      </div>
-
-                      {/* Name + service + date */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <p style={{ fontSize: 13, fontWeight: 700, color: "#0b2c60" }} className="truncate">
-                            {entry.customerName}
-                          </p>
-                          <span style={{ fontSize: 9, fontWeight: 700, color: "#f97316", background: "rgba(249,115,22,0.10)", borderRadius: 5, padding: "2px 6px", letterSpacing: "0.04em", fontFamily: "monospace", flexShrink: 0 }}>
-                            {`CSC-${new Date(entry.createdAt).getFullYear()}-${String(entry.id).padStart(4, "0")}`}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                          <span
-                            style={{
-                              fontSize: 9, fontWeight: 700, color: "#0b2c60",
-                              background: "rgba(11,44,96,0.08)", borderRadius: 5,
-                              padding: "2px 6px", letterSpacing: "0.03em",
-                            }}
-                          >
-                            {entry.serviceType}
-                          </span>
-                          <span style={{ fontSize: 10, color: "#94a3b8", fontFamily: "monospace" }}>{entry.date}</span>
-                          {entry.description && (
-                            <span style={{ fontSize: 10, color: "#94a3b8" }} className="truncate">· {entry.description}</span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Edit/delete/receipt */}
-                      <div className="flex gap-0.5 flex-shrink-0">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" title="Print Receipt" onClick={() => setReceiptEntry(entry)}>
-                          <Receipt size={12} />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(entry)}>
-                          <Pencil size={12} />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(entry.id)}>
-                          <Trash2 size={12} />
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Bottom row: credit / debit / balance */}
-                    <div
-                      className="flex items-center gap-3 mt-3 pt-2.5"
-                      style={{ borderTop: "1px solid rgba(11,44,96,0.07)" }}
-                    >
-                      {entry.credit > 0 && (
-                        <div className="flex-1">
-                          <p style={{ fontSize: 9, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>Credit</p>
-                          <p style={{ fontSize: 13, fontWeight: 800, color: "#059669", marginTop: 1 }}>
-                            +₹{entry.credit.toLocaleString("en-IN")}
-                          </p>
-                        </div>
-                      )}
-                      {entry.debit > 0 && (
-                        <div className="flex-1">
-                          <p style={{ fontSize: 9, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>Debit</p>
-                          <p style={{ fontSize: 13, fontWeight: 800, color: "#e11d48", marginTop: 1 }}>
-                            -₹{entry.debit.toLocaleString("en-IN")}
-                          </p>
-                        </div>
-                      )}
-                      <div className="ml-auto text-right">
-                        <p style={{ fontSize: 9, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>Balance</p>
-                        <p style={{ fontSize: 13, fontWeight: 800, color: "#0b2c60", marginTop: 1 }}>
-                          ₹{Number(entry.balance).toLocaleString("en-IN")}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+            groupByDate(data.entries).map(([date, txns]) => (
+              <div key={date}>
+                {/* Date group header */}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 4px 6px" }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.08em", whiteSpace: "nowrap" }}>{fmtDateGroup(date)}</p>
+                  <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
                 </div>
-              );
-            })
+                {txns.map((entry: any) => {
+                  const isCredit = entry.credit > 0;
+                  const amt = isCredit ? entry.credit : entry.debit;
+                  const ec = isCredit ? "#059669" : "#e11d48";
+                  const iconBg = isCredit ? "rgba(5,150,105,0.08)" : "rgba(225,29,72,0.08)";
+                  return (
+                    <div key={entry.id} data-testid={`row-ledger-${entry.id}`}
+                      style={{ background: "#fff", borderRadius: 14, marginBottom: 8, overflow: "hidden", boxShadow: "0 1px 8px rgba(11,44,96,0.07)", display: "flex", border: "1px solid #f1f5f9" }}>
+                      <div style={{ width: 4, background: ec, flexShrink: 0 }} />
+                      <div style={{ flex: 1, padding: "11px 12px", display: "flex", alignItems: "center", gap: 10 }}>
+                        {/* Icon badge */}
+                        <div style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0, background: iconBg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          {isCredit
+                            ? <ArrowDownLeft size={17} color={ec} strokeWidth={2.5} />
+                            : <ArrowUpRight size={17} color={ec} strokeWidth={2.5} />}
+                        </div>
+                        {/* Details */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: 13, fontWeight: 700, color: "#0b2c60", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.customerName}</p>
+                          <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{entry.serviceType}</p>
+                        </div>
+                        {/* Amount + balance + action buttons */}
+                        <div style={{ textAlign: "right", flexShrink: 0 }}>
+                          <p style={{ fontSize: 15, fontWeight: 900, color: ec, lineHeight: 1 }}>{isCredit ? "+" : "−"}₹{amt.toLocaleString("en-IN")}</p>
+                          <p style={{ fontSize: 10, color: "#94a3b8", marginTop: 3 }}>Bal ₹{Number(entry.balance).toLocaleString("en-IN")}</p>
+                          <div style={{ display: "flex", gap: 4, justifyContent: "flex-end", marginTop: 5 }}>
+                            <button onClick={() => setReceiptEntry(entry)} style={{ width: 24, height: 24, borderRadius: 6, border: "1px solid #e2e8f0", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                              <Receipt size={11} color="#64748b" />
+                            </button>
+                            <button onClick={() => openEdit(entry)} style={{ width: 24, height: 24, borderRadius: 6, border: "1px solid #e2e8f0", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                              <Pencil size={11} color="#64748b" />
+                            </button>
+                            <button onClick={() => setDeleteId(entry.id)} style={{ width: 24, height: 24, borderRadius: 6, border: "1px solid #fee2e2", background: "#fff5f5", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                              <Trash2 size={11} color="#e11d48" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ))
           )}
         </div>
 
@@ -573,51 +581,98 @@ export default function Ledger() {
         )}
       </div>
 
-      {/* Entry Form Dialog */}
+      {/* ── MOBILE: Floating Action Button ── */}
+      <button
+        onClick={openCreate}
+        data-testid="button-new-entry"
+        className="md:hidden"
+        style={{ position: "fixed", bottom: 88, right: 20, width: 56, height: 56, borderRadius: 18, background: "linear-gradient(135deg,#f97316,#fb923c)", boxShadow: "0 8px 24px rgba(249,115,22,0.45)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 50 }}
+      >
+        <Plus size={24} color="#fff" strokeWidth={2.5} />
+      </button>
+
+      {/* ── Entry Form Dialog ── */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="w-[calc(100vw-2rem)] max-w-md rounded-2xl md:rounded-lg">
-          <DialogHeader><DialogTitle>{editEntry ? "Edit Entry" : "New Ledger Entry"}</DialogTitle></DialogHeader>
-          <form onSubmit={onSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Date</Label>
-                <Input type="date" {...form.register("date", { required: true })} data-testid="input-date" />
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-md rounded-2xl md:rounded-xl p-0 overflow-hidden gap-0">
+          {/* Drag handle — mobile visual cue */}
+          <div className="flex justify-center pt-3 pb-0 md:hidden">
+            <div style={{ width: 40, height: 4, borderRadius: 2, background: "#e2e8f0" }} />
+          </div>
+          {/* Header */}
+          <div className="px-5 pt-4 pb-3 flex items-center justify-between">
+            <h2 style={{ fontSize: 18, fontWeight: 900, color: accentColor }}>
+              {editEntry ? "Edit Entry" : (entryType === "credit" ? "New Credit Entry" : "New Debit Entry")}
+            </h2>
+            <button type="button" onClick={() => setShowForm(false)} style={{ width: 32, height: 32, borderRadius: 8, background: "#f1f5f9", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+              <X size={15} color="#64748b" />
+            </button>
+          </div>
+          <form onSubmit={onSubmit} className="px-5 pb-6 space-y-3">
+            {/* Credit / Debit toggle — hide when editing */}
+            {!editEntry && (
+              <div style={{ background: "#f1f5f9", borderRadius: 14, padding: 4, display: "flex", gap: 4 }}>
+                {(["credit", "debit"] as const).map(t => (
+                  <button key={t} type="button" onClick={() => setEntryType(t)}
+                    style={{ flex: 1, height: 40, borderRadius: 11, border: "none", cursor: "pointer", fontWeight: 800, fontSize: 13, background: entryType === t ? (t === "credit" ? "#059669" : "#e11d48") : "transparent", color: entryType === t ? "#fff" : "#94a3b8", transition: "all 0.15s", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
+                    {t === "credit" ? "▲ Credit (Income)" : "▼ Debit (Expense)"}
+                  </button>
+                ))}
               </div>
-              <div className="space-y-1.5">
-                <Label>Service Type</Label>
-                <Select value={form.watch("serviceType")} onValueChange={(v) => form.setValue("serviceType", v)}>
-                  <SelectTrigger data-testid="select-service"><SelectValue placeholder="Select..." /></SelectTrigger>
-                  <SelectContent className="max-h-60 overflow-y-auto">
-                    {serviceTypes.map((s: string) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                    <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
+            )}
+            {/* Amount — big and bold */}
+            <div style={{ background: accentBg, border: `2px solid ${accentColor}25`, borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: accentGrad, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: `0 4px 12px ${accentColor}30` }}>
+                <IndianRupee size={18} color="#fff" strokeWidth={2.5} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 2 }}>Amount (₹)</p>
+                <input
+                  type="number" step="0.01" min="0" value={rawAmount}
+                  onChange={e => setRawAmount(e.target.value)}
+                  data-testid="input-credit"
+                  placeholder="0.00"
+                  style={{ width: "100%", fontSize: 28, fontWeight: 900, color: accentColor, background: "transparent", border: "none", outline: "none", padding: 0 }}
+                />
               </div>
             </div>
-            <div className="space-y-1.5">
-              <Label>Customer Name</Label>
-              <Input {...form.register("customerName", { required: true })} placeholder="Customer name" data-testid="input-customer" />
+            {/* Customer name */}
+            <div style={{ position: "relative" }}>
+              <User size={14} color="#94a3b8" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }} />
+              <input {...form.register("customerName", { required: true })} placeholder="Customer name"
+                data-testid="input-customer"
+                style={{ width: "100%", height: 44, paddingLeft: 36, paddingRight: 12, borderRadius: 12, border: "1.5px solid #e2e8f0", background: "#fafafa", fontSize: 14, color: "#0b2c60", outline: "none", boxSizing: "border-box", fontWeight: 600 }} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Credit (₹)</Label>
-                <Input type="number" step="0.01" min="0" {...form.register("credit", { valueAsNumber: true, min: 0 })} data-testid="input-credit" />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Debit (₹)</Label>
-                <Input type="number" step="0.01" min="0" {...form.register("debit", { valueAsNumber: true, min: 0 })} data-testid="input-debit" />
-              </div>
+            {/* Service type */}
+            <Select value={form.watch("serviceType")} onValueChange={(v) => form.setValue("serviceType", v)}>
+              <SelectTrigger data-testid="select-service" className="h-11 rounded-xl border-[#e2e8f0] bg-[#fafafa] text-sm font-semibold text-[#0b2c60]">
+                <SelectValue placeholder="Select service type" />
+              </SelectTrigger>
+              <SelectContent className="max-h-60 overflow-y-auto">
+                {serviceTypes.map((s: string) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                <SelectItem value="Other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+            {/* Date */}
+            <div style={{ position: "relative" }}>
+              <Calendar size={14} color="#94a3b8" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
+              <input type="date" {...form.register("date", { required: true })}
+                data-testid="input-date"
+                style={{ width: "100%", height: 44, paddingLeft: 36, paddingRight: 12, borderRadius: 12, border: "1.5px solid #e2e8f0", background: "#fafafa", fontSize: 14, color: "#0b2c60", outline: "none", boxSizing: "border-box", fontWeight: 600 }} />
             </div>
-            <div className="space-y-1.5">
-              <Label>Description</Label>
-              <Input {...form.register("description")} placeholder="Description..." data-testid="input-description" />
+            {/* Description */}
+            <div style={{ position: "relative" }}>
+              <FileText size={14} color="#94a3b8" style={{ position: "absolute", left: 12, top: 13 }} />
+              <textarea {...form.register("description")} rows={2} placeholder="Add a note (optional)"
+                data-testid="input-description"
+                style={{ width: "100%", paddingLeft: 36, paddingRight: 12, paddingTop: 12, paddingBottom: 12, borderRadius: 12, border: "1.5px solid #e2e8f0", background: "#fafafa", fontSize: 13, color: "#0b2c60", outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit" }} />
             </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
-              <Button type="submit" disabled={createMut.isPending || updateMut.isPending} data-testid="button-save-entry">
-                {editEntry ? "Update" : "Create"}
-              </Button>
-            </DialogFooter>
+            {/* Submit */}
+            <button type="submit" data-testid="button-save-entry"
+              disabled={createMut.isPending || updateMut.isPending}
+              style={{ width: "100%", height: 52, borderRadius: 16, border: "none", cursor: "pointer", background: accentGrad, color: "#fff", fontSize: 16, fontWeight: 900, letterSpacing: "0.02em", boxShadow: `0 6px 20px ${accentColor}35`, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, opacity: (createMut.isPending || updateMut.isPending) ? 0.7 : 1 }}>
+              <CheckCircle2 size={18} strokeWidth={2.5} />
+              {editEntry ? "Update Entry" : `Save ${entryType === "credit" ? "Credit" : "Debit"} Entry`}
+            </button>
           </form>
         </DialogContent>
       </Dialog>
