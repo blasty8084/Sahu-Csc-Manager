@@ -3,27 +3,23 @@ import QRCode from "react-qr-code";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Download, Printer, Share2, Fingerprint, MapPin, Phone, Globe } from "lucide-react";
+import { Download, Printer, Share2, MapPin, Phone, Globe, ArrowUpRight, ArrowDownLeft } from "lucide-react";
 
-const WhatsAppIcon = () => (
-  <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
-    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-  </svg>
-);
-
-export interface AepsTxReceipt {
+export interface UdhariEntryReceipt {
   id: number;
-  type: "withdrawal" | "deposit";
+  type: "gave" | "got";
   amount: number;
   customerName: string;
-  description: string | null;
-  balance: number;
-  createdAt: string;
+  customerMobile?: string | null;
+  customerAddress?: string | null;
+  note: string | null;
   date: string;
+  createdAt: string;
+  currentBalance: number;
 }
 
-interface AepsReceiptModalProps {
-  tx: AepsTxReceipt | null;
+interface UdhariReceiptModalProps {
+  entry: UdhariEntryReceipt | null;
   open: boolean;
   onClose: () => void;
   businessName?: string;
@@ -32,56 +28,76 @@ interface AepsReceiptModalProps {
   businessWebsite?: string;
 }
 
-export function AepsReceiptModal({
-  tx,
+export function UdhariReceiptModal({
+  entry,
   open,
   onClose,
   businessName = "SAHU CSC Center",
   businessAddress = "",
   businessMobile = "",
   businessWebsite = "",
-}: AepsReceiptModalProps) {
+}: UdhariReceiptModalProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const [generatingPdf, setGeneratingPdf] = useState(false);
 
-  if (!tx) return null;
+  if (!entry) return null;
 
-  const year = new Date(tx.createdAt).getFullYear();
-  const receiptNumber = `AEPS-${year}-${String(tx.id).padStart(4, "0")}`;
+  const year = new Date(entry.createdAt).getFullYear();
+  const receiptNumber = `UDH-${year}-${String(entry.id).padStart(4, "0")}`;
 
-  const isWithdrawal = tx.type === "withdrawal";
-  const amountColor = isWithdrawal ? "#e11d48" : "#059669";
-  const amountPrefix = isWithdrawal ? "−" : "+";
-  const txLabel = isWithdrawal ? "Cash Withdrawal" : "Cash Deposit";
+  const isGave = entry.type === "gave";
+  const accentColor = isGave ? "#ea580c" : "#059669";
+  const headerGrad = isGave
+    ? "linear-gradient(135deg, #7c2d12, #ea580c)"
+    : "linear-gradient(135deg, #064e3b, #059669)";
+  const stripeGrad = isGave
+    ? "linear-gradient(90deg, #ea580c, #f97316 60%, #0b2c60)"
+    : "linear-gradient(90deg, #059669, #10b981 60%, #0b2c60)";
+  const txLabel = isGave ? "You Gave" : "You Got";
+  const amountPrefix = isGave ? "+" : "−";
 
-  const formattedDate = new Date(tx.date + "T00:00:00").toLocaleDateString("en-IN", {
+  const balanceColor = entry.currentBalance > 0 ? "#ea580c" : entry.currentBalance < 0 ? "#059669" : "#64748b";
+  const balanceLabel = entry.currentBalance > 0 ? "To Collect" : entry.currentBalance < 0 ? "To Pay" : "Settled";
+
+  const formattedDate = new Date(entry.date + "T00:00:00").toLocaleDateString("en-IN", {
     day: "numeric", month: "long", year: "numeric",
   });
-  const issuedAt = new Date(tx.createdAt).toLocaleString("en-IN", {
+  const issuedAt = new Date(entry.createdAt).toLocaleString("en-IN", {
     day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
   });
 
   const hasContact = businessAddress || businessMobile || businessWebsite;
 
   const qrData = [
-    `SAHU CSC – AePS Receipt`,
+    `SAHU CSC – Udhari Khata Receipt`,
     `Receipt No: ${receiptNumber}`,
-    `Type: ${isWithdrawal ? "Withdrawal" : "Deposit"}`,
-    `Customer: ${tx.customerName}`,
-    `Amount: ₹${tx.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
-    `Balance: ₹${tx.balance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
+    `Type: ${txLabel}`,
+    `Customer: ${entry.customerName}`,
+    `Amount: ₹${entry.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
+    `Balance: ${balanceLabel} ₹${Math.abs(entry.currentBalance).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
     `Date: ${formattedDate}`,
     `Issued: ${issuedAt}`,
-    ...(tx.description ? [`Note: ${tx.description}`] : []),
+    ...(entry.note ? [`Note: ${entry.note}`] : []),
     businessName ? `Center: ${businessName}` : "",
   ].filter(Boolean).join("\n");
 
+  const reminderText = (() => {
+    const amt = `₹${Math.abs(entry.currentBalance).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+    if (entry.currentBalance > 0) {
+      return `Namaste ${entry.customerName} ji 🙏\n\nAapka Udhari Khata balance *${amt}* baaki hai (To Pay).\n\nKindly settle kar dijiye.\n\nReceipt No: ${receiptNumber}\n\n— ${businessName}`;
+    } else if (entry.currentBalance < 0) {
+      return `Namaste ${entry.customerName} ji 🙏\n\nHamara aapko *${amt}* dena baaki hai. Jald hi settle karenge.\n\nReceipt No: ${receiptNumber}\n\n— ${businessName}`;
+    }
+    return `Namaste ${entry.customerName} ji 🙏\n\nAapka Udhari Khata settle ho gaya hai. Thank you!\n\nReceipt No: ${receiptNumber}\n\n— ${businessName}`;
+  })();
+
   const shareText = [
-    `🏦 AePS ${isWithdrawal ? "Withdrawal" : "Deposit"} Receipt`,
+    `📋 Udhari Khata Receipt`,
     `Receipt No: ${receiptNumber}`,
-    `Customer: ${tx.customerName}`,
-    `Amount: ₹${tx.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
+    `Customer: ${entry.customerName}`,
+    `${txLabel}: ₹${entry.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
+    `Balance: ${balanceLabel} ₹${Math.abs(entry.currentBalance).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
     `Date: ${formattedDate}`,
     `Center: ${businessName}`,
     ...(businessMobile ? [`📞 ${businessMobile}`] : []),
@@ -132,11 +148,18 @@ export function AepsReceiptModal({
     }
   };
 
+  const handleWhatsApp = () => {
+    const mobile = entry.customerMobile?.replace(/\D/g, "") ?? "";
+    const num = mobile.startsWith("91") ? mobile : `91${mobile}`;
+    const url = `https://wa.me/${num}?text=${encodeURIComponent(reminderText)}`;
+    window.open(url, "_blank");
+  };
+
   const handleShare = async () => {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `AePS Receipt ${receiptNumber} — SAHU CSC`,
+          title: `Udhari Receipt ${receiptNumber} — SAHU CSC`,
           text: shareText,
         });
       } catch { /* user cancelled */ }
@@ -150,33 +173,17 @@ export function AepsReceiptModal({
     }
   };
 
-  const handleWhatsApp = () => {
-    const waText = [
-      `🏦 *AePS ${isWithdrawal ? "Withdrawal" : "Deposit"} Receipt*`,
-      `Receipt No: ${receiptNumber}`,
-      `Customer: ${tx.customerName}`,
-      `Amount: ₹${tx.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
-      `Date: ${formattedDate}`,
-      `Center: ${businessName}`,
-      ...(businessMobile ? [`📞 ${businessMobile}`] : []),
-    ].join("\n");
-    const url = `https://wa.me/?text=${encodeURIComponent(waText)}`;
-    window.open(url, "_blank");
-  };
-
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="w-[calc(100vw-2rem)] max-w-sm p-0 overflow-hidden rounded-2xl md:rounded-2xl gap-0">
         <DialogHeader className="sr-only">
-          <DialogTitle>AePS Receipt {receiptNumber}</DialogTitle>
+          <DialogTitle>Udhari Receipt {receiptNumber}</DialogTitle>
         </DialogHeader>
 
         <div ref={printRef} style={{ background: "#fff" }}>
-          {/* Navy header */}
+          {/* Colored header */}
           <div style={{
-            background: isWithdrawal
-              ? "linear-gradient(135deg, #7f1d1d, #e11d48)"
-              : "linear-gradient(135deg, #064e3b, #059669)",
+            background: headerGrad,
             padding: "18px 22px 16px",
             position: "relative",
             overflow: "hidden",
@@ -190,11 +197,11 @@ export function AepsReceiptModal({
                 {businessName}
               </p>
               <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 8, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase" }}>
-                AePS Receipt
+                Udhari Khata
               </p>
             </div>
 
-            {/* Brand + receipt number row */}
+            {/* Brand + receipt number */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", position: "relative" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{
@@ -203,13 +210,15 @@ export function AepsReceiptModal({
                   border: "1.5px solid rgba(255,255,255,0.25)",
                   display: "flex", alignItems: "center", justifyContent: "center",
                 }}>
-                  <Fingerprint size={18} color="#fff" />
+                  {isGave
+                    ? <ArrowUpRight size={18} color="#fff" />
+                    : <ArrowDownLeft size={18} color="#fff" />}
                 </div>
                 <div>
                   <h2 style={{ color: "#fff", fontSize: 18, fontWeight: 900, letterSpacing: "-0.01em", lineHeight: 1 }}>
-                    AePS <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 13, fontWeight: 600 }}>{txLabel}</span>
+                    {txLabel} <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, fontWeight: 600 }}>Receipt</span>
                   </h2>
-                  <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 9, marginTop: 3 }}>Aadhaar Enabled Payment System</p>
+                  <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 9, marginTop: 3 }}>Customer Credit Ledger</p>
                 </div>
               </div>
               <div style={{ textAlign: "right" }}>
@@ -224,7 +233,7 @@ export function AepsReceiptModal({
                 }}>
                   <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#fff" }} />
                   <span style={{ fontSize: 9, fontWeight: 700, color: "#fff", letterSpacing: "0.06em" }}>
-                    {isWithdrawal ? "WITHDRAWAL" : "DEPOSIT"}
+                    {isGave ? "YOU GAVE" : "YOU GOT"}
                   </span>
                 </div>
               </div>
@@ -232,15 +241,13 @@ export function AepsReceiptModal({
           </div>
 
           {/* Accent stripe */}
-          <div style={{ height: 3, background: isWithdrawal
-            ? "linear-gradient(90deg, #e11d48, #f43f5e 60%, #0b2c60)"
-            : "linear-gradient(90deg, #059669, #10b981 60%, #0b2c60)" }} />
+          <div style={{ height: 3, background: stripeGrad }} />
 
           {/* Amount block */}
           <div style={{ padding: "14px 20px 0" }}>
             <div style={{
-              background: `${amountColor}0f`,
-              border: `1px solid ${amountColor}2a`,
+              background: `${accentColor}0f`,
+              border: `1px solid ${accentColor}2a`,
               borderRadius: 12,
               padding: "12px 16px",
               display: "flex",
@@ -251,31 +258,48 @@ export function AepsReceiptModal({
                 <p style={{ fontSize: 9, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.10em", textTransform: "uppercase", marginBottom: 2 }}>
                   {txLabel} Amount
                 </p>
-                <p style={{ fontSize: 24, fontWeight: 900, color: amountColor, lineHeight: 1 }}>
-                  {amountPrefix}₹{tx.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                <p style={{ fontSize: 24, fontWeight: 900, color: accentColor, lineHeight: 1 }}>
+                  {amountPrefix}₹{entry.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                 </p>
               </div>
               <div style={{
                 width: 36, height: 36, borderRadius: "50%",
-                background: `${amountColor}18`,
-                border: `2px solid ${amountColor}30`,
+                background: `${accentColor}18`,
+                border: `2px solid ${accentColor}30`,
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
-                <Fingerprint size={17} color={amountColor} strokeWidth={2} />
+                {isGave
+                  ? <ArrowUpRight size={17} color={accentColor} strokeWidth={2.5} />
+                  : <ArrowDownLeft size={17} color={accentColor} strokeWidth={2.5} />}
               </div>
+            </div>
+          </div>
+
+          {/* Balance chip */}
+          <div style={{ padding: "8px 20px 0", display: "flex", justifyContent: "flex-end" }}>
+            <div style={{
+              display: "inline-flex", alignItems: "center", gap: 5,
+              background: `${balanceColor}10`,
+              border: `1px solid ${balanceColor}25`,
+              borderRadius: 20, padding: "4px 10px",
+            }}>
+              <div style={{ width: 6, height: 6, borderRadius: "50%", background: balanceColor }} />
+              <span style={{ fontSize: 10, fontWeight: 700, color: balanceColor }}>
+                {balanceLabel}: ₹{Math.abs(entry.currentBalance).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+              </span>
             </div>
           </div>
 
           {/* Detail rows */}
           <div style={{ padding: "10px 20px" }}>
             {[
-              { label: "Customer", value: tx.customerName },
-              { label: "Service", value: "AePS Cash Management" },
+              { label: "Customer", value: entry.customerName },
+              ...(entry.customerMobile ? [{ label: "Mobile", value: entry.customerMobile }] : []),
+              { label: "Service", value: "Udhari Khata" },
               { label: "Transaction", value: txLabel },
-              { label: "Balance After", value: `₹${tx.balance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}` },
               { label: "Date", value: formattedDate },
               { label: "Issued At", value: issuedAt },
-              ...(tx.description ? [{ label: "Note", value: tx.description }] : []),
+              ...(entry.note ? [{ label: "Note", value: entry.note }] : []),
             ].map((row, i, arr) => (
               <div
                 key={row.label}
@@ -289,20 +313,19 @@ export function AepsReceiptModal({
                 }}
               >
                 <p style={{ fontSize: 10, color: "#94a3b8", fontWeight: 600, flexShrink: 0 }}>{row.label}</p>
-                <p style={{
-                  fontSize: 11, color: "#0b2c60", fontWeight: 700,
-                  textAlign: "right", wordBreak: "break-word", maxWidth: "62%",
-                }}>{row.value}</p>
+                <p style={{ fontSize: 11, color: "#0b2c60", fontWeight: 700, textAlign: "right", wordBreak: "break-word", maxWidth: "62%" }}>
+                  {row.value}
+                </p>
               </div>
             ))}
           </div>
 
-          {/* QR code — encodes transaction summary */}
+          {/* QR code */}
           <div style={{ padding: "0 20px 12px", display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
             <div style={{ flex: 1, paddingRight: 14 }}>
               <p style={{ fontSize: 10, fontWeight: 700, color: "#0b2c60", marginBottom: 3 }}>Scan for details</p>
               <p style={{ fontSize: 8, color: "#94a3b8", lineHeight: 1.5 }}>
-                Scan this QR code to view transaction details. Keep this receipt for your records.
+                Scan to view entry details. Share as a reminder or for customer records.
               </p>
             </div>
             <div style={{
@@ -317,7 +340,7 @@ export function AepsReceiptModal({
             </div>
           </div>
 
-          {/* Business contact row */}
+          {/* Business contact */}
           {hasContact && (
             <div style={{
               borderTop: "1px dashed #e2e8f0",
@@ -348,11 +371,7 @@ export function AepsReceiptModal({
           )}
 
           {/* Footer */}
-          <div style={{
-            background: "#0b2c60",
-            padding: "10px 20px",
-            textAlign: "center",
-          }}>
+          <div style={{ background: "#0b2c60", padding: "10px 20px", textAlign: "center" }}>
             <p style={{ fontSize: 10, fontWeight: 700, color: "#fff", marginBottom: 2 }}>
               Thank you for choosing SAHU CSC
             </p>
@@ -362,7 +381,7 @@ export function AepsReceiptModal({
           </div>
         </div>
 
-        {/* Action buttons — 2×2 grid */}
+        {/* Action buttons — 2×2 grid for 4 actions */}
         <div style={{ padding: "10px 14px 12px", background: "#fff", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={handlePrint}>
             <Printer size={13} />Print
@@ -371,14 +390,27 @@ export function AepsReceiptModal({
             <Download size={13} />
             {generatingPdf ? "Generating…" : "PDF"}
           </Button>
-          <Button
-            size="sm"
-            className="gap-1.5 text-xs"
-            style={{ background: "#25D366", color: "#fff" }}
-            onClick={handleWhatsApp}
-          >
-            <WhatsAppIcon />WhatsApp
-          </Button>
+          {entry.customerMobile ? (
+            <Button
+              size="sm"
+              className="gap-1.5 text-xs"
+              style={{ background: "#25D366", color: "#fff" }}
+              onClick={handleWhatsApp}
+            >
+              {/* WhatsApp icon via SVG */}
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+              </svg>
+              WhatsApp
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs opacity-40" disabled>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="#94a3b8">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+              </svg>
+              No Mobile
+            </Button>
+          )}
           <Button size="sm" className="gap-1.5 text-xs" style={{ background: "#0b2c60" }} onClick={handleShare}>
             <Share2 size={13} />Share
           </Button>

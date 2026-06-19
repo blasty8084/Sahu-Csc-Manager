@@ -25,7 +25,7 @@ import {
   ArrowLeft, Phone, Pencil, Trash2, MessageCircle,
   ArrowUpRight, ArrowDownLeft, Plus, FileDown, MoreHorizontal, Receipt,
 } from "lucide-react";
-import { ReceiptModal } from "@/components/receipt-modal";
+import { UdhariReceiptModal } from "@/components/udhari-receipt-modal";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -562,25 +562,22 @@ export default function UdhariCustomer() {
       </AlertDialog>
 
       {/* Receipt modal */}
-      <ReceiptModal
+      <UdhariReceiptModal
         open={receiptEntry !== null}
         entry={receiptEntry ? (() => {
           const e = receiptEntry.entry;
           const cust = receiptEntry.customer;
-          const isGave = e.type === "gave";
           return {
             id: e.id,
-            date: e.date,
+            type: e.type as "gave" | "got",
+            amount: e.amount,
             customerName: cust.name,
-            serviceType: "Udhari Khata",
-            credit: isGave ? 0 : e.amount,
-            debit: isGave ? e.amount : 0,
-            description: e.note ?? null,
-            balance: 0,
-            receiptNumber: null,
-            receiptToken: null,
-            createdByName: null,
+            customerMobile: cust.mobile ?? null,
+            customerAddress: cust.address ?? null,
+            note: e.note ?? null,
+            date: e.date,
             createdAt: e.createdAt ?? new Date().toISOString(),
+            currentBalance: cust.balance,
           };
         })() : null}
         onClose={() => setReceiptEntry(null)}
