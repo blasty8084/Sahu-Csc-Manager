@@ -247,6 +247,7 @@ function DailyTab() {
         style={{ boxShadow: "0 2px 10px rgba(11,44,96,0.07)" }}
       >
         <button
+          type="button"
           onClick={() => setSelectedDate(shiftDate(selectedDate, -1))}
           className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:bg-slate-100"
           style={{ color: "#0b2c60" }}
@@ -274,6 +275,7 @@ function DailyTab() {
         </div>
 
         <button
+          type="button"
           onClick={() => setSelectedDate(shiftDate(selectedDate, 1))}
           disabled={selectedDate >= todayStr()}
           className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed"
@@ -284,6 +286,7 @@ function DailyTab() {
 
         {!isToday && (
           <button
+            type="button"
             onClick={() => setSelectedDate(todayStr())}
             className="text-[11px] font-bold px-2.5 py-1 rounded-lg transition-colors"
             style={{ background: "rgba(11,44,96,0.07)", color: "#0b2c60" }}
@@ -330,6 +333,7 @@ function DailyTab() {
               </p>
             </div>
             <button
+              type="button"
               onClick={() => setShowOpenDialog(true)}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-white text-sm transition-all active:scale-95"
               style={{ background: "linear-gradient(135deg, #0b2c60, #1a4a9e)", boxShadow: "0 4px 14px rgba(11,44,96,0.35)" }}
@@ -383,6 +387,7 @@ function DailyTab() {
               ₹{fmt(session.currentBalance)}
             </span>
             <button
+              type="button"
               className="ml-auto text-[10px] font-medium px-2 py-1 rounded-md hover:bg-slate-200 transition-colors"
               style={{ color: "#64748b" }}
               onClick={() => {
@@ -398,6 +403,7 @@ function DailyTab() {
           {/* ── Action Buttons ── */}
           <div className="grid grid-cols-2 gap-3">
             <button
+              type="button"
               onClick={openWithdrawal}
               className="flex flex-col items-center justify-center gap-2 py-4 rounded-2xl font-bold text-white transition-all active:scale-95"
               style={{
@@ -412,6 +418,7 @@ function DailyTab() {
             </button>
 
             <button
+              type="button"
               onClick={openDeposit}
               className="flex flex-col items-center justify-center gap-2 py-4 rounded-2xl font-bold text-white transition-all active:scale-95"
               style={{
@@ -547,6 +554,7 @@ function DailyTab() {
                           </p>
                         </div>
                         <button
+                          type="button"
                           title="View Receipt"
                           onClick={() => setReceiptTx(tx)}
                           className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-slate-100"
@@ -555,6 +563,7 @@ function DailyTab() {
                           <Receipt size={13} />
                         </button>
                         <button
+                          type="button"
                           onClick={() => openEditDialog(tx)}
                           className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-slate-100"
                           style={{ color: "#94a3b8" }}
@@ -562,6 +571,7 @@ function DailyTab() {
                           <Pencil size={13} />
                         </button>
                         <button
+                          type="button"
                           onClick={() => setDeletingTx(tx)}
                           className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-red-50"
                           style={{ color: "#e11d48" }}
@@ -1033,6 +1043,7 @@ function AllTransactionsTab() {
                       {isWd ? "−" : "+"}₹{fmt(tx.amount)}
                     </p>
                     <button
+                      type="button"
                       title="View Receipt"
                       onClick={() => setReceiptTx(tx)}
                       className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-slate-100 transition-colors"
@@ -1041,6 +1052,7 @@ function AllTransactionsTab() {
                       <Receipt size={13} />
                     </button>
                     <button
+                      type="button"
                       onClick={() => openEditDialog(tx)}
                       className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-slate-100 transition-colors"
                       style={{ color: "#94a3b8" }}
@@ -1048,6 +1060,7 @@ function AllTransactionsTab() {
                       <Pencil size={13} />
                     </button>
                     <button
+                      type="button"
                       onClick={() => setDeletingTx(tx)}
                       className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-red-50 transition-colors"
                       style={{ color: "#e11d48" }}
@@ -1218,6 +1231,7 @@ export default function AePS() {
             ]).map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
+                type="button"
                 onClick={() => setTab(key)}
                 className="flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-all flex-1 justify-center"
                 style={{
