@@ -5,6 +5,12 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Download, Printer, Share2, CheckCircle2, MapPin, Phone, Globe } from "lucide-react";
 
+const WhatsAppIcon = () => (
+  <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+  </svg>
+);
+
 interface ReceiptEntry {
   id: number;
   date: string;
@@ -42,6 +48,7 @@ export function ReceiptModal({
   const printRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [sendingWa, setSendingWa] = useState(false);
 
   if (!entry) return null;
 
@@ -69,17 +76,37 @@ export function ReceiptModal({
 
   const hasContact = businessAddress || businessMobile || businessWebsite;
 
+  const generatePdfBlob = async (): Promise<Blob | null> => {
+    const el = printRef.current;
+    if (!el) return null;
+    const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+      import("html2canvas"),
+      import("jspdf"),
+    ]);
+    const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false });
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a5" });
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+    return pdf.output("blob");
+  };
+
   const handlePrint = () => {
     const printContent = printRef.current;
     if (!printContent) return;
     const win = window.open("", "_blank", "width=600,height=900");
-    if (!win) return;
+    if (!win) {
+      toast({ title: "Popup blocked", description: "Please allow popups for printing", variant: "destructive" });
+      return;
+    }
     win.document.write(`<!DOCTYPE html><html><head><title>Receipt ${receiptNumber}</title>
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #fff; }
         @page { size: A5; margin: 0; }
         @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+        svg { display: block; }
       </style>
     </head><body>${printContent.innerHTML}</body></html>`);
     win.document.close();
@@ -88,21 +115,16 @@ export function ReceiptModal({
   };
 
   const handleDownloadPdf = async () => {
-    const el = printRef.current;
-    if (!el) return;
     setGeneratingPdf(true);
     try {
-      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
-        import("html2canvas"),
-        import("jspdf"),
-      ]);
-      const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false });
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a5" });
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`${receiptNumber}.pdf`);
+      const blob = await generatePdfBlob();
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${receiptNumber}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
     } catch {
       toast({ title: "PDF generation failed", variant: "destructive" });
     } finally {
@@ -110,18 +132,59 @@ export function ReceiptModal({
     }
   };
 
-  const handleShare = async () => {
-    if (!receiptToken) {
-      toast({ title: "Receipt link not available for this entry", variant: "destructive" });
-      return;
+  const handleWhatsApp = async () => {
+    setSendingWa(true);
+    try {
+      const blob = await generatePdfBlob();
+      if (blob) {
+        const file = new File([blob], `${receiptNumber}.pdf`, { type: "application/pdf" });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: `Receipt ${receiptNumber} — SAHU CSC`,
+            text: `Transaction receipt for ${entry.customerName}`,
+          });
+          return;
+        }
+      }
+      const waText = [
+        `🧾 *Receipt ${receiptNumber}*`,
+        `Customer: ${entry.customerName}`,
+        `Service: ${entry.serviceType}`,
+        `${txType}: ₹${amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
+        `Date: ${formattedDate}`,
+        ...(receiptToken ? [`\n📎 View & download PDF: ${verifyUrl}`] : []),
+        `\n— ${businessName}`,
+      ].join("\n");
+      window.open(`https://wa.me/?text=${encodeURIComponent(waText)}`, "_blank");
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name !== "AbortError") {
+        const waText = [
+          `🧾 *Receipt ${receiptNumber}*`,
+          `Customer: ${entry.customerName}`,
+          ...(receiptToken ? [`📎 View & download PDF: ${verifyUrl}`] : []),
+        ].join("\n");
+        window.open(`https://wa.me/?text=${encodeURIComponent(waText)}`, "_blank");
+      }
+    } finally {
+      setSendingWa(false);
     }
+  };
+
+  const handleShare = async () => {
     if (navigator.share) {
       try {
-        await navigator.share({ title: `Receipt ${receiptNumber} — SAHU CSC`, text: `Transaction receipt for ${entry.customerName} (${receiptNumber})`, url: verifyUrl });
+        await navigator.share({
+          title: `Receipt ${receiptNumber} — SAHU CSC`,
+          text: `Transaction receipt for ${entry.customerName} (${receiptNumber})`,
+          ...(receiptToken ? { url: verifyUrl } : {}),
+        });
       } catch { /* user cancelled */ }
-    } else {
+    } else if (receiptToken) {
       await navigator.clipboard.writeText(verifyUrl);
       toast({ title: "Receipt link copied to clipboard" });
+    } else {
+      toast({ title: "Share not available for this entry", variant: "destructive" });
     }
   };
 
@@ -239,13 +302,13 @@ export function ReceiptModal({
             ))}
           </div>
 
-          {/* QR code */}
+          {/* QR code — links to verify page where PDF can be downloaded */}
           {receiptToken && (
             <div style={{ padding: "0 20px 12px", display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
               <div style={{ flex: 1, paddingRight: 14 }}>
-                <p style={{ fontSize: 10, fontWeight: 700, color: "#0b2c60", marginBottom: 3 }}>Scan to verify</p>
+                <p style={{ fontSize: 10, fontWeight: 700, color: "#0b2c60", marginBottom: 3 }}>Scan to open & download</p>
                 <p style={{ fontSize: 8, color: "#94a3b8", lineHeight: 1.5 }}>
-                  Scan the QR code to verify this receipt online. Valid for the customer's records.
+                  Scan QR to open receipt online. Download PDF or share via WhatsApp from there.
                 </p>
               </div>
               <div style={{
@@ -292,11 +355,7 @@ export function ReceiptModal({
           )}
 
           {/* Footer */}
-          <div style={{
-            background: "#0b2c60",
-            padding: "10px 20px",
-            textAlign: "center",
-          }}>
+          <div style={{ background: "#0b2c60", padding: "10px 20px", textAlign: "center" }}>
             <p style={{ fontSize: 10, fontWeight: 700, color: "#fff", marginBottom: 2 }}>
               Thank you for choosing SAHU CSC
             </p>
@@ -306,16 +365,26 @@ export function ReceiptModal({
           </div>
         </div>
 
-        {/* Action buttons */}
-        <div style={{ padding: "10px 14px", background: "#fff", display: "flex", gap: 8 }}>
-          <Button variant="outline" size="sm" className="flex-1 gap-1.5 text-xs" onClick={handlePrint}>
+        {/* Action buttons — 2×2 grid */}
+        <div style={{ padding: "10px 14px 12px", background: "#fff", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={handlePrint}>
             <Printer size={13} />Print
           </Button>
-          <Button variant="outline" size="sm" className="flex-1 gap-1.5 text-xs" onClick={handleDownloadPdf} disabled={generatingPdf}>
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={handleDownloadPdf} disabled={generatingPdf}>
             <Download size={13} />
             {generatingPdf ? "Generating…" : "PDF"}
           </Button>
-          <Button size="sm" className="flex-1 gap-1.5 text-xs" style={{ background: "#0b2c60" }} onClick={handleShare}>
+          <Button
+            size="sm"
+            className="gap-1.5 text-xs"
+            style={{ background: "#25D366", color: "#fff" }}
+            onClick={handleWhatsApp}
+            disabled={sendingWa}
+          >
+            <WhatsAppIcon />
+            {sendingWa ? "Preparing…" : "WhatsApp"}
+          </Button>
+          <Button size="sm" className="gap-1.5 text-xs" style={{ background: "#0b2c60" }} onClick={handleShare}>
             <Share2 size={13} />Share
           </Button>
         </div>

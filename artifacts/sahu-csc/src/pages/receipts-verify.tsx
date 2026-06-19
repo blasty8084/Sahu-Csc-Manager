@@ -1,9 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "wouter";
 import QRCode from "react-qr-code";
 import { CheckCircle2, MapPin, Phone, Globe, Download, Share2, Printer } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+const WhatsAppIcon = ({ size = 14 }: { size?: number }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+  </svg>
+);
 
 interface ReceiptData {
   receiptNumber: string;
@@ -28,6 +34,8 @@ export default function ReceiptsVerify() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [sendingWa, setSendingWa] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!token) { setError("Invalid link"); setLoading(false); return; }
@@ -73,26 +81,72 @@ export default function ReceiptsVerify() {
   const issuedAt = new Date(data.createdAt).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
   const hasContact = data.businessAddress || data.businessMobile || data.businessWebsite;
 
+  const generatePdfBlob = async (): Promise<Blob | null> => {
+    const el = cardRef.current;
+    if (!el) return null;
+    const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+      import("html2canvas"),
+      import("jspdf"),
+    ]);
+    const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false });
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a5" });
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+    return pdf.output("blob");
+  };
+
   const handlePrint = () => window.print();
 
   const handleDownloadPdf = async () => {
     setGeneratingPdf(true);
     try {
-      const el = document.getElementById("receipt-card-inner");
-      if (!el) return;
-      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
-        import("html2canvas"),
-        import("jspdf"),
-      ]);
-      const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false });
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a5" });
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`${data.receiptNumber}.pdf`);
+      const blob = await generatePdfBlob();
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${data.receiptNumber}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
     } finally {
       setGeneratingPdf(false);
+    }
+  };
+
+  const handleWhatsApp = async () => {
+    setSendingWa(true);
+    try {
+      const blob = await generatePdfBlob();
+      if (blob) {
+        const file = new File([blob], `${data.receiptNumber}.pdf`, { type: "application/pdf" });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: `Receipt ${data.receiptNumber} — SAHU CSC`,
+            text: `Transaction receipt for ${data.customerName}`,
+          });
+          return;
+        }
+      }
+      const waText = [
+        `🧾 *Receipt ${data.receiptNumber}*`,
+        `Customer: ${data.customerName}`,
+        `Service: ${data.serviceType}`,
+        `${txType}: ₹${amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
+        `Date: ${formattedDate}`,
+        `\n📎 View & download PDF:\n${verifyUrl}`,
+        `\n— ${data.businessName}`,
+      ].join("\n");
+      window.open(`https://wa.me/?text=${encodeURIComponent(waText)}`, "_blank");
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name !== "AbortError") {
+        const waText = `🧾 Receipt ${data.receiptNumber} — SAHU CSC\n\n📎 ${verifyUrl}`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(waText)}`, "_blank");
+      }
+    } finally {
+      setSendingWa(false);
     }
   };
 
@@ -104,8 +158,14 @@ export default function ReceiptsVerify() {
     }
   };
 
+  const btnBase: React.CSSProperties = {
+    display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+    border: "none", borderRadius: 10, padding: "10px 0",
+    fontSize: 12, fontWeight: 600, cursor: "pointer", width: "100%",
+  };
+
   return (
-    <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #0b2c60 0%, #1a4a9e 100%)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "28px 16px 40px" }}>
+    <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #0b2c60 0%, #1a4a9e 100%)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "28px 16px 48px" }}>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         @media print {
@@ -126,13 +186,12 @@ export default function ReceiptsVerify() {
       <div id="receipt-wrapper" style={{ width: "100%", maxWidth: 420 }}>
         {/* Receipt card */}
         <div id="receipt-card" style={{ background: "#fff", borderRadius: 20, overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,0.28)" }}>
-          <div id="receipt-card-inner">
+          <div id="receipt-card-inner" ref={cardRef}>
             {/* Navy header */}
             <div style={{ background: "linear-gradient(135deg, #0b2c60, #1a4a9e)", padding: "20px 24px 18px", position: "relative", overflow: "hidden" }}>
               <div style={{ position: "absolute", top: -18, right: -18, width: 90, height: 90, borderRadius: "50%", background: "rgba(249,115,22,0.18)" }} />
               <div style={{ position: "absolute", bottom: -26, left: 36, width: 72, height: 72, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
 
-              {/* Top label row */}
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, position: "relative" }}>
                 <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 9, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" }}>
                   {data.businessName}
@@ -142,7 +201,6 @@ export default function ReceiptsVerify() {
                 </p>
               </div>
 
-              {/* Brand + receipt number row */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", position: "relative" }}>
                 <div>
                   <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 900, letterSpacing: "-0.01em", lineHeight: 1 }}>
@@ -229,9 +287,9 @@ export default function ReceiptsVerify() {
             {/* QR code section */}
             <div style={{ padding: "0 24px 16px", display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
               <div style={{ flex: 1, paddingRight: 16 }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: "#0b2c60", marginBottom: 4 }}>Scan to verify</p>
+                <p style={{ fontSize: 11, fontWeight: 700, color: "#0b2c60", marginBottom: 4 }}>Scan to open & download</p>
                 <p style={{ fontSize: 9, color: "#94a3b8", lineHeight: 1.6 }}>
-                  Scan the QR code to verify this receipt online. Valid for customer records.
+                  Share this QR code with your customer. Scanning opens this receipt for PDF download.
                 </p>
               </div>
               <div style={{
@@ -282,26 +340,30 @@ export default function ReceiptsVerify() {
           </div>
         </div>
 
-        {/* Action buttons */}
-        <div className="no-print" style={{ display: "flex", gap: 10, marginTop: 16, justifyContent: "center" }}>
-          <button
-            onClick={handlePrint}
-            style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.15)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 10, padding: "9px 18px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
-          >
-            <Printer size={13} /> Print
+        {/* Action buttons — 2×2 grid */}
+        <div className="no-print" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 16 }}>
+          <button onClick={handlePrint} style={{ ...btnBase, background: "rgba(255,255,255,0.15)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)" }}>
+            <Printer size={14} /> Print
           </button>
           <button
             onClick={handleDownloadPdf}
             disabled={generatingPdf}
-            style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.15)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 10, padding: "9px 18px", fontSize: 12, fontWeight: 600, cursor: generatingPdf ? "not-allowed" : "pointer", opacity: generatingPdf ? 0.7 : 1 }}
+            style={{ ...btnBase, background: "rgba(255,255,255,0.15)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", opacity: generatingPdf ? 0.7 : 1, cursor: generatingPdf ? "not-allowed" : "pointer" }}
           >
-            <Download size={13} /> {generatingPdf ? "Saving…" : "Save PDF"}
+            <Download size={14} /> {generatingPdf ? "Saving…" : "Download PDF"}
+          </button>
+          <button
+            onClick={handleWhatsApp}
+            disabled={sendingWa}
+            style={{ ...btnBase, background: "#25D366", color: "#fff", opacity: sendingWa ? 0.7 : 1, cursor: sendingWa ? "not-allowed" : "pointer" }}
+          >
+            <WhatsAppIcon size={14} /> {sendingWa ? "Preparing…" : "WhatsApp PDF"}
           </button>
           <button
             onClick={handleShare}
-            style={{ display: "flex", alignItems: "center", gap: 6, background: "#f97316", color: "#fff", border: "none", borderRadius: 10, padding: "9px 18px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+            style={{ ...btnBase, background: "#f97316", color: "#fff" }}
           >
-            <Share2 size={13} /> Share
+            <Share2 size={14} /> Share Link
           </button>
         </div>
       </div>
