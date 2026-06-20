@@ -21,6 +21,7 @@ import {
 } from "@workspace/api-client-react";
 import {
   Plus, Search, SortAsc, Users, ChevronRight, Phone, BookOpen,
+  ArrowUpRight, ArrowDownLeft, IndianRupee,
 } from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -116,30 +117,40 @@ function AddCustomerDialog({ open, onClose }: { open: boolean; onClose: () => vo
 // ─── Summary Banner ────────────────────────────────────────────────────────────
 function SummaryBanner() {
   const { data, isLoading } = useGetUdhariSummary();
+  const cards = [
+    {
+      label: "To Collect", value: (data as any)?.toCollect ?? 0,
+      accent: "linear-gradient(135deg,#f97316,#ea580c)", color: "#ea580c",
+      light: "rgba(249,115,22,0.07)", border: "rgba(249,115,22,0.18)",
+      icon: ArrowUpRight, sub: "Customers owe you",
+    },
+    {
+      label: "To Pay", value: (data as any)?.toPay ?? 0,
+      accent: "linear-gradient(135deg,#10b981,#059669)", color: "#059669",
+      light: "rgba(16,185,129,0.07)", border: "rgba(16,185,129,0.18)",
+      icon: ArrowDownLeft, sub: "You owe customers",
+    },
+  ];
   return (
     <div className="grid grid-cols-2 gap-3">
-      <div className="rounded-2xl overflow-hidden"
-        style={{ boxShadow: "0 2px 12px rgba(249,115,22,0.10)" }}>
-        <div style={{ height: 3, background: "linear-gradient(90deg,#f97316,#fb923c)" }} />
-        <div className="bg-white px-4 py-3">
-          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">To Collect</p>
-          {isLoading ? <Skeleton className="h-6 w-24 mt-1" /> :
-            <p className="text-lg font-black mt-0.5" style={{ color: "#ea580c" }}>
-              {fmt(data?.toCollect ?? 0)}
-            </p>}
+      {cards.map((c) => (
+        <div key={c.label} className="rounded-2xl overflow-hidden bg-white"
+          style={{ boxShadow: `0 2px 12px ${c.color}18`, border: `1px solid ${c.border}` }}>
+          <div style={{ height: 3, background: c.accent }} />
+          <div className="px-4 py-3 flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase" as const, letterSpacing: "0.07em" }}>{c.label}</p>
+              {isLoading
+                ? <Skeleton className="h-6 w-24 mt-1" />
+                : <p style={{ fontSize: 18, fontWeight: 900, color: c.color, lineHeight: 1.1, marginTop: 3 }}>{fmt(c.value)}</p>}
+              <p style={{ fontSize: 10, color: "#94a3b8", marginTop: 3 }}>{c.sub}</p>
+            </div>
+            <div style={{ width: 36, height: 36, borderRadius: 11, flexShrink: 0, background: c.accent, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 10px ${c.color}28` }}>
+              <c.icon size={16} color="#fff" />
+            </div>
+          </div>
         </div>
-      </div>
-      <div className="rounded-2xl overflow-hidden"
-        style={{ boxShadow: "0 2px 12px rgba(16,185,129,0.10)" }}>
-        <div style={{ height: 3, background: "linear-gradient(90deg,#10b981,#34d399)" }} />
-        <div className="bg-white px-4 py-3">
-          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">To Pay</p>
-          {isLoading ? <Skeleton className="h-6 w-24 mt-1" /> :
-            <p className="text-lg font-black mt-0.5" style={{ color: "#059669" }}>
-              {fmt(data?.toPay ?? 0)}
-            </p>}
-        </div>
-      </div>
+      ))}
     </div>
   );
 }

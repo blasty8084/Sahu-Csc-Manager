@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNetworkStatus } from "@/hooks/use-network-status";
-import { Plus, Pencil, Trash2, Download, Filter, X, ChevronLeft, ChevronRight, Clock, WifiOff, Receipt, Search, IndianRupee, User, FileText, Calendar, CheckCircle2, ArrowDownLeft, ArrowUpRight } from "lucide-react";
+import { Plus, Pencil, Trash2, Download, Filter, X, ChevronLeft, ChevronRight, Clock, WifiOff, Receipt, Search, IndianRupee, User, FileText, Calendar, CheckCircle2, ArrowDownLeft, ArrowUpRight, TrendingUp, TrendingDown, Wallet } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { addPendingEntry, getAllPendingEntries, type PendingLedgerEntry } from "@/lib/offline-db";
 import { syncEngine } from "@/lib/sync-engine";
@@ -305,18 +305,25 @@ export default function Ledger() {
 
         {/* ── DESKTOP: Balance Summary ── */}
         <div className="hidden md:grid grid-cols-3 gap-3">
-          {[
-            { label: "Balance", value: balance?.balance, accent: "linear-gradient(90deg,#0b2c60,#1a4a9e)", valColor: "#0b2c60" },
-            { label: "Credits", value: balance?.totalCredits, accent: "linear-gradient(90deg,#10b981,#34d399)", valColor: "#059669" },
-            { label: "Debits", value: balance?.totalDebits, accent: "linear-gradient(90deg,#f43f5e,#fb7185)", valColor: "#e11d48" },
-          ].map((item) => (
-            <div key={item.label} className="border border-border rounded-xl bg-card overflow-hidden">
+          {([
+            { label: "Current Balance", value: balance?.balance, accent: "linear-gradient(135deg,#0b2c60,#1a4a9e)", color: "#0b2c60", icon: Wallet, sub: "Running total" },
+            { label: "Total Credits", value: balance?.totalCredits, accent: "linear-gradient(135deg,#10b981,#059669)", color: "#059669", icon: TrendingUp, sub: "All income" },
+            { label: "Total Debits", value: balance?.totalDebits, accent: "linear-gradient(135deg,#f43f5e,#e11d48)", color: "#e11d48", icon: TrendingDown, sub: "All expenses" },
+          ] as any[]).map((item) => (
+            <div key={item.label} className="bg-white rounded-2xl overflow-hidden flex-1"
+              style={{ boxShadow: "0 1px 12px rgba(11,44,96,0.08)", border: "1px solid rgba(11,44,96,0.06)" }}>
               <div style={{ height: 3, background: item.accent }} />
-              <div className="p-4">
-                <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide">{item.label}</p>
-                {item.value === undefined ? <Skeleton className="h-7 w-24 mt-1" /> : (
-                  <p className="text-xl font-bold mt-1" style={{ color: item.valColor }}>₹{(item.value ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 0 })}</p>
-                )}
+              <div className="p-5 flex items-start justify-between">
+                <div>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{item.label}</p>
+                  {item.value === undefined
+                    ? <Skeleton className="h-7 w-24" />
+                    : <p style={{ fontSize: 24, fontWeight: 900, color: item.color, lineHeight: 1 }}>₹{(item.value ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p>}
+                  <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 6 }}>{item.sub}</p>
+                </div>
+                <div style={{ width: 44, height: 44, borderRadius: 13, flexShrink: 0, background: item.accent, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 14px ${item.color}33` }}>
+                  <item.icon size={20} color="#fff" />
+                </div>
               </div>
             </div>
           ))}
