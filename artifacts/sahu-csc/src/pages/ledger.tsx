@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   useListLedgerEntries, useCreateLedgerEntry, useUpdateLedgerEntry, useDeleteLedgerEntry,
@@ -87,6 +87,7 @@ export default function Ledger() {
   };
 
   const { data, isLoading } = useListLedgerEntries(params);
+  const { data: allEntriesData } = useListLedgerEntries({ limit: 500 });
   const { data: balance } = useGetBalance();
   const { data: services } = useListServices();
   const { data: settings } = useGetSettings();
@@ -231,6 +232,11 @@ export default function Ledger() {
   const hasFilters = !!(startDate || endDate || customerName || serviceFilter);
   const serviceTypes = services?.map((s: any) => s.name) ?? [];
   const totalPages = Math.ceil((data?.total ?? 0) / 15);
+  const customerNameSuggestions = useMemo(() => {
+    const names = new Set<string>();
+    allEntriesData?.entries?.forEach((e: any) => { if (e.customerName) names.add(e.customerName); });
+    return Array.from(names).sort((a, b) => a.localeCompare(b));
+  }, [allEntriesData]);
 
   // Sync rawAmount + entryType → form credit/debit fields
   useEffect(() => {
@@ -270,6 +276,10 @@ export default function Ledger() {
 
   return (
     <Layout>
+      {/* Customer name datalist for autocomplete */}
+      <datalist id="ledger-customer-names">
+        {customerNameSuggestions.map(name => <option key={name} value={name} />)}
+      </datalist>
       <div className="space-y-4">
         {/* ── MOBILE: Navy gradient hero header ── */}
         <div className="md:hidden rounded-2xl overflow-hidden" style={{ background: "linear-gradient(145deg,#0b2c60 0%,#1a4a9e 100%)", padding: "20px 20px 24px", position: "relative" }}>
@@ -516,6 +526,8 @@ export default function Ledger() {
                           onChange={e => setQuickAdd(p => ({ ...p, customerName: e.target.value }))}
                           onKeyDown={e => e.key === "Enter" && saveQuickAdd()}
                           placeholder="Customer name *"
+                          list="ledger-customer-names"
+                          autoComplete="off"
                           style={{ width: "100%", height: 33, paddingInline: 8, borderRadius: 8, border: "1.5px solid rgba(249,115,22,0.35)", fontSize: 12, color: "#0b2c60", outline: "none", background: "#fff", fontWeight: 600, boxSizing: "border-box" }}
                           onFocus={e => (e.target.style.borderColor = "#f97316")}
                           onBlur={e => (e.target.style.borderColor = "rgba(249,115,22,0.35)")} />
@@ -623,6 +635,8 @@ export default function Ledger() {
                                 <input value={inlineEdit.customerName}
                                   onChange={e => setInlineEdit(p => ({ ...p, customerName: e.target.value }))}
                                   placeholder="Customer"
+                                  list="ledger-customer-names"
+                                  autoComplete="off"
                                   style={{ width: "100%", height: 32, paddingInline: 8, borderRadius: 8, border: "1.5px solid #0b2c60", fontSize: 12, color: "#0b2c60", outline: "none", background: "#fff", fontWeight: 600, boxSizing: "border-box" }} />
                               </td>
                               {/* Service select */}
