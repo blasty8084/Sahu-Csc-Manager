@@ -6,6 +6,7 @@ export const modules: ModuleMap = {
   "./components/mockups/aeps/AepsPage.tsx": () => import("../components/mockups/aeps/AepsPage.tsx"),
   "./components/mockups/aeps-desktop/AePS.tsx": () => import("../components/mockups/aeps-desktop/AePS.tsx"),
   "./components/mockups/aeps-entry-form/AepsEntry.tsx": () => import("../components/mockups/aeps-entry-form/AepsEntry.tsx"),
+  "./components/mockups/aeps-mobile-entry/AepsMobileEntry.tsx": () => import("../components/mockups/aeps-mobile-entry/AepsMobileEntry.tsx"),
   "./components/mockups/aeps-page/AePS.tsx": () => import("../components/mockups/aeps-page/AePS.tsx"),
   "./components/mockups/ledger/LedgerPage.tsx": () => import("../components/mockups/ledger/LedgerPage.tsx"),
   "./components/mockups/ledger-desktop/Ledger.tsx": () => import("../components/mockups/ledger-desktop/Ledger.tsx"),
