@@ -55,6 +55,9 @@ export default function Ledger() {
   const [rawAmount, setRawAmount] = useState("0");
   const [inlineEditId, setInlineEditId] = useState<number | null>(null);
   const [inlineEdit, setInlineEdit] = useState<{ date: string; customerName: string; serviceType: string; entryType: "credit" | "debit"; amount: string; description: string }>({ date: "", customerName: "", serviceType: "", entryType: "credit", amount: "0", description: "" });
+  const todayStr = new Date().toISOString().split("T")[0];
+  const [quickAdd, setQuickAdd] = useState<{ date: string; customerName: string; serviceType: string; entryType: "credit" | "debit"; amount: string; description: string }>({ date: todayStr, customerName: "", serviceType: "", entryType: "credit", amount: "", description: "" });
+  const [quickAddSaving, setQuickAddSaving] = useState(false);
 
   const refreshPending = async () => {
     try {
@@ -152,6 +155,25 @@ export default function Ledger() {
       invalidate();
     } catch {
       toast({ title: "Failed to update entry", variant: "destructive" });
+    }
+  };
+
+  const saveQuickAdd = async () => {
+    const amt = parseFloat(quickAdd.amount);
+    if (!quickAdd.customerName.trim() || !quickAdd.serviceType || !amt || amt <= 0) {
+      toast({ title: "Fill in customer, service, and a valid amount", variant: "destructive" });
+      return;
+    }
+    setQuickAddSaving(true);
+    try {
+      await createMut.mutateAsync({ date: quickAdd.date, customerName: quickAdd.customerName.trim(), serviceType: quickAdd.serviceType, credit: quickAdd.entryType === "credit" ? amt : 0, debit: quickAdd.entryType === "debit" ? amt : 0, description: quickAdd.description });
+      toast({ title: "Entry added" });
+      setQuickAdd({ date: todayStr, customerName: "", serviceType: "", entryType: "credit", amount: "", description: "" });
+      invalidate();
+    } catch {
+      toast({ title: "Failed to add entry", variant: "destructive" });
+    } finally {
+      setQuickAddSaving(false);
     }
   };
 
@@ -474,6 +496,78 @@ export default function Ledger() {
                     </tr>
                   </thead>
                   <tbody>
+                    {/* ── Quick-add row (always pinned at top, desktop only) ── */}
+                    <tr style={{ borderBottom: "2px solid rgba(11,44,96,0.09)", background: "rgba(249,115,22,0.025)" }}>
+                      {/* + label */}
+                      <td style={{ padding: "8px 14px" }}>
+                        <div style={{ width: 22, height: 22, borderRadius: 6, background: "linear-gradient(135deg,#f97316,#fb923c)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <Plus size={13} color="#fff" strokeWidth={3} />
+                        </div>
+                      </td>
+                      {/* Date — no receipt col in quick-add, spans receipt+date */}
+                      <td colSpan={2} style={{ padding: "6px 6px" }}>
+                        <input type="date" value={quickAdd.date}
+                          onChange={e => setQuickAdd(p => ({ ...p, date: e.target.value }))}
+                          style={{ width: "100%", height: 33, paddingInline: 8, borderRadius: 8, border: "1.5px solid rgba(249,115,22,0.35)", fontSize: 11, color: "#0b2c60", outline: "none", background: "#fff", fontFamily: "monospace", boxSizing: "border-box" }} />
+                      </td>
+                      {/* Customer */}
+                      <td style={{ padding: "6px 6px" }}>
+                        <input value={quickAdd.customerName}
+                          onChange={e => setQuickAdd(p => ({ ...p, customerName: e.target.value }))}
+                          onKeyDown={e => e.key === "Enter" && saveQuickAdd()}
+                          placeholder="Customer name *"
+                          style={{ width: "100%", height: 33, paddingInline: 8, borderRadius: 8, border: "1.5px solid rgba(249,115,22,0.35)", fontSize: 12, color: "#0b2c60", outline: "none", background: "#fff", fontWeight: 600, boxSizing: "border-box" }}
+                          onFocus={e => (e.target.style.borderColor = "#f97316")}
+                          onBlur={e => (e.target.style.borderColor = "rgba(249,115,22,0.35)")} />
+                      </td>
+                      {/* Service */}
+                      <td style={{ padding: "6px 6px" }}>
+                        <select value={quickAdd.serviceType}
+                          onChange={e => setQuickAdd(p => ({ ...p, serviceType: e.target.value }))}
+                          style={{ width: "100%", height: 33, paddingInline: 7, borderRadius: 8, border: "1.5px solid rgba(249,115,22,0.35)", fontSize: 11, color: quickAdd.serviceType ? "#0b2c60" : "#94a3b8", outline: "none", background: "#fff", boxSizing: "border-box" }}>
+                          <option value="">Service *</option>
+                          {serviceTypes.map((s: string) => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      </td>
+                      {/* Cr/Dr toggle + amount (spans credit+debit cols) */}
+                      <td colSpan={2} style={{ padding: "6px 6px" }}>
+                        <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                          <button onClick={() => setQuickAdd(p => ({ ...p, entryType: "credit" }))}
+                            style={{ flexShrink: 0, height: 33, paddingInline: 10, borderRadius: 8, border: "1.5px solid", borderColor: quickAdd.entryType === "credit" ? "#059669" : "#e2e8f0", background: quickAdd.entryType === "credit" ? "rgba(5,150,105,0.1)" : "#fff", color: quickAdd.entryType === "credit" ? "#059669" : "#94a3b8", fontSize: 11, fontWeight: 800, cursor: "pointer" }}>
+                            Cr
+                          </button>
+                          <button onClick={() => setQuickAdd(p => ({ ...p, entryType: "debit" }))}
+                            style={{ flexShrink: 0, height: 33, paddingInline: 10, borderRadius: 8, border: "1.5px solid", borderColor: quickAdd.entryType === "debit" ? "#e11d48" : "#e2e8f0", background: quickAdd.entryType === "debit" ? "rgba(225,29,72,0.08)" : "#fff", color: quickAdd.entryType === "debit" ? "#e11d48" : "#94a3b8", fontSize: 11, fontWeight: 800, cursor: "pointer" }}>
+                            Dr
+                          </button>
+                          <input type="number" value={quickAdd.amount} min="0" step="0.01"
+                            onChange={e => setQuickAdd(p => ({ ...p, amount: e.target.value }))}
+                            onKeyDown={e => e.key === "Enter" && saveQuickAdd()}
+                            placeholder="Amount *"
+                            style={{ flex: 1, minWidth: 0, height: 33, paddingInline: 8, borderRadius: 8, border: "1.5px solid rgba(249,115,22,0.35)", fontSize: 12, color: "#0b2c60", outline: "none", background: "#fff", textAlign: "right", fontWeight: 700, boxSizing: "border-box" }}
+                            onFocus={e => (e.target.style.borderColor = "#f97316")}
+                            onBlur={e => (e.target.style.borderColor = "rgba(249,115,22,0.35)")} />
+                        </div>
+                      </td>
+                      {/* Balance placeholder */}
+                      <td style={{ padding: "8px 14px", textAlign: "right", color: "#cbd5e1", fontSize: 11 }}>—</td>
+                      {/* Note */}
+                      <td style={{ padding: "6px 6px" }}>
+                        <input value={quickAdd.description}
+                          onChange={e => setQuickAdd(p => ({ ...p, description: e.target.value }))}
+                          onKeyDown={e => e.key === "Enter" && saveQuickAdd()}
+                          placeholder="Note…"
+                          style={{ width: "100%", height: 33, paddingInline: 8, borderRadius: 8, border: "1.5px solid #e2e8f0", fontSize: 11, color: "#0b2c60", outline: "none", background: "#fff", boxSizing: "border-box" }} />
+                      </td>
+                      {/* Add button */}
+                      <td style={{ padding: "6px 8px" }}>
+                        <button onClick={saveQuickAdd} disabled={quickAddSaving}
+                          style={{ width: "100%", height: 33, borderRadius: 8, border: "none", background: quickAddSaving ? "#94a3b8" : "linear-gradient(135deg,#f97316,#fb923c)", color: "#fff", fontSize: 12, fontWeight: 800, cursor: quickAddSaving ? "wait" : "pointer", whiteSpace: "nowrap", boxShadow: quickAddSaving ? "none" : "0 2px 10px rgba(249,115,22,0.35)" }}>
+                          {quickAddSaving ? "…" : "Add"}
+                        </button>
+                      </td>
+                    </tr>
+
                     {isLoading ? (
                       [...Array(8)].map((_, i) => (
                         <tr key={i} style={{ borderBottom: "1px solid rgba(11,44,96,0.05)" }}>
