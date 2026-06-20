@@ -466,28 +466,30 @@ export function AepsMobileEntry() {
               </div>
             </div>
 
-            {/* Account Number (optional) */}
-            <div>
-              <label style={{ fontSize: 11, fontWeight: 700, color: "#475569", display: "block", marginBottom: 6 }}>
-                Account Number <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 500 }}>(optional)</span>
-              </label>
-              <div className="relative">
-                <Hash size={14} style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
-                <input
-                  inputMode="numeric"
-                  value={accountNo}
-                  onChange={e => setAccountNo(e.target.value.replace(/\D/g, "").slice(0, 18))}
-                  placeholder="Bank account number"
-                  style={{
-                    width: "100%", height: 46, paddingLeft: 36, paddingRight: 14,
-                    borderRadius: 12, border: "1.5px solid #e2e8f0",
-                    fontSize: 14, fontWeight: 600, color: "#0b2c60",
-                    outline: "none", boxSizing: "border-box", background: "#fff",
-                    fontFamily: "monospace", letterSpacing: "0.06em",
-                  }}
-                />
+            {/* Account Number — deposit only */}
+            {txType === "deposit" && (
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: "#475569", display: "block", marginBottom: 6 }}>
+                  Account Number <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 500 }}>(optional)</span>
+                </label>
+                <div className="relative">
+                  <Hash size={14} style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+                  <input
+                    inputMode="numeric"
+                    value={accountNo}
+                    onChange={e => setAccountNo(e.target.value.replace(/\D/g, "").slice(0, 18))}
+                    placeholder="Bank account number"
+                    style={{
+                      width: "100%", height: 46, paddingLeft: 36, paddingRight: 14,
+                      borderRadius: 12, border: "1.5px solid #e2e8f0",
+                      fontSize: 14, fontWeight: 600, color: "#0b2c60",
+                      outline: "none", boxSizing: "border-box", background: "#fff",
+                      fontFamily: "monospace", letterSpacing: "0.06em",
+                    }}
+                  />
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
