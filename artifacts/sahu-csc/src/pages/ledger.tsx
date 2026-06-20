@@ -284,54 +284,314 @@ export default function Ledger() {
           </button>
         </div>
 
-        {/* ── DESKTOP: Header ── */}
-        <div className="hidden md:flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg md:text-xl font-bold">Ledger</h2>
-            <p className="text-xs text-muted-foreground">{data?.total ?? 0} transactions</p>
-          </div>
-          <div className="flex gap-2">
-            <Button asChild variant="outline" size="sm">
-              <a href="/api/reports/export" target="_blank"><Download size={14} className="mr-1.5" />Export</a>
-            </Button>
-            <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive hover:text-destructive-foreground" onClick={() => setShowDeleteAll(true)}>
-              <Trash2 size={14} className="mr-1.5" />Delete All
-            </Button>
-            <Button size="sm" onClick={openCreate} data-testid="button-new-entry">
-              <Plus size={14} className="mr-1.5" />New Entry
-            </Button>
-          </div>
-        </div>
+        {/* ═══════════════════════════════════════════════
+            DESKTOP LAYOUT — sidebar + main panel
+            Hidden on mobile, shown on md+
+        ═══════════════════════════════════════════════ */}
+        <div className="hidden md:flex gap-5" style={{ minHeight: "calc(100vh - 130px)" }}>
 
-        {/* ── DESKTOP: Balance Summary ── */}
-        <div className="hidden md:grid grid-cols-3 gap-3">
-          {([
-            { label: "Current Balance", value: balance?.balance, accent: "linear-gradient(135deg,#0b2c60,#1a4a9e)", color: "#0b2c60", icon: Wallet, sub: "Running total" },
-            { label: "Total Credits", value: balance?.totalCredits, accent: "linear-gradient(135deg,#10b981,#059669)", color: "#059669", icon: TrendingUp, sub: "All income" },
-            { label: "Total Debits", value: balance?.totalDebits, accent: "linear-gradient(135deg,#f43f5e,#e11d48)", color: "#e11d48", icon: TrendingDown, sub: "All expenses" },
-          ] as any[]).map((item) => (
-            <div key={item.label} className="bg-white rounded-2xl overflow-hidden flex-1"
-              style={{ boxShadow: "0 1px 12px rgba(11,44,96,0.08)", border: "1px solid rgba(11,44,96,0.06)" }}>
-              <div style={{ height: 3, background: item.accent }} />
-              <div className="p-5 flex items-start justify-between">
-                <div>
-                  <p style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{item.label}</p>
-                  {item.value === undefined
-                    ? <Skeleton className="h-7 w-24" />
-                    : <p style={{ fontSize: 24, fontWeight: 900, color: item.color, lineHeight: 1 }}>₹{(item.value ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p>}
-                  <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 6 }}>{item.sub}</p>
+          {/* ── LEFT SIDEBAR ── */}
+          <div style={{ width: 268, flexShrink: 0, display: "flex", flexDirection: "column", gap: 14 }}>
+
+            {/* Brand + Balance + New Entry */}
+            <div style={{ background: "linear-gradient(145deg,#0b2c60 0%,#1a4a9e 100%)", borderRadius: 20, padding: "20px 18px 18px", position: "relative", overflow: "hidden" }}>
+              <div style={{ position: "absolute", top: -24, right: -24, width: 100, height: 100, borderRadius: "50%", background: "rgba(249,115,22,0.12)", pointerEvents: "none" }} />
+              <div style={{ position: "absolute", bottom: -18, left: 8, width: 64, height: 64, borderRadius: "50%", background: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
+              <div style={{ position: "relative" }}>
+                <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 2 }}>My Ledger</p>
+                <h1 style={{ color: "#fff", fontSize: 18, fontWeight: 900, lineHeight: 1.1, marginBottom: 16 }}>Transaction Book</h1>
+                {/* Balance glass card */}
+                <div style={{ background: "rgba(255,255,255,0.09)", borderRadius: 14, padding: "14px 14px", border: "1px solid rgba(255,255,255,0.13)", marginBottom: 12 }}>
+                  <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 5 }}>Current Balance</p>
+                  {balance === undefined
+                    ? <div style={{ height: 28, background: "rgba(255,255,255,0.1)", borderRadius: 6, width: "65%", marginBottom: 12 }} />
+                    : <p style={{ color: "#fff", fontSize: 24, fontWeight: 900, lineHeight: 1, marginBottom: 12 }}>₹{(balance?.balance ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p>}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                    <div style={{ background: "rgba(16,185,129,0.15)", borderRadius: 9, padding: "8px 10px", border: "1px solid rgba(16,185,129,0.25)" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 3 }}>
+                        <ArrowDownLeft size={10} color="#34d399" />
+                        <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 8, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>Credits</p>
+                      </div>
+                      {balance === undefined
+                        ? <div style={{ height: 14, background: "rgba(255,255,255,0.12)", borderRadius: 4, width: "80%" }} />
+                        : <p style={{ color: "#34d399", fontSize: 13, fontWeight: 900 }}>+₹{(balance?.totalCredits ?? 0).toLocaleString("en-IN")}</p>}
+                    </div>
+                    <div style={{ background: "rgba(244,63,94,0.15)", borderRadius: 9, padding: "8px 10px", border: "1px solid rgba(244,63,94,0.25)" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 3 }}>
+                        <ArrowUpRight size={10} color="#fb7185" />
+                        <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 8, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>Debits</p>
+                      </div>
+                      {balance === undefined
+                        ? <div style={{ height: 14, background: "rgba(255,255,255,0.12)", borderRadius: 4, width: "80%" }} />
+                        : <p style={{ color: "#fb7185", fontSize: 13, fontWeight: 900 }}>−₹{(balance?.totalDebits ?? 0).toLocaleString("en-IN")}</p>}
+                    </div>
+                  </div>
                 </div>
-                <div style={{ width: 44, height: 44, borderRadius: 13, flexShrink: 0, background: item.accent, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 14px ${item.color}33` }}>
-                  <item.icon size={20} color="#fff" />
+                {/* New Entry */}
+                <button onClick={openCreate} data-testid="button-new-entry"
+                  style={{ width: "100%", height: 46, borderRadius: 13, background: "linear-gradient(135deg,#f97316,#fb923c)", border: "none", color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, boxShadow: "0 4px 18px rgba(249,115,22,0.45)", letterSpacing: "0.01em" }}>
+                  <Plus size={18} strokeWidth={2.5} />New Entry
+                </button>
+              </div>
+            </div>
+
+            {/* Filters card */}
+            <div style={{ background: "#fff", borderRadius: 16, padding: "16px 16px", boxShadow: "0 2px 12px rgba(11,44,96,0.07)", border: "1px solid rgba(11,44,96,0.06)" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <div style={{ width: 22, height: 22, borderRadius: 7, background: "rgba(11,44,96,0.07)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Filter size={11} color="#0b2c60" />
+                  </div>
+                  <p style={{ fontSize: 11, fontWeight: 800, color: "#0b2c60", textTransform: "uppercase", letterSpacing: "0.08em" }}>Filters</p>
+                </div>
+                {hasFilters && (
+                  <button onClick={clearFilters} style={{ fontSize: 10, fontWeight: 700, color: "#f97316", background: "rgba(249,115,22,0.08)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 6, padding: "3px 9px", cursor: "pointer" }}>
+                    Clear all
+                  </button>
+                )}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ position: "relative" }}>
+                  <Search size={12} color="#94a3b8" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
+                  <input value={customerName} onChange={(e) => { setCustomerName(e.target.value); setPage(1); }} placeholder="Search customer…"
+                    style={{ width: "100%", height: 36, paddingLeft: 28, paddingRight: 10, borderRadius: 10, border: "1.5px solid #e2e8f0", background: "#fafbff", fontSize: 12, color: "#0b2c60", outline: "none", boxSizing: "border-box", fontWeight: 500, transition: "border-color 0.15s" }}
+                    onFocus={e => (e.target.style.borderColor = "#0b2c60")} onBlur={e => (e.target.style.borderColor = "#e2e8f0")} />
+                </div>
+                <div>
+                  <p style={{ fontSize: 9, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5 }}>From Date</p>
+                  <input type="date" value={startDate} onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
+                    style={{ width: "100%", height: 36, paddingInline: 10, borderRadius: 10, border: "1.5px solid #e2e8f0", background: "#fafbff", fontSize: 12, color: startDate ? "#0b2c60" : "#94a3b8", outline: "none", boxSizing: "border-box", fontWeight: 500 }} />
+                </div>
+                <div>
+                  <p style={{ fontSize: 9, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5 }}>To Date</p>
+                  <input type="date" value={endDate} onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
+                    style={{ width: "100%", height: 36, paddingInline: 10, borderRadius: 10, border: "1.5px solid #e2e8f0", background: "#fafbff", fontSize: 12, color: endDate ? "#0b2c60" : "#94a3b8", outline: "none", boxSizing: "border-box", fontWeight: 500 }} />
+                </div>
+                <div>
+                  <p style={{ fontSize: 9, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5 }}>Service</p>
+                  <Select value={serviceFilter} onValueChange={(v) => { setServiceFilter(v); setPage(1); }}>
+                    <SelectTrigger style={{ height: 36, borderRadius: 10, border: "1.5px solid #e2e8f0", background: "#fafbff", fontSize: 12, fontWeight: 500, color: "#0b2c60" }}>
+                      <SelectValue placeholder="All services" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60 overflow-y-auto">
+                      <SelectItem value="all">All services</SelectItem>
+                      {serviceTypes.map((s: string) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
-          ))}
-        </div>
 
-        {/* Offline Pending Entries */}
+            {/* Actions */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <a href="/api/reports/export" target="_blank"
+                style={{ height: 42, borderRadius: 12, border: "1.5px solid rgba(11,44,96,0.15)", background: "#fff", color: "#0b2c60", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, textDecoration: "none", boxShadow: "0 1px 6px rgba(11,44,96,0.05)" }}>
+                <Download size={15} />Export to Excel
+              </a>
+              <button onClick={() => setShowDeleteAll(true)}
+                style={{ height: 42, borderRadius: 12, border: "1.5px solid rgba(225,29,72,0.2)", background: "rgba(225,29,72,0.04)", color: "#e11d48", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                <Trash2 size={15} />Delete All Entries
+              </button>
+            </div>
+          </div>
+
+          {/* ── RIGHT MAIN PANEL ── */}
+          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+            <div style={{ background: "#fff", borderRadius: 20, overflow: "hidden", boxShadow: "0 2px 20px rgba(11,44,96,0.08)", border: "1px solid rgba(11,44,96,0.06)", flex: 1, display: "flex", flexDirection: "column" }}>
+
+              {/* Table toolbar */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 22px", borderBottom: "1px solid rgba(11,44,96,0.07)", flexShrink: 0 }}>
+                <div>
+                  <p style={{ fontSize: 15, fontWeight: 900, color: "#0b2c60" }}>Transactions</p>
+                  <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 1 }}>{data?.total ?? 0} total entries · Page {page} of {Math.max(totalPages, 1)}</p>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  {hasFilters && (
+                    <span style={{ fontSize: 10, fontWeight: 700, color: "#f97316", background: "rgba(249,115,22,0.08)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 20, padding: "4px 12px" }}>
+                      Filtered
+                    </span>
+                  )}
+                  {isOffline && (
+                    <span style={{ fontSize: 10, fontWeight: 700, color: "#d97706", background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.25)", borderRadius: 20, padding: "4px 10px", display: "flex", alignItems: "center", gap: 4 }}>
+                      <WifiOff size={10} /> Offline
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Pending entries banner */}
+              {pendingEntries.length > 0 && (
+                <div style={{ background: "rgba(251,191,36,0.07)", borderBottom: "1px solid rgba(251,191,36,0.18)", padding: "10px 22px", display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                  <Clock size={13} style={{ color: "#d97706", flexShrink: 0 }} />
+                  <p style={{ fontSize: 12, fontWeight: 600, color: "#92400e" }}>
+                    {pendingEntries.length} offline {pendingEntries.length === 1 ? "entry" : "entries"} pending sync — will upload when reconnected
+                  </p>
+                </div>
+              )}
+
+              {/* Table */}
+              <div style={{ flex: 1, overflowX: "auto", overflowY: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
+                    <tr style={{ background: "rgba(11,44,96,0.03)", borderBottom: "2px solid rgba(11,44,96,0.08)" }}>
+                      {[
+                        { label: "#", w: 44 },
+                        { label: "Receipt No", w: 126 },
+                        { label: "Date", w: 100 },
+                        { label: "Customer", w: undefined },
+                        { label: "Service", w: 156 },
+                        { label: "Credit", w: 108, right: true },
+                        { label: "Debit", w: 108, right: true },
+                        { label: "Balance", w: 118, right: true },
+                        { label: "Note", w: 130 },
+                        { label: "", w: 106 },
+                      ].map((col) => (
+                        <th key={col.label} style={{ padding: "11px 14px", textAlign: col.right ? "right" : "left", fontSize: 10, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap", width: col.w }}>
+                          {col.label}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {isLoading ? (
+                      [...Array(8)].map((_, i) => (
+                        <tr key={i} style={{ borderBottom: "1px solid rgba(11,44,96,0.05)" }}>
+                          {[44, 110, 90, 0, 130, 90, 90, 100, 110, 90].map((w, j) => (
+                            <td key={j} style={{ padding: "13px 14px" }}>
+                              <div style={{ height: 12, borderRadius: 6, background: "#f1f5f9", width: w || "80%" }} />
+                            </td>
+                          ))}
+                        </tr>
+                      ))
+                    ) : !data?.entries?.length ? (
+                      <tr>
+                        <td colSpan={10} style={{ textAlign: "center", padding: "72px 0" }}>
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+                            <div style={{ width: 60, height: 60, borderRadius: 18, background: "rgba(11,44,96,0.06)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                              <FileText size={26} color="#0b2c60" opacity={0.3} />
+                            </div>
+                            <div>
+                              <p style={{ fontSize: 15, fontWeight: 700, color: "#0b2c60", marginBottom: 5 }}>No entries found</p>
+                              <p style={{ fontSize: 12, color: "#94a3b8" }}>
+                                {hasFilters ? "Try clearing the filters" : "Use New Entry in the sidebar to add your first transaction"}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      data.entries.map((entry: any, idx: number) => {
+                        const isCredit = entry.credit > 0;
+                        const rowNum = (page - 1) * 15 + idx + 1;
+                        const balanceNum = Number(entry.balance);
+                        return (
+                          <tr key={entry.id}
+                            data-testid={`row-ledger-${entry.id}`}
+                            style={{ borderBottom: "1px solid rgba(11,44,96,0.05)", transition: "background 0.1s" }}
+                            onMouseEnter={e => (e.currentTarget.style.background = "rgba(11,44,96,0.025)")}
+                            onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                          >
+                            {/* # */}
+                            <td style={{ padding: "13px 14px", color: "#cbd5e1", fontSize: 11, fontWeight: 700 }}>{rowNum}</td>
+                            {/* Receipt */}
+                            <td style={{ padding: "13px 14px", whiteSpace: "nowrap" }}>
+                              <span style={{ fontFamily: "monospace", fontSize: 11, fontWeight: 800, color: "#f97316", background: "rgba(249,115,22,0.07)", padding: "3px 8px", borderRadius: 6, border: "1px solid rgba(249,115,22,0.15)" }}>
+                                {entry.receiptNumber ?? `CSC-${new Date(entry.createdAt).getFullYear()}-${String(entry.id).padStart(4, "0")}`}
+                              </span>
+                            </td>
+                            {/* Date */}
+                            <td style={{ padding: "13px 14px", fontFamily: "monospace", fontSize: 12, color: "#64748b", whiteSpace: "nowrap" }}>{entry.date}</td>
+                            {/* Customer */}
+                            <td style={{ padding: "13px 14px", fontWeight: 700, fontSize: 13, color: "#0b2c60", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.customerName}</td>
+                            {/* Service */}
+                            <td style={{ padding: "13px 14px" }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: "#475569", background: "rgba(71,85,105,0.07)", padding: "3px 10px", borderRadius: 20, whiteSpace: "nowrap", display: "inline-block", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", verticalAlign: "middle" }}>
+                                {entry.serviceType}
+                              </span>
+                            </td>
+                            {/* Credit */}
+                            <td style={{ padding: "13px 14px", textAlign: "right", fontWeight: 800, fontSize: 13, whiteSpace: "nowrap" }}>
+                              {entry.credit > 0
+                                ? <span style={{ color: "#059669", background: "rgba(5,150,105,0.07)", padding: "3px 8px", borderRadius: 7 }}>+₹{entry.credit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                                : <span style={{ color: "#e2e8f0" }}>—</span>}
+                            </td>
+                            {/* Debit */}
+                            <td style={{ padding: "13px 14px", textAlign: "right", fontWeight: 800, fontSize: 13, whiteSpace: "nowrap" }}>
+                              {entry.debit > 0
+                                ? <span style={{ color: "#e11d48", background: "rgba(225,29,72,0.07)", padding: "3px 8px", borderRadius: 7 }}>−₹{entry.debit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                                : <span style={{ color: "#e2e8f0" }}>—</span>}
+                            </td>
+                            {/* Balance */}
+                            <td style={{ padding: "13px 14px", textAlign: "right", fontWeight: 900, fontSize: 13, color: balanceNum < 0 ? "#e11d48" : "#0b2c60", whiteSpace: "nowrap" }}>
+                              ₹{balanceNum.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                            </td>
+                            {/* Note */}
+                            <td style={{ padding: "13px 14px", color: "#94a3b8", fontSize: 11, maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.description || "—"}</td>
+                            {/* Actions */}
+                            <td style={{ padding: "13px 14px" }}>
+                              <div style={{ display: "flex", gap: 5, justifyContent: "flex-end" }}>
+                                <button onClick={() => setReceiptEntry(entry)} title="Receipt"
+                                  style={{ width: 30, height: 30, borderRadius: 8, border: "1px solid #e2e8f0", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                                  <Receipt size={13} color="#64748b" />
+                                </button>
+                                <button onClick={() => openEdit(entry)} title="Edit"
+                                  style={{ width: 30, height: 30, borderRadius: 8, border: "1px solid rgba(11,44,96,0.15)", background: "rgba(11,44,96,0.04)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                                  <Pencil size={13} color="#0b2c60" />
+                                </button>
+                                <button onClick={() => setDeleteId(entry.id)} title="Delete"
+                                  style={{ width: 30, height: 30, borderRadius: 8, border: "1px solid rgba(225,29,72,0.2)", background: "rgba(225,29,72,0.04)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                                  <Trash2 size={13} color="#e11d48" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination footer */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 22px", borderTop: "1px solid rgba(11,44,96,0.07)", background: "rgba(11,44,96,0.015)", flexShrink: 0 }}>
+                <p style={{ fontSize: 12, color: "#94a3b8" }}>
+                  {data?.total
+                    ? `Showing ${(page - 1) * 15 + 1}–${Math.min(page * 15, data.total)} of ${data.total} entries`
+                    : "No entries"}
+                </p>
+                {totalPages > 1 && (
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button onClick={() => setPage(p => p - 1)} disabled={page <= 1}
+                      style={{ height: 34, paddingInline: 14, borderRadius: 10, border: "1.5px solid #e2e8f0", background: page <= 1 ? "#f8fafc" : "#fff", color: page <= 1 ? "#cbd5e1" : "#0b2c60", fontSize: 12, fontWeight: 700, cursor: page <= 1 ? "default" : "pointer", display: "flex", alignItems: "center", gap: 5, transition: "all 0.1s" }}>
+                      <ChevronLeft size={14} />Previous
+                    </button>
+                    <div style={{ display: "flex", gap: 4 }}>
+                      {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                        const p = totalPages <= 5 ? i + 1 : page <= 3 ? i + 1 : page >= totalPages - 2 ? totalPages - 4 + i : page - 2 + i;
+                        return (
+                          <button key={p} onClick={() => setPage(p)}
+                            style={{ width: 34, height: 34, borderRadius: 10, border: "1.5px solid", borderColor: p === page ? "#0b2c60" : "#e2e8f0", background: p === page ? "#0b2c60" : "#fff", color: p === page ? "#fff" : "#64748b", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                            {p}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <button onClick={() => setPage(p => p + 1)} disabled={page >= totalPages}
+                      style={{ height: 34, paddingInline: 14, borderRadius: 10, border: "1.5px solid #e2e8f0", background: page >= totalPages ? "#f8fafc" : "#fff", color: page >= totalPages ? "#cbd5e1" : "#0b2c60", fontSize: 12, fontWeight: 700, cursor: page >= totalPages ? "default" : "pointer", display: "flex", alignItems: "center", gap: 5, transition: "all 0.1s" }}>
+                      Next<ChevronRight size={14} />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+            </div>
+          </div>
+        </div>
+        {/* ═══════════════════════════════════════════════ */}
+
+        {/* Offline Pending Entries — mobile only (desktop shows banner inside table panel) */}
         {pendingEntries.length > 0 && (
-          <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-xl p-4 space-y-3">
+          <div className="md:hidden bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-xl p-4 space-y-3">
             <div className="flex items-center gap-2">
               <Clock size={14} className="text-amber-600 dark:text-amber-400 flex-shrink-0" />
               <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
@@ -404,24 +664,6 @@ export default function Ledger() {
           </div>
         )}
 
-        {/* Desktop Filters */}
-        <div className="hidden md:flex flex-wrap gap-2 bg-card border rounded-lg p-3">
-          <Input className="w-36 h-8 text-sm" type="date" value={startDate} onChange={(e) => { setStartDate(e.target.value); setPage(1); }} />
-          <Input className="w-36 h-8 text-sm" type="date" value={endDate} onChange={(e) => { setEndDate(e.target.value); setPage(1); }} />
-          <Input className="w-44 h-8 text-sm" value={customerName} onChange={(e) => { setCustomerName(e.target.value); setPage(1); }} placeholder="Customer name..." />
-          <Select value={serviceFilter} onValueChange={(v) => { setServiceFilter(v); setPage(1); }}>
-            <SelectTrigger className="w-40 h-8 text-sm"><SelectValue placeholder="All services" /></SelectTrigger>
-            <SelectContent className="max-h-60 overflow-y-auto">
-              <SelectItem value="all">All services</SelectItem>
-              {serviceTypes.map((s: string) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          {hasFilters && (
-            <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={clearFilters}>
-              <X size={12} className="mr-1" />Clear
-            </Button>
-          )}
-        </div>
 
         {/* ── MOBILE: Date-grouped card list ── */}
         <div className="md:hidden space-y-1 pb-24">
@@ -483,95 +725,6 @@ export default function Ledger() {
               </div>
             ))
           )}
-        </div>
-
-        {/* DESKTOP: Table */}
-        <div className="hidden md:block border rounded-lg overflow-hidden bg-card">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="border-b bg-muted/30">
-                <tr className="text-left">
-                  <th className="px-4 py-3 font-medium text-muted-foreground">Receipt No</th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground">Date</th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground">Customer</th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground">Service</th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground text-right">Credit</th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground text-right">Debit</th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground text-right">Balance</th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground">Description</th>
-                  <th className="px-4 py-3" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {isLoading ? (
-                  [...Array(6)].map((_, i) => (
-                    <tr key={i} className="border-b border-border">
-                      <td className="px-4 py-3"><Skeleton className="h-3.5 w-24 rounded-full" /></td>
-                      <td className="px-4 py-3"><Skeleton className="h-3.5 w-20 rounded-full" /></td>
-                      <td className="px-4 py-3"><Skeleton className="h-3.5 rounded-full" style={{ width: `${80 + (i * 27) % 60}px` }} /></td>
-                      <td className="px-4 py-3"><Skeleton className="h-5 w-24 rounded-full" /></td>
-                      <td className="px-4 py-3 text-right"><Skeleton className="h-3.5 w-16 rounded-full ml-auto" /></td>
-                      <td className="px-4 py-3 text-right"><Skeleton className="h-3.5 w-16 rounded-full ml-auto" /></td>
-                      <td className="px-4 py-3 text-right"><Skeleton className="h-3.5 w-20 rounded-full ml-auto" /></td>
-                      <td className="px-4 py-3"><Skeleton className="h-3.5 w-28 rounded-full" /></td>
-                      <td className="px-4 py-3"><div className="flex gap-1"><Skeleton className="h-7 w-7 rounded" /><Skeleton className="h-7 w-7 rounded" /></div></td>
-                    </tr>
-                  ))
-                ) : !data?.entries?.length ? (
-                  <tr>
-                    <td colSpan={9} className="text-center text-muted-foreground py-14 text-sm">
-                      No entries found. Click <strong>New Entry</strong> to start.
-                    </td>
-                  </tr>
-                ) : (
-                  data.entries.map((entry: any) => (
-                    <tr key={entry.id} className="hover:bg-muted/20 transition-colors" data-testid={`row-ledger-${entry.id}`}>
-                      <td className="px-4 py-3 font-mono text-xs font-semibold whitespace-nowrap" style={{ color: "#f97316" }}>
-                        {`CSC-${new Date(entry.createdAt).getFullYear()}-${String(entry.id).padStart(4, "0")}`}
-                      </td>
-                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground whitespace-nowrap">{entry.date}</td>
-                      <td className="px-4 py-3 font-medium">{entry.customerName}</td>
-                      <td className="px-4 py-3"><Badge variant="outline" className="text-xs">{entry.serviceType}</Badge></td>
-                      <td className="px-4 py-3 text-right text-emerald-600 font-medium">{entry.credit > 0 ? `₹${entry.credit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}` : "—"}</td>
-                      <td className="px-4 py-3 text-right text-red-600 font-medium">{entry.debit > 0 ? `₹${entry.debit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}` : "—"}</td>
-                      <td className="px-4 py-3 text-right font-bold">₹{entry.balance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
-                      <td className="px-4 py-3 text-muted-foreground text-xs max-w-32 truncate">{entry.description}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Print Receipt" onClick={() => setReceiptEntry(entry)}><Receipt size={12} /></Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(entry)}><Pencil size={12} /></Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(entry.id)}><Trash2 size={12} /></Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-          {/* Desktop: Delete All + Export in table footer */}
-          <div className="flex items-center justify-between px-4 py-3 border-t bg-muted/10">
-            <div className="flex gap-2">
-              <Button asChild variant="outline" size="sm">
-                <a href="/api/reports/export" target="_blank"><Download size={13} className="mr-1.5" />Export Excel</a>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-destructive border-destructive/30 hover:bg-destructive hover:text-destructive-foreground"
-                onClick={() => setShowDeleteAll(true)}
-              >
-                <Trash2 size={13} className="mr-1.5" />Delete All
-              </Button>
-            </div>
-            {totalPages > 1 && (
-              <div className="flex items-center gap-2">
-                <p className="text-xs text-muted-foreground">Page {page} of {totalPages}</p>
-                <Button variant="outline" size="sm" onClick={() => setPage(p => p - 1)} disabled={page <= 1}>Prev</Button>
-                <Button variant="outline" size="sm" onClick={() => setPage(p => p + 1)} disabled={page >= totalPages}>Next</Button>
-              </div>
-            )}
-          </div>
         </div>
 
         {/* Mobile Pagination */}
