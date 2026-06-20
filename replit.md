@@ -1,5 +1,5 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 2.1.0**
+**Version 2.1.0** — last updated 2026-06-20
 
 A full-stack CSC (Common Service Center) business management platform for tracking services, ledger accounting, AePS cash management, Udhari Khata (customer credit ledger), and reporting. Built for Odisha / India rural service centers. Supports PWA installation, offline operation, and Android TWA packaging.
 
@@ -473,10 +473,34 @@ Full config in `infrastructure/twa/twa-config.json`.
 
 ---
 
+## Mockup Sandbox
+
+Design exploration lives in `artifacts/mockup-sandbox/`. Each group is a folder under `src/components/mockups/`. The preview server runs on port 8081 — URL pattern: `https://<domain>/__mockup/preview/<group>/<ComponentName>`.
+
+| Group | Component | Viewport | Description |
+|-------|-----------|----------|-------------|
+| `aeps-page` | `AePS` | 390×844 (mobile) | Mobile AePS daily session — stat cards, date nav, transaction list |
+| `aeps-desktop` | `AePS` | 1280×800 (desktop) | Desktop AePS with sidebar, stat cards, tabbed transaction table |
+| `aeps-entry-form` | `AepsEntry` | 900×620 (desktop) | Side-by-side Withdrawal + Deposit entry forms with quick-amount buttons, validation, and success state |
+| `ledger-desktop` | `Ledger` | 1280×800 (desktop) | Desktop Ledger with sidebar, stat cards, filter bar, full table with receipt numbers |
+| `udhari-desktop` | `Udhari` | 1280×800 (desktop) | Desktop Udhari Khata — two-panel layout: customer list + per-customer detail/entry ledger |
+| `addentry` | `AddEntryForm` | — | Ledger add entry form |
+| `aeps` | `AepsEntryForm`, `AepsPage` | — | Earlier AePS entry form variants |
+| `ledger` | `LedgerPage` | — | Earlier ledger page variant |
+| `receipt` | `ReceiptDesign` | — | Receipt card design |
+| `sahu-csc` | `Desktop`, `Mobile`, `Tablet`, `Login`, `Register` | — | Full-app layout variants |
+| `sahu-header` | `Minimal`, `MobileNew`, `Modern` | — | Header design variants |
+| `udhari` | `UdhariForm` | — | Udhari entry form |
+
+**Mockup sandbox workflow:** `artifacts/mockup-sandbox: Component Preview Server` (port 8081). The `.generated/mockup-components.ts` file is auto-maintained — add imports there when adding new groups. All mockup components are fully self-contained with mock data (no API calls).
+
+---
+
 ## Changelog
 
 | Date | Change |
 |------|--------|
+| 2026-06-20 | **Design mockups**: Created desktop redesign mockups for Ledger, AePS, and Udhari Khata pages on the canvas. Added AePS Withdrawal/Deposit entry form mockup with interactive quick-amount buttons, field validation, and success state. All mockups are live in the mockup sandbox at `/__mockup/preview/*`. |
 | 2026-06-19 | **v2.1.0** — **Reject-with-reason notification**: When an admin declines a registration, a "Registration Declined" notification is sent to the rejected user's ID. On the user's next login attempt, `auth.ts` returns `{ rejected: true, rejectionReason }` in the 401 — `login.tsx` shows a distinct "Registration Declined" toast with the reason text so the user sees exactly why they were turned away, even without access to their notification feed. Reject dialog updated to "Decline Registration" with helper text explaining the reason goes to the user. |
 | 2026-06-18 | **v2.1.0** — **Notification isolation audit & fixes**: Full audit of notification creation, fetching, push targeting, and cache scoping. 7 bugs fixed: (1) unknown-identifier login created a null-userId broadcast notification → removed; (2) `notifyNewRegistration` broadcast to all users → now per-admin; (3) "Registration Setting Changed" null-userId → scoped to admin; (4) "User Approved" null-userId → scoped to approved user; (5–6) backup created/restored null-userId → scoped to acting admin; (7) push unsubscribe had no ownership check → added `AND userId = currentUser`. `createSystemNotification` now filters to `isActive=true AND status='ACTIVE'` only. All fetch/count/delete queries confirmed correctly scoped via `userScope(userId)`. `queryClient.clear()` on logout confirmed. |
 | 2026-06-18 | **v2.1.0** — **Receipt modal redesign**: `ReceiptModal` and public `/receipts/verify/:token` page both updated to match a professional receipt format — navy branded header ("SAHU CSC CENTER"), orange receipt number, green "VERIFIED" badge (only when `receiptToken` present), colored amount block with checkmark, detail rows, QR code section, business contact footer (📍 address, 📞 mobile, 🌐 website), navy footer bar. Business address/phone/website now returned by `GET /api/receipts/verify/:token` from the settings table. New `businessWebsite` field added to `DEFAULT_SETTINGS` and `settings.tsx` form. |

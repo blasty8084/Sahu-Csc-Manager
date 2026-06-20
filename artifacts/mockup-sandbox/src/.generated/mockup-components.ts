@@ -19,5 +19,5 @@ export const modules: ModuleMap = {
   "./components/mockups/sahu-header/MobileNew.tsx": () => import("../components/mockups/sahu-header/MobileNew.tsx"),
   "./components/mockups/sahu-header/Modern.tsx": () => import("../components/mockups/sahu-header/Modern.tsx"),
   "./components/mockups/udhari/UdhariForm.tsx": () => import("../components/mockups/udhari/UdhariForm.tsx"),
-  "./components/mockups/udhari-desktop/Udhari.tsx": () => import("../components/mockups/udhari-desktop/Udhari.tsx")
+  "./components/mockups/udhari-desktop/Udhari.tsx": () => import("../components/mockups/udhari-desktop/Udhari.tsx"),
 };
