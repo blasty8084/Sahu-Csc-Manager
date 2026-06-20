@@ -1035,132 +1035,170 @@ export default function Ledger() {
       {/* ── Entry Form: Desktop Panel ── */}
       {!isMobile && showForm && (
         <>
-          {/* Backdrop */}
           <div onClick={() => setShowForm(false)}
-            style={{ position: "fixed", inset: 0, background: "rgba(11,44,96,0.20)", backdropFilter: "blur(3px)", zIndex: 49 }} />
-          {/* Slide-in panel */}
-          <div style={{ position: "fixed", right: 0, top: 0, height: "100vh", width: 500, background: "#fff", zIndex: 50, boxShadow: "-12px 0 60px rgba(11,44,96,0.22)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-            {/* Saffron accent stripe */}
-            <div style={{ height: 4, background: "linear-gradient(90deg,#f97316,#fb923c)", flexShrink: 0 }} />
-            {/* Navy header */}
-            <div style={{ background: "linear-gradient(135deg,#0b2c60 0%,#1a4a9e 100%)", padding: "22px 28px 20px", flexShrink: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                <div style={{ width: 46, height: 46, borderRadius: 14, background: accentGrad, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: `0 6px 18px ${accentColor}45` }}>
-                  {editEntry ? <Pencil size={20} color="#fff" /> : entryType === "credit" ? <ArrowUpRight size={20} color="#fff" /> : <ArrowDownLeft size={20} color="#fff" />}
+            style={{ position: "fixed", inset: 0, background: "rgba(11,44,96,0.40)", backdropFilter: "blur(4px)", zIndex: 49 }} />
+          {/* V2 — Full-screen split layout */}
+          <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex" }}>
+
+            {/* ── LEFT INFO PANEL ── */}
+            <div style={{ width: 380, flexShrink: 0, background: "linear-gradient(160deg,#0b2c60 0%,#0f3872 55%,#1a4a9e 100%)", display: "flex", flexDirection: "column", padding: "40px 36px", position: "relative", overflow: "hidden" }}>
+              <div style={{ position: "absolute", top: -80, right: -80, width: 260, height: 260, borderRadius: "50%", background: "rgba(249,115,22,0.12)", pointerEvents: "none" }} />
+              <div style={{ position: "absolute", bottom: -60, left: -60, width: 200, height: 200, borderRadius: "50%", background: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 48, position: "relative" }}>
+                <div style={{ width: 36, height: 36, borderRadius: 11, background: "linear-gradient(135deg,#f97316,#fb923c)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 14px rgba(249,115,22,0.40)" }}>
+                  <span style={{ fontWeight: 900, fontSize: 13, color: "#fff" }}>SC</span>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em" }}>Ledger Transaction</p>
-                  <h2 style={{ color: "#fff", fontSize: 20, fontWeight: 900, lineHeight: 1.1, marginTop: 3 }}>
-                    {editEntry ? "Edit Entry" : entryType === "credit" ? "New Credit Entry" : "New Debit Entry"}
-                  </h2>
+                <div><span style={{ color: "#fff", fontWeight: 900, fontSize: 16 }}>SAHU </span><span style={{ color: "#f97316", fontWeight: 900, fontSize: 16 }}>CSC</span></div>
+              </div>
+              <div style={{ position: "relative", marginBottom: 28 }}>
+                <div style={{ width: 64, height: 64, borderRadius: 20, background: accentGrad, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 8px 28px ${accentColor}45`, marginBottom: 20 }}>
+                  {entryType === "credit" ? <TrendingUp size={30} color="#fff" /> : <TrendingDown size={30} color="#fff" />}
                 </div>
-                <button type="button" onClick={() => setShowForm(false)}
-                  style={{ width: 36, height: 36, borderRadius: 11, background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.20)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                  <X size={16} color="#fff" />
-                </button>
+                <h1 style={{ color: "#fff", fontSize: 26, fontWeight: 900, lineHeight: 1.2, marginBottom: 10 }}>
+                  {editEntry ? "Edit Entry" : entryType === "credit" ? "New Credit Entry" : "New Debit Entry"}
+                </h1>
+                <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 13, lineHeight: 1.7 }}>Record your daily service income and expenses. Every entry updates your running balance instantly.</p>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: "auto", position: "relative" }}>
+                {([
+                  { label: "Running Balance", value: `₹${((balance as any)?.balance ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`, color: "#f97316", Icon: Wallet },
+                  { label: "Total Credits", value: `₹${((balance as any)?.totalCredits ?? 0).toLocaleString("en-IN")}`, color: "#10b981", Icon: TrendingUp },
+                  { label: "Total Debits", value: `₹${((balance as any)?.totalDebits ?? 0).toLocaleString("en-IN")}`, color: "#f43f5e", Icon: TrendingDown },
+                ] as { label: string; value: string; color: string; Icon: React.ElementType }[]).map(({ label, value, color, Icon }) => (
+                  <div key={label} style={{ display: "flex", alignItems: "center", gap: 14, background: "rgba(255,255,255,0.08)", borderRadius: 14, padding: "12px 16px", border: "1px solid rgba(255,255,255,0.08)" }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 11, background: "rgba(255,255,255,0.10)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Icon size={16} color={color} />
+                    </div>
+                    <div>
+                      <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</p>
+                      <p style={{ color: "#fff", fontSize: 15, fontWeight: 800, marginTop: 1 }}>{value}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Scrollable form body */}
-            <form onSubmit={onSubmit} style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
-              <div style={{ padding: "28px 28px 16px", display: "flex", flexDirection: "column", gap: 20 }}>
-
-                {/* Credit / Debit toggle */}
-                {!editEntry && (
-                  <div>
-                    <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>Transaction Type</p>
-                    <div style={{ background: "#f1f5f9", borderRadius: 16, padding: 5, display: "flex", gap: 5 }}>
+            {/* ── RIGHT FORM PANEL ── */}
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "#f8fafc" }}>
+              {/* Top bar */}
+              <div style={{ background: "#fff", borderBottom: "1px solid #f1f5f9", padding: "20px 40px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+                <div>
+                  <h2 style={{ fontSize: 18, fontWeight: 800, color: "#0b2c60", margin: 0 }}>{editEntry ? "Edit Entry" : "New Transaction"}</h2>
+                  <p style={{ fontSize: 12, color: "#94a3b8", margin: 0, marginTop: 2 }}>Ledger · {new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</p>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  {!editEntry && (
+                    <div style={{ display: "flex", background: "#f1f5f9", borderRadius: 14, padding: 4, gap: 4 }}>
                       {(["credit", "debit"] as const).map(t => (
                         <button key={t} type="button" onClick={() => setEntryType(t)}
-                          style={{ flex: 1, height: 46, borderRadius: 12, border: "none", cursor: "pointer", fontWeight: 800, fontSize: 14, background: entryType === t ? (t === "credit" ? "linear-gradient(135deg,#059669,#10b981)" : "linear-gradient(135deg,#e11d48,#f43f5e)") : "transparent", color: entryType === t ? "#fff" : "#94a3b8", transition: "all 0.18s", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, boxShadow: entryType === t ? (t === "credit" ? "0 4px 14px rgba(5,150,105,0.35)" : "0 4px 14px rgba(225,29,72,0.35)") : "none" }}>
-                          {t === "credit" ? <><TrendingUp size={15} />Credit (Income)</> : <><TrendingDown size={15} />Debit (Expense)</>}
+                          style={{ padding: "8px 18px", borderRadius: 11, border: "none", cursor: "pointer", background: entryType === t ? (t === "credit" ? "linear-gradient(135deg,#059669,#10b981)" : "linear-gradient(135deg,#e11d48,#f43f5e)") : "transparent", color: entryType === t ? "#fff" : "#64748b", fontWeight: 700, fontSize: 13, boxShadow: entryType === t ? `0 2px 10px ${t === "credit" ? "rgba(5,150,105,0.35)" : "rgba(225,29,72,0.35)"}` : "none", transition: "all 0.15s" }}>
+                          {t === "credit" ? "Credit (+)" : "Debit (−)"}
                         </button>
                       ))}
                     </div>
-                  </div>
-                )}
+                  )}
+                  <button type="button" onClick={() => setShowForm(false)}
+                    style={{ width: 38, height: 38, borderRadius: 12, border: "1.5px solid #e2e8f0", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                    <X size={16} color="#64748b" />
+                  </button>
+                </div>
+              </div>
 
-                {/* Amount — hero input */}
-                <div>
-                  <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>Amount</p>
-                  <div style={{ background: accentBg, border: `2px solid ${accentColor}30`, borderRadius: 18, padding: "18px 20px", display: "flex", alignItems: "center", gap: 14 }}>
-                    <div style={{ width: 50, height: 50, borderRadius: 15, background: accentGrad, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: `0 6px 18px ${accentColor}35` }}>
-                      <IndianRupee size={22} color="#fff" strokeWidth={2.5} />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ fontSize: 11, fontWeight: 700, color: `${accentColor}99`, marginBottom: 4 }}>Enter amount in ₹</p>
+              {/* Scrollable form */}
+              <form onSubmit={onSubmit} style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+                <div style={{ padding: "32px 40px", display: "flex", flexDirection: "column", gap: 24, maxWidth: 640 }}>
+
+                  {/* Amount — hero */}
+                  <div style={{ background: entryType === "credit" ? "linear-gradient(135deg,rgba(5,150,105,0.06),rgba(16,185,129,0.04))" : "linear-gradient(135deg,rgba(225,29,72,0.06),rgba(244,63,94,0.04))", border: `2px solid ${entryType === "credit" ? "rgba(5,150,105,0.22)" : "rgba(225,29,72,0.22)"}`, borderRadius: 20, padding: "20px 24px" }}>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: accentColor, textTransform: "uppercase" as const, letterSpacing: "0.1em", display: "block", marginBottom: 12 }}>Amount (₹) *</label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                      <div style={{ width: 48, height: 48, borderRadius: 15, background: accentGrad, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: `0 4px 14px ${accentColor}35` }}>
+                        <IndianRupee size={22} color="#fff" />
+                      </div>
                       <input type="number" step="0.01" min="0" value={rawAmount} onChange={e => setRawAmount(e.target.value)}
                         data-testid="input-credit" placeholder="0.00" autoFocus
-                        style={{ width: "100%", fontSize: 36, fontWeight: 900, color: accentColor, background: "transparent", border: "none", outline: "none", padding: 0, lineHeight: 1 }} />
+                        style={{ flex: 1, fontSize: 38, fontWeight: 900, color: accentColor, background: "transparent", border: "none", outline: "none", letterSpacing: "-0.02em" }} />
                     </div>
                   </div>
-                </div>
 
-                {/* Customer + Date side by side */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                  {/* Customer + Date */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>Customer Name *</label>
+                      <div style={{ position: "relative" }}>
+                        <User size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+                        <input {...form.register("customerName", { required: true })} placeholder="Customer name" list="ledger-customer-names" autoComplete="off" data-testid="input-customer"
+                          style={{ width: "100%", height: 50, paddingLeft: 40, paddingRight: 14, borderRadius: 14, border: "1.5px solid #e2e8f0", fontSize: 14, fontWeight: 600, color: "#0b2c60", outline: "none", background: "#fff", boxSizing: "border-box", boxShadow: "0 1px 4px rgba(11,44,96,0.06)" }}
+                          onFocus={e => (e.target.style.borderColor = accentColor)} onBlur={e => (e.target.style.borderColor = "#e2e8f0")} />
+                      </div>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>Date *</label>
+                      <div style={{ position: "relative" }}>
+                        <Calendar size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" }} />
+                        <input type="date" {...form.register("date", { required: true })} data-testid="input-date"
+                          style={{ width: "100%", height: 50, paddingLeft: 40, paddingRight: 14, borderRadius: 14, border: "1.5px solid #e2e8f0", fontSize: 14, fontWeight: 600, color: "#0b2c60", outline: "none", background: "#fff", boxSizing: "border-box", boxShadow: "0 1px 4px rgba(11,44,96,0.06)" }}
+                          onFocus={e => (e.target.style.borderColor = accentColor)} onBlur={e => (e.target.style.borderColor = "#e2e8f0")} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Service */}
                   <div>
-                    <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>Customer Name *</p>
-                    <div style={{ position: "relative" }}>
-                      <User size={14} color="#94a3b8" style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)" }} />
-                      <input {...form.register("customerName", { required: true })} placeholder="Customer name"
-                        list="ledger-customer-names" autoComplete="off" data-testid="input-customer"
-                        style={{ width: "100%", height: 46, paddingLeft: 36, paddingRight: 12, borderRadius: 13, border: "1.5px solid #e2e8f0", background: "#fafbff", fontSize: 14, color: "#0b2c60", outline: "none", boxSizing: "border-box", fontWeight: 600 }}
-                        onFocus={e => (e.target.style.borderColor = accentColor)}
-                        onBlur={e => (e.target.style.borderColor = "#e2e8f0")} />
-                    </div>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>Service Type</label>
+                    <Select value={form.watch("serviceType")} onValueChange={(v) => form.setValue("serviceType", v)}>
+                      <SelectTrigger data-testid="select-service" className="h-[50px] rounded-[14px] border-[#e2e8f0] bg-white text-sm font-semibold text-[#0b2c60] shadow-[0_1px_4px_rgba(11,44,96,0.06)]">
+                        <SelectValue placeholder="Select service type" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-60 overflow-y-auto">
+                        {serviceTypes.map((s: string) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
+
+                  {/* Note */}
                   <div>
-                    <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>Date *</p>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>Note <span style={{ fontWeight: 400, textTransform: "none" as const, color: "#94a3b8", letterSpacing: 0 }}>(optional)</span></label>
                     <div style={{ position: "relative" }}>
-                      <Calendar size={14} color="#94a3b8" style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
-                      <input type="date" {...form.register("date", { required: true })} data-testid="input-date"
-                        style={{ width: "100%", height: 46, paddingLeft: 36, paddingRight: 12, borderRadius: 13, border: "1.5px solid #e2e8f0", background: "#fafbff", fontSize: 14, color: "#0b2c60", outline: "none", boxSizing: "border-box", fontWeight: 600 }}
-                        onFocus={e => (e.target.style.borderColor = accentColor)}
-                        onBlur={e => (e.target.style.borderColor = "#e2e8f0")} />
+                      <FileText size={15} style={{ position: "absolute", left: 14, top: 16, color: "#94a3b8" }} />
+                      <textarea {...form.register("description")} rows={3} placeholder="Add a note about this transaction…" data-testid="input-description"
+                        style={{ width: "100%", paddingLeft: 40, paddingRight: 14, paddingTop: 14, paddingBottom: 14, borderRadius: 14, border: "1.5px solid #e2e8f0", fontSize: 14, color: "#0b2c60", resize: "none", outline: "none", boxSizing: "border-box", fontFamily: "inherit", background: "#fff", lineHeight: 1.6, boxShadow: "0 1px 4px rgba(11,44,96,0.06)" }}
+                        onFocus={e => (e.target.style.borderColor = accentColor)} onBlur={e => (e.target.style.borderColor = "#e2e8f0")} />
                     </div>
                   </div>
+
+                  {/* Balance preview */}
+                  {(balance as any)?.balance !== undefined && (
+                    <div style={{ background: "rgba(11,44,96,0.04)", border: "1px solid rgba(11,44,96,0.10)", borderRadius: 16, padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <div>
+                        <p style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>Balance after this entry</p>
+                        <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>
+                          ₹{((balance as any)?.balance ?? 0).toLocaleString("en-IN")} {entryType === "credit" ? "+" : "−"} ₹{(parseFloat(rawAmount) || 0).toLocaleString("en-IN")}
+                        </p>
+                      </div>
+                      <p style={{ fontSize: 22, fontWeight: 900, color: accentColor }}>
+                        ₹{(entryType === "credit"
+                          ? ((balance as any)?.balance ?? 0) + (parseFloat(rawAmount) || 0)
+                          : ((balance as any)?.balance ?? 0) - (parseFloat(rawAmount) || 0)
+                        ).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
-                {/* Service type */}
-                <div>
-                  <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>Service Type</p>
-                  <Select value={form.watch("serviceType")} onValueChange={(v) => form.setValue("serviceType", v)}>
-                    <SelectTrigger data-testid="select-service" className="h-[46px] rounded-[13px] border-[#e2e8f0] bg-[#fafbff] text-sm font-semibold text-[#0b2c60]">
-                      <SelectValue placeholder="Select service type" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-60 overflow-y-auto">
-                      {serviceTypes.map((s: string) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
+                {/* Footer */}
+                <div style={{ padding: "20px 40px", borderTop: "1px solid #f1f5f9", background: "#fff", flexShrink: 0, display: "flex", gap: 14, marginTop: "auto" }}>
+                  <button type="button" onClick={() => setShowForm(false)}
+                    style={{ height: 50, padding: "0 28px", borderRadius: 14, border: "1.5px solid #e2e8f0", background: "#f8fafc", cursor: "pointer", fontWeight: 700, fontSize: 14, color: "#64748b" }}>Cancel</button>
+                  <button type="submit" data-testid="button-save-entry" disabled={createMut.isPending || updateMut.isPending}
+                    style={{ flex: 1, height: 50, borderRadius: 14, border: "none", cursor: "pointer", background: accentGrad, color: "#fff", fontSize: 15, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: `0 6px 20px ${accentColor}35`, opacity: (createMut.isPending || updateMut.isPending) ? 0.7 : 1 }}>
+                    <CheckCircle2 size={18} strokeWidth={2.5} />
+                    {editEntry ? "Update Entry" : `Save ${entryType === "credit" ? "Credit" : "Debit"} Entry`}
+                  </button>
                 </div>
-
-                {/* Note */}
-                <div>
-                  <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>Note <span style={{ fontSize: 10, fontWeight: 400, textTransform: "none", color: "#cbd5e1" }}>(optional)</span></p>
-                  <div style={{ position: "relative" }}>
-                    <FileText size={14} color="#94a3b8" style={{ position: "absolute", left: 13, top: 15 }} />
-                    <textarea {...form.register("description")} rows={3} placeholder="Add a note about this transaction…" data-testid="input-description"
-                      style={{ width: "100%", paddingLeft: 36, paddingRight: 14, paddingTop: 13, paddingBottom: 13, borderRadius: 13, border: "1.5px solid #e2e8f0", background: "#fafbff", fontSize: 13, color: "#0b2c60", outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit", lineHeight: 1.5 }}
-                      onFocus={e => (e.target.style.borderColor = accentColor)}
-                      onBlur={e => (e.target.style.borderColor = "#e2e8f0")} />
-                  </div>
-                </div>
-              </div>
-
-              {/* Sticky footer */}
-              <div style={{ padding: "16px 28px 28px", borderTop: "1px solid #f1f5f9", background: "#fff", flexShrink: 0, display: "flex", gap: 12 }}>
-                <button type="button" onClick={() => setShowForm(false)}
-                  style={{ flex: 1, height: 50, borderRadius: 14, border: "1.5px solid #e2e8f0", background: "#f8fafc", cursor: "pointer", fontWeight: 700, fontSize: 14, color: "#64748b" }}>
-                  Cancel
-                </button>
-                <button type="submit" data-testid="button-save-entry" disabled={createMut.isPending || updateMut.isPending}
-                  style={{ flex: 2, height: 50, borderRadius: 14, border: "none", cursor: "pointer", background: accentGrad, color: "#fff", fontSize: 15, fontWeight: 900, letterSpacing: "0.02em", boxShadow: `0 6px 20px ${accentColor}35`, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, opacity: (createMut.isPending || updateMut.isPending) ? 0.7 : 1 }}>
-                  <CheckCircle2 size={18} strokeWidth={2.5} />
-                  {editEntry ? "Update Entry" : `Save ${entryType === "credit" ? "Credit" : "Debit"} Entry`}
-                </button>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
         </>
       )}
