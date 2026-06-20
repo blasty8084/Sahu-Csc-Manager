@@ -465,21 +465,138 @@ interface LoginFormContentProps {
   setRememberMe: (v: boolean) => void;
   onForgotPassword: () => void;
   attemptsLeft: number | null;
+  lockoutUntil: Date | null;
+  onLockoutExpired: () => void;
 }
 
-function LoginFormContent({ form, onSubmit, showPassword, setShowPassword, rememberMe, setRememberMe, onForgotPassword, attemptsLeft }: LoginFormContentProps) {
+function useLockoutCountdown(lockoutUntil: Date | null, onExpired: () => void) {
+  const [remaining, setRemaining] = useState<number>(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (!lockoutUntil) { setRemaining(0); return; }
+    const tick = () => {
+      const ms = lockoutUntil.getTime() - Date.now();
+      if (ms <= 0) {
+        setRemaining(0);
+        if (timerRef.current) clearInterval(timerRef.current);
+        onExpired();
+      } else {
+        setRemaining(Math.ceil(ms / 1000));
+      }
+    };
+    tick();
+    timerRef.current = setInterval(tick, 1000);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [lockoutUntil, onExpired]);
+
+  const mins = Math.floor(remaining / 60);
+  const secs = remaining % 60;
+  const display = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  const LOCK_TOTAL_SECS = 15 * 60;
+  const progress = lockoutUntil ? Math.max(0, remaining / LOCK_TOTAL_SECS) : 0;
+
+  return { remaining, display, progress };
+}
+
+function LoginFormContent({ form, onSubmit, showPassword, setShowPassword, rememberMe, setRememberMe, onForgotPassword, attemptsLeft, lockoutUntil, onLockoutExpired }: LoginFormContentProps) {
   const isSubmitting = form.formState.isSubmitting;
   const usedAttempts = attemptsLeft !== null ? MAX_ATTEMPTS - attemptsLeft : 0;
-  const showCounter = attemptsLeft !== null && attemptsLeft < MAX_ATTEMPTS;
+  const showCounter = attemptsLeft !== null && attemptsLeft < MAX_ATTEMPTS && !lockoutUntil;
   const urgency = attemptsLeft !== null
     ? attemptsLeft <= 1 ? "critical"
     : attemptsLeft <= 2 ? "high"
     : "medium"
     : "medium";
+  const { remaining, display, progress } = useLockoutCountdown(lockoutUntil, onLockoutExpired);
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+
+        {/* ── Lockout countdown panel ── */}
+        <AnimatePresence>
+          {lockoutUntil && remaining > 0 && (
+            <motion.div
+              key="lockout-panel"
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.25 }}
+              className="rounded-2xl border-2 overflow-hidden"
+              style={{ borderColor: "#fecdd3", background: "#fff1f2" }}
+            >
+              {/* Progress bar — drains left to right over 15 min */}
+              <div className="h-1.5 w-full" style={{ background: "#fecdd3" }}>
+                <motion.div
+                  className="h-full rounded-full"
+                  style={{ background: "linear-gradient(90deg, #e11d48, #f43f5e)", width: `${progress * 100}%` }}
+                  transition={{ duration: 0.8 }}
+                />
+              </div>
+
+              <div className="px-4 py-4">
+                {/* Icon + heading */}
+                <div className="flex flex-col items-center text-center mb-4">
+                  <motion.div
+                    animate={{ rotate: [0, -8, 8, -8, 8, 0] }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3 shadow-sm"
+                    style={{ background: "linear-gradient(135deg, #e11d48, #be123c)" }}
+                  >
+                    <Lock className="w-7 h-7 text-white" />
+                  </motion.div>
+                  <h3 className="text-base font-bold" style={{ color: "#be123c" }}>Account Locked</h3>
+                  <p className="text-xs mt-1" style={{ color: "#9f1239" }}>
+                    Too many failed attempts. Try again after the timer expires.
+                  </p>
+                </div>
+
+                {/* Big countdown display */}
+                <div
+                  className="flex flex-col items-center justify-center rounded-xl py-4 mb-4"
+                  style={{ background: "rgba(225,29,72,0.08)" }}
+                >
+                  <motion.span
+                    key={display}
+                    initial={{ scale: 1.1, opacity: 0.7 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.2 }}
+                    className="text-4xl font-black tabular-nums tracking-wider"
+                    style={{ color: remaining <= 60 ? "#e11d48" : "#be123c", fontVariantNumeric: "tabular-nums" }}
+                  >
+                    {display}
+                  </motion.span>
+                  <span className="text-[10px] mt-1 font-medium uppercase tracking-widest" style={{ color: "#f43f5e" }}>
+                    remaining
+                  </span>
+                </div>
+
+                {/* Forgot password escape hatch */}
+                <button
+                  type="button"
+                  onClick={onForgotPassword}
+                  className="w-full h-10 rounded-xl font-semibold text-sm border-2 transition-colors"
+                  style={{ borderColor: "#fda4af", color: "#be123c", background: "transparent" }}
+                >
+                  Reset password instead →
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── Normal form fields (hidden while locked) ── */}
+        <AnimatePresence>
+          {(!lockoutUntil || remaining <= 0) && (
+            <motion.div
+              key="form-fields"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-4"
+            >
         <FormField
           control={form.control}
           name="identifier"
@@ -645,6 +762,9 @@ function LoginFormContent({ form, onSubmit, showPassword, setShowPassword, remem
             >
               <Shield className="w-4 h-4 text-green-600 flex-shrink-0" />
               <span className="text-xs text-green-700 font-medium">Your data is 100% secure with us</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
             </motion.div>
           )}
         </AnimatePresence>
@@ -869,6 +989,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [attemptsLeft, setAttemptsLeft] = useState<number | null>(null);
+  const [lockoutUntil, setLockoutUntil] = useState<Date | null>(null);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -897,10 +1018,12 @@ export default function Login() {
     try {
       await login({ ...values, rememberMe });
       setAttemptsLeft(null);
+      setLockoutUntil(null);
       toast({ title: "Login successful", description: "Welcome back to the SAHU CSC Platform." });
     } catch (err: any) {
       if (err?.locked) {
         setAttemptsLeft(0);
+        setLockoutUntil(err.lockedUntil ? new Date(err.lockedUntil) : new Date(Date.now() + 15 * 60_000));
         toast({ variant: "destructive", title: "Account Locked", description: err.message ?? "Your account is temporarily locked. Please try again later." });
       } else if (err?.rejected) {
         toast({ variant: "destructive", title: "Registration Declined", description: err.rejectionReason ? `Your registration was declined. Reason: ${err.rejectionReason}` : "Your registration was declined. Please contact administrator." });
@@ -913,8 +1036,15 @@ export default function Login() {
     }
   };
 
+  const handleLockoutExpired = useCallback(() => {
+    setLockoutUntil(null);
+    setAttemptsLeft(null);
+    toast({ title: "Lockout lifted", description: "You can try logging in again." });
+  }, [toast]);
+
   const formProps: Omit<LoginFormContentProps, "onForgotPassword"> = {
-    form, onSubmit, showPassword, setShowPassword, rememberMe, setRememberMe, attemptsLeft,
+    form, onSubmit, showPassword, setShowPassword, rememberMe, setRememberMe,
+    attemptsLeft, lockoutUntil, onLockoutExpired: handleLockoutExpired,
   };
 
   return isMobile
