@@ -950,14 +950,15 @@ export default function Ledger() {
       </div>
 
       {/* ── MOBILE: Floating Action Button ── */}
-      <button
-        onClick={openCreate}
-        data-testid="button-new-entry"
-        className="md:hidden"
-        style={{ position: "fixed", bottom: 88, right: 20, width: 56, height: 56, borderRadius: 18, background: "linear-gradient(135deg,#f97316,#fb923c)", boxShadow: "0 8px 24px rgba(249,115,22,0.45)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 50 }}
-      >
-        <Plus size={24} color="#fff" strokeWidth={2.5} />
-      </button>
+      {isMobile && (
+        <button
+          onClick={openCreate}
+          data-testid="button-new-entry"
+          style={{ position: "fixed", bottom: 88, right: 20, width: 56, height: 56, borderRadius: 18, background: "linear-gradient(135deg,#f97316,#fb923c)", boxShadow: "0 8px 24px rgba(249,115,22,0.45)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 50 }}
+        >
+          <Plus size={24} color="#fff" strokeWidth={2.5} />
+        </button>
+      )}
 
       {/* ── Entry Form Dialog ── */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
