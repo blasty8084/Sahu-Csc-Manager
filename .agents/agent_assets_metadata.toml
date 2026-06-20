@@ -12,3 +12,9 @@ id = "tJs7cZSIJbiA83ByZixLn"
 uri = "file://CHANGELOG.md"
 type = "text"
 title = "SAHU CSC — Complete Change Document"
+
+[[outputs]]
+id = "rwFSM8A3hY4IaPtD36nGU"
+uri = "file://docs/DESKTOP_FORMS_V2.md"
+type = "text"
+title = "Desktop Forms V2 — Architecture & Changelog"
