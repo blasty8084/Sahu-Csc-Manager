@@ -1293,20 +1293,6 @@ function DailyTab() {
                     <AlertCircle size={13} style={{ color: "#d97706", flexShrink: 0, marginTop: 1 }} />
                     <p style={{ fontSize: 12, color: "#92400e", lineHeight: 1.5 }}>Confirm Aadhaar and amount with the customer before proceeding.</p>
                   </div>
-                  <div style={{ display: "flex", gap: 12, marginTop: "auto", paddingTop: 8 }}>
-                    <button onClick={() => setTxStep("form")} style={{ flex: 1, height: 50, borderRadius: 14, border: "1.5px solid #e2e8f0", background: "#f8fafc", cursor: "pointer", fontWeight: 700, fontSize: 14, color: "#64748b" }}>Edit</button>
-                    <button disabled={txMut.isPending}
-                      onClick={() => {
-                        const parts = [txBankName];
-                        if (isValidAadhaar) parts.push("Aadhaar XXXX" + aadhaarDigits.slice(-4));
-                        if (txAccountNo) parts.push("A/C XX" + txAccountNo.slice(-4));
-                        if (txNote) parts.push(txNote);
-                        txMut.mutate({ type: txType, amount: amtNum, customerName: txCustomerName, description: parts.join(" · ") });
-                      }}
-                      style={{ flex: 2, height: 50, borderRadius: 14, border: "none", cursor: "pointer", background: accent, color: "#fff", fontSize: 15, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: `0 4px 14px ${accentColor}32`, opacity: txMut.isPending ? 0.7 : 1 }}>
-                      {txMut.isPending ? "Saving…" : <>{isWd ? <ArrowDownLeft size={15} /> : <ArrowUpRight size={15} />} Confirm & Save</>}
-                    </button>
-                  </div>
                 </div>
               )}
 
@@ -1412,13 +1398,35 @@ function DailyTab() {
                 </div>
               )}
 
-              {/* Proceed footer — form step only */}
+              {/* Footer — form step */}
               {txStep === "form" && (
-                <div style={{ padding: "16px 28px 28px", borderTop: "1px solid #f1f5f9", background: "#fff", flexShrink: 0 }}>
+                <div style={{ padding: "16px 28px 28px", borderTop: "1px solid #f1f5f9", background: "#fff", flexShrink: 0, display: "flex", gap: 12 }}>
+                  <button type="button" onClick={() => { resetTxForm(); setShowTxDialog(false); }}
+                    style={{ flex: 1, height: 52, borderRadius: 16, border: "1.5px solid #e2e8f0", background: "#f8fafc", cursor: "pointer", fontWeight: 700, fontSize: 14, color: "#64748b" }}>
+                    Cancel
+                  </button>
                   <button type="button" onClick={() => { if (isFormValid) setTxStep("confirm"); }} disabled={!isFormValid}
-                    style={{ width: "100%", height: 52, borderRadius: 16, border: "none", cursor: isFormValid ? "pointer" : "not-allowed", background: isFormValid ? accent : "#f1f5f9", color: isFormValid ? "#fff" : "#94a3b8", fontSize: 15, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: isFormValid ? `0 6px 20px ${accentColor}30` : "none", transition: "all 0.18s" }}>
+                    style={{ flex: 2, height: 52, borderRadius: 16, border: "none", cursor: isFormValid ? "pointer" : "not-allowed", background: isFormValid ? accent : "#f1f5f9", color: isFormValid ? "#fff" : "#94a3b8", fontSize: 15, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: isFormValid ? `0 6px 20px ${accentColor}30` : "none", transition: "all 0.18s" }}>
                     {isWd ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
                     Review Transaction
+                  </button>
+                </div>
+              )}
+
+              {/* Footer — confirm step */}
+              {txStep === "confirm" && (
+                <div style={{ padding: "16px 28px 28px", borderTop: "1px solid #f1f5f9", background: "#fff", flexShrink: 0, display: "flex", gap: 12 }}>
+                  <button onClick={() => setTxStep("form")} style={{ flex: 1, height: 50, borderRadius: 14, border: "1.5px solid #e2e8f0", background: "#f8fafc", cursor: "pointer", fontWeight: 700, fontSize: 14, color: "#64748b" }}>Edit</button>
+                  <button disabled={txMut.isPending}
+                    onClick={() => {
+                      const parts = [txBankName];
+                      if (isValidAadhaar) parts.push("Aadhaar XXXX" + aadhaarDigits.slice(-4));
+                      if (txAccountNo) parts.push("A/C XX" + txAccountNo.slice(-4));
+                      if (txNote) parts.push(txNote);
+                      txMut.mutate({ type: txType, amount: amtNum, customerName: txCustomerName, description: parts.join(" · ") });
+                    }}
+                    style={{ flex: 2, height: 50, borderRadius: 14, border: "none", cursor: "pointer", background: accent, color: "#fff", fontSize: 15, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: `0 4px 14px ${accentColor}32`, opacity: txMut.isPending ? 0.7 : 1 }}>
+                    {txMut.isPending ? "Saving…" : <>{isWd ? <ArrowDownLeft size={15} /> : <ArrowUpRight size={15} />} Confirm & Save</>}
                   </button>
                 </div>
               )}

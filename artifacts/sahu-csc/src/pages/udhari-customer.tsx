@@ -206,11 +206,17 @@ function EntryFormDialog({ customerId, mode, existing, open, onClose, customer }
               <p style={{ fontSize: 14, fontWeight: 900, color: previewColor }}>{previewLabel}</p>
             </div>
           )}
-          <button type="button" onClick={handleSave} disabled={create.isPending || update.isPending}
-            style={{ width: "100%", height: 52, borderRadius: 16, border: "none", cursor: "pointer", background: isGave ? "linear-gradient(135deg,#7c2d12,#ea580c)" : "linear-gradient(135deg,#064e3b,#059669)", color: "#fff", fontSize: 16, fontWeight: 900, letterSpacing: "0.02em", boxShadow: `0 6px 20px ${accentColor}40`, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, opacity: (create.isPending || update.isPending) ? 0.7 : 1 }}>
-            <CheckCircle2 size={18} strokeWidth={2.5} />
-            {create.isPending || update.isPending ? "Saving…" : `Save — ${isGave ? "You Gave" : "You Got"}`}
-          </button>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button type="button" onClick={onClose}
+              style={{ flex: 1, height: 52, borderRadius: 16, border: "1.5px solid #e2e8f0", background: "#f8fafc", cursor: "pointer", fontWeight: 700, fontSize: 14, color: "#64748b" }}>
+              Cancel
+            </button>
+            <button type="button" onClick={handleSave} disabled={create.isPending || update.isPending}
+              style={{ flex: 2, height: 52, borderRadius: 16, border: "none", cursor: "pointer", background: isGave ? "linear-gradient(135deg,#7c2d12,#ea580c)" : "linear-gradient(135deg,#064e3b,#059669)", color: "#fff", fontSize: 16, fontWeight: 900, letterSpacing: "0.02em", boxShadow: `0 6px 20px ${accentColor}40`, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, opacity: (create.isPending || update.isPending) ? 0.7 : 1 }}>
+              <CheckCircle2 size={18} strokeWidth={2.5} />
+              {create.isPending || update.isPending ? "Saving…" : `Save — ${isGave ? "You Gave" : "You Got"}`}
+            </button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
