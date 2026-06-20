@@ -14,6 +14,7 @@ import {
   Fingerprint, Plus, Trash2, ArrowDownLeft, ArrowUpRight, Wallet,
   Pencil, ChevronLeft, ChevronRight, Filter, X, Receipt,
   CalendarDays, TrendingDown, TrendingUp, IndianRupee, ListFilter,
+  StickyNote, CheckCircle2,
 } from "lucide-react";
 import { AepsReceiptModal } from "@/components/aeps-receipt-modal";
 import { useForm } from "react-hook-form";
@@ -125,6 +126,95 @@ function StatCard({
           <p style={{ fontSize: 18, fontWeight: 900, color, lineHeight: 1.1 }}>
             ₹{fmt(value)}
           </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const OPEN_QUICK_AMOUNTS = [500, 1000, 2000, 5000, 10000, 20000, 50000];
+
+// ─────────────────────────────────────────────────────────
+// Opening Balance Hero Card
+// ─────────────────────────────────────────────────────────
+function OpeningBalanceHeroCard({
+  session, onEdit,
+}: {
+  session: NonNullable<AepsSession>;
+  onEdit: () => void;
+}) {
+  return (
+    <div
+      className="rounded-3xl overflow-hidden"
+      style={{
+        background: "linear-gradient(135deg,#0b2c60 0%,#0f3872 55%,#1a4a9e 100%)",
+        boxShadow: "0 8px 28px rgba(11,44,96,0.28), 0 2px 8px rgba(11,44,96,0.14)",
+      }}
+    >
+      <div style={{ height: 3, background: "linear-gradient(90deg,#f97316,#fb923c,#fde68a)" }} />
+      <div className="px-5 py-4">
+        {/* Label + edit button */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <div style={{
+              width: 30, height: 30, borderRadius: 9,
+              background: "rgba(249,115,22,0.20)", border: "1px solid rgba(249,115,22,0.30)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <Wallet size={14} color="#f97316" />
+            </div>
+            <span style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.70)", textTransform: "uppercase", letterSpacing: "0.09em" }}>
+              Opening Balance
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={onEdit}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all active:scale-95"
+            style={{
+              background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.18)",
+              color: "rgba(255,255,255,0.85)", fontSize: 11, fontWeight: 700,
+            }}
+          >
+            <Pencil size={11} /> Edit
+          </button>
+        </div>
+
+        {/* Amount */}
+        <div className="flex items-end gap-1.5 mb-3">
+          <span style={{ fontSize: 16, fontWeight: 700, color: "rgba(255,255,255,0.50)", marginBottom: 5 }}>₹</span>
+          <span style={{ fontSize: 44, fontWeight: 900, color: "#ffffff", lineHeight: 1, letterSpacing: "-0.03em" }}>
+            {fmt(session.openingBalance)}
+          </span>
+        </div>
+
+        {/* Notes pill */}
+        {session.notes && (
+          <div
+            className="flex items-center gap-2 px-3 py-2 rounded-xl mb-3"
+            style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.10)" }}
+          >
+            <StickyNote size={11} color="rgba(255,255,255,0.50)" />
+            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.60)", fontStyle: "italic" }}>{session.notes}</span>
+          </div>
+        )}
+
+        {/* Mini stats row */}
+        <div className="flex gap-2">
+          {[
+            { label: "Date", value: fmtDate(session.date).split(",")[0] },
+            { label: "Session", value: "Active" },
+            { label: "Txns", value: String(session.transactions.length) },
+          ].map(({ label, value }) => (
+            <div
+              key={label}
+              className="flex-1 rounded-xl px-2 py-2 text-center"
+              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}
+            >
+              <p style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.40)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</p>
+              <p style={{ fontSize: 12, fontWeight: 800, color: "rgba(255,255,255,0.85)", marginTop: 2 }}>{value}</p>
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -346,13 +436,18 @@ function DailyTab() {
       ) : (
         <div className="space-y-4">
 
-          {/* ── Summary Cards ── */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard
-              label="Opening Balance" value={session.openingBalance}
-              accent="linear-gradient(135deg, #0b2c60, #1a4a9e)"
-              color="#0b2c60" icon={Wallet} wide
-            />
+          {/* ── Opening Balance Hero Card ── */}
+          <OpeningBalanceHeroCard
+            session={session}
+            onEdit={() => {
+              openForm.setValue("openingBalance", String(session.openingBalance));
+              openForm.setValue("notes", session.notes ?? "");
+              setShowOpenDialog(true);
+            }}
+          />
+
+          {/* ── Summary Cards — Withdrawals / Deposits / Balance ── */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <StatCard
               label="Withdrawals" value={session.totalWithdrawals}
               accent="linear-gradient(135deg, #f43f5e, #e11d48)"
@@ -370,34 +465,42 @@ function DailyTab() {
                 : "linear-gradient(135deg, #10b981, #059669)"}
               color={session.currentBalance < 0 ? "#e11d48" : "#059669"}
               icon={IndianRupee}
+              wide
             />
           </div>
 
-          {/* ── Balance formula bar ── */}
+          {/* ── Visual Balance Formula ── */}
           <div
-            className="rounded-xl px-4 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-1"
-            style={{ background: "rgba(11,44,96,0.04)", border: "1px solid rgba(11,44,96,0.08)" }}
+            className="bg-white rounded-2xl px-4 py-3 overflow-hidden"
+            style={{ boxShadow: "0 2px 12px rgba(11,44,96,0.07)", border: "1px solid rgba(11,44,96,0.06)" }}
           >
-            <span style={{ fontSize: 11, color: "#64748b" }}>Balance formula:</span>
-            <span style={{ fontSize: 11, fontWeight: 700, color: "#0b2c60" }}>₹{fmt(session.openingBalance)}</span>
-            <span style={{ fontSize: 11, color: "#e11d48" }}>− ₹{fmt(session.totalWithdrawals)}</span>
-            <span style={{ fontSize: 11, color: "#059669" }}>+ ₹{fmt(session.totalDeposits)}</span>
-            <span style={{ fontSize: 11, color: "#94a3b8" }}>=</span>
-            <span style={{ fontSize: 12, fontWeight: 900, color: session.currentBalance < 0 ? "#e11d48" : "#059669" }}>
-              ₹{fmt(session.currentBalance)}
-            </span>
-            <button
-              type="button"
-              className="ml-auto text-[10px] font-medium px-2 py-1 rounded-md hover:bg-slate-200 transition-colors"
-              style={{ color: "#64748b" }}
-              onClick={() => {
-                openForm.setValue("openingBalance", String(session.openingBalance));
-                openForm.setValue("notes", session.notes ?? "");
-                setShowOpenDialog(true);
-              }}
-            >
-              Edit Opening
-            </button>
+            <p style={{ fontSize: 9, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.10em", marginBottom: 10 }}>
+              Balance Calculation
+            </p>
+            <div className="flex items-center gap-1 flex-wrap">
+              {([
+                { label: "Opening", value: session.openingBalance, color: "#0b2c60", bg: "rgba(11,44,96,0.07)" },
+                { op: "−", color: "#e11d48" },
+                { label: "Withdrawn", value: session.totalWithdrawals, color: "#e11d48", bg: "rgba(244,63,94,0.08)" },
+                { op: "+", color: "#059669" },
+                { label: "Deposited", value: session.totalDeposits, color: "#059669", bg: "rgba(16,185,129,0.08)" },
+                { op: "=", color: "#64748b" },
+                {
+                  label: "Balance", value: session.currentBalance, bold: true,
+                  color: session.currentBalance < 0 ? "#e11d48" : "#059669",
+                  bg: session.currentBalance < 0 ? "rgba(244,63,94,0.09)" : "rgba(16,185,129,0.09)",
+                },
+              ] as any[]).map((s, i) =>
+                s.op ? (
+                  <span key={i} style={{ fontSize: 18, fontWeight: 900, color: s.color, paddingInline: 2 }}>{s.op}</span>
+                ) : (
+                  <div key={i} className="px-2.5 py-1.5 rounded-xl flex flex-col items-center" style={{ background: s.bg, minWidth: 54 }}>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: s.color + "99", textTransform: "uppercase", letterSpacing: "0.04em" }}>{s.label}</span>
+                    <span style={{ fontSize: s.bold ? 13 : 12, fontWeight: 900, color: s.color, lineHeight: 1.1, marginTop: 2 }}>₹{fmt(s.value)}</span>
+                  </div>
+                )
+              )}
+            </div>
           </div>
 
           {/* ── Action Buttons ── */}
@@ -613,35 +716,114 @@ function DailyTab() {
         </div>
       )}
 
-      {/* ── Open Day Dialog ── */}
+      {/* ── Open / Edit Day Dialog ── */}
       <Dialog open={showOpenDialog} onOpenChange={setShowOpenDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Set Day Opening Balance</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={onOpenSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label>Date</Label>
-              <Input value={fmtDate(selectedDate)} disabled className="text-muted-foreground" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Opening Balance (₹) — Cash loaded for AePS today</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">₹</span>
-                <Input type="number" min={0} step={0.01} placeholder="e.g. 50000" className="pl-7"
-                  {...openForm.register("openingBalance", { required: true })} autoFocus />
+        <DialogContent className="p-0 overflow-hidden gap-0 max-w-sm">
+          {/* Gradient header */}
+          <div style={{ background: "linear-gradient(135deg,#0b2c60 0%,#1a4a9e 100%)" }}>
+            <div style={{ height: 3, background: "linear-gradient(90deg,#f97316,#fb923c)" }} />
+            <div className="px-5 py-4 flex items-center gap-3">
+              <div style={{
+                width: 40, height: 40, borderRadius: 12,
+                background: "rgba(249,115,22,0.20)", border: "1px solid rgba(249,115,22,0.30)",
+                display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+              }}>
+                <Wallet size={20} color="#f97316" />
+              </div>
+              <div>
+                <DialogTitle className="text-white text-base font-black m-0 p-0">
+                  {session ? "Edit Opening Balance" : "Set Day Opening Balance"}
+                </DialogTitle>
+                <p style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", marginTop: 2 }}>
+                  {fmtDate(selectedDate)}
+                </p>
               </div>
             </div>
-            <div className="space-y-1.5">
-              <Label>Notes (optional)</Label>
-              <Input placeholder="e.g. Loaded from SBI BC account" {...openForm.register("notes")} />
+          </div>
+
+          <form onSubmit={onOpenSubmit} className="px-5 py-4 space-y-4">
+            {/* Amount input */}
+            <div className="space-y-2">
+              <label style={{ fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.07em" }}>
+                Cash Amount (₹) *
+              </label>
+              <div className="relative">
+                <span style={{
+                  position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)",
+                  fontSize: 20, fontWeight: 900, color: "#94a3b8",
+                }}>₹</span>
+                <input
+                  type="number" min={0} step={0.01} placeholder="0"
+                  autoFocus
+                  {...openForm.register("openingBalance", { required: true })}
+                  style={{
+                    width: "100%", height: 60, paddingLeft: 36, paddingRight: 14,
+                    borderRadius: 14, border: "2px solid #e2e8f0",
+                    fontSize: 28, fontWeight: 900, color: "#0b2c60",
+                    outline: "none", boxSizing: "border-box",
+                    background: "#fafbff", transition: "border-color 0.15s",
+                  }}
+                  onFocus={e => (e.target.style.borderColor = "#0b2c60")}
+                  onBlur={e => (e.target.style.borderColor = "#e2e8f0")}
+                />
+              </div>
+
+              {/* Quick-amount chips */}
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {OPEN_QUICK_AMOUNTS.map(v => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => openForm.setValue("openingBalance", String(v))}
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95"
+                    style={{
+                      background: "rgba(11,44,96,0.07)", color: "#0b2c60",
+                      border: "1px solid rgba(11,44,96,0.10)",
+                    }}
+                  >
+                    ₹{v >= 1000 ? (v / 1000) + "K" : v}
+                  </button>
+                ))}
+              </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" type="button" onClick={() => setShowOpenDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={openMut.isPending}>
-                {openMut.isPending ? "Saving..." : "Confirm & Open Day"}
+
+            {/* Notes */}
+            <div className="space-y-2">
+              <label style={{ fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.07em" }}>
+                Note <span style={{ fontWeight: 400, textTransform: "none", fontSize: 11, color: "#94a3b8" }}>(optional)</span>
+              </label>
+              <div className="relative">
+                <StickyNote size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+                <Input
+                  placeholder="e.g. Loaded from SBI BC account"
+                  className="pl-9"
+                  {...openForm.register("notes")}
+                />
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex gap-2 pt-1">
+              <Button
+                variant="outline" type="button"
+                className="flex-none"
+                onClick={() => setShowOpenDialog(false)}
+              >
+                Cancel
               </Button>
-            </DialogFooter>
+              <Button
+                type="submit"
+                disabled={openMut.isPending}
+                className="flex-1 gap-2"
+                style={{ background: "linear-gradient(135deg,#0b2c60,#1a4a9e)", color: "#fff" }}
+              >
+                {openMut.isPending ? (
+                  "Saving…"
+                ) : (
+                  <><CheckCircle2 size={15} /> {session ? "Save Changes" : "Open Day"}</>
+                )}
+              </Button>
+            </div>
           </form>
         </DialogContent>
       </Dialog>
