@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   useListUdhariCustomers,
   useCreateUdhariCustomer,
@@ -21,7 +22,7 @@ import {
 } from "@workspace/api-client-react";
 import {
   Plus, Search, SortAsc, Users, ChevronRight, Phone, BookOpen,
-  ArrowUpRight, ArrowDownLeft, IndianRupee,
+  ArrowUpRight, ArrowDownLeft, IndianRupee, X, CheckCircle2, User, FileText,
 } from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -53,10 +54,11 @@ function BalanceBadge({ balance }: { balance: number }) {
   );
 }
 
-// ─── Add Customer Dialog ───────────────────────────────────────────────────────
+// ─── Add Customer Dialog / Desktop Panel ──────────────────────────────────────
 function AddCustomerDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { toast } = useToast();
   const qc = useQueryClient();
+  const isMobile = useIsMobile();
   const [form, setForm] = useState({ name: "", mobile: "", address: "", notes: "" });
   const create = useCreateUdhariCustomer();
 
@@ -64,7 +66,6 @@ function AddCustomerDialog({ open, onClose }: { open: boolean; onClose: () => vo
     if (!form.name.trim()) { toast({ title: "Name is required", variant: "destructive" }); return; }
     try {
       await create.mutateAsync({ data: { name: form.name.trim(), mobile: form.mobile || undefined, address: form.address || undefined, notes: form.notes || undefined } });
-      // Immediately refresh the customer list and summary
       qc.invalidateQueries({ queryKey: ["/api/udhari/customers"] });
       qc.invalidateQueries({ queryKey: ["/api/udhari/summary"] });
       toast({ title: "Customer added!" });
@@ -75,13 +76,12 @@ function AddCustomerDialog({ open, onClose }: { open: boolean; onClose: () => vo
     }
   };
 
-  return (
+  /* ── Mobile: Dialog ── */
+  if (isMobile) return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
-      <DialogContent className="w-[calc(100vw-2rem)] max-w-md rounded-2xl md:rounded-lg">
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-md rounded-2xl">
         <DialogHeader>
-          <DialogTitle className="text-base font-bold" style={{ color: "#0b2c60" }}>
-            Add Customer
-          </DialogTitle>
+          <DialogTitle className="text-base font-bold" style={{ color: "#0b2c60" }}>Add Customer</DialogTitle>
         </DialogHeader>
         <div className="space-y-3 py-1">
           <div>
@@ -98,8 +98,7 @@ function AddCustomerDialog({ open, onClose }: { open: boolean; onClose: () => vo
           <div>
             <Label className="text-xs font-semibold">Address / Notes (optional)</Label>
             <Textarea className="mt-1 text-sm resize-none" rows={2} placeholder="Address or any notes"
-              value={form.address}
-              onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))} />
+              value={form.address} onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))} />
           </div>
         </div>
         <DialogFooter className="gap-2 pt-1 flex-row justify-end">
@@ -111,6 +110,88 @@ function AddCustomerDialog({ open, onClose }: { open: boolean; onClose: () => vo
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+
+  /* ── Desktop: Slide-in panel ── */
+  if (!open) return null;
+  return (
+    <>
+      {/* Backdrop */}
+      <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(11,44,96,0.20)", backdropFilter: "blur(3px)", zIndex: 49 }} />
+      {/* Panel */}
+      <div style={{ position: "fixed", right: 0, top: 0, height: "100vh", width: 460, background: "#fff", zIndex: 50, boxShadow: "-12px 0 60px rgba(11,44,96,0.22)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        {/* Saffron stripe */}
+        <div style={{ height: 4, background: "linear-gradient(90deg,#f97316,#fb923c)", flexShrink: 0 }} />
+        {/* Navy header */}
+        <div style={{ background: "linear-gradient(135deg,#0b2c60,#1a4a9e)", padding: "22px 28px 20px", flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <div style={{ width: 46, height: 46, borderRadius: 14, background: "linear-gradient(135deg,#f97316,#fb923c)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 6px 18px rgba(249,115,22,0.45)" }}>
+              <Users size={20} color="#fff" />
+            </div>
+            <div style={{ flex: 1 }}>
+              <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em" }}>Udhari Khata</p>
+              <h2 style={{ color: "#fff", fontSize: 20, fontWeight: 900, lineHeight: 1.1, marginTop: 3 }}>Add New Customer</h2>
+            </div>
+            <button onClick={onClose} style={{ width: 36, height: 36, borderRadius: 11, background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.20)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+              <X size={16} color="#fff" />
+            </button>
+          </div>
+        </div>
+
+        {/* Scrollable body */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "28px 28px 16px", display: "flex", flexDirection: "column", gap: 20 }}>
+          {/* Name */}
+          <div>
+            <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>Full Name *</p>
+            <div style={{ position: "relative" }}>
+              <User size={14} color="#94a3b8" style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)" }} />
+              <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+                onKeyDown={e => e.key === "Enter" && handleSubmit()}
+                placeholder="Customer's full name" autoFocus
+                style={{ width: "100%", height: 48, paddingLeft: 38, paddingRight: 14, borderRadius: 13, border: "1.5px solid #e2e8f0", background: "#fafbff", fontSize: 15, color: "#0b2c60", outline: "none", boxSizing: "border-box", fontWeight: 600 }}
+                onFocus={e => (e.target.style.borderColor = "#0b2c60")}
+                onBlur={e => (e.target.style.borderColor = "#e2e8f0")} />
+            </div>
+          </div>
+
+          {/* Mobile */}
+          <div>
+            <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>Mobile <span style={{ fontWeight: 400, textTransform: "none" }}>(optional)</span></p>
+            <div style={{ position: "relative" }}>
+              <Phone size={14} color="#94a3b8" style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)" }} />
+              <input inputMode="numeric" value={form.mobile} onChange={e => setForm(p => ({ ...p, mobile: e.target.value.replace(/\D/g, "").slice(0, 10) }))}
+                placeholder="10-digit mobile number"
+                style={{ width: "100%", height: 48, paddingLeft: 38, paddingRight: 14, borderRadius: 13, border: "1.5px solid #e2e8f0", background: "#fafbff", fontSize: 15, color: "#0b2c60", outline: "none", boxSizing: "border-box", fontWeight: 600, fontFamily: "monospace", letterSpacing: "0.06em" }}
+                onFocus={e => (e.target.style.borderColor = "#0b2c60")}
+                onBlur={e => (e.target.style.borderColor = "#e2e8f0")} />
+            </div>
+          </div>
+
+          {/* Address / Notes */}
+          <div>
+            <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>Address / Notes <span style={{ fontWeight: 400, textTransform: "none" }}>(optional)</span></p>
+            <div style={{ position: "relative" }}>
+              <FileText size={14} color="#94a3b8" style={{ position: "absolute", left: 13, top: 15 }} />
+              <textarea value={form.address} onChange={e => setForm(p => ({ ...p, address: e.target.value }))}
+                rows={3} placeholder="Village, district, or any notes…"
+                style={{ width: "100%", paddingLeft: 38, paddingRight: 14, paddingTop: 13, paddingBottom: 13, borderRadius: 13, border: "1.5px solid #e2e8f0", background: "#fafbff", fontSize: 13, color: "#0b2c60", outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit", lineHeight: 1.5 }}
+                onFocus={e => (e.target.style.borderColor = "#0b2c60")}
+                onBlur={e => (e.target.style.borderColor = "#e2e8f0")} />
+            </div>
+          </div>
+        </div>
+
+        {/* Sticky footer */}
+        <div style={{ padding: "16px 28px 28px", borderTop: "1px solid #f1f5f9", background: "#fff", flexShrink: 0, display: "flex", gap: 12 }}>
+          <button onClick={onClose} style={{ flex: 1, height: 50, borderRadius: 14, border: "1.5px solid #e2e8f0", background: "#f8fafc", cursor: "pointer", fontWeight: 700, fontSize: 14, color: "#64748b" }}>Cancel</button>
+          <button onClick={handleSubmit} disabled={create.isPending}
+            style={{ flex: 2, height: 50, borderRadius: 14, border: "none", cursor: "pointer", background: "linear-gradient(135deg,#0b2c60,#1a4a9e)", color: "#fff", fontSize: 15, fontWeight: 900, letterSpacing: "0.02em", boxShadow: "0 6px 20px rgba(11,44,96,0.30)", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, opacity: create.isPending ? 0.7 : 1 }}>
+            <CheckCircle2 size={18} strokeWidth={2.5} />
+            {create.isPending ? "Adding…" : "Add Customer"}
+          </button>
+        </div>
+      </div>
+    </>
   );
 }
 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
@@ -247,6 +248,7 @@ function DailyTab() {
   const businessMobile = (bizSettings as any)?.businessMobile ?? "";
   const businessWebsite = (bizSettings as any)?.businessWebsite ?? "";
 
+  const isMobile = useIsMobile();
   const [selectedDate, setSelectedDate] = useState(todayStr());
   const [showOpenDialog, setShowOpenDialog] = useState(false);
   const [showTxDialog, setShowTxDialog] = useState(false);
@@ -709,120 +711,131 @@ function DailyTab() {
         </div>
       )}
 
-      {/* ── Open / Edit Day Dialog ── */}
-      <Dialog open={showOpenDialog} onOpenChange={setShowOpenDialog}>
-        <DialogContent className="p-0 overflow-hidden gap-0 max-w-sm">
-          {/* Gradient header */}
-          <div style={{ background: "linear-gradient(135deg,#0b2c60 0%,#1a4a9e 100%)" }}>
-            <div style={{ height: 3, background: "linear-gradient(90deg,#f97316,#fb923c)" }} />
-            <div className="px-5 py-4 flex items-center gap-3">
-              <div style={{
-                width: 40, height: 40, borderRadius: 12,
-                background: "rgba(249,115,22,0.20)", border: "1px solid rgba(249,115,22,0.30)",
-                display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-              }}>
-                <Wallet size={20} color="#f97316" />
-              </div>
-              <div>
-                <DialogTitle className="text-white text-base font-black m-0 p-0">
-                  {session ? "Edit Opening Balance" : "Set Day Opening Balance"}
-                </DialogTitle>
-                <p style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", marginTop: 2 }}>
-                  {fmtDate(selectedDate)}
-                </p>
+      {/* ── Open / Edit Day: Mobile Dialog ── */}
+      {isMobile && (
+        <Dialog open={showOpenDialog} onOpenChange={setShowOpenDialog}>
+          <DialogContent className="p-0 overflow-hidden gap-0 max-w-sm">
+            <div style={{ background: "linear-gradient(135deg,#0b2c60 0%,#1a4a9e 100%)" }}>
+              <div style={{ height: 3, background: "linear-gradient(90deg,#f97316,#fb923c)" }} />
+              <div className="px-5 py-4 flex items-center gap-3">
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(249,115,22,0.20)", border: "1px solid rgba(249,115,22,0.30)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Wallet size={20} color="#f97316" />
+                </div>
+                <div>
+                  <DialogTitle className="text-white text-base font-black m-0 p-0">
+                    {session ? "Edit Opening Balance" : "Set Day Opening Balance"}
+                  </DialogTitle>
+                  <p style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", marginTop: 2 }}>{fmtDate(selectedDate)}</p>
+                </div>
               </div>
             </div>
+            <form onSubmit={onOpenSubmit} className="px-5 py-4 space-y-4">
+              <div className="space-y-2">
+                <label style={{ fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.07em" }}>Cash Amount (₹) *</label>
+                <div className="relative">
+                  <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 20, fontWeight: 900, color: "#94a3b8" }}>₹</span>
+                  <input type="number" min={0} step={0.01} placeholder="0" autoFocus {...openForm.register("openingBalance", { required: true })}
+                    style={{ width: "100%", height: 60, paddingLeft: 36, paddingRight: 14, borderRadius: 14, border: "2px solid #e2e8f0", fontSize: 28, fontWeight: 900, color: "#0b2c60", outline: "none", boxSizing: "border-box", background: "#fafbff", transition: "border-color 0.15s" }}
+                    onFocus={e => (e.target.style.borderColor = "#0b2c60")} onBlur={e => (e.target.style.borderColor = "#e2e8f0")} />
+                </div>
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {OPEN_QUICK_AMOUNTS.map(v => (
+                    <button key={v} type="button" onClick={() => openForm.setValue("openingBalance", String(v))}
+                      className="px-3 py-1.5 rounded-xl text-xs font-bold" style={{ background: "rgba(11,44,96,0.07)", color: "#0b2c60", border: "1px solid rgba(11,44,96,0.10)" }}>
+                      ₹{v >= 1000 ? (v / 1000) + "K" : v}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label style={{ fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.07em" }}>Note <span style={{ fontWeight: 400, textTransform: "none", fontSize: 11, color: "#94a3b8" }}>(optional)</span></label>
+                <div className="relative">
+                  <StickyNote size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+                  <Input placeholder="e.g. Loaded from SBI BC account" className="pl-9" {...openForm.register("notes")} />
+                </div>
+              </div>
+              <div className="flex gap-2 pt-1">
+                <Button variant="outline" type="button" className="flex-none" onClick={() => setShowOpenDialog(false)}>Cancel</Button>
+                <Button type="submit" disabled={openMut.isPending} className="flex-1 gap-2" style={{ background: "linear-gradient(135deg,#0b2c60,#1a4a9e)", color: "#fff" }}>
+                  {openMut.isPending ? "Saving…" : <><CheckCircle2 size={15} /> {session ? "Save Changes" : "Open Day"}</>}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* ── Open / Edit Day: Desktop Panel ── */}
+      {!isMobile && showOpenDialog && (
+        <>
+          <div onClick={() => setShowOpenDialog(false)} style={{ position: "fixed", inset: 0, background: "rgba(11,44,96,0.20)", backdropFilter: "blur(3px)", zIndex: 49 }} />
+          <div style={{ position: "fixed", right: 0, top: 0, height: "100vh", width: 480, background: "#fff", zIndex: 50, boxShadow: "-12px 0 60px rgba(11,44,96,0.22)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <div style={{ height: 4, background: "linear-gradient(90deg,#f97316,#fb923c)", flexShrink: 0 }} />
+            <div style={{ background: "linear-gradient(135deg,#0b2c60,#1a4a9e)", padding: "22px 28px 20px", flexShrink: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <div style={{ width: 48, height: 48, borderRadius: 14, background: "rgba(249,115,22,0.20)", border: "1.5px solid rgba(249,115,22,0.35)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Wallet size={22} color="#f97316" />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em" }}>AePS Cash Management</p>
+                  <h2 style={{ color: "#fff", fontSize: 20, fontWeight: 900, lineHeight: 1.1, marginTop: 3 }}>
+                    {session ? "Edit Opening Balance" : "Set Opening Balance"}
+                  </h2>
+                  <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, marginTop: 3 }}>{fmtDate(selectedDate)}</p>
+                </div>
+                <button onClick={() => setShowOpenDialog(false)} style={{ width: 36, height: 36, borderRadius: 11, background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.20)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                  <X size={16} color="#fff" />
+                </button>
+              </div>
+            </div>
+            <form onSubmit={onOpenSubmit} style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+              <div style={{ padding: "28px 28px 16px", display: "flex", flexDirection: "column", gap: 22 }}>
+                {/* Amount hero */}
+                <div>
+                  <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>Opening Cash Amount *</p>
+                  <div style={{ position: "relative" }}>
+                    <span style={{ position: "absolute", left: 18, top: "50%", transform: "translateY(-50%)", fontSize: 24, fontWeight: 900, color: "#94a3b8", pointerEvents: "none" }}>₹</span>
+                    <input type="number" min={0} step={0.01} placeholder="0" autoFocus
+                      {...openForm.register("openingBalance", { required: true })}
+                      style={{ width: "100%", height: 72, paddingLeft: 48, paddingRight: 18, borderRadius: 16, border: "2px solid #e2e8f0", fontSize: 36, fontWeight: 900, color: "#0b2c60", outline: "none", boxSizing: "border-box", background: "#fafbff", transition: "border-color 0.15s" }}
+                      onFocus={e => (e.target.style.borderColor = "#0b2c60")}
+                      onBlur={e => (e.target.style.borderColor = "#e2e8f0")} />
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+                    {OPEN_QUICK_AMOUNTS.map(v => (
+                      <button key={v} type="button" onClick={() => openForm.setValue("openingBalance", String(v))}
+                        style={{ padding: "8px 16px", borderRadius: 12, fontSize: 13, fontWeight: 700, background: "rgba(11,44,96,0.07)", color: "#0b2c60", border: "1px solid rgba(11,44,96,0.12)", cursor: "pointer" }}>
+                        ₹{v >= 1000 ? (v / 1000) + "K" : v}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {/* Note */}
+                <div>
+                  <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>Note <span style={{ fontWeight: 400, textTransform: "none", color: "#cbd5e1" }}>(optional)</span></p>
+                  <div style={{ position: "relative" }}>
+                    <StickyNote size={14} color="#94a3b8" style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)" }} />
+                    <input placeholder="e.g. Loaded from SBI BC account" {...openForm.register("notes")}
+                      style={{ width: "100%", height: 48, paddingLeft: 38, paddingRight: 14, borderRadius: 13, border: "1.5px solid #e2e8f0", background: "#fafbff", fontSize: 14, color: "#0b2c60", outline: "none", boxSizing: "border-box", fontWeight: 500 }}
+                      onFocus={e => (e.target.style.borderColor = "#0b2c60")}
+                      onBlur={e => (e.target.style.borderColor = "#e2e8f0")} />
+                  </div>
+                </div>
+              </div>
+              <div style={{ padding: "16px 28px 28px", borderTop: "1px solid #f1f5f9", background: "#fff", flexShrink: 0, display: "flex", gap: 12 }}>
+                <button type="button" onClick={() => setShowOpenDialog(false)} style={{ flex: 1, height: 50, borderRadius: 14, border: "1.5px solid #e2e8f0", background: "#f8fafc", cursor: "pointer", fontWeight: 700, fontSize: 14, color: "#64748b" }}>Cancel</button>
+                <button type="submit" disabled={openMut.isPending} style={{ flex: 2, height: 50, borderRadius: 14, border: "none", cursor: "pointer", background: "linear-gradient(135deg,#0b2c60,#1a4a9e)", color: "#fff", fontSize: 15, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "0 6px 20px rgba(11,44,96,0.30)", opacity: openMut.isPending ? 0.7 : 1 }}>
+                  <CheckCircle2 size={18} />
+                  {openMut.isPending ? "Saving…" : session ? "Save Changes" : "Open Day"}
+                </button>
+              </div>
+            </form>
           </div>
+        </>
+      )}
 
-          <form onSubmit={onOpenSubmit} className="px-5 py-4 space-y-4">
-            {/* Amount input */}
-            <div className="space-y-2">
-              <label style={{ fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.07em" }}>
-                Cash Amount (₹) *
-              </label>
-              <div className="relative">
-                <span style={{
-                  position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)",
-                  fontSize: 20, fontWeight: 900, color: "#94a3b8",
-                }}>₹</span>
-                <input
-                  type="number" min={0} step={0.01} placeholder="0"
-                  autoFocus
-                  {...openForm.register("openingBalance", { required: true })}
-                  style={{
-                    width: "100%", height: 60, paddingLeft: 36, paddingRight: 14,
-                    borderRadius: 14, border: "2px solid #e2e8f0",
-                    fontSize: 28, fontWeight: 900, color: "#0b2c60",
-                    outline: "none", boxSizing: "border-box",
-                    background: "#fafbff", transition: "border-color 0.15s",
-                  }}
-                  onFocus={e => (e.target.style.borderColor = "#0b2c60")}
-                  onBlur={e => (e.target.style.borderColor = "#e2e8f0")}
-                />
-              </div>
-
-              {/* Quick-amount chips */}
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {OPEN_QUICK_AMOUNTS.map(v => (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => openForm.setValue("openingBalance", String(v))}
-                    className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95"
-                    style={{
-                      background: "rgba(11,44,96,0.07)", color: "#0b2c60",
-                      border: "1px solid rgba(11,44,96,0.10)",
-                    }}
-                  >
-                    ₹{v >= 1000 ? (v / 1000) + "K" : v}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Notes */}
-            <div className="space-y-2">
-              <label style={{ fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.07em" }}>
-                Note <span style={{ fontWeight: 400, textTransform: "none", fontSize: 11, color: "#94a3b8" }}>(optional)</span>
-              </label>
-              <div className="relative">
-                <StickyNote size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
-                <Input
-                  placeholder="e.g. Loaded from SBI BC account"
-                  className="pl-9"
-                  {...openForm.register("notes")}
-                />
-              </div>
-            </div>
-
-            {/* Buttons */}
-            <div className="flex gap-2 pt-1">
-              <Button
-                variant="outline" type="button"
-                className="flex-none"
-                onClick={() => setShowOpenDialog(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={openMut.isPending}
-                className="flex-1 gap-2"
-                style={{ background: "linear-gradient(135deg,#0b2c60,#1a4a9e)", color: "#fff" }}
-              >
-                {openMut.isPending ? (
-                  "Saving…"
-                ) : (
-                  <><CheckCircle2 size={15} /> {session ? "Save Changes" : "Open Day"}</>
-                )}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* ── Add Transaction Dialog (3-step) ── */}
-      <Dialog open={showTxDialog} onOpenChange={(open) => { if (!open) { resetTxForm(); setShowTxDialog(false); } }}>
+      {/* ── Add Transaction: Mobile Dialog (3-step) ── */}
+      {isMobile && <Dialog open={showTxDialog} onOpenChange={(open) => { if (!open) { resetTxForm(); setShowTxDialog(false); } }}>
         <DialogContent className="p-0 overflow-hidden gap-0 max-w-sm">
           {(() => {
             const txAmountVal = txForm.watch("amount");
@@ -1136,7 +1149,283 @@ function DailyTab() {
             );
           })()}
         </DialogContent>
-      </Dialog>
+      </Dialog>}
+
+      {/* ── Add Transaction: Desktop Panel (3-step) ── */}
+      {!isMobile && showTxDialog && (() => {
+        const txAmountVal = txForm.watch("amount");
+        const txCustomerName = txForm.watch("customerName");
+        const aadhaarDigits = txAadhaar.replace(/\D/g, "");
+        const amtNum = parseFloat(txAmountVal);
+        const isWd = txType === "withdrawal";
+        const accent = isWd ? "linear-gradient(135deg,#f43f5e,#e11d48)" : "linear-gradient(135deg,#10b981,#059669)";
+        const accentColor = isWd ? "#e11d48" : "#059669";
+        const accentLight = isWd ? "rgba(244,63,94,0.07)" : "rgba(16,185,129,0.07)";
+        const accentBorder = isWd ? "rgba(244,63,94,0.22)" : "rgba(16,185,129,0.22)";
+        const isValidAmount = !isNaN(amtNum) && amtNum > 0;
+        const isValidName = txCustomerName.trim().length >= 2;
+        const isValidAadhaar = aadhaarDigits.length === 12;
+        const isValidBank = txBankName.trim().length > 0;
+        const isFormValid = isValidAmount && isValidName && isValidAadhaar && isValidBank;
+        const displayAadhaar = txShowAadhaar ? maskAadhaar(txAadhaar) : aadhaarDigits.length > 0 ? "XXXX XXXX " + aadhaarDigits.slice(-4) : "";
+
+        return (
+          <>
+            <div onClick={() => { resetTxForm(); setShowTxDialog(false); }}
+              style={{ position: "fixed", inset: 0, background: "rgba(11,44,96,0.20)", backdropFilter: "blur(3px)", zIndex: 49 }} />
+            <div style={{ position: "fixed", right: 0, top: 0, height: "100vh", width: 560, background: "#fff", zIndex: 50, boxShadow: "-12px 0 60px rgba(11,44,96,0.22)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+
+              {/* Accent stripe */}
+              <div style={{ height: 4, background: accent, flexShrink: 0 }} />
+
+              {/* Navy header */}
+              <div style={{ background: "linear-gradient(135deg,#0b2c60 0%,#0f3872 60%,#1a4a9e 100%)", padding: "18px 28px 14px", flexShrink: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em" }}>AePS Transaction</p>
+                    <h2 style={{ color: "#fff", fontSize: 20, fontWeight: 900, lineHeight: 1.1, marginTop: 2 }}>
+                      {txStep === "success" ? "Transaction Complete" : txStep === "confirm" ? "Confirm Transaction" : "New AePS Transaction"}
+                    </h2>
+                  </div>
+                  <button onClick={() => { resetTxForm(); setShowTxDialog(false); }}
+                    style={{ width: 36, height: 36, borderRadius: 11, background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.20)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+                    <X size={16} color="#fff" />
+                  </button>
+                </div>
+                {/* Type toggle — form step only */}
+                {txStep === "form" && (
+                  <div style={{ display: "flex", borderRadius: 16, overflow: "hidden", background: "rgba(255,255,255,0.10)", padding: 4, gap: 4 }}>
+                    {(["withdrawal", "deposit"] as const).map(t => {
+                      const active = txType === t;
+                      const isW = t === "withdrawal";
+                      return (
+                        <button key={t} type="button" onClick={() => setTxType(t)}
+                          style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "9px 0", borderRadius: 12, fontWeight: 800, fontSize: 13, border: "none", cursor: "pointer", background: active ? (isW ? "linear-gradient(135deg,#f43f5e,#e11d48)" : "linear-gradient(135deg,#10b981,#059669)") : "transparent", color: active ? "#fff" : "rgba(255,255,255,0.48)", boxShadow: active ? `0 3px 10px ${isW ? "rgba(244,63,94,0.45)" : "rgba(16,185,129,0.45)"}` : "none", transition: "all 0.18s" }}>
+                          {isW ? <ArrowDownLeft size={14} /> : <ArrowUpRight size={14} />}
+                          {isW ? "Withdrawal" : "Deposit"}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* ── Success ── */}
+              {txStep === "success" && (
+                <div style={{ flex: 1, overflowY: "auto", padding: 28, display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
+                  <div style={{ width: 76, height: 76, borderRadius: 22, background: accent, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 8px 28px ${accentColor}40` }}>
+                    <CheckCircle2 size={38} color="#fff" />
+                  </div>
+                  <div style={{ textAlign: "center" }}>
+                    <p style={{ fontSize: 22, fontWeight: 900, color: "#0b2c60" }}>{isWd ? "Withdrawal" : "Deposit"} Recorded!</p>
+                    <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>AePS transaction saved successfully</p>
+                  </div>
+                  <div style={{ width: "100%", background: "#fff", borderRadius: 18, overflow: "hidden", boxShadow: "0 4px 18px rgba(11,44,96,0.09)", border: "1px solid rgba(11,44,96,0.07)" }}>
+                    <div style={{ height: 4, background: accent }} />
+                    <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div style={{ textAlign: "center", padding: "12px 0", borderRadius: 12, marginBottom: 4, background: accentLight, border: `1px solid ${accentBorder}` }}>
+                        <p style={{ fontSize: 11, fontWeight: 700, color: accentColor, textTransform: "uppercase", letterSpacing: "0.07em" }}>Amount {isWd ? "Withdrawn" : "Deposited"}</p>
+                        <p style={{ fontSize: 30, fontWeight: 900, color: accentColor, lineHeight: 1.1, marginTop: 4 }}>₹{fmt(amtNum)}</p>
+                      </div>
+                      {[
+                        { label: "Customer", value: txCustomerName },
+                        { label: "Aadhaar", value: "XXXX XXXX " + aadhaarDigits.slice(-4) },
+                        { label: "Bank", value: txBankName },
+                        ...(txAccountNo ? [{ label: "Account No", value: "XX" + txAccountNo.slice(-4) }] : []),
+                        ...(txNote ? [{ label: "Note", value: txNote }] : []),
+                      ].map(({ label, value }) => (
+                        <div key={label} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "10px 0", borderBottom: "1px solid #f1f5f9" }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", flexShrink: 0 }}>{label}</span>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: "#0b2c60", textAlign: "right" }}>{value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ width: "100%", display: "flex", gap: 12 }}>
+                    <button onClick={() => { const t = txType; resetTxForm(); setTxType(t); }}
+                      style={{ flex: 1, padding: "13px 0", borderRadius: 14, fontWeight: 700, fontSize: 14, border: `1.5px solid ${accentBorder}`, color: accentColor, background: accentLight, cursor: "pointer" }}>
+                      + New {isWd ? "Withdrawal" : "Deposit"}
+                    </button>
+                    <button onClick={() => { resetTxForm(); setShowTxDialog(false); }}
+                      style={{ flex: 1, padding: "13px 0", borderRadius: 14, fontWeight: 700, fontSize: 14, border: "none", color: "#fff", background: "linear-gradient(135deg,#0b2c60,#1a4a9e)", cursor: "pointer" }}>
+                      Done
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ── Confirm ── */}
+              {txStep === "confirm" && (
+                <div style={{ flex: 1, overflowY: "auto", padding: 28, display: "flex", flexDirection: "column", gap: 16 }}>
+                  <div style={{ borderRadius: 18, overflow: "hidden", boxShadow: "0 4px 14px rgba(11,44,96,0.09)" }}>
+                    <div style={{ height: 4, background: accent }} />
+                    <div style={{ background: "#fff", padding: "18px 20px", textAlign: "center" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 8 }}>
+                        <div style={{ width: 32, height: 32, borderRadius: 10, background: accent, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          {isWd ? <ArrowDownLeft size={15} color="#fff" /> : <ArrowUpRight size={15} color="#fff" />}
+                        </div>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: accentColor, textTransform: "uppercase", letterSpacing: "0.05em" }}>AePS {isWd ? "Withdrawal" : "Deposit"}</span>
+                      </div>
+                      <p style={{ fontSize: 36, fontWeight: 900, color: accentColor, lineHeight: 1 }}>₹{fmt(amtNum)}</p>
+                    </div>
+                  </div>
+                  <div style={{ background: "#fff", borderRadius: 18, padding: "16px 20px", boxShadow: "0 2px 12px rgba(11,44,96,0.07)", border: "1px solid rgba(11,44,96,0.06)", display: "flex", flexDirection: "column", gap: 8 }}>
+                    <p style={{ fontSize: 10, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.09em", marginBottom: 4 }}>Customer Details</p>
+                    {[
+                      { icon: User, label: "Customer", value: txCustomerName },
+                      { icon: Fingerprint, label: "Aadhaar", value: "XXXX XXXX " + aadhaarDigits.slice(-4) },
+                      { icon: Building2, label: "Bank", value: txBankName },
+                      ...(txAccountNo ? [{ icon: Hash, label: "Account No", value: "XX" + txAccountNo.slice(-4) }] : []),
+                      ...(txNote ? [{ icon: FileText, label: "Note", value: txNote }] : []),
+                    ].map(({ icon: Icon, label, value }) => (
+                      <div key={label} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0", borderBottom: "1px solid #f8fafc" }}>
+                        <div style={{ width: 30, height: 30, borderRadius: 9, background: "rgba(11,44,96,0.06)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <Icon size={13} style={{ color: "#0b2c60" }} />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</p>
+                          <p style={{ fontSize: 13, fontWeight: 600, color: "#0b2c60", marginTop: 2 }}>{value}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 14px", borderRadius: 12, background: "rgba(245,158,11,0.07)", border: "1px solid rgba(245,158,11,0.20)" }}>
+                    <AlertCircle size={13} style={{ color: "#d97706", flexShrink: 0, marginTop: 1 }} />
+                    <p style={{ fontSize: 12, color: "#92400e", lineHeight: 1.5 }}>Confirm Aadhaar and amount with the customer before proceeding.</p>
+                  </div>
+                  <div style={{ display: "flex", gap: 12, marginTop: "auto", paddingTop: 8 }}>
+                    <button onClick={() => setTxStep("form")} style={{ flex: 1, height: 50, borderRadius: 14, border: "1.5px solid #e2e8f0", background: "#f8fafc", cursor: "pointer", fontWeight: 700, fontSize: 14, color: "#64748b" }}>Edit</button>
+                    <button disabled={txMut.isPending}
+                      onClick={() => {
+                        const parts = [txBankName];
+                        if (isValidAadhaar) parts.push("Aadhaar XXXX" + aadhaarDigits.slice(-4));
+                        if (txAccountNo) parts.push("A/C XX" + txAccountNo.slice(-4));
+                        if (txNote) parts.push(txNote);
+                        txMut.mutate({ type: txType, amount: amtNum, customerName: txCustomerName, description: parts.join(" · ") });
+                      }}
+                      style={{ flex: 2, height: 50, borderRadius: 14, border: "none", cursor: "pointer", background: accent, color: "#fff", fontSize: 15, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: `0 4px 14px ${accentColor}32`, opacity: txMut.isPending ? 0.7 : 1 }}>
+                      {txMut.isPending ? "Saving…" : <>{isWd ? <ArrowDownLeft size={15} /> : <ArrowUpRight size={15} />} Confirm & Save</>}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ── Form Step ── */}
+              {txStep === "form" && (
+                <div style={{ flex: 1, overflowY: "auto", padding: 28, display: "flex", flexDirection: "column", gap: 20 }}>
+                  {/* Amount */}
+                  <div>
+                    <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>Amount *</p>
+                    <div style={{ background: "#fff", borderRadius: 16, overflow: "hidden", boxShadow: "0 2px 12px rgba(11,44,96,0.08)", border: "1px solid rgba(11,44,96,0.06)" }}>
+                      <div style={{ height: 3, background: accent }} />
+                      <div style={{ padding: "16px 20px" }}>
+                        <div style={{ position: "relative" }}>
+                          <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", width: 36, height: 36, borderRadius: 11, background: accent, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 3px 8px ${accentColor}28` }}>
+                            <IndianRupee size={16} color="#fff" />
+                          </div>
+                          <input type="number" inputMode="decimal" placeholder="0" autoFocus
+                            {...txForm.register("amount", { required: true })}
+                            style={{ width: "100%", height: 58, paddingLeft: 62, paddingRight: 16, borderRadius: 14, border: `2px solid ${isValidAmount ? accentColor : "#e2e8f0"}`, fontSize: 28, fontWeight: 900, color: "#0b2c60", outline: "none", boxSizing: "border-box", background: isValidAmount ? accentLight : "#fafbff", transition: "all 0.15s" }} />
+                        </div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+                          {AEPS_QUICK_AMOUNTS.map(v => (
+                            <button key={v} type="button" onClick={() => txForm.setValue("amount", String(v))}
+                              style={{ padding: "7px 14px", borderRadius: 10, fontSize: 12, fontWeight: 700, background: txAmountVal === String(v) ? accent : "#f1f5f9", color: txAmountVal === String(v) ? "#fff" : "#64748b", border: txAmountVal === String(v) ? "none" : "1px solid #e2e8f0", cursor: "pointer" }}>
+                              ₹{v >= 1000 ? (v / 1000) + "K" : v}
+                            </button>
+                          ))}
+                        </div>
+                        {session && isWd && isValidAmount && (
+                          <p style={{ fontSize: 11, color: accentColor, marginTop: 8, fontWeight: 600 }}>After: ₹{fmt(session.currentBalance - amtNum)}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Customer + Aadhaar side by side */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                    <div>
+                      <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>Customer Name *</p>
+                      <div style={{ position: "relative" }}>
+                        <User size={13} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+                        <input {...txForm.register("customerName", { required: true })} placeholder="Full name"
+                          style={{ width: "100%", height: 46, paddingLeft: 34, paddingRight: 12, borderRadius: 13, border: `1.5px solid ${isValidName ? "#0b2c6040" : "#e2e8f0"}`, fontSize: 13, fontWeight: 600, color: "#0b2c60", outline: "none", boxSizing: "border-box", background: isValidName ? "rgba(11,44,96,0.03)" : "#fff", transition: "all 0.15s" }} />
+                      </div>
+                    </div>
+                    <div>
+                      <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>Aadhaar * <span style={{ fontSize: 9, fontWeight: 400, color: "#cbd5e1" }}>(12 digits)</span></p>
+                      <div style={{ position: "relative" }}>
+                        <Fingerprint size={13} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+                        <input inputMode="numeric"
+                          value={txShowAadhaar ? maskAadhaar(txAadhaar) : displayAadhaar}
+                          onChange={e => setTxAadhaar(e.target.value.replace(/\D/g, "").slice(0, 12))}
+                          onFocus={() => setTxShowAadhaar(true)} onBlur={() => setTxShowAadhaar(false)}
+                          placeholder="XXXX XXXX XXXX"
+                          style={{ width: "100%", height: 46, paddingLeft: 34, paddingRight: 36, borderRadius: 13, border: `1.5px solid ${isValidAadhaar ? "#0b2c6040" : aadhaarDigits.length > 0 ? "#fca5a5" : "#e2e8f0"}`, fontSize: 13, fontWeight: 700, color: "#0b2c60", letterSpacing: "0.06em", fontFamily: "monospace", outline: "none", boxSizing: "border-box", background: isValidAadhaar ? "rgba(11,44,96,0.03)" : aadhaarDigits.length > 0 && !isValidAadhaar ? "#fff5f5" : "#fff", transition: "all 0.15s" }} />
+                        <button type="button" onMouseDown={() => setTxShowAadhaar(true)} onMouseUp={() => setTxShowAadhaar(false)}
+                          style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", background: "none", border: "none", cursor: "pointer" }}>
+                          {txShowAadhaar ? <EyeOff size={13} /> : <Eye size={13} />}
+                        </button>
+                      </div>
+                      <div style={{ display: "flex", gap: 2, marginTop: 5 }}>
+                        {Array.from({ length: 12 }).map((_, i) => (
+                          <div key={i} style={{ flex: 1, height: 3, borderRadius: 2, background: i < aadhaarDigits.length ? (isValidAadhaar ? "#0b2c60" : "#e11d48") : "#e2e8f0", transition: "background 0.1s" }} />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bank + Account side by side */}
+                  <div style={{ display: "grid", gridTemplateColumns: txType === "deposit" ? "1fr 1fr" : "1fr", gap: 16 }}>
+                    <div>
+                      <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>Bank Name *</p>
+                      <div style={{ position: "relative" }}>
+                        <Building2 size={13} style={{ position: "absolute", left: 12, top: 16, color: "#94a3b8", zIndex: 1 }} />
+                        <select value={txBankName} onChange={e => setTxBankName(e.target.value)}
+                          style={{ width: "100%", height: 46, paddingLeft: 34, paddingRight: 12, borderRadius: 13, border: `1.5px solid ${isValidBank ? "#0b2c6040" : "#e2e8f0"}`, fontSize: 13, fontWeight: 600, color: txBankName ? "#0b2c60" : "#94a3b8", outline: "none", boxSizing: "border-box", appearance: "none", background: isValidBank ? "rgba(11,44,96,0.03)" : "#fff" }}>
+                          <option value="" disabled>Select bank</option>
+                          {AEPS_BANKS.map(b => <option key={b} value={b}>{b}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    {txType === "deposit" && (
+                      <div>
+                        <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>Account No <span style={{ fontWeight: 400, textTransform: "none", color: "#cbd5e1" }}>(optional)</span></p>
+                        <div style={{ position: "relative" }}>
+                          <Hash size={13} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+                          <input inputMode="numeric" value={txAccountNo} onChange={e => setTxAccountNo(e.target.value.replace(/\D/g, "").slice(0, 18))} placeholder="Account number"
+                            style={{ width: "100%", height: 46, paddingLeft: 34, paddingRight: 12, borderRadius: 13, border: "1.5px solid #e2e8f0", fontSize: 13, fontWeight: 600, color: "#0b2c60", outline: "none", boxSizing: "border-box", background: "#fff", fontFamily: "monospace", letterSpacing: "0.05em" }} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Note */}
+                  <div>
+                    <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>Note <span style={{ fontWeight: 400, textTransform: "none", color: "#cbd5e1" }}>(optional)</span></p>
+                    <div style={{ position: "relative" }}>
+                      <FileText size={13} style={{ position: "absolute", left: 12, top: 13, color: "#94a3b8" }} />
+                      <textarea value={txNote} onChange={e => setTxNote(e.target.value)} placeholder="Additional notes…" rows={2}
+                        style={{ width: "100%", paddingLeft: 34, paddingRight: 14, paddingTop: 11, paddingBottom: 11, borderRadius: 13, border: "1.5px solid #e2e8f0", fontSize: 13, color: "#0b2c60", resize: "none", outline: "none", boxSizing: "border-box", fontFamily: "inherit", background: "#fff", lineHeight: 1.5 }} />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Proceed footer — form step only */}
+              {txStep === "form" && (
+                <div style={{ padding: "16px 28px 28px", borderTop: "1px solid #f1f5f9", background: "#fff", flexShrink: 0 }}>
+                  <button type="button" onClick={() => { if (isFormValid) setTxStep("confirm"); }} disabled={!isFormValid}
+                    style={{ width: "100%", height: 52, borderRadius: 16, border: "none", cursor: isFormValid ? "pointer" : "not-allowed", background: isFormValid ? accent : "#f1f5f9", color: isFormValid ? "#fff" : "#94a3b8", fontSize: 15, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: isFormValid ? `0 6px 20px ${accentColor}30` : "none", transition: "all 0.18s" }}>
+                    {isWd ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
+                    Review Transaction
+                  </button>
+                </div>
+              )}
+            </div>
+          </>
+        );
+      })()}
 
       {/* ── Edit Transaction Dialog ── */}
       <Dialog open={!!editingTx} onOpenChange={(open) => { if (!open) setEditingTx(null); }}>

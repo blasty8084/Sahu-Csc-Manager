@@ -124,15 +124,33 @@ function EntryFormDialog({ customerId, mode, existing, open, onClose, customer }
   const previewLabel = previewBalance > 0 ? `₹${previewBalance.toLocaleString("en-IN")} to collect` : previewBalance < 0 ? `₹${Math.abs(previewBalance).toLocaleString("en-IN")} to pay` : "Settled ✓";
   const previewColor = previewBalance > 0 ? "#ea580c" : previewBalance < 0 ? "#059669" : "#64748b";
 
-  return (
+  const isMobile = useIsMobile();
+
+  /* ── Customer header card (shared) ── */
+  const CustomerChip = () => customer ? (
+    <div style={{ background: "rgba(255,255,255,0.12)", borderRadius: 10, padding: "7px 12px", display: "flex", alignItems: "center", gap: 8 }}>
+      <div style={{ width: 24, height: 24, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <span style={{ fontSize: 11, fontWeight: 800, color: "#fff" }}>{customer.name?.charAt(0).toUpperCase()}</span>
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>Customer</p>
+        <p style={{ color: "#fff", fontSize: 12, fontWeight: 800, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{customer.name}</p>
+      </div>
+      <div style={{ background: "rgba(255,255,255,0.15)", borderRadius: 6, padding: "3px 8px", flexShrink: 0 }}>
+        <span style={{ fontSize: 10, fontWeight: 900, color: "#fff" }}>
+          {currentBalance > 0 ? `₹${currentBalance.toLocaleString("en-IN")} owed` : currentBalance < 0 ? `₹${Math.abs(currentBalance).toLocaleString("en-IN")} to pay` : "Settled"}
+        </span>
+      </div>
+    </div>
+  ) : null;
+
+  /* ── Mobile: Dialog ── */
+  if (isMobile) return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
       <DialogContent className="w-[calc(100vw-2rem)] max-w-sm rounded-2xl p-0 overflow-hidden gap-0">
-        {/* Drag handle */}
-        <div className="flex justify-center pt-3 pb-0 md:hidden">
+        <div className="flex justify-center pt-3 pb-0">
           <div style={{ width: 40, height: 4, borderRadius: 2, background: "#e2e8f0" }} />
         </div>
-
-        {/* Colored gradient header card */}
         <div style={{ background: headerGrad, margin: "12px 16px 0", borderRadius: 18, padding: "14px 16px", position: "relative", overflow: "hidden" }}>
           <div style={{ position: "absolute", top: -16, right: -16, width: 70, height: 70, borderRadius: "50%", background: "rgba(255,255,255,0.1)", pointerEvents: "none" }} />
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", position: "relative" }}>
@@ -142,36 +160,16 @@ function EntryFormDialog({ customerId, mode, existing, open, onClose, customer }
               </div>
               <div>
                 <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" }}>Udhari Khata</p>
-                <h3 style={{ color: "#fff", fontSize: 16, fontWeight: 900, lineHeight: 1.1, marginTop: 2 }}>
-                  {isEdit ? "Edit Entry" : (isGave ? "You Gave" : "You Got")}
-                </h3>
+                <h3 style={{ color: "#fff", fontSize: 16, fontWeight: 900, lineHeight: 1.1, marginTop: 2 }}>{isEdit ? "Edit Entry" : (isGave ? "You Gave" : "You Got")}</h3>
               </div>
             </div>
             <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", outline: "none" }}>
               <X size={13} color="#fff" />
             </button>
           </div>
-          {/* Customer chip */}
-          {customer && (
-            <div style={{ marginTop: 10, background: "rgba(255,255,255,0.12)", borderRadius: 10, padding: "7px 12px", display: "flex", alignItems: "center", gap: 8, position: "relative" }}>
-              <div style={{ width: 24, height: 24, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <span style={{ fontSize: 11, fontWeight: 800, color: "#fff" }}>{customer.name?.charAt(0).toUpperCase()}</span>
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>Customer</p>
-                <p style={{ color: "#fff", fontSize: 12, fontWeight: 800, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{customer.name}</p>
-              </div>
-              <div style={{ background: "rgba(255,255,255,0.15)", borderRadius: 6, padding: "3px 8px", flexShrink: 0 }}>
-                <span style={{ fontSize: 10, fontWeight: 900, color: "#fff" }}>
-                  {currentBalance > 0 ? `₹${currentBalance.toLocaleString("en-IN")} owed` : currentBalance < 0 ? `₹${Math.abs(currentBalance).toLocaleString("en-IN")} to pay` : "Settled"}
-                </span>
-              </div>
-            </div>
-          )}
+          {customer && <div style={{ marginTop: 10 }}><CustomerChip /></div>}
         </div>
-
         <div className="px-4 pt-3 pb-5 space-y-3">
-          {/* You Gave / You Got toggle — hide on edit */}
           {!isEdit && (
             <div style={{ background: "#f1f5f9", borderRadius: 14, padding: 4, display: "flex", gap: 4 }}>
               {(["gave", "got"] as const).map(t => (
@@ -182,47 +180,32 @@ function EntryFormDialog({ customerId, mode, existing, open, onClose, customer }
               ))}
             </div>
           )}
-
-          {/* Amount */}
           <div style={{ background: accentBg, border: `2px solid ${accentBorder}`, borderRadius: 16, padding: "13px 16px", display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ width: 40, height: 40, borderRadius: 12, background: amtGrad, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: `0 4px 12px ${accentColor}35` }}>
               <span style={{ fontSize: 16, fontWeight: 900, color: "#fff" }}>₹</span>
             </div>
             <div style={{ flex: 1 }}>
-              <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 2 }}>
-                {isGave ? "Amount You Gave" : "Amount You Got"}
-              </p>
-              <input type="number" min="0" step="0.01" value={form.amount}
-                onChange={e => setForm(p => ({ ...p, amount: e.target.value }))}
-                placeholder="0.00"
+              <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 2 }}>{isGave ? "Amount You Gave" : "Amount You Got"}</p>
+              <input type="number" min="0" step="0.01" value={form.amount} onChange={e => setForm(p => ({ ...p, amount: e.target.value }))} placeholder="0.00"
                 style={{ width: "100%", fontSize: 28, fontWeight: 900, color: accentColor, background: "transparent", border: "none", outline: "none", padding: 0 }} />
             </div>
           </div>
-
-          {/* Date */}
           <div style={{ position: "relative" }}>
             <Calendar size={14} color="#94a3b8" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
             <input type="date" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))}
               style={{ width: "100%", height: 44, paddingLeft: 36, paddingRight: 12, borderRadius: 12, border: "1.5px solid #e2e8f0", background: "#fafafa", fontSize: 14, color: "#0b2c60", outline: "none", boxSizing: "border-box", fontWeight: 600 }} />
           </div>
-
-          {/* Note */}
           <div style={{ position: "relative" }}>
             <FileText size={14} color="#94a3b8" style={{ position: "absolute", left: 12, top: 13 }} />
-            <textarea value={form.note} onChange={e => setForm(p => ({ ...p, note: e.target.value }))} rows={2}
-              placeholder="Add a note (optional)"
+            <textarea value={form.note} onChange={e => setForm(p => ({ ...p, note: e.target.value }))} rows={2} placeholder="Add a note (optional)"
               style={{ width: "100%", paddingLeft: 36, paddingRight: 12, paddingTop: 12, paddingBottom: 12, borderRadius: 12, border: "1.5px solid #e2e8f0", background: "#fafafa", fontSize: 13, color: "#0b2c60", outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit" }} />
           </div>
-
-          {/* Balance preview */}
           {customer && entryAmt > 0 && (
             <div style={{ background: "#f8fafc", borderRadius: 12, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", border: "1px solid #e2e8f0" }}>
               <p style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>New balance after this entry</p>
               <p style={{ fontSize: 14, fontWeight: 900, color: previewColor }}>{previewLabel}</p>
             </div>
           )}
-
-          {/* Submit */}
           <button type="button" onClick={handleSave} disabled={create.isPending || update.isPending}
             style={{ width: "100%", height: 52, borderRadius: 16, border: "none", cursor: "pointer", background: isGave ? "linear-gradient(135deg,#7c2d12,#ea580c)" : "linear-gradient(135deg,#064e3b,#059669)", color: "#fff", fontSize: 16, fontWeight: 900, letterSpacing: "0.02em", boxShadow: `0 6px 20px ${accentColor}40`, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, opacity: (create.isPending || update.isPending) ? 0.7 : 1 }}>
             <CheckCircle2 size={18} strokeWidth={2.5} />
@@ -231,6 +214,114 @@ function EntryFormDialog({ customerId, mode, existing, open, onClose, customer }
         </div>
       </DialogContent>
     </Dialog>
+  );
+
+  /* ── Desktop: Slide-in panel ── */
+  if (!open) return null;
+  return (
+    <>
+      <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(11,44,96,0.20)", backdropFilter: "blur(3px)", zIndex: 49 }} />
+      <div style={{ position: "fixed", right: 0, top: 0, height: "100vh", width: 500, background: "#fff", zIndex: 50, boxShadow: "-12px 0 60px rgba(11,44,96,0.22)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        {/* Accent stripe */}
+        <div style={{ height: 4, background: isGave ? "linear-gradient(90deg,#ea580c,#f97316)" : "linear-gradient(90deg,#059669,#10b981)", flexShrink: 0 }} />
+        {/* Header */}
+        <div style={{ background: headerGrad, padding: "22px 28px 20px", flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <div style={{ width: 50, height: 50, borderRadius: 15, background: "rgba(255,255,255,0.18)", border: "1.5px solid rgba(255,255,255,0.28)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              {isGave ? <ArrowUpRight size={24} color="#fff" strokeWidth={2.5} /> : <ArrowDownLeft size={24} color="#fff" strokeWidth={2.5} />}
+            </div>
+            <div style={{ flex: 1 }}>
+              <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em" }}>Udhari Khata</p>
+              <h2 style={{ color: "#fff", fontSize: 22, fontWeight: 900, lineHeight: 1.1, marginTop: 3 }}>
+                {isEdit ? "Edit Entry" : isGave ? "You Gave Money" : "You Got Money"}
+              </h2>
+            </div>
+            <button onClick={onClose} style={{ width: 36, height: 36, borderRadius: 11, background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+              <X size={16} color="#fff" />
+            </button>
+          </div>
+          {customer && <div style={{ marginTop: 14 }}><CustomerChip /></div>}
+        </div>
+
+        {/* Scrollable body */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "28px 28px 16px", display: "flex", flexDirection: "column", gap: 20 }}>
+          {/* Type toggle */}
+          {!isEdit && (
+            <div>
+              <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>Transaction Type</p>
+              <div style={{ background: "#f1f5f9", borderRadius: 16, padding: 5, display: "flex", gap: 5 }}>
+                {(["gave", "got"] as const).map(t => (
+                  <button key={t} type="button" onClick={() => setForm(p => ({ ...p, type: t }))}
+                    style={{ flex: 1, height: 48, borderRadius: 12, border: "none", cursor: "pointer", fontWeight: 800, fontSize: 14, background: form.type === t ? (t === "gave" ? "linear-gradient(135deg,#7c2d12,#ea580c)" : "linear-gradient(135deg,#064e3b,#059669)") : "transparent", color: form.type === t ? "#fff" : "#94a3b8", transition: "all 0.18s", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, boxShadow: form.type === t ? (t === "gave" ? "0 4px 14px rgba(234,88,12,0.35)" : "0 4px 14px rgba(5,150,105,0.35)") : "none" }}>
+                    {t === "gave" ? <><ArrowUpRight size={16} /> You Gave</> : <><ArrowDownLeft size={16} /> You Got</>}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Amount — hero */}
+          <div>
+            <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>Amount</p>
+            <div style={{ background: accentBg, border: `2px solid ${accentBorder}`, borderRadius: 18, padding: "18px 20px", display: "flex", alignItems: "center", gap: 14 }}>
+              <div style={{ width: 50, height: 50, borderRadius: 15, background: amtGrad, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: `0 6px 18px ${accentColor}35` }}>
+                <span style={{ fontSize: 22, fontWeight: 900, color: "#fff" }}>₹</span>
+              </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: `${accentColor}99`, marginBottom: 4 }}>{isGave ? "Amount you gave to customer" : "Amount you received from customer"}</p>
+                <input type="number" min="0" step="0.01" value={form.amount}
+                  onChange={e => setForm(p => ({ ...p, amount: e.target.value }))}
+                  placeholder="0.00" autoFocus
+                  style={{ width: "100%", fontSize: 36, fontWeight: 900, color: accentColor, background: "transparent", border: "none", outline: "none", padding: 0, lineHeight: 1 }} />
+              </div>
+            </div>
+          </div>
+
+          {/* Date */}
+          <div>
+            <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>Date</p>
+            <div style={{ position: "relative" }}>
+              <Calendar size={14} color="#94a3b8" style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
+              <input type="date" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))}
+                style={{ width: "100%", height: 48, paddingLeft: 38, paddingRight: 14, borderRadius: 13, border: "1.5px solid #e2e8f0", background: "#fafbff", fontSize: 14, color: "#0b2c60", outline: "none", boxSizing: "border-box", fontWeight: 600 }}
+                onFocus={e => (e.target.style.borderColor = accentColor)}
+                onBlur={e => (e.target.style.borderColor = "#e2e8f0")} />
+            </div>
+          </div>
+
+          {/* Note */}
+          <div>
+            <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>Note <span style={{ fontWeight: 400, textTransform: "none", color: "#cbd5e1" }}>(optional)</span></p>
+            <div style={{ position: "relative" }}>
+              <FileText size={14} color="#94a3b8" style={{ position: "absolute", left: 13, top: 15 }} />
+              <textarea value={form.note} onChange={e => setForm(p => ({ ...p, note: e.target.value }))} rows={3}
+                placeholder="Add a note about this transaction…"
+                style={{ width: "100%", paddingLeft: 38, paddingRight: 14, paddingTop: 13, paddingBottom: 13, borderRadius: 13, border: "1.5px solid #e2e8f0", background: "#fafbff", fontSize: 13, color: "#0b2c60", outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit", lineHeight: 1.5 }}
+                onFocus={e => (e.target.style.borderColor = accentColor)}
+                onBlur={e => (e.target.style.borderColor = "#e2e8f0")} />
+            </div>
+          </div>
+
+          {/* Balance preview */}
+          {customer && entryAmt > 0 && (
+            <div style={{ background: "#f8fafc", borderRadius: 14, padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", border: "1px solid #e2e8f0" }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "#64748b" }}>New balance after this entry</p>
+              <p style={{ fontSize: 16, fontWeight: 900, color: previewColor }}>{previewLabel}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Sticky footer */}
+        <div style={{ padding: "16px 28px 28px", borderTop: "1px solid #f1f5f9", background: "#fff", flexShrink: 0, display: "flex", gap: 12 }}>
+          <button onClick={onClose} style={{ flex: 1, height: 50, borderRadius: 14, border: "1.5px solid #e2e8f0", background: "#f8fafc", cursor: "pointer", fontWeight: 700, fontSize: 14, color: "#64748b" }}>Cancel</button>
+          <button type="button" onClick={handleSave} disabled={create.isPending || update.isPending}
+            style={{ flex: 2, height: 50, borderRadius: 14, border: "none", cursor: "pointer", background: isGave ? "linear-gradient(135deg,#7c2d12,#ea580c)" : "linear-gradient(135deg,#064e3b,#059669)", color: "#fff", fontSize: 15, fontWeight: 900, letterSpacing: "0.02em", boxShadow: `0 6px 20px ${accentColor}40`, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, opacity: (create.isPending || update.isPending) ? 0.7 : 1 }}>
+            <CheckCircle2 size={18} strokeWidth={2.5} />
+            {create.isPending || update.isPending ? "Saving…" : `Save — ${isGave ? "You Gave" : "You Got"}`}
+          </button>
+        </div>
+      </div>
+    </>
   );
 }
 
