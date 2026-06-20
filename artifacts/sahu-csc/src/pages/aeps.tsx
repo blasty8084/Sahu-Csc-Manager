@@ -496,40 +496,6 @@ function DailyTab() {
             />
           </div>
 
-          {/* ── Visual Balance Formula ── */}
-          <div
-            className="bg-white rounded-2xl px-4 py-3 overflow-hidden"
-            style={{ boxShadow: "0 2px 12px rgba(11,44,96,0.07)", border: "1px solid rgba(11,44,96,0.06)" }}
-          >
-            <p style={{ fontSize: 9, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.10em", marginBottom: 10 }}>
-              Balance Calculation
-            </p>
-            <div className="flex items-center gap-1 flex-wrap">
-              {([
-                { label: "Opening", value: session.openingBalance, color: "#0b2c60", bg: "rgba(11,44,96,0.07)" },
-                { op: "−", color: "#e11d48" },
-                { label: "Withdrawn", value: session.totalWithdrawals, color: "#e11d48", bg: "rgba(244,63,94,0.08)" },
-                { op: "+", color: "#059669" },
-                { label: "Deposited", value: session.totalDeposits, color: "#059669", bg: "rgba(16,185,129,0.08)" },
-                { op: "=", color: "#64748b" },
-                {
-                  label: "Balance", value: session.currentBalance, bold: true,
-                  color: session.currentBalance < 0 ? "#e11d48" : "#059669",
-                  bg: session.currentBalance < 0 ? "rgba(244,63,94,0.09)" : "rgba(16,185,129,0.09)",
-                },
-              ] as any[]).map((s, i) =>
-                s.op ? (
-                  <span key={i} style={{ fontSize: 18, fontWeight: 900, color: s.color, paddingInline: 2 }}>{s.op}</span>
-                ) : (
-                  <div key={i} className="px-2.5 py-1.5 rounded-xl flex flex-col items-center" style={{ background: s.bg, minWidth: 54 }}>
-                    <span style={{ fontSize: 9, fontWeight: 700, color: s.color + "99", textTransform: "uppercase", letterSpacing: "0.04em" }}>{s.label}</span>
-                    <span style={{ fontSize: s.bold ? 13 : 12, fontWeight: 900, color: s.color, lineHeight: 1.1, marginTop: 2 }}>₹{fmt(s.value)}</span>
-                  </div>
-                )
-              )}
-            </div>
-          </div>
-
           {/* ── Action Buttons ── */}
           <div className="grid grid-cols-2 gap-3">
             <button
