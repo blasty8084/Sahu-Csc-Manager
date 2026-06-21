@@ -438,7 +438,7 @@ DESKTOP_TABS = [
 - OTP resend cooldown: 120 seconds (same in register flow — do not change to 60)
 - Audit logged as `password.reset` on success
 
-### 2.2 V2 Multi-Device Sessions
+### 3.2 V2 Multi-Device Sessions
 
 **New table:** `user_sessions` — one row per active login across all devices.
 
@@ -458,13 +458,13 @@ Each login creates a row with: `sessionId` (UUID), `userId`, `deviceInfo`, `brow
 
 **Session management page** (`/sessions`): Lists all active sessions as device cards (browser, OS, IP, last active, "This device" badge). Actions: revoke single session, revoke all others, revoke all (logs out everywhere).
 
-### 2.3 RBAC — requirePermission Middleware
+### 3.3 RBAC — requirePermission Middleware
 
 `requirePermission(permission)` middleware applied to all data routes. Admin has wildcard `["*"]`. Operator has full data permissions. `user` role is read-only.
 
 See `architectureV2.md §5.3` for the full permission table.
 
-### 2.4 Receipt System
+### 3.4 Receipt System
 
 Every new ledger entry receives:
 
@@ -500,7 +500,7 @@ ALTER TABLE ledger ADD COLUMN IF NOT EXISTS receipt_token text;
 CREATE TABLE IF NOT EXISTS receipt_counters (year integer PRIMARY KEY, last_count integer NOT NULL DEFAULT 0);
 ```
 
-### 2.5 Admin Oversight Pages
+### 3.5 Admin Oversight Pages
 
 Three admin-only endpoints (do not mix with admin's own personal data):
 
@@ -514,7 +514,7 @@ Frontend pages:
 - `/users-overview` — cross-user balance card grid, expandable ledger drawer
 - Admin can view any user's data without affecting their own personal ledger/AePS data
 
-### 2.6 Notification Isolation Fixes
+### 3.6 Notification Isolation Fixes
 
 Seven isolation bugs patched in v2.1.0:
 
@@ -534,7 +534,7 @@ Seven isolation bugs patched in v2.1.0:
 - `createSystemNotification` without `userIds` filters to `isActive = true AND status = 'ACTIVE'` only
 - `queryClient.clear()` called on logout — prevents stale notification counts when switching accounts
 
-### 2.7 UI Design System v2
+### 3.7 UI Design System v2
 
 **Mobile header (layout.tsx) — 3-layer structure:**
 
@@ -562,7 +562,7 @@ box-shadow: 0 2px 12px rgba(11,44,96,0.08)
 
 **Key rule:** Icon badges must use `background: linear-gradient(...)` as an inline style. Tailwind `bg-*` classes do not render gradients correctly in this context.
 
-### 2.8 AePS Opening Balance Redesign
+### 3.8 AePS Opening Balance Redesign
 
 - **Before:** Flat navy `StatCard` in the stat grid
 - **After:** `OpeningBalanceHeroCard` — full-width navy→indigo gradient card with 3px saffron top stripe
@@ -580,7 +580,7 @@ box-shadow: 0 2px 12px rgba(11,44,96,0.08)
 - Before: plain text `₹OB − ₹WD + ₹DEP = ₹BAL`
 - After: white card with color-coded chips — navy (Opening), red (Withdrawn), green (Deposited), bold Balance chip
 
-### 2.9 PWA Status Page
+### 3.9 PWA Status Page
 
 New page at `/pwa-status` (App & Offline Status). Shows live:
 
@@ -594,7 +594,7 @@ New page at `/pwa-status` (App & Offline Status). Shows live:
 | Capabilities | Device capability checklist (notifications, service worker, IndexedDB, etc.) |
 | Security | Session info summary |
 
-### 2.10 Miscellaneous Fixes (v2.1)
+### 3.10 Miscellaneous Fixes (v2.1)
 
 | Area | Fix |
 |------|-----|
