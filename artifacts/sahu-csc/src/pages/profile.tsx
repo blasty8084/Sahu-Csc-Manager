@@ -169,18 +169,27 @@ function RegistrationControlSection() {
   );
 }
 
-// ─── Section block wrapper (desktop V3) ──────────────────────────────────────
-function SectionBlock({ id, icon, title, children }: { id: string; icon: React.ReactNode; title: string; children: React.ReactNode }) {
+// ─── V5 Command Center card (desktop) ────────────────────────────────────────
+function CmdCard({ title, icon, adminOnly, action, children }: {
+  title: string; icon: React.ReactNode; adminOnly?: boolean; action?: React.ReactNode; children: React.ReactNode;
+}) {
   return (
-    <div id={id} style={{ scrollMarginTop: 72 }} className="mb-8">
-      <div className="flex items-center gap-2.5 mb-4">
-        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">{icon}</div>
-        <h2 className="text-base font-bold">{title}</h2>
+    <div className={`rounded-xl border bg-card shadow-sm overflow-hidden ${adminOnly ? "border-orange-200 dark:border-orange-900/40" : ""}`}>
+      <div className={`flex items-center justify-between px-5 py-3.5 border-b ${adminOnly ? "bg-orange-50/60 dark:bg-orange-950/20" : "bg-muted/30"}`}>
+        <div className="flex items-center gap-2">
+          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${adminOnly ? "bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400" : "bg-primary/10 text-primary"}`}>
+            {icon}
+          </div>
+          <h2 className="text-sm font-bold">{title}</h2>
+          {adminOnly && <span className="ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400">Admin</span>}
+        </div>
+        {action}
       </div>
-      <div className="rounded-xl border bg-card p-5">{children}</div>
+      <div className="px-5 py-4">{children}</div>
     </div>
   );
 }
+
 
 function FormField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -192,18 +201,6 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
 }
 
 // ─── Nav sections config ──────────────────────────────────────────────────────
-type TabId = "s-photo" | "s-info" | "s-security" | "s-sessions" | "s-prefs" | "s-business" | "s-system";
-
-interface NavItem { id: TabId; label: string; adminOnly?: boolean; }
-const ALL_NAV: NavItem[] = [
-  { id: "s-photo",    label: "Photo" },
-  { id: "s-info",     label: "Personal Info" },
-  { id: "s-security", label: "Security" },
-  { id: "s-sessions", label: "Sessions" },
-  { id: "s-prefs",    label: "Preferences" },
-  { id: "s-business", label: "Business Info", adminOnly: true },
-  { id: "s-system",   label: "System",        adminOnly: true },
-];
 
 // Mobile section groups
 type MobileTab = "profile" | "security" | "preferences" | "business" | "system";
@@ -224,8 +221,6 @@ export default function Profile() {
   const qc = useQueryClient();
   const isAdmin = user?.role === "admin";
 
-  // Desktop active anchor
-  const [activeAnchor, setActiveAnchor] = useState<TabId>("s-photo");
   // Mobile drill-in
   const [mobileSection, setMobileSection] = useState<MobileTab | null>(null);
 
@@ -331,8 +326,6 @@ export default function Profile() {
   const initials = (profile?.fullName || profile?.username || "U").charAt(0).toUpperCase();
   const currentSession = sessions.find(s => s.isCurrent);
   const otherSessions = sessions.filter(s => !s.isCurrent);
-  const visibleNav = ALL_NAV.filter(n => !n.adminOnly || isAdmin);
-
   // ── Loading skeleton ──
   if (isLoading) {
     return (
@@ -632,148 +625,150 @@ export default function Profile() {
       </AlertDialog>
 
       {/* ═══════════════════════════════════════════════════════════════
-          DESKTOP — V3: sticky side nav + full-page scroll (md+)
+          DESKTOP — V5: Command Center (md+)
           ═══════════════════════════════════════════════════════════════ */}
-      <div className="hidden md:flex gap-0 max-w-5xl">
-        {/* Sticky side nav */}
-        <aside className="w-44 shrink-0 mr-6">
-          <div className="sticky top-[72px]">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground px-3 mb-2">Sections</p>
-            {visibleNav.map(n => (
-              <a
-                key={n.id}
-                href={`#${n.id}`}
-                onClick={() => setActiveAnchor(n.id)}
-                className={`block px-3 py-2 rounded-lg text-sm mb-0.5 transition-colors no-underline ${
-                  activeAnchor === n.id
-                    ? "bg-primary/10 text-primary font-semibold"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                }`}
-              >
-                {n.label}
-                {n.adminOnly && <span className="ml-1.5 text-[9px] font-bold text-orange-500">Admin</span>}
-              </a>
-            ))}
-          </div>
-        </aside>
-
-        {/* Scrollable content */}
-        <main className="flex-1 min-w-0">
-
-          {/* Photo */}
-          <SectionBlock id="s-photo" icon={<Camera size={16} />} title="Profile Photo">
+      <div className="hidden md:block">
+        {/* Full-width command banner — breaks out of Layout padding */}
+        <div
+          className="-mx-8 -mt-8 mb-6 px-8 py-6"
+          style={{ background: "linear-gradient(135deg, #0b2c60 0%, #0d3270 55%, #0f3872 100%)" }}
+        >
+          <div className="flex items-center justify-between gap-6">
+            {/* Left: avatar + identity */}
             <div className="flex items-center gap-5">
               <div className="relative shrink-0">
-                <Avatar className="h-20 w-20 border-2 border-border">
+                <Avatar className="h-20 w-20 border-2 border-white/20">
                   {displayPicture ? <AvatarImage src={displayPicture} alt="Profile" className="object-cover" /> : null}
-                  <AvatarFallback className="text-3xl font-bold bg-primary text-primary-foreground">{initials}</AvatarFallback>
+                  <AvatarFallback className="text-3xl font-bold bg-[#f97316] text-white">{initials}</AvatarFallback>
                 </Avatar>
-                <button type="button" onClick={() => setShowPicker(true)} className="absolute -bottom-1 -right-1 rounded-full bg-orange-500 text-white p-1.5 shadow-md hover:bg-orange-600 transition-colors">
+                <button type="button" onClick={() => setShowPicker(true)}
+                  className="absolute -bottom-1 -right-1 rounded-full bg-[#f97316] text-white p-1.5 shadow-md hover:bg-orange-600 transition-colors">
                   <Camera size={12} />
                 </button>
               </div>
-              <div className="flex-1">
-                <p className="font-bold text-lg">{profile?.fullName || profile?.username}</p>
-                <p className="text-sm text-muted-foreground mb-1">{profile?.email}</p>
-                <Badge variant="outline" className="capitalize text-xs mb-3">{profile?.role}</Badge>
-                <div className="flex gap-2 flex-wrap">
-                  <Button size="sm" variant="outline" onClick={() => setShowPicker(true)} disabled={uploadAvatarMut.isPending} className="gap-1.5 h-8">
-                    <Camera size={13} />{uploadAvatarMut.isPending ? "Uploading…" : "Change Photo"}
-                  </Button>
-                  {displayPicture && (
-                    <Button size="sm" variant="outline" className="h-8 text-destructive hover:bg-destructive/10 gap-1.5" onClick={handleDeleteAvatar} disabled={deleteAvatarMut.isPending}>
-                      <Trash2 size={13} />Remove
+              <div>
+                <h1 className="text-xl font-bold text-white">{profile?.fullName || profile?.username}</h1>
+                <p className="text-sm text-white/55 mt-0.5">{profile?.email}</p>
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold capitalize"
+                    style={{ background: "rgba(249,115,22,0.18)", color: "#fb923c", border: "1px solid rgba(249,115,22,0.30)" }}>
+                    {profile?.role}
+                  </span>
+                  {profile?.mobile && <span className="text-xs text-white/40">{profile.mobile}</span>}
+                  <div className="flex gap-2 ml-1">
+                    <Button size="sm" onClick={() => setShowPicker(true)} disabled={uploadAvatarMut.isPending}
+                      className="h-7 text-xs gap-1 bg-white/10 hover:bg-white/20 text-white border border-white/20">
+                      <Camera size={11} />{uploadAvatarMut.isPending ? "Uploading…" : "Change Photo"}
                     </Button>
-                  )}
+                    {displayPicture && (
+                      <Button size="sm" onClick={handleDeleteAvatar} disabled={deleteAvatarMut.isPending}
+                        className="h-7 text-xs gap-1 bg-white/10 hover:bg-white/20 text-white/70 border border-white/20">
+                        <Trash2 size={11} />Remove
+                      </Button>
+                    )}
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1.5">JPG · PNG · WEBP · HEIC — max 5 MB</p>
               </div>
             </div>
-          </SectionBlock>
 
-          {/* Personal Info */}
-          <SectionBlock id="s-info" icon={<User size={16} />} title="Personal Information">
-            <form onSubmit={onSaveProfile} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <FormField label="Full Name"><Input {...profileForm.register("fullName")} placeholder="Your full name" /></FormField>
-                <FormField label="Username"><Input value={profile?.username ?? ""} disabled className="bg-muted/50" /></FormField>
-                <FormField label="Email"><Input type="email" {...profileForm.register("email")} /></FormField>
-                <FormField label="Mobile"><Input {...profileForm.register("mobile")} placeholder="+91 XXXXX XXXXX" /></FormField>
-              </div>
-              <FormField label="Address"><Input {...profileForm.register("address")} /></FormField>
-              <FormField label="Bio"><Textarea {...profileForm.register("bio")} className="resize-none" rows={2} placeholder="Tell us about yourself..." /></FormField>
-              <div className="flex justify-end"><Button type="submit" disabled={updateMut.isPending}>{updateMut.isPending ? "Saving…" : "Save Changes"}</Button></div>
-            </form>
-          </SectionBlock>
-
-          {/* Security */}
-          <SectionBlock id="s-security" icon={<Lock size={16} />} title="Security">
-            <form onSubmit={onChangePassword} className="space-y-4">
-              <FormField label="Current Password"><Input type="password" {...passwordForm.register("currentPassword")} placeholder="Enter current password" /></FormField>
-              <div className="grid grid-cols-2 gap-4">
-                <FormField label="New Password"><Input type="password" {...passwordForm.register("password")} /></FormField>
-                <FormField label="Confirm Password"><Input type="password" {...passwordForm.register("confirmPassword")} /></FormField>
-              </div>
-              <div className="flex justify-end"><Button type="submit" disabled={updateMut.isPending}>{updateMut.isPending ? "Changing…" : "Change Password"}</Button></div>
-            </form>
-          </SectionBlock>
-
-          {/* Sessions */}
-          <SectionBlock id="s-sessions" icon={<Wifi size={16} />} title="Active Sessions">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-sm text-muted-foreground">Manage where you're currently logged in</p>
-              <Button variant="outline" size="sm" onClick={() => refetchSessions()} disabled={sessionsFetching} className="gap-1.5 h-8">
-                <RefreshCw size={13} className={sessionsFetching ? "animate-spin" : ""} />Refresh
-              </Button>
-            </div>
-            {sessionsContent}
-          </SectionBlock>
-
-          {/* Preferences */}
-          <SectionBlock id="s-prefs" icon={<Palette size={16} />} title="Preferences">
-            <form onSubmit={onSavePreferences} className="space-y-4">
+            {/* Right: KPI strip */}
+            <div className="flex items-center gap-3 shrink-0">
               {[
-                { label:"Theme", icon:<Palette size={14} />, child:<Select value={prefsForm.watch("theme")} onValueChange={v => prefsForm.setValue("theme", v as "light"|"dark")}><SelectTrigger className="w-36"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="light">☀️ Light</SelectItem><SelectItem value="dark">🌙 Dark</SelectItem></SelectContent></Select> },
-                { label:"Language", icon:<Globe size={14} />, child:<Select value={prefsForm.watch("language")} onValueChange={v => prefsForm.setValue("language", v as "en"|"hi"|"or")}><SelectTrigger className="w-36"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="en">🇬🇧 English</SelectItem><SelectItem value="hi">🇮🇳 हिंदी</SelectItem><SelectItem value="or">🇮🇳 ଓଡ଼ିଆ</SelectItem></SelectContent></Select> },
-                { label:"Dashboard Layout", icon:<LayoutDashboard size={14} />, child:<Select value={prefsForm.watch("dashboardLayout")} onValueChange={v => prefsForm.setValue("dashboardLayout", v)}><SelectTrigger className="w-36"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="default">Default</SelectItem><SelectItem value="compact">Compact</SelectItem><SelectItem value="expanded">Expanded</SelectItem></SelectContent></Select> },
-              ].map((row, i, arr) => (
-                <div key={row.label} className={`flex items-center justify-between ${i < arr.length-1 ? "pb-4 border-b" : ""}`}>
-                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">{row.icon}<span className="text-foreground">{row.label}</span></div>
-                  {row.child}
+                { val: String(sessions.length), label: "Active Sessions", icon: <Wifi size={15} /> },
+                { val: user?.role ?? "—", label: "Account Role", icon: <User size={15} />, capitalize: true },
+                { val: currentSession?.rememberMe ? "30 days" : "8 hours", label: "Session Length", icon: <Clock size={15} /> },
+              ].map(k => (
+                <div key={k.label} className="text-center px-5 py-3 rounded-xl border border-white/12"
+                  style={{ background: "rgba(255,255,255,0.07)" }}>
+                  <div className="flex items-center justify-center gap-1 mb-1" style={{ color: "#fb923c" }}>{k.icon}</div>
+                  <p className={`text-lg font-bold text-white ${k.capitalize ? "capitalize" : ""}`}>{k.val}</p>
+                  <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.45)" }}>{k.label}</p>
                 </div>
               ))}
-              <div className="flex justify-end pt-1"><Button type="submit" disabled={updatePrefsMut.isPending}>{updatePrefsMut.isPending ? "Saving…" : "Save Preferences"}</Button></div>
-            </form>
-          </SectionBlock>
+            </div>
+          </div>
+        </div>
 
-          {/* Business Info (admin) */}
-          {isAdmin && (
-            <SectionBlock id="s-business" icon={<Building2 size={16} />} title="Business Information">
-              <form onSubmit={onSaveSettings} className="space-y-4">
+        {/* Two-column content grid */}
+        <div className="grid gap-5" style={{ gridTemplateColumns: "1fr 300px" }}>
+          {/* ── Left column: Personal Info + Security + Sessions ── */}
+          <div className="space-y-5">
+            <CmdCard title="Personal Information" icon={<User size={15} />}>
+              <form onSubmit={onSaveProfile} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
+                  <FormField label="Full Name"><Input {...profileForm.register("fullName")} placeholder="Your full name" /></FormField>
+                  <FormField label="Username"><Input value={profile?.username ?? ""} disabled className="bg-muted/50" /></FormField>
+                  <FormField label="Email"><Input type="email" {...profileForm.register("email")} /></FormField>
+                  <FormField label="Mobile"><Input {...profileForm.register("mobile")} placeholder="+91 XXXXX XXXXX" /></FormField>
+                </div>
+                <FormField label="Address"><Input {...profileForm.register("address")} /></FormField>
+                <FormField label="Bio"><Textarea {...profileForm.register("bio")} className="resize-none" rows={2} placeholder="Tell us about yourself..." /></FormField>
+                <div className="flex justify-end"><Button type="submit" disabled={updateMut.isPending}>{updateMut.isPending ? "Saving…" : "Save Changes"}</Button></div>
+              </form>
+            </CmdCard>
+
+            <CmdCard title="Security" icon={<Lock size={15} />}>
+              <form onSubmit={onChangePassword} className="space-y-4">
+                <FormField label="Current Password"><Input type="password" {...passwordForm.register("currentPassword")} placeholder="Enter current password" /></FormField>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField label="New Password"><Input type="password" {...passwordForm.register("password")} /></FormField>
+                  <FormField label="Confirm Password"><Input type="password" {...passwordForm.register("confirmPassword")} /></FormField>
+                </div>
+                <div className="flex justify-end"><Button type="submit" disabled={updateMut.isPending}>{updateMut.isPending ? "Changing…" : "Change Password"}</Button></div>
+              </form>
+            </CmdCard>
+
+            <CmdCard title="Active Sessions" icon={<Wifi size={15} />}
+              action={
+                <Button variant="outline" size="sm" onClick={() => refetchSessions()} disabled={sessionsFetching} className="gap-1.5 h-7 text-xs">
+                  <RefreshCw size={12} className={sessionsFetching ? "animate-spin" : ""} />Refresh
+                </Button>
+              }>
+              {sessionsContent}
+            </CmdCard>
+          </div>
+
+          {/* ── Right column: Preferences + Business (admin) + System (admin) ── */}
+          <div className="space-y-5">
+            <CmdCard title="Preferences" icon={<Palette size={15} />}>
+              <form onSubmit={onSavePreferences} className="space-y-4">
+                {[
+                  { label: "Theme", icon: <Palette size={14} />, child: <Select value={prefsForm.watch("theme")} onValueChange={v => prefsForm.setValue("theme", v as "light"|"dark")}><SelectTrigger className="w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="light">☀️ Light</SelectItem><SelectItem value="dark">🌙 Dark</SelectItem></SelectContent></Select> },
+                  { label: "Language", icon: <Globe size={14} />, child: <Select value={prefsForm.watch("language")} onValueChange={v => prefsForm.setValue("language", v as "en"|"hi"|"or")}><SelectTrigger className="w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="en">🇬🇧 English</SelectItem><SelectItem value="hi">🇮🇳 हिंदी</SelectItem><SelectItem value="or">🇮🇳 ଓଡ଼ିଆ</SelectItem></SelectContent></Select> },
+                  { label: "Dashboard", icon: <LayoutDashboard size={14} />, child: <Select value={prefsForm.watch("dashboardLayout")} onValueChange={v => prefsForm.setValue("dashboardLayout", v)}><SelectTrigger className="w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="default">Default</SelectItem><SelectItem value="compact">Compact</SelectItem><SelectItem value="expanded">Expanded</SelectItem></SelectContent></Select> },
+                ].map((row, i, arr) => (
+                  <div key={row.label} className={`flex items-center justify-between ${i < arr.length - 1 ? "pb-4 border-b" : ""}`}>
+                    <div className="flex items-center gap-2 text-sm font-medium">{row.icon}{row.label}</div>
+                    {row.child}
+                  </div>
+                ))}
+                <Button type="submit" className="w-full mt-1" disabled={updatePrefsMut.isPending}>{updatePrefsMut.isPending ? "Saving…" : "Save Preferences"}</Button>
+              </form>
+            </CmdCard>
+
+            {isAdmin && (
+              <CmdCard title="Business Information" icon={<Building2 size={15} />} adminOnly>
+                <form onSubmit={onSaveSettings} className="space-y-3">
                   <FormField label="Business Name"><Input {...settingsForm.register("businessName")} /></FormField>
                   <FormField label="Website"><Input {...settingsForm.register("businessWebsite")} placeholder="e.g. sahucsc.in" /></FormField>
                   <FormField label="Mobile"><Input {...settingsForm.register("businessMobile")} /></FormField>
                   <FormField label="Email"><Input type="email" {...settingsForm.register("businessEmail")} /></FormField>
-                </div>
-                <FormField label="Address"><Input {...settingsForm.register("businessAddress")} /></FormField>
-                <div className="flex justify-end"><Button type="submit" disabled={updateSettingsMut.isPending}>{updateSettingsMut.isPending ? "Saving…" : "Save Business Info"}</Button></div>
-              </form>
-            </SectionBlock>
-          )}
+                  <FormField label="Address"><Input {...settingsForm.register("businessAddress")} /></FormField>
+                  <Button type="submit" className="w-full mt-1" disabled={updateSettingsMut.isPending}>{updateSettingsMut.isPending ? "Saving…" : "Save Business Info"}</Button>
+                </form>
+              </CmdCard>
+            )}
 
-          {/* System (admin) */}
-          {isAdmin && (
-            <SectionBlock id="s-system" icon={<Settings2 size={16} />} title="System Settings">
-              <div className="space-y-5">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">User Registration</p>
-                  <RegistrationControlSection />
-                </div>
-                <div className="pt-4 border-t">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">System Preferences</p>
-                  <form onSubmit={onSaveSettings} className="space-y-4">
-                    <div className="grid grid-cols-3 gap-4">
+            {isAdmin && (
+              <CmdCard title="System Settings" icon={<Settings2 size={15} />} adminOnly>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">User Registration</p>
+                    <RegistrationControlSection />
+                  </div>
+                  <div className="pt-3 border-t">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">System Preferences</p>
+                    <form onSubmit={onSaveSettings} className="space-y-3">
                       <FormField label="Language">
                         <Select value={settingsForm.watch("language")} onValueChange={v => settingsForm.setValue("language", v)}>
                           <SelectTrigger><SelectValue /></SelectTrigger>
@@ -792,21 +787,21 @@ export default function Profile() {
                           <SelectContent><SelectItem value="INR">INR (₹)</SelectItem><SelectItem value="USD">USD ($)</SelectItem></SelectContent>
                         </Select>
                       </FormField>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div><p className="text-sm font-medium">Auto Backup</p><p className="text-xs text-muted-foreground">Scheduled database backups</p></div>
-                      <Switch checked={settingsForm.watch("autoBackup")} onCheckedChange={v => settingsForm.setValue("autoBackup", v)} />
-                    </div>
-                    {settingsForm.watch("autoBackup") && (
-                      <FormField label="Frequency (days)"><Input type="number" min={1} max={30} {...settingsForm.register("backupFrequencyDays", { valueAsNumber: true })} className="w-24" /></FormField>
-                    )}
-                    <div className="flex justify-end"><Button type="submit" disabled={updateSettingsMut.isPending}>{updateSettingsMut.isPending ? "Saving…" : "Save Settings"}</Button></div>
-                  </form>
+                      <div className="flex items-center justify-between pt-1">
+                        <div><p className="text-sm font-medium">Auto Backup</p><p className="text-xs text-muted-foreground">Scheduled backups</p></div>
+                        <Switch checked={settingsForm.watch("autoBackup")} onCheckedChange={v => settingsForm.setValue("autoBackup", v)} />
+                      </div>
+                      {settingsForm.watch("autoBackup") && (
+                        <FormField label="Frequency (days)"><Input type="number" min={1} max={30} {...settingsForm.register("backupFrequencyDays", { valueAsNumber: true })} className="w-24" /></FormField>
+                      )}
+                      <Button type="submit" className="w-full" disabled={updateSettingsMut.isPending}>{updateSettingsMut.isPending ? "Saving…" : "Save Settings"}</Button>
+                    </form>
+                  </div>
                 </div>
-              </div>
-            </SectionBlock>
-          )}
-        </main>
+              </CmdCard>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════
