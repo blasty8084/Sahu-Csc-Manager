@@ -454,15 +454,14 @@ udhari.entry.create
 | `/services` | `services.tsx` | All roles | |
 | `/reports` | `reports.tsx` | All roles | Separate MobileReports + DesktopReports (v2.2) |
 | `/notifications` | `notifications.tsx` | All roles | |
-| `/profile` | `profile.tsx` | All roles | **Unified Profile + Settings (v2.3)** — Photo, Personal Info, Security, Sessions (embedded), Preferences, Business Info (admin), System (admin). Desktop V3: sticky side-nav + full-page scroll. Mobile V3: iOS drill-in. |
-| `/settings` | `settings.tsx` | — | Redirects to `/profile` (deprecated standalone page) |
+| `/profile` | `profile.tsx` | All roles | **Unified Profile + Settings (v2.3)** — Personal Info, Security, Sessions (embedded), Preferences, Business Info (admin), System (admin). Desktop V5: Command Center banner + two-column grid. Mobile V3: iOS drill-in. |
+| `/settings` | — | — | Deleted. Route redirects to `/profile` via `App.tsx`. File removed. |
 | `/sessions` | `sessions.tsx` | All roles | Standalone device management + revoke (still accessible; same UI also embedded in `/profile`) |
 | `/pwa-status` | `pwa-status.tsx` | All roles | Network, sync, storage, push status |
 | `/receipts/verify/:token` | `receipts-verify.tsx` | Public | QR scan target — no auth |
 | `/users` | `users.tsx` | admin | User management |
 | `/users-overview` | `users-overview.tsx` | admin | Cross-user balance view |
 | `/audit-logs` | `audit-logs.tsx` | admin | Full audit trail |
-| `/settings` | `settings.tsx` | admin | Business config |
 | `/backups` | `backups.tsx` | admin | pg_dump backup/restore |
 
 ### 6.3 Design System
@@ -497,28 +496,31 @@ Three-layer structure:
 - Tables: clean dividers, hover states, badge pills for counts, colored amounts
 - Charts: 200–260px height, CartesianGrid, styled tooltips, Legend
 
-#### Profile page desktop V3 (v2.3) — sticky side-nav + full-page scroll
+#### Profile page desktop V5 (v2.3) — Command Center banner + two-column grid
 
-`profile.tsx` desktop uses a sticky anchor-based side-nav (no router navigation, no re-mounts):
+`profile.tsx` desktop uses a full-width navy Command Center banner that breaks out of layout padding, followed by a responsive two-column card grid. No sticky side-nav, no anchor-based scroll links.
 
 ```
-┌─ side-nav (144px, sticky top-[72px]) ──────┐
-│  "Sections" label                           │
-│  Photo                                      │
-│  Personal Info                              │
-│  Security                                   │
-│  Sessions                                   │
-│  Preferences                                │
-│  Business Info   [Admin]                    │
-│  System          [Admin]                    │
-└─────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│  COMMAND BANNER  (navy gradient, -mx-8 -mt-8 px-8 py-6)      │
+│  [Avatar 80px]  Full Name · email · mobile · role badge      │
+│                              [Sessions] [Role] [Sess. Length]│
+└──────────────────────────────────────────────────────────────┘
+┌────────────────────────────────┐ ┌────────────────────────┐
+│  Personal Information          │ │  Preferences           │
+│  (2-col form grid)             │ ├────────────────────────┤
+│  Security                      │ │  Business Info  [Admin]│
+│  (password form)               │ │  (orange border)       │
+│  Active Sessions               │ ├────────────────────────┤
+│  (sessions UI)                 │ │  System Sett.   [Admin]│
+└────────────────────────────────┘ └────────────────────────┘
 ```
 
-- Each nav link is `<a href="#s-<id>">` — no `useNavigate` / `useLocation`
-- Each section block has `id="s-<id>"` + `style={{ scrollMarginTop: 72 }}` to offset the app header
-- `activeAnchor` state updated on `onClick`; active link styled with `bg-primary/10 text-primary font-semibold`
-- Admin-only sections show an `[Admin]` orange text label; hidden for non-admin users
-- Nav `position: sticky; top: 72px` (not `top: 0`) — clears the 60px app header
+**Command Banner:** `linear-gradient(135deg, #0b2c60, #0d3270, #0f3872)` breaking out with `-mx-8 -mt-8 mb-6`. KPI strip on the right shows total sessions, role, session length.
+
+**Grid:** `gridTemplateColumns: "1fr 300px"; gap: 24px`. Left column holds Personal Info → Security → Sessions. Right column holds Preferences → Business Info (admin) → System (admin).
+
+**`CmdCard` component:** `rounded-xl border bg-card shadow-sm`. Header: icon badge + title + optional `Admin` orange badge. Admin cards use `border-orange-200` + `bg-orange-50/60` header. No `SectionBlock`, no `activeAnchor` state, no `ALL_NAV` array.
 
 #### Profile page mobile V3 (v2.3) — iOS-style drill-in
 

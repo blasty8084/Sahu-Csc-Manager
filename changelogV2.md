@@ -9,11 +9,12 @@
 
 ## Table of Contents
 
-1. [v2.3.0 — Unified Profile + Sessions Page](#1-v230--unified-profile--sessions-page-june-2026)
+1. [v2.3.0 — Unified Profile + Settings Page](#1-v230--unified-profile--settings-page-june-2026)
    - [Unified /profile Page](#11-unified-profile-page)
-   - [Desktop V3 Design — Sticky Side-Nav + Full-Page Scroll](#12-desktop-v3-design--sticky-side-nav--full-page-scroll)
+   - [Desktop V5 Design — Command Center](#12-desktop-v5-design--command-center)
    - [Mobile V3 Design — iOS-Style Drill-In](#13-mobile-v3-design--ios-style-drill-in)
    - [Sessions Section Embedded](#14-sessions-section-embedded)
+   - [Settings Page Removed](#15-settings-page-removed)
 2. [v2.2.0 — Login UX Overhaul & Reports Redesign](#2-v220--login-ux-overhaul--reports-redesign-june-2026)
    - [Embedded Forgot-Password Flow (Inline)](#21-embedded-forgot-password-flow-inline)
    - [Login Attempt Counter with Visual Feedback](#22-login-attempt-counter-with-visual-feedback)
@@ -37,74 +38,77 @@
 
 ---
 
-## 1. v2.3.0 — Unified Profile + Sessions Page (June 2026)
+## 1. v2.3.0 — Unified Profile + Settings Page (June 2026)
 
 ### 1.1 Unified /profile Page
 
 **Problem:** Users had to navigate between two separate pages — `/profile` (personal info, avatar, password) and `/settings` (business info, system config, theme) — with no logical grouping and duplicated navigation steps for admins.
 
-**Change:** `/profile` is now the single unified page for all user and admin settings. The standalone `/settings` page (`settings.tsx`) is replaced with a redirect to `/profile`. No routes or API endpoints were removed — only the frontend page was merged.
+**Change:** `/profile` is now the single unified page for all user and admin settings. The standalone `/settings` page (`settings.tsx`) has been deleted. The `/settings` route redirects to `/profile` via `App.tsx`. No API endpoints were removed — only the frontend page was merged and the file deleted.
 
 **Sections in the unified page:**
 
 | Section | Visible to | Content |
 |---------|-----------|---------|
-| Photo | All | Avatar upload (camera / gallery picker), remove photo |
-| Personal Info | All | Full name, email, mobile, address, bio |
+| Personal Info | All | Full name, email, mobile, address, bio; avatar upload (camera / gallery picker), remove photo |
 | Security | All | Change password form |
 | Sessions | All | Embedded session management (see §1.4) |
 | Preferences | All | Theme, language, dashboard layout |
 | Business Info | Admin only | Business name, mobile, email, website, address |
 | System | Admin only | Registration control toggle, system language/theme/currency, auto-backup |
 
-Admin-only sections are hidden for non-admin users. On desktop, they show an orange `[Admin]` label in the side-nav. On mobile, they only appear in the section list when the logged-in user is an admin.
+Admin-only sections are hidden for non-admin users. On desktop they appear in the right column with an orange `Admin` badge in the card header. On mobile, they only appear in the section list when the logged-in user is an admin.
 
 **Files changed:**
-- `artifacts/sahu-csc/src/pages/profile.tsx` — full rewrite; unified page with all sections
-- `artifacts/sahu-csc/src/pages/settings.tsx` — replaced with `<Redirect to="/profile" />`
+- `artifacts/sahu-csc/src/pages/profile.tsx` — full rewrite; unified page with all sections + V5 Command Center desktop layout
+- `artifacts/sahu-csc/src/pages/settings.tsx` — **deleted**
+- `artifacts/sahu-csc/src/App.tsx` — `/settings` route changed to `<Redirect to="/profile" />`
 
 ---
 
-### 1.2 Desktop V3 Design — Sticky Side-Nav + Full-Page Scroll
+### 1.2 Desktop V5 Design — Command Center
 
-**Design:** Instead of tabs or a dark sidebar card grid, the desktop layout uses a lightweight sticky left-nav and a scrollable content area. All sections render simultaneously — the user scrolls or clicks a nav anchor to jump to a section.
+**Design:** A full-width navy Command Center banner breaks out of the page padding, followed by a two-column grid — a wide content column on the left and a narrower (300px) contextual column on the right.
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│  aside (w-44, sticky top-[72px])  │  main (flex-1)      │
-│                                   │                     │
-│  Sections ────────────────        │  [Photo section]    │
-│  ▸ Photo           (active)       │  ─────────────────  │
-│    Personal Info                  │  [Personal Info]    │
-│    Security                       │  ─────────────────  │
-│    Sessions                       │  [Security]         │
-│    Preferences                    │  ─────────────────  │
-│    Business Info  [Admin]         │  [Sessions]         │
-│    System         [Admin]         │  ─────────────────  │
-│                                   │  [Preferences]      │
-└───────────────────────────────────┴─────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│  COMMAND BANNER  (navy gradient, -mx-8 -mt-8 px-8 py-6)      │
+│  [Avatar 80px]  Full Name · email · role badge               │
+│                              [Sessions] [Role] [Sess. Length]│
+└──────────────────────────────────────────────────────────────┘
+┌────────────────────────────────┐ ┌────────────────────────┐
+│  Personal Information          │ │  Preferences           │
+│  (2-col form grid)             │ ├────────────────────────┤
+│                                │ │  Business Info  [Admin]│
+│  Security                      │ ├────────────────────────┤
+│  (password form)               │ │  System Sett.   [Admin]│
+│                                │ └────────────────────────┘
+│  Active Sessions               │
+│  (sessions UI)                 │
+└────────────────────────────────┘
 ```
 
-**Implementation details:**
+**Command Banner:**
+- Background: `linear-gradient(135deg, #0b2c60 0%, #0d3270 50%, #0f3872 100%)`
+- Breaks out of layout container padding: `-mx-8 -mt-8 mb-6 px-8 py-6`
+- Left side: 80px avatar (ring + shadow), full name, email, mobile, role badge
+- Right side: 3-stat KPI strip — total active sessions (blue chip), account role (saffron chip), session length (green chip for standard / purple for 30d)
 
-- Nav links are plain `<a href="#s-<id>">` — no router navigation; page never re-mounts
-- Each section block: `id="s-photo"`, `id="s-info"`, etc. + `style={{ scrollMarginTop: 72 }}` to clear the 60px app header when scrolling to the anchor
-- `activeAnchor` state (`TabId`) updated via `onClick` on each nav link
-- Active link: `bg-primary/10 text-primary font-semibold`; inactive: `text-muted-foreground hover:text-foreground hover:bg-muted`
-- Aside: `sticky top-[72px]` — aligns below the fixed app header bar
-- `SectionBlock` wrapper component: icon badge (navy `bg-primary/10` rounded-lg), bold heading, `rounded-xl border bg-card p-5` content card
+**Two-column grid:**
+- `display: grid; gridTemplateColumns: "1fr 300px"; gap: 24px`
+- Left column (flex-1): Personal Info card → Security card → Active Sessions card
+- Right column (300px, fixed): Preferences card → Business Info card (admin, orange border) → System Settings card (admin, orange border)
 
-**Nav section IDs:**
+**`CmdCard` helper component:**
+- `rounded-xl border bg-card shadow-sm overflow-hidden`
+- Header: icon badge (navy `bg-primary/10`, 32px, rounded-lg) + bold title + optional `Admin` orange badge + optional `action` slot (right-aligned)
+- Admin cards: `border-orange-200`; header: `bg-orange-50/60`; badge: orange text
+- Body: `px-5 py-4`
 
-| ID | Section | Admin only |
-|----|---------|-----------|
-| `s-photo` | Profile Photo | No |
-| `s-info` | Personal Information | No |
-| `s-security` | Security | No |
-| `s-sessions` | Active Sessions | No |
-| `s-prefs` | Preferences | No |
-| `s-business` | Business Information | Yes |
-| `s-system` | System Settings | Yes |
+**Files changed:**
+- `artifacts/sahu-csc/src/pages/profile.tsx` — `CmdCard` helper added; removed `SectionBlock`, `activeAnchor` state, `ALL_NAV` array; desktop layout replaced with Command Center banner + two-column grid
+- `artifacts/sahu-csc/src/components/layout.tsx` — Settings nav link removed from sidebar (admin section)
+- `artifacts/sahu-csc/src/lib/prefetch.ts` — `/settings` prefetch entry removed
 
 ---
 
@@ -145,6 +149,23 @@ Mobile Home Screen:                 Drill-in (e.g. Security):
 | `preferences` | Preferences | Palette | No |
 | `business` | Business Info | Building2 | Yes |
 | `system` | System | Settings2 | Yes |
+
+---
+
+### 1.5 Settings Page Removed
+
+**Change:** `artifacts/sahu-csc/src/pages/settings.tsx` has been deleted. Business config, system settings, and preferences are all now managed inside `/profile`.
+
+**Impact:**
+
+| Item | Before | After |
+|------|--------|-------|
+| `settings.tsx` | Standalone page | **Deleted** |
+| `/settings` route in `App.tsx` | Rendered `settings.tsx` | `<Redirect to="/profile" />` |
+| Settings nav link in sidebar | Shown in admin nav section | **Removed** |
+| `/settings` prefetch in `prefetch.ts` | Listed | **Removed** |
+
+No API routes were changed. `GET /api/settings` and `PATCH /api/settings` remain on the backend — they are consumed by the profile page.
 
 ---
 
@@ -603,7 +624,7 @@ New page at `/pwa-status` (App & Offline Status). Shows live:
 | Mobile FAB | Positioned at `bottom-20` (80px) instead of `bottom-6` to clear the bottom nav bar (~64px) |
 | Notifications page | Header stacks on mobile, tabs scroll horizontally, text truncates to prevent overflow |
 | Reject-with-reason | When admin declines a registration, `{ rejected: true, rejectionReason }` returned on next login attempt; distinct toast shown to the user |
-| `businessWebsite` setting | Added to `DEFAULT_SETTINGS` and `settings.tsx` form — no migration needed (key-value store) |
+| `businessWebsite` setting | Added to `DEFAULT_SETTINGS` — no migration needed (key-value store); managed via Business Info section in `/profile` |
 
 ---
 
