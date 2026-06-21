@@ -127,8 +127,8 @@ export function V4Mobile() {
         {tab==="system"&&(
           <>
             {[
-              {title:"User Registration",sub:reg?"Open — users can register":"Closed — page hidden",on:reg,set:()=>setReg(!r=>!r),ok:reg},
-              {title:"Auto Backup",sub:bk?"Backups scheduled":"No automatic backups",on:bk,set:()=>setBk(!b=>!b),ok:bk},
+              {title:"User Registration",sub:reg?"Open — users can register":"Closed — page hidden",on:reg,set:()=>setReg(v=>!v),ok:reg},
+              {title:"Auto Backup",sub:bk?"Backups scheduled":"No automatic backups",on:bk,set:()=>setBk(v=>!v),ok:bk},
             ].map(s=>(
               <div key={s.title} style={{background:"#fff",borderRadius:14,border:`1.5px solid ${s.ok?"#bbf7d0":"#e5e7eb"}`,padding:"16px 18px",marginBottom:12,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                 <div style={{flex:1,paddingRight:12}}>
