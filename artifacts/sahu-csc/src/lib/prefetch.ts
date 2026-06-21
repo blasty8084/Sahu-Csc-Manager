@@ -11,7 +11,6 @@ const routeImports: Record<string, () => Promise<unknown>> = {
   "/download-app":   () => import("@/pages/download-app"),
   "/users":          () => import("@/pages/users"),
   "/audit-logs":     () => import("@/pages/audit-logs"),
-  "/settings":       () => import("@/pages/settings"),
   "/backups":        () => import("@/pages/backups"),
   "/server-health":  () => import("@/pages/server-health"),
 };

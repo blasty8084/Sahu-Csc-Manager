@@ -5,7 +5,7 @@ import { useUnreadCount } from "@/hooks/use-notifications";
 import { useTheme } from "@/components/theme-provider";
 import {
   LayoutDashboard, BookOpen, Briefcase, BarChart3, Bell,
-  History, Users, Settings, Database, Menu,
+  History, Users, Database, Menu,
   Fingerprint, UserCircle, WifiOff, ArrowDownToLine, HeartPulse, MonitorSmartphone,
   LogIn, Sun, Moon, Info, HandCoins,
 } from "lucide-react";
@@ -235,7 +235,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/users", label: "User Management", icon: Users, badge: pendingCount },
     { href: "/audit-logs", label: "Audit Logs", icon: History },
     { href: "/backups", label: "Backups", icon: Database },
-    { href: "/settings", label: "Settings", icon: Settings },
     { href: "/server-health", label: "Server Health", icon: HeartPulse },
   ] : [];
 
