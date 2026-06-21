@@ -1,5 +1,5 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 2.1.0** — last updated 2026-06-20
+**Version 2.2.0** — last updated 2026-06-21
 
 A full-stack CSC (Common Service Center) business management platform for tracking services, ledger accounting, AePS cash management, Udhari Khata (customer credit ledger), and reporting. Built for Odisha / India rural service centers. Supports PWA installation, offline operation, and Android TWA packaging.
 
@@ -123,7 +123,7 @@ artifacts/
       udhari.tsx          — Udhari Khata customer list: search, sort, To Collect / To Pay banner, FAB
       udhari-customer.tsx — Per-customer ledger: balance banner, You Gave/You Got, entry list, WhatsApp reminder, PDF export
       services.tsx
-      reports.tsx         — Charts + Excel export + cached offline
+      reports.tsx         — Command Center design (v2.2): horizontal top nav bar, navy KPI strip, 2-col chart grid, Print Report + Excel export; MobileReports unchanged
       notifications.tsx
       profile.tsx
       users.tsx           — User management (admin)
@@ -579,6 +579,9 @@ Design exploration lives in `artifacts/mockup-sandbox/`. Each group is a folder 
 - **Login page `h-screen` must not be changed to `min-h-screen`**: Both `MobileLogin` and `DesktopLogin` use `h-screen overflow-hidden` to keep all content within the viewport without scrolling. Changing to `min-h-screen` causes the page to scroll on short screens.
 - **Responsive table pattern**: For pages with data tables, always render both a mobile card list (`sm:hidden`) and a desktop table (`hidden sm:block`). Do not use `overflow-x-auto` alone as a mobile solution — it produces poor UX on phones. Tables inside dialogs use `overflow-x-auto` with `min-w-[480px]` since the dialog already constrains width.
 - **`willChange: transform` on an ancestor breaks `position: fixed`**: The page-transition `motion.div` in `App.tsx` must NOT have `willChange: "opacity, transform"` or any active CSS transform. When a parent has `willChange: transform`, it becomes a new containing block for `position: fixed` children — making them position relative to that div instead of the viewport. The bottom nav has correct `fixed bottom-0` CSS; never add `willChange: transform` to any of its ancestor elements. Framer Motion handles GPU compositing internally without needing an explicit `willChange` hint.
+- **Desktop Reports — Command Center layout (v2.2)**: `DesktopReports` uses a full-width column layout: (1) white horizontal top nav bar — brand left, 4 tab links centre, filter controls + Print + Export buttons right; (2) navy KPI strip — 5 metric chips (tab-specific) showing live data from the already-fetched API responses; (3) scrollable `#f1f5f9` content area with 2-column chart grids and data tables. There is no sidebar. `MobileReports` is untouched. The `DESKTOP_TABS` constant holds tab metadata (id, label, Icon, accent, grad). `KpiChip` is a presentational-only component for the navy strip.
+- **Reports sparklines use existing monthly data**: The `Sparkline` sub-component in `reports.tsx` (72×28 `LineChart`, no axes/tooltip) reads `monthly.data.dailyBreakdown.slice(-7)` — no extra API call. It is passed into `DesktopStatCard` via `sparkData` / `sparkColor` props and only renders when there are ≥ 2 data points. In Command Center (v2.2) sparklines are on the KPI-strip level (not individual cards) — do not add sparklines back to `DesktopStatCard` usages without re-checking the layout.
+- **Print Report — `window.open` approach**: `printReport()` in `DesktopReports` builds a self-contained HTML string (inline `<style>`, A4 `@page`, branded header, KPI strip, tables, navy `summary-box`) and writes it into a new `window.open("", "_blank")`. `win.print()` fires after 400 ms to allow layout paint. This avoids `@media print` conflicts with Tailwind/Vite's dev CSS. The generated HTML adapts per tab: Daily (services table + AePS box), Monthly (daily breakdown table + AePS box), AePS (full day-wise detail table), Services (breakdown table). Never replace with a library-based PDF approach without removing this function first — duplicate print triggers will confuse users.
 
 ---
 
