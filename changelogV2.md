@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v2
-**Current version: 2.2.0 — June 2026**
+**Current version: 2.3.0 — June 2026**
 
 > Comprehensive record of every feature, change, and upgrade from v2.0.0 onward.  
 > For a full description of the system architecture, see `architectureV2.md`.  
@@ -9,32 +9,203 @@
 
 ## Table of Contents
 
-1. [v2.2.0 — Login UX Overhaul & Reports Redesign](#1-v220--login-ux-overhaul--reports-redesign-june-2026)
-   - [Embedded Forgot-Password Flow (Inline)](#11-embedded-forgot-password-flow-inline)
-   - [Login Attempt Counter with Visual Feedback](#12-login-attempt-counter-with-visual-feedback)
-   - [Lockout Countdown Timer](#13-lockout-countdown-timer)
-   - [Reports Page Full Redesign](#14-reports-page-full-redesign)
-2. [v2.1.0 — Security, Receipts, Udhari, Admin Oversight](#2-v210--security-receipts-udhari-admin-oversight-june-2026)
-   - [OTP Password Reset](#21-otp-password-reset)
-   - [V2 Multi-Device Sessions](#22-v2-multi-device-sessions)
-   - [RBAC — requirePermission Middleware](#23-rbac--requirepermission-middleware)
-   - [Receipt System](#24-receipt-system)
-   - [Admin Oversight Pages](#25-admin-oversight-pages)
-   - [Notification Isolation Fixes](#26-notification-isolation-fixes)
-   - [UI Design System v2](#27-ui-design-system-v2)
-   - [AePS Opening Balance Redesign](#28-aeps-opening-balance-redesign)
-   - [PWA Status Page](#29-pwa-status-page)
-   - [Miscellaneous Fixes (v2.1)](#210-miscellaneous-fixes-v21)
-3. [v2.0.0 — Udhari Khata](#3-v200--udhari-khata-june-2026)
-4. [Database Schema Reference](#4-database-schema-reference)
-5. [API Routes Reference](#5-api-routes-reference)
-6. [Known Gotchas & Conventions](#6-known-gotchas--conventions)
+1. [v2.3.0 — Unified Profile + Sessions Page](#1-v230--unified-profile--sessions-page-june-2026)
+   - [Unified /profile Page](#11-unified-profile-page)
+   - [Desktop V3 Design — Sticky Side-Nav + Full-Page Scroll](#12-desktop-v3-design--sticky-side-nav--full-page-scroll)
+   - [Mobile V3 Design — iOS-Style Drill-In](#13-mobile-v3-design--ios-style-drill-in)
+   - [Sessions Section Embedded](#14-sessions-section-embedded)
+2. [v2.2.0 — Login UX Overhaul & Reports Redesign](#2-v220--login-ux-overhaul--reports-redesign-june-2026)
+   - [Embedded Forgot-Password Flow (Inline)](#21-embedded-forgot-password-flow-inline)
+   - [Login Attempt Counter with Visual Feedback](#22-login-attempt-counter-with-visual-feedback)
+   - [Lockout Countdown Timer](#23-lockout-countdown-timer)
+   - [Reports Page Full Redesign](#24-reports-page-full-redesign)
+3. [v2.1.0 — Security, Receipts, Udhari, Admin Oversight](#3-v210--security-receipts-udhari-admin-oversight-june-2026)
+   - [OTP Password Reset](#31-otp-password-reset)
+   - [V2 Multi-Device Sessions](#32-v2-multi-device-sessions)
+   - [RBAC — requirePermission Middleware](#33-rbac--requirepermission-middleware)
+   - [Receipt System](#34-receipt-system)
+   - [Admin Oversight Pages](#35-admin-oversight-pages)
+   - [Notification Isolation Fixes](#36-notification-isolation-fixes)
+   - [UI Design System v2](#37-ui-design-system-v2)
+   - [AePS Opening Balance Redesign](#38-aeps-opening-balance-redesign)
+   - [PWA Status Page](#39-pwa-status-page)
+   - [Miscellaneous Fixes (v2.1)](#310-miscellaneous-fixes-v21)
+4. [v2.0.0 — Udhari Khata](#4-v200--udhari-khata-june-2026)
+5. [Database Schema Reference](#5-database-schema-reference)
+6. [API Routes Reference](#6-api-routes-reference)
+7. [Known Gotchas & Conventions](#7-known-gotchas--conventions)
 
 ---
 
-## 1. v2.2.0 — Login UX Overhaul & Reports Redesign (June 2026)
+## 1. v2.3.0 — Unified Profile + Sessions Page (June 2026)
 
-### 1.1 Embedded Forgot-Password Flow (Inline)
+### 1.1 Unified /profile Page
+
+**Problem:** Users had to navigate between two separate pages — `/profile` (personal info, avatar, password) and `/settings` (business info, system config, theme) — with no logical grouping and duplicated navigation steps for admins.
+
+**Change:** `/profile` is now the single unified page for all user and admin settings. The standalone `/settings` page (`settings.tsx`) is replaced with a redirect to `/profile`. No routes or API endpoints were removed — only the frontend page was merged.
+
+**Sections in the unified page:**
+
+| Section | Visible to | Content |
+|---------|-----------|---------|
+| Photo | All | Avatar upload (camera / gallery picker), remove photo |
+| Personal Info | All | Full name, email, mobile, address, bio |
+| Security | All | Change password form |
+| Sessions | All | Embedded session management (see §1.4) |
+| Preferences | All | Theme, language, dashboard layout |
+| Business Info | Admin only | Business name, mobile, email, website, address |
+| System | Admin only | Registration control toggle, system language/theme/currency, auto-backup |
+
+Admin-only sections are hidden for non-admin users. On desktop, they show an orange `[Admin]` label in the side-nav. On mobile, they only appear in the section list when the logged-in user is an admin.
+
+**Files changed:**
+- `artifacts/sahu-csc/src/pages/profile.tsx` — full rewrite; unified page with all sections
+- `artifacts/sahu-csc/src/pages/settings.tsx` — replaced with `<Redirect to="/profile" />`
+
+---
+
+### 1.2 Desktop V3 Design — Sticky Side-Nav + Full-Page Scroll
+
+**Design:** Instead of tabs or a dark sidebar card grid, the desktop layout uses a lightweight sticky left-nav and a scrollable content area. All sections render simultaneously — the user scrolls or clicks a nav anchor to jump to a section.
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  aside (w-44, sticky top-[72px])  │  main (flex-1)      │
+│                                   │                     │
+│  Sections ────────────────        │  [Photo section]    │
+│  ▸ Photo           (active)       │  ─────────────────  │
+│    Personal Info                  │  [Personal Info]    │
+│    Security                       │  ─────────────────  │
+│    Sessions                       │  [Security]         │
+│    Preferences                    │  ─────────────────  │
+│    Business Info  [Admin]         │  [Sessions]         │
+│    System         [Admin]         │  ─────────────────  │
+│                                   │  [Preferences]      │
+└───────────────────────────────────┴─────────────────────┘
+```
+
+**Implementation details:**
+
+- Nav links are plain `<a href="#s-<id>">` — no router navigation; page never re-mounts
+- Each section block: `id="s-photo"`, `id="s-info"`, etc. + `style={{ scrollMarginTop: 72 }}` to clear the 60px app header when scrolling to the anchor
+- `activeAnchor` state (`TabId`) updated via `onClick` on each nav link
+- Active link: `bg-primary/10 text-primary font-semibold`; inactive: `text-muted-foreground hover:text-foreground hover:bg-muted`
+- Aside: `sticky top-[72px]` — aligns below the fixed app header bar
+- `SectionBlock` wrapper component: icon badge (navy `bg-primary/10` rounded-lg), bold heading, `rounded-xl border bg-card p-5` content card
+
+**Nav section IDs:**
+
+| ID | Section | Admin only |
+|----|---------|-----------|
+| `s-photo` | Profile Photo | No |
+| `s-info` | Personal Information | No |
+| `s-security` | Security | No |
+| `s-sessions` | Active Sessions | No |
+| `s-prefs` | Preferences | No |
+| `s-business` | Business Information | Yes |
+| `s-system` | System Settings | Yes |
+
+---
+
+### 1.3 Mobile V3 Design — iOS-Style Drill-In
+
+**Design:** The mobile layout has two states — a home screen showing the avatar summary + section list, and a drill-in view for the selected section.
+
+```
+Mobile Home Screen:                 Drill-in (e.g. Security):
+┌──────────────────────────┐        ┌──────────────────────────┐
+│  [Avatar 80px]           │        │  ← Back    Security      │
+│  Rajesh Kumar            │        ├──────────────────────────┤
+│  admin@sahucsc.in        │        │  Change Password         │
+│  [admin badge]           │        │  ─────────────────       │
+├──────────────────────────┤        │  Sessions                │
+│  👤  My Profile      ❯   │        │  (compact card list)     │
+│  🔒  Security        ❯   │        │  [Logout Others]         │
+│  🎨  Preferences     ❯   │        │  [Logout All]            │
+│  🏢  Business Info   ❯   │        └──────────────────────────┘
+│  ⚙️   System         ❯   │
+└──────────────────────────┘
+```
+
+**Implementation details:**
+
+- State: `mobileSection: MobileTab | null` — `null` = home screen
+- Section options: `"profile"`, `"security"`, `"preferences"`, `"business"` (admin), `"system"` (admin)
+- Home screen: avatar card (clickable camera button), tappable rows with icon badge + label + `ChevronRight`
+- Drill-in: breadcrumb header with `← Back` button, section content renders inline
+- Sessions embedded inside `"security"` drill-in as a compact card list + bulk-action button strip
+
+**Mobile nav items:**
+
+| ID | Label | Icon | Admin only |
+|----|-------|------|-----------|
+| `profile` | My Profile | User | No |
+| `security` | Security | Lock | No |
+| `preferences` | Preferences | Palette | No |
+| `business` | Business Info | Building2 | Yes |
+| `system` | System | Settings2 | Yes |
+
+---
+
+### 1.4 Sessions Section Embedded
+
+**Change:** The full session management UI from `sessions.tsx` is embedded directly into `/profile` as the **Sessions** section. The standalone `/sessions` page still exists and is fully functional — it is not removed or redirected.
+
+**Embedded UI (desktop — full section; mobile — inside Security drill-in):**
+
+```
+Active Sessions section:
+┌─────────────────────────────────────────────────────────┐
+│  Manage where you're logged in           [Refresh ↺]    │
+├─────────────────────────────────────────────────────────┤
+│  [3]           [admin]        [8h]                      │
+│  Active Sessions  Account Role  Session Length           │
+├─────────────────────────────────────────────────────────┤
+│  ⚠ Sign out other devices   2 sessions  [Logout Others] │
+│  ✕ Sign out everywhere                  [Logout All]    │
+├─────────────────────────────────────────────────────────┤
+│  🛡 Current Session  [This Device]                      │
+│  Chrome on Android · 192.168.1.1 · just now             │
+├─────────────────────────────────────────────────────────┤
+│  Firefox on Windows · 10.0.0.1 · 2h ago     [Revoke]   │
+├─────────────────────────────────────────────────────────┤
+│  💡 Security tip: ...                                   │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Features:**
+- 3-stat strip: total active sessions · account role · session length (8h / 30d)
+- "Logout Others" orange banner (only shown when other sessions exist)
+- "Logout All" red banner (always shown when sessions > 0)
+- Current session card with `ShieldCheck` icon + "This Device" badge
+- Other sessions list: each with a Revoke button
+- Auto-refreshes every 30 seconds (`refetchInterval: 30_000`)
+- Manual Refresh button (`RefreshCw` icon, spins during fetch)
+- 3 confirmation `AlertDialog`s: Revoke single · Logout Others · Logout All
+
+**State added to `Profile` component:**
+```ts
+const [revokeId, setRevokeId] = useState<number | null>(null);
+const [revokeOthersOpen, setRevokeOthersOpen] = useState(false);
+const [revokeAllOpen, setRevokeAllOpen] = useState(false);
+```
+
+**Session helpers inlined (from `sessions.tsx`):**
+- `deviceIcon(os)` — returns `Smartphone | Tablet | Monitor`
+- `timeAgo(iso)` — "just now" / "Xm ago" / "Xh ago" / "Xd ago"
+- `formatExpiry(iso)` — "Expires in Xd Xh" / "Expires in Xh Xm" / "Expired"
+- `apiFetch(path, options?)` — fetch wrapper with credentials + JSON headers
+- `SessionCard` — sub-component; supports optional `compact` prop for mobile view
+
+**Files changed:**
+- `artifacts/sahu-csc/src/pages/profile.tsx` — sessions query + 3 mutations + all helpers + `SessionCard` sub-component added
+
+---
+
+## 2. v2.2.0 — Login UX Overhaul & Reports Redesign (June 2026)
+
+### 2.1 Embedded Forgot-Password Flow (Inline)
 
 **Problem:** The old "Forgot Password?" link navigated away to `/forgot-password`, losing the login context and creating a jarring full-page transition.
 
@@ -70,7 +241,7 @@
 
 ---
 
-### 1.2 Login Attempt Counter with Visual Feedback
+### 2.2 Login Attempt Counter with Visual Feedback
 
 **Problem:** Users had no feedback on how many wrong-password attempts they had remaining before lockout.
 
@@ -109,7 +280,7 @@
 
 ---
 
-### 1.3 Lockout Countdown Timer
+### 2.3 Lockout Countdown Timer
 
 **Problem:** When an account locked after 5 attempts, the user saw a plain error message with no indication of when they could try again.
 
@@ -159,7 +330,7 @@
 
 ---
 
-### 1.4 Reports Page Full Redesign
+### 2.4 Reports Page Full Redesign
 
 **Problem:** The existing `reports.tsx` used a single layout that was neither optimised for mobile nor fully featured on desktop. Tabs were cramped on mobile, charts were unsized, and there was no sidebar navigation on desktop.
 
@@ -250,9 +421,9 @@ DESKTOP_TABS = [
 
 ---
 
-## 2. v2.1.0 — Security, Receipts, Udhari, Admin Oversight (June 2026)
+## 3. v2.1.0 — Security, Receipts, Udhari, Admin Oversight (June 2026)
 
-### 2.1 OTP Password Reset
+### 3.1 OTP Password Reset
 
 **Flow (4 steps, single page `/forgot-password`):**
 
@@ -436,7 +607,7 @@ New page at `/pwa-status` (App & Offline Status). Shows live:
 
 ---
 
-## 3. v2.0.0 — Udhari Khata (June 2026)
+## 4. v2.0.0 — Udhari Khata (June 2026)
 
 **Udhari Khata** = "credit notebook" — per-user customer credit ledger.
 
@@ -477,7 +648,7 @@ udhari:manage  — POST/PATCH/DELETE udhari/* routes
 
 ---
 
-## 4. Database Schema Reference
+## 5. Database Schema Reference
 
 ### Tables added since v2.0.0
 
@@ -520,7 +691,7 @@ password_reset_tokens — OTP reset tokens
 
 ---
 
-## 5. API Routes Reference
+## 6. API Routes Reference
 
 ### Routes added in v2.x
 
@@ -545,7 +716,7 @@ password_reset_tokens — OTP reset tokens
 
 ---
 
-## 6. Known Gotchas & Conventions
+## 7. Known Gotchas & Conventions
 
 | Topic | Rule |
 |-------|------|

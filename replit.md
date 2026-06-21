@@ -1,5 +1,5 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 2.2.0** — last updated 2026-06-21
+**Version 2.3.0** — last updated 2026-06-21
 
 A full-stack CSC (Common Service Center) business management platform for tracking services, ledger accounting, AePS cash management, Udhari Khata (customer credit ledger), and reporting. Built for Odisha / India rural service centers. Supports PWA installation, offline operation, and Android TWA packaging.
 
@@ -125,13 +125,13 @@ artifacts/
       services.tsx
       reports.tsx         — Command Center design (v2.2): horizontal top nav bar, navy KPI strip, 2-col chart grid, Print Report + Excel export; MobileReports unchanged
       notifications.tsx
-      profile.tsx
+      profile.tsx         — Unified Profile + Settings page (v2.3): Desktop V3 sticky side-nav + full-page scroll; Mobile V3 iOS drill-in. Sections: Photo, Personal Info, Security, Sessions, Preferences, Business Info (admin), System (admin). Replaces separate settings page.
       users.tsx           — User management (admin)
       users-overview.tsx  — Admin overview of all users' ledger/balance (admin)
       audit-logs.tsx      — Full audit trail (admin)
-      settings.tsx        — Business info, theme, backup config (admin)
+      settings.tsx        — Redirects to /profile (deprecated standalone page)
       backups.tsx         — Backup and restore (admin)
-      sessions.tsx        — Active sessions page: device cards, revoke, logout others, logout ALL
+      sessions.tsx        — Standalone sessions page: device cards, revoke, logout others, logout ALL (still accessible at /sessions; sessions also embedded in /profile)
       pwa-status.tsx      — App & Offline Status page (network, sync, storage, push)
       receipts-verify.tsx — Public receipt verification page (/receipts/verify/:token); no auth required
       offline.tsx         — Offline fallback page
@@ -444,6 +444,9 @@ Full config in `infrastructure/twa/twa-config.json`.
 - **Mobile header design language (v2)**: The mobile header (`md:hidden` block in `layout.tsx`) uses a 3-layer structure: (1) 3px gradient accent stripe (navy `#0b2c60` → saffron `#f97316`), (2) white frosted main bar (60px, `bg-white`, box-shadow) with a navy rounded-square CSC badge logo + two-tone "SAHU" (navy) / "CSC" (saffron) brand text on the left; bell button + avatar chip on the right, (3) navy gradient greeting sub-bar (44px, `linear-gradient(135deg, #0b2c60, #0f3872)`) showing time-based greeting + short date. The avatar chip replaces the old hamburger icon and opens the `Sheet` nav drawer — do not add a separate hamburger. `firstName`, `greeting`, `greetingEmoji`, and `shortDate` are computed inside the `Layout` component.
 - **Mobile dashboard card design language**: Stat cards use a 3px colored top accent stripe (`s.accent` gradient) + white `bg-white` card body with `box-shadow` instead of a Tailwind `border`. Icon badges use `s.iconGradient` (CSS gradient) with a matching colored `box-shadow` drop shadow. Quick action cards are white rounded-2xl cards with gradient icon badges (42px, borderRadius 13) and navy label text. Never use flat `bg-*` Tailwind backgrounds for icon badges in these cards — always use `background: gradient` inline style so the gradient renders correctly.
 - **Forgot-password is a merged 4-step page**: `/forgot-password` covers the entire reset flow — identifier → OTP → new password → success. `/reset-password` simply redirects to `/forgot-password`. Do not split the flow back into two pages.
+- **Unified Profile + Settings page (v2.3)**: `/profile` is now the single unified page for all user and admin settings. It replaces the separate `/settings` page — `settings.tsx` now simply redirects to `/profile`. Desktop uses **V3 design**: a sticky `144px` left side-nav with anchor `href="#s-<id>"` links (scroll-margin-top 72px) and full-page scroll content sections. Mobile uses **V3 iOS drill-in**: avatar summary + tappable section rows with chevrons on the home screen; tapping drills into an inline detail view with a Back button. Sections visible to all users: Photo, Personal Info, Security, Sessions, Preferences. Admin-only sections (flagged with "Admin" badge in desktop side-nav): Business Info, System. Sessions are embedded inside the Security drill-in on mobile and appear as a dedicated scroll section on desktop.
+- **Sessions embedded in profile (v2.3)**: The full session management UI (stats strip, current device card, other-device list with Revoke buttons, Logout Others / Logout All banners, 3 confirmation dialogs) is embedded directly in `/profile`. The standalone `/sessions` page still exists and remains accessible for direct links; it is not removed. Sessions auto-refresh every 30 seconds in both locations.
+- **Profile desktop V3 side-nav anchor pattern**: Desktop side-nav links use plain `<a href="#s-photo">` anchors (not `useLocation` or router navigation) so the page never re-mounts. `scrollMarginTop: 72` on each section block offsets for the sticky app header. Active link tracking via `activeAnchor` state updated `onClick`. Never use `position: sticky` with `top: 0` on the nav — use `top: [72px]` (height of the app header) so the nav clears the header when scrolled.
 - **Password reset accepts username/email/mobile**: `POST /api/auth/send-otp { identifier, purpose: "password_reset" }` resolves the identifier to an email server-side via `OR` query on username/email/mobile columns. Returns `{ maskedEmail }`. The frontend never needs to know the actual email — it re-sends `identifier` to `verify-otp` which resolves internally. For `registration` purpose, `email` is still required.
 - **OTP resend timer is 120 seconds everywhere**: Both `forgot-password.tsx` and `register.tsx` use `RESEND_COOLDOWN = 120`. Do not change to 60.
 - **send-otp silent success on unknown identifier**: For `password_reset`, if the identifier does not resolve to an active account, `send-otp` returns HTTP 200 with `{ maskedEmail: null }` — never 404. This prevents account enumeration. The frontend always advances to the OTP step regardless.

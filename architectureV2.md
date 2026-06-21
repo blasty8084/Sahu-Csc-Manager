@@ -1,5 +1,5 @@
 # SAHU CSC — Architecture Reference v2
-**Version 2.2.0 — June 2026**
+**Version 2.3.0 — June 2026**
 
 > This document is the single authoritative reference for the SAHU CSC platform architecture.  
 > It supersedes any older architecture notes in `ARCHITECTURE.md`.  
@@ -454,8 +454,9 @@ udhari.entry.create
 | `/services` | `services.tsx` | All roles | |
 | `/reports` | `reports.tsx` | All roles | Separate MobileReports + DesktopReports (v2.2) |
 | `/notifications` | `notifications.tsx` | All roles | |
-| `/profile` | `profile.tsx` | All roles | Avatar, bio, password change |
-| `/sessions` | `sessions.tsx` | All roles | Device management + revoke |
+| `/profile` | `profile.tsx` | All roles | **Unified Profile + Settings (v2.3)** — Photo, Personal Info, Security, Sessions (embedded), Preferences, Business Info (admin), System (admin). Desktop V3: sticky side-nav + full-page scroll. Mobile V3: iOS drill-in. |
+| `/settings` | `settings.tsx` | — | Redirects to `/profile` (deprecated standalone page) |
+| `/sessions` | `sessions.tsx` | All roles | Standalone device management + revoke (still accessible; same UI also embedded in `/profile`) |
 | `/pwa-status` | `pwa-status.tsx` | All roles | Network, sync, storage, push status |
 | `/receipts/verify/:token` | `receipts-verify.tsx` | Public | QR scan target — no auth |
 | `/users` | `users.tsx` | admin | User management |
@@ -495,6 +496,49 @@ Three-layer structure:
 - Content: 4-column stat grid, white cards with 3px top stripe + `box-shadow: 0 2px 16px rgba(11,44,96,0.09)`
 - Tables: clean dividers, hover states, badge pills for counts, colored amounts
 - Charts: 200–260px height, CartesianGrid, styled tooltips, Legend
+
+#### Profile page desktop V3 (v2.3) — sticky side-nav + full-page scroll
+
+`profile.tsx` desktop uses a sticky anchor-based side-nav (no router navigation, no re-mounts):
+
+```
+┌─ side-nav (144px, sticky top-[72px]) ──────┐
+│  "Sections" label                           │
+│  Photo                                      │
+│  Personal Info                              │
+│  Security                                   │
+│  Sessions                                   │
+│  Preferences                                │
+│  Business Info   [Admin]                    │
+│  System          [Admin]                    │
+└─────────────────────────────────────────────┘
+```
+
+- Each nav link is `<a href="#s-<id>">` — no `useNavigate` / `useLocation`
+- Each section block has `id="s-<id>"` + `style={{ scrollMarginTop: 72 }}` to offset the app header
+- `activeAnchor` state updated on `onClick`; active link styled with `bg-primary/10 text-primary font-semibold`
+- Admin-only sections show an `[Admin]` orange text label; hidden for non-admin users
+- Nav `position: sticky; top: 72px` (not `top: 0`) — clears the 60px app header
+
+#### Profile page mobile V3 (v2.3) — iOS-style drill-in
+
+```
+Home screen:                   Drill-in (e.g. Security):
+┌───────────────────────┐      ┌───────────────────────┐
+│ Avatar + name + badge │      │ ← Back  Security      │
+├───────────────────────┤      ├───────────────────────┤
+│ My Profile        ❯   │      │  [Change Password form]│
+│ Security          ❯   │      │  [Sessions list]       │
+│ Preferences       ❯   │      │  [Logout Others]       │
+│ Business Info ❯ [ADM] │      │  [Logout All]          │
+│ System        ❯ [ADM] │      └───────────────────────┘
+└───────────────────────┘
+```
+
+- Home screen state: `mobileSection === null`
+- Drill-in: `setMobileSection("security")` etc.
+- Back button: `setMobileSection(null)`
+- Sessions embedded inside Security panel in a compact card list + bulk-action buttons
 
 #### Reports page (v2.2) — dual-component architecture
 
@@ -821,6 +865,8 @@ Admin oversight (`/api/admin/*`) aggregates across users but is separate from th
 
 | Decision | Rule |
 |----------|------|
+| **Unified Profile page** | `/profile` is the single page for all profile + settings. `/settings` redirects there. Desktop V3: sticky side-nav anchors + full-page scroll. Mobile V3: section list → drill-in. Sessions embedded inline. |
+| **Profile side-nav anchors** | Desktop nav uses plain `<a href="#s-id">` anchors (not router), `scrollMarginTop: 72` offsets for app header, `sticky top-[72px]` on the aside |
 | **Page transitions** | `motion.div` must NOT have `willChange: transform` — breaks `position: fixed` on the bottom nav |
 | **Contract-first API** | OpenAPI → Orval → React Query hooks; never edit generated files |
 | **Session-based auth** | express-session + bcrypt; no JWTs — simpler for single-center use case |
