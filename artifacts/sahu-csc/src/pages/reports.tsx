@@ -8,6 +8,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, CartesianGrid, Legend,
+  LineChart, Line,
 } from "recharts";
 import {
   Calendar, Download, TrendingUp, TrendingDown, Activity,
@@ -453,7 +454,24 @@ const DESKTOP_TABS = [
   { id: "services", label: "Service Analysis",Icon: Layers,      accent: "#10b981", light: "rgba(16,185,129,0.08)", grad: "linear-gradient(135deg,#10b981,#059669)" },
 ];
 
-function DesktopStatCard({ label, value, sub, accentColor, iconGrad, Icon, isLoading }: any) {
+function Sparkline({ data, color }: { data: { v: number }[]; color: string }) {
+  const trend = data.length >= 2 ? data[data.length - 1].v - data[0].v : 0;
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8 }}>
+      <LineChart width={72} height={28} data={data} margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
+        <Line type="monotone" dataKey="v" stroke={color} strokeWidth={1.8} dot={false} isAnimationActive={false} />
+      </LineChart>
+      <span style={{
+        fontSize: 10, fontWeight: 700,
+        color: trend >= 0 ? "#10b981" : "#ef4444",
+      }}>
+        {trend >= 0 ? "▲" : "▼"} 7d
+      </span>
+    </div>
+  );
+}
+
+function DesktopStatCard({ label, value, sub, accentColor, iconGrad, Icon, isLoading, sparkData, sparkColor }: any) {
   return (
     <div className="bg-white rounded-2xl overflow-hidden flex-1" style={{ boxShadow: "0 2px 20px rgba(11,44,96,0.10)", borderTop: `4px solid ${accentColor}` }}>
       <div className="p-5">
@@ -467,6 +485,7 @@ function DesktopStatCard({ label, value, sub, accentColor, iconGrad, Icon, isLoa
           ? <Skeleton className="h-8 w-28 mb-2" />
           : <p style={{ fontSize: 26, fontWeight: 900, color: "#0b2c60", lineHeight: 1 }}>{value}</p>}
         {sub && <p style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", marginTop: 6 }}>{sub}</p>}
+        {sparkData?.length >= 2 && <Sparkline data={sparkData} color={sparkColor ?? accentColor} />}
       </div>
     </div>
   );
@@ -639,13 +658,22 @@ function DesktopReports() {
               <div className="flex gap-4">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-32 rounded-2xl flex-1" />)}</div>
             ) : daily.data ? (
               <>
-                {/* KPI row */}
-                <div className="flex gap-4">
-                  <DesktopStatCard label="Transactions" value={daily.data.transactionCount} sub="Today's total" accentColor="#0b2c60" iconGrad="linear-gradient(135deg,#0b2c60,#1a4a9e)" Icon={Activity} />
-                  <DesktopStatCard label="Net Revenue" value={fmt(daily.data.netRevenue)} sub={daily.data.netRevenue >= 0 ? "Profit today" : "Loss today"} accentColor={daily.data.netRevenue >= 0 ? "#10b981" : "#ef4444"} iconGrad={daily.data.netRevenue >= 0 ? "linear-gradient(135deg,#10b981,#059669)" : "linear-gradient(135deg,#ef4444,#dc2626)"} Icon={daily.data.netRevenue >= 0 ? TrendingUp : TrendingDown} />
-                  <DesktopStatCard label="Credits" value={fmt(daily.data.totalCredits)} sub="Income" accentColor="#10b981" iconGrad="linear-gradient(135deg,#10b981,#059669)" Icon={ArrowDownLeft} />
-                  <DesktopStatCard label="Debits" value={fmt(daily.data.totalDebits)} sub="Expenses" accentColor="#f97316" iconGrad="linear-gradient(135deg,#f97316,#ea580c)" Icon={ArrowUpRight} />
-                </div>
+                {/* KPI row — derive 7-day spark from monthly breakdown */}
+                {(() => {
+                  const bd = monthly.data?.dailyBreakdown ?? [];
+                  const last7 = bd.slice(-7);
+                  const spkCredits = last7.map((d: any) => ({ v: parseFloat(d.credits) || 0 }));
+                  const spkDebits  = last7.map((d: any) => ({ v: parseFloat(d.debits)  || 0 }));
+                  const spkNet     = last7.map((d: any) => ({ v: (parseFloat(d.credits) || 0) - (parseFloat(d.debits) || 0) }));
+                  return (
+                    <div className="flex gap-4">
+                      <DesktopStatCard label="Transactions" value={daily.data.transactionCount} sub="Today's total" accentColor="#0b2c60" iconGrad="linear-gradient(135deg,#0b2c60,#1a4a9e)" Icon={Activity} />
+                      <DesktopStatCard label="Net Revenue" value={fmt(daily.data.netRevenue)} sub={daily.data.netRevenue >= 0 ? "Profit today" : "Loss today"} accentColor={daily.data.netRevenue >= 0 ? "#10b981" : "#ef4444"} iconGrad={daily.data.netRevenue >= 0 ? "linear-gradient(135deg,#10b981,#059669)" : "linear-gradient(135deg,#ef4444,#dc2626)"} Icon={daily.data.netRevenue >= 0 ? TrendingUp : TrendingDown} sparkData={spkNet} sparkColor={daily.data.netRevenue >= 0 ? "#10b981" : "#ef4444"} />
+                      <DesktopStatCard label="Credits" value={fmt(daily.data.totalCredits)} sub="Income" accentColor="#10b981" iconGrad="linear-gradient(135deg,#10b981,#059669)" Icon={ArrowDownLeft} sparkData={spkCredits} sparkColor="#10b981" />
+                      <DesktopStatCard label="Debits" value={fmt(daily.data.totalDebits)} sub="Expenses" accentColor="#f97316" iconGrad="linear-gradient(135deg,#f97316,#ea580c)" Icon={ArrowUpRight} sparkData={spkDebits} sparkColor="#f97316" />
+                    </div>
+                  );
+                })()}
 
                 {/* Charts row — credits vs debits bar + service pie */}
                 {(daily.data.totalCredits > 0 || daily.data.totalDebits > 0) && (
@@ -760,12 +788,21 @@ function DesktopReports() {
               <div className="flex gap-4">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-32 rounded-2xl flex-1" />)}</div>
             ) : monthly.data ? (
               <>
-                <div className="flex gap-4">
-                  <DesktopStatCard label="Transactions" value={monthly.data.totalTransactions} sub={`${MONTHS[filters.reportMonth - 1]} total`} accentColor="#0b2c60" iconGrad="linear-gradient(135deg,#0b2c60,#1a4a9e)" Icon={Activity} />
-                  <DesktopStatCard label="Net Profit" value={fmt(monthly.data.netProfit)} sub={monthly.data.netProfit >= 0 ? "Month profit" : "Month loss"} accentColor={monthly.data.netProfit >= 0 ? "#10b981" : "#ef4444"} iconGrad={monthly.data.netProfit >= 0 ? "linear-gradient(135deg,#10b981,#059669)" : "linear-gradient(135deg,#ef4444,#dc2626)"} Icon={monthly.data.netProfit >= 0 ? TrendingUp : TrendingDown} />
-                  <DesktopStatCard label="Total Credits" value={fmt(monthly.data.totalCredits)} accentColor="#10b981" iconGrad="linear-gradient(135deg,#10b981,#059669)" Icon={ArrowDownLeft} />
-                  <DesktopStatCard label="Total Debits" value={fmt(monthly.data.totalDebits)} accentColor="#f97316" iconGrad="linear-gradient(135deg,#f97316,#ea580c)" Icon={ArrowUpRight} />
-                </div>
+                {(() => {
+                  const bd = monthly.data.dailyBreakdown ?? [];
+                  const last7 = bd.slice(-7);
+                  const spkCredits = last7.map((d: any) => ({ v: parseFloat(d.credits) || 0 }));
+                  const spkDebits  = last7.map((d: any) => ({ v: parseFloat(d.debits)  || 0 }));
+                  const spkNet     = last7.map((d: any) => ({ v: (parseFloat(d.credits) || 0) - (parseFloat(d.debits) || 0) }));
+                  return (
+                    <div className="flex gap-4">
+                      <DesktopStatCard label="Transactions" value={monthly.data.totalTransactions} sub={`${MONTHS[filters.reportMonth - 1]} total`} accentColor="#0b2c60" iconGrad="linear-gradient(135deg,#0b2c60,#1a4a9e)" Icon={Activity} />
+                      <DesktopStatCard label="Net Profit" value={fmt(monthly.data.netProfit)} sub={monthly.data.netProfit >= 0 ? "Month profit" : "Month loss"} accentColor={monthly.data.netProfit >= 0 ? "#10b981" : "#ef4444"} iconGrad={monthly.data.netProfit >= 0 ? "linear-gradient(135deg,#10b981,#059669)" : "linear-gradient(135deg,#ef4444,#dc2626)"} Icon={monthly.data.netProfit >= 0 ? TrendingUp : TrendingDown} sparkData={spkNet} sparkColor={monthly.data.netProfit >= 0 ? "#10b981" : "#ef4444"} />
+                      <DesktopStatCard label="Total Credits" value={fmt(monthly.data.totalCredits)} accentColor="#10b981" iconGrad="linear-gradient(135deg,#10b981,#059669)" Icon={ArrowDownLeft} sparkData={spkCredits} sparkColor="#10b981" />
+                      <DesktopStatCard label="Total Debits" value={fmt(monthly.data.totalDebits)} accentColor="#f97316" iconGrad="linear-gradient(135deg,#f97316,#ea580c)" Icon={ArrowUpRight} sparkData={spkDebits} sparkColor="#f97316" />
+                    </div>
+                  );
+                })()}
 
                 {monthly.data.dailyBreakdown?.length > 0 && (
                   <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "0 2px 20px rgba(11,44,96,0.08)" }}>
@@ -834,12 +871,21 @@ function DesktopReports() {
               <div className="flex gap-4">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-32 rounded-2xl flex-1" />)}</div>
             ) : aepsReport.data ? (
               <>
-                <div className="flex gap-4">
-                  <DesktopStatCard label="AePS Transactions" value={aepsReport.data.totalTransactions} sub="In date range" accentColor="#f97316" iconGrad="linear-gradient(135deg,#f97316,#ea580c)" Icon={Fingerprint} />
-                  <DesktopStatCard label="Net Flow" value={fmt(aepsReport.data.netFlow)} sub={aepsReport.data.netFlow >= 0 ? "Net positive" : "Net negative"} accentColor={aepsReport.data.netFlow >= 0 ? "#10b981" : "#ef4444"} iconGrad={aepsReport.data.netFlow >= 0 ? "linear-gradient(135deg,#10b981,#059669)" : "linear-gradient(135deg,#ef4444,#dc2626)"} Icon={aepsReport.data.netFlow >= 0 ? TrendingUp : TrendingDown} />
-                  <DesktopStatCard label="Total Withdrawals" value={fmt(aepsReport.data.totalWithdrawals)} accentColor="#ef4444" iconGrad="linear-gradient(135deg,#ef4444,#dc2626)" Icon={ArrowUpRight} />
-                  <DesktopStatCard label="Total Deposits" value={fmt(aepsReport.data.totalDeposits)} accentColor="#10b981" iconGrad="linear-gradient(135deg,#10b981,#059669)" Icon={ArrowDownLeft} />
-                </div>
+                {(() => {
+                  const bd = aepsReport.data.dailyBreakdown ?? [];
+                  const last7 = bd.slice(-7);
+                  const spkWithdraw = last7.map((d: any) => ({ v: parseFloat(d.withdrawals) || 0 }));
+                  const spkDeposit  = last7.map((d: any) => ({ v: parseFloat(d.deposits)    || 0 }));
+                  const spkNet      = last7.map((d: any) => ({ v: parseFloat(d.netFlow)      || 0 }));
+                  return (
+                    <div className="flex gap-4">
+                      <DesktopStatCard label="AePS Transactions" value={aepsReport.data.totalTransactions} sub="In date range" accentColor="#f97316" iconGrad="linear-gradient(135deg,#f97316,#ea580c)" Icon={Fingerprint} />
+                      <DesktopStatCard label="Net Flow" value={fmt(aepsReport.data.netFlow)} sub={aepsReport.data.netFlow >= 0 ? "Net positive" : "Net negative"} accentColor={aepsReport.data.netFlow >= 0 ? "#10b981" : "#ef4444"} iconGrad={aepsReport.data.netFlow >= 0 ? "linear-gradient(135deg,#10b981,#059669)" : "linear-gradient(135deg,#ef4444,#dc2626)"} Icon={aepsReport.data.netFlow >= 0 ? TrendingUp : TrendingDown} sparkData={spkNet} sparkColor={aepsReport.data.netFlow >= 0 ? "#10b981" : "#ef4444"} />
+                      <DesktopStatCard label="Total Withdrawals" value={fmt(aepsReport.data.totalWithdrawals)} accentColor="#ef4444" iconGrad="linear-gradient(135deg,#ef4444,#dc2626)" Icon={ArrowUpRight} sparkData={spkWithdraw} sparkColor="#ef4444" />
+                      <DesktopStatCard label="Total Deposits" value={fmt(aepsReport.data.totalDeposits)} accentColor="#10b981" iconGrad="linear-gradient(135deg,#10b981,#059669)" Icon={ArrowDownLeft} sparkData={spkDeposit} sparkColor="#10b981" />
+                    </div>
+                  );
+                })()}
 
                 {aepsReport.data.dailyBreakdown?.length > 0 && (
                   <>
