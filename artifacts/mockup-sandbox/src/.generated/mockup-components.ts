@@ -2,11 +2,12 @@
 type ModuleMap = Record<string, () => Promise<Record<string, unknown>>>;
 export const modules: ModuleMap = {
   "./components/mockups/addentry/AddEntryForm.tsx": () => import("../components/mockups/addentry/AddEntryForm.tsx"),
-  "./components/mockups/aeps-desktop/AePS.tsx": () => import("../components/mockups/aeps-desktop/AePS.tsx"),
   "./components/mockups/aeps/AepsEntryForm.tsx": () => import("../components/mockups/aeps/AepsEntryForm.tsx"),
   "./components/mockups/aeps/AepsPage.tsx": () => import("../components/mockups/aeps/AepsPage.tsx"),
+  "./components/mockups/aeps-desktop/AePS.tsx": () => import("../components/mockups/aeps-desktop/AePS.tsx"),
   "./components/mockups/aeps-entry-form/AepsEntry.tsx": () => import("../components/mockups/aeps-entry-form/AepsEntry.tsx"),
   "./components/mockups/aeps-mobile-entry/AepsMobileEntry.tsx": () => import("../components/mockups/aeps-mobile-entry/AepsMobileEntry.tsx"),
+  "./components/mockups/aeps-page/AePS.tsx": () => import("../components/mockups/aeps-page/AePS.tsx"),
   "./components/mockups/desktop-forms/AepsDeposit.tsx": () => import("../components/mockups/desktop-forms/AepsDeposit.tsx"),
   "./components/mockups/desktop-forms/AepsWithdrawal.tsx": () => import("../components/mockups/desktop-forms/AepsWithdrawal.tsx"),
   "./components/mockups/desktop-forms/LedgerEntryForm.tsx": () => import("../components/mockups/desktop-forms/LedgerEntryForm.tsx"),
@@ -17,7 +18,6 @@ export const modules: ModuleMap = {
   "./components/mockups/desktop-forms-v2/LedgerEntryV2.tsx": () => import("../components/mockups/desktop-forms-v2/LedgerEntryV2.tsx"),
   "./components/mockups/desktop-forms-v2/UdhariAddCustomerV2.tsx": () => import("../components/mockups/desktop-forms-v2/UdhariAddCustomerV2.tsx"),
   "./components/mockups/desktop-forms-v2/UdhariEntryV2.tsx": () => import("../components/mockups/desktop-forms-v2/UdhariEntryV2.tsx"),
-  "./components/mockups/aeps-page/AePS.tsx": () => import("../components/mockups/aeps-page/AePS.tsx"),
   "./components/mockups/ledger/LedgerPage.tsx": () => import("../components/mockups/ledger/LedgerPage.tsx"),
   "./components/mockups/ledger-desktop/Ledger.tsx": () => import("../components/mockups/ledger-desktop/Ledger.tsx"),
   "./components/mockups/profile-merged/V1.tsx": () => import("../components/mockups/profile-merged/V1.tsx"),

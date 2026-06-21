@@ -31,6 +31,9 @@ import {
   CheckCircle2,
   KeyRound,
   AlertTriangle,
+  Clock,
+  Ban,
+  MailCheck,
 } from "lucide-react";
 
 const MAX_ATTEMPTS = 5;
@@ -467,6 +470,9 @@ interface LoginFormContentProps {
   attemptsLeft: number | null;
   lockoutUntil: Date | null;
   onLockoutExpired: () => void;
+  rejectedInfo: { reason: string | null } | null;
+  isPendingApproval: boolean;
+  onDismissStatus: () => void;
 }
 
 function useLockoutCountdown(lockoutUntil: Date | null, onExpired: () => void) {
@@ -499,7 +505,7 @@ function useLockoutCountdown(lockoutUntil: Date | null, onExpired: () => void) {
   return { remaining, display, progress };
 }
 
-function LoginFormContent({ form, onSubmit, showPassword, setShowPassword, rememberMe, setRememberMe, onForgotPassword, attemptsLeft, lockoutUntil, onLockoutExpired }: LoginFormContentProps) {
+function LoginFormContent({ form, onSubmit, showPassword, setShowPassword, rememberMe, setRememberMe, onForgotPassword, attemptsLeft, lockoutUntil, onLockoutExpired, rejectedInfo, isPendingApproval, onDismissStatus }: LoginFormContentProps) {
   const isSubmitting = form.formState.isSubmitting;
   const usedAttempts = attemptsLeft !== null ? MAX_ATTEMPTS - attemptsLeft : 0;
   const showCounter = attemptsLeft !== null && attemptsLeft < MAX_ATTEMPTS && !lockoutUntil;
@@ -510,9 +516,119 @@ function LoginFormContent({ form, onSubmit, showPassword, setShowPassword, remem
     : "medium";
   const { remaining, display, progress } = useLockoutCountdown(lockoutUntil, onLockoutExpired);
 
+  const showStatusPanel = !!(rejectedInfo || isPendingApproval);
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+
+        {/* ── Registration Declined panel ── */}
+        <AnimatePresence>
+          {rejectedInfo && (
+            <motion.div
+              key="rejected-panel"
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.25 }}
+              className="rounded-2xl border-2 overflow-hidden"
+              style={{ borderColor: "#fed7aa", background: "#fff7ed" }}
+            >
+              <div className="h-1.5 w-full" style={{ background: "linear-gradient(90deg, #f97316, #ea580c)" }} />
+              <div className="px-4 py-4">
+                <div className="flex flex-col items-center text-center mb-3">
+                  <motion.div
+                    animate={{ scale: [1, 1.08, 1] }}
+                    transition={{ duration: 0.4, delay: 0.15 }}
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3 shadow-sm"
+                    style={{ background: "linear-gradient(135deg, #f97316, #c2410c)" }}
+                  >
+                    <Ban className="w-7 h-7 text-white" />
+                  </motion.div>
+                  <h3 className="text-base font-bold" style={{ color: "#c2410c" }}>Registration Declined</h3>
+                  <p className="text-xs mt-1" style={{ color: "#9a3412" }}>
+                    Your registration request was not approved by the administrator.
+                  </p>
+                </div>
+
+                {rejectedInfo.reason && (
+                  <div
+                    className="rounded-xl px-3 py-2.5 mb-3 border"
+                    style={{ background: "rgba(249,115,22,0.07)", borderColor: "#fed7aa" }}
+                  >
+                    <p className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: "#ea580c" }}>Reason</p>
+                    <p className="text-sm font-medium leading-relaxed" style={{ color: "#7c2d12" }}>{rejectedInfo.reason}</p>
+                  </div>
+                )}
+
+                <p className="text-[11px] text-center mb-3" style={{ color: "#9a3412" }}>
+                  For assistance, contact your administrator or register with a different account.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={onDismissStatus}
+                  className="w-full h-10 rounded-xl font-semibold text-sm border-2 transition-colors"
+                  style={{ borderColor: "#fed7aa", color: "#c2410c", background: "transparent" }}
+                >
+                  Try a different account →
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── Pending Approval panel ── */}
+        <AnimatePresence>
+          {isPendingApproval && (
+            <motion.div
+              key="pending-panel"
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.25 }}
+              className="rounded-2xl border-2 overflow-hidden"
+              style={{ borderColor: "#bfdbfe", background: "#eff6ff" }}
+            >
+              <div className="h-1.5 w-full" style={{ background: "linear-gradient(90deg, #3b82f6, #1d4ed8)" }} />
+              <div className="px-4 py-4">
+                <div className="flex flex-col items-center text-center mb-3">
+                  <motion.div
+                    animate={{ rotate: [0, -6, 6, -6, 6, 0] }}
+                    transition={{ duration: 0.5, delay: 0.15 }}
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3 shadow-sm"
+                    style={{ background: "linear-gradient(135deg, #3b82f6, #1d4ed8)" }}
+                  >
+                    <Clock className="w-7 h-7 text-white" />
+                  </motion.div>
+                  <h3 className="text-base font-bold" style={{ color: "#1d4ed8" }}>Awaiting Approval</h3>
+                  <p className="text-xs mt-1" style={{ color: "#1e40af" }}>
+                    Your registration is pending admin review. You'll be able to log in once approved.
+                  </p>
+                </div>
+
+                <div
+                  className="rounded-xl px-3 py-2.5 mb-3 border flex items-start gap-2.5"
+                  style={{ background: "rgba(59,130,246,0.07)", borderColor: "#bfdbfe" }}
+                >
+                  <MailCheck className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: "#3b82f6" }} />
+                  <p className="text-xs leading-relaxed" style={{ color: "#1e40af" }}>
+                    You'll receive a notification once the administrator reviews your request. Check back later or contact your CSC admin directly.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={onDismissStatus}
+                  className="w-full h-10 rounded-xl font-semibold text-sm border-2 transition-colors"
+                  style={{ borderColor: "#bfdbfe", color: "#1d4ed8", background: "transparent" }}
+                >
+                  ← Back to login
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* ── Lockout countdown panel ── */}
         <AnimatePresence>
@@ -586,9 +702,9 @@ function LoginFormContent({ form, onSubmit, showPassword, setShowPassword, remem
           )}
         </AnimatePresence>
 
-        {/* ── Normal form fields (hidden while locked) ── */}
+        {/* ── Normal form fields (hidden while locked or status panel shown) ── */}
         <AnimatePresence>
-          {(!lockoutUntil || remaining <= 0) && (
+          {(!lockoutUntil || remaining <= 0) && !showStatusPanel && (
             <motion.div
               key="form-fields"
               initial={{ opacity: 0 }}
@@ -990,6 +1106,8 @@ export default function Login() {
   const [rememberMe, setRememberMe] = useState(false);
   const [attemptsLeft, setAttemptsLeft] = useState<number | null>(null);
   const [lockoutUntil, setLockoutUntil] = useState<Date | null>(null);
+  const [rejectedInfo, setRejectedInfo] = useState<{ reason: string | null } | null>(null);
+  const [isPendingApproval, setIsPendingApproval] = useState(false);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -1007,7 +1125,15 @@ export default function Login() {
     }
   }, []);
 
+  const onDismissStatus = useCallback(() => {
+    setRejectedInfo(null);
+    setIsPendingApproval(false);
+    form.reset();
+  }, [form]);
+
   const onSubmit = async (values: LoginFormValues) => {
+    setRejectedInfo(null);
+    setIsPendingApproval(false);
     if (rememberMe) {
       localStorage.setItem("rememberMe", "true");
       localStorage.setItem("savedIdentifier", values.identifier);
@@ -1026,7 +1152,9 @@ export default function Login() {
         setLockoutUntil(err.lockedUntil ? new Date(err.lockedUntil) : new Date(Date.now() + 15 * 60_000));
         toast({ variant: "destructive", title: "Account Locked", description: err.message ?? "Your account is temporarily locked. Please try again later." });
       } else if (err?.rejected) {
-        toast({ variant: "destructive", title: "Registration Declined", description: err.rejectionReason ? `Your registration was declined. Reason: ${err.rejectionReason}` : "Your registration was declined. Please contact administrator." });
+        setRejectedInfo({ reason: err.rejectionReason ?? null });
+      } else if (err?.pending) {
+        setIsPendingApproval(true);
       } else if (err?.attemptsLeft !== undefined) {
         setAttemptsLeft(err.attemptsLeft);
         toast({ variant: "destructive", title: "Wrong password", description: `${err.attemptsLeft} attempt${err.attemptsLeft !== 1 ? "s" : ""} remaining before lockout.` });
@@ -1045,6 +1173,7 @@ export default function Login() {
   const formProps: Omit<LoginFormContentProps, "onForgotPassword"> = {
     form, onSubmit, showPassword, setShowPassword, rememberMe, setRememberMe,
     attemptsLeft, lockoutUntil, onLockoutExpired: handleLockoutExpired,
+    rejectedInfo, isPendingApproval, onDismissStatus,
   };
 
   return isMobile

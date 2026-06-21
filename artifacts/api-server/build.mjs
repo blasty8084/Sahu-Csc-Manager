@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build as esbuild } from "esbuild";
 import esbuildPluginPino from "esbuild-plugin-pino";
-import { rm, open } from "node:fs/promises";
+import { open, rm } from "node:fs/promises";
 
 globalThis.require = createRequire(import.meta.url);
 
@@ -29,7 +29,6 @@ async function releaseLock() {
 
 async function buildAll() {
   const distDir = path.resolve(artifactDir, "dist");
-  await rm(distDir, { recursive: true, force: true });
 
   const seedPath = path.resolve(artifactDir, "src/scripts/seed.ts");
 

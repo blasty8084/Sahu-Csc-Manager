@@ -100,6 +100,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       err.locked = errBody.locked;
       err.lockedUntil = errBody.lockedUntil;
       err.attemptsLeft = errBody.attemptsLeft;
+      err.rejected = errBody.rejected;
+      err.rejectionReason = errBody.rejectionReason ?? null;
+      err.pending = errBody.pending;
       throw err;
     }
     // Login response already contains full user data — set it directly in
