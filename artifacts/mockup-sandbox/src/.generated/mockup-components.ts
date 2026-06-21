@@ -2,10 +2,10 @@
 type ModuleMap = Record<string, () => Promise<Record<string, unknown>>>;
 export const modules: ModuleMap = {
   "./components/mockups/addentry/AddEntryForm.tsx": () => import("../components/mockups/addentry/AddEntryForm.tsx"),
-  "./components/mockups/aeps-desktop/AePS.tsx": () => import("../components/mockups/aeps-desktop/AePS.tsx"),
-  "./components/mockups/aeps-entry-form/AepsEntry.tsx": () => import("../components/mockups/aeps-entry-form/AepsEntry.tsx"),
   "./components/mockups/aeps/AepsEntryForm.tsx": () => import("../components/mockups/aeps/AepsEntryForm.tsx"),
   "./components/mockups/aeps/AepsPage.tsx": () => import("../components/mockups/aeps/AepsPage.tsx"),
+  "./components/mockups/aeps-desktop/AePS.tsx": () => import("../components/mockups/aeps-desktop/AePS.tsx"),
+  "./components/mockups/aeps-entry-form/AepsEntry.tsx": () => import("../components/mockups/aeps-entry-form/AepsEntry.tsx"),
   "./components/mockups/aeps-mobile-entry/AepsMobileEntry.tsx": () => import("../components/mockups/aeps-mobile-entry/AepsMobileEntry.tsx"),
   "./components/mockups/aeps-page/AePS.tsx": () => import("../components/mockups/aeps-page/AePS.tsx"),
   "./components/mockups/desktop-forms/AepsDeposit.tsx": () => import("../components/mockups/desktop-forms/AepsDeposit.tsx"),
