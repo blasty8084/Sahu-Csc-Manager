@@ -515,200 +515,208 @@ function ChartTooltip({ active, payload, label }: any) {
   );
 }
 
+/* ── KPI strip metric chip ─────────────────────────────────────────────────── */
+function KpiChip({ label, value, trend, pos }: { label: string; value: string | number; trend?: string; pos?: boolean }) {
+  return (
+    <div style={{ flex: 1, padding: "0 20px", borderRight: "1px solid rgba(255,255,255,0.10)" }}>
+      <div style={{ fontSize: 9, color: "rgba(255,255,255,0.45)", letterSpacing: "0.1em", marginBottom: 5, textTransform: "uppercase" }}>{label}</div>
+      <div style={{ fontSize: 19, fontWeight: 900, color: "white", marginBottom: 3, letterSpacing: "-0.5px" }}>{value}</div>
+      {trend && (
+        <div style={{ fontSize: 10, fontWeight: 700, color: pos ? "#34d399" : "#fca5a5" }}>{trend}</div>
+      )}
+    </div>
+  );
+}
+
 function DesktopReports() {
   const [activeTab, setActiveTab] = useState("daily");
   const filters = useFilterState();
   const { daily, monthly, breakdown, aepsReport } = useReportsData(filters.dailyDate, filters.reportYear, filters.reportMonth, filters.aepsStart, filters.aepsEnd);
-  const tab = DESKTOP_TABS.find(t => t.id === activeTab)!;
 
   const exportUrl = activeTab === "aeps"
     ? `${BASE}/api/reports/export?startDate=${filters.aepsStart}&endDate=${filters.aepsEnd}`
     : `${BASE}/api/reports/export?startDate=${filters.monthStart}&endDate=${filters.monthEnd}`;
 
-  // Header subtitle per tab
-  const headerSub: Record<string, string> = {
-    daily: filters.dailyDate,
-    monthly: `${MONTHS[filters.reportMonth - 1]} ${filters.reportYear}`,
-    aeps: `${filters.aepsStart} → ${filters.aepsEnd}`,
-    services: "All-time breakdown",
-  };
+  /* KPI strip values per tab */
+  const kpiChips = (() => {
+    if (activeTab === "daily" && daily.data) {
+      const avg = daily.data.transactionCount > 0 ? daily.data.netRevenue / daily.data.transactionCount : 0;
+      return [
+        { label: "Total Credits",  value: fmt(daily.data.totalCredits),  trend: undefined },
+        { label: "Total Debits",   value: fmt(daily.data.totalDebits),   trend: undefined },
+        { label: "Net Revenue",    value: fmt(daily.data.netRevenue),    trend: daily.data.netRevenue >= 0 ? "Profitable day" : "Loss day", pos: daily.data.netRevenue >= 0 },
+        { label: "Transactions",   value: daily.data.transactionCount,   trend: undefined },
+        { label: "Avg Ticket",     value: fmt(avg),                      trend: undefined },
+      ];
+    }
+    if (activeTab === "monthly" && monthly.data) {
+      const avg = monthly.data.totalTransactions > 0 ? monthly.data.netProfit / monthly.data.totalTransactions : 0;
+      return [
+        { label: "Total Credits",  value: fmt(monthly.data.totalCredits),  trend: undefined },
+        { label: "Total Debits",   value: fmt(monthly.data.totalDebits),   trend: undefined },
+        { label: "Net Profit",     value: fmt(monthly.data.netProfit),     trend: monthly.data.netProfit >= 0 ? "Month profit" : "Month loss", pos: monthly.data.netProfit >= 0 },
+        { label: "Transactions",   value: monthly.data.totalTransactions,  trend: undefined },
+        { label: "Avg Ticket",     value: fmt(avg),                        trend: undefined },
+      ];
+    }
+    if (activeTab === "aeps" && aepsReport.data) {
+      return [
+        { label: "AePS Tx",        value: aepsReport.data.totalTransactions, trend: undefined },
+        { label: "Withdrawals",    value: fmt(aepsReport.data.totalWithdrawals), trend: undefined },
+        { label: "Deposits",       value: fmt(aepsReport.data.totalDeposits),    trend: undefined },
+        { label: "Net Flow",       value: fmt(aepsReport.data.netFlow), trend: aepsReport.data.netFlow >= 0 ? "Net positive" : "Net negative", pos: aepsReport.data.netFlow >= 0 },
+      ];
+    }
+    if (activeTab === "services" && breakdown.data?.length) {
+      const totalTx  = breakdown.data.reduce((s: number, r: any) => s + r.count, 0);
+      const totalRev = breakdown.data.reduce((s: number, r: any) => s + parseFloat(r.revenue || 0), 0);
+      return [
+        { label: "Services",       value: breakdown.data.length,  trend: undefined },
+        { label: "Total Tx",       value: totalTx,                trend: undefined },
+        { label: "Total Revenue",  value: fmt(totalRev),          trend: undefined },
+      ];
+    }
+    return [];
+  })();
 
   return (
-    <div className="flex gap-0 min-h-0" style={{ margin: "-24px -24px -24px", height: "calc(100vh - 64px)" }}>
+    <div style={{ display: "flex", flexDirection: "column", margin: "-24px -24px -24px", height: "calc(100vh - 64px)", overflow: "hidden" }}>
 
-      {/* ── Navy gradient sidebar ── */}
-      <div style={{
-        width: 244, flexShrink: 0,
-        background: "linear-gradient(160deg,#0b2c60 0%,#0f3872 100%)",
-        display: "flex", flexDirection: "column",
-        boxShadow: "4px 0 24px rgba(11,44,96,0.18)",
-      }}>
-        {/* Logo strip */}
-        <div style={{ padding: "22px 20px 18px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,#f97316,#fb923c)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <BarChart2 size={18} color="#fff" />
-            </div>
-            <div>
-              <p style={{ fontSize: 13, fontWeight: 700, color: "white", lineHeight: 1.2 }}>SAHU CSC</p>
-              <p style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", letterSpacing: "0.08em" }}>REPORTS</p>
-            </div>
+      {/* ── White top nav bar ── */}
+      <div style={{ background: "white", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "stretch", flexShrink: 0 }}>
+
+        {/* Brand */}
+        <div style={{ padding: "0 22px", display: "flex", alignItems: "center", gap: 10, borderRight: "1px solid #e2e8f0", minWidth: 210 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 9, background: "linear-gradient(135deg,#0b2c60,#0f3872)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <BarChart2 size={15} color="#fff" />
+          </div>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 800, color: "#0b2c60" }}>SAHU CSC</div>
+            <div style={{ fontSize: 9, color: "#94a3b8", letterSpacing: "0.06em" }}>Reports Center</div>
           </div>
         </div>
 
-        {/* Report type nav */}
-        <div style={{ padding: "14px 12px 0" }}>
-          <p style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", letterSpacing: "0.1em", padding: "0 8px", marginBottom: 8, textTransform: "uppercase" }}>Report Type</p>
-          {DESKTOP_TABS.map((t) => {
+        {/* Tabs */}
+        <div style={{ display: "flex", flex: 1 }}>
+          {DESKTOP_TABS.map(t => {
             const active = activeTab === t.id;
             return (
               <button
                 key={t.id}
                 onClick={() => setActiveTab(t.id)}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm mb-1 transition-all"
-                style={active
-                  ? { background: "rgba(255,255,255,0.13)", color: "white", fontWeight: 700 }
-                  : { background: "transparent", color: "rgba(255,255,255,0.55)", fontWeight: 400 }
-                }
+                style={{
+                  display: "flex", alignItems: "center", gap: 7, padding: "0 20px",
+                  borderBottom: active ? `3px solid #0b2c60` : "3px solid transparent",
+                  background: "none", border: "none", cursor: "pointer",
+                  color: active ? "#0b2c60" : "#94a3b8",
+                  fontSize: 13, fontWeight: active ? 700 : 400,
+                  borderTop: "none", borderLeft: "none", borderRight: "none",
+                  outline: "none",
+                  borderBottomStyle: "solid",
+                  borderBottomWidth: 3,
+                  borderBottomColor: active ? "#0b2c60" : "transparent",
+                }}
               >
-                <div style={{
-                  width: 28, height: 28, borderRadius: 8, flexShrink: 0,
-                  background: active ? t.grad : "rgba(255,255,255,0.08)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
-                  <t.Icon size={13} color={active ? "#fff" : "rgba(255,255,255,0.5)"} />
-                </div>
+                <t.Icon size={13} />
                 {t.label}
               </button>
             );
           })}
         </div>
 
-        <div style={{ flex: 1 }} />
-
-        {/* Filters */}
-        <div style={{ padding: "0 16px 20px" }}>
-          <p style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", letterSpacing: "0.1em", marginBottom: 10, textTransform: "uppercase" }}>Filter</p>
-
+        {/* Right: filter controls + export */}
+        <div style={{ padding: "0 16px", display: "flex", alignItems: "center", gap: 8, borderLeft: "1px solid #e2e8f0" }}>
           {activeTab === "daily" && (
-            <div style={{ marginBottom: 10 }}>
-              <p style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", marginBottom: 5, fontWeight: 600 }}>Report Date</p>
-              <input type="date" value={filters.dailyDate} onChange={e => filters.setDailyDate(e.target.value)}
-                style={{ width: "100%", height: 36, borderRadius: 10, border: "none", background: "rgba(255,255,255,0.10)", color: "white", padding: "0 12px", fontSize: 12, outline: "none", boxSizing: "border-box" }} />
-            </div>
+            <input type="date" value={filters.dailyDate} onChange={e => filters.setDailyDate(e.target.value)}
+              style={{ height: 32, borderRadius: 8, border: "1px solid #e2e8f0", padding: "0 10px", fontSize: 12, color: "#334155", outline: "none" }} />
           )}
           {activeTab === "monthly" && (
             <>
-              <div style={{ marginBottom: 8 }}>
-                <p style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", marginBottom: 5, fontWeight: 600 }}>Month</p>
-                <Select value={String(filters.reportMonth)} onValueChange={v => filters.setReportMonth(Number(v))}>
-                  <SelectTrigger className="h-9 text-sm" style={{ background: "rgba(255,255,255,0.10)", border: "none", color: "white", borderRadius: 10 }}><SelectValue /></SelectTrigger>
-                  <SelectContent>{MONTHS.map((m, i) => <SelectItem key={i+1} value={String(i+1)}>{m}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div style={{ marginBottom: 10 }}>
-                <p style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", marginBottom: 5, fontWeight: 600 }}>Year</p>
-                <input type="number" value={filters.reportYear} onChange={e => filters.setReportYear(Number(e.target.value))}
-                  style={{ width: "100%", height: 36, borderRadius: 10, border: "none", background: "rgba(255,255,255,0.10)", color: "white", padding: "0 12px", fontSize: 12, outline: "none", boxSizing: "border-box" }} />
-              </div>
+              <Select value={String(filters.reportMonth)} onValueChange={v => filters.setReportMonth(Number(v))}>
+                <SelectTrigger className="h-8 text-xs w-28" style={{ border: "1px solid #e2e8f0", borderRadius: 8 }}><SelectValue /></SelectTrigger>
+                <SelectContent>{MONTHS.map((m, i) => <SelectItem key={i+1} value={String(i+1)}>{m}</SelectItem>)}</SelectContent>
+              </Select>
+              <input type="number" value={filters.reportYear} onChange={e => filters.setReportYear(Number(e.target.value))}
+                style={{ height: 32, width: 72, borderRadius: 8, border: "1px solid #e2e8f0", padding: "0 10px", fontSize: 12, color: "#334155", outline: "none" }} />
             </>
           )}
           {activeTab === "aeps" && (
             <>
-              <div style={{ marginBottom: 8 }}>
-                <p style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", marginBottom: 5, fontWeight: 600 }}>From</p>
-                <input type="date" value={filters.aepsStart} onChange={e => filters.setAepsStart(e.target.value)}
-                  style={{ width: "100%", height: 36, borderRadius: 10, border: "none", background: "rgba(255,255,255,0.10)", color: "white", padding: "0 12px", fontSize: 12, outline: "none", boxSizing: "border-box" }} />
-              </div>
-              <div style={{ marginBottom: 10 }}>
-                <p style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", marginBottom: 5, fontWeight: 600 }}>To</p>
-                <input type="date" value={filters.aepsEnd} onChange={e => filters.setAepsEnd(e.target.value)}
-                  style={{ width: "100%", height: 36, borderRadius: 10, border: "none", background: "rgba(255,255,255,0.10)", color: "white", padding: "0 12px", fontSize: 12, outline: "none", boxSizing: "border-box" }} />
-              </div>
+              <input type="date" value={filters.aepsStart} onChange={e => filters.setAepsStart(e.target.value)}
+                style={{ height: 32, borderRadius: 8, border: "1px solid #e2e8f0", padding: "0 10px", fontSize: 12, color: "#334155", outline: "none" }} />
+              <span style={{ fontSize: 11, color: "#94a3b8" }}>→</span>
+              <input type="date" value={filters.aepsEnd} onChange={e => filters.setAepsEnd(e.target.value)}
+                style={{ height: 32, borderRadius: 8, border: "1px solid #e2e8f0", padding: "0 10px", fontSize: 12, color: "#334155", outline: "none" }} />
             </>
           )}
-          {activeTab === "services" && (
-            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 10 }}>All-time service data</p>
-          )}
-
           <a
-            href={exportUrl}
-            target="_blank"
-            className="flex items-center justify-center gap-2 w-full h-9 rounded-xl text-xs font-bold text-white"
-            style={{ background: "linear-gradient(135deg,#f97316,#fb923c)", textDecoration: "none" }}
+            href={exportUrl} target="_blank"
+            style={{ height: 32, borderRadius: 8, background: "linear-gradient(135deg,#f97316,#fb923c)", color: "white", fontSize: 12, fontWeight: 700, padding: "0 14px", display: "flex", alignItems: "center", gap: 6, textDecoration: "none", flexShrink: 0 }}
           >
-            <Download size={13} />Export Excel
+            <Download size={12} /> Export
           </a>
         </div>
       </div>
 
-      {/* ── Main content ── */}
-      <div className="flex-1 min-w-0 overflow-auto" style={{ background: "#f1f5f9", padding: "26px 28px 28px" }}>
-
-        {/* Content header */}
-        <div style={{ marginBottom: 22 }}>
-          <p style={{ fontSize: 20, fontWeight: 900, color: "#0b2c60", lineHeight: 1.2 }}>{tab.label}</p>
-          <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 3 }}>{headerSub[activeTab]} · All data is user-scoped</p>
+      {/* ── Navy KPI strip ── */}
+      {kpiChips.length > 0 && (
+        <div style={{ background: "#0b2c60", padding: "14px 28px", display: "flex", flexShrink: 0 }}>
+          {kpiChips.map((c, i) => (
+            <div key={c.label} style={{ flex: 1, padding: "0 20px", borderRight: i < kpiChips.length - 1 ? "1px solid rgba(255,255,255,0.10)" : "none" }}>
+              <div style={{ fontSize: 9, color: "rgba(255,255,255,0.45)", letterSpacing: "0.1em", marginBottom: 5, textTransform: "uppercase" }}>{c.label}</div>
+              <div style={{ fontSize: 19, fontWeight: 900, color: "white", marginBottom: 3, letterSpacing: "-0.5px" }}>{c.value}</div>
+              {c.trend && <div style={{ fontSize: 10, fontWeight: 700, color: c.pos ? "#34d399" : "#fca5a5" }}>{c.trend}</div>}
+            </div>
+          ))}
         </div>
+      )}
+
+      {/* ── Scrollable content ── */}
+      <div style={{ flex: 1, overflow: "auto", background: "#f1f5f9", padding: "20px 28px 28px" }}>
 
         {/* ─ Daily ─ */}
         {activeTab === "daily" && (
           <div className="space-y-5">
             {daily.isLoading ? (
-              <div className="flex gap-4">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-32 rounded-2xl flex-1" />)}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-48 rounded-2xl" />)}</div>
             ) : daily.data ? (
               <>
-                {/* KPI row — derive 7-day spark from monthly breakdown */}
-                {(() => {
-                  const bd = monthly.data?.dailyBreakdown ?? [];
-                  const last7 = bd.slice(-7);
-                  const spkCredits = last7.map((d: any) => ({ v: parseFloat(d.credits) || 0 }));
-                  const spkDebits  = last7.map((d: any) => ({ v: parseFloat(d.debits)  || 0 }));
-                  const spkNet     = last7.map((d: any) => ({ v: (parseFloat(d.credits) || 0) - (parseFloat(d.debits) || 0) }));
-                  return (
-                    <div className="flex gap-4">
-                      <DesktopStatCard label="Transactions" value={daily.data.transactionCount} sub="Today's total" accentColor="#0b2c60" iconGrad="linear-gradient(135deg,#0b2c60,#1a4a9e)" Icon={Activity} />
-                      <DesktopStatCard label="Net Revenue" value={fmt(daily.data.netRevenue)} sub={daily.data.netRevenue >= 0 ? "Profit today" : "Loss today"} accentColor={daily.data.netRevenue >= 0 ? "#10b981" : "#ef4444"} iconGrad={daily.data.netRevenue >= 0 ? "linear-gradient(135deg,#10b981,#059669)" : "linear-gradient(135deg,#ef4444,#dc2626)"} Icon={daily.data.netRevenue >= 0 ? TrendingUp : TrendingDown} sparkData={spkNet} sparkColor={daily.data.netRevenue >= 0 ? "#10b981" : "#ef4444"} />
-                      <DesktopStatCard label="Credits" value={fmt(daily.data.totalCredits)} sub="Income" accentColor="#10b981" iconGrad="linear-gradient(135deg,#10b981,#059669)" Icon={ArrowDownLeft} sparkData={spkCredits} sparkColor="#10b981" />
-                      <DesktopStatCard label="Debits" value={fmt(daily.data.totalDebits)} sub="Expenses" accentColor="#f97316" iconGrad="linear-gradient(135deg,#f97316,#ea580c)" Icon={ArrowUpRight} sparkData={spkDebits} sparkColor="#f97316" />
-                    </div>
-                  );
-                })()}
-
-                {/* Charts row — credits vs debits bar + service pie */}
+                {/* 2-col chart grid */}
                 {(daily.data.totalCredits > 0 || daily.data.totalDebits > 0) && (
-                  <div style={{ display: "grid", gridTemplateColumns: daily.data.topServices?.length ? "1fr 320px" : "1fr", gap: 16 }}>
-                    <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "0 2px 20px rgba(11,44,96,0.08)" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                    {/* Cashflow bar */}
+                    <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "0 2px 16px rgba(11,44,96,0.07)" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                         <div>
                           <p style={{ fontSize: 14, fontWeight: 700, color: "#0b2c60" }}>Today's Cashflow</p>
-                          <p style={{ fontSize: 11, color: "#94a3b8" }}>Credits vs Debits</p>
+                          <p style={{ fontSize: 11, color: "#94a3b8" }}>Credits vs Debits · {filters.dailyDate}</p>
                         </div>
-                        <div className="flex items-center gap-3">
-                          {[{ l: "Credits", c: "#0b2c60" }, { l: "Debits", c: "#f97316" }].map(x => (
-                            <div key={x.l} className="flex items-center gap-1.5">
+                        <div style={{ display: "flex", gap: 12 }}>
+                          {[{ l: "Credits", c: "#3b82f6" }, { l: "Debits", c: "#fca5a5" }].map(x => (
+                            <div key={x.l} style={{ display: "flex", alignItems: "center", gap: 5 }}>
                               <div style={{ width: 8, height: 8, borderRadius: 2, background: x.c }} />
-                              <span style={{ fontSize: 11, color: "#94a3b8" }}>{x.l}</span>
+                              <span style={{ fontSize: 10, color: "#94a3b8" }}>{x.l}</span>
                             </div>
                           ))}
                         </div>
                       </div>
                       <ResponsiveContainer width="100%" height={200}>
-                        <BarChart data={[{ name: filters.dailyDate, credits: daily.data.totalCredits, debits: daily.data.totalDebits }]} barSize={48} barGap={8}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                        <BarChart data={[{ name: "Today", credits: daily.data.totalCredits, debits: daily.data.totalDebits }]} barSize={48} barGap={8}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f8fafc" />
                           <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
                           <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={v => `₹${(v/1000).toFixed(0)}k`} />
                           <Tooltip content={<ChartTooltip />} />
-                          <Bar dataKey="credits" name="Credits" fill="#0b2c60" radius={[6,6,0,0]} />
-                          <Bar dataKey="debits" name="Debits" fill="#f97316" radius={[6,6,0,0]} />
+                          <Bar dataKey="credits" name="Credits" fill="#3b82f6" radius={[6,6,0,0]} />
+                          <Bar dataKey="debits" name="Debits" fill="#fca5a5" radius={[6,6,0,0]} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
 
-                    {daily.data.topServices?.length > 0 && (
-                      <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "0 2px 20px rgba(11,44,96,0.08)" }}>
+                    {/* Service mix pie */}
+                    {daily.data.topServices?.length > 0 ? (
+                      <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "0 2px 16px rgba(11,44,96,0.07)" }}>
                         <p style={{ fontSize: 14, fontWeight: 700, color: "#0b2c60", marginBottom: 4 }}>Service Mix</p>
-                        <p style={{ fontSize: 11, color: "#94a3b8", marginBottom: 12 }}>By revenue share</p>
+                        <p style={{ fontSize: 11, color: "#94a3b8", marginBottom: 10 }}>By revenue share</p>
                         <ResponsiveContainer width="100%" height={160}>
                           <PieChart>
                             <Pie data={daily.data.topServices} dataKey="revenue" nameKey="serviceType" cx="50%" cy="50%" innerRadius={44} outerRadius={68} paddingAngle={3}>
@@ -717,63 +725,91 @@ function DesktopReports() {
                             <Tooltip formatter={(v: any) => [`₹${Number(v).toLocaleString("en-IN")}`, "Revenue"]} contentStyle={{ fontSize: 11, borderRadius: 8, border: "none", boxShadow: "0 4px 20px rgba(0,0,0,0.12)" }} />
                           </PieChart>
                         </ResponsiveContainer>
-                        <div className="space-y-1.5 mt-1">
+                        <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 6 }}>
                           {daily.data.topServices.slice(0, 5).map((s: any, i: number) => (
-                            <div key={s.serviceType} className="flex items-center gap-2">
+                            <div key={s.serviceType} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                               <div style={{ width: 8, height: 8, borderRadius: 2, background: PIE_COLORS[i % PIE_COLORS.length], flexShrink: 0 }} />
-                              <span style={{ fontSize: 11, color: "#334155", flex: 1 }} className="truncate">{s.serviceType}</span>
-                              <span style={{ fontSize: 11, fontWeight: 700, color: PIE_COLORS[i % PIE_COLORS.length] }}>{s.count}tx</span>
+                              <span style={{ fontSize: 11, color: "#334155", flex: 1 }}>{s.serviceType}</span>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: PIE_COLORS[i % PIE_COLORS.length] }}>{s.count} tx</span>
                             </div>
                           ))}
                         </div>
                       </div>
+                    ) : (
+                      daily.data.aeps && (
+                        <div style={{ background: "linear-gradient(135deg,#0b2c60,#0f3872)", borderRadius: 16, padding: "20px 22px" }}>
+                          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", marginBottom: 12 }}>AePS TODAY</p>
+                          {[
+                            { label: "Total Tx", value: daily.data.aeps.totalTransactions },
+                            { label: "Withdrawals", value: fmt(daily.data.aeps.totalWithdrawals) },
+                            { label: "Deposits", value: fmt(daily.data.aeps.totalDeposits) },
+                            { label: "Net Flow", value: fmt(daily.data.aeps.netFlow) },
+                          ].map((row, i, arr) => (
+                            <div key={row.label} style={{ display: "flex", justifyContent: "space-between", padding: "7px 0", borderBottom: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
+                              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.55)" }}>{row.label}</span>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: "white" }}>{row.value}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )
                     )}
                   </div>
                 )}
 
-                {/* AePS section */}
-                {daily.data.aeps && (
-                  <>
-                    <SectionLabel label="AePS Cash" accentGrad="linear-gradient(180deg,#f97316,#ea580c)" />
-                    <div className="flex gap-4">
-                      <DesktopStatCard label="AePS Tx" value={daily.data.aeps.totalTransactions} sub="Transactions" accentColor="#f97316" iconGrad="linear-gradient(135deg,#f97316,#ea580c)" Icon={Fingerprint} />
-                      <DesktopStatCard label="Net Flow" value={fmt(daily.data.aeps.netFlow)} accentColor={daily.data.aeps.netFlow >= 0 ? "#10b981" : "#ef4444"} iconGrad={daily.data.aeps.netFlow >= 0 ? "linear-gradient(135deg,#10b981,#059669)" : "linear-gradient(135deg,#ef4444,#dc2626)"} Icon={daily.data.aeps.netFlow >= 0 ? TrendingUp : TrendingDown} />
-                      <DesktopStatCard label="Withdrawals" value={fmt(daily.data.aeps.totalWithdrawals)} accentColor="#ef4444" iconGrad="linear-gradient(135deg,#ef4444,#dc2626)" Icon={ArrowUpRight} />
-                      <DesktopStatCard label="Deposits" value={fmt(daily.data.aeps.totalDeposits)} accentColor="#10b981" iconGrad="linear-gradient(135deg,#10b981,#059669)" Icon={ArrowDownLeft} />
-                    </div>
-                  </>
-                )}
-
-                {/* Top services table */}
+                {/* Services table + AePS summary side-by-side */}
                 {daily.data.topServices?.length > 0 && (
-                  <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 20px rgba(11,44,96,0.08)" }}>
-                    <div style={{ height: 4, background: "linear-gradient(90deg,#0b2c60,#f97316)" }} />
-                    <div className="p-5">
-                      <p style={{ fontSize: 14, fontWeight: 700, color: "#0b2c60", marginBottom: 16 }}>Services Used Today</p>
-                      <table className="w-full">
-                        <thead>
-                          <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
-                            {["#","Service","Transactions","Revenue"].map(h => (
-                              <th key={h} style={{ textAlign: h === "#" || h === "Service" ? "left" : "right", fontSize: 10, color: "#94a3b8", letterSpacing: "0.08em", padding: "0 8px 10px", fontWeight: 600, textTransform: "uppercase" }}>{h}</th>
+                  <div style={{ display: "grid", gridTemplateColumns: daily.data.aeps ? "1fr 300px" : "1fr", gap: 16 }}>
+                    <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 16px rgba(11,44,96,0.07)" }}>
+                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #f1f5f9" }}>
+                        <p style={{ fontSize: 14, fontWeight: 700, color: "#0b2c60" }}>Services Used Today</p>
+                        <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>Transaction breakdown by service</p>
+                      </div>
+                      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                        <thead style={{ background: "#f8fafc" }}>
+                          <tr>
+                            {["Rank","Service","Transactions","Revenue"].map(h => (
+                              <th key={h} style={{ padding: "9px 16px", fontSize: 10, color: "#94a3b8", letterSpacing: "0.07em", fontWeight: 600, textTransform: "uppercase", textAlign: h === "Rank" || h === "Service" ? "left" : "right" }}>{h}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
                           {daily.data.topServices.map((s: any, i: number) => (
-                            <tr key={s.serviceType} style={{ borderBottom: "1px solid #f8fafc" }}>
-                              <td style={{ padding: "11px 8px" }}>
-                                <div style={{ width: 26, height: 26, borderRadius: 8, background: PIE_COLORS[i % PIE_COLORS.length], display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 900, color: "white" }}>{i + 1}</div>
+                            <tr key={s.serviceType} style={{ borderTop: "1px solid #f8fafc" }}>
+                              <td style={{ padding: "11px 16px" }}>
+                                <div style={{ width: 24, height: 24, borderRadius: 7, background: PIE_COLORS[i % PIE_COLORS.length], display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 900, color: "white" }}>{i + 1}</div>
                               </td>
-                              <td style={{ padding: "11px 8px", fontSize: 13, fontWeight: 600, color: "#334155" }}>{s.serviceType}</td>
-                              <td style={{ padding: "11px 8px", textAlign: "right" }}>
-                                <span style={{ background: "#eff6ff", color: "#1d4ed8", borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>{s.count} tx</span>
+                              <td style={{ padding: "11px 16px" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                  <div style={{ width: 6, height: 6, borderRadius: 2, background: PIE_COLORS[i % PIE_COLORS.length], flexShrink: 0 }} />
+                                  <span style={{ fontSize: 13, fontWeight: 500, color: "#334155" }}>{s.serviceType}</span>
+                                </div>
                               </td>
-                              <td style={{ padding: "11px 8px", textAlign: "right", fontSize: 13, fontWeight: 800, color: "#10b981" }}>{fmt(s.revenue)}</td>
+                              <td style={{ padding: "11px 16px", textAlign: "right" }}>
+                                <span style={{ background: "#eff6ff", color: "#1d4ed8", borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>{s.count}</span>
+                              </td>
+                              <td style={{ padding: "11px 16px", textAlign: "right", fontSize: 13, fontWeight: 700, color: "#10b981" }}>{fmt(s.revenue)}</td>
                             </tr>
                           ))}
                         </tbody>
                       </table>
                     </div>
+
+                    {daily.data.aeps && (
+                      <div style={{ background: "linear-gradient(135deg,#0b2c60,#0f3872)", borderRadius: 16, padding: "20px 22px" }}>
+                        <p style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", marginBottom: 12 }}>AePS TODAY</p>
+                        {[
+                          { label: "Total Transactions", value: daily.data.aeps.totalTransactions },
+                          { label: "Total Withdrawn", value: fmt(daily.data.aeps.totalWithdrawals) },
+                          { label: "Total Deposited", value: fmt(daily.data.aeps.totalDeposits) },
+                          { label: "Net Flow", value: fmt(daily.data.aeps.netFlow) },
+                        ].map((row, i, arr) => (
+                          <div key={row.label} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
+                            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.55)" }}>{row.label}</span>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: i === 2 ? "#34d399" : i === 1 ? "#fca5a5" : "white" }}>{row.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </>
@@ -785,79 +821,108 @@ function DesktopReports() {
         {activeTab === "monthly" && (
           <div className="space-y-5">
             {monthly.isLoading ? (
-              <div className="flex gap-4">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-32 rounded-2xl flex-1" />)}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-48 rounded-2xl" />)}</div>
             ) : monthly.data ? (
               <>
-                {(() => {
-                  const bd = monthly.data.dailyBreakdown ?? [];
-                  const last7 = bd.slice(-7);
-                  const spkCredits = last7.map((d: any) => ({ v: parseFloat(d.credits) || 0 }));
-                  const spkDebits  = last7.map((d: any) => ({ v: parseFloat(d.debits)  || 0 }));
-                  const spkNet     = last7.map((d: any) => ({ v: (parseFloat(d.credits) || 0) - (parseFloat(d.debits) || 0) }));
-                  return (
-                    <div className="flex gap-4">
-                      <DesktopStatCard label="Transactions" value={monthly.data.totalTransactions} sub={`${MONTHS[filters.reportMonth - 1]} total`} accentColor="#0b2c60" iconGrad="linear-gradient(135deg,#0b2c60,#1a4a9e)" Icon={Activity} />
-                      <DesktopStatCard label="Net Profit" value={fmt(monthly.data.netProfit)} sub={monthly.data.netProfit >= 0 ? "Month profit" : "Month loss"} accentColor={monthly.data.netProfit >= 0 ? "#10b981" : "#ef4444"} iconGrad={monthly.data.netProfit >= 0 ? "linear-gradient(135deg,#10b981,#059669)" : "linear-gradient(135deg,#ef4444,#dc2626)"} Icon={monthly.data.netProfit >= 0 ? TrendingUp : TrendingDown} sparkData={spkNet} sparkColor={monthly.data.netProfit >= 0 ? "#10b981" : "#ef4444"} />
-                      <DesktopStatCard label="Total Credits" value={fmt(monthly.data.totalCredits)} accentColor="#10b981" iconGrad="linear-gradient(135deg,#10b981,#059669)" Icon={ArrowDownLeft} sparkData={spkCredits} sparkColor="#10b981" />
-                      <DesktopStatCard label="Total Debits" value={fmt(monthly.data.totalDebits)} accentColor="#f97316" iconGrad="linear-gradient(135deg,#f97316,#ea580c)" Icon={ArrowUpRight} sparkData={spkDebits} sparkColor="#f97316" />
-                    </div>
-                  );
-                })()}
-
-                {monthly.data.dailyBreakdown?.length > 0 && (
-                  <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "0 2px 20px rgba(11,44,96,0.08)" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                      <div>
-                        <p style={{ fontSize: 14, fontWeight: 700, color: "#0b2c60" }}>Daily Revenue Trend</p>
-                        <p style={{ fontSize: 11, color: "#94a3b8" }}>Credits vs Debits by day</p>
+                {/* 2-col: daily revenue bar + AePS area */}
+                <div style={{ display: "grid", gridTemplateColumns: monthly.data.aeps?.dailyBreakdown?.length ? "1fr 1fr" : "1fr", gap: 16 }}>
+                  {monthly.data.dailyBreakdown?.length > 0 && (
+                    <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "0 2px 16px rgba(11,44,96,0.07)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                        <div>
+                          <p style={{ fontSize: 14, fontWeight: 700, color: "#0b2c60" }}>Daily Revenue Trend</p>
+                          <p style={{ fontSize: 11, color: "#94a3b8" }}>Credits vs Debits · {MONTHS[filters.reportMonth - 1]} {filters.reportYear}</p>
+                        </div>
+                        <div style={{ display: "flex", gap: 12 }}>
+                          {[{ l: "Credits", c: "#3b82f6" }, { l: "Debits", c: "#fca5a5" }].map(x => (
+                            <div key={x.l} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                              <div style={{ width: 8, height: 8, borderRadius: 2, background: x.c }} />
+                              <span style={{ fontSize: 10, color: "#94a3b8" }}>{x.l}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        {[{ l: "Credits", c: "#0b2c60" }, { l: "Debits", c: "#f97316" }].map(x => (
-                          <div key={x.l} className="flex items-center gap-1.5">
-                            <div style={{ width: 8, height: 8, borderRadius: 2, background: x.c }} />
-                            <span style={{ fontSize: 11, color: "#94a3b8" }}>{x.l}</span>
+                      <ResponsiveContainer width="100%" height={200}>
+                        <BarChart data={monthly.data.dailyBreakdown} margin={{ top: 4, right: 4, left: -20, bottom: 0 }} barGap={3}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f8fafc" />
+                          <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={v => v.split("-")[2]} />
+                          <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                          <Tooltip content={<ChartTooltip />} />
+                          <Bar dataKey="credits" name="Credits" fill="#3b82f6" radius={[4,4,0,0]} />
+                          <Bar dataKey="debits" name="Debits" fill="#fca5a5" radius={[4,4,0,0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+
+                  {monthly.data.aeps?.dailyBreakdown?.length > 0 && (
+                    <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "0 2px 16px rgba(11,44,96,0.07)" }}>
+                      <div style={{ marginBottom: 16 }}>
+                        <p style={{ fontSize: 14, fontWeight: 700, color: "#0b2c60" }}>AePS Float — This Month</p>
+                        <p style={{ fontSize: 11, color: "#94a3b8" }}>Withdrawals vs Deposits daily</p>
+                      </div>
+                      <ResponsiveContainer width="100%" height={200}>
+                        <AreaChart data={monthly.data.aeps.dailyBreakdown}>
+                          <defs>
+                            <linearGradient id="wdGrad" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#ef4444" stopOpacity={0.15} />
+                              <stop offset="100%" stopColor="#ef4444" stopOpacity={0} />
+                            </linearGradient>
+                            <linearGradient id="dpGrad" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#10b981" stopOpacity={0.15} />
+                              <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f8fafc" />
+                          <XAxis dataKey="date" tick={{ fontSize: 9, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={v => v.split("-")[2]} />
+                          <YAxis tick={{ fontSize: 9, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
+                          <Tooltip content={<ChartTooltip />} />
+                          <Area type="monotone" dataKey="withdrawals" name="Withdrawals" stroke="#ef4444" strokeWidth={2} fill="url(#wdGrad)" dot={false} />
+                          <Area type="monotone" dataKey="deposits" name="Deposits" stroke="#10b981" strokeWidth={2} fill="url(#dpGrad)" dot={false} />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+                </div>
+
+                {/* Services table + AePS navy summary */}
+                {monthly.data.aeps && (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 16 }}>
+                    <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 16px rgba(11,44,96,0.07)" }}>
+                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #f1f5f9" }}>
+                        <p style={{ fontSize: 14, fontWeight: 700, color: "#0b2c60" }}>Monthly Summary</p>
+                        <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{MONTHS[filters.reportMonth - 1]} {filters.reportYear}</p>
+                      </div>
+                      <div style={{ padding: "16px 20px" }}>
+                        {[
+                          { label: "Total Credits",  value: fmt(monthly.data.totalCredits),      color: "#3b82f6" },
+                          { label: "Total Debits",   value: fmt(monthly.data.totalDebits),       color: "#fca5a5" },
+                          { label: "Net Profit",     value: fmt(monthly.data.netProfit),         color: monthly.data.netProfit >= 0 ? "#10b981" : "#ef4444" },
+                          { label: "Transactions",   value: monthly.data.totalTransactions,      color: "#0b2c60" },
+                        ].map((row, i, arr) => (
+                          <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: i < arr.length - 1 ? "1px solid #f8fafc" : "none" }}>
+                            <span style={{ fontSize: 13, color: "#64748b" }}>{row.label}</span>
+                            <span style={{ fontSize: 15, fontWeight: 800, color: row.color }}>{row.value}</span>
                           </div>
                         ))}
                       </div>
                     </div>
-                    <ResponsiveContainer width="100%" height={240}>
-                      <BarChart data={monthly.data.dailyBreakdown} margin={{ top: 4, right: 4, left: -20, bottom: 0 }} barGap={3}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                        <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={v => v.split("-")[2]} />
-                        <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-                        <Tooltip content={<ChartTooltip />} />
-                        <Bar dataKey="credits" name="Credits" fill="#0b2c60" radius={[4,4,0,0]} />
-                        <Bar dataKey="debits" name="Debits" fill="#f97316" radius={[4,4,0,0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                )}
 
-                {monthly.data.aeps && (
-                  <>
-                    <SectionLabel label="AePS Cash" accentGrad="linear-gradient(180deg,#f97316,#ea580c)" />
-                    <div className="flex gap-4">
-                      <DesktopStatCard label="AePS Tx" value={monthly.data.aeps.totalTransactions} accentColor="#f97316" iconGrad="linear-gradient(135deg,#f97316,#ea580c)" Icon={Fingerprint} />
-                      <DesktopStatCard label="Net Flow" value={fmt(monthly.data.aeps.netFlow)} accentColor={monthly.data.aeps.netFlow >= 0 ? "#10b981" : "#ef4444"} iconGrad={monthly.data.aeps.netFlow >= 0 ? "linear-gradient(135deg,#10b981,#059669)" : "linear-gradient(135deg,#ef4444,#dc2626)"} Icon={monthly.data.aeps.netFlow >= 0 ? TrendingUp : TrendingDown} />
-                      <DesktopStatCard label="Withdrawals" value={fmt(monthly.data.aeps.totalWithdrawals)} accentColor="#ef4444" iconGrad="linear-gradient(135deg,#ef4444,#dc2626)" Icon={ArrowUpRight} />
-                      <DesktopStatCard label="Deposits" value={fmt(monthly.data.aeps.totalDeposits)} accentColor="#10b981" iconGrad="linear-gradient(135deg,#10b981,#059669)" Icon={ArrowDownLeft} />
+                    <div style={{ background: "linear-gradient(135deg,#0b2c60,#0f3872)", borderRadius: 16, padding: "20px 22px" }}>
+                      <p style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", marginBottom: 12 }}>AePS THIS MONTH</p>
+                      {[
+                        { label: "Total Transactions", value: monthly.data.aeps.totalTransactions },
+                        { label: "Total Withdrawn",    value: fmt(monthly.data.aeps.totalWithdrawals) },
+                        { label: "Total Deposited",    value: fmt(monthly.data.aeps.totalDeposits) },
+                        { label: "Net Flow",           value: fmt(monthly.data.aeps.netFlow) },
+                      ].map((row, i, arr) => (
+                        <div key={row.label} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
+                          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.55)" }}>{row.label}</span>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: i === 2 ? "#34d399" : i === 1 ? "#fca5a5" : "white" }}>{row.value}</span>
+                        </div>
+                      ))}
                     </div>
-                    {monthly.data.aeps.dailyBreakdown?.length > 0 && (
-                      <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "0 2px 20px rgba(11,44,96,0.08)" }}>
-                        <p style={{ fontSize: 14, fontWeight: 700, color: "#0b2c60", marginBottom: 16 }}>AePS Daily Breakdown</p>
-                        <ResponsiveContainer width="100%" height={200}>
-                          <BarChart data={monthly.data.aeps.dailyBreakdown} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                            <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={v => v.split("-")[2]} />
-                            <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-                            <Tooltip content={<ChartTooltip />} />
-                            <Bar dataKey="withdrawals" name="Withdrawals" fill="#ef4444" radius={[4,4,0,0]} />
-                            <Bar dataKey="deposits" name="Deposits" fill="#10b981" radius={[4,4,0,0]} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    )}
-                  </>
+                  </div>
                 )}
               </>
             ) : <EmptyState label="No data for this period" />}
@@ -868,83 +933,94 @@ function DesktopReports() {
         {activeTab === "aeps" && (
           <div className="space-y-5">
             {aepsReport.isLoading ? (
-              <div className="flex gap-4">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-32 rounded-2xl flex-1" />)}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-48 rounded-2xl" />)}</div>
             ) : aepsReport.data ? (
               <>
-                {(() => {
-                  const bd = aepsReport.data.dailyBreakdown ?? [];
-                  const last7 = bd.slice(-7);
-                  const spkWithdraw = last7.map((d: any) => ({ v: parseFloat(d.withdrawals) || 0 }));
-                  const spkDeposit  = last7.map((d: any) => ({ v: parseFloat(d.deposits)    || 0 }));
-                  const spkNet      = last7.map((d: any) => ({ v: parseFloat(d.netFlow)      || 0 }));
-                  return (
-                    <div className="flex gap-4">
-                      <DesktopStatCard label="AePS Transactions" value={aepsReport.data.totalTransactions} sub="In date range" accentColor="#f97316" iconGrad="linear-gradient(135deg,#f97316,#ea580c)" Icon={Fingerprint} />
-                      <DesktopStatCard label="Net Flow" value={fmt(aepsReport.data.netFlow)} sub={aepsReport.data.netFlow >= 0 ? "Net positive" : "Net negative"} accentColor={aepsReport.data.netFlow >= 0 ? "#10b981" : "#ef4444"} iconGrad={aepsReport.data.netFlow >= 0 ? "linear-gradient(135deg,#10b981,#059669)" : "linear-gradient(135deg,#ef4444,#dc2626)"} Icon={aepsReport.data.netFlow >= 0 ? TrendingUp : TrendingDown} sparkData={spkNet} sparkColor={aepsReport.data.netFlow >= 0 ? "#10b981" : "#ef4444"} />
-                      <DesktopStatCard label="Total Withdrawals" value={fmt(aepsReport.data.totalWithdrawals)} accentColor="#ef4444" iconGrad="linear-gradient(135deg,#ef4444,#dc2626)" Icon={ArrowUpRight} sparkData={spkWithdraw} sparkColor="#ef4444" />
-                      <DesktopStatCard label="Total Deposits" value={fmt(aepsReport.data.totalDeposits)} accentColor="#10b981" iconGrad="linear-gradient(135deg,#10b981,#059669)" Icon={ArrowDownLeft} sparkData={spkDeposit} sparkColor="#10b981" />
-                    </div>
-                  );
-                })()}
-
                 {aepsReport.data.dailyBreakdown?.length > 0 && (
                   <>
-                    <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "0 2px 20px rgba(11,44,96,0.08)" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                        <div>
-                          <p style={{ fontSize: 14, fontWeight: 700, color: "#0b2c60" }}>Withdrawals vs Deposits</p>
-                          <p style={{ fontSize: 11, color: "#94a3b8" }}>Day-by-day AePS cashflow</p>
+                    {/* 2-col: bar chart + day-wise table */}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                      <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "0 2px 16px rgba(11,44,96,0.07)" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                          <div>
+                            <p style={{ fontSize: 14, fontWeight: 700, color: "#0b2c60" }}>Withdrawals vs Deposits</p>
+                            <p style={{ fontSize: 11, color: "#94a3b8" }}>Day-by-day AePS cashflow</p>
+                          </div>
+                          <div style={{ display: "flex", gap: 12 }}>
+                            {[{ l: "Withdrawals", c: "#ef4444" }, { l: "Deposits", c: "#10b981" }].map(x => (
+                              <div key={x.l} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                                <div style={{ width: 8, height: 8, borderRadius: 2, background: x.c }} />
+                                <span style={{ fontSize: 10, color: "#94a3b8" }}>{x.l}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          {[{ l: "Withdrawals", c: "#ef4444" }, { l: "Deposits", c: "#10b981" }].map(x => (
-                            <div key={x.l} className="flex items-center gap-1.5">
-                              <div style={{ width: 8, height: 8, borderRadius: 2, background: x.c }} />
-                              <span style={{ fontSize: 11, color: "#94a3b8" }}>{x.l}</span>
-                            </div>
-                          ))}
-                        </div>
+                        <ResponsiveContainer width="100%" height={200}>
+                          <BarChart data={aepsReport.data.dailyBreakdown} margin={{ top: 4, right: 4, left: -20, bottom: 0 }} barGap={3}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f8fafc" />
+                            <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={v => v.split("-")[2]} />
+                            <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                            <Tooltip content={<ChartTooltip />} />
+                            <Bar dataKey="withdrawals" name="Withdrawals" fill="#ef4444" radius={[4,4,0,0]} />
+                            <Bar dataKey="deposits" name="Deposits" fill="#10b981" radius={[4,4,0,0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
                       </div>
-                      <ResponsiveContainer width="100%" height={240}>
-                        <BarChart data={aepsReport.data.dailyBreakdown} margin={{ top: 4, right: 4, left: -20, bottom: 0 }} barGap={3}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                          <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={v => v.split("-")[2]} />
-                          <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-                          <Tooltip content={<ChartTooltip />} />
-                          <Bar dataKey="withdrawals" name="Withdrawals" fill="#ef4444" radius={[4,4,0,0]} />
-                          <Bar dataKey="deposits" name="Deposits" fill="#10b981" radius={[4,4,0,0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
+
+                      {/* AePS area chart — opening float */}
+                      <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "0 2px 16px rgba(11,44,96,0.07)" }}>
+                        <div style={{ marginBottom: 16 }}>
+                          <p style={{ fontSize: 14, fontWeight: 700, color: "#0b2c60" }}>Opening Balance Trend</p>
+                          <p style={{ fontSize: 11, color: "#94a3b8" }}>Daily opening float over period</p>
+                        </div>
+                        <ResponsiveContainer width="100%" height={200}>
+                          <AreaChart data={aepsReport.data.dailyBreakdown}>
+                            <defs>
+                              <linearGradient id="obGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.15} />
+                                <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f8fafc" />
+                            <XAxis dataKey="date" tick={{ fontSize: 9, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={v => v.split("-")[2]} />
+                            <YAxis tick={{ fontSize: 9, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
+                            <Tooltip content={<ChartTooltip />} />
+                            <Area type="monotone" dataKey="openingBalance" name="Opening Balance" stroke="#3b82f6" strokeWidth={2} fill="url(#obGrad)" dot={false} />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
                     </div>
 
-                    <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 20px rgba(11,44,96,0.08)" }}>
-                      <div style={{ height: 4, background: "linear-gradient(90deg,#f97316,#ea580c)" }} />
-                      <div className="p-5">
-                        <p style={{ fontSize: 14, fontWeight: 700, color: "#0b2c60", marginBottom: 16 }}>Day-wise Detail</p>
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-sm">
-                            <thead>
-                              <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
-                                {["Date","Opening Balance","Withdrawals","Deposits","Transactions","Net Flow"].map(h => (
-                                  <th key={h} style={{ textAlign: h === "Date" ? "left" : "right", fontSize: 10, color: "#94a3b8", letterSpacing: "0.07em", padding: "0 8px 10px", fontWeight: 600, textTransform: "uppercase" }}>{h}</th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {aepsReport.data.dailyBreakdown.map((row: any) => (
-                                <tr key={row.date} style={{ borderBottom: "1px solid #f8fafc" }}>
-                                  <td style={{ padding: "11px 8px", fontSize: 12, fontWeight: 800, color: "#0b2c60", fontVariantNumeric: "tabular-nums" }}>{row.date}</td>
-                                  <td style={{ padding: "11px 8px", textAlign: "right", fontSize: 12, color: "#64748b" }}>{formatINR(row.openingBalance)}</td>
-                                  <td style={{ padding: "11px 8px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#ef4444" }}>{formatINR(row.withdrawals)}</td>
-                                  <td style={{ padding: "11px 8px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#10b981" }}>{formatINR(row.deposits)}</td>
-                                  <td style={{ padding: "11px 8px", textAlign: "right" }}>
-                                    <span style={{ background: "#fff7ed", color: "#f97316", borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>{row.transactions}</span>
-                                  </td>
-                                  <td style={{ padding: "11px 8px", textAlign: "right", fontSize: 12, fontWeight: 800, color: row.netFlow >= 0 ? "#10b981" : "#ef4444" }}>{formatINR(row.netFlow)}</td>
-                                </tr>
+                    {/* Full-width day-wise table */}
+                    <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 16px rgba(11,44,96,0.07)" }}>
+                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #f1f5f9" }}>
+                        <p style={{ fontSize: 14, fontWeight: 700, color: "#0b2c60" }}>Day-wise Detail</p>
+                        <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{filters.aepsStart} → {filters.aepsEnd}</p>
+                      </div>
+                      <div style={{ overflowX: "auto" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                          <thead style={{ background: "#f8fafc" }}>
+                            <tr>
+                              {["Date","Opening Balance","Withdrawals","Deposits","Transactions","Net Flow"].map(h => (
+                                <th key={h} style={{ padding: "9px 16px", fontSize: 10, color: "#94a3b8", letterSpacing: "0.07em", fontWeight: 600, textTransform: "uppercase", textAlign: h === "Date" ? "left" : "right" }}>{h}</th>
                               ))}
-                            </tbody>
-                          </table>
-                        </div>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {aepsReport.data.dailyBreakdown.map((row: any) => (
+                              <tr key={row.date} style={{ borderTop: "1px solid #f8fafc" }}>
+                                <td style={{ padding: "11px 16px", fontSize: 12, fontWeight: 800, color: "#0b2c60" }}>{row.date}</td>
+                                <td style={{ padding: "11px 16px", textAlign: "right", fontSize: 12, color: "#64748b" }}>{formatINR(row.openingBalance)}</td>
+                                <td style={{ padding: "11px 16px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#ef4444" }}>{formatINR(row.withdrawals)}</td>
+                                <td style={{ padding: "11px 16px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#10b981" }}>{formatINR(row.deposits)}</td>
+                                <td style={{ padding: "11px 16px", textAlign: "right" }}>
+                                  <span style={{ background: "#fff7ed", color: "#f97316", borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>{row.transactions}</span>
+                                </td>
+                                <td style={{ padding: "11px 16px", textAlign: "right", fontSize: 12, fontWeight: 800, color: row.netFlow >= 0 ? "#10b981" : "#ef4444" }}>{formatINR(row.netFlow)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
                   </>
@@ -960,57 +1036,64 @@ function DesktopReports() {
             {!breakdown.data?.length ? (
               <EmptyState label="No service data yet" />
             ) : (
-              <>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                  <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "0 2px 20px rgba(11,44,96,0.08)" }}>
-                    <p style={{ fontSize: 14, fontWeight: 700, color: "#0b2c60", marginBottom: 4 }}>Revenue by Service</p>
-                    <p style={{ fontSize: 11, color: "#94a3b8", marginBottom: 16 }}>All-time share</p>
-                    <ResponsiveContainer width="100%" height={260}>
-                      <PieChart>
-                        <Pie data={breakdown.data} dataKey="revenue" nameKey="serviceType" cx="50%" cy="50%" outerRadius={100} innerRadius={50} paddingAngle={3}>
-                          {breakdown.data?.map((_: any, i: number) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-                        </Pie>
-                        <Tooltip formatter={(v: any) => [`₹${Number(v).toLocaleString("en-IN")}`, "Revenue"]} contentStyle={{ fontSize: 11, borderRadius: 10, border: "none", boxShadow: "0 4px 20px rgba(0,0,0,0.12)" }} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-
-                  <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 20px rgba(11,44,96,0.08)" }}>
-                    <div style={{ height: 4, background: "linear-gradient(90deg,#0b2c60,#f97316)" }} />
-                    <div className="p-5">
-                      <p style={{ fontSize: 14, fontWeight: 700, color: "#0b2c60", marginBottom: 16 }}>Service Details</p>
-                      <table className="w-full">
-                        <thead>
-                          <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
-                            {["#","Service","Transactions","Revenue"].map(h => (
-                              <th key={h} style={{ textAlign: h === "#" || h === "Service" ? "left" : "right", fontSize: 10, color: "#94a3b8", letterSpacing: "0.07em", padding: "0 8px 10px", fontWeight: 600, textTransform: "uppercase" }}>{h}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {breakdown.data?.map((s: any, i: number) => (
-                            <tr key={s.serviceType} style={{ borderBottom: "1px solid #f8fafc" }}>
-                              <td style={{ padding: "10px 8px" }}>
-                                <div style={{ width: 22, height: 22, borderRadius: 6, background: PIE_COLORS[i % PIE_COLORS.length], display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 900, color: "white" }}>{i + 1}</div>
-                              </td>
-                              <td style={{ padding: "10px 8px" }}>
-                                <div className="flex items-center gap-2">
-                                  <div style={{ width: 8, height: 8, borderRadius: 2, background: PIE_COLORS[i % PIE_COLORS.length], flexShrink: 0 }} />
-                                  <span style={{ fontSize: 12, fontWeight: 500, color: "#334155" }}>{s.serviceType}</span>
-                                </div>
-                              </td>
-                              <td style={{ padding: "10px 8px", textAlign: "right" }}>
-                                <span style={{ background: "#eff6ff", color: "#1d4ed8", borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>{s.count}</span>
-                              </td>
-                              <td style={{ padding: "10px 8px", textAlign: "right", fontSize: 13, fontWeight: 800, color: "#10b981" }}>{fmt(s.revenue)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "0 2px 16px rgba(11,44,96,0.07)" }}>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: "#0b2c60", marginBottom: 4 }}>Revenue by Service</p>
+                  <p style={{ fontSize: 11, color: "#94a3b8", marginBottom: 12 }}>All-time share</p>
+                  <ResponsiveContainer width="100%" height={260}>
+                    <PieChart>
+                      <Pie data={breakdown.data} dataKey="revenue" nameKey="serviceType" cx="50%" cy="50%" outerRadius={100} innerRadius={50} paddingAngle={3}>
+                        {breakdown.data?.map((_: any, i: number) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                      </Pie>
+                      <Tooltip formatter={(v: any) => [`₹${Number(v).toLocaleString("en-IN")}`, "Revenue"]} contentStyle={{ fontSize: 11, borderRadius: 10, border: "none", boxShadow: "0 4px 20px rgba(0,0,0,0.12)" }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 8 }}>
+                    {breakdown.data?.slice(0, 5).map((s: any, i: number) => (
+                      <div key={s.serviceType} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: 2, background: PIE_COLORS[i % PIE_COLORS.length], flexShrink: 0 }} />
+                        <span style={{ fontSize: 11, color: "#334155", flex: 1 }}>{s.serviceType}</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: PIE_COLORS[i % PIE_COLORS.length] }}>{s.count} tx</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </>
+
+                <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 16px rgba(11,44,96,0.07)" }}>
+                  <div style={{ padding: "16px 20px", borderBottom: "1px solid #f1f5f9" }}>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: "#0b2c60" }}>Service Details</p>
+                    <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>All-time breakdown</p>
+                  </div>
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead style={{ background: "#f8fafc" }}>
+                      <tr>
+                        {["Rank","Service","Transactions","Revenue"].map(h => (
+                          <th key={h} style={{ padding: "9px 16px", fontSize: 10, color: "#94a3b8", letterSpacing: "0.07em", fontWeight: 600, textTransform: "uppercase", textAlign: h === "Rank" || h === "Service" ? "left" : "right" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {breakdown.data?.map((s: any, i: number) => (
+                        <tr key={s.serviceType} style={{ borderTop: "1px solid #f8fafc" }}>
+                          <td style={{ padding: "11px 16px" }}>
+                            <div style={{ width: 24, height: 24, borderRadius: 7, background: PIE_COLORS[i % PIE_COLORS.length], display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 900, color: "white" }}>{i + 1}</div>
+                          </td>
+                          <td style={{ padding: "11px 16px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <div style={{ width: 6, height: 6, borderRadius: 2, background: PIE_COLORS[i % PIE_COLORS.length], flexShrink: 0 }} />
+                              <span style={{ fontSize: 13, fontWeight: 500, color: "#334155" }}>{s.serviceType}</span>
+                            </div>
+                          </td>
+                          <td style={{ padding: "11px 16px", textAlign: "right" }}>
+                            <span style={{ background: "#eff6ff", color: "#1d4ed8", borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>{s.count}</span>
+                          </td>
+                          <td style={{ padding: "11px 16px", textAlign: "right", fontSize: 13, fontWeight: 800, color: "#10b981" }}>{fmt(s.revenue)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             )}
           </div>
         )}
