@@ -610,7 +610,7 @@ export default function Users() {
             <h2 className="text-xl font-bold">User Management</h2>
             <p className="text-sm text-muted-foreground">{users?.length ?? 0} users total</p>
           </div>
-          {tab !== "overview" && (
+          {tab !== "overview" && tab !== "sessions" && (
             <Button size="sm" onClick={openCreate} data-testid="button-new-user">
               <Plus size={14} className="mr-1.5" />Add User
             </Button>
@@ -624,6 +624,7 @@ export default function Users() {
             { key: "active", label: "Active", count: activeUsers.length },
             { key: "all", label: "All Users", count: users?.length ?? 0 },
             { key: "overview", label: "Cash Overview", count: 0 },
+            { key: "sessions", label: "Sessions", count: 0 },
           ] as { key: Tab; label: string; count: number }[]).map(({ key, label, count }) => (
             <button
               key={key}
@@ -644,8 +645,10 @@ export default function Users() {
           ))}
         </div>
 
-        {/* Cash Overview Tab */}
-        {tab === "overview" ? (
+        {/* Sessions Tab */}
+        {tab === "sessions" ? (
+          <AdminSessionsTab />
+        ) : tab === "overview" ? (
           <CashOverviewTab />
         ) : isLoading ? (
           <div className="space-y-3">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
