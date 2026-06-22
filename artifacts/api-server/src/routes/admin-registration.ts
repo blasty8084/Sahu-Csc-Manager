@@ -5,6 +5,8 @@ import { z } from "zod/v4";
 import { requireRole, auditLog, getClientIp } from "../lib/auth";
 import { cacheGet, cacheSet, cacheDel } from "../lib/registration-cache";
 import { createNotification } from "../lib/notify";
+import { sendApprovalEmail, sendRejectionEmail, isSmtpConfigured } from "../lib/mailer";
+import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
@@ -135,6 +137,12 @@ router.patch("/admin/users/:id/approve", requireRole("admin"), async (req, res):
   await auditLog(req.session.userId!, "APPROVED", `Approved user: ${user.username}`, getClientIp(req));
   await createNotification("Account Approved", `Your account has been approved. You can now log in.`, "success", id);
 
+  if (isSmtpConfigured()) {
+    sendApprovalEmail(user.email, user.fullName ?? user.username).catch((err) =>
+      logger.warn({ err, userId: id }, "Failed to send approval email")
+    );
+  }
+
   res.json({ success: true, message: "User approved", user: fmtUser(updated) });
 });
 
@@ -165,6 +173,12 @@ router.patch("/admin/users/:id/reject", requireRole("admin"), async (req, res): 
     ? `Your registration has been declined. Reason: ${reason}`
     : "Your registration has been declined. Please contact administrator for details.";
   await createNotification("Registration Declined", notifyMsg, "warning", id);
+
+  if (isSmtpConfigured()) {
+    sendRejectionEmail(user.email, user.fullName ?? user.username, reason).catch((err) =>
+      logger.warn({ err, userId: id }, "Failed to send rejection email")
+    );
+  }
 
   res.json({ success: true, message: "User rejected", user: fmtUser(updated) });
 });
