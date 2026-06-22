@@ -401,6 +401,105 @@ export async function sendApprovalEmail(to: string, name: string): Promise<void>
   });
 }
 
+export async function sendNewRegistrationAdminEmail(opts: {
+  adminEmail: string;
+  adminName: string;
+  applicantUsername: string;
+  applicantFullName: string | null;
+  applicantEmail: string;
+  submittedAt: Date;
+}): Promise<void> {
+  const transporter = createTransporter();
+  const fromEmail = process.env.SMTP_FROM_EMAIL ?? process.env.SMTP_USER ?? "noreply@sahucsc.in";
+  const { adminEmail, adminName, applicantUsername, applicantFullName, applicantEmail, submittedAt } = opts;
+
+  const displayApplicant = applicantFullName ? `${applicantFullName} (@${applicantUsername})` : `@${applicantUsername}`;
+  const timeStr = submittedAt.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
+
+  const bodyHtml = `
+    <p style="margin:0 0 8px;font-size:20px;font-weight:700;color:#0b1a3a;">Hi ${adminName},</p>
+    <p style="margin:0 0 24px;font-size:14px;color:#4b5563;line-height:1.7;">
+      A new registration request is waiting for your review on <strong>SAHU CSC</strong>.
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:24px;">
+      <tr>
+        <td style="background:#eff6ff;border:2px solid rgba(37,99,235,0.25);border-radius:14px;padding:24px 26px;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td style="padding-bottom:14px;">
+                <p style="margin:0 0 3px;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#9ca3af;">Applicant</p>
+                <p style="margin:0;font-size:16px;font-weight:700;color:#0b1a3a;">${displayApplicant}</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="border-top:1px solid #dbeafe;padding-top:14px;">
+                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td width="50%" style="padding-right:12px;">
+                      <p style="margin:0 0 2px;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#9ca3af;">Email</p>
+                      <p style="margin:0;font-size:13px;color:#374151;">${applicantEmail}</p>
+                    </td>
+                    <td width="50%">
+                      <p style="margin:0 0 2px;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#9ca3af;">Submitted</p>
+                      <p style="margin:0;font-size:13px;color:#374151;">${timeStr}</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
+      <tr>
+        <td style="background:#f8fafc;border-left:4px solid #0b2c60;border-radius:0 8px 8px 0;padding:14px 16px;">
+          <p style="margin:0;font-size:12px;color:#374151;line-height:1.6;">
+            Log in to SAHU CSC and go to <strong>User Management → Pending</strong> to approve or decline this request.
+          </p>
+        </td>
+      </tr>
+    </table>
+    <p style="margin:0;font-size:12px;color:#9ca3af;line-height:1.6;">
+      This alert was sent because you are an administrator on SAHU CSC. You will receive one email per new registration request.
+    </p>`;
+
+  await transporter.sendMail({
+    from: `"SAHU CSC" <${fromEmail}>`,
+    to: adminEmail,
+    subject: `SAHU CSC — New registration request from @${applicantUsername}`,
+    html: buildStatusHtml({
+      heading: "New Registration Request",
+      subheading: "Action Required",
+      icon: "&#128276;",
+      accentColor: "#0b2c60",
+      accentLight: "#eff6ff",
+      accentBorder: "rgba(37,99,235,0.25)",
+      bodyHtml,
+    }),
+    text: [
+      "SAHU CSC — Management Platform",
+      "=".repeat(40),
+      "",
+      "NEW REGISTRATION REQUEST — ACTION REQUIRED",
+      "",
+      `Hi ${adminName},`,
+      "",
+      "A new registration request is waiting for your review.",
+      "",
+      `Applicant : ${displayApplicant}`,
+      `Email     : ${applicantEmail}`,
+      `Submitted : ${timeStr}`,
+      "",
+      "Log in to SAHU CSC and go to User Management → Pending to approve or decline.",
+      "",
+      "-".repeat(40),
+      "SAHU CSC · Common Service Center · Odisha, India",
+      "This is an automated message. Please do not reply.",
+    ].join("\n"),
+  });
+}
+
 export async function sendRejectionEmail(to: string, name: string, reason: string | null): Promise<void> {
   const transporter = createTransporter();
   const fromEmail = process.env.SMTP_FROM_EMAIL ?? process.env.SMTP_USER ?? "noreply@sahucsc.in";

@@ -21,6 +21,8 @@ import {
 import { randomUUID } from "crypto";
 import crypto from "node:crypto";
 import { cacheGet, cacheSet } from "../lib/registration-cache";
+import { sendNewRegistrationAdminEmail, isSmtpConfigured } from "../lib/mailer";
+import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
@@ -165,6 +167,28 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     "New Registration Request",
     `${user.username} submitted a registration request — pending approval`
   );
+
+  if (isSmtpConfigured()) {
+    const submittedAt = user.createdAt instanceof Date ? user.createdAt : new Date(user.createdAt as string);
+    db.select({ email: usersTable.email, fullName: usersTable.fullName, username: usersTable.username })
+      .from(usersTable)
+      .where(eq(usersTable.role, "admin"))
+      .then((admins) => {
+        for (const admin of admins) {
+          sendNewRegistrationAdminEmail({
+            adminEmail: admin.email,
+            adminName: admin.fullName ?? admin.username,
+            applicantUsername: user.username,
+            applicantFullName: user.fullName ?? null,
+            applicantEmail: user.email,
+            submittedAt,
+          }).catch((err) =>
+            logger.warn({ err, adminEmail: admin.email }, "Failed to send admin registration alert email")
+          );
+        }
+      })
+      .catch((err) => logger.warn({ err }, "Failed to fetch admins for registration alert email"));
+  }
 
   res.status(201).json({ pending: true, message: "Registration submitted. Awaiting admin approval." });
 });
