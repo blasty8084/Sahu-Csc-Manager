@@ -19,8 +19,9 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Plus, Pencil, Trash2, CheckCircle2, XCircle, Clock,
   Users as UsersIcon, TrendingUp, TrendingDown, Wallet, Receipt, ChevronRight,
-  X, User, Mail, Phone, Shield, Eye, EyeOff,
+  X, User, Mail, Phone, Shield, Eye, EyeOff, ListChecks,
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from "react-hook-form";
 
 interface UserForm {
@@ -227,6 +228,10 @@ export default function Users() {
   const [rejectTarget, setRejectTarget] = useState<any>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [actionLoading, setActionLoading] = useState<number | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [showBulkRejectDialog, setShowBulkRejectDialog] = useState(false);
+  const [bulkRejectReason, setBulkRejectReason] = useState("");
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
 
   const { data: users, isLoading: usersLoading } = useListUsers();
   const { data: pendingUsers, isLoading: pendingLoading } = usePendingUsers();
@@ -329,6 +334,74 @@ export default function Users() {
     }
   };
 
+  const toggleSelect = (id: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    const pending = pendingUsers ?? [];
+    if (selectedIds.size === pending.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(pending.map((u: any) => u.id)));
+    }
+  };
+
+  const bulkApprove = async () => {
+    const ids = [...selectedIds];
+    if (!ids.length) return;
+    setBulkActionLoading(true);
+    try {
+      const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+      const results = await Promise.allSettled(
+        ids.map(id => fetch(`${base}/api/admin/users/${id}/approve`, { method: "PATCH", credentials: "include" }))
+      );
+      const failed = results.filter(r => r.status === "rejected" || (r.status === "fulfilled" && !r.value.ok)).length;
+      const succeeded = ids.length - failed;
+      if (succeeded > 0) toast({ title: `✅ ${succeeded} user${succeeded !== 1 ? "s" : ""} approved` });
+      if (failed > 0) toast({ title: `${failed} approval${failed !== 1 ? "s" : ""} failed`, variant: "destructive" });
+      setSelectedIds(new Set());
+      invalidate();
+    } catch {
+      toast({ title: "Bulk approve failed", variant: "destructive" });
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
+  const confirmBulkReject = async () => {
+    const ids = [...selectedIds];
+    if (!ids.length) return;
+    setBulkActionLoading(true);
+    try {
+      const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+      const results = await Promise.allSettled(
+        ids.map(id => fetch(`${base}/api/admin/users/${id}/reject`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ reason: bulkRejectReason }),
+        }))
+      );
+      const failed = results.filter(r => r.status === "rejected" || (r.status === "fulfilled" && !r.value.ok)).length;
+      const succeeded = ids.length - failed;
+      if (succeeded > 0) toast({ title: `❌ ${succeeded} user${succeeded !== 1 ? "s" : ""} rejected` });
+      if (failed > 0) toast({ title: `${failed} rejection${failed !== 1 ? "s" : ""} failed`, variant: "destructive" });
+      setSelectedIds(new Set());
+      setShowBulkRejectDialog(false);
+      setBulkRejectReason("");
+      invalidate();
+    } catch {
+      toast({ title: "Bulk reject failed", variant: "destructive" });
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
   const activeUsers = (users ?? []).filter((u: any) => u.status === "ACTIVE" || u.isActive);
   const displayedUsers = tab === "pending" ? (pendingUsers ?? []) : tab === "active" ? activeUsers : (users ?? []);
   const isLoading = tab === "pending" ? pendingLoading : usersLoading;
@@ -399,12 +472,56 @@ export default function Users() {
           </div>
         ) : tab === "pending" ? (
           <>
+            {/* Bulk action bar */}
+            {selectedIds.size > 0 && (
+              <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl border-2 border-primary/20 bg-primary/5 sticky top-0 z-10">
+                <ListChecks className="w-4 h-4 text-primary shrink-0" />
+                <span className="text-sm font-semibold text-primary flex-1">
+                  {selectedIds.size} user{selectedIds.size !== 1 ? "s" : ""} selected
+                </span>
+                <Button
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700 text-white h-8 px-3 text-xs"
+                  onClick={bulkApprove}
+                  disabled={bulkActionLoading}
+                >
+                  <CheckCircle2 size={12} className="mr-1" />
+                  Approve ({selectedIds.size})
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-red-200 text-red-600 hover:bg-red-50 h-8 px-3 text-xs"
+                  onClick={() => { setShowBulkRejectDialog(true); setBulkRejectReason(""); }}
+                  disabled={bulkActionLoading}
+                >
+                  <XCircle size={12} className="mr-1" />
+                  Reject ({selectedIds.size})
+                </Button>
+                <button
+                  className="text-xs text-muted-foreground hover:text-foreground ml-1 transition-colors"
+                  onClick={() => setSelectedIds(new Set())}
+                >
+                  Clear
+                </button>
+              </div>
+            )}
+
             {/* Pending — mobile cards */}
             <div className="space-y-3 sm:hidden">
               {displayedUsers.map((user: any) => (
-                <div key={user.id} className="bg-card border border-amber-200 rounded-xl p-4 space-y-3">
+                <div
+                  key={user.id}
+                  className={`bg-card border rounded-xl p-4 space-y-3 transition-colors ${selectedIds.has(user.id) ? "border-primary/40 bg-primary/5" : "border-amber-200"}`}
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 min-w-0">
+                      <Checkbox
+                        checked={selectedIds.has(user.id)}
+                        onCheckedChange={() => toggleSelect(user.id)}
+                        className="shrink-0"
+                        aria-label={`Select ${user.username}`}
+                      />
                       <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
                         <Clock className="w-4 h-4 text-amber-600" />
                       </div>
@@ -421,10 +538,10 @@ export default function Users() {
                     <p>Registered {new Date(user.createdAt).toLocaleDateString("en-IN")}</p>
                   </div>
                   <div className="flex gap-2 pt-1">
-                    <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700 text-white h-9" onClick={() => approveUser(user)} disabled={actionLoading === user.id}>
+                    <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700 text-white h-9" onClick={() => approveUser(user)} disabled={actionLoading === user.id || bulkActionLoading}>
                       <CheckCircle2 size={13} className="mr-1.5" />Approve
                     </Button>
-                    <Button size="sm" variant="outline" className="flex-1 border-red-200 text-red-600 hover:bg-red-50 h-9" onClick={() => { setRejectTarget(user); setRejectReason(""); }} disabled={actionLoading === user.id}>
+                    <Button size="sm" variant="outline" className="flex-1 border-red-200 text-red-600 hover:bg-red-50 h-9" onClick={() => { setRejectTarget(user); setRejectReason(""); }} disabled={actionLoading === user.id || bulkActionLoading}>
                       <XCircle size={13} className="mr-1.5" />Reject
                     </Button>
                   </div>
@@ -437,6 +554,15 @@ export default function Users() {
               <table className="w-full text-sm">
                 <thead className="border-b bg-muted/30">
                   <tr className="text-left">
+                    <th className="px-4 py-3 w-10">
+                      <Checkbox
+                        checked={displayedUsers.length > 0 && selectedIds.size === displayedUsers.length}
+                        data-state={selectedIds.size > 0 && selectedIds.size < displayedUsers.length ? "indeterminate" : undefined}
+                        onCheckedChange={toggleSelectAll}
+                        aria-label="Select all"
+                        className={selectedIds.size > 0 && selectedIds.size < displayedUsers.length ? "opacity-70" : ""}
+                      />
+                    </th>
                     <th className="px-4 py-3 font-medium text-muted-foreground">User</th>
                     <th className="px-4 py-3 font-medium text-muted-foreground">Contact</th>
                     <th className="px-4 py-3 font-medium text-muted-foreground">Registered</th>
@@ -445,7 +571,17 @@ export default function Users() {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {displayedUsers.map((user: any) => (
-                    <tr key={user.id} className="hover:bg-muted/20 transition-colors">
+                    <tr
+                      key={user.id}
+                      className={`transition-colors ${selectedIds.has(user.id) ? "bg-primary/5" : "hover:bg-muted/20"}`}
+                    >
+                      <td className="px-4 py-3">
+                        <Checkbox
+                          checked={selectedIds.has(user.id)}
+                          onCheckedChange={() => toggleSelect(user.id)}
+                          aria-label={`Select ${user.username}`}
+                        />
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
@@ -464,10 +600,10 @@ export default function Users() {
                       <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(user.createdAt).toLocaleDateString("en-IN")}</td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2">
-                          <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white h-8 px-3 text-xs" onClick={() => approveUser(user)} disabled={actionLoading === user.id}>
+                          <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white h-8 px-3 text-xs" onClick={() => approveUser(user)} disabled={actionLoading === user.id || bulkActionLoading}>
                             <CheckCircle2 size={12} className="mr-1" />Approve
                           </Button>
-                          <Button size="sm" variant="outline" className="border-red-200 text-red-600 hover:bg-red-50 h-8 px-3 text-xs" onClick={() => { setRejectTarget(user); setRejectReason(""); }} disabled={actionLoading === user.id}>
+                          <Button size="sm" variant="outline" className="border-red-200 text-red-600 hover:bg-red-50 h-8 px-3 text-xs" onClick={() => { setRejectTarget(user); setRejectReason(""); }} disabled={actionLoading === user.id || bulkActionLoading}>
                             <XCircle size={12} className="mr-1" />Reject
                           </Button>
                         </div>
@@ -821,6 +957,38 @@ export default function Users() {
           <DialogFooter>
             <Button variant="outline" onClick={() => { setRejectTarget(null); setRejectReason(""); }}>Cancel</Button>
             <Button variant="destructive" onClick={confirmReject} disabled={actionLoading === rejectTarget?.id}>Decline</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Reject Dialog */}
+      <Dialog open={showBulkRejectDialog} onOpenChange={(open) => { if (!open) { setShowBulkRejectDialog(false); setBulkRejectReason(""); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Decline {selectedIds.size} Registration{selectedIds.size !== 1 ? "s" : ""}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              All <strong>{selectedIds.size} selected</strong> registration requests will be declined and each user will be notified.
+            </p>
+            <div className="space-y-1.5">
+              <Label className="text-sm">Reason for declining <span className="text-muted-foreground font-normal">(optional)</span></Label>
+              <Textarea
+                placeholder="e.g. Incomplete documentation, duplicate accounts, unauthorised applications..."
+                value={bulkRejectReason}
+                onChange={(e) => setBulkRejectReason(e.target.value)}
+                className="resize-none h-20"
+              />
+              <p className="text-xs text-muted-foreground">
+                The same reason will be shown to all declined users when they next try to log in.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowBulkRejectDialog(false); setBulkRejectReason(""); }}>Cancel</Button>
+            <Button variant="destructive" onClick={confirmBulkReject} disabled={bulkActionLoading}>
+              {bulkActionLoading ? "Declining…" : `Decline All (${selectedIds.size})`}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
