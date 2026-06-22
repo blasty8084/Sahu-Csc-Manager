@@ -22,6 +22,7 @@ import { prefetch } from "@/lib/prefetch";
 type NavItem = {
   href: string;
   label: string;
+  mobileOnly?: boolean;
   icon: React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>;
   badge?: number;
 };
@@ -225,7 +226,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/reports", label: "Reports", icon: BarChart3 },
     { href: "/notifications", label: "Notifications", icon: Bell, badge: unreadCount },
     { href: "/profile", label: "My Profile", icon: UserCircle },
-    { href: "/sessions", label: "Active Sessions", icon: MonitorSmartphone },
+    { href: "/sessions", label: "Active Sessions", icon: MonitorSmartphone, mobileOnly: true },
     { href: "/pwa-status", label: "App & Offline", icon: WifiOff },
     { href: "/download-app", label: "Download App", icon: ArrowDownToLine },
     { href: "/about", label: "About & Docs", icon: Info },
@@ -276,7 +277,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Desktop Sidebar */}
       <div className="hidden md:block w-64 fixed inset-y-0 z-10">
         <SidebarNav
-          mainNavItems={mainNavItems}
+          mainNavItems={mainNavItems.filter((i) => !i.mobileOnly)}
           adminNavItems={adminNavItems}
           initials={initials}
           avatarSrc={avatarSrc}
