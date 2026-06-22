@@ -1,5 +1,5 @@
 # SAHU CSC — Workflow Guide
-**Version 2.1.0 — June 2026**
+**Version 2.4.0 — June 2026**
 
 > **Read this first.**
 > This file is the single source of truth for how to start, seed, and troubleshoot the SAHU CSC platform. All workflow definitions live in `.replit`.
@@ -18,7 +18,7 @@ monorepo root/
 └── lib/api-client-react/     — Auto-generated React Query hooks (Orval)
 ```
 
-**v2.1.0 features:** Ledger · AePS · Udhari Khata · Receipts (CSC-YYYY-NNNN + QR + WhatsApp PDF) · V2 multi-device sessions · RBAC requirePermission · OTP password reset · Admin oversight · PWA Status page · Idle timeout · Notification isolation fixes · Canvas UI mockup exploration
+**v2.4.0 features:** Ledger · AePS · Udhari Khata · Receipts (CSC-YYYY-NNNN + QR + WhatsApp PDF) · V2 multi-device sessions · RBAC requirePermission · OTP password reset · Admin oversight · PWA Status page · Idle timeout · Notification isolation fixes · Unified Profile+Settings page · Reports redesign · Login UX overhaul · Admin registration management (pending bulk approve/reject + emails) · Admin Sessions tab (view + revoke any user's sessions)
 
 ---
 

@@ -1,5 +1,5 @@
 # SAHU CSC — Architecture Reference v2
-**Version 2.3.0 — June 2026**
+**Version 2.4.0 — June 2026**
 
 > This document is the single authoritative reference for the SAHU CSC platform architecture.  
 > It supersedes any older architecture notes in `ARCHITECTURE.md`.  
@@ -359,6 +359,7 @@ password.reset
 REGISTER_REQUEST
 udhari.customer.create udhari.customer.update   udhari.customer.delete
 udhari.entry.create
+admin.session.revoke  admin.session.revoke_all_for_user
 ```
 
 **Device detection** (`parseDevice(userAgent)`) — called once per login request, returns `{ browser, os, deviceInfo, deviceType }`. `deviceType` is `"mobile" | "tablet" | "desktop"`.
@@ -409,6 +410,15 @@ udhari.entry.create
 | **Admin** | GET | `/api/admin/users-overview` | ✅ | admin |
 | | GET | `/api/admin/users-overview/:userId/ledger` | ✅ | admin |
 | | GET | `/api/admin/aeps-overview` | ✅ | admin |
+| | GET | `/api/admin/sessions` | ✅ | admin |
+| | DELETE | `/api/admin/sessions/:id` | ✅ | admin |
+| | DELETE | `/api/admin/sessions/user/:userId` | ✅ | admin |
+| **Admin Registration** | GET | `/api/admin/registration/pending` | ✅ | admin |
+| | GET | `/api/admin/users/pending-count` | ✅ | admin |
+| | POST | `/api/admin/registration/:id/approve` | ✅ | admin |
+| | POST | `/api/admin/registration/:id/reject` | ✅ | admin |
+| | POST | `/api/admin/registration/bulk-approve` | ✅ | admin |
+| | POST | `/api/admin/registration/bulk-reject` | ✅ | admin |
 | **Users** | GET | `/api/users` | ✅ | admin |
 | | POST | `/api/users` | ✅ | admin |
 | | PATCH | `/api/users/:id` | ✅ | admin |
@@ -459,7 +469,7 @@ udhari.entry.create
 | `/sessions` | `sessions.tsx` | All roles | Standalone device management + revoke (still accessible; same UI also embedded in `/profile`) |
 | `/pwa-status` | `pwa-status.tsx` | All roles | Network, sync, storage, push status |
 | `/receipts/verify/:token` | `receipts-verify.tsx` | Public | QR scan target — no auth |
-| `/users` | `users.tsx` | admin | User management |
+| `/users` | `users.tsx` | admin | User management — tabs: Pending (bulk approve/reject + bulk reject dialog) · Active · All Users · Cash Overview · **Sessions** (view + revoke all users' sessions) |
 | `/users-overview` | `users-overview.tsx` | admin | Cross-user balance view |
 | `/audit-logs` | `audit-logs.tsx` | admin | Full audit trail |
 | `/backups` | `backups.tsx` | admin | pg_dump backup/restore |

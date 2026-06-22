@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v2
-**Current version: 2.3.0 — June 2026**
+**Current version: 2.4.0 — June 2026**
 
 > Comprehensive record of every feature, change, and upgrade from v2.0.0 onward.  
 > For a full description of the system architecture, see `architectureV2.md`.  
@@ -9,13 +9,18 @@
 
 ## Table of Contents
 
-1. [v2.3.0 — Unified Profile + Settings Page](#1-v230--unified-profile--settings-page-june-2026)
-   - [Unified /profile Page](#11-unified-profile-page)
-   - [Desktop V5 Design — Command Center](#12-desktop-v5-design--command-center)
-   - [Mobile V3 Design — iOS-Style Drill-In](#13-mobile-v3-design--ios-style-drill-in)
-   - [Sessions Section Embedded](#14-sessions-section-embedded)
-   - [Settings Page Removed](#15-settings-page-removed)
-2. [v2.2.0 — Login UX Overhaul & Reports Redesign](#2-v220--login-ux-overhaul--reports-redesign-june-2026)
+1. [v2.4.0 — Admin Registration Management & Admin Sessions](#1-v240--admin-registration-management--admin-sessions-june-2026)
+   - [Pending Tab — Bulk Approve/Reject](#11-pending-tab--bulk-approvereject)
+   - [Email Notifications for Registration Events](#12-email-notifications-for-registration-events)
+   - [Sessions Sidebar Item (Mobile-Only)](#13-sessions-sidebar-item-mobile-only)
+   - [Admin Sessions Tab in User Management](#14-admin-sessions-tab-in-user-management)
+2. [v2.3.0 — Unified Profile + Settings Page](#2-v230--unified-profile--settings-page-june-2026)
+   - [Unified /profile Page](#21-unified-profile-page)
+   - [Desktop V5 Design — Command Center](#22-desktop-v5-design--command-center)
+   - [Mobile V3 Design — iOS-Style Drill-In](#23-mobile-v3-design--ios-style-drill-in)
+   - [Sessions Section Embedded](#24-sessions-section-embedded)
+   - [Settings Page Removed](#25-settings-page-removed)
+3. [v2.2.0 — Login UX Overhaul & Reports Redesign](#3-v220--login-ux-overhaul--reports-redesign-june-2026)
    - [Embedded Forgot-Password Flow (Inline)](#21-embedded-forgot-password-flow-inline)
    - [Login Attempt Counter with Visual Feedback](#22-login-attempt-counter-with-visual-feedback)
    - [Lockout Countdown Timer](#23-lockout-countdown-timer)
@@ -38,7 +43,179 @@
 
 ---
 
-## 1. v2.3.0 — Unified Profile + Settings Page (June 2026)
+## 1. v2.4.0 — Admin Registration Management & Admin Sessions (June 2026)
+
+### 1.1 Pending Tab — Bulk Approve/Reject
+
+**Problem:** Admins reviewing a large queue of pending registrations had to approve or reject users one at a time.
+
+**Change:** The Pending tab in `users.tsx` now supports bulk selection and bulk approve/reject.
+
+**UI additions:**
+- **Checkbox column** in the desktop table header and each row
+- **Master "select all" checkbox** in the header: checked = all selected, indeterminate = partial selection
+- **Bulk action bar** (appears when ≥1 user is selected): selected count label + green "Approve Selected" button + red "Reject Selected" button + "Clear" button
+- **Bulk reject dialog**: before bulk rejecting, admin enters an optional rejection reason applied to all selected users; has a `<Select>` with common preset reasons + free-text textarea
+
+**State added to `Users` component:**
+```ts
+const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+const [bulkRejectOpen, setBulkRejectOpen] = useState(false);
+const [bulkRejectReason, setBulkRejectReason] = useState("");
+const [bulkActionLoading, setBulkActionLoading] = useState(false);
+```
+
+**Helper functions:**
+- `toggleSelect(id)` — add/remove one ID from the set
+- `toggleSelectAll()` — select all displayed pending users or clear if all selected
+- `bulkApprove()` — calls `POST /api/admin/registration/bulk-approve` with `{ userIds: [...] }`
+- `bulkReject()` — calls `POST /api/admin/registration/bulk-reject` with `{ userIds: [...], reason }` then closes dialog
+
+After any bulk action: selection is cleared, pending list refetches, toast shown with count.
+
+**Individual approve/reject buttons** remain unchanged — `bulkActionLoading` disables them while a bulk action is in progress to prevent conflicts.
+
+**Files changed:**
+- `artifacts/sahu-csc/src/pages/users.tsx` — checkbox column, master checkbox, bulk action bar, bulk reject dialog, `selectedIds` state, toggle helpers, bulk action handlers
+
+---
+
+### 1.2 Email Notifications for Registration Events
+
+**New file:** `artifacts/api-server/src/lib/mailer.ts`
+
+Nodemailer-based email sender. All functions are SMTP-gated — they check for `SMTP_HOST` / `SMTP_USER` / `SMTP_PASS` env secrets before attempting any send. All calls in routes are fire-and-forget with `try/catch` — a missing or misconfigured SMTP setup never breaks the registration flow.
+
+**Three email functions:**
+
+| Function | Trigger | Recipient(s) |
+|----------|---------|--------------|
+| `sendApprovalEmail(user)` | Admin approves a user | The newly approved user |
+| `sendRejectionEmail(user, reason?)` | Admin rejects a user | The rejected user |
+| `sendNewRegistrationAdminEmail(newUser, adminEmails[])` | New user self-registers | All active admin email addresses |
+
+**Wiring:**
+- `admin-registration.ts` approve handler → `sendApprovalEmail(approvedUser)` (fire-and-forget)
+- `admin-registration.ts` reject handler → `sendRejectionEmail(rejectedUser, reason)` (fire-and-forget)
+- `auth.ts` register handler → queries active admin emails → `sendNewRegistrationAdminEmail(newUser, adminEmails)` (fire-and-forget)
+
+**SMTP environment secrets required:**
+
+| Secret | Purpose |
+|--------|---------|
+| `SMTP_HOST` | Mail server hostname (e.g. `smtp.gmail.com`) |
+| `SMTP_PORT` | Port — default `587` (TLS) |
+| `SMTP_USER` | SMTP auth username / email address |
+| `SMTP_PASS` | SMTP password or app-specific password |
+| `SMTP_FROM` | Sender display name + address (e.g. `"SAHU CSC" <noreply@sahucsc.in>`) |
+
+**Files changed:**
+- `artifacts/api-server/src/lib/mailer.ts` — new file
+- `artifacts/api-server/src/routes/admin-registration.ts` — approval/rejection email calls added
+- `artifacts/api-server/src/routes/auth.ts` — new registration admin alert email call
+
+---
+
+### 1.3 Sessions Sidebar Item (Mobile-Only)
+
+**Change:** The "Active Sessions" item has been removed from the desktop sidebar. It remains fully accessible in the mobile bottom-nav drawer and at `/sessions` directly.
+
+**Rationale:** The Sessions UI is already embedded inside `/profile` on desktop (as the "Active Sessions" card section). Keeping a separate Sessions link in the desktop sidebar was redundant and cluttered the admin nav.
+
+**Implementation:**
+- Added `mobileOnly?: boolean` to the `NavItem` interface in `layout.tsx`
+- Sessions nav item marked `mobileOnly: true`
+- Desktop `<SidebarNav>` prop receives `navItems.filter(item => !item.mobileOnly)`
+- Mobile drawer still receives the full `navItems` list (including mobile-only items)
+
+**Files changed:**
+- `artifacts/sahu-csc/src/components/layout.tsx`
+
+---
+
+### 1.4 Admin Sessions Tab in User Management
+
+**New feature:** A **Sessions** tab added to the User Management page (`/users`) so admins can see all active sessions across all users and forcefully revoke any of them.
+
+#### Backend
+
+**New file:** `artifacts/api-server/src/routes/admin-sessions.ts`
+
+All three endpoints require `requireRole("admin")`:
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/admin/sessions` | All active, non-expired sessions joined with user info |
+| `DELETE` | `/api/admin/sessions/:id` | Revoke a specific session by DB row ID |
+| `DELETE` | `/api/admin/sessions/user/:userId` | Revoke all sessions for a specific user |
+
+**`GET /api/admin/sessions` response item shape:**
+```json
+{
+  "id": 5,
+  "sessionId": "uuid-...",
+  "userId": 2,
+  "username": "operator",
+  "fullName": "Jane Doe",
+  "role": "operator",
+  "deviceInfo": "Chrome on Windows",
+  "browser": "Chrome",
+  "os": "Windows",
+  "ipAddress": "1.2.3.4",
+  "rememberMe": false,
+  "lastActivity": "2026-06-22T05:20:00.000Z",
+  "expiresAt": "2026-06-22T13:20:00.000Z",
+  "createdAt": "2026-06-22T05:15:00.000Z"
+}
+```
+
+**Revocation mechanism:** Sets `isActive = false` on `userSessionsTable`. Does **not** touch the express `session` table — that belongs to the admin performing the revocation. `requireAuth` automatically rejects the target user's next request because `isActive = false`.
+
+**New audit codes:**
+```
+admin.session.revoke              — Admin revoked one session for another user
+admin.session.revoke_all_for_user — Admin revoked all sessions for a user
+```
+
+**Registration:** `adminSessionsRouter` imported and `router.use(adminSessionsRouter)` added in `routes/index.ts`.
+
+#### Frontend
+
+**`users.tsx` changes (5 items):**
+
+1. **Icon imports** — added `MonitorSmartphone`, `Smartphone`, `Monitor`, `Tablet`, `LogOut`, `RefreshCw`, `Globe`
+2. **`Tab` type** extended: `"pending" | "active" | "all" | "overview" | "sessions"`
+3. **"Add User" button** condition: `tab !== "overview" && tab !== "sessions"`
+4. **Tab bar** — "Sessions" tab added as the 5th tab (no count badge)
+5. **Tab content** — `tab === "sessions" ? <AdminSessionsTab />` added before the `isLoading` check
+
+**Helper functions added before component:**
+```ts
+useAdminSessions()        // React Query; fetches /api/admin/sessions; refetchInterval 30s
+getDeviceIcon(os)         // returns Smartphone | Monitor (Monitor is default for desktop/unknown)
+formatRelative(iso)       // "just now" / "Xm ago" / "Xh ago" / "Xd ago"
+```
+
+**`AdminSessionsTab` component:**
+- Fetches all sessions via `useAdminSessions()`
+- Groups sessions by `userId` using `.reduce()`
+- **Summary bar:** "N active sessions across M users" + Refresh button
+- **Per-user group card:**
+  - **Header:** initials avatar, full name, `@username`, role badge, session count, "Revoke All" button
+  - **Mobile cards (`sm:hidden`):** device info row + IP / relative time / expiry in subtext + revoke icon button
+  - **Desktop table (`hidden sm:block`):** browser, OS, IP, last active, expires, Remember Me badge (8h / 30d), Revoke button
+- **Revoke handlers:** `revokeSession(id)` + `revokeAllForUser(userId, username)` — both invalidate `["admin-sessions"]` and show a toast
+- **Loading state:** 3 skeleton cards
+- **Empty state:** `MonitorSmartphone` icon + "No active sessions" message
+
+**Files changed:**
+- `artifacts/api-server/src/routes/admin-sessions.ts` — new file
+- `artifacts/api-server/src/routes/index.ts` — registered `adminSessionsRouter`
+- `artifacts/sahu-csc/src/pages/users.tsx` — 7 edits (icons, Tab type, button condition, tab bar, tab content render, helper functions, `AdminSessionsTab` component)
+
+---
+
+## 2. v2.3.0 — Unified Profile + Settings Page (June 2026)
 
 ### 1.1 Unified /profile Page
 
