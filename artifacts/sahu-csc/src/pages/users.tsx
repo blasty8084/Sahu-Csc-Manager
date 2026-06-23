@@ -22,7 +22,7 @@ import {
   X, User, Mail, Phone, Shield, Eye, EyeOff, ListChecks,
   MonitorSmartphone, Smartphone, Monitor, Tablet, LogOut, RefreshCw, Globe,
   Search, ArrowDownLeft, ArrowUpRight, Activity, CreditCard, CalendarDays,
-  UserCheck, UserMinus,
+  UserCheck, UserMinus, Download,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from "react-hook-form";
@@ -822,6 +822,30 @@ export default function Users() {
     }
   };
 
+  const exportCSV = () => {
+    const tabLabel = tab === "pending" ? "Pending" : tab === "active" ? "Active" : "All";
+    const headers = ["Full Name", "Username", "Email", "Mobile", "Role", "Status", "Joined"];
+    const rows = displayedUsers.map((u: any) => [
+      u.fullName || u.username,
+      u.username,
+      u.email ?? "",
+      u.mobile ?? "",
+      u.role,
+      u.isActive ? "Active" : "Inactive",
+      new Date(u.createdAt).toLocaleDateString("en-IN"),
+    ]);
+    const csv = [headers, ...rows]
+      .map(row => row.map((v: string) => `"${String(v).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `SAHU-CSC-Users-${tabLabel}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const bulkSetStatus = async (activate: boolean) => {
     const ids = [...selectedIds];
     if (!ids.length) return;
@@ -865,9 +889,16 @@ export default function Users() {
             <p className="text-sm text-muted-foreground">{users?.length ?? 0} users total</p>
           </div>
           {tab !== "overview" && tab !== "aeps" && tab !== "sessions" && (
-            <Button size="sm" onClick={openCreate} data-testid="button-new-user">
-              <Plus size={14} className="mr-1.5" />Add User
-            </Button>
+            <div className="flex items-center gap-2">
+              {displayedUsers.length > 0 && (
+                <Button size="sm" variant="outline" onClick={exportCSV} data-testid="button-export-csv">
+                  <Download size={14} className="mr-1.5" />Export CSV
+                </Button>
+              )}
+              <Button size="sm" onClick={openCreate} data-testid="button-new-user">
+                <Plus size={14} className="mr-1.5" />Add User
+              </Button>
+            </div>
           )}
         </div>
 
