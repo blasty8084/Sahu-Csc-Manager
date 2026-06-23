@@ -907,20 +907,22 @@ export default function Users() {
   return (
     <Layout>
       <div className="space-y-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-bold">User Management</h2>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-xl font-bold leading-tight">User Management</h2>
             <p className="text-sm text-muted-foreground">{users?.length ?? 0} users total</p>
           </div>
           {tab !== "overview" && tab !== "aeps" && tab !== "sessions" && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               {displayedUsers.length > 0 && (
-                <Button size="sm" variant="outline" onClick={exportCSV} data-testid="button-export-csv">
-                  <Download size={14} className="mr-1.5" />Export CSV
+                <Button size="sm" variant="outline" onClick={exportCSV} data-testid="button-export-csv" className="px-2 sm:px-3">
+                  <Download size={14} className="shrink-0" />
+                  <span className="hidden sm:inline ml-1.5">Export CSV</span>
                 </Button>
               )}
-              <Button size="sm" onClick={openCreate} data-testid="button-new-user">
-                <Plus size={14} className="mr-1.5" />Add User
+              <Button size="sm" onClick={openCreate} data-testid="button-new-user" className="px-2 sm:px-3">
+                <Plus size={14} className="shrink-0" />
+                <span className="hidden sm:inline ml-1.5">Add User</span>
               </Button>
             </div>
           )}
@@ -957,7 +959,7 @@ export default function Users() {
 
         {/* Search / Filter bar — shown on user-list tabs only */}
         {tab !== "sessions" && tab !== "overview" && tab !== "aeps" && (
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
               <Input
@@ -976,7 +978,7 @@ export default function Users() {
               )}
             </div>
             <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v as typeof roleFilter)}>
-              <SelectTrigger className="h-9 w-[130px] text-sm shrink-0">
+              <SelectTrigger className="h-9 w-full sm:w-[130px] text-sm shrink-0">
                 <SelectValue placeholder="All roles" />
               </SelectTrigger>
               <SelectContent>
@@ -1040,10 +1042,10 @@ export default function Users() {
           <>
             {/* Bulk action bar */}
             {selectedIds.size > 0 && (
-              <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl border-2 border-primary/20 bg-primary/5 sticky top-0 z-10">
+              <div className="flex flex-wrap items-center gap-2 px-3 py-2.5 rounded-xl border-2 border-primary/20 bg-primary/5 sticky top-0 z-10">
                 <ListChecks className="w-4 h-4 text-primary shrink-0" />
-                <span className="text-sm font-semibold text-primary flex-1">
-                  {selectedIds.size} user{selectedIds.size !== 1 ? "s" : ""} selected
+                <span className="text-sm font-semibold text-primary flex-1 min-w-[80px]">
+                  {selectedIds.size} selected
                 </span>
                 <Button
                   size="sm"
@@ -1052,7 +1054,7 @@ export default function Users() {
                   disabled={bulkActionLoading}
                 >
                   <CheckCircle2 size={12} className="mr-1" />
-                  Approve ({selectedIds.size})
+                  Approve<span className="hidden sm:inline"> ({selectedIds.size})</span>
                 </Button>
                 <Button
                   size="sm"
@@ -1062,10 +1064,10 @@ export default function Users() {
                   disabled={bulkActionLoading}
                 >
                   <XCircle size={12} className="mr-1" />
-                  Reject ({selectedIds.size})
+                  Reject<span className="hidden sm:inline"> ({selectedIds.size})</span>
                 </Button>
                 <button
-                  className="text-xs text-muted-foreground hover:text-foreground ml-1 transition-colors"
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                   onClick={() => setSelectedIds(new Set())}
                 >
                   Clear
@@ -1184,10 +1186,10 @@ export default function Users() {
           <>
             {/* Bulk action bar — Active / All tabs */}
             {selectedIds.size > 0 && (
-              <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl border-2 border-primary/20 bg-primary/5 sticky top-0 z-10">
+              <div className="flex flex-wrap items-center gap-2 px-3 py-2.5 rounded-xl border-2 border-primary/20 bg-primary/5 sticky top-0 z-10">
                 <ListChecks className="w-4 h-4 text-primary shrink-0" />
-                <span className="text-sm font-semibold text-primary flex-1">
-                  {selectedIds.size} user{selectedIds.size !== 1 ? "s" : ""} selected
+                <span className="text-sm font-semibold text-primary flex-1 min-w-[80px]">
+                  {selectedIds.size} selected
                 </span>
                 <Button
                   size="sm"
@@ -1196,7 +1198,7 @@ export default function Users() {
                   disabled={bulkActionLoading}
                 >
                   <UserCheck size={12} className="mr-1" />
-                  Activate ({selectedIds.size})
+                  Activate<span className="hidden sm:inline"> ({selectedIds.size})</span>
                 </Button>
                 <Button
                   size="sm"
@@ -1206,10 +1208,10 @@ export default function Users() {
                   disabled={bulkActionLoading}
                 >
                   <UserMinus size={12} className="mr-1" />
-                  Suspend ({selectedIds.size})
+                  Suspend<span className="hidden sm:inline"> ({selectedIds.size})</span>
                 </Button>
                 <button
-                  className="text-xs text-muted-foreground hover:text-foreground ml-1 transition-colors"
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                   onClick={() => setSelectedIds(new Set())}
                 >
                   Clear
