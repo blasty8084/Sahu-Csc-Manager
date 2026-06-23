@@ -21,6 +21,7 @@ import {
   Users as UsersIcon, TrendingUp, TrendingDown, Wallet, Receipt, ChevronRight,
   X, User, Mail, Phone, Shield, Eye, EyeOff, ListChecks,
   MonitorSmartphone, Smartphone, Monitor, Tablet, LogOut, RefreshCw, Globe,
+  Search,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from "react-hook-form";
@@ -428,6 +429,7 @@ export default function Users() {
   const [showBulkRejectDialog, setShowBulkRejectDialog] = useState(false);
   const [bulkRejectReason, setBulkRejectReason] = useState("");
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: users, isLoading: usersLoading } = useListUsers();
   const { data: pendingUsers, isLoading: pendingLoading } = usePendingUsers();
@@ -599,7 +601,15 @@ export default function Users() {
   };
 
   const activeUsers = (users ?? []).filter((u: any) => u.status === "ACTIVE" || u.isActive);
-  const displayedUsers = tab === "pending" ? (pendingUsers ?? []) : tab === "active" ? activeUsers : (users ?? []);
+  const baseUsers = tab === "pending" ? (pendingUsers ?? []) : tab === "active" ? activeUsers : (users ?? []);
+  const searchLower = searchQuery.toLowerCase().trim();
+  const displayedUsers = searchLower
+    ? baseUsers.filter((u: any) =>
+        (u.fullName ?? "").toLowerCase().includes(searchLower) ||
+        (u.username ?? "").toLowerCase().includes(searchLower) ||
+        (u.email ?? "").toLowerCase().includes(searchLower)
+      )
+    : baseUsers;
   const isLoading = tab === "pending" ? pendingLoading : usersLoading;
 
   return (
@@ -628,7 +638,7 @@ export default function Users() {
           ] as { key: Tab; label: string; count: number }[]).map(({ key, label, count }) => (
             <button
               key={key}
-              onClick={() => setTab(key)}
+              onClick={() => { setTab(key); setSearchQuery(""); }}
               className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${
                 tab === key ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
@@ -645,6 +655,27 @@ export default function Users() {
           ))}
         </div>
 
+        {/* Search / Filter bar — shown on user-list tabs only */}
+        {tab !== "sessions" && tab !== "overview" && (
+          <div className="relative">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by name, username, or email…"
+              className="pl-9 pr-9 h-9 text-sm"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Sessions Tab */}
         {tab === "sessions" ? (
           <AdminSessionsTab />
@@ -654,7 +685,16 @@ export default function Users() {
           <div className="space-y-3">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
         ) : displayedUsers.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-            {tab === "pending" ? (
+            {searchLower ? (
+              <>
+                <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center">
+                  <Search className="w-7 h-7 text-muted-foreground" />
+                </div>
+                <p className="font-semibold text-gray-700">No users match "{searchQuery}"</p>
+                <p className="text-sm text-muted-foreground">Try a different name, username, or email.</p>
+                <button onClick={() => setSearchQuery("")} className="text-sm text-primary hover:underline">Clear search</button>
+              </>
+            ) : tab === "pending" ? (
               <>
                 <div className="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center">
                   <CheckCircle2 className="w-7 h-7 text-green-500" />
