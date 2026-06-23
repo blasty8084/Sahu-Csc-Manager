@@ -22,7 +22,7 @@ import {
   X, User, Mail, Phone, Shield, Eye, EyeOff, ListChecks,
   MonitorSmartphone, Smartphone, Monitor, Tablet, LogOut, RefreshCw, Globe,
   Search, ArrowDownLeft, ArrowUpRight, Activity, CreditCard, CalendarDays,
-  UserCheck, UserMinus, Download,
+  UserCheck, UserMinus, Download, KeyRound,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from "react-hook-form";
@@ -653,6 +653,11 @@ export default function Users() {
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<"all" | "admin" | "operator" | "user">("all");
+  const [resetPwUser, setResetPwUser] = useState<any>(null);
+  const [resetPwValue, setResetPwValue] = useState("");
+  const [resetPwConfirm, setResetPwConfirm] = useState("");
+  const [resetPwShow, setResetPwShow] = useState(false);
+  const [resetPwLoading, setResetPwLoading] = useState(false);
 
   const { data: users, isLoading: usersLoading } = useListUsers();
   const { data: pendingUsers, isLoading: pendingLoading } = usePendingUsers();
@@ -864,6 +869,25 @@ export default function Users() {
       toast({ title: "Bulk status update failed", variant: "destructive" });
     } finally {
       setBulkActionLoading(false);
+    }
+  };
+
+  const resetPassword = async () => {
+    if (!resetPwUser) return;
+    if (resetPwValue !== resetPwConfirm) { toast({ title: "Passwords don't match", variant: "destructive" }); return; }
+    const policy = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+    if (!policy.test(resetPwValue)) { toast({ title: "Password doesn't meet policy requirements", variant: "destructive" }); return; }
+    setResetPwLoading(true);
+    try {
+      await updateMut.mutateAsync({ id: resetPwUser.id, data: { password: resetPwValue } as any });
+      toast({ title: `✅ Password reset for @${resetPwUser.username}` });
+      setResetPwUser(null);
+      setResetPwValue("");
+      setResetPwConfirm("");
+    } catch {
+      toast({ title: "Password reset failed", variant: "destructive" });
+    } finally {
+      setResetPwLoading(false);
     }
   };
 
@@ -1218,6 +1242,7 @@ export default function Users() {
                       </div>
                     </div>
                     <div className="flex gap-1 shrink-0">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700" title="Reset password" onClick={() => { setResetPwUser(user); setResetPwValue(""); setResetPwConfirm(""); setResetPwShow(false); }}><KeyRound size={13} /></Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(user)}><Pencil size={13} /></Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteId(user.id)}><Trash2 size={13} /></Button>
                     </div>
@@ -1295,6 +1320,7 @@ export default function Users() {
                       <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(user.createdAt).toLocaleDateString("en-IN")}</td>
                       <td className="px-4 py-3">
                         <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-blue-600 hover:text-blue-700" title="Reset password" onClick={() => { setResetPwUser(user); setResetPwValue(""); setResetPwConfirm(""); setResetPwShow(false); }}><KeyRound size={12} /></Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(user)}><Pencil size={12} /></Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(user.id)}><Trash2 size={12} /></Button>
                         </div>
@@ -1564,6 +1590,82 @@ export default function Users() {
           <DialogFooter>
             <Button variant="outline" onClick={() => { setRejectTarget(null); setRejectReason(""); }}>Cancel</Button>
             <Button variant="destructive" onClick={confirmReject} disabled={actionLoading === rejectTarget?.id}>Decline</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset Password Dialog */}
+      <Dialog open={resetPwUser !== null} onOpenChange={(open) => { if (!open) { setResetPwUser(null); setResetPwValue(""); setResetPwConfirm(""); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound size={16} className="text-blue-600" />
+              Reset Password
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Set a new password for <strong>@{resetPwUser?.username}</strong>. This takes effect immediately.
+            </p>
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label>New Password</Label>
+                <div className="relative">
+                  <input
+                    type={resetPwShow ? "text" : "password"}
+                    value={resetPwValue}
+                    onChange={e => setResetPwValue(e.target.value)}
+                    placeholder="Min 8 chars, upper, lower, number"
+                    className="w-full h-10 px-3 pr-10 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    autoComplete="new-password"
+                  />
+                  <button type="button" onClick={() => setResetPwShow(p => !p)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                    {resetPwShow ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Confirm Password</Label>
+                <input
+                  type={resetPwShow ? "text" : "password"}
+                  value={resetPwConfirm}
+                  onChange={e => setResetPwConfirm(e.target.value)}
+                  placeholder="Re-enter new password"
+                  className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  autoComplete="new-password"
+                />
+              </div>
+              <ul className="text-xs space-y-1 pt-1">
+                {([
+                  { label: "At least 8 characters", ok: resetPwValue.length >= 8 },
+                  { label: "Uppercase letter (A–Z)", ok: /[A-Z]/.test(resetPwValue) },
+                  { label: "Lowercase letter (a–z)", ok: /[a-z]/.test(resetPwValue) },
+                  { label: "Number (0–9)", ok: /\d/.test(resetPwValue) },
+                  { label: "Passwords match", ok: resetPwValue.length > 0 && resetPwValue === resetPwConfirm },
+                ] as { label: string; ok: boolean }[]).map(({ label, ok }) => (
+                  <li key={label} className={`flex items-center gap-1.5 transition-colors ${ok ? "text-green-600" : "text-muted-foreground"}`}>
+                    {ok ? <CheckCircle2 size={11} /> : <XCircle size={11} />}
+                    {label}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setResetPwUser(null); setResetPwValue(""); setResetPwConfirm(""); }}>Cancel</Button>
+            <Button
+              onClick={resetPassword}
+              disabled={
+                resetPwLoading ||
+                resetPwValue.length < 8 ||
+                !/[A-Z]/.test(resetPwValue) ||
+                !/[a-z]/.test(resetPwValue) ||
+                !/\d/.test(resetPwValue) ||
+                resetPwValue !== resetPwConfirm
+              }
+            >
+              {resetPwLoading ? "Saving…" : "Set Password"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
