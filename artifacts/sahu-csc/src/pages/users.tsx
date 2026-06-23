@@ -430,6 +430,7 @@ export default function Users() {
   const [bulkRejectReason, setBulkRejectReason] = useState("");
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState<"all" | "admin" | "operator" | "user">("all");
 
   const { data: users, isLoading: usersLoading } = useListUsers();
   const { data: pendingUsers, isLoading: pendingLoading } = usePendingUsers();
@@ -603,13 +604,14 @@ export default function Users() {
   const activeUsers = (users ?? []).filter((u: any) => u.status === "ACTIVE" || u.isActive);
   const baseUsers = tab === "pending" ? (pendingUsers ?? []) : tab === "active" ? activeUsers : (users ?? []);
   const searchLower = searchQuery.toLowerCase().trim();
-  const displayedUsers = searchLower
-    ? baseUsers.filter((u: any) =>
-        (u.fullName ?? "").toLowerCase().includes(searchLower) ||
-        (u.username ?? "").toLowerCase().includes(searchLower) ||
-        (u.email ?? "").toLowerCase().includes(searchLower)
-      )
-    : baseUsers;
+  const displayedUsers = baseUsers.filter((u: any) => {
+    const matchesSearch = !searchLower ||
+      (u.fullName ?? "").toLowerCase().includes(searchLower) ||
+      (u.username ?? "").toLowerCase().includes(searchLower) ||
+      (u.email ?? "").toLowerCase().includes(searchLower);
+    const matchesRole = roleFilter === "all" || u.role === roleFilter;
+    return matchesSearch && matchesRole;
+  });
   const isLoading = tab === "pending" ? pendingLoading : usersLoading;
 
   return (
@@ -638,7 +640,7 @@ export default function Users() {
           ] as { key: Tab; label: string; count: number }[]).map(({ key, label, count }) => (
             <button
               key={key}
-              onClick={() => { setTab(key); setSearchQuery(""); }}
+              onClick={() => { setTab(key); setSearchQuery(""); setRoleFilter("all"); }}
               className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${
                 tab === key ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
@@ -657,22 +659,47 @@ export default function Users() {
 
         {/* Search / Filter bar — shown on user-list tabs only */}
         {tab !== "sessions" && tab !== "overview" && (
-          <div className="relative">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by name, username, or email…"
-              className="pl-9 pr-9 h-9 text-sm"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <X size={14} />
-              </button>
-            )}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by name, username, or email…"
+                className="pl-9 pr-9 h-9 text-sm"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+            <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v as typeof roleFilter)}>
+              <SelectTrigger className="h-9 w-[130px] text-sm shrink-0">
+                <SelectValue placeholder="All roles" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All roles</SelectItem>
+                <SelectItem value="admin">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />Admin
+                  </span>
+                </SelectItem>
+                <SelectItem value="operator">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />Operator
+                  </span>
+                </SelectItem>
+                <SelectItem value="user">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-slate-400 inline-block" />User
+                  </span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         )}
 
