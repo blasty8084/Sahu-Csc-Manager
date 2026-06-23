@@ -1,5 +1,5 @@
 # SAHU CSC — Complete App Logic & Architecture
-**Version 2.4.0 — June 2026**
+**Version 2.5.0 — June 2026**
 
 ## Table of Contents
 

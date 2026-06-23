@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v2
-**Current version: 2.4.0 — June 2026**
+**Current version: 2.5.0 — June 2026**
 
 > Comprehensive record of every feature, change, and upgrade from v2.0.0 onward.  
 > For a full description of the system architecture, see `architectureV2.md`.  
@@ -9,43 +9,275 @@
 
 ## Table of Contents
 
-1. [v2.4.0 — Admin Registration Management & Admin Sessions](#1-v240--admin-registration-management--admin-sessions-june-2026)
-   - [Pending Tab — Bulk Approve/Reject](#11-pending-tab--bulk-approvereject)
-   - [Email Notifications for Registration Events](#12-email-notifications-for-registration-events)
-   - [Sessions Sidebar Item (Mobile-Only)](#13-sessions-sidebar-item-mobile-only)
-   - [Admin Sessions Tab in User Management](#14-admin-sessions-tab-in-user-management)
-2. [v2.3.0 — Unified Profile + Settings Page](#2-v230--unified-profile--settings-page-june-2026)
-   - [Unified /profile Page](#21-unified-profile-page)
-   - [Desktop V5 Design — Command Center](#22-desktop-v5-design--command-center)
-   - [Mobile V3 Design — iOS-Style Drill-In](#23-mobile-v3-design--ios-style-drill-in)
-   - [Sessions Section Embedded](#24-sessions-section-embedded)
-   - [Settings Page Removed](#25-settings-page-removed)
-3. [v2.2.0 — Login UX Overhaul & Reports Redesign](#3-v220--login-ux-overhaul--reports-redesign-june-2026)
-   - [Embedded Forgot-Password Flow (Inline)](#21-embedded-forgot-password-flow-inline)
-   - [Login Attempt Counter with Visual Feedback](#22-login-attempt-counter-with-visual-feedback)
-   - [Lockout Countdown Timer](#23-lockout-countdown-timer)
-   - [Reports Page Full Redesign](#24-reports-page-full-redesign)
-3. [v2.1.0 — Security, Receipts, Udhari, Admin Oversight](#3-v210--security-receipts-udhari-admin-oversight-june-2026)
-   - [OTP Password Reset](#31-otp-password-reset)
-   - [V2 Multi-Device Sessions](#32-v2-multi-device-sessions)
-   - [RBAC — requirePermission Middleware](#33-rbac--requirepermission-middleware)
-   - [Receipt System](#34-receipt-system)
-   - [Admin Oversight Pages](#35-admin-oversight-pages)
-   - [Notification Isolation Fixes](#36-notification-isolation-fixes)
-   - [UI Design System v2](#37-ui-design-system-v2)
-   - [AePS Opening Balance Redesign](#38-aeps-opening-balance-redesign)
-   - [PWA Status Page](#39-pwa-status-page)
-   - [Miscellaneous Fixes (v2.1)](#310-miscellaneous-fixes-v21)
-4. [v2.0.0 — Udhari Khata](#4-v200--udhari-khata-june-2026)
-5. [Database Schema Reference](#5-database-schema-reference)
-6. [API Routes Reference](#6-api-routes-reference)
-7. [Known Gotchas & Conventions](#7-known-gotchas--conventions)
+1. [v2.5.0 — User Management Enhancements](#1-v250--user-management-enhancements-june-2026)
+   - [Search & Role Filter](#11-search--role-filter)
+   - [AePS Overview Tab](#12-aeps-overview-tab)
+   - [Bulk Status Toggle (Active / All Users Tabs)](#13-bulk-status-toggle-active--all-users-tabs)
+   - [CSV Export](#14-csv-export)
+   - [Admin Password Reset](#15-admin-password-reset)
+   - [Responsive Layout Fixes](#16-responsive-layout-fixes)
+2. [v2.4.0 — Admin Registration Management & Admin Sessions](#2-v240--admin-registration-management--admin-sessions-june-2026)
+   - [Pending Tab — Bulk Approve/Reject](#21-pending-tab--bulk-approvereject)
+   - [Email Notifications for Registration Events](#22-email-notifications-for-registration-events)
+   - [Sessions Sidebar Item (Mobile-Only)](#23-sessions-sidebar-item-mobile-only)
+   - [Admin Sessions Tab in User Management](#24-admin-sessions-tab-in-user-management)
+3. [v2.3.0 — Unified Profile + Settings Page](#3-v230--unified-profile--settings-page-june-2026)
+   - [Unified /profile Page](#31-unified-profile-page)
+   - [Desktop V5 Design — Command Center](#32-desktop-v5-design--command-center)
+   - [Mobile V3 Design — iOS-Style Drill-In](#33-mobile-v3-design--ios-style-drill-in)
+   - [Sessions Section Embedded](#34-sessions-section-embedded)
+   - [Settings Page Removed](#35-settings-page-removed)
+4. [v2.2.0 — Login UX Overhaul & Reports Redesign](#4-v220--login-ux-overhaul--reports-redesign-june-2026)
+   - [Embedded Forgot-Password Flow (Inline)](#41-embedded-forgot-password-flow-inline)
+   - [Login Attempt Counter with Visual Feedback](#42-login-attempt-counter-with-visual-feedback)
+   - [Lockout Countdown Timer](#43-lockout-countdown-timer)
+   - [Reports Page Full Redesign](#44-reports-page-full-redesign)
+5. [v2.1.0 — Security, Receipts, Udhari, Admin Oversight](#5-v210--security-receipts-udhari-admin-oversight-june-2026)
+   - [OTP Password Reset](#51-otp-password-reset)
+   - [V2 Multi-Device Sessions](#52-v2-multi-device-sessions)
+   - [RBAC — requirePermission Middleware](#53-rbac--requirepermission-middleware)
+   - [Receipt System](#54-receipt-system)
+   - [Admin Oversight Pages](#55-admin-oversight-pages)
+   - [Notification Isolation Fixes](#56-notification-isolation-fixes)
+   - [UI Design System v2](#57-ui-design-system-v2)
+   - [AePS Opening Balance Redesign](#58-aeps-opening-balance-redesign)
+   - [PWA Status Page](#59-pwa-status-page)
+   - [Miscellaneous Fixes (v2.1)](#510-miscellaneous-fixes-v21)
+6. [v2.0.0 — Udhari Khata](#6-v200--udhari-khata-june-2026)
+7. [Database Schema Reference](#7-database-schema-reference)
+8. [API Routes Reference](#8-api-routes-reference)
+9. [Known Gotchas & Conventions](#9-known-gotchas--conventions)
 
 ---
 
-## 1. v2.4.0 — Admin Registration Management & Admin Sessions (June 2026)
+## 1. v2.5.0 — User Management Enhancements (June 2026)
 
-### 1.1 Pending Tab — Bulk Approve/Reject
+### 1.1 Search & Role Filter
+
+**Problem:** With many registered users, admins had no way to filter the user list — they had to scan the entire table.
+
+**Change:** A search + role filter bar was added to the top of the **Active** and **All Users** tabs.
+
+**UI:**
+- **Search input** (magnifying glass icon): real-time filter on `username`, `fullName`, `email`, `mobile`
+- **Role dropdown** (`<Select>`): "All Roles" (default) · "Admin" · "Operator" · "User"
+- Filters are combined — role + search can both be active simultaneously
+- Clear button on the search input; role resets to "All Roles" on tab change
+
+**State added:**
+```ts
+const [searchQuery, setSearchQuery] = useState("");
+const [roleFilter, setRoleFilter] = useState<string>("all");
+```
+
+**`displayedUsers` derivation:**
+```ts
+const displayedUsers = users
+  .filter(user =>
+    (roleFilter === "all" || user.role === roleFilter) &&
+    (searchQuery === "" ||
+      [user.username, user.fullName, user.email, user.mobile]
+        .some(field => field?.toLowerCase().includes(searchQuery.toLowerCase()))
+    )
+  );
+```
+
+**Files changed:**
+- `artifacts/sahu-csc/src/pages/users.tsx` — search input + role `<Select>` in Active/All tab headers; `displayedUsers` computed from `searchQuery` + `roleFilter`; `toggleSelectAll` updated to use `displayedUsers`
+
+---
+
+### 1.2 AePS Overview Tab
+
+**Change:** A 6th tab — **AePS Overview** — was added to the User Management page so admins can see each operator's AePS cash balance at a glance.
+
+**Tab type extended:**
+```ts
+type Tab = "pending" | "active" | "all" | "overview" | "aeps" | "sessions";
+```
+
+**Backend:** Uses the existing `GET /api/admin/aeps-overview` endpoint — no new backend code needed.
+
+**`useAepsOverview()` hook:**
+```ts
+function useAepsOverview() {
+  return useQuery({
+    queryKey: ["admin-aeps-overview"],
+    queryFn: () => customFetch("/api/admin/aeps-overview"),
+    enabled: tab === "aeps",
+  });
+}
+```
+
+**`AepsOverviewTab` component:**
+- Summary bar: total AePS balance across all users
+- **Per-user `AepsUserSummary` cards:**
+  - User avatar (initials), full name, `@username`, role badge
+  - Opening balance, total deposited, total withdrawn, net balance
+  - Last session date
+  - Color-coded balance chip: green (positive) · red (negative) · gray (zero)
+- Loading: 3 skeleton cards
+- Empty state: `Wallet` icon + "No AePS data found"
+
+**Tab bar ordering (left → right):** Pending · Active · All Users · Cash Overview · **AePS Overview** · Sessions
+
+**Files changed:**
+- `artifacts/sahu-csc/src/pages/users.tsx` — `Tab` type extended, tab bar item, `AepsOverviewTab` component, `AepsUserSummary` sub-component, `useAepsOverview` hook, "Add User" button condition updated to exclude `"aeps"` tab
+
+---
+
+### 1.3 Bulk Status Toggle (Active / All Users Tabs)
+
+**Problem:** Admins could only activate or suspend users one at a time. Bulk actions existed for Pending registrations but not for Active/All tabs.
+
+**Change:** The **Active** and **All Users** tabs now support checkboxes + bulk Activate / Suspend.
+
+**UI additions:**
+- **Checkbox column** in desktop table header + each row; checkbox on mobile cards
+- **Master "select all"** checkbox: selects/deselects all `displayedUsers` for the current tab
+- **Sticky bulk action bar** (appears when ≥1 user selected):
+  - Selected count label
+  - Green **"Activate Selected"** button (`UserCheck` icon)
+  - Amber **"Suspend Selected"** button (`UserX` icon)
+  - Gray **"Clear"** button
+  - Bar uses `flex-wrap` so buttons stack gracefully on narrow screens
+
+**`bulkSetStatus(activate: boolean)` handler:**
+```ts
+async function bulkSetStatus(activate: boolean) {
+  setBulkActionLoading(true);
+  const ids = [...selectedIds];
+  await Promise.all(
+    ids.map(id =>
+      customFetch(`/api/users/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: activate ? "ACTIVE" : "SUSPENDED" }),
+      })
+    )
+  );
+  setSelectedIds(new Set());
+  setBulkActionLoading(false);
+  queryClient.invalidateQueries({ queryKey: ["users"] });
+  toast.success(`${ids.length} user(s) ${activate ? "activated" : "suspended"}`);
+}
+```
+
+**State added:**
+```ts
+const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+const [bulkActionLoading, setBulkActionLoading] = useState(false);
+```
+
+**Selection clears** on tab change (`useEffect` watching `tab`).
+
+**No new API endpoints** — reuses existing `PATCH /api/users/:id` with `{ status }`.
+
+**Files changed:**
+- `artifacts/sahu-csc/src/pages/users.tsx` — checkbox column, master checkbox, bulk action bar (Active + All tabs), `bulkSetStatus`, selection state, `toggleSelectAll` re-uses `displayedUsers`
+
+---
+
+### 1.4 CSV Export
+
+**Change:** A **Download CSV** button was added to the User Management page header. It exports the currently visible user list respecting the active tab, search query, and role filter.
+
+**`exportCSV()` function:**
+```ts
+function exportCSV() {
+  const rows = [
+    ["ID", "Username", "Full Name", "Email", "Mobile", "Role", "Status", "Created"],
+    ...displayedUsers.map(u => [
+      u.id, u.username, u.fullName, u.email ?? "",
+      u.mobile ?? "", u.role, u.status,
+      new Date(u.createdAt).toLocaleDateString("en-IN"),
+    ]),
+  ];
+  const csv = rows.map(r => r.join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `users-${tab}-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+```
+
+**UI:** `Download` icon button in the page header — icon-only on mobile, icon + "Export CSV" label on `sm:flex` desktop.
+
+**Filename pattern:** `users-<tab>-<YYYY-MM-DD>.csv`
+
+**Files changed:**
+- `artifacts/sahu-csc/src/pages/users.tsx` — `exportCSV` function, `Download` icon import, header button
+
+---
+
+### 1.5 Admin Password Reset
+
+**Problem:** Admins had no way to reset another user's password directly — the only existing path was the user-initiated OTP email flow.
+
+**Change:** Each user row in the Active and All Users tabs now has a **Reset Password** button (`KeyRound` icon) that opens a dialog where the admin sets a new password directly.
+
+**Dialog features:**
+- **New password** input with show/hide toggle
+- **Confirm password** input with show/hide toggle
+- **Live policy checklist** (updates as admin types):
+  - ✅/❌ Minimum 8 characters
+  - ✅/❌ Uppercase letter
+  - ✅/❌ Lowercase letter
+  - ✅/❌ Contains a number
+  - ✅/❌ Passwords match
+- Submit button disabled until all 5 checks are green
+
+**`resetPassword(userId, newPassword)` handler:**
+```ts
+async function resetPassword(userId: number, newPassword: string) {
+  await customFetch(`/api/users/${userId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ password: newPassword }),
+  });
+  setResetPasswordOpen(false);
+  setResetPasswordValue("");
+  setResetPasswordConfirm("");
+  toast.success("Password updated successfully");
+}
+```
+
+**State added:**
+```ts
+const [resetPasswordOpen, setResetPasswordOpen] = useState<number | false>(false);
+const [resetPasswordValue, setResetPasswordValue] = useState("");
+const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
+const [showResetPw, setShowResetPw] = useState(false);
+const [showResetConfirm, setShowResetConfirm] = useState(false);
+```
+
+**No new API endpoints** — reuses existing `PATCH /api/users/:id`. The route already accepts and bcrypt-hashes a `password` field.
+
+**Files changed:**
+- `artifacts/sahu-csc/src/pages/users.tsx` — `KeyRound` icon import, reset password button in user rows (Active + All tabs), `ResetPasswordDialog` inline component, `resetPassword` handler, reset password state
+
+---
+
+### 1.6 Responsive Layout Fixes
+
+**Changes applied to `users.tsx`:**
+
+| Area | Fix |
+|------|-----|
+| Header buttons | Icon-only on mobile (`sm:hidden` label spans); icon + label on `sm:flex` desktop |
+| Search/filter bar | `flex-col sm:flex-row` so search input and role dropdown stack vertically on mobile |
+| Bulk action bars | `flex-wrap` on both Active-tab and All-tab bars so action buttons wrap instead of overflowing on narrow screens |
+| Table checkbox column | Fixed 40px width — does not push other columns on narrow viewports |
+
+**Files changed:**
+- `artifacts/sahu-csc/src/pages/users.tsx` — responsive class adjustments throughout
+
+---
+
+## 2. v2.4.0 — Admin Registration Management & Admin Sessions (June 2026)
+
+### 2.1 Pending Tab — Bulk Approve/Reject
 
 **Problem:** Admins reviewing a large queue of pending registrations had to approve or reject users one at a time.
 
@@ -80,7 +312,7 @@ After any bulk action: selection is cleared, pending list refetches, toast shown
 
 ---
 
-### 1.2 Email Notifications for Registration Events
+### 2.2 Email Notifications for Registration Events
 
 **New file:** `artifacts/api-server/src/lib/mailer.ts`
 
@@ -116,7 +348,7 @@ Nodemailer-based email sender. All functions are SMTP-gated — they check for `
 
 ---
 
-### 1.3 Sessions Sidebar Item (Mobile-Only)
+### 2.3 Sessions Sidebar Item (Mobile-Only)
 
 **Change:** The "Active Sessions" item has been removed from the desktop sidebar. It remains fully accessible in the mobile bottom-nav drawer and at `/sessions` directly.
 
@@ -133,7 +365,7 @@ Nodemailer-based email sender. All functions are SMTP-gated — they check for `
 
 ---
 
-### 1.4 Admin Sessions Tab in User Management
+### 2.4 Admin Sessions Tab in User Management
 
 **New feature:** A **Sessions** tab added to the User Management page (`/users`) so admins can see all active sessions across all users and forcefully revoke any of them.
 
@@ -215,7 +447,7 @@ formatRelative(iso)       // "just now" / "Xm ago" / "Xh ago" / "Xd ago"
 
 ---
 
-## 2. v2.3.0 — Unified Profile + Settings Page (June 2026)
+## 3. v2.3.0 — Unified Profile + Settings Page (June 2026)
 
 ### 1.1 Unified /profile Page
 
@@ -229,7 +461,7 @@ formatRelative(iso)       // "just now" / "Xm ago" / "Xh ago" / "Xd ago"
 |---------|-----------|---------|
 | Personal Info | All | Full name, email, mobile, address, bio; avatar upload (camera / gallery picker), remove photo |
 | Security | All | Change password form |
-| Sessions | All | Embedded session management (see §1.4) |
+| Sessions | All | Embedded session management (see §2.4) |
 | Preferences | All | Theme, language, dashboard layout |
 | Business Info | Admin only | Business name, mobile, email, website, address |
 | System | Admin only | Registration control toggle, system language/theme/currency, auto-backup |
@@ -401,7 +633,7 @@ const [revokeAllOpen, setRevokeAllOpen] = useState(false);
 
 ---
 
-## 2. v2.2.0 — Login UX Overhaul & Reports Redesign (June 2026)
+## 4. v2.2.0 — Login UX Overhaul & Reports Redesign (June 2026)
 
 ### 2.1 Embedded Forgot-Password Flow (Inline)
 
@@ -619,7 +851,7 @@ DESKTOP_TABS = [
 
 ---
 
-## 3. v2.1.0 — Security, Receipts, Udhari, Admin Oversight (June 2026)
+## 5. v2.1.0 — Security, Receipts, Udhari, Admin Oversight (June 2026)
 
 ### 3.1 OTP Password Reset
 
@@ -805,7 +1037,7 @@ New page at `/pwa-status` (App & Offline Status). Shows live:
 
 ---
 
-## 4. v2.0.0 — Udhari Khata (June 2026)
+## 6. v2.0.0 — Udhari Khata (June 2026)
 
 **Udhari Khata** = "credit notebook" — per-user customer credit ledger.
 
@@ -846,7 +1078,7 @@ udhari:manage  — POST/PATCH/DELETE udhari/* routes
 
 ---
 
-## 5. Database Schema Reference
+## 7. Database Schema Reference
 
 ### Tables added since v2.0.0
 
@@ -889,12 +1121,18 @@ password_reset_tokens — OTP reset tokens
 
 ---
 
-## 6. API Routes Reference
+## 8. API Routes Reference
 
 ### Routes added in v2.x
 
 | Added | Method | Path | Notes |
 |-------|--------|------|-------|
+| v2.5 | — | — | No new API routes. All v2.5 features (search/filter, bulk status, CSV export, AePS overview tab, admin password reset) reuse existing endpoints: `PATCH /api/users/:id`, `GET /api/admin/aeps-overview` |
+| v2.4 | GET | `/api/admin/sessions` | All active sessions (admin) |
+| v2.4 | DELETE | `/api/admin/sessions/:id` | Revoke session (admin) |
+| v2.4 | DELETE | `/api/admin/sessions/user/:userId` | Revoke all for user (admin) |
+| v2.4 | POST | `/api/admin/registration/bulk-approve` | Bulk approve pending users |
+| v2.4 | POST | `/api/admin/registration/bulk-reject` | Bulk reject with reason |
 | v2.1 | POST | `/api/auth/send-otp` | OTP generation (password reset + registration) |
 | v2.1 | POST | `/api/auth/verify-otp` | OTP verification |
 | v2.1 | POST | `/api/auth/reset-password` | New password after OTP |
@@ -914,7 +1152,7 @@ password_reset_tokens — OTP reset tokens
 
 ---
 
-## 7. Known Gotchas & Conventions
+## 9. Known Gotchas & Conventions
 
 | Topic | Rule |
 |-------|------|

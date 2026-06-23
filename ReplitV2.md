@@ -1,5 +1,5 @@
 # SAHU CSC — Project Reference v2
-**Version 2.4.0 — June 2026**
+**Version 2.5.0 — June 2026**
 
 > This is the authoritative quick-reference for the SAHU CSC platform.  
 > For deep architecture detail: `architectureV2.md` · For change history: `changelogV2.md` · For workflow guide: `WORKFLOWS.md`
@@ -410,7 +410,7 @@ pnpm --filter @workspace/api-spec run codegen    # Regenerate React Query hooks 
 | `/sessions` | `sessions.tsx` | All | Standalone device management (still accessible; also embedded in /profile) |
 | `/pwa-status` | `pwa-status.tsx` | All | Network, sync, storage, install, push status |
 | `/receipts/verify/:token` | `receipts-verify.tsx` | Public | QR scan target — no auth required |
-| `/users` | `users.tsx` | Admin | User management — **5 tabs**: Pending (bulk approve/reject) · Active · All Users · Cash Overview · **Sessions** (admin session viewer + revoke) |
+| `/users` | `users.tsx` | Admin | User management — **6 tabs**: Pending (bulk approve/reject + reject reason dialog) · Active (search/filter, bulk activate/suspend, CSV export, admin password reset) · All Users (same) · Cash Overview · **AePS Overview** (per-user AePS balance) · **Sessions** (admin session viewer + revoke) |
 | `/users-overview` | `users-overview.tsx` | Admin | Cross-user balance summary |
 | `/audit-logs` | `audit-logs.tsx` | Admin | Full audit trail |
 | `/backups` | `backups.tsx` | Admin | pg_dump backup/restore |
@@ -498,20 +498,34 @@ admin.session.revoke      admin.session.revoke_all_for_user
 
 ## 13. Admin Features
 
-### User Management (`/users`) — 5 tabs
+### User Management (`/users`) — 6 tabs
 
 | Tab | Content |
 |-----|---------|
 | **Pending** | Registrations awaiting approval. Checkboxes + bulk action bar (approve/reject N at once). Bulk reject dialog with optional reason. Individual approve/reject buttons. |
-| **Active** | Active users — edit, change role, suspend, delete |
-| **All Users** | Full user list with status badges |
-| **Cash Overview** | Cross-user AePS balance overview |
+| **Active** | Active users — edit, change role, suspend, delete. **v2.5:** real-time search (username/name/email/mobile) + role filter dropdown; checkboxes + bulk Activate/Suspend bar; CSV export (respects filters); admin password reset (`KeyRound` dialog with live policy checklist). |
+| **All Users** | Full user list with status badges. Same search, filter, bulk status, CSV export, and admin password reset as Active tab. |
+| **Cash Overview** | Cross-user ledger balance overview |
+| **AePS Overview** *(v2.5)* | Per-user AePS balance summary cards — opening balance, deposited, withdrawn, net balance, last session date, color-coded chip. |
 | **Sessions** *(v2.4)* | All active sessions across all users, grouped by user. Per-session: device, browser, OS, IP, last active, expiry, Remember Me. Revoke individual session or all sessions for a user. Auto-refreshes every 30s. |
+
+### Admin User Management — new v2.5 features at a glance
+
+| Feature | How it works |
+|---------|-------------|
+| Search | Real-time filter on `username`, `fullName`, `email`, `mobile` |
+| Role filter | `<Select>` dropdown — "All Roles" / Admin / Operator / User |
+| Bulk status | Select ≥1 users → sticky bar → "Activate Selected" or "Suspend Selected"; calls `PATCH /api/users/:id` with `{ status }` in parallel |
+| CSV export | `exportCSV()` → `Blob` download; filename `users-<tab>-<YYYY-MM-DD>.csv`; respects current filters |
+| Password reset | `KeyRound` button → dialog with new + confirm inputs + live policy checklist (8+ chars, upper, lower, number, match); calls `PATCH /api/users/:id` with `{ password }` |
 
 ### Admin Sessions endpoints
 - `GET /api/admin/sessions` — active non-expired sessions joined with user info
 - `DELETE /api/admin/sessions/:id` — revoke one session (sets `isActive = false`)
 - `DELETE /api/admin/sessions/user/:userId` — revoke all for a user
+
+### AePS Overview endpoint
+- `GET /api/admin/aeps-overview` — all users' AePS balance data (pre-existing endpoint, no changes)
 
 ### Registration email notifications
 When SMTP secrets are set:

@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log & Feature Documentation
-**Current version: 2.1.0 — June 2026**
+**Current version: 2.5.0 — June 2026**
 
 > Full record of every feature, change, and upgrade applied to the SAHU CSC platform.
 > Use this file as a reference for future development, onboarding, and audits.
