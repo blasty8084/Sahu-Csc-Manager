@@ -22,6 +22,7 @@ import {
   X, User, Mail, Phone, Shield, Eye, EyeOff, ListChecks,
   MonitorSmartphone, Smartphone, Monitor, Tablet, LogOut, RefreshCw, Globe,
   Search, ArrowDownLeft, ArrowUpRight, Activity, CreditCard, CalendarDays,
+  UserCheck, UserMinus,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from "react-hook-form";
@@ -763,11 +764,10 @@ export default function Users() {
   };
 
   const toggleSelectAll = () => {
-    const pending = pendingUsers ?? [];
-    if (selectedIds.size === pending.length) {
+    if (selectedIds.size === displayedUsers.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(pending.map((u: any) => u.id)));
+      setSelectedIds(new Set(displayedUsers.map((u: any) => u.id)));
     }
   };
 
@@ -822,6 +822,27 @@ export default function Users() {
     }
   };
 
+  const bulkSetStatus = async (activate: boolean) => {
+    const ids = [...selectedIds];
+    if (!ids.length) return;
+    setBulkActionLoading(true);
+    try {
+      const results = await Promise.allSettled(
+        ids.map(id => updateMut.mutateAsync({ id, data: { isActive: activate } as any }))
+      );
+      const failed = results.filter(r => r.status === "rejected").length;
+      const succeeded = ids.length - failed;
+      if (succeeded > 0) toast({ title: `✅ ${succeeded} user${succeeded !== 1 ? "s" : ""} ${activate ? "activated" : "suspended"}` });
+      if (failed > 0) toast({ title: `${failed} update${failed !== 1 ? "s" : ""} failed`, variant: "destructive" });
+      setSelectedIds(new Set());
+      invalidate();
+    } catch {
+      toast({ title: "Bulk status update failed", variant: "destructive" });
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
   const activeUsers = (users ?? []).filter((u: any) => u.status === "ACTIVE" || u.isActive);
   const baseUsers = tab === "pending" ? (pendingUsers ?? []) : tab === "active" ? activeUsers : (users ?? []);
   const searchLower = searchQuery.toLowerCase().trim();
@@ -862,7 +883,7 @@ export default function Users() {
           ] as { key: Tab; label: string; count: number }[]).map(({ key, label, count }) => (
             <button
               key={key}
-              onClick={() => { setTab(key); setSearchQuery(""); setRoleFilter("all"); }}
+              onClick={() => { setTab(key); setSearchQuery(""); setRoleFilter("all"); setSelectedIds(new Set()); }}
               className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${
                 tab === key ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
@@ -1106,12 +1127,57 @@ export default function Users() {
           </>
         ) : (
           <>
+            {/* Bulk action bar — Active / All tabs */}
+            {selectedIds.size > 0 && (
+              <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl border-2 border-primary/20 bg-primary/5 sticky top-0 z-10">
+                <ListChecks className="w-4 h-4 text-primary shrink-0" />
+                <span className="text-sm font-semibold text-primary flex-1">
+                  {selectedIds.size} user{selectedIds.size !== 1 ? "s" : ""} selected
+                </span>
+                <Button
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700 text-white h-8 px-3 text-xs"
+                  onClick={() => bulkSetStatus(true)}
+                  disabled={bulkActionLoading}
+                >
+                  <UserCheck size={12} className="mr-1" />
+                  Activate ({selectedIds.size})
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-orange-200 text-orange-600 hover:bg-orange-50 h-8 px-3 text-xs"
+                  onClick={() => bulkSetStatus(false)}
+                  disabled={bulkActionLoading}
+                >
+                  <UserMinus size={12} className="mr-1" />
+                  Suspend ({selectedIds.size})
+                </Button>
+                <button
+                  className="text-xs text-muted-foreground hover:text-foreground ml-1 transition-colors"
+                  onClick={() => setSelectedIds(new Set())}
+                >
+                  Clear
+                </button>
+              </div>
+            )}
+
             {/* Active / All — mobile cards */}
             <div className="space-y-3 sm:hidden">
               {displayedUsers.map((user: any) => (
-                <div key={user.id} className="bg-card border rounded-xl p-4 space-y-3" data-testid={`row-user-${user.id}`}>
+                <div
+                  key={user.id}
+                  className={`bg-card border rounded-xl p-4 space-y-3 transition-colors ${selectedIds.has(user.id) ? "border-primary/40 bg-primary/5" : ""}`}
+                  data-testid={`row-user-${user.id}`}
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 min-w-0">
+                      <Checkbox
+                        checked={selectedIds.has(user.id)}
+                        onCheckedChange={() => toggleSelect(user.id)}
+                        className="shrink-0"
+                        aria-label={`Select ${user.username}`}
+                      />
                       <Avatar className="h-9 w-9 shrink-0">
                         <AvatarFallback className="text-sm bg-primary/10 text-primary">{(user.fullName || user.username).charAt(0).toUpperCase()}</AvatarFallback>
                       </Avatar>
@@ -1143,6 +1209,15 @@ export default function Users() {
               <table className="w-full text-sm">
                 <thead className="border-b bg-muted/30">
                   <tr className="text-left">
+                    <th className="px-4 py-3 w-10">
+                      <Checkbox
+                        checked={displayedUsers.length > 0 && selectedIds.size === displayedUsers.length}
+                        data-state={selectedIds.size > 0 && selectedIds.size < displayedUsers.length ? "indeterminate" : undefined}
+                        onCheckedChange={toggleSelectAll}
+                        aria-label="Select all"
+                        className={selectedIds.size > 0 && selectedIds.size < displayedUsers.length ? "opacity-70" : ""}
+                      />
+                    </th>
                     <th className="px-4 py-3 font-medium text-muted-foreground">User</th>
                     <th className="px-4 py-3 font-medium text-muted-foreground">Contact</th>
                     <th className="px-4 py-3 font-medium text-muted-foreground">Role</th>
@@ -1153,7 +1228,18 @@ export default function Users() {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {displayedUsers.map((user: any) => (
-                    <tr key={user.id} className="hover:bg-muted/20 transition-colors" data-testid={`row-user-${user.id}`}>
+                    <tr
+                      key={user.id}
+                      className={`transition-colors ${selectedIds.has(user.id) ? "bg-primary/5" : "hover:bg-muted/20"}`}
+                      data-testid={`row-user-${user.id}`}
+                    >
+                      <td className="px-4 py-3">
+                        <Checkbox
+                          checked={selectedIds.has(user.id)}
+                          onCheckedChange={() => toggleSelect(user.id)}
+                          aria-label={`Select ${user.username}`}
+                        />
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
