@@ -665,6 +665,8 @@ export default function Users() {
   const [resetLinkExpiry, setResetLinkExpiry] = useState<string | null>(null);
   const [resetLinkLoading, setResetLinkLoading] = useState(false);
   const [resetLinkCopied, setResetLinkCopied] = useState(false);
+  const [resetLinkEmailLoading, setResetLinkEmailLoading] = useState(false);
+  const [resetLinkEmailSent, setResetLinkEmailSent] = useState(false);
 
   const resetLinkUrl = resetLinkToken
     ? `${window.location.origin}/forgot-password?token=${resetLinkToken}${resetLinkExpiry ? `&exp=${new Date(resetLinkExpiry).getTime()}` : ""}`
@@ -675,6 +677,7 @@ export default function Users() {
     setResetLinkToken(null);
     setResetLinkExpiry(null);
     setResetLinkCopied(false);
+    setResetLinkEmailSent(false);
   };
 
   const closeResetLink = () => {
@@ -682,6 +685,29 @@ export default function Users() {
     setResetLinkToken(null);
     setResetLinkExpiry(null);
     setResetLinkCopied(false);
+    setResetLinkEmailSent(false);
+  };
+
+  const sendResetLinkEmail = async () => {
+    if (!resetLinkUser || !resetLinkToken || !resetLinkExpiry || !resetLinkUrl) return;
+    setResetLinkEmailLoading(true);
+    try {
+      const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+      const res = await fetch(`${base}/api/admin/users/${resetLinkUser.id}/email-reset-link`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resetToken: resetLinkToken, expiresAt: resetLinkExpiry, resetUrl: resetLinkUrl }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to send email");
+      setResetLinkEmailSent(true);
+      toast({ title: `Email sent to ${data.sentTo}` });
+    } catch (err: any) {
+      toast({ title: err.message ?? "Failed to send email", variant: "destructive" });
+    } finally {
+      setResetLinkEmailLoading(false);
+    }
   };
 
   const generateResetLink = async () => {
@@ -1743,8 +1769,10 @@ export default function Users() {
             <p className="text-sm text-muted-foreground">
               Create a secure, single-use password reset link for{" "}
               <strong>@{resetLinkUser?.username}</strong>
-              {resetLinkUser?.fullName ? ` (${resetLinkUser.fullName})` : ""}. 
-              No email is sent — share the link directly with the user.
+              {resetLinkUser?.fullName ? ` (${resetLinkUser.fullName})` : ""}.{" "}
+              {resetLinkUser?.email
+                ? "Copy it manually or send it directly to their email."
+                : "Copy it and share via a secure channel — no email address on file."}
             </p>
 
             {!resetLinkToken ? (
@@ -1782,6 +1810,29 @@ export default function Users() {
                   </div>
                   <p className="text-xs text-muted-foreground">Click the link field to select all, then copy.</p>
                 </div>
+
+                {/* Send to email button — shown only if user has an email on file */}
+                {resetLinkUser?.email && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant={resetLinkEmailSent ? "default" : "outline"}
+                      className={`h-9 gap-1.5 transition-colors text-xs ${resetLinkEmailSent ? "bg-green-600 hover:bg-green-700 border-green-600 text-white" : ""}`}
+                      disabled={resetLinkEmailLoading || resetLinkEmailSent}
+                      onClick={sendResetLinkEmail}
+                    >
+                      {resetLinkEmailLoading
+                        ? <><Loader2 size={13} className="animate-spin" />Sending…</>
+                        : resetLinkEmailSent
+                          ? <><CheckCircle2 size={13} />Sent!</>
+                          : <><Mail size={13} />Send to {resetLinkUser.email}</>}
+                    </Button>
+                    {resetLinkEmailSent && (
+                      <span className="text-xs text-muted-foreground">Email delivered — link is still valid until expiry.</span>
+                    )}
+                  </div>
+                )}
+
                 <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800 space-y-1">
                   <p className="font-semibold">
                     ⏱ Expires at {resetLinkExpiry

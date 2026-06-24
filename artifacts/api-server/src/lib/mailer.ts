@@ -640,3 +640,109 @@ export async function sendRejectionEmail(to: string, name: string, reason: strin
     ].join("\n"),
   });
 }
+
+// ── Admin-generated password reset link email ─────────────────────────────────
+
+export async function sendAdminResetLinkEmail(opts: {
+  to: string;
+  displayName: string;
+  username: string;
+  resetUrl: string;
+  expiresAt: Date;
+}): Promise<void> {
+  const { to, displayName, username, resetUrl, expiresAt } = opts;
+  const transporter = createTransporter();
+  const fromEmail = process.env.SMTP_FROM_EMAIL ?? process.env.SMTP_USER ?? "noreply@sahucsc.in";
+
+  const expiryTime = expiresAt.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+  const name = displayName || username;
+
+  const bodyHtml = `
+    <p style="margin:0 0 8px;font-size:20px;font-weight:700;color:#0b1a3a;">Hi ${name}!</p>
+    <p style="margin:0 0 24px;font-size:14px;color:#4b5563;line-height:1.7;">
+      Your administrator has generated a secure, one-time password reset link for your
+      <strong>SAHU CSC</strong> account (<strong>@${username}</strong>).
+      Click the button below to set a new password.
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:24px;">
+      <tr><td align="center">
+        <table cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td style="border-radius:10px;background:#f97316;">
+              <a href="${resetUrl}" style="display:inline-block;padding:14px 36px;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;letter-spacing:0.3px;border-radius:10px;">
+                &#128274;&nbsp; Reset My Password
+              </a>
+            </td>
+          </tr>
+        </table>
+      </td></tr>
+    </table>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
+      <tr>
+        <td style="background:#fff7ed;border:2px solid rgba(249,115,22,0.3);border-radius:12px;padding:16px 18px;text-align:center;">
+          <p style="margin:0;font-size:13px;font-weight:600;color:#c2410c;">
+            &#9201;&nbsp; Expires at <strong>${expiryTime}</strong> &bull; valid 10 minutes &bull; one-time use only
+          </p>
+        </td>
+      </tr>
+    </table>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
+      <tr>
+        <td style="background:#f8fafc;border-left:4px solid #f97316;border-radius:0 8px 8px 0;padding:14px 16px;">
+          <p style="margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#9ca3af;">If the button does not work, copy this link:</p>
+          <p style="margin:0;font-size:11px;color:#374151;word-break:break-all;font-family:Courier New,Courier,monospace;">${resetUrl}</p>
+        </td>
+      </tr>
+    </table>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:16px;">
+      <tr>
+        <td style="background:#f8fafc;border-left:4px solid #dc2626;border-radius:0 8px 8px 0;padding:14px 16px;">
+          <p style="margin:0;font-size:12px;color:#374151;line-height:1.6;">
+            <strong style="color:#0b1a3a;">&#128274; Security Notice:</strong>&nbsp;
+            Only use this link if your administrator told you to expect it.
+            <strong>Never share this link</strong> with anyone. Once used or expired, it becomes permanently invalid.
+          </p>
+        </td>
+      </tr>
+    </table>
+    <p style="margin:0;font-size:12px;color:#9ca3af;line-height:1.6;">
+      If you did not expect this email, you can safely ignore it — your password has not changed.
+    </p>`;
+
+  await transporter.sendMail({
+    from: `"SAHU CSC" <${fromEmail}>`,
+    to,
+    subject: "SAHU CSC — Admin-generated password reset link",
+    html: buildStatusHtml({
+      heading: "Password Reset Link",
+      subheading: "Admin-Assisted Reset",
+      icon: "&#128274;",
+      accentColor: "#f97316",
+      accentLight: "#fff7ed",
+      accentBorder: "rgba(249,115,22,0.3)",
+      bodyHtml,
+    }),
+    text: [
+      "SAHU CSC — Management Platform",
+      "=".repeat(40),
+      "",
+      "ADMIN-ASSISTED PASSWORD RESET",
+      "",
+      `Hi ${name},`,
+      "",
+      "Your administrator has generated a secure password reset link for your SAHU CSC account.",
+      "",
+      "Use the link below to set a new password (valid for 10 minutes, one-time use):",
+      "",
+      resetUrl,
+      "",
+      `Expires at: ${expiryTime}`,
+      "",
+      "If you did not expect this email, you can safely ignore it.",
+      "",
+      "-".repeat(40),
+      "SAHU CSC · Common Service Center · Odisha, India",
+      "This is an automated message. Please do not reply.",
+    ].join("\n"),
+  });
+}

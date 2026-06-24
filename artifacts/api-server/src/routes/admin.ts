@@ -4,6 +4,7 @@ import { eq, sum, count, desc } from "drizzle-orm";
 import { requireRole, getClientIp, auditLog } from "../lib/auth";
 import crypto from "node:crypto";
 import { randomUUID } from "node:crypto";
+import { sendAdminResetLinkEmail, isSmtpConfigured } from "../lib/mailer";
 
 const router: IRouter = Router();
 
@@ -148,6 +149,63 @@ router.post("/admin/users/:id/generate-reset-link", requireRole("admin"), async 
   );
 
   res.json({ resetToken: verifiedToken, expiresAt: expiresAt.toISOString(), username: user.username });
+});
+
+// ─── POST /admin/users/:id/email-reset-link ───────────────────────────────────
+// Admin-only: sends the already-generated reset link to the user's email address.
+// Body: { resetToken: string, expiresAt: string (ISO), resetUrl: string }
+router.post("/admin/users/:id/email-reset-link", requireRole("admin"), async (req, res): Promise<void> => {
+  if (!isSmtpConfigured()) {
+    res.status(503).json({ error: "Email is not configured on this server. Copy the link and share it manually." });
+    return;
+  }
+
+  const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const userId = parseInt(rawId, 10);
+  if (isNaN(userId)) { res.status(400).json({ error: "Invalid user ID" }); return; }
+
+  const { resetToken, expiresAt: expiresAtStr, resetUrl } = req.body as {
+    resetToken?: string;
+    expiresAt?: string;
+    resetUrl?: string;
+  };
+
+  if (!resetToken || !expiresAtStr || !resetUrl) {
+    res.status(400).json({ error: "resetToken, expiresAt, and resetUrl are required." });
+    return;
+  }
+
+  const expiresAt = new Date(expiresAtStr);
+  if (isNaN(expiresAt.getTime()) || expiresAt <= new Date()) {
+    res.status(400).json({ error: "Reset link has already expired. Generate a new one." });
+    return;
+  }
+
+  const [user] = await db
+    .select({ id: usersTable.id, username: usersTable.username, email: usersTable.email, fullName: usersTable.fullName, isActive: usersTable.isActive })
+    .from(usersTable)
+    .where(eq(usersTable.id, userId));
+
+  if (!user) { res.status(404).json({ error: "User not found" }); return; }
+  if (!user.email) { res.status(400).json({ error: "This user has no email address on file." }); return; }
+
+  await sendAdminResetLinkEmail({
+    to: user.email,
+    displayName: user.fullName ?? user.username,
+    username: user.username,
+    resetUrl,
+    expiresAt,
+  });
+
+  const adminId = (req.session as any)?.userId ?? null;
+  await auditLog(
+    adminId,
+    "password.admin_reset_link_emailed",
+    `Admin emailed reset link to @${user.username} (userId=${user.id}, to=${user.email})`,
+    getClientIp(req)
+  );
+
+  res.json({ ok: true, sentTo: user.email });
 });
 
 export default router;
