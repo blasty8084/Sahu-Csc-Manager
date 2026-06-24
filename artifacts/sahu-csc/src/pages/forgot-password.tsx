@@ -472,6 +472,8 @@ export default function ForgotPassword() {
                           ref={(el) => { otpRefs.current[i] = el; }}
                           type="text"
                           inputMode="numeric"
+                          pattern="[0-9]*"
+                          autoComplete={i === 0 ? "one-time-code" : "off"}
                           maxLength={1}
                           value={digit}
                           onChange={(e) => handleOtpInput(i, e.target.value)}
