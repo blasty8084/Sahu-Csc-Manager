@@ -165,8 +165,18 @@ function buildOtpHtml(
                   <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
                     <tr>${digitCells}</tr>
                   </table>
+                  <!-- Copy-code block -->
+                  <p style="margin:20px 0 8px;font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#9ca3af;">&#x2014;&nbsp; or copy the full code &nbsp;&#x2014;</p>
+                  <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
+                    <tr>
+                      <td style="background:#ffffff;border:2px dashed ${accentColor};border-radius:10px;padding:10px 28px;">
+                        <p style="margin:0;font-size:32px;font-weight:900;letter-spacing:10px;color:#0b2c60;font-family:Courier New,Courier,monospace;user-select:all;-webkit-user-select:all;mso-user-select:all;">${otp}</p>
+                      </td>
+                    </tr>
+                  </table>
+                  <p style="margin:8px 0 0;font-size:10px;color:#9ca3af;">Tap the code above to select &amp; copy it</p>
                   <!-- Expiry -->
-                  <table cellpadding="0" cellspacing="0" border="0" style="margin:20px auto 0;">
+                  <table cellpadding="0" cellspacing="0" border="0" style="margin:16px auto 0;">
                     <tr>
                       <td style="background:${accentColor};border-radius:99px;padding:6px 18px;">
                         <p style="margin:0;font-size:12px;font-weight:600;color:#ffffff;">&#9201;&nbsp; Expires at ${expiryTime} &bull; valid for 10 minutes</p>
