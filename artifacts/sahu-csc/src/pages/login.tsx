@@ -105,6 +105,35 @@ function CSCBuilding() {
 }
 
 // ── Forgot / Reset password panel ────────────────────────────────────────────
+const OTP_RATE_LIMIT = 15 * 60;
+
+function OtpRateLimitPanel({ seconds, onBack }: { seconds: number; onBack: () => void }) {
+  const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
+  const ss = String(seconds % 60).padStart(2, "0");
+  const isUrgent = seconds <= 60;
+  return (
+    <div className="flex flex-col items-center gap-4 py-2 text-center">
+      <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #fef2f2, #fee2e2)" }}>
+        <Lock className="w-7 h-7 text-red-500" />
+      </div>
+      <div>
+        <h3 className="font-bold text-gray-900 text-base">Too Many Requests</h3>
+        <p className="text-gray-500 text-xs mt-1 max-w-[260px]">OTP sending is temporarily blocked. Please wait before requesting a new code.</p>
+      </div>
+      <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+        <div className="h-full rounded-full" style={{ width: `${(seconds / OTP_RATE_LIMIT) * 100}%`, background: isUrgent ? "#ef4444" : "#f97316", transition: "width 1s linear" }} />
+      </div>
+      <div>
+        <div className="text-4xl font-black tabular-nums tracking-tight" style={{ color: isUrgent ? "#dc2626" : "#0b2c60" }}>{mm}:{ss}</div>
+        <p className="text-gray-400 text-xs mt-1">until you can try again</p>
+      </div>
+      <button type="button" onClick={onBack} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors mt-1">
+        <ArrowLeft className="w-3.5 h-3.5" />Back
+      </button>
+    </div>
+  );
+}
+
 function ForgotPasswordPanel({ onBack }: { onBack: () => void }) {
   const { toast } = useToast();
 
@@ -120,6 +149,9 @@ function ForgotPasswordPanel({ onBack }: { onBack: () => void }) {
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [resendSeconds, setResendSeconds] = useState(RESEND_COOLDOWN);
   const resendTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [otpRateLimited, setOtpRateLimited] = useState(false);
+  const [rateLimitSeconds, setRateLimitSeconds] = useState(OTP_RATE_LIMIT);
+  const rateLimitTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -132,6 +164,7 @@ function ForgotPasswordPanel({ onBack }: { onBack: () => void }) {
   useEffect(() => () => {
     if (resendTimerRef.current) clearInterval(resendTimerRef.current);
     if (countdownRef.current) clearInterval(countdownRef.current);
+    if (rateLimitTimerRef.current) clearInterval(rateLimitTimerRef.current);
   }, []);
 
   const startResendTimer = useCallback(() => {
@@ -139,6 +172,18 @@ function ForgotPasswordPanel({ onBack }: { onBack: () => void }) {
     if (resendTimerRef.current) clearInterval(resendTimerRef.current);
     resendTimerRef.current = setInterval(() => {
       setResendSeconds((s) => { if (s <= 1) { clearInterval(resendTimerRef.current!); return 0; } return s - 1; });
+    }, 1000);
+  }, []);
+
+  const startRateLimitTimer = useCallback(() => {
+    setOtpRateLimited(true);
+    setRateLimitSeconds(OTP_RATE_LIMIT);
+    if (rateLimitTimerRef.current) clearInterval(rateLimitTimerRef.current);
+    rateLimitTimerRef.current = setInterval(() => {
+      setRateLimitSeconds((s) => {
+        if (s <= 1) { clearInterval(rateLimitTimerRef.current!); setOtpRateLimited(false); setStep("identifier"); return OTP_RATE_LIMIT; }
+        return s - 1;
+      });
     }, 1000);
   }, []);
 
@@ -162,7 +207,7 @@ function ForgotPasswordPanel({ onBack }: { onBack: () => void }) {
       const data = await res.json();
       if (!res.ok) {
         if (res.status === 404 && data.notRegistered) { setNotRegistered(true); setServerError(data.error ?? "Account not found. Please register first."); }
-        else if (res.status === 429) { setServerError("Too many OTP requests. Please wait 15 minutes before trying again."); }
+        else if (res.status === 429) { startRateLimitTimer(); setStep("otp"); }
         else { setServerError(data.error ?? "Failed to send OTP. Please try again."); }
         return;
       }
@@ -219,6 +264,7 @@ function ForgotPasswordPanel({ onBack }: { onBack: () => void }) {
       const res = await apiPost("send-otp", { identifier: identifier.trim(), purpose: "password_reset" });
       const data = await res.json();
       if (res.ok) { if (data.maskedEmail) setMaskedEmail(data.maskedEmail); startResendTimer(); toast({ title: "OTP resent", description: "A new code has been sent." }); setTimeout(() => otpRefs.current[0]?.focus(), 120); }
+      else if (res.status === 429) { startRateLimitTimer(); }
       else { setServerError(data.error ?? "Failed to resend OTP."); }
     } catch { setServerError("Network error."); }
     finally { setSubmitting(false); }
@@ -336,49 +382,62 @@ function ForgotPasswordPanel({ onBack }: { onBack: () => void }) {
         {/* Step 2: OTP */}
         {step === "otp" && (
           <motion.div key="fp-otp" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
-            <div className="flex flex-col items-center mb-5">
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm mb-3" style={{ background: "#dcfce7" }}>
-                <ShieldCheck className="w-6 h-6 text-emerald-600" />
-              </div>
-              <h2 className="text-gray-900 font-bold text-lg">Enter OTP</h2>
-              <p className="text-gray-500 text-xs mt-1 text-center max-w-xs">
-                {maskedEmail ? <>We sent a 6-digit code to <span className="font-semibold text-gray-700">{maskedEmail}</span></> : "We sent a 6-digit code to your registered email"}
-              </p>
-              <p className="text-gray-400 text-[10px] mt-0.5">Check your inbox and spam folder</p>
-            </div>
-            <div className="flex gap-2 justify-center mb-5" onPaste={handleOtpPaste}>
-              {otpDigits.map((digit, i) => (
-                <input
-                  key={i}
-                  ref={(el) => { otpRefs.current[i] = el; }}
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={1}
-                  value={digit}
-                  onChange={(e) => handleOtpInput(i, e.target.value)}
-                  onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                  className="w-11 h-12 text-center text-xl font-bold border-2 rounded-xl bg-white outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 text-gray-900"
-                  style={{ borderColor: serverError ? "rgb(239,68,68)" : digit ? "#0b2c60" : "#e5e7eb" }}
-                />
-              ))}
-            </div>
-            {serverError && (
-              <div className="flex items-start gap-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-2.5 mb-4">
-                <XCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />{serverError}
-              </div>
+            {otpRateLimited ? (
+              <OtpRateLimitPanel
+                seconds={rateLimitSeconds}
+                onBack={() => {
+                  if (rateLimitTimerRef.current) clearInterval(rateLimitTimerRef.current);
+                  setOtpRateLimited(false);
+                  setStep("identifier");
+                }}
+              />
+            ) : (
+              <>
+                <div className="flex flex-col items-center mb-5">
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm mb-3" style={{ background: "#dcfce7" }}>
+                    <ShieldCheck className="w-6 h-6 text-emerald-600" />
+                  </div>
+                  <h2 className="text-gray-900 font-bold text-lg">Enter OTP</h2>
+                  <p className="text-gray-500 text-xs mt-1 text-center max-w-xs">
+                    {maskedEmail ? <>We sent a 6-digit code to <span className="font-semibold text-gray-700">{maskedEmail}</span></> : "We sent a 6-digit code to your registered email"}
+                  </p>
+                  <p className="text-gray-400 text-[10px] mt-0.5">Check your inbox and spam folder</p>
+                </div>
+                <div className="flex gap-2 justify-center mb-5" onPaste={handleOtpPaste}>
+                  {otpDigits.map((digit, i) => (
+                    <input
+                      key={i}
+                      ref={(el) => { otpRefs.current[i] = el; }}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => handleOtpInput(i, e.target.value)}
+                      onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                      className="w-11 h-12 text-center text-xl font-bold border-2 rounded-xl bg-white outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 text-gray-900"
+                      style={{ borderColor: serverError ? "rgb(239,68,68)" : digit ? "#0b2c60" : "#e5e7eb" }}
+                    />
+                  ))}
+                </div>
+                {serverError && (
+                  <div className="flex items-start gap-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-2.5 mb-4">
+                    <XCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />{serverError}
+                  </div>
+                )}
+                <Button onClick={() => verifyOtp(otpDigits.join(""))} disabled={submitting || !otpComplete} className="w-full h-11 font-bold text-white border-0 mb-4" style={{ background: "linear-gradient(135deg, #1a2560, #0f1a4a)" }}>
+                  {submitting ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Verifying…</span> : <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4" />Verify OTP</span>}
+                </Button>
+                <div className="flex flex-col items-center gap-3">
+                  <button type="button" onClick={handleResend} disabled={resendSeconds > 0 || submitting} className="flex items-center gap-1.5 text-sm transition-colors" style={{ color: resendSeconds > 0 ? "#9ca3af" : "#0b2c60" }}>
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    {resendSeconds > 0 ? `Resend OTP in ${resendSeconds}s` : "Resend OTP"}
+                  </button>
+                  <button type="button" onClick={() => { setStep("identifier"); setServerError(null); }} className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors">
+                    <ArrowLeft className="w-3.5 h-3.5" />Try a different username
+                  </button>
+                </div>
+              </>
             )}
-            <Button onClick={() => verifyOtp(otpDigits.join(""))} disabled={submitting || !otpComplete} className="w-full h-11 font-bold text-white border-0 mb-4" style={{ background: "linear-gradient(135deg, #1a2560, #0f1a4a)" }}>
-              {submitting ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Verifying…</span> : <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4" />Verify OTP</span>}
-            </Button>
-            <div className="flex flex-col items-center gap-3">
-              <button type="button" onClick={handleResend} disabled={resendSeconds > 0 || submitting} className="flex items-center gap-1.5 text-sm transition-colors" style={{ color: resendSeconds > 0 ? "#9ca3af" : "#0b2c60" }}>
-                <RefreshCw className="w-3.5 h-3.5" />
-                {resendSeconds > 0 ? `Resend OTP in ${resendSeconds}s` : "Resend OTP"}
-              </button>
-              <button type="button" onClick={() => { setStep("identifier"); setServerError(null); }} className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors">
-                <ArrowLeft className="w-3.5 h-3.5" />Try a different username
-              </button>
-            </div>
           </motion.div>
         )}
 
