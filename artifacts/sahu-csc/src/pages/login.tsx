@@ -34,6 +34,8 @@ import {
   Clock,
   Ban,
   MailCheck,
+  Mail,
+  MessageCircle,
 } from "lucide-react";
 
 const MAX_ATTEMPTS = 5;
@@ -532,6 +534,7 @@ interface LoginFormContentProps {
   rejectedInfo: { reason: string | null } | null;
   isPendingApproval: boolean;
   onDismissStatus: () => void;
+  adminContact: { name: string; phone: string | null; email: string | null } | null;
 }
 
 function useLockoutCountdown(lockoutUntil: Date | null, onExpired: () => void) {
@@ -564,7 +567,7 @@ function useLockoutCountdown(lockoutUntil: Date | null, onExpired: () => void) {
   return { remaining, display, progress };
 }
 
-function LoginFormContent({ form, onSubmit, showPassword, setShowPassword, rememberMe, setRememberMe, onForgotPassword, attemptsLeft, lockoutUntil, onLockoutExpired, rejectedInfo, isPendingApproval, onDismissStatus }: LoginFormContentProps) {
+function LoginFormContent({ form, onSubmit, showPassword, setShowPassword, rememberMe, setRememberMe, onForgotPassword, attemptsLeft, lockoutUntil, onLockoutExpired, rejectedInfo, isPendingApproval, onDismissStatus, adminContact }: LoginFormContentProps) {
   const isSubmitting = form.formState.isSubmitting;
   const usedAttempts = attemptsLeft !== null ? MAX_ATTEMPTS - attemptsLeft : 0;
   const showCounter = attemptsLeft !== null && attemptsLeft < MAX_ATTEMPTS && !lockoutUntil;
@@ -620,9 +623,59 @@ function LoginFormContent({ form, onSubmit, showPassword, setShowPassword, remem
                   </div>
                 )}
 
-                <p className="text-[11px] text-center mb-3" style={{ color: "#9a3412" }}>
-                  For assistance, contact your administrator or register with a different account.
-                </p>
+                {/* Appeal buttons */}
+                {(adminContact?.phone || adminContact?.email) ? (
+                  <div className="space-y-2 mb-3">
+                    <p className="text-[11px] text-center font-semibold" style={{ color: "#9a3412" }}>
+                      Contact the administrator to appeal:
+                    </p>
+                    <div className={`grid gap-2 ${adminContact.phone && adminContact.email ? "grid-cols-2" : "grid-cols-1"}`}>
+                      {adminContact.phone && (() => {
+                        const digits = adminContact.phone.replace(/\D/g, "");
+                        const waNum = digits.length === 10 ? `91${digits}` : digits;
+                        const identifier = form.getValues("identifier");
+                        const reason = rejectedInfo?.reason;
+                        const msg = encodeURIComponent(
+                          `Hi, I am ${identifier || "a user"}. My SAHU CSC registration was declined.${reason ? ` Reason given: "${reason}".` : ""} I would like to appeal this decision. Please reconsider my application.`
+                        );
+                        return (
+                          <a
+                            href={`https://wa.me/${waNum}?text=${msg}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center gap-1.5 h-9 rounded-xl text-xs font-semibold transition-colors"
+                            style={{ background: "#25d366", color: "#fff" }}
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                            WhatsApp
+                          </a>
+                        );
+                      })()}
+                      {adminContact.email && (() => {
+                        const identifier = form.getValues("identifier");
+                        const reason = rejectedInfo?.reason;
+                        const subject = encodeURIComponent(`Appeal: SAHU CSC Registration Declined — ${identifier || "User"}`);
+                        const body = encodeURIComponent(
+                          `Hello,\n\nI am ${identifier || "a registered user"} and my SAHU CSC registration was declined.${reason ? `\n\nReason given: "${reason}"` : ""}\n\nI would like to appeal this decision and request a review of my application.\n\nThank you.`
+                        );
+                        return (
+                          <a
+                            href={`mailto:${adminContact.email}?subject=${subject}&body=${body}`}
+                            className="flex items-center justify-center gap-1.5 h-9 rounded-xl text-xs font-semibold transition-colors"
+                            style={{ background: "#0b2c60", color: "#fff" }}
+                          >
+                            <Mail className="w-3.5 h-3.5" />
+                            Email Admin
+                          </a>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-center mb-3" style={{ color: "#9a3412" }}>
+                    For assistance, contact your administrator or register with a different account.
+                  </p>
+                )}
 
                 <button
                   type="button"
@@ -1167,6 +1220,12 @@ export default function Login() {
   const [lockoutUntil, setLockoutUntil] = useState<Date | null>(null);
   const [rejectedInfo, setRejectedInfo] = useState<{ reason: string | null } | null>(null);
   const [isPendingApproval, setIsPendingApproval] = useState(false);
+  const [adminContact, setAdminContact] = useState<{ name: string; phone: string | null; email: string | null } | null>(null);
+
+  useEffect(() => {
+    const base = (import.meta as any).env?.BASE_URL?.replace(/\/$/, "") ?? "";
+    fetch(`${base}/api/settings/contact`).then(r => r.ok ? r.json() : null).then(d => { if (d) setAdminContact(d); }).catch(() => {});
+  }, []);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -1232,7 +1291,7 @@ export default function Login() {
   const formProps: Omit<LoginFormContentProps, "onForgotPassword"> = {
     form, onSubmit, showPassword, setShowPassword, rememberMe, setRememberMe,
     attemptsLeft, lockoutUntil, onLockoutExpired: handleLockoutExpired,
-    rejectedInfo, isPendingApproval, onDismissStatus,
+    rejectedInfo, isPendingApproval, onDismissStatus, adminContact,
   };
 
   return isMobile

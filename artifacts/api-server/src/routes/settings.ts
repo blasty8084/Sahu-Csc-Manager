@@ -49,6 +49,16 @@ function formatSettings(s: Record<string, string>) {
   };
 }
 
+// Public — no auth required — returns only the contact fields safe to expose pre-login
+router.get("/settings/contact", async (_req, res): Promise<void> => {
+  const settings = await getAllSettings();
+  res.json({
+    name: settings.businessName ?? DEFAULT_SETTINGS.businessName,
+    phone: settings.businessMobile || null,
+    email: settings.businessEmail || null,
+  });
+});
+
 router.get("/settings", requireAuth, async (_req, res): Promise<void> => {
   const settings = await getAllSettings();
   res.json(formatSettings(settings));
