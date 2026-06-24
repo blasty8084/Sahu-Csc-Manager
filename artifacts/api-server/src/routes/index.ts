@@ -18,6 +18,7 @@ import adminRegistrationRouter from "./admin-registration";
 import adminSessionsRouter from "./admin-sessions";
 import udhariRouter from "./udhari";
 import receiptsRouter from "./receipts";
+import broadcastRouter from "./broadcast";
 
 const router: IRouter = Router();
 
@@ -40,5 +41,6 @@ router.use(adminRegistrationRouter);
 router.use(adminSessionsRouter);
 router.use(udhariRouter);
 router.use(receiptsRouter);
+router.use(broadcastRouter);
 
 export default router;

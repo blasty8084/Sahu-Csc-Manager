@@ -500,6 +500,69 @@ export async function sendNewRegistrationAdminEmail(opts: {
   });
 }
 
+export async function sendBroadcastEmail(opts: {
+  subject: string;
+  body: string;
+  recipients: Array<{ email: string; fullName: string | null; username: string }>;
+}): Promise<{ sent: number; failed: number }> {
+  const { subject, body, recipients } = opts;
+  const transporter = createTransporter();
+  const fromEmail = process.env.SMTP_FROM_EMAIL ?? process.env.SMTP_USER ?? "noreply@sahucsc.in";
+
+  const bodyHtml = `
+    <p style="margin:0 0 8px;font-size:20px;font-weight:700;color:#0b1a3a;">Hello,</p>
+    <div style="font-size:14px;color:#374151;line-height:1.8;white-space:pre-wrap;">${body.replace(/\n/g, "<br/>")}</div>
+    <hr style="margin:28px 0 16px;border:none;border-top:1px solid #e2e8f0;" />
+    <p style="margin:0;font-size:12px;color:#9ca3af;line-height:1.6;">
+      This message was sent by your SAHU CSC administrator. If you have questions, contact your center directly.
+    </p>`;
+
+  const htmlContent = buildStatusHtml({
+    heading: "Message from Admin",
+    subheading: "Admin Broadcast",
+    icon: "&#128226;",
+    accentColor: "#0b2c60",
+    accentLight: "#eff6ff",
+    accentBorder: "rgba(11,44,96,0.2)",
+    bodyHtml,
+  });
+
+  const textContent = [
+    "SAHU CSC — Management Platform",
+    "=".repeat(40),
+    "",
+    "MESSAGE FROM ADMIN",
+    "",
+    body,
+    "",
+    "-".repeat(40),
+    "SAHU CSC · Common Service Center · Odisha, India",
+    "This is an automated message. Please do not reply.",
+  ].join("\n");
+
+  let sent = 0;
+  let failed = 0;
+
+  await Promise.allSettled(
+    recipients.map(async (r) => {
+      try {
+        await transporter.sendMail({
+          from: `"SAHU CSC" <${fromEmail}>`,
+          to: r.email,
+          subject,
+          html: htmlContent,
+          text: textContent,
+        });
+        sent++;
+      } catch {
+        failed++;
+      }
+    })
+  );
+
+  return { sent, failed };
+}
+
 export async function sendRejectionEmail(to: string, name: string, reason: string | null): Promise<void> {
   const transporter = createTransporter();
   const fromEmail = process.env.SMTP_FROM_EMAIL ?? process.env.SMTP_USER ?? "noreply@sahucsc.in";
