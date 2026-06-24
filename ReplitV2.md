@@ -1,5 +1,5 @@
 # SAHU CSC — Project Reference v2
-**Version 2.5.0 — June 2026**
+**Version 2.6.0 — June 2026**
 
 > This is the authoritative quick-reference for the SAHU CSC platform.  
 > For deep architecture detail: `architectureV2.md` · For change history: `changelogV2.md` · For workflow guide: `WORKFLOWS.md`
@@ -43,6 +43,7 @@
 | **Admin — Users** | Create/edit/delete users · Pending registrations (bulk approve/reject) · Email notifications |
 | **Admin — Sessions** | View + revoke any user's active sessions from User Management → Sessions tab |
 | **Admin — Oversight** | Cross-user balance overview, per-user ledger view, AePS overview, audit trail |
+| **Admin — Broadcast** | Push notification + email blast to all users · Sent-history log with pagination |
 | **Profile** | Unified Profile+Settings page (v2.3) — Personal Info, Security, Sessions, Preferences, Business Info, System |
 | **PWA** | Installable, offline-first, push notifications (VAPID), Android TWA |
 
@@ -263,6 +264,7 @@ pnpm --filter @workspace/api-spec run codegen    # Regenerate React Query hooks 
 | `user_preferences` | user_id, theme, language | Per-user UI preferences |
 | `push_subscriptions` | user_id, endpoint, p256dh, auth | VAPID Web Push subscriptions |
 | `password_reset_tokens` | token, user_id, expires_at, used | One-time OTP reset tokens |
+| `broadcast_logs` | id, sent_by, channel, subject, body, recipient_filter, recipient_count, failed_count, created_at | Audit trail of every push / email blast sent |
 
 ---
 
@@ -380,6 +382,14 @@ pnpm --filter @workspace/api-spec run codegen    # Regenerate React Query hooks 
 | POST | `/api/push/subscribe` |
 | DELETE | `/api/push/unsubscribe` |
 
+### Admin — Broadcast *(v2.6.0)*
+| Method | Path | Notes |
+|--------|------|-------|
+| GET | `/api/admin/broadcast/stats` | Push subscriber count, active users, SMTP status |
+| POST | `/api/admin/broadcast/push` | Send push notification to all subscribers |
+| POST | `/api/admin/broadcast/email` | Send email blast (`recipientFilter`: all / active) |
+| GET | `/api/admin/broadcast/history` | Paginated broadcast log (`?page=&limit=`) |
+
 ### Misc
 | Method | Path | Notes |
 |--------|------|-------|
@@ -411,6 +421,7 @@ pnpm --filter @workspace/api-spec run codegen    # Regenerate React Query hooks 
 | `/pwa-status` | `pwa-status.tsx` | All | Network, sync, storage, install, push status |
 | `/receipts/verify/:token` | `receipts-verify.tsx` | Public | QR scan target — no auth required |
 | `/users` | `users.tsx` | Admin | User management — **6 tabs**: Pending (bulk approve/reject + reject reason dialog) · Active (search/filter, bulk activate/suspend, CSV export, admin password reset) · All Users (same) · Cash Overview · **AePS Overview** (per-user AePS balance) · **Sessions** (admin session viewer + revoke) |
+| `/broadcast` | `broadcast.tsx` | Admin | Broadcast Center — Push tab · Email tab · History tab (paginated sent-log) |
 | `/users-overview` | `users-overview.tsx` | Admin | Cross-user balance summary |
 | `/audit-logs` | `audit-logs.tsx` | Admin | Full audit trail |
 | `/backups` | `backups.tsx` | Admin | pg_dump backup/restore |

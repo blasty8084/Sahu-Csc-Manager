@@ -1,5 +1,5 @@
 # SAHU CSC — Architecture Reference v2
-**Version 2.5.0 — June 2026**
+**Version 2.6.0 — June 2026**
 
 > This document is the single authoritative reference for the SAHU CSC platform architecture.  
 > It supersedes any older architecture notes in `ARCHITECTURE.md`.  
@@ -263,6 +263,7 @@ All tables use PostgreSQL via Drizzle ORM. `@workspace/db` exports `pool`, `db`,
 | `user_preferences` | Per-user UI settings (theme, language) |
 | `push_subscriptions` | VAPID Web Push subscription records |
 | `password_reset_tokens` | One-time OTP reset tokens |
+| `broadcast_logs` | Sent-broadcast audit log — channel, subject, body, recipient_filter, recipient_count, failed_count, sent_by, created_at |
 
 ---
 
@@ -470,6 +471,7 @@ admin.session.revoke  admin.session.revoke_all_for_user
 | `/pwa-status` | `pwa-status.tsx` | All roles | Network, sync, storage, push status |
 | `/receipts/verify/:token` | `receipts-verify.tsx` | Public | QR scan target — no auth |
 | `/users` | `users.tsx` | admin | User management — **6 tabs**: Pending (bulk approve/reject + bulk reject dialog) · Active (search/filter, bulk activate/suspend, CSV export, admin password reset) · All Users (same features) · Cash Overview · **AePS Overview** (per-user AePS balance summary) · **Sessions** (view + revoke all users' sessions) |
+| `/broadcast` | `broadcast.tsx` | admin | Broadcast Center — Push tab · Email Blast tab · History tab (paginated sent-log with expand/collapse) |
 | `/users-overview` | `users-overview.tsx` | admin | Cross-user balance view |
 | `/audit-logs` | `audit-logs.tsx` | admin | Full audit trail |
 | `/backups` | `backups.tsx` | admin | pg_dump backup/restore |

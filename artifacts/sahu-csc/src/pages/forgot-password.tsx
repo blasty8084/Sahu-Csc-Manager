@@ -511,16 +511,40 @@ export default function ForgotPassword() {
                     </Button>
 
                     <div className="flex flex-col items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={handleResend}
-                        disabled={resendSeconds > 0 || submitting}
-                        className="flex items-center gap-1.5 text-sm transition-colors"
-                        style={{ color: resendSeconds > 0 ? "#9ca3af" : "#0b2c60" }}
-                      >
-                        <RefreshCw className="w-3.5 h-3.5" />
-                        {resendSeconds > 0 ? `Resend OTP in ${resendSeconds}s` : "Resend OTP"}
-                      </button>
+                      {resendSeconds > 0 ? (() => {
+                        const R = 11, CIRC = 2 * Math.PI * R;
+                        const offset = CIRC * (1 - resendSeconds / RESEND_COOLDOWN);
+                        return (
+                          <div className="flex items-center gap-2.5">
+                            <div className="relative w-8 h-8 flex-shrink-0">
+                              <svg width="32" height="32" viewBox="0 0 32 32" style={{ transform: "rotate(-90deg)" }}>
+                                <circle cx="16" cy="16" r={R} fill="none" stroke="#e5e7eb" strokeWidth="2.5" />
+                                <circle cx="16" cy="16" r={R} fill="none" stroke="#0b2c60" strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                  strokeDasharray={CIRC}
+                                  strokeDashoffset={offset}
+                                  style={{ transition: "stroke-dashoffset 1s linear" }}
+                                />
+                              </svg>
+                              <span className="absolute inset-0 flex items-center justify-center font-bold leading-none" style={{ fontSize: "9px", color: "#0b2c60" }}>
+                                {resendSeconds}
+                              </span>
+                            </div>
+                            <span className="text-sm text-gray-400">Resend OTP in {resendSeconds}s</span>
+                          </div>
+                        );
+                      })() : (
+                        <button
+                          type="button"
+                          onClick={handleResend}
+                          disabled={submitting}
+                          className="flex items-center gap-1.5 text-sm font-semibold transition-colors"
+                          style={{ color: "#0b2c60" }}
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" />
+                          Resend OTP
+                        </button>
+                      )}
 
                       <button
                         type="button"

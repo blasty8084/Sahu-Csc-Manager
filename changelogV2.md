@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v2
-**Current version: 2.5.0 — June 2026**
+**Current version: 2.6.0 — June 2026**
 
 > Comprehensive record of every feature, change, and upgrade from v2.0.0 onward.  
 > For a full description of the system architecture, see `architectureV2.md`.  
@@ -9,7 +9,13 @@
 
 ## Table of Contents
 
-1. [v2.5.0 — User Management Enhancements](#1-v250--user-management-enhancements-june-2026)
+1. [v2.6.0 — Broadcast Center, OTP UX, Resend Progress Ring](#1-v260--broadcast-center-otp-ux--resend-progress-ring-june-2026)
+   - [Broadcast Center](#11-broadcast-center)
+   - [Broadcast History Log](#12-broadcast-history-log)
+   - [OTP Email Copy Block](#13-otp-email-copy-block)
+   - [OTP Auto-Fill](#14-otp-auto-fill)
+   - [Resend OTP Progress Ring](#15-resend-otp-progress-ring)
+2. [v2.5.0 — User Management Enhancements](#2-v250--user-management-enhancements-june-2026)
    - [Search & Role Filter](#11-search--role-filter)
    - [AePS Overview Tab](#12-aeps-overview-tab)
    - [Bulk Status Toggle (Active / All Users Tabs)](#13-bulk-status-toggle-active--all-users-tabs)
@@ -50,7 +56,164 @@
 
 ---
 
-## 1. v2.5.0 — User Management Enhancements (June 2026)
+## 1. v2.6.0 — Broadcast Center, OTP UX & Resend Progress Ring (June 2026)
+
+### 1.1 Broadcast Center
+
+**New page:** `/broadcast` (admin only) — `artifacts/sahu-csc/src/pages/broadcast.tsx`
+
+Three-tab interface in a navy-header card layout:
+
+| Tab | Purpose |
+|-----|---------|
+| **Push Notification** | Compose + send VAPID push to all subscribed devices |
+| **Email Blast** | Compose + send email to all/active users (SMTP-gated) |
+| **History** | Paginated log of every sent broadcast |
+
+**Push tab:** Title (150 char max) + Message (500 char max) + optional link URL + "Also create in-app notification" checkbox. Send button shows subscriber count. Disabled if no subscribers.
+
+**Email tab:** Recipient filter (all registered / active users only) + Subject + Body (plain text, monospace textarea). SMTP warning banner if not configured. Disabled if SMTP missing or zero recipients.
+
+**Stats strip** (push + email tabs): Live `pushSubscribers` + `activeUsers` from `GET /api/admin/broadcast/stats`.
+
+**New API endpoints** (`artifacts/api-server/src/routes/broadcast.ts` registered at `router.use(broadcastRouter)` in `routes/index.ts`):
+
+| Method | Path | Notes |
+|--------|------|-------|
+| GET | `/api/admin/broadcast/stats` | `{ pushSubscribers, usersWithEmail, activeUsers, smtpConfigured }` |
+| POST | `/api/admin/broadcast/push` | Sends via `sendPushToAll`; optionally creates in-app notification; logs to `broadcast_logs` |
+| POST | `/api/admin/broadcast/email` | `recipientFilter: "all" | "active"`; sends via `sendBroadcastEmail`; logs to `broadcast_logs` |
+
+**`sendBroadcastEmail`** added to `artifacts/api-server/src/lib/mailer.ts` — HTML + plain-text branded email blast template.
+
+**Nav:** `Megaphone` icon added to admin sidebar in `layout.tsx`.
+
+**Files changed:**
+- `artifacts/sahu-csc/src/pages/broadcast.tsx` — new file
+- `artifacts/api-server/src/routes/broadcast.ts` — new file
+- `artifacts/api-server/src/routes/index.ts` — registered `broadcastRouter`
+- `artifacts/api-server/src/lib/mailer.ts` — `sendBroadcastEmail` added
+- `artifacts/sahu-csc/src/components/layout.tsx` — Megaphone nav item
+- `artifacts/sahu-csc/src/App.tsx` — `/broadcast` route (adminOnly)
+
+---
+
+### 1.2 Broadcast History Log
+
+**New DB table:** `broadcast_logs`
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | serial PK | |
+| `sent_by` | integer | FK → `users.id` |
+| `channel` | text | `"push"` or `"email"` |
+| `subject` | text | Push title or email subject |
+| `body` | text | Full message body |
+| `recipient_filter` | text | `"all"` / `"active"` / null (push) |
+| `recipient_count` | integer | Devices/users actually sent |
+| `failed_count` | integer | Failures (0 for email — not tracked per-recipient) |
+| `created_at` | timestamptz | Auto-set |
+
+Indexes: `sent_by`, `channel`, `created_at`.
+
+**Schema file:** `lib/db/src/schema/broadcast_logs.ts`  
+**Table applied via raw SQL** (drizzle-kit push requires TTY — not available in non-interactive shell).
+
+**`GET /api/admin/broadcast/history`** — paginated, joins with `users` for sender name. Returns `{ logs, total, page, limit }`.
+
+**History tab UI** (`broadcast.tsx`):
+- Entry cards with coloured left stripe (purple = push, navy = email)
+- Channel badge · subject · recipient count · failed count · sender name · timestamp
+- "Show message" toggle expands the body inline
+- Pagination with Prev/Next when >10 entries
+- Empty state when nothing sent yet
+- Send actions invalidate `["broadcast-history"]` cache
+
+**Files changed:**
+- `lib/db/src/schema/broadcast_logs.ts` — new schema file
+- `lib/db/src/schema/index.ts` — export added
+- `artifacts/api-server/src/routes/broadcast.ts` — `GET /history` endpoint + DB insert after each send
+- `artifacts/sahu-csc/src/pages/broadcast.tsx` — History tab added
+
+---
+
+### 1.3 OTP Email Copy Block
+
+**Problem:** The OTP email showed the code only as individual digit boxes — hard to copy on mobile.
+
+**Change:** A prominent copy-friendly block was added below the digit boxes inside the OTP email:
+
+```
+─── or copy the full code ───
+
+┌ - - - - - - - - - - - ┐
+   4  8  2  9  1  7
+└ - - - - - - - - - - - ┘
+
+Tap the code above to select & copy it
+```
+
+**Implementation:** Added to `buildOtpHtml()` in `artifacts/api-server/src/lib/mailer.ts`:
+- Full OTP in one `<p>` tag, `font-family: Courier New`, `letter-spacing: 10px`, `font-size: 32px`
+- `user-select: all; -webkit-user-select: all; mso-user-select: all` — single tap selects the entire code in Gmail, Apple Mail, Outlook web
+- Dashed accent-coloured border box to make it visually obvious
+- Hint text: "Tap the code above to select & copy it"
+
+Applies to both **Email Verification** (registration) and **Password Reset** OTP emails.
+
+**Files changed:**
+- `artifacts/api-server/src/lib/mailer.ts` — copy block added inside `buildOtpHtml`
+
+---
+
+### 1.4 OTP Auto-Fill
+
+**Problem:** Mobile users had to manually type the 6-digit OTP from the email — no system suggestion appeared.
+
+**Change:** Added `autoComplete="one-time-code"` (first digit box only) and `pattern="[0-9]*"` to every OTP input field on:
+- `artifacts/sahu-csc/src/pages/forgot-password.tsx` — password reset OTP step
+- `artifacts/sahu-csc/src/pages/register.tsx` — email verification OTP step
+
+**Effect by platform:**
+- **iOS 12+:** "From Mail: 482917 →" suggestion bar above the keyboard — one tap fills all 6 boxes
+- **Android Chrome:** Smart autofill banner from recent email/SMS — one tap fills
+- **Desktop Chrome:** Clipboard paste detected as OTP — auto-fills on paste
+
+The existing `handleOtpPaste` already auto-submits when all 6 digits are pasted, so the complete flow on mobile is: **tap suggestion → code fills → form auto-submits**.
+
+**Files changed:**
+- `artifacts/sahu-csc/src/pages/forgot-password.tsx`
+- `artifacts/sahu-csc/src/pages/register.tsx`
+
+---
+
+### 1.5 Resend OTP Progress Ring
+
+**Problem:** The "Resend OTP in 120s" plain text gave users no intuitive sense of how much time remained.
+
+**Change:** Replaced the text-only countdown with an **SVG circular progress ring** that drains visually as the cooldown ticks:
+
+```
+  ◑ 74    Resend OTP in 74s
+```
+
+**Design:**
+- 32×32 SVG with two concentric circles: grey track + navy progress arc
+- Arc starts at 12 o'clock (`rotate(-90deg)` on SVG)
+- `strokeDashoffset` computed from `CIRC * (1 - resendSeconds / RESEND_COOLDOWN)` — full at start, empty at 0
+- `transition: stroke-dashoffset 1s linear` for smooth per-second animation
+- Remaining seconds rendered in the centre of the ring (9px bold navy)
+- When `resendSeconds === 0`: ring disappears, navy "Resend OTP" button with `RefreshCw` icon appears
+
+Added to both `forgot-password.tsx` and `register.tsx` OTP steps. No new component file — implemented inline using an IIFE expression in JSX.
+
+**Files changed:**
+- `artifacts/sahu-csc/src/pages/forgot-password.tsx`
+- `artifacts/sahu-csc/src/pages/register.tsx`
+
+---
+
+## 2. v2.5.0 — User Management Enhancements (June 2026)
 
 ### 1.1 Search & Role Filter
 
