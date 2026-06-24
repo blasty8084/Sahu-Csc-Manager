@@ -13,3 +13,4 @@ export * from "./push_subscriptions";
 export * from "./user_sessions";
 export * from "./email_otps";
 export * from "./udhari";
+export * from "./broadcast_logs";

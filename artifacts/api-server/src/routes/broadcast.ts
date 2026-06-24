@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { db, pushSubscriptionsTable, usersTable } from "@workspace/db";
-import { eq, isNotNull, ne, count } from "drizzle-orm";
+import { db, pushSubscriptionsTable, usersTable, broadcastLogsTable } from "@workspace/db";
+import { eq, isNotNull, count, desc } from "drizzle-orm";
 import { requireRole } from "../lib/auth";
 import { sendPushToAll } from "../lib/push";
 import { sendBroadcastEmail, isSmtpConfigured } from "../lib/mailer";
@@ -10,19 +10,12 @@ import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
-// GET /api/admin/broadcast/stats — subscriber counts
+// GET /api/admin/broadcast/stats
 router.get("/admin/broadcast/stats", requireRole("admin"), async (_req, res): Promise<void> => {
   try {
     const [pushRow] = await db.select({ total: count() }).from(pushSubscriptionsTable);
-    const [emailRow] = await db
-      .select({ total: count() })
-      .from(usersTable)
-      .where(isNotNull(usersTable.email));
-
-    const [activeRow] = await db
-      .select({ total: count() })
-      .from(usersTable)
-      .where(eq(usersTable.isActive, true));
+    const [emailRow] = await db.select({ total: count() }).from(usersTable).where(isNotNull(usersTable.email));
+    const [activeRow] = await db.select({ total: count() }).from(usersTable).where(eq(usersTable.isActive, true));
 
     res.json({
       pushSubscribers: Number(pushRow?.total ?? 0),
@@ -36,7 +29,50 @@ router.get("/admin/broadcast/stats", requireRole("admin"), async (_req, res): Pr
   }
 });
 
-// POST /api/admin/broadcast/push — send push notification to all subscribers
+// GET /api/admin/broadcast/history
+router.get("/admin/broadcast/history", requireRole("admin"), async (req, res): Promise<void> => {
+  try {
+    const page = Math.max(1, parseInt(String(req.query.page ?? "1"), 10));
+    const limit = Math.min(50, Math.max(1, parseInt(String(req.query.limit ?? "20"), 10)));
+    const offset = (page - 1) * limit;
+
+    const [totalRow] = await db.select({ total: count() }).from(broadcastLogsTable);
+    const rows = await db
+      .select({
+        id: broadcastLogsTable.id,
+        sentBy: broadcastLogsTable.sentBy,
+        channel: broadcastLogsTable.channel,
+        subject: broadcastLogsTable.subject,
+        body: broadcastLogsTable.body,
+        recipientFilter: broadcastLogsTable.recipientFilter,
+        recipientCount: broadcastLogsTable.recipientCount,
+        failedCount: broadcastLogsTable.failedCount,
+        createdAt: broadcastLogsTable.createdAt,
+        senderUsername: usersTable.username,
+        senderFullName: usersTable.fullName,
+      })
+      .from(broadcastLogsTable)
+      .leftJoin(usersTable, eq(broadcastLogsTable.sentBy, usersTable.id))
+      .orderBy(desc(broadcastLogsTable.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    res.json({
+      logs: rows.map((r) => ({
+        ...r,
+        createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : r.createdAt,
+      })),
+      total: Number(totalRow?.total ?? 0),
+      page,
+      limit,
+    });
+  } catch (err) {
+    logger.error({ err }, "broadcast history failed");
+    res.status(500).json({ error: "Failed to fetch history" });
+  }
+});
+
+// POST /api/admin/broadcast/push
 router.post("/admin/broadcast/push", requireRole("admin"), async (req: any, res): Promise<void> => {
   const parsed = z.object({
     title: z.string().min(1).max(150),
@@ -51,35 +87,37 @@ router.post("/admin/broadcast/push", requireRole("admin"), async (req: any, res)
   }
 
   const { title, body, url, createInAppNotification } = parsed.data;
+  const adminId: number = req.session?.userId;
 
   try {
-    await sendPushToAll({
-      title,
-      body,
-      url: url || "/",
-      tag: "admin-broadcast",
-      requireInteraction: false,
-    });
+    const [subRow] = await db.select({ total: count() }).from(pushSubscriptionsTable);
+    const subCount = Number(subRow?.total ?? 0);
+
+    await sendPushToAll({ title, body, url: url || "/", tag: "admin-broadcast", requireInteraction: false });
 
     if (createInAppNotification) {
-      await createSystemNotification({
-        title,
-        message: body,
-        type: "info",
-        priority: "HIGH",
-        link: url ?? null,
-      });
+      await createSystemNotification({ title, message: body, type: "info", priority: "HIGH", link: url ?? null });
     }
 
-    logger.info({ adminId: req.session?.userId, title }, "admin broadcast push sent");
-    res.json({ success: true, message: "Push notification sent to all subscribers" });
+    await db.insert(broadcastLogsTable).values({
+      sentBy: adminId,
+      channel: "push",
+      subject: title,
+      body,
+      recipientFilter: "all",
+      recipientCount: subCount,
+      failedCount: 0,
+    });
+
+    logger.info({ adminId, title, subCount }, "admin broadcast push sent");
+    res.json({ success: true, sent: subCount, message: `Push notification sent to ${subCount} subscriber(s)` });
   } catch (err) {
     logger.error({ err }, "broadcast push failed");
     res.status(500).json({ error: "Failed to send push notification" });
   }
 });
 
-// POST /api/admin/broadcast/email — send custom email to all registered users
+// POST /api/admin/broadcast/email
 router.post("/admin/broadcast/email", requireRole("admin"), async (req: any, res): Promise<void> => {
   const parsed = z.object({
     subject: z.string().min(1).max(200),
@@ -98,20 +136,21 @@ router.post("/admin/broadcast/email", requireRole("admin"), async (req: any, res
   }
 
   const { subject, body, recipientFilter } = parsed.data;
+  const adminId: number = req.session?.userId;
 
   try {
-    let query = db.select({ email: usersTable.email, fullName: usersTable.fullName, username: usersTable.username })
-      .from(usersTable)
-      .where(isNotNull(usersTable.email));
-
+    let usersQuery;
     if (recipientFilter === "active") {
-      query = db
-        .select({ email: usersTable.email, fullName: usersTable.fullName, username: usersTable.username })
+      usersQuery = db.select({ email: usersTable.email, fullName: usersTable.fullName, username: usersTable.username })
         .from(usersTable)
-        .where(eq(usersTable.isActive, true)) as typeof query;
+        .where(eq(usersTable.isActive, true));
+    } else {
+      usersQuery = db.select({ email: usersTable.email, fullName: usersTable.fullName, username: usersTable.username })
+        .from(usersTable)
+        .where(isNotNull(usersTable.email));
     }
 
-    const users = await query;
+    const users = await usersQuery;
     const withEmail = users.filter((u) => u.email && u.email.trim());
 
     if (withEmail.length === 0) {
@@ -121,8 +160,17 @@ router.post("/admin/broadcast/email", requireRole("admin"), async (req: any, res
 
     const results = await sendBroadcastEmail({ subject, body, recipients: withEmail as any });
 
-    logger.info({ adminId: req.session?.userId, subject, sent: results.sent, failed: results.failed }, "admin broadcast email sent");
+    await db.insert(broadcastLogsTable).values({
+      sentBy: adminId,
+      channel: "email",
+      subject,
+      body,
+      recipientFilter,
+      recipientCount: results.sent,
+      failedCount: results.failed,
+    });
 
+    logger.info({ adminId, subject, sent: results.sent, failed: results.failed }, "admin broadcast email sent");
     res.json({
       success: true,
       sent: results.sent,
