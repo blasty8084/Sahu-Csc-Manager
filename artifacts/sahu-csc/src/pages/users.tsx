@@ -667,7 +667,7 @@ export default function Users() {
   const [resetLinkCopied, setResetLinkCopied] = useState(false);
 
   const resetLinkUrl = resetLinkToken
-    ? `${window.location.origin}/forgot-password?token=${resetLinkToken}`
+    ? `${window.location.origin}/forgot-password?token=${resetLinkToken}${resetLinkExpiry ? `&exp=${new Date(resetLinkExpiry).getTime()}` : ""}`
     : null;
 
   const openResetLink = (user: any) => {
