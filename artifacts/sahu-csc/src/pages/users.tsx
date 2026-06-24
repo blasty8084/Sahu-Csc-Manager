@@ -22,7 +22,7 @@ import {
   X, User, Mail, Phone, Shield, Eye, EyeOff, ListChecks,
   MonitorSmartphone, Smartphone, Monitor, Tablet, LogOut, RefreshCw, Globe,
   Search, ArrowDownLeft, ArrowUpRight, Activity, CreditCard, CalendarDays,
-  UserCheck, UserMinus, Download, KeyRound,
+  UserCheck, UserMinus, Download, KeyRound, Link2, Copy,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from "react-hook-form";
@@ -659,6 +659,62 @@ export default function Users() {
   const [resetPwShow, setResetPwShow] = useState(false);
   const [resetPwLoading, setResetPwLoading] = useState(false);
 
+  // Admin reset-link state
+  const [resetLinkUser, setResetLinkUser] = useState<any | null>(null);
+  const [resetLinkToken, setResetLinkToken] = useState<string | null>(null);
+  const [resetLinkExpiry, setResetLinkExpiry] = useState<string | null>(null);
+  const [resetLinkLoading, setResetLinkLoading] = useState(false);
+  const [resetLinkCopied, setResetLinkCopied] = useState(false);
+
+  const resetLinkUrl = resetLinkToken
+    ? `${window.location.origin}/forgot-password?token=${resetLinkToken}`
+    : null;
+
+  const openResetLink = (user: any) => {
+    setResetLinkUser(user);
+    setResetLinkToken(null);
+    setResetLinkExpiry(null);
+    setResetLinkCopied(false);
+  };
+
+  const closeResetLink = () => {
+    setResetLinkUser(null);
+    setResetLinkToken(null);
+    setResetLinkExpiry(null);
+    setResetLinkCopied(false);
+  };
+
+  const generateResetLink = async () => {
+    if (!resetLinkUser) return;
+    setResetLinkLoading(true);
+    try {
+      const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+      const res = await fetch(`${base}/api/admin/users/${resetLinkUser.id}/generate-reset-link`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to generate link");
+      setResetLinkToken(data.resetToken);
+      setResetLinkExpiry(data.expiresAt);
+    } catch (err: any) {
+      toast({ title: err.message ?? "Failed to generate link", variant: "destructive" });
+    } finally {
+      setResetLinkLoading(false);
+    }
+  };
+
+  const copyResetLink = async () => {
+    if (!resetLinkUrl) return;
+    try {
+      await navigator.clipboard.writeText(resetLinkUrl);
+      setResetLinkCopied(true);
+      setTimeout(() => setResetLinkCopied(false), 2500);
+    } catch {
+      toast({ title: "Copy failed — select the link manually", variant: "destructive" });
+    }
+  };
+
   const { data: users, isLoading: usersLoading } = useListUsers();
   const { data: pendingUsers, isLoading: pendingLoading } = usePendingUsers();
   const { data: pendingCountData } = usePendingCount();
@@ -1244,6 +1300,7 @@ export default function Users() {
                       </div>
                     </div>
                     <div className="flex gap-1 shrink-0">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-orange-600 hover:text-orange-700" title="Generate reset link (no email)" onClick={() => openResetLink(user)}><Link2 size={13} /></Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700" title="Reset password" onClick={() => { setResetPwUser(user); setResetPwValue(""); setResetPwConfirm(""); setResetPwShow(false); }}><KeyRound size={13} /></Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(user)}><Pencil size={13} /></Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteId(user.id)}><Trash2 size={13} /></Button>
@@ -1322,6 +1379,7 @@ export default function Users() {
                       <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(user.createdAt).toLocaleDateString("en-IN")}</td>
                       <td className="px-4 py-3">
                         <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-orange-600 hover:text-orange-700" title="Generate reset link (no email)" onClick={() => openResetLink(user)}><Link2 size={12} /></Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7 text-blue-600 hover:text-blue-700" title="Reset password" onClick={() => { setResetPwUser(user); setResetPwValue(""); setResetPwConfirm(""); setResetPwShow(false); }}><KeyRound size={12} /></Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(user)}><Pencil size={12} /></Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(user.id)}><Trash2 size={12} /></Button>
@@ -1668,6 +1726,89 @@ export default function Users() {
             >
               {resetPwLoading ? "Saving…" : "Set Password"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Generate Reset Link Dialog */}
+      <Dialog open={resetLinkUser !== null} onOpenChange={(open) => { if (!open) closeResetLink(); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Link2 size={16} className="text-orange-500" />
+              Generate Reset Link
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Create a secure, single-use password reset link for{" "}
+              <strong>@{resetLinkUser?.username}</strong>
+              {resetLinkUser?.fullName ? ` (${resetLinkUser.fullName})` : ""}. 
+              No email is sent — share the link directly with the user.
+            </p>
+
+            {!resetLinkToken ? (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 space-y-1.5">
+                <p className="font-semibold flex items-center gap-1.5">⚠ Security notice</p>
+                <ul className="space-y-1 list-disc pl-4">
+                  <li>The link expires in <strong>10 minutes</strong></li>
+                  <li>It can only be used <strong>once</strong></li>
+                  <li>Only share through a secure, private channel</li>
+                  <li>Every generation is recorded in the audit log</li>
+                </ul>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Reset Link</p>
+                  <div className="flex gap-2">
+                    <input
+                      readOnly
+                      value={resetLinkUrl ?? ""}
+                      className="flex-1 h-9 px-3 text-xs rounded-md border bg-muted/40 font-mono"
+                      style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                      onClick={(e) => (e.target as HTMLInputElement).select()}
+                    />
+                    <Button
+                      size="sm"
+                      variant={resetLinkCopied ? "default" : "outline"}
+                      className={`shrink-0 h-9 gap-1.5 transition-colors ${resetLinkCopied ? "bg-green-600 hover:bg-green-700 border-green-600 text-white" : ""}`}
+                      onClick={copyResetLink}
+                    >
+                      {resetLinkCopied
+                        ? <><CheckCircle2 size={13} />Copied!</>
+                        : <><Copy size={13} />Copy</>}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Click the link field to select all, then copy.</p>
+                </div>
+                <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800 space-y-1">
+                  <p className="font-semibold">
+                    ⏱ Expires at {resetLinkExpiry
+                      ? new Date(resetLinkExpiry).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })
+                      : ""}
+                  </p>
+                  <p>The link becomes invalid once used or after 10 minutes — whichever comes first.</p>
+                </div>
+              </>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeResetLink}>
+              {resetLinkToken ? "Close" : "Cancel"}
+            </Button>
+            {!resetLinkToken && (
+              <Button
+                onClick={generateResetLink}
+                disabled={resetLinkLoading}
+                style={{ background: "#f97316", borderColor: "#f97316", color: "#fff" }}
+                className="hover:opacity-90"
+              >
+                {resetLinkLoading
+                  ? <><Loader2 size={14} className="animate-spin mr-1.5" />Generating…</>
+                  : <><Link2 size={14} className="mr-1.5" />Generate Link</>}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

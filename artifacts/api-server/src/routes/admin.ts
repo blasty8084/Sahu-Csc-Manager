@@ -1,7 +1,9 @@
 import { Router, type IRouter } from "express";
-import { db, ledgerTable, usersTable } from "@workspace/db";
+import { db, ledgerTable, usersTable, emailOtpsTable } from "@workspace/db";
 import { eq, sum, count, desc } from "drizzle-orm";
-import { requireRole } from "../lib/auth";
+import { requireRole, getClientIp, auditLog } from "../lib/auth";
+import crypto from "node:crypto";
+import { randomUUID } from "node:crypto";
 
 const router: IRouter = Router();
 
@@ -93,6 +95,59 @@ router.get("/admin/users-overview/:userId/ledger", requireRole("admin"), async (
     page,
     limit,
   });
+});
+
+// ─── POST /admin/users/:id/generate-reset-link ────────────────────────────────
+// Admin-only: creates a pre-verified password reset token without sending email.
+// Returns { resetToken, expiresAt, username } — frontend builds the full URL.
+router.post("/admin/users/:id/generate-reset-link", requireRole("admin"), async (req, res): Promise<void> => {
+  const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const userId = parseInt(rawId, 10);
+  if (isNaN(userId)) { res.status(400).json({ error: "Invalid user ID" }); return; }
+
+  const [user] = await db
+    .select({ id: usersTable.id, username: usersTable.username, email: usersTable.email, isActive: usersTable.isActive })
+    .from(usersTable)
+    .where(eq(usersTable.id, userId));
+
+  if (!user) { res.status(404).json({ error: "User not found" }); return; }
+  if (!user.isActive) {
+    res.status(400).json({ error: "Cannot generate a reset link for an inactive account." }); return;
+  }
+  if (!user.email) {
+    res.status(400).json({ error: "This user has no email address on file." }); return;
+  }
+
+  // Generate a dummy OTP hash (never sent anywhere) + a pre-verified UUID token
+  const otpHash = crypto.createHash("sha256").update(randomUUID()).digest("hex");
+  const verifiedToken = randomUUID();
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+  // Insert with usedAt set immediately so the OTP path can never be used independently
+  const [inserted] = await db
+    .insert(emailOtpsTable)
+    .values({
+      email: user.email,
+      purpose: "password_reset",
+      otpHash,
+      expiresAt,
+      usedAt: new Date(),
+      ipAddress: getClientIp(req),
+    })
+    .returning({ id: emailOtpsTable.id });
+
+  // Attach the pre-verified token — this is what the reset-password endpoint validates
+  await db.update(emailOtpsTable).set({ verifiedToken }).where(eq(emailOtpsTable.id, inserted.id));
+
+  const adminId = (req.session as any)?.userId ?? null;
+  await auditLog(
+    adminId,
+    "password.admin_reset_link",
+    `Admin generated reset link for @${user.username} (userId=${user.id})`,
+    getClientIp(req)
+  );
+
+  res.json({ resetToken: verifiedToken, expiresAt: expiresAt.toISOString(), username: user.username });
 });
 
 export default router;
