@@ -1,5 +1,5 @@
 # SAHU CSC — Workflow Guide
-**Version 2.6.0 — June 2026**
+**Version 2.7.0 — June 2026**
 
 > **Read this first.**
 > This file is the single source of truth for how to start, seed, and troubleshoot the SAHU CSC platform. All workflow definitions live in `.replit`.

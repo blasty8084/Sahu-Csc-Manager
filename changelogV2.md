@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v2
-**Current version: 2.6.0 — June 2026**
+**Current version: 2.7.0 — June 2026**
 
 > Comprehensive record of every feature, change, and upgrade from v2.0.0 onward.  
 > For a full description of the system architecture, see `architectureV2.md`.  
@@ -9,13 +9,19 @@
 
 ## Table of Contents
 
-1. [v2.6.0 — Broadcast Center, OTP UX, Resend Progress Ring](#1-v260--broadcast-center-otp-ux--resend-progress-ring-june-2026)
-   - [Broadcast Center](#11-broadcast-center)
-   - [Broadcast History Log](#12-broadcast-history-log)
-   - [OTP Email Copy Block](#13-otp-email-copy-block)
-   - [OTP Auto-Fill](#14-otp-auto-fill)
-   - [Resend OTP Progress Ring](#15-resend-otp-progress-ring)
-2. [v2.5.0 — User Management Enhancements](#2-v250--user-management-enhancements-june-2026)
+1. [v2.7.0 — Bulk Receipt Export & Monthly Auto-Export](#1-v270--bulk-receipt-export--monthly-auto-export-june-2026)
+   - [Bulk Receipt Export Page](#11-bulk-receipt-export-page)
+   - [Monthly Scheduled Auto-Export](#12-monthly-scheduled-auto-export)
+   - [Manual Monthly Trigger & Download](#13-manual-monthly-trigger--download)
+   - [Appeal Flow (already built — confirmed)](#14-appeal-flow-already-built--confirmed)
+   - [Bug Fix — Admin Router Missing](#15-bug-fix--admin-router-missing)
+2. [v2.6.0 — Broadcast Center, OTP UX, Resend Progress Ring](#2-v260--broadcast-center-otp-ux--resend-progress-ring-june-2026)
+   - [Broadcast Center](#21-broadcast-center)
+   - [Broadcast History Log](#22-broadcast-history-log)
+   - [OTP Email Copy Block](#23-otp-email-copy-block)
+   - [OTP Auto-Fill](#24-otp-auto-fill)
+   - [Resend OTP Progress Ring](#25-resend-otp-progress-ring)
+3. [v2.5.0 — User Management Enhancements](#3-v250--user-management-enhancements-june-2026)
    - [Search & Role Filter](#11-search--role-filter)
    - [AePS Overview Tab](#12-aeps-overview-tab)
    - [Bulk Status Toggle (Active / All Users Tabs)](#13-bulk-status-toggle-active--all-users-tabs)

@@ -1,5 +1,5 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 2.5.0** — last updated 2026-06-23
+**Version 2.7.0** — last updated 2026-06-25
 
 A full-stack CSC (Common Service Center) business management platform for tracking services, ledger accounting, AePS cash management, Udhari Khata (customer credit ledger), and reporting. Built for Odisha / India rural service centers. Supports PWA installation, offline operation, and Android TWA packaging.
 
