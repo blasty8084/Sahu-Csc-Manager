@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { db, ledgerTable, usersTable, settingsTable } from "@workspace/db";
 import { eq, and, gte, lte, isNotNull, inArray, asc } from "drizzle-orm";
 import { requireRole } from "../lib/auth";
+import { buildMonthlyZip, sendMonthlyExportEmail } from "../lib/monthly-export";
 import { createRequire } from "node:module";
 
 const _require = createRequire(import.meta.url);
@@ -345,6 +346,46 @@ router.get(
     }
 
     await archive.finalize();
+  }
+);
+
+// ── Manual monthly export trigger (for testing / on-demand) ──────────────────
+router.post(
+  "/admin/receipts/monthly-export/trigger",
+  requireRole("admin"),
+  async (req, res): Promise<void> => {
+    const now = new Date();
+    const { year, month } = req.body as { year?: number; month?: number };
+    const targetYear = year ?? (now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear());
+    const targetMonth = month ?? (now.getMonth() === 0 ? 12 : now.getMonth());
+
+    if (targetMonth < 1 || targetMonth > 12) {
+      res.status(400).json({ error: "month must be 1-12" }); return;
+    }
+
+    await sendMonthlyExportEmail(targetYear, targetMonth);
+    res.json({ ok: true, message: `Monthly export for ${targetYear}-${String(targetMonth).padStart(2, "0")} triggered` });
+  }
+);
+
+// ── Manual monthly ZIP download (admin downloads without email) ───────────────
+router.get(
+  "/admin/receipts/monthly-export/download",
+  requireRole("admin"),
+  async (req, res): Promise<void> => {
+    const now = new Date();
+    const rawYear = req.query.year ? parseInt(req.query.year as string, 10) : (now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear());
+    const rawMonth = req.query.month ? parseInt(req.query.month as string, 10) : (now.getMonth() === 0 ? 12 : now.getMonth());
+
+    if (isNaN(rawYear) || isNaN(rawMonth) || rawMonth < 1 || rawMonth > 12) {
+      res.status(400).json({ error: "Invalid year or month" }); return;
+    }
+
+    const zipBuffer = await buildMonthlyZip(rawYear, rawMonth);
+    const filename = `receipts-${rawYear}-${String(rawMonth).padStart(2, "0")}.zip`;
+    res.setHeader("Content-Type", "application/zip");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.send(zipBuffer);
   }
 );
 

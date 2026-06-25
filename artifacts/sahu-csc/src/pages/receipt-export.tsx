@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useGetAdminUsersOverview } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
+import { customFetch } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -18,6 +19,9 @@ import {
   CheckCircle2,
   Loader2,
   ArrowRight,
+  Mail,
+  Clock,
+  ChevronDown,
 } from "lucide-react";
 
 interface PreviewEntry {
@@ -35,6 +39,167 @@ interface CountResult {
   entries: PreviewEntry[];
 }
 
+function MonthlyExportSection() {
+  const now = new Date();
+  const [triggerYear, setTriggerYear] = useState(now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear());
+  const [triggerMonth, setTriggerMonth] = useState(now.getMonth() === 0 ? 12 : now.getMonth());
+  const [triggering, setTriggering] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const { toast } = useToast();
+
+  const monthName = new Date(triggerYear, triggerMonth - 1, 1).toLocaleString("en-IN", {
+    month: "long",
+    year: "numeric",
+  });
+
+  const nextExport = (() => {
+    const d = new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 5, 0);
+    return d.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+  })();
+
+  const handleTriggerEmail = async () => {
+    setTriggering(true);
+    try {
+      const res = await fetch("/api/admin/receipts/monthly-export/trigger", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ year: triggerYear, month: triggerMonth }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error ?? "Failed to trigger export");
+      }
+      toast({ title: "Email sent!", description: `Monthly export for ${monthName} emailed to all admins.` });
+    } catch (err: any) {
+      toast({ title: "Failed to send", description: err.message, variant: "destructive" });
+    } finally {
+      setTriggering(false);
+    }
+  };
+
+  const handleDownloadZip = async () => {
+    setDownloading(true);
+    try {
+      const res = await fetch(
+        `/api/admin/receipts/monthly-export/download?year=${triggerYear}&month=${triggerMonth}`,
+        { credentials: "include" }
+      );
+      if (!res.ok) throw new Error("Download failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `receipts-${triggerYear}-${String(triggerMonth).padStart(2, "0")}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast({ title: "Downloaded!", description: `ZIP for ${monthName} saved.` });
+    } catch {
+      toast({ title: "Download failed", variant: "destructive" });
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const months = [
+    { value: 1, label: "January" }, { value: 2, label: "February" }, { value: 3, label: "March" },
+    { value: 4, label: "April" }, { value: 5, label: "May" }, { value: 6, label: "June" },
+    { value: 7, label: "July" }, { value: 8, label: "August" }, { value: 9, label: "September" },
+    { value: 10, label: "October" }, { value: 11, label: "November" }, { value: 12, label: "December" },
+  ];
+
+  const years = Array.from({ length: 3 }, (_, i) => now.getFullYear() - i);
+
+  return (
+    <Card className="border-orange-100">
+      <CardHeader className="pb-3">
+        <div className="flex items-center gap-2.5">
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{ background: "linear-gradient(135deg, #f97316, #ea6c0a)" }}
+          >
+            <Clock size={15} className="text-white" />
+          </div>
+          <div>
+            <CardTitle className="text-base">Monthly Auto-Export</CardTitle>
+            <CardDescription className="text-xs">
+              Runs automatically on the 1st of each month · Next: {nextExport}
+            </CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="rounded-lg bg-orange-50 border border-orange-100 px-3.5 py-2.5 flex items-start gap-2">
+          <Mail size={13} className="text-orange-500 mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-orange-700 leading-relaxed">
+            On the 1st of every month, a ZIP of last month's receipts is automatically emailed to all admin accounts
+            that have an email address set. Configure SMTP settings (
+            <code className="bg-orange-100 rounded px-1">SMTP_HOST</code>,{" "}
+            <code className="bg-orange-100 rounded px-1">SMTP_USER</code>,{" "}
+            <code className="bg-orange-100 rounded px-1">SMTP_PASS</code>) to enable email delivery.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Month</Label>
+            <Select value={String(triggerMonth)} onValueChange={(v) => setTriggerMonth(Number(v))}>
+              <SelectTrigger className="h-9 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {months.map((m) => (
+                  <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Year</Label>
+            <Select value={String(triggerYear)} onValueChange={(v) => setTriggerYear(Number(v))}>
+              <SelectTrigger className="h-9 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {years.map((y) => (
+                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <p className="text-xs text-slate-500 text-center">
+          Selected: <strong className="text-slate-700">{monthName}</strong>
+        </p>
+
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadZip}
+            disabled={downloading}
+            className="flex-1 gap-1.5 text-xs h-9"
+          >
+            {downloading ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
+            Download ZIP
+          </Button>
+          <Button
+            size="sm"
+            onClick={handleTriggerEmail}
+            disabled={triggering}
+            className="flex-1 gap-1.5 text-xs h-9"
+            style={{ background: "linear-gradient(135deg, #0b2c60, #1a4a9e)" }}
+          >
+            {triggering ? <Loader2 size={12} className="animate-spin" /> : <Mail size={12} />}
+            Email to Admins
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function ReceiptExport() {
   const today = new Date().toISOString().split("T")[0];
   const firstOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
@@ -49,7 +214,10 @@ export default function ReceiptExport() {
   const [downloading, setDownloading] = useState(false);
   const { toast } = useToast();
 
-  const { data: usersOverview = [] } = useGetAdminUsersOverview();
+  const { data: usersOverview = [] } = useQuery<any[]>({
+    queryKey: ["admin", "users-overview"],
+    queryFn: () => customFetch<any[]>("/api/admin/users-overview"),
+  });
 
   const buildParams = () => {
     const p = new URLSearchParams({ startDate, endDate });
@@ -418,6 +586,9 @@ export default function ReceiptExport() {
             </CardContent>
           </Card>
         )}
+
+        {/* Monthly auto-export section */}
+        <MonthlyExportSection />
       </div>
     </div>
   );
