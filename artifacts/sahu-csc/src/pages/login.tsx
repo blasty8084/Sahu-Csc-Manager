@@ -569,6 +569,17 @@ function useLockoutCountdown(lockoutUntil: Date | null, onExpired: () => void) {
 
 function LoginFormContent({ form, onSubmit, showPassword, setShowPassword, rememberMe, setRememberMe, onForgotPassword, attemptsLeft, lockoutUntil, onLockoutExpired, rejectedInfo, isPendingApproval, onDismissStatus, adminContact }: LoginFormContentProps) {
   const isSubmitting = form.formState.isSubmitting;
+
+  const fireAppealLog = (channel: "whatsapp" | "email") => {
+    const identifier = form.getValues("identifier");
+    if (!identifier) return;
+    const base = (import.meta as any).env?.BASE_URL?.replace(/\/$/, "") ?? "";
+    fetch(`${base}/api/auth/appeal`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ identifier, channel }),
+    }).catch(() => {});
+  };
   const usedAttempts = attemptsLeft !== null ? MAX_ATTEMPTS - attemptsLeft : 0;
   const showCounter = attemptsLeft !== null && attemptsLeft < MAX_ATTEMPTS && !lockoutUntil;
   const urgency = attemptsLeft !== null
@@ -643,6 +654,7 @@ function LoginFormContent({ form, onSubmit, showPassword, setShowPassword, remem
                             href={`https://wa.me/${waNum}?text=${msg}`}
                             target="_blank"
                             rel="noopener noreferrer"
+                            onClick={() => fireAppealLog("whatsapp")}
                             className="flex items-center justify-center gap-1.5 h-9 rounded-xl text-xs font-semibold transition-colors"
                             style={{ background: "#25d366", color: "#fff" }}
                           >
@@ -661,6 +673,7 @@ function LoginFormContent({ form, onSubmit, showPassword, setShowPassword, remem
                         return (
                           <a
                             href={`mailto:${adminContact.email}?subject=${subject}&body=${body}`}
+                            onClick={() => fireAppealLog("email")}
                             className="flex items-center justify-center gap-1.5 h-9 rounded-xl text-xs font-semibold transition-colors"
                             style={{ background: "#0b2c60", color: "#fff" }}
                           >

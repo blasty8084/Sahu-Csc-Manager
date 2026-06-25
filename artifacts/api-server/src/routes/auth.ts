@@ -355,6 +355,67 @@ router.post("/auth/logout", requireAuth, async (req, res): Promise<void> => {
   res.json({ message: "Logged out successfully" });
 });
 
+// ─── POST /api/auth/appeal ────────────────────────────────────────────────────
+// Public — no auth required. Records that a declined user clicked the appeal
+// contact button. Creates notifications for all admins + an audit log entry.
+// Rate-limited: max 3 appeals per IP per hour to prevent spam.
+const appealRateMap = new Map<string, { count: number; resetAt: number }>();
+
+router.post("/auth/appeal", async (req, res): Promise<void> => {
+  const clientIp = getClientIp(req);
+
+  // Simple in-memory rate limit
+  const now = Date.now();
+  const bucket = appealRateMap.get(clientIp);
+  if (bucket && now < bucket.resetAt) {
+    if (bucket.count >= 3) {
+      res.status(429).json({ error: "Too many appeal requests. Please try again later." });
+      return;
+    }
+    bucket.count += 1;
+  } else {
+    appealRateMap.set(clientIp, { count: 1, resetAt: now + 60 * 60 * 1000 });
+  }
+
+  const { identifier, channel } = req.body as { identifier?: string; channel?: string };
+  if (!identifier || typeof identifier !== "string") {
+    res.status(400).json({ error: "identifier is required" });
+    return;
+  }
+
+  // Look up the user
+  const [user] = await db
+    .select({ id: usersTable.id, username: usersTable.username, fullName: usersTable.fullName, status: usersTable.status, rejectionReason: usersTable.rejectionReason })
+    .from(usersTable)
+    .where(or(eq(usersTable.username, identifier), eq(usersTable.email, identifier)));
+
+  if (!user || user.status !== "DELETED") {
+    // Don't reveal whether the user exists — just ack
+    res.json({ ok: true });
+    return;
+  }
+
+  const channelLabel = channel === "whatsapp" ? "WhatsApp" : channel === "email" ? "Email" : "unknown channel";
+  const displayName = user.fullName ? `${user.fullName} (@${user.username})` : `@${user.username}`;
+
+  // Notify all admins
+  const { notifyNewRegistration } = await import("../services/notificationTemplates");
+  await notifyNewRegistration(
+    `Appeal: Registration declined — ${displayName}`,
+    `${displayName} clicked the ${channelLabel} appeal button after their registration was declined.${user.rejectionReason ? ` Decline reason: "${user.rejectionReason}".` : ""} Review their registration in User Management.`
+  );
+
+  // Audit log
+  await auditLog(
+    null,
+    "appeal.submitted",
+    `Declined user @${user.username} submitted an appeal via ${channelLabel} from ${clientIp}`,
+    clientIp
+  );
+
+  res.json({ ok: true });
+});
+
 // ─── GET /auth/me ─────────────────────────────────────────────────────────────
 router.get("/auth/me", requireAuth, async (req, res): Promise<void> => {
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!));
