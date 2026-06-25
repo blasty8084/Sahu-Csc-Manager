@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { customFetch } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
@@ -216,7 +216,7 @@ export default function ReceiptExport() {
   const [downloading, setDownloading] = useState(false);
   const { toast } = useToast();
 
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
 
   const { data: usersOverview = [] } = useQuery<any[]>({
     queryKey: ["admin", "users-overview"],
@@ -333,7 +333,7 @@ export default function ReceiptExport() {
       <div className="bg-white border-b border-slate-200 px-4 sm:px-8 py-5">
         <div className="max-w-3xl mx-auto flex items-center gap-3">
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => window.history.length > 1 ? window.history.back() : setLocation("/")}
             className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-slate-500 hover:text-[#0b2c60] hover:bg-slate-100 transition-colors"
             aria-label="Go back"
           >
