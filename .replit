@@ -65,7 +65,7 @@ outputType = "console"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pnpm --filter @workspace/api-server run seed"
+args = "pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/api-server run seed"
 
 [agent]
 stack = "BEST_EFFORT_FALLBACK"
