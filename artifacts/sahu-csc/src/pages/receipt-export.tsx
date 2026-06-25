@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { customFetch } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ import {
   Mail,
   Clock,
   ChevronDown,
+  ArrowLeft,
 } from "lucide-react";
 
 interface PreviewEntry {
@@ -214,6 +216,8 @@ export default function ReceiptExport() {
   const [downloading, setDownloading] = useState(false);
   const { toast } = useToast();
 
+  const navigate = useNavigate();
+
   const { data: usersOverview = [] } = useQuery<any[]>({
     queryKey: ["admin", "users-overview"],
     queryFn: () => customFetch<any[]>("/api/admin/users-overview"),
@@ -328,6 +332,13 @@ export default function ReceiptExport() {
       {/* Page header */}
       <div className="bg-white border-b border-slate-200 px-4 sm:px-8 py-5">
         <div className="max-w-3xl mx-auto flex items-center gap-3">
+          <button
+            onClick={() => navigate(-1)}
+            className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-slate-500 hover:text-[#0b2c60] hover:bg-slate-100 transition-colors"
+            aria-label="Go back"
+          >
+            <ArrowLeft size={18} />
+          </button>
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
             style={{ background: "linear-gradient(135deg, #0b2c60, #1a4a9e)" }}
