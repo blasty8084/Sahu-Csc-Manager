@@ -6,6 +6,7 @@ import { requireRole, auditLog, getClientIp } from "../lib/auth";
 import { cacheGet, cacheSet, cacheDel } from "../lib/registration-cache";
 import { createNotification } from "../lib/notify";
 import { sendApprovalEmail, sendRejectionEmail, isSmtpConfigured } from "../lib/mailer";
+import { sendPushToUser } from "../lib/push";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
@@ -219,6 +220,13 @@ router.patch("/admin/users/:id/re-approve", requireRole("admin"), async (req, re
 
   await auditLog(req.session.userId!, "user.appeal_approved", `Appeal approved for user: ${user.username}`, getClientIp(req));
   await createNotification("Appeal Approved", "Your appeal has been reviewed and your account has been approved. You can now log in.", "success", id);
+  sendPushToUser(id, {
+    title: "Appeal Approved ✅",
+    body: "Your account has been approved! You can now log in to SAHU CSC.",
+    url: "/",
+    tag: "appeal-approved",
+    requireInteraction: true,
+  }).catch((err) => logger.warn({ err, userId: id }, "Failed to send appeal approval push"));
 
   if (isSmtpConfigured()) {
     sendApprovalEmail(user.email, user.fullName ?? user.username).catch((err) =>
@@ -241,6 +249,19 @@ router.patch("/admin/users/:id/dismiss-appeal", requireRole("admin"), async (req
   await db.update(usersTable).set({ appealSubmittedAt: null }).where(eq(usersTable.id, id));
 
   await auditLog(req.session.userId!, "user.appeal_dismissed", `Appeal dismissed for user: ${user.username}`, getClientIp(req));
+  await createNotification(
+    "Appeal Not Approved",
+    "Your appeal has been reviewed but could not be approved at this time. Please contact the administrator directly for further assistance.",
+    "warning",
+    id,
+  );
+  sendPushToUser(id, {
+    title: "Appeal Update",
+    body: "Your appeal has been reviewed. Please contact the administrator directly for further assistance.",
+    url: "/",
+    tag: "appeal-dismissed",
+    requireInteraction: true,
+  }).catch((err) => logger.warn({ err, userId: id }, "Failed to send appeal dismissed push"));
 
   res.json({ success: true, message: "Appeal dismissed" });
 });
