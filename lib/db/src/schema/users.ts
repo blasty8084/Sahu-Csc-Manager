@@ -21,6 +21,7 @@ export const usersTable = pgTable("users", {
   address: text("address"),
   // kept for backward-compat; V2 multi-device uses user_sessions table instead
   activeSessionToken: text("active_session_token"),
+  appealSubmittedAt: timestamp("appeal_submitted_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

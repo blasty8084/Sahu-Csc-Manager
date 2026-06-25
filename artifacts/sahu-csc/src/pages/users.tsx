@@ -22,7 +22,7 @@ import {
   X, User, Mail, Phone, Shield, Eye, EyeOff, ListChecks,
   MonitorSmartphone, Smartphone, Monitor, Tablet, LogOut, RefreshCw, Globe,
   Search, ArrowDownLeft, ArrowUpRight, Activity, CreditCard, CalendarDays,
-  UserCheck, UserMinus, Download, KeyRound, Link2, Copy,
+  UserCheck, UserMinus, Download, KeyRound, Link2, Copy, MessageSquareWarning,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from "react-hook-form";
@@ -43,7 +43,7 @@ const ROLE_COLORS: Record<string, string> = {
   user: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300",
 };
 
-type Tab = "pending" | "active" | "all" | "overview" | "aeps" | "sessions";
+type Tab = "pending" | "active" | "all" | "overview" | "aeps" | "sessions" | "appeals";
 
 function fmt(n: number) {
   return `₹${Math.abs(n).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
@@ -250,6 +250,20 @@ function usePendingUsers() {
     queryFn: async () => {
       const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
       const res = await fetch(`${base}/api/admin/users/pending`, { credentials: "include" });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    staleTime: 20_000,
+    refetchInterval: 30_000,
+  });
+}
+
+function useAppealUsers() {
+  return useQuery<any[]>({
+    queryKey: ["admin-appeal-users"],
+    queryFn: async () => {
+      const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+      const res = await fetch(`${base}/api/admin/users/appeals`, { credentials: "include" });
       if (!res.ok) return [];
       return res.json();
     },
@@ -743,8 +757,10 @@ export default function Users() {
 
   const { data: users, isLoading: usersLoading } = useListUsers();
   const { data: pendingUsers, isLoading: pendingLoading } = usePendingUsers();
+  const { data: appealUsers, isLoading: appealLoading } = useAppealUsers();
   const { data: pendingCountData } = usePendingCount();
   const pendingCount = pendingCountData?.count ?? pendingUsers?.length ?? 0;
+  const appealCount = appealUsers?.length ?? 0;
 
   const createMut = useCreateUser();
   const updateMut = useUpdateUser();
@@ -758,6 +774,7 @@ export default function Users() {
     qc.invalidateQueries({ queryKey: getListUsersQueryKey() });
     qc.invalidateQueries({ queryKey: ["admin-pending-users"] });
     qc.invalidateQueries({ queryKey: ["admin-pending-count"] });
+    qc.invalidateQueries({ queryKey: ["admin-appeal-users"] });
   };
 
   const openCreate = () => {
@@ -814,6 +831,36 @@ export default function Users() {
       invalidate();
     } catch {
       toast({ title: "Failed to approve user", variant: "destructive" });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const reApproveUser = async (user: any) => {
+    setActionLoading(user.id);
+    try {
+      const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+      const res = await fetch(`${base}/api/admin/users/${user.id}/re-approve`, { method: "PATCH", credentials: "include" });
+      if (!res.ok) throw new Error();
+      toast({ title: `✅ ${user.username} re-approved`, description: "Their account is now active." });
+      invalidate();
+    } catch {
+      toast({ title: "Failed to re-approve user", variant: "destructive" });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const dismissAppeal = async (user: any) => {
+    setActionLoading(user.id);
+    try {
+      const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+      const res = await fetch(`${base}/api/admin/users/${user.id}/dismiss-appeal`, { method: "PATCH", credentials: "include" });
+      if (!res.ok) throw new Error();
+      toast({ title: `Appeal dismissed for ${user.username}` });
+      invalidate();
+    } catch {
+      toast({ title: "Failed to dismiss appeal", variant: "destructive" });
     } finally {
       setActionLoading(null);
     }
@@ -974,7 +1021,7 @@ export default function Users() {
   };
 
   const activeUsers = (users ?? []).filter((u: any) => u.status === "ACTIVE" || u.isActive);
-  const baseUsers = tab === "pending" ? (pendingUsers ?? []) : tab === "active" ? activeUsers : (users ?? []);
+  const baseUsers = tab === "pending" ? (pendingUsers ?? []) : tab === "active" ? activeUsers : tab === "appeals" ? (appealUsers ?? []) : (users ?? []);
   const searchLower = searchQuery.toLowerCase().trim();
   const displayedUsers = baseUsers.filter((u: any) => {
     const matchesSearch = !searchLower ||
@@ -984,7 +1031,7 @@ export default function Users() {
     const matchesRole = roleFilter === "all" || u.role === roleFilter;
     return matchesSearch && matchesRole;
   });
-  const isLoading = tab === "pending" ? pendingLoading : usersLoading;
+  const isLoading = tab === "pending" ? pendingLoading : tab === "appeals" ? appealLoading : usersLoading;
 
   return (
     <Layout>
@@ -994,7 +1041,7 @@ export default function Users() {
             <h2 className="text-xl font-bold leading-tight">User Management</h2>
             <p className="text-sm text-muted-foreground">{users?.length ?? 0} users total</p>
           </div>
-          {tab !== "overview" && tab !== "aeps" && tab !== "sessions" && (
+          {tab !== "overview" && tab !== "aeps" && tab !== "sessions" && tab !== "appeals" && (
             <div className="flex items-center gap-2 shrink-0">
               {displayedUsers.length > 0 && (
                 <Button size="sm" variant="outline" onClick={exportCSV} data-testid="button-export-csv" className="px-2 sm:px-3">
@@ -1014,6 +1061,7 @@ export default function Users() {
         <div className="flex gap-1 border-b border-border overflow-x-auto">
           {([
             { key: "pending", label: "Pending", count: pendingCount },
+            { key: "appeals", label: "Appeals", count: appealCount },
             { key: "active", label: "Active", count: activeUsers.length },
             { key: "all", label: "All Users", count: users?.length ?? 0 },
             { key: "overview", label: "Cash Overview", count: 0 },
@@ -1030,7 +1078,7 @@ export default function Users() {
               {label}
               {count > 0 && (
                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none ${
-                  key === "pending" ? "bg-red-500 text-white" : "bg-muted text-muted-foreground"
+                  key === "pending" ? "bg-red-500 text-white" : key === "appeals" ? "bg-orange-500 text-white" : "bg-muted text-muted-foreground"
                 }`}>
                   {count}
                 </span>
@@ -1040,7 +1088,7 @@ export default function Users() {
         </div>
 
         {/* Search / Filter bar — shown on user-list tabs only */}
-        {tab !== "sessions" && tab !== "overview" && tab !== "aeps" && (
+        {tab !== "sessions" && tab !== "overview" && tab !== "aeps" && tab !== "appeals" && (
           <div className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
@@ -1092,6 +1140,114 @@ export default function Users() {
           <CashOverviewTab />
         ) : tab === "aeps" ? (
           <AepsOverviewTab />
+        ) : tab === "appeals" ? (
+          appealLoading ? (
+            <div className="space-y-3">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+          ) : (appealUsers ?? []).length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+              <div className="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center">
+                <CheckCircle2 className="w-7 h-7 text-green-500" />
+              </div>
+              <p className="font-semibold text-gray-700">No pending appeals</p>
+              <p className="text-sm text-muted-foreground">Declined users who submit an appeal will appear here.</p>
+            </div>
+          ) : (
+            <>
+              <p className="text-sm text-muted-foreground">
+                <span className="font-semibold text-foreground">{(appealUsers ?? []).length}</span> declined user{(appealUsers ?? []).length !== 1 ? "s" : ""} requesting re-review
+              </p>
+
+              {/* Appeals — mobile cards */}
+              <div className="space-y-3 sm:hidden">
+                {(appealUsers ?? []).map((user: any) => (
+                  <div key={user.id} className="bg-card border border-orange-200 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
+                          <MessageSquareWarning className="w-4 h-4 text-orange-600" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium truncate">{user.fullName || user.username}</p>
+                          <p className="text-xs text-muted-foreground">@{user.username}</p>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 shrink-0">Appeal</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground space-y-0.5 pl-12">
+                      <p>{user.email}</p>
+                      {user.mobile && <p>{user.mobile}</p>}
+                      {user.rejectionReason && (
+                        <p className="text-red-500">Declined: {user.rejectionReason}</p>
+                      )}
+                      <p>Appealed {new Date(user.appealSubmittedAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</p>
+                    </div>
+                    <div className="flex gap-2 pt-1">
+                      <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700 text-white h-9" onClick={() => reApproveUser(user)} disabled={actionLoading === user.id}>
+                        <CheckCircle2 size={13} className="mr-1.5" />Approve
+                      </Button>
+                      <Button size="sm" variant="outline" className="flex-1 border-slate-200 text-slate-600 hover:bg-slate-50 h-9" onClick={() => dismissAppeal(user)} disabled={actionLoading === user.id}>
+                        <XCircle size={13} className="mr-1.5" />Dismiss
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Appeals — desktop table */}
+              <div className="hidden sm:block border rounded-lg overflow-hidden bg-card">
+                <table className="w-full text-sm">
+                  <thead className="border-b bg-muted/30">
+                    <tr className="text-left">
+                      <th className="px-4 py-3 font-medium text-muted-foreground">User</th>
+                      <th className="px-4 py-3 font-medium text-muted-foreground">Contact</th>
+                      <th className="px-4 py-3 font-medium text-muted-foreground">Decline Reason</th>
+                      <th className="px-4 py-3 font-medium text-muted-foreground">Appealed</th>
+                      <th className="px-4 py-3 font-medium text-muted-foreground">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {(appealUsers ?? []).map((user: any) => (
+                      <tr key={user.id} className="hover:bg-muted/20 transition-colors">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
+                              <MessageSquareWarning className="w-4 h-4 text-orange-600" />
+                            </div>
+                            <div>
+                              <p className="font-medium">{user.fullName || user.username}</p>
+                              <p className="text-xs text-muted-foreground">@{user.username}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <p className="text-xs">{user.email}</p>
+                          {user.mobile && <p className="text-xs text-muted-foreground">{user.mobile}</p>}
+                        </td>
+                        <td className="px-4 py-3 max-w-[200px]">
+                          {user.rejectionReason
+                            ? <p className="text-xs text-red-600 truncate" title={user.rejectionReason}>{user.rejectionReason}</p>
+                            : <p className="text-xs text-muted-foreground italic">No reason given</p>}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
+                          {new Date(user.appealSubmittedAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex gap-2">
+                            <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white h-8 px-3 text-xs" onClick={() => reApproveUser(user)} disabled={actionLoading === user.id}>
+                              <CheckCircle2 size={12} className="mr-1" />Approve
+                            </Button>
+                            <Button size="sm" variant="outline" className="border-slate-200 text-slate-600 hover:bg-slate-50 h-8 px-3 text-xs" onClick={() => dismissAppeal(user)} disabled={actionLoading === user.id}>
+                              <XCircle size={12} className="mr-1" />Dismiss
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )
         ) : isLoading ? (
           <div className="space-y-3">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
         ) : displayedUsers.length === 0 ? (

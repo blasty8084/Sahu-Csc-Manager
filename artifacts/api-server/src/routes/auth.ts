@@ -398,6 +398,9 @@ router.post("/auth/appeal", async (req, res): Promise<void> => {
   const channelLabel = channel === "whatsapp" ? "WhatsApp" : channel === "email" ? "Email" : "unknown channel";
   const displayName = user.fullName ? `${user.fullName} (@${user.username})` : `@${user.username}`;
 
+  // Stamp appealSubmittedAt so admins can see who has submitted an appeal
+  await db.update(usersTable).set({ appealSubmittedAt: new Date() }).where(eq(usersTable.id, user.id));
+
   // Notify all admins
   const { notifyNewRegistration } = await import("../services/notificationTemplates");
   await notifyNewRegistration(

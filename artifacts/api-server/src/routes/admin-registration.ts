@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, usersTable, settingsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, isNotNull } from "drizzle-orm";
 import { z } from "zod/v4";
 import { requireRole, auditLog, getClientIp } from "../lib/auth";
 import { cacheGet, cacheSet, cacheDel } from "../lib/registration-cache";
@@ -181,6 +181,68 @@ router.patch("/admin/users/:id/reject", requireRole("admin"), async (req, res): 
   }
 
   res.json({ success: true, message: "User rejected", user: fmtUser(updated) });
+});
+
+// ─── GET /api/admin/users/appeals ────────────────────────────────────────────
+// Returns declined users (status=DELETED) who have submitted an appeal.
+router.get("/admin/users/appeals", requireRole("admin"), async (_req, res): Promise<void> => {
+  const rows = await db
+    .select()
+    .from(usersTable)
+    .where(isNotNull(usersTable.appealSubmittedAt))
+    .orderBy(usersTable.appealSubmittedAt);
+
+  res.json(rows.map((u) => ({
+    ...fmtUser(u),
+    appealSubmittedAt: u.appealSubmittedAt instanceof Date ? u.appealSubmittedAt.toISOString() : u.appealSubmittedAt,
+  })));
+});
+
+// ─── PATCH /api/admin/users/:id/re-approve ───────────────────────────────────
+// Approve a previously declined user who has submitted an appeal.
+router.patch("/admin/users/:id/re-approve", requireRole("admin"), async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id as string, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, id));
+  if (!user) { res.status(404).json({ error: "User not found" }); return; }
+  if (user.status !== "DELETED") {
+    res.status(400).json({ error: `User is not in a declined state (current status: ${user.status})` });
+    return;
+  }
+
+  const [updated] = await db
+    .update(usersTable)
+    .set({ status: "ACTIVE", isActive: true, rejectionReason: null, appealSubmittedAt: null })
+    .where(eq(usersTable.id, id))
+    .returning();
+
+  await auditLog(req.session.userId!, "user.appeal_approved", `Appeal approved for user: ${user.username}`, getClientIp(req));
+  await createNotification("Appeal Approved", "Your appeal has been reviewed and your account has been approved. You can now log in.", "success", id);
+
+  if (isSmtpConfigured()) {
+    sendApprovalEmail(user.email, user.fullName ?? user.username).catch((err) =>
+      logger.warn({ err, userId: id }, "Failed to send appeal approval email")
+    );
+  }
+
+  res.json({ success: true, message: "Appeal approved", user: { ...fmtUser(updated), appealSubmittedAt: null } });
+});
+
+// ─── PATCH /api/admin/users/:id/dismiss-appeal ───────────────────────────────
+// Dismiss an appeal without approving the user — clears the appeal flag.
+router.patch("/admin/users/:id/dismiss-appeal", requireRole("admin"), async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id as string, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, id));
+  if (!user) { res.status(404).json({ error: "User not found" }); return; }
+
+  await db.update(usersTable).set({ appealSubmittedAt: null }).where(eq(usersTable.id, id));
+
+  await auditLog(req.session.userId!, "user.appeal_dismissed", `Appeal dismissed for user: ${user.username}`, getClientIp(req));
+
+  res.json({ success: true, message: "Appeal dismissed" });
 });
 
 export { getRegistrationOpen, getPendingCount, invalidatePendingCache };
