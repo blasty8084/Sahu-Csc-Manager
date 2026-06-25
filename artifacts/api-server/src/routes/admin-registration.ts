@@ -266,5 +266,56 @@ router.patch("/admin/users/:id/dismiss-appeal", requireRole("admin"), async (req
   res.json({ success: true, message: "Appeal dismissed" });
 });
 
+// ─── POST /api/admin/users/appeals/dismiss-all ────────────────────────────────
+// Dismiss ALL pending appeals at once. Stamps appealDismissedAt on every user
+// whose appealSubmittedAt is set, notifies each user, and returns the count.
+router.post("/admin/users/appeals/dismiss-all", requireRole("admin"), async (req, res): Promise<void> => {
+  const { isNotNull: drizzleIsNotNull } = await import("drizzle-orm");
+
+  const pending = await db
+    .select({ id: usersTable.id, username: usersTable.username })
+    .from(usersTable)
+    .where(drizzleIsNotNull(usersTable.appealSubmittedAt));
+
+  if (pending.length === 0) {
+    res.json({ success: true, dismissed: 0 });
+    return;
+  }
+
+  const now = new Date();
+  await db
+    .update(usersTable)
+    .set({ appealSubmittedAt: null, appealDismissedAt: now })
+    .where(drizzleIsNotNull(usersTable.appealSubmittedAt));
+
+  await auditLog(
+    req.session.userId!,
+    "user.appeals_bulk_dismissed",
+    `Bulk dismissed ${pending.length} appeal(s) by admin`,
+    getClientIp(req),
+  );
+
+  // Notify every affected user (fire-and-forget, don't block response)
+  Promise.allSettled(
+    pending.map(async (u) => {
+      await createNotification(
+        "Appeal Not Approved",
+        "Your appeal has been reviewed but could not be approved at this time. Please contact the administrator directly for further assistance.",
+        "warning",
+        u.id,
+      );
+      sendPushToUser(u.id, {
+        title: "Appeal Update",
+        body: "Your appeal has been reviewed. Please contact the administrator directly for further assistance.",
+        url: "/",
+        tag: "appeal-dismissed",
+        requireInteraction: true,
+      }).catch((err) => logger.warn({ err, userId: u.id }, "Failed to send bulk appeal push"));
+    })
+  );
+
+  res.json({ success: true, dismissed: pending.length });
+});
+
 export { getRegistrationOpen, getPendingCount, invalidatePendingCache };
 export default router;

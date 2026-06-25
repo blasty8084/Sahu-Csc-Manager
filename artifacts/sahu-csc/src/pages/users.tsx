@@ -866,6 +866,26 @@ export default function Users() {
     }
   };
 
+  const [bulkDismissLoading, setBulkDismissLoading] = useState(false);
+  const [showBulkDismissConfirm, setShowBulkDismissConfirm] = useState(false);
+
+  const dismissAllAppeals = async () => {
+    setBulkDismissLoading(true);
+    try {
+      const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+      const res = await fetch(`${base}/api/admin/users/appeals/dismiss-all`, { method: "POST", credentials: "include" });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      toast({ title: `✓ ${data.dismissed} appeal${data.dismissed !== 1 ? "s" : ""} dismissed`, description: "All users have been notified." });
+      setShowBulkDismissConfirm(false);
+      invalidate();
+    } catch {
+      toast({ title: "Failed to bulk dismiss appeals", variant: "destructive" });
+    } finally {
+      setBulkDismissLoading(false);
+    }
+  };
+
   const confirmReject = async () => {
     if (!rejectTarget) return;
     setActionLoading(rejectTarget.id);
@@ -1153,9 +1173,44 @@ export default function Users() {
             </div>
           ) : (
             <>
-              <p className="text-sm text-muted-foreground">
-                <span className="font-semibold text-foreground">{(appealUsers ?? []).length}</span> declined user{(appealUsers ?? []).length !== 1 ? "s" : ""} requesting re-review
-              </p>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-semibold text-foreground">{(appealUsers ?? []).length}</span> declined user{(appealUsers ?? []).length !== 1 ? "s" : ""} requesting re-review
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-slate-200 text-slate-600 hover:bg-red-50 hover:border-red-200 hover:text-red-700 h-8 px-3 text-xs shrink-0"
+                  onClick={() => setShowBulkDismissConfirm(true)}
+                  disabled={bulkDismissLoading}
+                >
+                  <XCircle size={12} className="mr-1.5" />
+                  Dismiss All
+                </Button>
+              </div>
+
+              {/* Bulk-dismiss confirmation dialog */}
+              <Dialog open={showBulkDismissConfirm} onOpenChange={setShowBulkDismissConfirm}>
+                <DialogContent className="max-w-sm">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <XCircle className="w-5 h-5 text-red-500" />
+                      Dismiss all {(appealUsers ?? []).length} appeal{(appealUsers ?? []).length !== 1 ? "s" : ""}?
+                    </DialogTitle>
+                  </DialogHeader>
+                  <p className="text-sm text-muted-foreground">
+                    All pending appeals will be dismissed and each user will receive an in-app and push notification. This cannot be undone.
+                  </p>
+                  <DialogFooter className="flex gap-2 mt-2">
+                    <Button variant="outline" className="flex-1" onClick={() => setShowBulkDismissConfirm(false)} disabled={bulkDismissLoading}>
+                      Cancel
+                    </Button>
+                    <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white" onClick={dismissAllAppeals} disabled={bulkDismissLoading}>
+                      {bulkDismissLoading ? "Dismissing…" : "Dismiss All"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
 
               {/* Appeals — mobile cards */}
               <div className="space-y-3 sm:hidden">
