@@ -22,7 +22,7 @@ import {
   X, User, Mail, Phone, Shield, Eye, EyeOff, ListChecks,
   MonitorSmartphone, Smartphone, Monitor, Tablet, LogOut, RefreshCw, Globe,
   Search, ArrowDownLeft, ArrowUpRight, Activity, CreditCard, CalendarDays,
-  UserCheck, UserMinus, Download, KeyRound, Link2, Copy, Loader2,
+  UserCheck, UserMinus, Download, KeyRound, Link2, Copy,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from "react-hook-form";
