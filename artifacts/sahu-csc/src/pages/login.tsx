@@ -570,15 +570,29 @@ function useLockoutCountdown(lockoutUntil: Date | null, onExpired: () => void) {
 function LoginFormContent({ form, onSubmit, showPassword, setShowPassword, rememberMe, setRememberMe, onForgotPassword, attemptsLeft, lockoutUntil, onLockoutExpired, rejectedInfo, isPendingApproval, onDismissStatus, adminContact }: LoginFormContentProps) {
   const isSubmitting = form.formState.isSubmitting;
 
-  const fireAppealLog = (channel: "whatsapp" | "email") => {
+  const [appealCooldownMsg, setAppealCooldownMsg] = useState<string | null>(null);
+
+  const fireAppealLog = async (channel: "whatsapp" | "email"): Promise<boolean> => {
     const identifier = form.getValues("identifier");
-    if (!identifier) return;
+    if (!identifier) return true;
     const base = (import.meta as any).env?.BASE_URL?.replace(/\/$/, "") ?? "";
-    fetch(`${base}/api/auth/appeal`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ identifier, channel }),
-    }).catch(() => {});
+    try {
+      const res = await fetch(`${base}/api/auth/appeal`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier, channel }),
+      });
+      if (res.status === 429) {
+        const data = await res.json().catch(() => ({}));
+        const msg = data.error ?? "Please wait before submitting another appeal.";
+        setAppealCooldownMsg(msg);
+        return false;
+      }
+      setAppealCooldownMsg(null);
+    } catch {
+      // network error — let the link open anyway
+    }
+    return true;
   };
   const usedAttempts = attemptsLeft !== null ? MAX_ATTEMPTS - attemptsLeft : 0;
   const showCounter = attemptsLeft !== null && attemptsLeft < MAX_ATTEMPTS && !lockoutUntil;
@@ -650,17 +664,18 @@ function LoginFormContent({ form, onSubmit, showPassword, setShowPassword, remem
                           `Hi, I am ${identifier || "a user"}. My SAHU CSC registration was declined.${reason ? ` Reason given: "${reason}".` : ""} I would like to appeal this decision. Please reconsider my application.`
                         );
                         return (
-                          <a
-                            href={`https://wa.me/${waNum}?text=${msg}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={() => fireAppealLog("whatsapp")}
-                            className="flex items-center justify-center gap-1.5 h-9 rounded-xl text-xs font-semibold transition-colors"
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const allowed = await fireAppealLog("whatsapp");
+                              if (allowed) window.open(`https://wa.me/${waNum}?text=${msg}`, "_blank", "noopener,noreferrer");
+                            }}
+                            className="flex items-center justify-center gap-1.5 h-9 rounded-xl text-xs font-semibold transition-opacity active:opacity-80"
                             style={{ background: "#25d366", color: "#fff" }}
                           >
                             <MessageCircle className="w-3.5 h-3.5" />
                             WhatsApp
-                          </a>
+                          </button>
                         );
                       })()}
                       {adminContact.email && (() => {
@@ -671,18 +686,26 @@ function LoginFormContent({ form, onSubmit, showPassword, setShowPassword, remem
                           `Hello,\n\nI am ${identifier || "a registered user"} and my SAHU CSC registration was declined.${reason ? `\n\nReason given: "${reason}"` : ""}\n\nI would like to appeal this decision and request a review of my application.\n\nThank you.`
                         );
                         return (
-                          <a
-                            href={`mailto:${adminContact.email}?subject=${subject}&body=${body}`}
-                            onClick={() => fireAppealLog("email")}
-                            className="flex items-center justify-center gap-1.5 h-9 rounded-xl text-xs font-semibold transition-colors"
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const allowed = await fireAppealLog("email");
+                              if (allowed) window.location.href = `mailto:${adminContact.email}?subject=${subject}&body=${body}`;
+                            }}
+                            className="flex items-center justify-center gap-1.5 h-9 rounded-xl text-xs font-semibold transition-opacity active:opacity-80"
                             style={{ background: "#0b2c60", color: "#fff" }}
                           >
                             <Mail className="w-3.5 h-3.5" />
                             Email Admin
-                          </a>
+                          </button>
                         );
                       })()}
                     </div>
+                    {appealCooldownMsg && (
+                      <p className="text-[11px] text-center font-medium mt-1" style={{ color: "#b45309" }}>
+                        ⏳ {appealCooldownMsg}
+                      </p>
+                    )}
                   </div>
                 ) : (
                   <p className="text-[11px] text-center mb-3" style={{ color: "#9a3412" }}>

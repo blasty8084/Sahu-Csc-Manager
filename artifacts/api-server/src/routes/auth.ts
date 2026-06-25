@@ -385,7 +385,7 @@ router.post("/auth/appeal", async (req, res): Promise<void> => {
 
   // Look up the user
   const [user] = await db
-    .select({ id: usersTable.id, username: usersTable.username, fullName: usersTable.fullName, status: usersTable.status, rejectionReason: usersTable.rejectionReason })
+    .select({ id: usersTable.id, username: usersTable.username, fullName: usersTable.fullName, status: usersTable.status, rejectionReason: usersTable.rejectionReason, appealDismissedAt: usersTable.appealDismissedAt })
     .from(usersTable)
     .where(or(eq(usersTable.username, identifier), eq(usersTable.email, identifier)));
 
@@ -393,6 +393,20 @@ router.post("/auth/appeal", async (req, res): Promise<void> => {
     // Don't reveal whether the user exists — just ack
     res.json({ ok: true });
     return;
+  }
+
+  // 24-hour cooldown after a dismissal
+  if (user.appealDismissedAt) {
+    const cooldownMs = 24 * 60 * 60 * 1000;
+    const elapsed = Date.now() - new Date(user.appealDismissedAt).getTime();
+    if (elapsed < cooldownMs) {
+      const hoursLeft = Math.ceil((cooldownMs - elapsed) / (60 * 60 * 1000));
+      res.status(429).json({
+        error: `Your previous appeal was reviewed. Please wait ${hoursLeft} hour${hoursLeft !== 1 ? "s" : ""} before submitting another appeal.`,
+        cooldownHoursLeft: hoursLeft,
+      });
+      return;
+    }
   }
 
   const channelLabel = channel === "whatsapp" ? "WhatsApp" : channel === "email" ? "Email" : "unknown channel";

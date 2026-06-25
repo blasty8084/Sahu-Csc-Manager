@@ -214,7 +214,7 @@ router.patch("/admin/users/:id/re-approve", requireRole("admin"), async (req, re
 
   const [updated] = await db
     .update(usersTable)
-    .set({ status: "ACTIVE", isActive: true, rejectionReason: null, appealSubmittedAt: null })
+    .set({ status: "ACTIVE", isActive: true, rejectionReason: null, appealSubmittedAt: null, appealDismissedAt: null })
     .where(eq(usersTable.id, id))
     .returning();
 
@@ -246,7 +246,7 @@ router.patch("/admin/users/:id/dismiss-appeal", requireRole("admin"), async (req
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, id));
   if (!user) { res.status(404).json({ error: "User not found" }); return; }
 
-  await db.update(usersTable).set({ appealSubmittedAt: null }).where(eq(usersTable.id, id));
+  await db.update(usersTable).set({ appealSubmittedAt: null, appealDismissedAt: new Date() }).where(eq(usersTable.id, id));
 
   await auditLog(req.session.userId!, "user.appeal_dismissed", `Appeal dismissed for user: ${user.username}`, getClientIp(req));
   await createNotification(
