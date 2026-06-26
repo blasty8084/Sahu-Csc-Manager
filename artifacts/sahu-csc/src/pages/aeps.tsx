@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
@@ -19,6 +19,7 @@ import {
   Share2, Download, MessageCircle,
 } from "lucide-react";
 import { AepsReceiptModal } from "@/components/aeps-receipt-modal";
+import { AutocompleteInput } from "@/components/autocomplete-input";
 import { useForm } from "react-hook-form";
 import { useGetSettings } from "@workspace/api-client-react";
 
@@ -272,9 +273,23 @@ function DailyTab() {
     queryFn: () => apiFetch(`/api/aeps/session?date=${selectedDate}`),
   });
 
+  const { data: aepsNamesData } = useQuery<AllTxResponse>({
+    queryKey: ["aeps-customer-names"],
+    queryFn: () => apiFetch(`/api/aeps/transactions?limit=500`),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const aepsCustomerNames = useMemo(() => {
+    const names = new Set<string>();
+    session?.transactions?.forEach((t: AepsTx) => { if (t.customerName) names.add(t.customerName); });
+    aepsNamesData?.transactions?.forEach((t: AllTx) => { if (t.customerName) names.add(t.customerName); });
+    return Array.from(names).filter(Boolean).sort((a, b) => a.localeCompare(b));
+  }, [session, aepsNamesData]);
+
   const openForm = useForm({ defaultValues: { openingBalance: "", notes: "" } });
   const txForm = useForm({ defaultValues: { amount: "", customerName: "", description: "" } });
   const editForm = useForm({ defaultValues: { type: "withdrawal", amount: "", customerName: "", description: "" } });
+  const editCustomerName = editForm.watch("customerName");
 
   const openMut = useMutation({
     mutationFn: (data: { openingBalance: number; notes?: string }) =>
@@ -1324,7 +1339,11 @@ function DailyTab() {
                         <label style={{ fontSize: 11, fontWeight: 700, color: "#475569", display: "block", marginBottom: 5 }}>Customer Name *</label>
                         <div className="relative">
                           <User size={13} style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
-                          <input {...txForm.register("customerName", { required: true })} placeholder="Full name of customer"
+                          <AutocompleteInput
+                            value={txCustomerName}
+                            onChange={(val) => txForm.setValue("customerName", val)}
+                            suggestions={aepsCustomerNames}
+                            placeholder="Full name of customer"
                             style={{ width: "100%", height: 42, paddingLeft: 32, paddingRight: 12, borderRadius: 11, border: `1.5px solid ${isValidName ? "#0b2c6040" : "#e2e8f0"}`, fontSize: 13, fontWeight: 600, color: "#0b2c60", outline: "none", boxSizing: "border-box", background: isValidName ? "rgba(11,44,96,0.03)" : "#fff", transition: "all 0.15s" }}
                           />
                         </div>
@@ -1652,8 +1671,13 @@ function DailyTab() {
                           <label style={{ fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>Customer Name *</label>
                           <div style={{ position: "relative" }}>
                             <User size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
-                            <input {...txForm.register("customerName", { required: true })} placeholder="Full name"
-                              style={{ width: "100%", height: 50, paddingLeft: 40, paddingRight: 14, borderRadius: 14, border: `1.5px solid ${isValidName ? "#0b2c6040" : "#e2e8f0"}`, fontSize: 14, fontWeight: 600, color: "#0b2c60", outline: "none", background: isValidName ? "rgba(11,44,96,0.03)" : "#fff", boxSizing: "border-box", boxShadow: "0 1px 4px rgba(11,44,96,0.06)" }} />
+                            <AutocompleteInput
+                              value={txCustomerName}
+                              onChange={(val) => txForm.setValue("customerName", val)}
+                              suggestions={aepsCustomerNames}
+                              placeholder="Full name"
+                              style={{ width: "100%", height: 50, paddingLeft: 40, paddingRight: 14, borderRadius: 14, border: `1.5px solid ${isValidName ? "#0b2c6040" : "#e2e8f0"}`, fontSize: 14, fontWeight: 600, color: "#0b2c60", outline: "none", background: isValidName ? "rgba(11,44,96,0.03)" : "#fff", boxSizing: "border-box", boxShadow: "0 1px 4px rgba(11,44,96,0.06)" }}
+                            />
                           </div>
                         </div>
                         <div>
@@ -1770,7 +1794,13 @@ function DailyTab() {
             </div>
             <div className="space-y-1.5">
               <Label>Customer Name</Label>
-              <Input {...editForm.register("customerName", { required: true })} autoFocus />
+              <AutocompleteInput
+                value={editCustomerName}
+                onChange={(val) => editForm.setValue("customerName", val)}
+                suggestions={aepsCustomerNames}
+                autoFocus
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Amount (₹)</Label>
@@ -1859,6 +1889,7 @@ function AllTransactionsTab() {
   const [receiptTx, setReceiptTx] = useState<AllTx | null>(null);
 
   const editForm = useForm({ defaultValues: { type: "withdrawal", amount: "", customerName: "", description: "" } });
+  const editCustomerName = editForm.watch("customerName");
 
   const params = new URLSearchParams({ page: String(page), limit: "20" });
   if (startDate) params.set("startDate", startDate);
@@ -1870,6 +1901,12 @@ function AllTransactionsTab() {
     queryKey: ["aeps-all-tx", page, startDate, endDate, typeFilter, customerName],
     queryFn: () => apiFetch(`/api/aeps/transactions?${params.toString()}`),
   });
+
+  const allTabCustomerNames = useMemo(() => {
+    const names = new Set<string>();
+    data?.transactions?.forEach((t: AllTx) => { if (t.customerName) names.add(t.customerName); });
+    return Array.from(names).filter(Boolean).sort((a, b) => a.localeCompare(b));
+  }, [data]);
 
   const editMut = useMutation({
     mutationFn: ({ id, data }: { id: number; data: Record<string, any> }) =>
@@ -1966,7 +2003,15 @@ function AllTransactionsTab() {
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Customer Name</Label>
-              <Input placeholder="Search name…" value={customerName} onChange={(e) => { setCustomerName(e.target.value); setPage(1); }} className="h-8 text-sm" />
+              <div style={{ position: "relative" }}>
+                <AutocompleteInput
+                  value={customerName}
+                  onChange={(val) => { setCustomerName(val); setPage(1); }}
+                  suggestions={allTabCustomerNames}
+                  placeholder="Search name…"
+                  className="flex h-8 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -2156,7 +2201,13 @@ function AllTransactionsTab() {
             </div>
             <div className="space-y-1.5">
               <Label>Customer Name</Label>
-              <Input {...editForm.register("customerName", { required: true })} autoFocus />
+              <AutocompleteInput
+                value={editCustomerName}
+                onChange={(val) => editForm.setValue("customerName", val)}
+                suggestions={allTabCustomerNames}
+                autoFocus
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Amount (₹)</Label>

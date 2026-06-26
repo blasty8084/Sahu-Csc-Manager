@@ -22,6 +22,7 @@ import { useForm } from "react-hook-form";
 import { addPendingEntry, getAllPendingEntries, type PendingLedgerEntry } from "@/lib/offline-db";
 import { syncEngine } from "@/lib/sync-engine";
 import { ReceiptModal } from "@/components/receipt-modal";
+import { AutocompleteInput } from "@/components/autocomplete-input";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -341,10 +342,11 @@ export default function Ledger() {
 
         {/* ── MOBILE: Search bar ── */}
         <div className="md:hidden" style={{ position: "relative" }}>
-          <Search size={14} color="#94a3b8" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
-          <input
+          <Search size={14} color="#94a3b8" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", zIndex: 1 }} />
+          <AutocompleteInput
             value={customerName}
-            onChange={(e) => { setCustomerName(e.target.value); setPage(1); }}
+            onChange={(val) => { setCustomerName(val); setPage(1); }}
+            suggestions={customerNameSuggestions}
             placeholder="Search customer or service…"
             style={{ width: "100%", height: 44, paddingLeft: 34, paddingRight: 46, borderRadius: 14, border: "1.5px solid #e2e8f0", background: "#fff", fontSize: 13, color: "#0b2c60", outline: "none", boxSizing: "border-box", fontWeight: 500, boxShadow: "0 1px 6px rgba(11,44,96,0.06)" }}
           />
@@ -443,10 +445,16 @@ export default function Ledger() {
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <div style={{ position: "relative" }}>
-                  <Search size={12} color="#94a3b8" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
-                  <input value={customerName} onChange={(e) => { setCustomerName(e.target.value); setPage(1); }} placeholder="Search customer…"
+                  <Search size={12} color="#94a3b8" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", zIndex: 1 }} />
+                  <AutocompleteInput
+                    value={customerName}
+                    onChange={(val) => { setCustomerName(val); setPage(1); }}
+                    suggestions={customerNameSuggestions}
+                    placeholder="Search customer…"
                     style={{ width: "100%", height: 36, paddingLeft: 28, paddingRight: 10, borderRadius: 10, border: "1.5px solid #e2e8f0", background: "#fafbff", fontSize: 12, color: "#0b2c60", outline: "none", boxSizing: "border-box", fontWeight: 500, transition: "border-color 0.15s" }}
-                    onFocus={e => (e.target.style.borderColor = "#0b2c60")} onBlur={e => (e.target.style.borderColor = "#e2e8f0")} />
+                    onFocus={e => ((e.target as HTMLInputElement).style.borderColor = "#0b2c60")}
+                    onBlur={e => ((e.target as HTMLInputElement).style.borderColor = "#e2e8f0")}
+                  />
                 </div>
                 <div>
                   <p style={{ fontSize: 9, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5 }}>From Date</p>
