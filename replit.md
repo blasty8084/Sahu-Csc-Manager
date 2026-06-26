@@ -21,10 +21,12 @@ A full-stack CSC (Common Service Center) business management platform for tracki
 
 ### Startup command (Project run button)
 ```bash
-# Runs in parallel:
-PORT=8080 pnpm --filter @workspace/api-server run dev   # API on 8080
-PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run dev  # Frontend on 5000
+# Runs in parallel — pnpm install runs first in each, so the app works after any fresh import/remix:
+pnpm install && PORT=8080 pnpm --filter @workspace/api-server run dev          # API on 8080
+pnpm install && PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run dev # Frontend on 5000
 ```
+
+> **Remix / import safe**: Both workflow commands run `pnpm install` before starting. This ensures all dependencies are present even on a fresh clone, fork, or GitHub import — no manual setup step required.
 
 ---
 
