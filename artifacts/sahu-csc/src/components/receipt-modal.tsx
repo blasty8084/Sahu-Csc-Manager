@@ -220,8 +220,12 @@ export function ReceiptModal({
         });
       } catch { /* user cancelled */ }
     } else if (receiptToken) {
-      await navigator.clipboard.writeText(verifyUrl);
-      toast.success("Receipt link copied to clipboard");
+      try {
+        await navigator.clipboard.writeText(verifyUrl);
+        toast.success("Receipt link copied to clipboard");
+      } catch {
+        toast({ title: "Could not copy link", description: "Please copy manually: " + verifyUrl, variant: "destructive" });
+      }
     } else {
       toast({ title: "Share not available for this entry", variant: "destructive" });
     }
@@ -229,11 +233,12 @@ export function ReceiptModal({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="w-[calc(100vw-2rem)] max-w-sm p-0 overflow-hidden rounded-2xl md:rounded-2xl gap-0">
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-sm p-0 overflow-hidden rounded-2xl md:rounded-2xl gap-0 max-h-[95dvh] flex flex-col [&>button:last-child]:hidden">
         <DialogHeader className="sr-only">
           <DialogTitle>Receipt {receiptNumber}</DialogTitle>
         </DialogHeader>
 
+        <div className="overflow-y-auto flex-1 min-h-0">
         <div ref={printRef} style={{ background: "#fff" }}>
           {/* Navy header */}
           <div style={{
@@ -403,9 +408,10 @@ export function ReceiptModal({
             </p>
           </div>
         </div>
+        </div>{/* end scroll wrapper */}
 
-        {/* Action buttons — 2×2 grid */}
-        <div style={{ padding: "10px 14px 12px", background: "#fff", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        {/* Action buttons — 2×2 grid — pinned outside scroll */}
+        <div style={{ padding: "10px 14px 12px", background: "#fff", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, flexShrink: 0, borderTop: "1px solid #f1f5f9" }}>
           <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={handlePrint}>
             <Printer size={13} />Print
           </Button>
