@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { CheckCircle2, XCircle, AlertTriangle, Info, X } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 type Variant = "default" | "destructive" | "success" | "warning"
 
@@ -44,12 +45,16 @@ interface ToastItemProps {
   title?: React.ReactNode
   description?: React.ReactNode
   variant?: Variant
+  isTop: boolean
   dismiss: (id: string) => void
 }
 
-function ToastItem({ id, title, description, variant = "default", dismiss }: ToastItemProps) {
+function ToastItem({ id, title, description, variant = "default", isTop, dismiss }: ToastItemProps) {
   const cfg = VARIANT_CONFIG[variant] ?? VARIANT_CONFIG.default
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const enterY = isTop ? -64 : 64
+  const exitY  = isTop ? -20 : 20
 
   useEffect(() => {
     timerRef.current = setTimeout(() => dismiss(id), DURATION)
@@ -59,11 +64,11 @@ function ToastItem({ id, title, description, variant = "default", dismiss }: Toa
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 64, scale: 0.90, filter: "blur(4px)" }}
+      initial={{ opacity: 0, y: enterY, scale: 0.92, filter: "blur(4px)" }}
       animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
       exit={{
         opacity: 0,
-        y: 16,
+        y: exitY,
         scale: 0.93,
         filter: "blur(3px)",
         transition: { duration: 0.22, ease: [0.4, 0, 1, 1] },
@@ -115,12 +120,17 @@ function ToastItem({ id, title, description, variant = "default", dismiss }: Toa
 
 export function Toaster() {
   const { toasts, dismiss } = useToast()
+  const isMobile = useIsMobile()
 
   const visible = toasts.filter((t) => t.open !== false)
 
   return (
     <div
-      className="fixed bottom-4 right-4 z-[200] flex w-[360px] max-w-[calc(100vw-2rem)] flex-col gap-2.5"
+      className={
+        isMobile
+          ? "fixed left-1/2 top-4 z-[200] flex w-[calc(100vw-2rem)] max-w-[420px] -translate-x-1/2 flex-col gap-2"
+          : "fixed bottom-4 right-4 z-[200] flex w-[360px] flex-col gap-2.5"
+      }
       aria-live="polite"
       aria-atomic="false"
     >
@@ -132,6 +142,7 @@ export function Toaster() {
             title={title}
             description={description}
             variant={(variant ?? "default") as Variant}
+            isTop={!!isMobile}
             dismiss={dismiss}
           />
         ))}
