@@ -57,21 +57,11 @@ export function ReceiptModal({
   useEffect(() => {
     if (!autoDownload || !open || !entry) return;
     const timer = setTimeout(async () => {
-      const el = printRef.current;
-      if (!el) return;
+      if (!printRef.current) return;
       setGeneratingPdf(true);
       try {
-        const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
-          import("html2canvas"),
-          import("jspdf"),
-        ]);
-        const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false });
-        const imgData = canvas.toDataURL("image/png");
-        const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-        pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-        const blob = pdf.output("blob");
+        const blob = await generatePdfBlob();
+        if (!blob) return;
         const receiptNum = entry.receiptNumber ?? `CSC-${new Date(entry.createdAt).getFullYear()}-${String(entry.id).padStart(4, "0")}`;
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -118,17 +108,37 @@ export function ReceiptModal({
   const generatePdfBlob = async (): Promise<Blob | null> => {
     const el = printRef.current;
     if (!el) return null;
-    const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
-      import("html2canvas"),
-      import("jspdf"),
-    ]);
-    const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false });
-    const imgData = canvas.toDataURL("image/png");
-    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-    return pdf.output("blob");
+    // Fix width to 560px (= A5 width at 96dpi) before capture so PDF is
+    // perfectly sized for A5 paper (half of A4), regardless of modal width.
+    const prevWidth = el.style.width;
+    const prevMaxWidth = el.style.maxWidth;
+    el.style.width = "560px";
+    el.style.maxWidth = "560px";
+    try {
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import("html2canvas"),
+        import("jspdf"),
+      ]);
+      const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false });
+      const imgData = canvas.toDataURL("image/png");
+      // A5 = 148×210mm = exactly half of A4; receipt fills the page cleanly.
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a5" });
+      const pdfW = pdf.internal.pageSize.getWidth();
+      const pdfH = pdf.internal.pageSize.getHeight();
+      const imgH = (canvas.height * pdfW) / canvas.width;
+      // Scale down if content is taller than the page (prevents clipping).
+      if (imgH <= pdfH) {
+        pdf.addImage(imgData, "PNG", 0, 0, pdfW, imgH);
+      } else {
+        const scale = pdfH / imgH;
+        pdf.addImage(imgData, "PNG", 0, 0, pdfW * scale, pdfH);
+      }
+      return pdf.output("blob");
+    } finally {
+      // Always restore inline styles even if html2canvas or import throws.
+      el.style.width = prevWidth;
+      el.style.maxWidth = prevMaxWidth;
+    }
   };
 
   const handlePrint = () => {
@@ -143,7 +153,7 @@ export function ReceiptModal({
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #fff; }
-        @page { size: A4; margin: 0; }
+        @page { size: A5; margin: 0; }
         @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
         svg { display: block; }
       </style>
