@@ -29,7 +29,7 @@ export default function Backups() {
   const handleCreate = async () => {
     try {
       await createMut.mutateAsync();
-      toast({ title: "Backup created successfully" });
+      toast.success("Backup created successfully");
       invalidate();
     } catch {
       toast({ title: "Backup failed", variant: "destructive" });
@@ -40,7 +40,7 @@ export default function Backups() {
     if (!restoreId) return;
     try {
       await restoreMut.mutateAsync({ id: restoreId });
-      toast({ title: "Database restored successfully" });
+      toast.success("Database restored successfully");
       setRestoreId(null);
       invalidate();
     } catch {

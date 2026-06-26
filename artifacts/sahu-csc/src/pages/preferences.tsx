@@ -42,7 +42,7 @@ export default function Preferences() {
       await updateMut.mutateAsync({ data: values });
       qc.invalidateQueries({ queryKey: getGetPreferencesQueryKey() });
       setTheme(values.theme);
-      toast({ title: "Preferences saved successfully" });
+      toast.success("Preferences saved successfully");
     } catch {
       toast({ title: "Failed to save preferences", variant: "destructive" });
     }

@@ -188,4 +188,16 @@ function useToast() {
   }
 }
 
+toast.success = (title: React.ReactNode, description?: React.ReactNode) =>
+  toast({ title, description, variant: "success" as any })
+
+toast.error = (title: React.ReactNode, description?: React.ReactNode) =>
+  toast({ title, description, variant: "destructive" })
+
+toast.warning = (title: React.ReactNode, description?: React.ReactNode) =>
+  toast({ title, description, variant: "warning" as any })
+
+toast.info = (title: React.ReactNode, description?: React.ReactNode) =>
+  toast({ title, description, variant: "default" })
+
 export { useToast, toast }

@@ -91,9 +91,9 @@ export default function Notifications() {
   const handleSearch = () => { setSearch(searchInput); setPage(1); };
 
   const handleMarkRead = async (id: number) => { await markRead(id); invalidate(); };
-  const handleMarkAll = async () => { await markAllRead(); invalidate(); toast({ title: "All notifications marked as read" }); };
-  const handleDelete = async (id: number) => { await deleteNotif(id); invalidate(); toast({ title: "Notification deleted" }); };
-  const handleDeleteRead = async () => { await deleteRead(); invalidate(); toast({ title: "Read notifications cleared" }); };
+  const handleMarkAll = async () => { await markAllRead(); invalidate(); toast.success("All notifications marked as read"); };
+  const handleDelete = async (id: number) => { await deleteNotif(id); invalidate(); toast.success("Notification deleted"); };
+  const handleDeleteRead = async () => { await deleteRead(); invalidate(); toast.success("Read notifications cleared"); };
 
   return (
     <Layout>

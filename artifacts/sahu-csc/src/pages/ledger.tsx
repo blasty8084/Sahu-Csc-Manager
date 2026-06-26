@@ -113,7 +113,7 @@ export default function Ledger() {
       qc.invalidateQueries({ queryKey: getGetBalanceQueryKey() });
       setShowDeleteAll(false);
       setPage(1);
-      toast({ title: "All transactions deleted. Balance reset to ₹0." });
+      toast.warning("All transactions deleted", "Balance reset to ₹0.");
     },
     onError: () => toast({ title: "Failed to delete all transactions", variant: "destructive" }),
   });
@@ -155,7 +155,7 @@ export default function Ledger() {
     const amt = parseFloat(inlineEdit.amount) || 0;
     try {
       await updateMut.mutateAsync({ id: inlineEditId, data: { date: inlineEdit.date, customerName: inlineEdit.customerName, serviceType: inlineEdit.serviceType, credit: inlineEdit.entryType === "credit" ? amt : 0, debit: inlineEdit.entryType === "debit" ? amt : 0, description: inlineEdit.description } });
-      toast({ title: "Entry updated" });
+      toast.success("Entry updated");
       setInlineEditId(null);
       invalidate();
     } catch {
@@ -172,7 +172,7 @@ export default function Ledger() {
     setQuickAddSaving(true);
     try {
       await createMut.mutateAsync({ date: quickAdd.date, customerName: quickAdd.customerName.trim(), serviceType: quickAdd.serviceType, credit: quickAdd.entryType === "credit" ? amt : 0, debit: quickAdd.entryType === "debit" ? amt : 0, description: quickAdd.description });
-      toast({ title: "Entry added" });
+      toast.success("Entry added");
       setQuickAdd({ date: todayStr, customerName: "", serviceType: "", entryType: "credit", amount: "", description: "" });
       invalidate();
     } catch {
@@ -186,7 +186,7 @@ export default function Ledger() {
     try {
       if (editEntry) {
         await updateMut.mutateAsync({ id: editEntry.id, data: values });
-        toast({ title: "Entry updated" });
+        toast.success("Entry updated");
         setShowForm(false);
         invalidate();
       } else if (isOffline) {
@@ -211,7 +211,7 @@ export default function Ledger() {
         });
       } else {
         await createMut.mutateAsync({ data: values });
-        toast({ title: "Entry created" });
+        toast.success("Entry created");
         setShowForm(false);
         invalidate();
       }
@@ -224,7 +224,7 @@ export default function Ledger() {
     if (!deleteId) return;
     try {
       await deleteMut.mutateAsync({ id: deleteId });
-      toast({ title: "Entry deleted" });
+      toast.success("Entry deleted");
       setDeleteId(null);
       invalidate();
     } catch {

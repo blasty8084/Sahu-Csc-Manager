@@ -136,7 +136,7 @@ export default function BroadcastPage() {
       return data;
     },
     onSuccess: (data) => {
-      toast({ title: "Push sent!", description: data.message });
+      toast.success("Push sent!", data.message);
       setPushTitle(""); setPushBody(""); setPushUrl("");
       refetchStats();
       qc.invalidateQueries({ queryKey: ["broadcast-history"] });
@@ -157,7 +157,7 @@ export default function BroadcastPage() {
       return data;
     },
     onSuccess: (data) => {
-      toast({ title: "Email sent!", description: data.message });
+      toast.success("Email sent!", data.message);
       setEmailSubject(""); setEmailBody("");
       refetchStats();
       qc.invalidateQueries({ queryKey: ["broadcast-history"] });

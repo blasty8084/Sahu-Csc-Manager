@@ -290,7 +290,7 @@ export default function ForgotPassword() {
       if (res.ok) {
         if (data.maskedEmail) setMaskedEmail(data.maskedEmail);
         startResendTimer();
-        toast({ title: "OTP resent", description: "A new code has been sent." });
+        toast.success("OTP resent", "A new code has been sent.");
         setTimeout(() => otpRefs.current[0]?.focus(), 120);
       } else if (res.status === 429) {
         startRateLimitTimer();

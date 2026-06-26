@@ -265,7 +265,7 @@ function ForgotPasswordPanel({ onBack }: { onBack: () => void }) {
     try {
       const res = await apiPost("send-otp", { identifier: identifier.trim(), purpose: "password_reset" });
       const data = await res.json();
-      if (res.ok) { if (data.maskedEmail) setMaskedEmail(data.maskedEmail); startResendTimer(); toast({ title: "OTP resent", description: "A new code has been sent." }); setTimeout(() => otpRefs.current[0]?.focus(), 120); }
+      if (res.ok) { if (data.maskedEmail) setMaskedEmail(data.maskedEmail); startResendTimer(); toast.success("OTP resent", "A new code has been sent."); setTimeout(() => otpRefs.current[0]?.focus(), 120); }
       else if (res.status === 429) { startRateLimitTimer(); }
       else { setServerError(data.error ?? "Failed to resend OTP."); }
     } catch { setServerError("Network error."); }
@@ -1299,7 +1299,7 @@ export default function Login() {
       await login({ ...values, rememberMe });
       setAttemptsLeft(null);
       setLockoutUntil(null);
-      toast({ title: "Login successful", description: "Welcome back to the SAHU CSC Platform." });
+      toast.success("Login successful", "Welcome back to the SAHU CSC Platform.");
     } catch (err: any) {
       if (err?.locked) {
         setAttemptsLeft(0);
@@ -1321,7 +1321,7 @@ export default function Login() {
   const handleLockoutExpired = useCallback(() => {
     setLockoutUntil(null);
     setAttemptsLeft(null);
-    toast({ title: "Lockout lifted", description: "You can try logging in again." });
+    toast.warning("Lockout lifted", "You can try logging in again.");
   }, [toast]);
 
   const formProps: Omit<LoginFormContentProps, "onForgotPassword"> = {

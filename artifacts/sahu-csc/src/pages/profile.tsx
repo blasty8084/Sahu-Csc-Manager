@@ -250,17 +250,17 @@ export default function Profile() {
 
   const revokeMut = useMutation({
     mutationFn: (id: number) => apiFetch(`/sessions/${id}`, { method: "DELETE" }),
-    onSuccess: (data: any) => { qc.invalidateQueries({ queryKey: ["sessions"] }); toast({ title: "Session revoked" }); if (data?.redirect) logout(); },
+    onSuccess: (data: any) => { qc.invalidateQueries({ queryKey: ["sessions"] }); toast.success("Session revoked"); if (data?.redirect) logout(); },
     onError: (e: any) => toast({ variant: "destructive", title: e.message }),
   });
   const revokeOthersMut = useMutation({
     mutationFn: () => apiFetch("/sessions/others", { method: "DELETE" }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["sessions"] }); toast({ title: "All other sessions revoked" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["sessions"] }); toast.success("All other sessions revoked"); },
     onError: (e: any) => toast({ variant: "destructive", title: e.message }),
   });
   const revokeAllMut = useMutation({
     mutationFn: () => apiFetch("/sessions/all", { method: "DELETE" }),
-    onSuccess: () => { toast({ title: "Logged out everywhere" }); logout(); },
+    onSuccess: () => { toast.success("Logged out everywhere"); logout(); },
     onError: (e: any) => toast({ variant: "destructive", title: e.message }),
   });
 
@@ -292,33 +292,33 @@ export default function Profile() {
   const invalidateProfile = () => { qc.invalidateQueries({ queryKey: getGetProfileQueryKey() }); qc.invalidateQueries({ queryKey: getGetMeQueryKey() }); };
 
   const onSaveProfile = profileForm.handleSubmit(async (v) => {
-    try { await updateMut.mutateAsync({ data: v as any }); invalidateProfile(); toast({ title: "Profile updated" }); }
+    try { await updateMut.mutateAsync({ data: v as any }); invalidateProfile(); toast.success("Profile updated"); }
     catch { toast({ title: "Failed to update profile", variant: "destructive" }); }
   });
   const onChangePassword = passwordForm.handleSubmit(async (v) => {
     if (v.password !== v.confirmPassword) { toast({ title: "Passwords do not match", variant: "destructive" }); return; }
-    try { await updateMut.mutateAsync({ data: { currentPassword: v.currentPassword, password: v.password } as any }); invalidateProfile(); passwordForm.reset(); toast({ title: "Password changed" }); }
+    try { await updateMut.mutateAsync({ data: { currentPassword: v.currentPassword, password: v.password } as any }); invalidateProfile(); passwordForm.reset(); toast.success("Password changed"); }
     catch (e: any) { toast({ title: e?.response?.data?.error ?? "Failed to change password", variant: "destructive" }); }
   });
   const onSavePreferences = prefsForm.handleSubmit(async (v) => {
-    try { await updatePrefsMut.mutateAsync({ data: v }); qc.invalidateQueries({ queryKey: getGetPreferencesQueryKey() }); setTheme(v.theme); toast({ title: "Preferences saved" }); }
+    try { await updatePrefsMut.mutateAsync({ data: v }); qc.invalidateQueries({ queryKey: getGetPreferencesQueryKey() }); setTheme(v.theme); toast.success("Preferences saved"); }
     catch { toast({ title: "Failed to save preferences", variant: "destructive" }); }
   });
   const onSaveSettings = settingsForm.handleSubmit(async (v) => {
-    try { await updateSettingsMut.mutateAsync({ data: v as any }); qc.invalidateQueries({ queryKey: getGetSettingsQueryKey() }); setTheme(v.theme as "light"|"dark"); toast({ title: "Settings saved" }); }
+    try { await updateSettingsMut.mutateAsync({ data: v as any }); qc.invalidateQueries({ queryKey: getGetSettingsQueryKey() }); setTheme(v.theme as "light"|"dark"); toast.success("Settings saved"); }
     catch { toast({ title: "Failed to save settings", variant: "destructive" }); }
   });
   const handleFileSelected = (file: File) => {
     const reader = new FileReader();
     reader.onload = async (ev) => {
       const dataUrl = ev.target?.result as string; setAvatarPreview(dataUrl);
-      try { await uploadAvatarMut.mutateAsync({ data: { profilePicture: dataUrl } }); invalidateProfile(); toast({ title: "Profile picture updated" }); }
+      try { await uploadAvatarMut.mutateAsync({ data: { profilePicture: dataUrl } }); invalidateProfile(); toast.success("Profile picture updated"); }
       catch { setAvatarPreview(null); toast({ title: "Failed to upload picture", variant: "destructive" }); }
     };
     reader.readAsDataURL(file);
   };
   const handleDeleteAvatar = async () => {
-    try { await deleteAvatarMut.mutateAsync(); setAvatarPreview(null); invalidateProfile(); toast({ title: "Profile picture removed" }); }
+    try { await deleteAvatarMut.mutateAsync(); setAvatarPreview(null); invalidateProfile(); toast.success("Profile picture removed"); }
     catch { toast({ title: "Failed to remove picture", variant: "destructive" }); }
   };
 

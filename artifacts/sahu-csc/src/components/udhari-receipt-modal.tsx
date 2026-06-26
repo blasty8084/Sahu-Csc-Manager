@@ -204,7 +204,7 @@ export function UdhariReceiptModal({
       } catch { /* user cancelled */ }
     } else if (verifyUrl) {
       await navigator.clipboard.writeText(verifyUrl);
-      toast({ title: "Receipt link copied to clipboard" });
+      toast.success("Receipt link copied to clipboard");
     } else {
       toast({ title: "Share not available for this entry", variant: "destructive" });
     }
