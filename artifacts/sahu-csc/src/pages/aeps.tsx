@@ -286,6 +286,13 @@ function DailyTab() {
     return Array.from(names).filter(Boolean).sort((a, b) => a.localeCompare(b));
   }, [session, aepsNamesData]);
 
+  const aepsFrequentCustomers = useMemo(() => {
+    const freq: Record<string, number> = {};
+    aepsNamesData?.transactions?.forEach((t: AllTx) => { if (t.customerName) freq[t.customerName] = (freq[t.customerName] || 0) + 1; });
+    session?.transactions?.forEach((t: AepsTx) => { if (t.customerName) freq[t.customerName] = (freq[t.customerName] || 0) + 1; });
+    return Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name]) => name);
+  }, [aepsNamesData, session]);
+
   const openForm = useForm({ defaultValues: { openingBalance: "", notes: "" } });
   const txForm = useForm({ defaultValues: { amount: "", customerName: "", description: "" } });
   const editForm = useForm({ defaultValues: { type: "withdrawal", amount: "", customerName: "", description: "" } });
@@ -1335,6 +1342,26 @@ function DailyTab() {
                     <div style={{ height: 3, background: "linear-gradient(90deg,#0b2c60,#1a4a9e)" }} />
                     <div className="px-4 py-3 space-y-3">
                       <p style={{ fontSize: 10, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em" }}>Customer Details</p>
+                      {aepsFrequentCustomers.length > 0 && (
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          {aepsFrequentCustomers.map(name => (
+                            <button
+                              key={name}
+                              type="button"
+                              onClick={() => txForm.setValue("customerName", name)}
+                              style={{
+                                padding: "4px 10px", borderRadius: 16,
+                                border: `1px solid ${txCustomerName === name ? "#0b2c60" : "rgba(11,44,96,0.18)"}`,
+                                background: txCustomerName === name ? "#0b2c60" : "rgba(11,44,96,0.04)",
+                                color: txCustomerName === name ? "#fff" : "#0b2c60",
+                                fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap",
+                              }}
+                            >
+                              {name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                       <div>
                         <label style={{ fontSize: 11, fontWeight: 700, color: "#475569", display: "block", marginBottom: 5 }}>Customer Name *</label>
                         <div className="relative">
@@ -1668,7 +1695,27 @@ function DailyTab() {
                       {/* Customer + Aadhaar */}
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
                         <div>
-                          <label style={{ fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>Customer Name *</label>
+                          <label style={{ fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block", marginBottom: aepsFrequentCustomers.length > 0 ? 6 : 8 }}>Customer Name *</label>
+                          {aepsFrequentCustomers.length > 0 && (
+                            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+                              {aepsFrequentCustomers.map(name => (
+                                <button
+                                  key={name}
+                                  type="button"
+                                  onClick={() => txForm.setValue("customerName", name)}
+                                  style={{
+                                    padding: "4px 10px", borderRadius: 12,
+                                    border: `1px solid ${txCustomerName === name ? "#0b2c60" : "rgba(11,44,96,0.18)"}`,
+                                    background: txCustomerName === name ? "#0b2c60" : "rgba(11,44,96,0.05)",
+                                    color: txCustomerName === name ? "#fff" : "#0b2c60",
+                                    fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  {name}
+                                </button>
+                              ))}
+                            </div>
+                          )}
                           <div style={{ position: "relative" }}>
                             <User size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
                             <AutocompleteInput

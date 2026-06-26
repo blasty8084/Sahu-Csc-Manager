@@ -242,6 +242,14 @@ export default function Ledger() {
     return Array.from(names).sort((a, b) => a.localeCompare(b));
   }, [allEntriesData]);
 
+  const frequentCustomers = useMemo(() => {
+    const freq: Record<string, number> = {};
+    allEntriesData?.entries?.forEach((e: any) => {
+      if (e.customerName) freq[e.customerName] = (freq[e.customerName] || 0) + 1;
+    });
+    return Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name]) => name);
+  }, [allEntriesData]);
+
   const receiptEntries = useMemo(() => {
     const all: any[] = allEntriesData?.entries ?? [];
     const q = receiptSearch.trim().toLowerCase();
@@ -355,6 +363,30 @@ export default function Ledger() {
           </button>
         </div>
 
+        {/* ── MOBILE: Frequent customers ── */}
+        {frequentCustomers.length > 0 && (
+          <div className="md:hidden" style={{ display: "flex", gap: 7, overflowX: "auto", paddingBottom: 2, scrollbarWidth: "none" as const }}>
+            {frequentCustomers.map(name => (
+              <button
+                key={name}
+                type="button"
+                onClick={() => { setCustomerName(customerName === name ? "" : name); setPage(1); }}
+                style={{
+                  flexShrink: 0, padding: "5px 11px", borderRadius: 20,
+                  border: `1.5px solid ${customerName === name ? "#0b2c60" : "rgba(11,44,96,0.18)"}`,
+                  background: customerName === name ? "#0b2c60" : "rgba(11,44,96,0.04)",
+                  color: customerName === name ? "#fff" : "#0b2c60",
+                  fontSize: 12, fontWeight: 600, cursor: "pointer",
+                  display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap",
+                }}
+              >
+                <User size={10} />
+                {name}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* ── MOBILE: Tab switcher ── */}
         <div className="md:hidden" style={{ display: "flex", background: "#f1f5f9", borderRadius: 14, padding: 4, gap: 4 }}>
           {(["transactions", "receipts"] as const).map(tab => (
@@ -444,6 +476,29 @@ export default function Ledger() {
                 )}
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {frequentCustomers.length > 0 && (
+                  <div>
+                    <p style={{ fontSize: 9, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5 }}>Frequent</p>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                      {frequentCustomers.map(name => (
+                        <button
+                          key={name}
+                          type="button"
+                          onClick={() => { setCustomerName(customerName === name ? "" : name); setPage(1); }}
+                          style={{
+                            padding: "3px 9px", borderRadius: 10,
+                            border: `1px solid ${customerName === name ? "#0b2c60" : "rgba(11,44,96,0.18)"}`,
+                            background: customerName === name ? "#0b2c60" : "transparent",
+                            color: customerName === name ? "#fff" : "#0b2c60",
+                            fontSize: 10, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap",
+                          }}
+                        >
+                          {name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div style={{ position: "relative" }}>
                   <Search size={12} color="#94a3b8" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", zIndex: 1 }} />
                   <AutocompleteInput
