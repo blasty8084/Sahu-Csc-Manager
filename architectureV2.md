@@ -904,3 +904,66 @@ Admin oversight (`/api/admin/*`) aggregates across users but is separate from th
 | **OTP resend cooldown** | 120 seconds everywhere — do not change to 60 |
 | **send-otp silent on unknown** | Returns 200 with `maskedEmail: null` for unknown identifiers (prevents account enumeration) |
 | **React Query clear on logout** | `queryClient.clear()` in `handleLogout` — prevents stale data when switching accounts |
+
+---
+
+## 15. Toast Notification System v2
+
+### Architecture
+`toaster.tsx` is a pure custom Framer Motion renderer — it does NOT use Radix UI `@radix-ui/react-toast` primitives. State comes from the unchanged `useToast()` hook (singleton reducer pattern in `use-toast.ts`).
+
+### Component tree
+```
+<Toaster>                         ← reads useToast() + useIsMobile()
+  <AnimatePresence mode="sync">
+    {visible.map(t => <ToastItem> ← per-toast motion.div
+      drag="x"                    ← swipe-to-dismiss
+      useMotionValue(x)           ← drag position
+      useTransform(opacity/rotate)
+      fmAnimate(x, ±520)          ← imperative throw animation
+      setTimeout → dismiss()      ← auto-dismiss at 4.5 s
+      <ProgressBar scaleX 1→0>   ← draining progress indicator
+    </ToastItem>}
+  </AnimatePresence>
+</Toaster>
+```
+
+### Positioning
+| Breakpoint | Position | Direction |
+|------------|----------|-----------|
+| Mobile (< sm) | `top-4` centered | Slides down from top |
+| Desktop (≥ sm) | `bottom-4 right-4` | Slides up from bottom |
+
+### Variants
+| Value | Accent | Icon |
+|-------|--------|------|
+| `default` | Navy `#0b2c60` | Info |
+| `success` | Green `#16a34a` | CheckCircle2 |
+| `destructive` | Red `#ef4444` | XCircle |
+| `warning` | Amber `#d97706` | AlertTriangle |
+
+### Shorthands
+`toast.success()` · `toast.error()` · `toast.warning()` · `toast.info()` — all defined on the `toast` function object in `use-toast.ts`.
+
+### Swipe-to-dismiss
+`drag="x"`, `dragConstraints={{ left: 0, right: 0 }}`, `dragElastic={0.35}`. Dismiss triggers at `|velocity.x| > 400` OR `|offset.x| > 110`. Imperative throw: `fmAnimate(x, ±520, { duration: 0.22 }).then(() => dismiss(id))`. Partial drag snaps back via spring.
+
+---
+
+## 16. Receipt System — AePS & Udhari Extensions
+
+### AePS transaction receipts
+- `receipt_token TEXT` on `aeps_transactions` — UUID generated on `POST /api/aeps/transaction`
+- All GET responses include `receiptToken`
+- Modal: `aeps-receipt-modal.tsx` — QR → `/receipts/verify/aeps/:token`; `AEPS-YYYY-{id:04}` display number
+- Public API: `GET /api/receipts/verify/aeps/:token` (in `aeps.ts`) — no auth required
+- Public page: `/receipts/verify/aeps/:token` → `aeps-receipt-verify.tsx`
+
+### Udhari entry receipts
+- `receipt_token TEXT` on `udhari_entries` — UUID generated on `POST /api/udhari/customers/:id/entries`
+- Modal: `udhari-receipt-modal.tsx` — QR → `/receipts/verify/udhari/:token`; `UDH-YYYY-{id:04}` display number
+- Public API: `GET /api/receipts/verify/udhari/:token` (in `receipts.ts`) — no auth required
+- Public page: `/receipts/verify/udhari/:token` → `udhari-receipt-verify.tsx`
+
+### Route depth disambiguation
+`/receipts/verify/:token` (3 segments in the router) does **not** match `/receipts/verify/aeps/:token` or `/receipts/verify/udhari/:token` (4 segments each) — Express path matching is exact by depth when `end: true` (default Router behavior).

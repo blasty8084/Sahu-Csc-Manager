@@ -1,5 +1,6 @@
-import { useEffect, useRef } from "react"
-import { AnimatePresence, motion } from "framer-motion"
+import { useEffect, useRef, useCallback } from "react"
+import { AnimatePresence, motion, useMotionValue, useTransform, animate as fmAnimate } from "framer-motion"
+import type { PanInfo } from "framer-motion"
 import { CheckCircle2, XCircle, AlertTriangle, Info, X } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -7,6 +8,8 @@ import { useIsMobile } from "@/hooks/use-mobile"
 type Variant = "default" | "destructive" | "success" | "warning"
 
 const DURATION = 4500
+const SWIPE_VELOCITY_THRESHOLD = 400
+const SWIPE_OFFSET_THRESHOLD   = 110
 
 const VARIANT_CONFIG: Record<Variant, {
   icon: React.ReactNode
@@ -50,16 +53,43 @@ interface ToastItemProps {
 }
 
 function ToastItem({ id, title, description, variant = "default", isTop, dismiss }: ToastItemProps) {
-  const cfg = VARIANT_CONFIG[variant] ?? VARIANT_CONFIG.default
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const cfg       = VARIANT_CONFIG[variant] ?? VARIANT_CONFIG.default
+  const timerRef  = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const x         = useMotionValue(0)
+  const dragAlpha = useTransform(x, [-180, -55, 0, 55, 180], [0.15, 0.75, 1, 0.75, 0.15])
+  const rotate    = useTransform(x, [-160, 0, 160], [-4, 0, 4])
 
   const enterY = isTop ? -64 : 64
-  const exitY  = isTop ? -20 : 20
+  const exitY  = isTop ? -18 : 18
+
+  const clearTimer = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current)
+  }, [])
+
+  const startTimer = useCallback(() => {
+    clearTimer()
+    timerRef.current = setTimeout(() => dismiss(id), DURATION)
+  }, [id, dismiss, clearTimer])
 
   useEffect(() => {
-    timerRef.current = setTimeout(() => dismiss(id), DURATION)
-    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
-  }, [id, dismiss])
+    startTimer()
+    return clearTimer
+  }, [startTimer, clearTimer])
+
+  const handleDragEnd = (_: PointerEvent, info: PanInfo) => {
+    const gone =
+      Math.abs(info.velocity.x) > SWIPE_VELOCITY_THRESHOLD ||
+      Math.abs(info.offset.x)   > SWIPE_OFFSET_THRESHOLD
+
+    if (gone) {
+      clearTimer()
+      const dir = info.offset.x > 0 ? 1 : -1
+      fmAnimate(x, dir * 520, { duration: 0.22, ease: [0.4, 0, 1, 1] }).then(() => dismiss(id))
+    } else {
+      fmAnimate(x, 0, { type: "spring", stiffness: 520, damping: 32 })
+      startTimer()
+    }
+  }
 
   return (
     <motion.div
@@ -74,11 +104,20 @@ function ToastItem({ id, title, description, variant = "default", isTop, dismiss
         transition: { duration: 0.22, ease: [0.4, 0, 1, 1] },
       }}
       transition={{ type: "spring", stiffness: 460, damping: 34, mass: 0.8 }}
-      className="relative w-full overflow-hidden rounded-2xl bg-white"
+      drag="x"
+      dragDirectionLock
+      dragConstraints={{ left: 0, right: 0 }}
+      dragElastic={0.35}
       style={{
+        x,
+        rotate,
+        opacity: dragAlpha,
         borderLeft: `4px solid ${cfg.accent}`,
         boxShadow: "0 8px 40px -6px rgba(0,0,0,0.18), 0 2px 12px -2px rgba(0,0,0,0.10)",
       }}
+      onDragStart={clearTimer}
+      onDragEnd={handleDragEnd}
+      className="relative w-full cursor-grab touch-pan-y select-none overflow-hidden rounded-2xl bg-white active:cursor-grabbing"
     >
       <div className="flex items-start gap-3 px-4 py-3.5 pr-11">
         <div
@@ -99,7 +138,8 @@ function ToastItem({ id, title, description, variant = "default", isTop, dismiss
       </div>
 
       <button
-        onClick={() => dismiss(id)}
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={() => { clearTimer(); dismiss(id) }}
         className="absolute right-2.5 top-2.5 flex h-6 w-6 items-center justify-center rounded-full text-gray-400 transition-all hover:bg-gray-100 hover:text-gray-700 active:scale-95"
       >
         <X className="h-3.5 w-3.5" />

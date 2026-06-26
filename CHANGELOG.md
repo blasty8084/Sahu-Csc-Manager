@@ -1428,3 +1428,98 @@ Complete list of all database tables as of v2.1.0:
 | `push_subscriptions` | VAPID Web Push subscription records |
 | `password_reset_tokens` | One-time OTP tokens for password reset |
 | `backups` | Backup metadata records |
+
+---
+
+## 37. AePS & Udhari Receipt Token System (June 2026)
+
+### What was added
+- `receipt_token TEXT` column on `aeps_transactions` and `udhari_entries` tables (added via raw `ALTER TABLE … ADD COLUMN IF NOT EXISTS`)
+- UUID receipt token generated at create-time for every AePS transaction and every Udhari entry
+- All GET responses for transactions and entries include `receiptToken`
+
+### AePS Receipt Modal (`aeps-receipt-modal.tsx`)
+- Receipt number format: `AEPS-YYYY-{id padded 4}`
+- QR code links to `/receipts/verify/aeps/:token` when token is present
+- Print (popup), PDF (html2canvas + jsPDF), Web Share API with PDF blob, WhatsApp text fallback
+
+### Udhari Receipt Modal (`udhari-receipt-modal.tsx`)
+- Receipt number format: `UDH-YYYY-{id padded 4}`
+- QR code links to `/receipts/verify/udhari/:token` when token is present
+- WhatsApp share uses customer mobile from `udhari_customers` as fallback
+
+### Public Verify Pages
+| Route | Component | Notes |
+|-------|-----------|-------|
+| `/receipts/verify/aeps/:token` | `aeps-receipt-verify.tsx` | No auth required |
+| `/receipts/verify/udhari/:token` | `udhari-receipt-verify.tsx` | No auth required |
+
+### Public API Endpoints
+| Method | Route | Description |
+|--------|-------|-------------|
+| `GET` | `/api/receipts/verify/aeps/:token` | AePS transaction verify (in `aeps.ts`) |
+| `GET` | `/api/receipts/verify/udhari/:token` | Udhari entry verify (in `receipts.ts`) |
+
+> **Routing note:** `/receipts/verify/:token` (3 segments) does not match `/receipts/verify/aeps/:token` (4 segments) — Express route depth prevents the catch-all from shadowing the specific paths.
+
+---
+
+## 38. Toast Notification Redesign v2 (June 2026)
+
+### Architecture
+Replaced the Radix UI `@radix-ui/react-toast` primitives entirely. The new system is a pure custom Framer Motion renderer — `toaster.tsx` reads state from the existing `useToast()` hook but renders with its own animated components.
+
+### Visual design
+- **Rounded card** (rounded-2xl) with a **4px colored left accent bar** per variant
+- **Icon badge** — 32×32 circle with tinted background, colored icon
+- **Draining progress bar** at the bottom — animates `scaleX: 1 → 0` over 4.5 s so the user can see time remaining
+- **Close button** — top-right, 24×24 rounded circle, hover background
+- **Elevated shadow** — `0 8px 40px -6px rgba(0,0,0,0.18)`
+
+### Variants
+| Variant | Accent | Icon | Use case |
+|---------|--------|------|----------|
+| `default` | Navy `#0b2c60` | Info | General info |
+| `success` | Green `#16a34a` | CheckCircle2 | Completed actions |
+| `destructive` | Red `#ef4444` | XCircle | Errors |
+| `warning` | Amber `#d97706` | AlertTriangle | Caution / reversible actions |
+
+### Shorthands (`use-toast.ts`)
+```ts
+toast.success("Entry created")
+toast.error("Failed to save", "Check your connection")
+toast.warning("All transactions deleted", "Balance reset to ₹0.")
+toast.info("OTP resent", "A new code has been sent.")
+```
+
+### ~30 call-site upgrades
+All success actions across `ledger.tsx`, `profile.tsx`, `login.tsx`, `broadcast.tsx`, `notifications.tsx`, `preferences.tsx`, `backups.tsx`, and receipt modals updated to `toast.success()`. Lockout-lifted and bulk-delete upgraded to `toast.warning()`.
+
+### Positioning
+- **Mobile (< sm):** top-center, full width minus 1rem padding, stacks downward
+- **Desktop (≥ sm):** bottom-right, 360px wide, stacks upward
+
+### TOAST_LIMIT raised to 3 (from 1) — toasts stack with `AnimatePresence layout` animations.
+
+---
+
+## 39. Toast Swipe-to-Dismiss + Mobile Animation Direction (June 2026)
+
+### Swipe-to-dismiss
+- `drag="x"` + `dragConstraints={{ left: 0, right: 0 }}` + `dragElastic={0.35}` on each toast card
+- Dismiss triggers when `|velocity.x| > 400` or `|offset.x| > 110`
+- On swipe: imperatively animates card to `x: ±520` via `fmAnimate(x, dir * 520)`, then calls `dismiss(id)`
+- On partial drag (below threshold): spring-snaps back via `fmAnimate(x, 0, { spring })` and restarts the auto-dismiss timer
+- `dragOpacity` motion value fades the card as it's dragged (`x: 0 → 1.0`, `x: ±180 → 0.15`)
+- `rotate` motion value tilts the card ±4° at max drag
+- Close button uses `onPointerDown={e.stopPropagation()}` to prevent drag intercepting the tap
+- `touch-pan-y select-none` CSS class prevents scroll interference on mobile
+
+### Animation directions
+- **Mobile (isTop=true):** enter from `y: -64` (slides down from top), exit to `y: -18` (slides up)
+- **Desktop (isTop=false):** enter from `y: 64` (slides up from bottom), exit to `y: 18` (slides down)
+- Spring: `stiffness 460, damping 34, mass 0.8`
+- Exit: `0.22s ease-in`
+
+### Timer management
+Auto-dismiss timer is paused on `onDragStart` and either restarted (snap-back) or permanently cleared (swipe-dismiss).

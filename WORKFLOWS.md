@@ -18,6 +18,8 @@ monorepo root/
 └── lib/api-client-react/     — Auto-generated React Query hooks (Orval)
 ```
 
+**v2.7.x features:** AePS & Udhari receipt tokens (QR + public verify pages) · Toast redesign v2 (Framer Motion, 4 variants, shorthands, mobile-top, swipe-to-dismiss)
+
 **v2.6.0 features:** Broadcast Center (push + email blast to all users) · Broadcast History log (`broadcast_logs` table + paginated history tab) · OTP email copy block (selectable full-code in email) · OTP auto-fill (`autocomplete="one-time-code"` on all OTP inputs) · Resend OTP SVG progress ring (draining circle countdown on forgot-password + register pages)
 
 **v2.5.0 features:** User Management Enhancements (search + role filter, AePS Overview tab, bulk activate/suspend, CSV export, admin password reset)

@@ -1347,3 +1347,36 @@ password_reset_tokens — OTP reset tokens
 | **API port** | Port 8082 (not 8080 — held by a Replit artifact workflow). Vite proxy in `vite.config.ts` must target 8082. |
 | **`businessWebsite` setting** | Added to `DEFAULT_SETTINGS` — no DB migration needed. Settings table is a key-value store; new keys only need code changes. |
 | **Udhari cache invalidation** | Every mutation must invalidate all 4 keys: `/api/udhari/customers`, `/api/udhari/customers/:id`, `/api/udhari/customers/:id/entries`, `/api/udhari/summary`. Missing any key causes stale UI. |
+
+---
+
+## v2.7.x — June 2026
+
+### AePS & Udhari Receipt Tokens
+- `receipt_token TEXT` (UUID) added to `aeps_transactions` and `udhari_entries` via raw `ALTER TABLE … ADD COLUMN IF NOT EXISTS`
+- UUID generated at transaction/entry create time; returned in all GET responses
+- `AepsReceiptModal` — QR links to `/receipts/verify/aeps/:token`; receipt number `AEPS-YYYY-{id:04}`
+- `UdhariReceiptModal` — QR links to `/receipts/verify/udhari/:token`; receipt number `UDH-YYYY-{id:04}`
+- New public pages: `aeps-receipt-verify.tsx` + `udhari-receipt-verify.tsx` (no auth required)
+- New public API: `GET /api/receipts/verify/aeps/:token` (in `aeps.ts`) + `GET /api/receipts/verify/udhari/:token` (in `receipts.ts`)
+- App.tsx lazy-imports + routes for both verify pages
+
+### Toast Notification System v2 (Framer Motion)
+- **Completely replaced** Radix UI `@radix-ui/react-toast` primitives with a custom Framer Motion renderer
+- `toaster.tsx` reads state from the unchanged `useToast()` hook but renders with its own `AnimatePresence` + `motion.div`
+- Visual: rounded-2xl white card, 4px colored left accent bar, 32px icon badge, draining progress bar (4.5 s), close button
+- Four variants: `default` (navy), `success` (green `#16a34a`), `destructive` (red), `warning` (amber)
+- Shorthands on `toast` function: `toast.success()`, `toast.error()`, `toast.warning()`, `toast.info()`
+- ~30 call sites upgraded across 10 files; legacy `toast({ title: "…" })` form still valid
+- `TOAST_LIMIT` raised 1 → 3; `TOAST_REMOVE_DELAY` reduced 1,000,000 ms → 1,500 ms
+
+### Toast — Mobile Top Position
+- Mobile (< sm breakpoint, via `useIsMobile()`): toasts appear at **top-center**, full-width, slide downward
+- Desktop (≥ sm): toasts appear at **bottom-right**, 360px, slide upward
+- Animation `y` direction adapts: `isTop` prop on `ToastItem` flips enter/exit y values
+
+### Toast — Swipe-to-Dismiss
+- `drag="x"` on each toast card; dismisses when `|velocity.x| > 400` or `|offset.x| > 110`
+- Swipe-out: `fmAnimate(x, ±520)` then `dismiss(id)`; snap-back: spring to `x=0` + timer restart
+- `dragOpacity` + `rotate` motion values give visual feedback during drag
+- Auto-dismiss timer paused on drag start, cleared/restarted on drag end

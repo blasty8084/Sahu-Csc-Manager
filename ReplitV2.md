@@ -621,3 +621,28 @@ When SMTP secrets are set:
 | **`EADDRINUSE :8080`** | Artifact workflow holds 8080 permanently. `Start application` uses 8082 — this is expected |
 | **Emails not sent** | SMTP secrets not set. This is expected/normal — email is optional and always fire-and-forget |
 | **Sessions tab shows nothing** | User has no active sessions, or all sessions expired. Try logging in from another browser/device first |
+
+---
+
+## 17. Toast Notification System v2
+
+Fully custom Framer Motion system — Radix UI toast primitives replaced. State unchanged (`useToast()` hook). `toaster.tsx` renders with `AnimatePresence` + `motion.div`.
+
+| Feature | Detail |
+|---------|--------|
+| **Positioning** | Mobile: top-center, slides down. Desktop: bottom-right, slides up |
+| **Swipe-to-dismiss** | `drag="x"`, threshold `|vel| > 400` or `|offset| > 110`, throw animation via `fmAnimate` |
+| **Auto-dismiss** | 4.5 s countdown with draining progress bar |
+| **Variants** | `default` (navy), `success` (green), `destructive` (red), `warning` (amber) |
+| **Shorthands** | `toast.success()` · `toast.error()` · `toast.warning()` · `toast.info()` |
+| **Stack limit** | 3 toasts visible simultaneously (`TOAST_LIMIT = 3`) |
+
+### Architecture decisions (toast)
+| Decision | Rule |
+|----------|------|
+| **Custom renderer, not Radix** | `toaster.tsx` uses Framer Motion directly; `useToast()` state hook is unchanged — swapping the renderer required zero hook changes |
+| **`fmAnimate(x, ±520)` for throw** | Imperative animation of a `MotionValue` via the module-level `animate` function; `.then(() => dismiss())` fires after the throw completes |
+| **Timer paused on drag** | `onDragStart={clearTimer}` — prevents auto-dismiss racing the swipe animation |
+| **`onPointerDown` on close button** | `e.stopPropagation()` prevents the drag handler from intercepting close-button taps |
+| **`touch-pan-y` CSS class** | Allows vertical page scroll while horizontal drag is captured by Framer Motion |
+| **`isTop` prop** | Passed from `Toaster` to `ToastItem`; flips `enterY`/`exitY` sign so animation direction matches card position |
