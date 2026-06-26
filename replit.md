@@ -9,18 +9,21 @@ A full-stack CSC (Common Service Center) business management platform for tracki
 
 | Workflow | Command | Port | Purpose |
 |----------|---------|------|---------|
-| `Start application` | Runs API (8082) + Frontend (5000) together | 5000 → :80 | **Main workflow — use this** |
-| `Seed Database` | `pnpm --filter @workspace/api-server run seed` | — | Seed/reseed sample data; **always resets admin + operator passwords** to defaults (one-shot, exits when done) |
+| `API Server` | `PORT=8080 pnpm --filter @workspace/api-server run dev` | 8080 | Express API server |
+| `artifacts/sahu-csc: web` | `pnpm --filter @workspace/sahu-csc run dev` | 5000 → :80 | Vite frontend (webview) |
+| `artifacts/mockup-sandbox: Component Preview Server` | `pnpm --filter @workspace/mockup-sandbox run dev` | 8081 | Design mockup sandbox |
+| `artifacts/api-server: API Server` | `pnpm --filter @workspace/api-server run dev` | 8080 | Standalone API workflow |
+| `Seed Database` | `PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server exec tsx src/scripts/seed.ts` | — | Seed/reseed sample data; **always resets admin + operator passwords** to defaults (one-shot, exits when done) |
 
-> **Note:** `Start application` runs both the Express API (port **8082**) and the Vite frontend (port 5000) in a single workflow. Port 5000 is mapped to external port 80 (Replit proxy). Always use the `Start application` workflow — do NOT run separate API/frontend workflows as they cause port conflicts.
+> **Note:** The `Project` run button (runButton) starts `API Server` + `artifacts/sahu-csc: web` in parallel. Port 5000 is mapped to external port 80 (Replit proxy). The API runs on **port 8080**. The Vite proxy in `vite.config.ts` points to 8080.
 >
-> **Port 8080 is held by a Replit artifact workflow** — the API therefore runs on **8082**. The Vite proxy in `vite.config.ts` already points to 8082.
+> `artifacts/api-server: API Server` and `Seed Database` are standalone workflows — run them individually as needed, not as part of the main Project flow.
 
-### Startup command (in `.replit`)
+### Startup command (Project run button)
 ```bash
-fuser -k 5000/tcp 2>/dev/null; fuser -k 8082/tcp 2>/dev/null
-PORT=8082 pnpm --filter @workspace/api-server run dev &
-PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run dev
+# Runs in parallel:
+PORT=8080 pnpm --filter @workspace/api-server run dev   # API on 8080
+PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run dev  # Frontend on 5000
 ```
 
 ---
@@ -38,7 +41,7 @@ PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run dev
 
 ```bash
 # Development
-pnpm --filter @workspace/api-server run dev      # API server (port 8082)
+pnpm --filter @workspace/api-server run dev      # API server (port 8080)
 pnpm --filter @workspace/sahu-csc run dev         # Frontend (port 5000)
 
 # Database
@@ -568,7 +571,7 @@ Design exploration lives in `artifacts/mockup-sandbox/`. Each group is a folder 
 - `drizzle-kit push` can empty tables on destructive schema changes — always re-seed after schema changes.
 - Seed script uses `onConflictDoNothing()` — safe to run multiple times. Ledger entries are **not** seeded (removed in v2.0.0) — ledger starts clean.
 - VAPID keys are auto-generated ephemerally if not set as env secrets — push subscriptions break on server restart without persistent keys.
-- **API port is 8082** (not 8080) — Replit holds 8080 via an artifact workflow. The `Start application` command and the Vite proxy in `vite.config.ts` are already set to 8082.
+- **API port is 8080** — The Express API server runs on port 8080. The Vite proxy in `vite.config.ts` targets `http://localhost:8080`. Use the `API Server` workflow to start it.
 - **502 on mobile / preview**: Usually means the server is still starting up (takes ~15–20 seconds). Wait for the Replit preview pane to load first, then open the link on your phone. Never use `localhost` on mobile — always use the `.replit.dev` public URL.
 - **VAPID key persistence**: `ensureVapidKeys()` now sets `VAPID_KEYS_FROM_ENV=true` when keys come from Replit Secrets — the `/server-health` page uses this flag to show "Persistent" vs "Ephemeral" status.
 - **`/api/healthz`** returns full diagnostics (server uptime, memory, DB latency, VAPID status) — no auth required, safe to call from monitoring tools.
