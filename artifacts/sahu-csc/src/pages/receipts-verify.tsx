@@ -84,17 +84,33 @@ export default function ReceiptsVerify() {
   const generatePdfBlob = async (): Promise<Blob | null> => {
     const el = cardRef.current;
     if (!el) return null;
-    const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
-      import("html2canvas"),
-      import("jspdf"),
-    ]);
-    const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false });
-    const imgData = canvas.toDataURL("image/png");
-    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-    return pdf.output("blob");
+    // Fix capture width to 794px (A4 at 96dpi) so PDF fills the full page.
+    const prevWidth = el.style.width;
+    const prevMaxWidth = el.style.maxWidth;
+    el.style.width = "794px";
+    el.style.maxWidth = "794px";
+    try {
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import("html2canvas"),
+        import("jspdf"),
+      ]);
+      const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pdfW = pdf.internal.pageSize.getWidth();
+      const pdfH = pdf.internal.pageSize.getHeight();
+      const imgH = (canvas.height * pdfW) / canvas.width;
+      if (imgH <= pdfH) {
+        pdf.addImage(imgData, "PNG", 0, 0, pdfW, imgH);
+      } else {
+        const scale = pdfH / imgH;
+        pdf.addImage(imgData, "PNG", 0, 0, pdfW * scale, pdfH);
+      }
+      return pdf.output("blob");
+    } finally {
+      el.style.width = prevWidth;
+      el.style.maxWidth = prevMaxWidth;
+    }
   };
 
   const handlePrint = () => window.print();

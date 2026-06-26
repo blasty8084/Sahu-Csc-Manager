@@ -108,12 +108,12 @@ export function ReceiptModal({
   const generatePdfBlob = async (): Promise<Blob | null> => {
     const el = printRef.current;
     if (!el) return null;
-    // Fix width to 560px (= A5 width at 96dpi) before capture so PDF is
-    // perfectly sized for A5 paper (half of A4), regardless of modal width.
+    // Fix width to 794px (= A4 width at 96dpi) before capture so PDF fills
+    // a full A4 page cleanly, regardless of the modal's display width.
     const prevWidth = el.style.width;
     const prevMaxWidth = el.style.maxWidth;
-    el.style.width = "560px";
-    el.style.maxWidth = "560px";
+    el.style.width = "794px";
+    el.style.maxWidth = "794px";
     try {
       const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
         import("html2canvas"),
@@ -121,8 +121,8 @@ export function ReceiptModal({
       ]);
       const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false });
       const imgData = canvas.toDataURL("image/png");
-      // A5 = 148×210mm = exactly half of A4; receipt fills the page cleanly.
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a5" });
+      // A4 = 210×297mm; 794px wide at 96dpi maps exactly to A4 width.
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
       const pdfW = pdf.internal.pageSize.getWidth();
       const pdfH = pdf.internal.pageSize.getHeight();
       const imgH = (canvas.height * pdfW) / canvas.width;
@@ -153,7 +153,7 @@ export function ReceiptModal({
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #fff; }
-        @page { size: A5; margin: 0; }
+        @page { size: A4; margin: 0; }
         @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
         svg { display: block; }
       </style>
