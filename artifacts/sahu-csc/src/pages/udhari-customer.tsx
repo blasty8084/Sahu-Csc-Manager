@@ -789,6 +789,7 @@ export default function UdhariCustomer() {
             date: e.date,
             createdAt: e.createdAt ?? new Date().toISOString(),
             currentBalance: cust.balance,
+            receiptToken: e.receiptToken ?? null,
           };
         })() : null}
         onClose={() => setReceiptEntry(null)}

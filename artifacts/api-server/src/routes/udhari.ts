@@ -3,6 +3,7 @@ import { db, udhariCustomersTable, udhariEntriesTable } from "@workspace/db";
 import { eq, and, desc, sql, or, ilike } from "drizzle-orm";
 import { requireAuth, requirePermission, auditLog, getClientIp } from "../lib/auth";
 import { z } from "zod/v4";
+import { randomUUID } from "crypto";
 
 const router = Router();
 
@@ -287,9 +288,11 @@ router.post(
 
     const { date, type, amount, note } = parsed.data;
 
+    const receiptToken = randomUUID();
+
     const [entry] = await db
       .insert(udhariEntriesTable)
-      .values({ customerId, date, type, amount: String(amount), note: note ?? "", createdBy: userId })
+      .values({ customerId, date, type, amount: String(amount), note: note ?? "", receiptToken, createdBy: userId })
       .returning();
 
     await recalcBalance(customerId);

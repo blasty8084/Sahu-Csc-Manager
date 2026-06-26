@@ -3,7 +3,7 @@ import QRCode from "react-qr-code";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Download, Printer, Share2, Fingerprint, MapPin, Phone, Globe } from "lucide-react";
+import { Download, Printer, Share2, CheckCircle2, MapPin, Phone, Globe, Fingerprint } from "lucide-react";
 
 const WhatsAppIcon = () => (
   <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
@@ -17,9 +17,10 @@ export interface AepsTxReceipt {
   amount: number;
   customerName: string;
   description: string | null;
-  balance: number;
+  balance?: number;
   createdAt: string;
-  date: string;
+  date?: string;
+  receiptToken?: string | null;
 }
 
 interface AepsReceiptModalProps {
@@ -44,18 +45,22 @@ export function AepsReceiptModal({
   const printRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [sendingWa, setSendingWa] = useState(false);
 
   if (!tx) return null;
-
-  const year = new Date(tx.createdAt).getFullYear();
-  const receiptNumber = `AEPS-${year}-${String(tx.id).padStart(4, "0")}`;
 
   const isWithdrawal = tx.type === "withdrawal";
   const amountColor = isWithdrawal ? "#e11d48" : "#059669";
   const amountPrefix = isWithdrawal ? "−" : "+";
   const txLabel = isWithdrawal ? "Cash Withdrawal" : "Cash Deposit";
 
-  const formattedDate = new Date(tx.date + "T00:00:00").toLocaleDateString("en-IN", {
+  const txDate = tx.date
+    ? new Date(tx.date + "T00:00:00")
+    : new Date(tx.createdAt);
+  const year = txDate.getFullYear();
+  const receiptNumber = `AEPS-${year}-${String(tx.id).padStart(4, "0")}`;
+
+  const formattedDate = txDate.toLocaleDateString("en-IN", {
     day: "numeric", month: "long", year: "numeric",
   });
   const issuedAt = new Date(tx.createdAt).toLocaleString("en-IN", {
@@ -63,29 +68,38 @@ export function AepsReceiptModal({
   });
 
   const hasContact = businessAddress || businessMobile || businessWebsite;
+  const hasToken = !!tx.receiptToken;
 
-  const qrData = [
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+  const verifyUrl = hasToken
+    ? `${origin}${basePath}/receipts/verify/aeps/${tx.receiptToken}`
+    : null;
+
+  const qrValue = verifyUrl ?? [
     `SAHU CSC – AePS Receipt`,
-    `Receipt No: ${receiptNumber}`,
-    `Type: ${isWithdrawal ? "Withdrawal" : "Deposit"}`,
-    `Customer: ${tx.customerName}`,
-    `Amount: ₹${tx.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
-    `Balance: ₹${tx.balance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
-    `Date: ${formattedDate}`,
-    `Issued: ${issuedAt}`,
-    ...(tx.description ? [`Note: ${tx.description}`] : []),
-    businessName ? `Center: ${businessName}` : "",
-  ].filter(Boolean).join("\n");
-
-  const shareText = [
-    `🏦 AePS ${isWithdrawal ? "Withdrawal" : "Deposit"} Receipt`,
-    `Receipt No: ${receiptNumber}`,
+    `Receipt: ${receiptNumber}`,
+    `Type: ${txLabel}`,
     `Customer: ${tx.customerName}`,
     `Amount: ₹${tx.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
     `Date: ${formattedDate}`,
-    `Center: ${businessName}`,
-    ...(businessMobile ? [`📞 ${businessMobile}`] : []),
   ].join("\n");
+
+  const generatePdfBlob = async (): Promise<Blob | null> => {
+    const el = printRef.current;
+    if (!el) return null;
+    const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+      import("html2canvas"),
+      import("jspdf"),
+    ]);
+    const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false });
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+    return pdf.output("blob");
+  };
 
   const handlePrint = () => {
     const el = printRef.current;
@@ -106,25 +120,20 @@ export function AepsReceiptModal({
     </head><body>${el.innerHTML}</body></html>`);
     win.document.close();
     win.focus();
-    setTimeout(() => { win.print(); win.close(); }, 500);
+    setTimeout(() => { win.print(); win.close(); }, 400);
   };
 
   const handleDownloadPdf = async () => {
-    const el = printRef.current;
-    if (!el) return;
     setGeneratingPdf(true);
     try {
-      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
-        import("html2canvas"),
-        import("jspdf"),
-      ]);
-      const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false });
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`${receiptNumber}.pdf`);
+      const blob = await generatePdfBlob();
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${receiptNumber}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
     } catch {
       toast({ title: "PDF generation failed", variant: "destructive" });
     } finally {
@@ -132,36 +141,55 @@ export function AepsReceiptModal({
     }
   };
 
+  const handleWhatsApp = async () => {
+    setSendingWa(true);
+    try {
+      const blob = await generatePdfBlob();
+      if (blob) {
+        const file = new File([blob], `${receiptNumber}.pdf`, { type: "application/pdf" });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: `AePS Receipt ${receiptNumber} — SAHU CSC`,
+            text: `AePS ${txLabel} receipt for ${tx.customerName}`,
+          });
+          return;
+        }
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === "AbortError") { return; }
+    } finally {
+      setSendingWa(false);
+    }
+    const waText = [
+      `🏦 *AePS ${txLabel} Receipt*`,
+      `Receipt No: ${receiptNumber}`,
+      `Customer: ${tx.customerName}`,
+      `Amount: ₹${tx.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
+      `Date: ${formattedDate}`,
+      ...(verifyUrl ? [`\n📎 View & download PDF:\n${verifyUrl}`] : []),
+      `\n— ${businessName}`,
+      ...(businessMobile ? [`📞 ${businessMobile}`] : []),
+    ].join("\n");
+    window.open(`https://wa.me/?text=${encodeURIComponent(waText)}`, "_blank");
+    setSendingWa(false);
+  };
+
   const handleShare = async () => {
     if (navigator.share) {
       try {
         await navigator.share({
           title: `AePS Receipt ${receiptNumber} — SAHU CSC`,
-          text: shareText,
+          text: `AePS ${txLabel} receipt for ${tx.customerName}`,
+          ...(verifyUrl ? { url: verifyUrl } : {}),
         });
       } catch { /* user cancelled */ }
+    } else if (verifyUrl) {
+      await navigator.clipboard.writeText(verifyUrl);
+      toast({ title: "Receipt link copied to clipboard" });
     } else {
-      try {
-        await navigator.clipboard.writeText(shareText);
-        toast({ title: "Receipt details copied to clipboard" });
-      } catch {
-        toast({ title: "Share not supported on this device", variant: "destructive" });
-      }
+      toast({ title: "Share not available for this entry", variant: "destructive" });
     }
-  };
-
-  const handleWhatsApp = () => {
-    const waText = [
-      `🏦 *AePS ${isWithdrawal ? "Withdrawal" : "Deposit"} Receipt*`,
-      `Receipt No: ${receiptNumber}`,
-      `Customer: ${tx.customerName}`,
-      `Amount: ₹${tx.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
-      `Date: ${formattedDate}`,
-      `Center: ${businessName}`,
-      ...(businessMobile ? [`📞 ${businessMobile}`] : []),
-    ].join("\n");
-    const url = `https://wa.me/?text=${encodeURIComponent(waText)}`;
-    window.open(url, "_blank");
   };
 
   return (
@@ -172,7 +200,7 @@ export function AepsReceiptModal({
         </DialogHeader>
 
         <div ref={printRef} style={{ background: "#fff" }}>
-          {/* Navy header */}
+          {/* Coloured header */}
           <div style={{
             background: isWithdrawal
               ? "linear-gradient(135deg, #7f1d1d, #e11d48)"
@@ -184,7 +212,6 @@ export function AepsReceiptModal({
             <div style={{ position: "absolute", top: -16, right: -16, width: 80, height: 80, borderRadius: "50%", background: "rgba(255,255,255,0.10)" }} />
             <div style={{ position: "absolute", bottom: -24, left: 32, width: 64, height: 64, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
 
-            {/* Top label row */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8, position: "relative" }}>
               <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 8, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" }}>
                 {businessName}
@@ -194,7 +221,6 @@ export function AepsReceiptModal({
               </p>
             </div>
 
-            {/* Brand + receipt number row */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", position: "relative" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{
@@ -216,17 +242,16 @@ export function AepsReceiptModal({
                 <p style={{ color: "rgba(255,255,255,0.9)", fontSize: 12, fontWeight: 900, fontFamily: "monospace", letterSpacing: "0.03em" }}>
                   {receiptNumber}
                 </p>
-                <div style={{
-                  display: "inline-flex", alignItems: "center", gap: 4,
-                  background: "rgba(255,255,255,0.15)",
-                  border: "1px solid rgba(255,255,255,0.25)",
-                  borderRadius: 20, padding: "3px 8px", marginTop: 5,
-                }}>
-                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#fff" }} />
-                  <span style={{ fontSize: 9, fontWeight: 700, color: "#fff", letterSpacing: "0.06em" }}>
-                    {isWithdrawal ? "WITHDRAWAL" : "DEPOSIT"}
-                  </span>
-                </div>
+                {hasToken && (
+                  <div style={{
+                    display: "inline-flex", alignItems: "center", gap: 4,
+                    background: "rgba(34,197,94,0.20)", border: "1px solid rgba(34,197,94,0.35)",
+                    borderRadius: 20, padding: "3px 8px", marginTop: 5,
+                  }}>
+                    <CheckCircle2 size={9} color="#22c55e" strokeWidth={2.5} />
+                    <span style={{ fontSize: 9, fontWeight: 700, color: "#22c55e", letterSpacing: "0.06em" }}>VERIFIED</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -270,62 +295,45 @@ export function AepsReceiptModal({
           <div style={{ padding: "10px 20px" }}>
             {[
               { label: "Customer", value: tx.customerName },
-              { label: "Service", value: "AePS Cash Management" },
               { label: "Transaction", value: txLabel },
-              { label: "Balance After", value: `₹${tx.balance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}` },
               { label: "Date", value: formattedDate },
               { label: "Issued At", value: issuedAt },
+              ...(tx.balance !== undefined ? [{ label: "Balance After", value: `₹${tx.balance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}` }] : []),
               ...(tx.description ? [{ label: "Note", value: tx.description }] : []),
             ].map((row, i, arr) => (
-              <div
-                key={row.label}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                  padding: "6px 0",
-                  borderBottom: i < arr.length - 1 ? "1px solid #f1f5f9" : "none",
-                  gap: 8,
-                }}
-              >
+              <div key={row.label} style={{
+                display: "flex", justifyContent: "space-between", alignItems: "flex-start",
+                padding: "6px 0", borderBottom: i < arr.length - 1 ? "1px solid #f1f5f9" : "none", gap: 8,
+              }}>
                 <p style={{ fontSize: 10, color: "#94a3b8", fontWeight: 600, flexShrink: 0 }}>{row.label}</p>
-                <p style={{
-                  fontSize: 11, color: "#0b2c60", fontWeight: 700,
-                  textAlign: "right", wordBreak: "break-word", maxWidth: "62%",
-                }}>{row.value}</p>
+                <p style={{ fontSize: 11, color: "#0b2c60", fontWeight: 700, textAlign: "right", wordBreak: "break-word", maxWidth: "62%" }}>{row.value}</p>
               </div>
             ))}
           </div>
 
-          {/* QR code — encodes transaction summary */}
+          {/* QR code */}
           <div style={{ padding: "0 20px 12px", display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
             <div style={{ flex: 1, paddingRight: 14 }}>
-              <p style={{ fontSize: 10, fontWeight: 700, color: "#0b2c60", marginBottom: 3 }}>Scan for details</p>
+              <p style={{ fontSize: 10, fontWeight: 700, color: "#0b2c60", marginBottom: 3 }}>
+                {hasToken ? "Scan to open & download" : "Scan for details"}
+              </p>
               <p style={{ fontSize: 8, color: "#94a3b8", lineHeight: 1.5 }}>
-                Scan this QR code to view transaction details. Keep this receipt for your records.
+                {hasToken
+                  ? "Scan QR to open receipt online and download the PDF."
+                  : "Scan this QR to view transaction details."}
               </p>
             </div>
             <div style={{
-              background: "#fff",
-              padding: 8,
-              borderRadius: 10,
-              border: "1px solid #e2e8f0",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-              flexShrink: 0,
+              background: "#fff", padding: 8, borderRadius: 10,
+              border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", flexShrink: 0,
             }}>
-              <QRCode value={qrData} size={70} fgColor="#0b2c60" bgColor="#fff" />
+              <QRCode value={qrValue} size={70} fgColor="#0b2c60" bgColor="#fff" />
             </div>
           </div>
 
-          {/* Business contact row */}
+          {/* Business contact */}
           {hasContact && (
-            <div style={{
-              borderTop: "1px dashed #e2e8f0",
-              padding: "10px 20px",
-              display: "flex",
-              flexDirection: "column",
-              gap: 4,
-            }}>
+            <div style={{ borderTop: "1px dashed #e2e8f0", padding: "10px 20px", display: "flex", flexDirection: "column", gap: 4 }}>
               {businessAddress && (
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
                   <MapPin size={9} color="#94a3b8" style={{ flexShrink: 0, marginTop: 1 }} />
@@ -348,21 +356,13 @@ export function AepsReceiptModal({
           )}
 
           {/* Footer */}
-          <div style={{
-            background: "#0b2c60",
-            padding: "10px 20px",
-            textAlign: "center",
-          }}>
-            <p style={{ fontSize: 10, fontWeight: 700, color: "#fff", marginBottom: 2 }}>
-              Thank you for choosing SAHU CSC
-            </p>
-            <p style={{ fontSize: 8, color: "rgba(255,255,255,0.5)" }}>
-              Computer generated receipt · No signature required
-            </p>
+          <div style={{ background: "#0b2c60", padding: "10px 20px", textAlign: "center" }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: "#fff", marginBottom: 2 }}>Thank you for choosing SAHU CSC</p>
+            <p style={{ fontSize: 8, color: "rgba(255,255,255,0.5)" }}>AePS transaction receipt · Aadhaar-Enabled Payment System</p>
           </div>
         </div>
 
-        {/* Action buttons — 2×2 grid */}
+        {/* Action buttons */}
         <div style={{ padding: "10px 14px 12px", background: "#fff", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={handlePrint}>
             <Printer size={13} />Print
@@ -371,13 +371,9 @@ export function AepsReceiptModal({
             <Download size={13} />
             {generatingPdf ? "Generating…" : "PDF"}
           </Button>
-          <Button
-            size="sm"
-            className="gap-1.5 text-xs"
-            style={{ background: "#25D366", color: "#fff" }}
-            onClick={handleWhatsApp}
-          >
-            <WhatsAppIcon />WhatsApp
+          <Button size="sm" className="gap-1.5 text-xs" style={{ background: "#25D366", color: "#fff" }}
+            onClick={handleWhatsApp} disabled={sendingWa}>
+            <WhatsAppIcon />{sendingWa ? "Preparing…" : "WhatsApp"}
           </Button>
           <Button size="sm" className="gap-1.5 text-xs" style={{ background: "#0b2c60" }} onClick={handleShare}>
             <Share2 size={13} />Share

@@ -45,6 +45,8 @@ const About              = lazy(() => import("@/pages/about"));
 const Udhari             = lazy(() => import("@/pages/udhari"));
 const UdhariCustomer     = lazy(() => import("@/pages/udhari-customer"));
 const ReceiptsVerify     = lazy(() => import("@/pages/receipts-verify"));
+const AepsReceiptVerify  = lazy(() => import("@/pages/aeps-receipt-verify"));
+const UdhariReceiptVerify = lazy(() => import("@/pages/udhari-receipt-verify"));
 const Broadcast          = lazy(() => import("@/pages/broadcast"));
 const ReceiptExport      = lazy(() => import("@/pages/receipt-export"));
 
@@ -382,6 +384,8 @@ function Router() {
             <Route path="/broadcast">{() => <ProtectedRoute component={Broadcast} adminOnly />}</Route>
             <Route path="/receipt-export">{() => <ProtectedRoute component={ReceiptExport} adminOnly />}</Route>
             <Route path="/receipts/verify/:token" component={ReceiptsVerify} />
+            <Route path="/receipts/verify/aeps/:token" component={AepsReceiptVerify} />
+            <Route path="/receipts/verify/udhari/:token" component={UdhariReceiptVerify} />
             <Route path="/share-target" component={ShareTargetHandler} />
             <Route path="/offline" component={Offline} />
             <Route path="/open-file">{() => <ProtectedRoute component={Ledger} />}</Route>

@@ -33,6 +33,7 @@ export const udhariEntriesTable = pgTable(
     type: text("type").notNull(), // 'gave' | 'got'
     amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
     note: text("note").notNull().default(""),
+    receiptToken: text("receipt_token"),
     createdBy: integer("created_by")
       .notNull()
       .references(() => usersTable.id, { onDelete: "cascade" }),

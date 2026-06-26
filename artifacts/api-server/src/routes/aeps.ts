@@ -1,8 +1,9 @@
 import { Router, type IRouter } from "express";
-import { db, aepsDailyTable, aepsTransactionsTable } from "@workspace/db";
-import { eq, and, sum, count, desc, gte, lte, ilike, sql } from "drizzle-orm";
+import { db, aepsDailyTable, aepsTransactionsTable, usersTable, settingsTable } from "@workspace/db";
+import { eq, and, sum, count, desc, gte, lte, ilike, sql, inArray } from "drizzle-orm";
 import { requireAuth, requireRole, requirePermission, auditLog, getClientIp } from "../lib/auth";
 import { z } from "zod";
+import { randomUUID } from "crypto";
 
 const router: IRouter = Router();
 
@@ -56,6 +57,7 @@ router.get("/aeps/session", requireAuth, requirePermission("aeps:view"), async (
       customerName: tx.customerName,
       description: tx.description,
       balance: runningBalance,
+      receiptToken: tx.receiptToken ?? null,
       createdAt: tx.createdAt instanceof Date ? tx.createdAt.toISOString() : tx.createdAt,
     };
   });
@@ -87,7 +89,6 @@ router.get("/aeps/transactions", requireAuth, requirePermission("aeps:view"), as
   const typeFilter = req.query.type as string | undefined;
   const customerName = req.query.customerName as string | undefined;
 
-  // Collect all session IDs belonging to this user (with optional date range)
   const sessionWhere: any[] = [eq(aepsDailyTable.createdBy, userId)];
   if (startDate) sessionWhere.push(gte(aepsDailyTable.date, startDate));
   if (endDate)   sessionWhere.push(lte(aepsDailyTable.date, endDate));
@@ -105,7 +106,6 @@ router.get("/aeps/transactions", requireAuth, requirePermission("aeps:view"), as
   const sessionMap = new Map(sessions.map((s) => [s.id, s]));
   const sessionIds = sessions.map((s) => s.id);
 
-  // Build transaction filters
   const idFilter = sessionIds.length === 1
     ? eq(aepsTransactionsTable.dailyId, sessionIds[0])
     : sql`${aepsTransactionsTable.dailyId} = ANY(ARRAY[${sql.raw(sessionIds.join(","))}])`;
@@ -117,21 +117,16 @@ router.get("/aeps/transactions", requireAuth, requirePermission("aeps:view"), as
     txWhere.push(ilike(aepsTransactionsTable.customerName, `%${customerName}%`));
   }
 
-  // We do a simpler approach: select all matching tx then paginate in JS (avoids complex IN query with Drizzle)
   const allTx = await db
     .select()
     .from(aepsTransactionsTable)
     .where(and(...txWhere))
     .orderBy(desc(aepsTransactionsTable.createdAt));
 
-  // Filter to only transactions whose dailyId is in our session set
   const filtered = allTx.filter((tx) => sessionMap.has(tx.dailyId));
-  const finalFiltered = typeFilter || customerName
-    ? filtered
-    : filtered; // already filtered above
 
-  const total = finalFiltered.length;
-  const paginated = finalFiltered.slice(offset, offset + limit);
+  const total = filtered.length;
+  const paginated = filtered.slice(offset, offset + limit);
 
   const result = paginated.map((tx) => {
     const session = sessionMap.get(tx.dailyId)!;
@@ -142,6 +137,7 @@ router.get("/aeps/transactions", requireAuth, requirePermission("aeps:view"), as
       amount: fmt(tx.amount),
       customerName: tx.customerName,
       description: tx.description,
+      receiptToken: tx.receiptToken ?? null,
       createdAt: tx.createdAt instanceof Date ? tx.createdAt.toISOString() : tx.createdAt,
     };
   });
@@ -198,9 +194,11 @@ router.post("/aeps/transaction", requireAuth, requirePermission("aeps:manage"), 
     return;
   }
 
+  const receiptToken = randomUUID();
+
   const [tx] = await db
     .insert(aepsTransactionsTable)
-    .values({ dailyId: session.id, type, amount: String(amount), customerName, description })
+    .values({ dailyId: session.id, type, amount: String(amount), customerName, description, receiptToken })
     .returning();
 
   await auditLog(userId, "aeps.transaction", `AePS ${type} ₹${amount} for ${customerName}`, getClientIp(req));
@@ -211,6 +209,7 @@ router.post("/aeps/transaction", requireAuth, requirePermission("aeps:manage"), 
     amount: fmt(tx.amount),
     customerName: tx.customerName,
     description: tx.description,
+    receiptToken: tx.receiptToken ?? null,
     createdAt: tx.createdAt instanceof Date ? tx.createdAt.toISOString() : tx.createdAt,
   });
 });
@@ -234,7 +233,6 @@ router.patch("/aeps/transaction/:id", requireAuth, requirePermission("aeps:manag
   const [existing] = await db.select().from(aepsTransactionsTable).where(eq(aepsTransactionsTable.id, id));
   if (!existing) { res.status(404).json({ error: "Not found" }); return; }
 
-  // Ownership check via parent session
   const [session] = await db.select().from(aepsDailyTable).where(eq(aepsDailyTable.id, existing.dailyId));
   if (session && session.createdBy !== req.session.userId && req.session.userRole !== "admin") {
     res.status(403).json({ error: "Forbidden" }); return;
@@ -255,6 +253,7 @@ router.patch("/aeps/transaction/:id", requireAuth, requirePermission("aeps:manag
     amount: fmt(updated.amount),
     customerName: updated.customerName,
     description: updated.description,
+    receiptToken: updated.receiptToken ?? null,
     createdAt: updated.createdAt instanceof Date ? updated.createdAt.toISOString() : updated.createdAt,
   });
 });
@@ -278,7 +277,7 @@ router.delete("/aeps/transaction/:id", requireAuth, requirePermission("aeps:mana
   res.sendStatus(204);
 });
 
-// Admin: get AePS summary for all users (used in admin reports)
+// Admin: get AePS summary for all users
 router.get("/admin/aeps-overview", requireRole("admin"), async (_req, res): Promise<void> => {
   const sessions = await db
     .select({
@@ -325,6 +324,76 @@ router.get("/admin/aeps-overview", requireRole("admin"), async (_req, res): Prom
       currentBalance: parseFloat(s.openingBalance ?? "0") - e.w + e.d,
     };
   }));
+});
+
+// ── Public verify endpoint — GET /api/receipts/verify/aeps/:token ──────────────
+router.get("/receipts/verify/aeps/:token", async (req, res): Promise<void> => {
+  const { token } = req.params;
+  if (!token || typeof token !== "string" || token.length < 16) {
+    res.status(400).json({ error: "Invalid token" });
+    return;
+  }
+
+  const [tx] = await db
+    .select({
+      id: aepsTransactionsTable.id,
+      dailyId: aepsTransactionsTable.dailyId,
+      type: aepsTransactionsTable.type,
+      amount: aepsTransactionsTable.amount,
+      customerName: aepsTransactionsTable.customerName,
+      description: aepsTransactionsTable.description,
+      receiptToken: aepsTransactionsTable.receiptToken,
+      createdAt: aepsTransactionsTable.createdAt,
+    })
+    .from(aepsTransactionsTable)
+    .where(eq(aepsTransactionsTable.receiptToken, token));
+
+  if (!tx) {
+    res.status(404).json({ error: "Receipt not found" });
+    return;
+  }
+
+  // Get the session for this transaction to get the date and operator
+  const [session] = await db
+    .select({
+      id: aepsDailyTable.id,
+      date: aepsDailyTable.date,
+      openingBalance: aepsDailyTable.openingBalance,
+      createdBy: aepsDailyTable.createdBy,
+    })
+    .from(aepsDailyTable)
+    .where(eq(aepsDailyTable.id, tx.dailyId));
+
+  // Get operator name
+  const [operator] = session
+    ? await db.select({ username: usersTable.username }).from(usersTable).where(eq(usersTable.id, session.createdBy))
+    : [];
+
+  const settingsRows = await db
+    .select({ key: settingsTable.key, value: settingsTable.value })
+    .from(settingsTable)
+    .where(inArray(settingsTable.key, ["businessName", "businessAddress", "businessMobile", "businessWebsite"]));
+
+  const getSetting = (key: string, fallback = "") =>
+    settingsRows.find((r) => r.key === key)?.value ?? fallback;
+
+  const year = session ? new Date(session.date).getFullYear() : new Date().getFullYear();
+  const receiptNumber = `AEPS-${year}-${String(tx.id).padStart(4, "0")}`;
+
+  res.json({
+    receiptNumber,
+    date: session?.date ?? new Date().toISOString().split("T")[0],
+    type: tx.type,
+    amount: parseFloat(tx.amount ?? "0"),
+    customerName: tx.customerName,
+    description: tx.description,
+    operatorName: operator?.username ?? null,
+    createdAt: tx.createdAt instanceof Date ? tx.createdAt.toISOString() : tx.createdAt,
+    businessName: getSetting("businessName", "SAHU CSC Center"),
+    businessAddress: getSetting("businessAddress", ""),
+    businessMobile: getSetting("businessMobile", ""),
+    businessWebsite: getSetting("businessWebsite", ""),
+  });
 });
 
 export default router;

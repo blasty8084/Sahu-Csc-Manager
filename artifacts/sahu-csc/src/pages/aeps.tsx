@@ -67,6 +67,7 @@ type AepsTx = {
   description: string | null;
   balance: number;
   createdAt: string;
+  receiptToken?: string | null;
 };
 
 type AepsSession = {
@@ -88,6 +89,7 @@ type AllTx = {
   customerName: string;
   description: string | null;
   createdAt: string;
+  receiptToken?: string | null;
 };
 
 type AllTxResponse = {
@@ -1902,6 +1904,7 @@ function DailyTab() {
           balance: receiptTx.balance,
           createdAt: receiptTx.createdAt,
           date: selectedDate,
+          receiptToken: receiptTx.receiptToken,
         } : null}
         onClose={() => setReceiptTx(null)}
         businessName={businessName}
@@ -2309,6 +2312,7 @@ function AllTransactionsTab() {
           balance: 0,
           createdAt: receiptTx.createdAt,
           date: receiptTx.date,
+          receiptToken: receiptTx.receiptToken,
         } : null}
         onClose={() => setReceiptTx(null)}
         businessName={businessName}
