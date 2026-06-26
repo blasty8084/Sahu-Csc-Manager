@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import QRCode from "react-qr-code";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,8 @@ interface ReceiptModalProps {
   businessAddress?: string;
   businessMobile?: string;
   businessWebsite?: string;
+  autoDownload?: boolean;
+  onAutoDownloadComplete?: () => void;
 }
 
 export function ReceiptModal({
@@ -44,11 +46,48 @@ export function ReceiptModal({
   businessAddress = "",
   businessMobile = "",
   businessWebsite = "",
+  autoDownload = false,
+  onAutoDownloadComplete,
 }: ReceiptModalProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [sendingWa, setSendingWa] = useState(false);
+
+  useEffect(() => {
+    if (!autoDownload || !open || !entry) return;
+    const timer = setTimeout(async () => {
+      const el = printRef.current;
+      if (!el) return;
+      setGeneratingPdf(true);
+      try {
+        const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+          import("html2canvas"),
+          import("jspdf"),
+        ]);
+        const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false });
+        const imgData = canvas.toDataURL("image/png");
+        const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+        const blob = pdf.output("blob");
+        const receiptNum = entry.receiptNumber ?? `CSC-${new Date(entry.createdAt).getFullYear()}-${String(entry.id).padStart(4, "0")}`;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${receiptNum}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+        onAutoDownloadComplete?.();
+      } catch {
+        /* silently ignore auto-download failures */
+      } finally {
+        setGeneratingPdf(false);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [autoDownload, open, entry?.id]);
 
   if (!entry) return null;
 

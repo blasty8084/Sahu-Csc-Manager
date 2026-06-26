@@ -58,6 +58,9 @@ export default function Ledger() {
   const todayStr = new Date().toISOString().split("T")[0];
   const [quickAdd, setQuickAdd] = useState<{ date: string; customerName: string; serviceType: string; entryType: "credit" | "debit"; amount: string; description: string }>({ date: todayStr, customerName: "", serviceType: "", entryType: "credit", amount: "", description: "" });
   const [quickAddSaving, setQuickAddSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<"transactions" | "receipts">("transactions");
+  const [receiptSearch, setReceiptSearch] = useState("");
+  const [autoDownloadReceipt, setAutoDownloadReceipt] = useState(false);
 
   const refreshPending = async () => {
     try {
@@ -238,6 +241,19 @@ export default function Ledger() {
     return Array.from(names).sort((a, b) => a.localeCompare(b));
   }, [allEntriesData]);
 
+  const receiptEntries = useMemo(() => {
+    const all: any[] = allEntriesData?.entries ?? [];
+    const q = receiptSearch.trim().toLowerCase();
+    return all
+      .filter((e: any) => e.receiptNumber)
+      .filter((e: any) => !q || (
+        e.receiptNumber?.toLowerCase().includes(q) ||
+        e.customerName?.toLowerCase().includes(q) ||
+        e.serviceType?.toLowerCase().includes(q)
+      ))
+      .sort((a: any, b: any) => b.id - a.id);
+  }, [allEntriesData, receiptSearch]);
+
   // Sync rawAmount + entryType → form credit/debit fields
   useEffect(() => {
     const amt = parseFloat(rawAmount) || 0;
@@ -335,6 +351,28 @@ export default function Ledger() {
           <button onClick={() => setShowFilters(!showFilters)} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", width: 30, height: 30, borderRadius: 8, background: hasFilters ? "#0b2c60" : "#f1f5f9", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", outline: "none" }}>
             <Filter size={13} color={hasFilters ? "#fff" : "#64748b"} />
           </button>
+        </div>
+
+        {/* ── MOBILE: Tab switcher ── */}
+        <div className="md:hidden" style={{ display: "flex", background: "#f1f5f9", borderRadius: 14, padding: 4, gap: 4 }}>
+          {(["transactions", "receipts"] as const).map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              style={{
+                flex: 1, height: 38, borderRadius: 11, border: "none", cursor: "pointer",
+                background: activeTab === tab ? "#fff" : "transparent",
+                color: activeTab === tab ? "#0b2c60" : "#64748b",
+                fontWeight: activeTab === tab ? 800 : 600,
+                fontSize: 13,
+                boxShadow: activeTab === tab ? "0 2px 8px rgba(11,44,96,0.12)" : "none",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                transition: "all 0.15s",
+              }}
+            >
+              {tab === "transactions" ? <><FileText size={13} />Transactions</> : <><Receipt size={13} />Receipts</>}
+            </button>
+          ))}
         </div>
 
         {/* ═══════════════════════════════════════════════
@@ -452,23 +490,48 @@ export default function Ledger() {
           <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
             <div style={{ background: "#fff", borderRadius: 20, overflow: "hidden", boxShadow: "0 2px 20px rgba(11,44,96,0.08)", border: "1px solid rgba(11,44,96,0.06)", flex: 1, display: "flex", flexDirection: "column" }}>
 
-              {/* Table toolbar */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 22px", borderBottom: "1px solid rgba(11,44,96,0.07)", flexShrink: 0 }}>
-                <div>
-                  <p style={{ fontSize: 15, fontWeight: 900, color: "#0b2c60" }}>Transactions</p>
-                  <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 1 }}>{data?.total ?? 0} total entries · Page {page} of {Math.max(totalPages, 1)}</p>
+              {/* Table toolbar + Tab switcher */}
+              <div style={{ padding: "14px 18px 0", borderBottom: "1px solid rgba(11,44,96,0.07)", flexShrink: 0 }}>
+                {/* Tab pills */}
+                <div style={{ display: "flex", background: "#f1f5f9", borderRadius: 13, padding: 4, gap: 4, marginBottom: 12 }}>
+                  {(["transactions", "receipts"] as const).map(tab => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      style={{
+                        flex: 1, height: 36, borderRadius: 10, border: "none", cursor: "pointer",
+                        background: activeTab === tab ? "#fff" : "transparent",
+                        color: activeTab === tab ? "#0b2c60" : "#64748b",
+                        fontWeight: activeTab === tab ? 800 : 600,
+                        fontSize: 13,
+                        boxShadow: activeTab === tab ? "0 2px 8px rgba(11,44,96,0.10)" : "none",
+                        display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      {tab === "transactions" ? <><FileText size={13} />Transactions</> : <><Receipt size={13} />Receipt History</>}
+                    </button>
+                  ))}
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  {hasFilters && (
-                    <span style={{ fontSize: 10, fontWeight: 700, color: "#f97316", background: "rgba(249,115,22,0.08)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 20, padding: "4px 12px" }}>
-                      Filtered
-                    </span>
-                  )}
-                  {isOffline && (
-                    <span style={{ fontSize: 10, fontWeight: 700, color: "#d97706", background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.25)", borderRadius: 20, padding: "4px 10px", display: "flex", alignItems: "center", gap: 4 }}>
-                      <WifiOff size={10} /> Offline
-                    </span>
-                  )}
+                {/* Subtitle row */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 12 }}>
+                  <p style={{ fontSize: 11, color: "#94a3b8" }}>
+                    {activeTab === "transactions"
+                      ? `${data?.total ?? 0} total entries · Page ${page} of ${Math.max(totalPages, 1)}`
+                      : `${receiptEntries.length} receipt${receiptEntries.length !== 1 ? "s" : ""} found`}
+                  </p>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    {activeTab === "transactions" && hasFilters && (
+                      <span style={{ fontSize: 10, fontWeight: 700, color: "#f97316", background: "rgba(249,115,22,0.08)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 20, padding: "4px 12px" }}>
+                        Filtered
+                      </span>
+                    )}
+                    {isOffline && (
+                      <span style={{ fontSize: 10, fontWeight: 700, color: "#d97706", background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.25)", borderRadius: 20, padding: "4px 10px", display: "flex", alignItems: "center", gap: 4 }}>
+                        <WifiOff size={10} /> Offline
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -482,8 +545,102 @@ export default function Ledger() {
                 </div>
               )}
 
+              {/* Desktop Receipt History panel */}
+              {activeTab === "receipts" && (
+                <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+                  {/* Search bar */}
+                  <div style={{ position: "relative" }}>
+                    <Search size={13} color="#94a3b8" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
+                    <input
+                      value={receiptSearch}
+                      onChange={(e) => setReceiptSearch(e.target.value)}
+                      placeholder="Search by receipt no., customer name, or service…"
+                      style={{ width: "100%", height: 40, paddingLeft: 34, paddingRight: 12, borderRadius: 12, border: "1.5px solid #e2e8f0", background: "#f8fafc", fontSize: 13, color: "#0b2c60", outline: "none", boxSizing: "border-box", fontWeight: 500, boxShadow: "0 1px 4px rgba(11,44,96,0.05)" }}
+                    />
+                  </div>
+                  {/* Receipt list */}
+                  {receiptEntries.length === 0 ? (
+                    <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 0" }}>
+                      <div style={{ width: 60, height: 60, borderRadius: 18, background: "rgba(11,44,96,0.06)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
+                        <Receipt size={26} color="#0b2c60" opacity={0.3} />
+                      </div>
+                      <p style={{ fontSize: 15, fontWeight: 700, color: "#0b2c60", marginBottom: 6 }}>No receipts found</p>
+                      <p style={{ fontSize: 12, color: "#94a3b8" }}>{receiptSearch ? "Try a different search term" : "Receipts will appear here after adding entries"}</p>
+                    </div>
+                  ) : (
+                    <div style={{ overflowX: "auto" }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                        <thead>
+                          <tr style={{ background: "rgba(11,44,96,0.03)", borderBottom: "2px solid rgba(11,44,96,0.08)" }}>
+                            {[
+                              { label: "Receipt No", w: 140 },
+                              { label: "Date", w: 100 },
+                              { label: "Customer", w: undefined },
+                              { label: "Service", w: 156 },
+                              { label: "Amount", w: 120, right: true },
+                              { label: "Actions", w: 160, right: true },
+                            ].map(col => (
+                              <th key={col.label} style={{ padding: "10px 14px", textAlign: col.right ? "right" : "left", fontSize: 10, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase" as const, letterSpacing: "0.07em", whiteSpace: "nowrap" as const, width: col.w }}>
+                                {col.label}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {receiptEntries.map((entry: any) => {
+                            const isCredit = entry.credit > 0;
+                            const amt = isCredit ? entry.credit : entry.debit;
+                            const ec = isCredit ? "#059669" : "#e11d48";
+                            const prefix = isCredit ? "+" : "−";
+                            return (
+                              <tr key={entry.id}
+                                style={{ borderBottom: "1px solid rgba(11,44,96,0.05)", transition: "background 0.1s" }}
+                                onMouseEnter={e => (e.currentTarget.style.background = "rgba(11,44,96,0.02)")}
+                                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                              >
+                                <td style={{ padding: "12px 14px", whiteSpace: "nowrap" as const }}>
+                                  <span style={{ fontFamily: "monospace", fontSize: 11, fontWeight: 800, color: "#f97316", background: "rgba(249,115,22,0.07)", padding: "3px 8px", borderRadius: 6, border: "1px solid rgba(249,115,22,0.15)" }}>
+                                    {entry.receiptNumber}
+                                  </span>
+                                </td>
+                                <td style={{ padding: "12px 14px", fontFamily: "monospace", fontSize: 12, color: "#64748b", whiteSpace: "nowrap" as const }}>{entry.date}</td>
+                                <td style={{ padding: "12px 14px", fontWeight: 700, fontSize: 13, color: "#0b2c60", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>{entry.customerName}</td>
+                                <td style={{ padding: "12px 14px" }}>
+                                  <span style={{ fontSize: 11, fontWeight: 700, color: "#475569", background: "rgba(71,85,105,0.07)", padding: "3px 10px", borderRadius: 20, whiteSpace: "nowrap" as const }}>
+                                    {entry.serviceType}
+                                  </span>
+                                </td>
+                                <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 900, fontSize: 14, color: ec, whiteSpace: "nowrap" as const }}>
+                                  {prefix}₹{amt.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                </td>
+                                <td style={{ padding: "12px 14px" }}>
+                                  <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                                    <button
+                                      onClick={() => { setReceiptEntry(entry); setAutoDownloadReceipt(false); }}
+                                      title="View Receipt"
+                                      style={{ height: 32, paddingInline: 10, borderRadius: 8, border: "1.5px solid rgba(11,44,96,0.15)", background: "rgba(11,44,96,0.04)", color: "#0b2c60", fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                                      <Receipt size={12} />View
+                                    </button>
+                                    <button
+                                      onClick={() => { setReceiptEntry(entry); setAutoDownloadReceipt(true); }}
+                                      title="Download PDF"
+                                      style={{ height: 32, paddingInline: 10, borderRadius: 8, border: "none", background: "linear-gradient(135deg,#0b2c60,#1a4a9e)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, boxShadow: "0 2px 8px rgba(11,44,96,0.22)" }}>
+                                      <Download size={12} />PDF
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Table */}
-              <div style={{ flex: 1, overflowX: "auto", overflowY: "auto" }}>
+              <div style={{ flex: 1, overflowX: "auto", overflowY: "auto", display: activeTab !== "transactions" ? "none" : undefined }}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
                     <tr style={{ background: "rgba(11,44,96,0.03)", borderBottom: "2px solid rgba(11,44,96,0.08)" }}>
@@ -761,7 +918,7 @@ export default function Ledger() {
               </div>
 
               {/* Pagination footer */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 22px", borderTop: "1px solid rgba(11,44,96,0.07)", background: "rgba(11,44,96,0.015)", flexShrink: 0 }}>
+              <div style={{ display: activeTab !== "transactions" ? "none" : "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 22px", borderTop: "1px solid rgba(11,44,96,0.07)", background: "rgba(11,44,96,0.015)", flexShrink: 0 }}>
                 <p style={{ fontSize: 12, color: "#94a3b8" }}>
                   {data?.total
                     ? `Showing ${(page - 1) * 15 + 1}–${Math.min(page * 15, data.total)} of ${data.total} entries`
@@ -798,7 +955,7 @@ export default function Ledger() {
         {/* ═══════════════════════════════════════════════ */}
 
         {/* Offline Pending Entries — mobile only (desktop shows banner inside table panel) */}
-        {pendingEntries.length > 0 && (
+        {activeTab === "transactions" && pendingEntries.length > 0 && (
           <div className="md:hidden bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-xl p-4 space-y-3">
             <div className="flex items-center gap-2">
               <Clock size={14} className="text-amber-600 dark:text-amber-400 flex-shrink-0" />
@@ -841,7 +998,7 @@ export default function Ledger() {
         )}
 
         {/* Mobile Filters (collapsible) */}
-        {showFilters && (
+        {activeTab === "transactions" && showFilters && (
           <div className="md:hidden bg-card border rounded-xl p-4 space-y-3">
             <div className="flex items-center justify-between">
               <p className="text-sm font-semibold">Filters</p>
@@ -873,8 +1030,69 @@ export default function Ledger() {
         )}
 
 
+        {/* ── MOBILE: Receipt History ── */}
+        {activeTab === "receipts" && (
+          <div className="md:hidden space-y-3 pb-24">
+            <div style={{ position: "relative" }}>
+              <Search size={13} color="#94a3b8" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
+              <input
+                value={receiptSearch}
+                onChange={(e) => setReceiptSearch(e.target.value)}
+                placeholder="Search receipt no., customer, or service…"
+                style={{ width: "100%", height: 42, paddingLeft: 34, paddingRight: 12, borderRadius: 14, border: "1.5px solid #e2e8f0", background: "#fff", fontSize: 13, color: "#0b2c60", outline: "none", boxSizing: "border-box", fontWeight: 500, boxShadow: "0 1px 6px rgba(11,44,96,0.06)" }}
+              />
+            </div>
+            {receiptEntries.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "40px 0" }}>
+                <div style={{ width: 52, height: 52, borderRadius: 16, background: "rgba(11,44,96,0.06)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
+                  <Receipt size={22} color="#0b2c60" opacity={0.3} />
+                </div>
+                <p style={{ fontSize: 14, fontWeight: 700, color: "#0b2c60", marginBottom: 4 }}>No receipts yet</p>
+                <p style={{ fontSize: 12, color: "#94a3b8" }}>{receiptSearch ? "No receipts match your search" : "Receipts appear here after you add entries"}</p>
+              </div>
+            ) : receiptEntries.map((entry: any) => {
+              const isCredit = entry.credit > 0;
+              const amt = isCredit ? entry.credit : entry.debit;
+              const ec = isCredit ? "#059669" : "#e11d48";
+              const prefix = isCredit ? "+" : "−";
+              return (
+                <div key={entry.id} style={{ background: "#fff", borderRadius: 16, overflow: "hidden", boxShadow: "0 1px 8px rgba(11,44,96,0.07)", border: "1px solid #f1f5f9" }}>
+                  <div style={{ height: 3, background: "linear-gradient(90deg,#f97316,#0b2c60)" }} />
+                  <div style={{ padding: "12px 14px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                      <span style={{ fontFamily: "monospace", fontSize: 12, fontWeight: 800, color: "#f97316", background: "rgba(249,115,22,0.08)", padding: "3px 9px", borderRadius: 7, border: "1px solid rgba(249,115,22,0.18)" }}>
+                        {entry.receiptNumber}
+                      </span>
+                      <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600 }}>
+                        {new Date(entry.date + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: "#0b2c60", marginBottom: 2 }}>{entry.customerName}</p>
+                    <p style={{ fontSize: 11, color: "#64748b", marginBottom: 10 }}>{entry.serviceType}</p>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <p style={{ fontSize: 18, fontWeight: 900, color: ec }}>{prefix}₹{amt.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button
+                          onClick={() => { setReceiptEntry(entry); setAutoDownloadReceipt(false); }}
+                          style={{ height: 34, paddingInline: 12, borderRadius: 10, border: "1.5px solid rgba(11,44,96,0.15)", background: "rgba(11,44,96,0.04)", color: "#0b2c60", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
+                          <Receipt size={13} />View
+                        </button>
+                        <button
+                          onClick={() => { setReceiptEntry(entry); setAutoDownloadReceipt(true); }}
+                          style={{ height: 34, paddingInline: 12, borderRadius: 10, border: "none", background: "linear-gradient(135deg,#0b2c60,#1a4a9e)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 5, boxShadow: "0 2px 10px rgba(11,44,96,0.25)" }}>
+                          <Download size={13} />PDF
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         {/* ── MOBILE: Date-grouped card list ── */}
-        <div className="md:hidden space-y-1 pb-24">
+        <div className="md:hidden space-y-1 pb-24" style={activeTab === "receipts" ? { display: "none" } : {}}>
           {isLoading ? (
             [...Array(5)].map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)
           ) : !data?.entries?.length ? (
@@ -1219,11 +1437,13 @@ export default function Ledger() {
       <ReceiptModal
         entry={receiptEntry}
         open={!!receiptEntry}
-        onClose={() => setReceiptEntry(null)}
+        onClose={() => { setReceiptEntry(null); setAutoDownloadReceipt(false); }}
         businessName={businessName}
         businessAddress={businessAddress}
         businessMobile={businessMobile}
         businessWebsite={businessWebsite}
+        autoDownload={autoDownloadReceipt}
+        onAutoDownloadComplete={() => setAutoDownloadReceipt(false)}
       />
 
       {/* Delete All */}
