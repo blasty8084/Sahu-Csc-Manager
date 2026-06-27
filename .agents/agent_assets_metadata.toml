@@ -18,3 +18,15 @@ id = "rwFSM8A3hY4IaPtD36nGU"
 uri = "file://docs/DESKTOP_FORMS_V2.md"
 type = "text"
 title = "Desktop Forms V2 — Architecture & Changelog"
+
+[[outputs]]
+id = "v6BbhtCEDkS05tuEvwkcq"
+uri = "file://artifacts/sahu-csc/src/locales/hi/translation.json"
+type = "unspecified"
+title = "Hindi (हिंदी) — hi/translation.json"
+
+[[outputs]]
+id = "Hkz5jBAwXtxRYvvZ9wW-J"
+uri = "file://artifacts/sahu-csc/src/locales/or/translation.json"
+type = "unspecified"
+title = "Odia (ଓଡ଼ିଆ) — or/translation.json"
