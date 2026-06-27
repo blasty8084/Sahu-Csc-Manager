@@ -1,7 +1,7 @@
 # Desktop Forms V2 — Full-Screen Split Layout
 
-**Version:** 2.0  
-**Date:** 2026-06-20  
+**Version:** 2.1  
+**Date:** 2026-06-27  
 **Scope:** All 5 desktop entry forms (Ledger, Udhari Add Customer, Udhari Entry, AePS Withdrawal, AePS Deposit)
 
 ---

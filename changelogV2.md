@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v2
-**Current version: 2.7.0 — June 2026**
+**Current version: 2.7.1 — June 27, 2026**
 
 > Comprehensive record of every feature, change, and upgrade from v2.0.0 onward.  
 > For a full description of the system architecture, see `architectureV2.md`.  
@@ -9,7 +9,8 @@
 
 ## Table of Contents
 
-1. [v2.7.0 — Bulk Receipt Export & Monthly Auto-Export](#1-v270--bulk-receipt-export--monthly-auto-export-june-2026)
+1. [v2.7.1 — Language UX, Startup Reliability & Workflow Cleanup](#1-v271--language-ux-startup-reliability--workflow-cleanup-june-27-2026)
+2. [v2.7.0 — Bulk Receipt Export & Monthly Auto-Export](#2-v270--bulk-receipt-export--monthly-auto-export-june-2026)
    - [Bulk Receipt Export Page](#11-bulk-receipt-export-page)
    - [Monthly Scheduled Auto-Export](#12-monthly-scheduled-auto-export)
    - [Manual Monthly Trigger & Download](#13-manual-monthly-trigger--download)

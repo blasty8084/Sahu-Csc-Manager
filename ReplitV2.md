@@ -1,5 +1,5 @@
 # SAHU CSC — Project Reference v2
-**Version 2.7.0 — June 2026**
+**Version 2.7.1 — June 27, 2026**
 
 > This is the authoritative quick-reference for the SAHU CSC platform.  
 > For deep architecture detail: `architectureV2.md` · For change history: `changelogV2.md` · For workflow guide: `WORKFLOWS.md`
