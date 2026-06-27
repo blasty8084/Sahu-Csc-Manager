@@ -272,6 +272,12 @@ export default function Profile() {
   const profileForm = useForm({ defaultValues: { fullName: "", email: "", mobile: "", bio: "", address: "" } });
   const passwordForm = useForm({ defaultValues: { currentPassword: "", password: "", confirmPassword: "" } });
   const prefsForm = useForm({ defaultValues: { theme: "light" as "light"|"dark", language: "en" as "en"|"hi"|"or", dashboardLayout: "default" } });
+  const LANG_META: Record<string, { flag: string; name: string; script: string }> = {
+    en: { flag: "🇬🇧", name: "English",  script: "English"  },
+    hi: { flag: "🇮🇳", name: "हिंदी",    script: "Hindi"    },
+    or: { flag: "🇮🇳", name: "ଓଡ଼ିଆ",   script: "Odia"     },
+  };
+  const currentLang = LANG_META[prefsForm.watch("language")] ?? LANG_META["en"];
   const settingsForm = useForm({
     defaultValues: {
       businessName: "", businessAddress: "", businessMobile: "", businessEmail: "", businessWebsite: "",
@@ -523,11 +529,14 @@ export default function Profile() {
         <form onSubmit={onSavePreferences} className="space-y-4">
           {[
             { label:"Theme", icon:<Palette size={14} />, child:<Select value={prefsForm.watch("theme")} onValueChange={v => prefsForm.setValue("theme", v as "light"|"dark")}><SelectTrigger className="w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="light">☀️ Light</SelectItem><SelectItem value="dark">🌙 Dark</SelectItem></SelectContent></Select> },
-            { label:"Language", icon:<Globe size={14} />, child:<Select value={prefsForm.watch("language")} onValueChange={v => prefsForm.setValue("language", v as "en"|"hi"|"or")}><SelectTrigger className="w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="en">🇬🇧 English</SelectItem><SelectItem value="hi">🇮🇳 हिंदी</SelectItem><SelectItem value="or">🇮🇳 ଓଡ଼ିଆ</SelectItem></SelectContent></Select> },
+            { label:"Language", icon:<Globe size={14} />, badge:<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-medium">{currentLang.flag} {currentLang.name}</span>, child:<Select value={prefsForm.watch("language")} onValueChange={v => prefsForm.setValue("language", v as "en"|"hi"|"or")}><SelectTrigger className="w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="en">🇬🇧 English</SelectItem><SelectItem value="hi">🇮🇳 हिंदी</SelectItem><SelectItem value="or">🇮🇳 ଓଡ଼ିଆ</SelectItem></SelectContent></Select> },
             { label:"Dashboard", icon:<LayoutDashboard size={14} />, child:<Select value={prefsForm.watch("dashboardLayout")} onValueChange={v => prefsForm.setValue("dashboardLayout", v)}><SelectTrigger className="w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="default">Default</SelectItem><SelectItem value="compact">Compact</SelectItem><SelectItem value="expanded">Expanded</SelectItem></SelectContent></Select> },
-          ].map((row, i, arr) => (
+          ].map((row: any, i, arr) => (
             <div key={row.label} className={`flex items-center justify-between ${i < arr.length-1 ? "pb-4 border-b" : ""}`}>
-              <div className="flex items-center gap-2 text-sm font-medium">{row.icon}{row.label}</div>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2 text-sm font-medium">{row.icon}{row.label}</div>
+                {row.badge && <div>{row.badge}</div>}
+              </div>
               {row.child}
             </div>
           ))}
@@ -736,11 +745,14 @@ export default function Profile() {
               <form onSubmit={onSavePreferences} className="space-y-4">
                 {[
                   { label: "Theme", icon: <Palette size={14} />, child: <Select value={prefsForm.watch("theme")} onValueChange={v => prefsForm.setValue("theme", v as "light"|"dark")}><SelectTrigger className="w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="light">☀️ Light</SelectItem><SelectItem value="dark">🌙 Dark</SelectItem></SelectContent></Select> },
-                  { label: "Language", icon: <Globe size={14} />, child: <Select value={prefsForm.watch("language")} onValueChange={v => prefsForm.setValue("language", v as "en"|"hi"|"or")}><SelectTrigger className="w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="en">🇬🇧 English</SelectItem><SelectItem value="hi">🇮🇳 हिंदी</SelectItem><SelectItem value="or">🇮🇳 ଓଡ଼ିଆ</SelectItem></SelectContent></Select> },
+                  { label: "Language", icon: <Globe size={14} />, badge: <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-medium">{currentLang.flag} {currentLang.name}</span>, child: <Select value={prefsForm.watch("language")} onValueChange={v => prefsForm.setValue("language", v as "en"|"hi"|"or")}><SelectTrigger className="w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="en">🇬🇧 English</SelectItem><SelectItem value="hi">🇮🇳 हिंदी</SelectItem><SelectItem value="or">🇮🇳 ଓଡ଼ིଆ</SelectItem></SelectContent></Select> },
                   { label: "Dashboard", icon: <LayoutDashboard size={14} />, child: <Select value={prefsForm.watch("dashboardLayout")} onValueChange={v => prefsForm.setValue("dashboardLayout", v)}><SelectTrigger className="w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="default">Default</SelectItem><SelectItem value="compact">Compact</SelectItem><SelectItem value="expanded">Expanded</SelectItem></SelectContent></Select> },
-                ].map((row, i, arr) => (
+                ].map((row: any, i, arr) => (
                   <div key={row.label} className={`flex items-center justify-between ${i < arr.length - 1 ? "pb-4 border-b" : ""}`}>
-                    <div className="flex items-center gap-2 text-sm font-medium">{row.icon}{row.label}</div>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2 text-sm font-medium">{row.icon}{row.label}</div>
+                      {row.badge && <div>{row.badge}</div>}
+                    </div>
                     {row.child}
                   </div>
                 ))}
