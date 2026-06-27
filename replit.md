@@ -1,5 +1,5 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 2.7.0** — last updated 2026-06-25
+**Version 2.7.1** — last updated 2026-06-27
 
 A full-stack CSC (Common Service Center) business management platform for tracking services, ledger accounting, AePS cash management, Udhari Khata (customer credit ledger), and reporting. Built for Odisha / India rural service centers. Supports PWA installation, offline operation, and Android TWA packaging.
 
@@ -7,23 +7,37 @@ A full-stack CSC (Common Service Center) business management platform for tracki
 
 ## Workflows
 
-| Workflow | Command | Port | Purpose |
-|----------|---------|------|---------|
-| `API Server` | `PORT=8080 pnpm --filter @workspace/api-server run dev` | 8080 | Express API server |
-| `artifacts/sahu-csc: web` | `pnpm --filter @workspace/sahu-csc run dev` | 5000 → :80 | Vite frontend (webview) |
-| `artifacts/mockup-sandbox: Component Preview Server` | `pnpm --filter @workspace/mockup-sandbox run dev` | 8081 | Design mockup sandbox |
-| `artifacts/api-server: API Server` | `pnpm --filter @workspace/api-server run dev` | 8080 | Standalone API workflow |
-| `Seed Database` | `PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server exec tsx src/scripts/seed.ts` | — | Seed/reseed sample data; **always resets admin + operator passwords** to defaults (one-shot, exits when done) |
+| Workflow | Port | Purpose | Starts with Project |
+|----------|------|---------|---------------------|
+| `API Server` | 8080 | Express API server (main) | ✅ Yes |
+| `artifacts/sahu-csc: web` | 5000 → :80 | Vite frontend webview | ✅ Yes |
+| `Seed Database` | — | One-shot DB seeder; resets admin + operator passwords | ❌ Manual only |
+| `artifacts/api-server: API Server` | 8080 | Artifact-managed API (auto-added by platform) | ⚠️ Platform-injected |
+| `artifacts/mockup-sandbox: Component Preview Server` | 8081 | Design mockup sandbox (canvas) | ⚠️ Platform-injected |
 
-> **Note:** The `Project` run button (runButton) starts `API Server` + `artifacts/sahu-csc: web` in parallel. Port 5000 is mapped to external port 80 (Replit proxy). The API runs on **port 8080**. The Vite proxy in `vite.config.ts` points to 8080.
+> **Note:** The `Project` run button starts `API Server` + `artifacts/sahu-csc: web` in parallel. The platform artifact system also injects `artifacts/api-server: API Server`, `artifacts/mockup-sandbox: Component Preview Server`, and a duplicate `artifacts/sahu-csc: web` into the Project task list — these extra tasks can be removed manually via **Workflows → Project** in the Replit UI.
 >
-> `artifacts/api-server: API Server` and `Seed Database` are standalone workflows — run them individually as needed, not as part of the main Project flow.
+> Port 5000 is mapped to external port 80 (Replit proxy). The API runs on **port 8080**. The Vite proxy in `vite.config.ts` forwards `/api/*` to `http://localhost:8080`.
 
-### Startup command (Project run button)
+### Preview panel
+The Preview panel shows **two entries** due to the artifact system registering a canvas artifact alongside the real workflow:
+- **`artifacts/sahu-csc: web`** — the real app (port 5000 → :80). **Use this one.**
+- **`SAHU CSC FV1`** — canvas artifact duplicate (port 21700). Remove via ⋮ → Delete in Preview.
+
+### Workflow commands (actual scripts as of v2.7.1)
+
 ```bash
-# Runs in parallel — pnpm install runs first in each, so the app works after any fresh import/remix:
-pnpm install && PORT=8080 pnpm --filter @workspace/api-server run dev          # API on 8080
-pnpm install && PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run dev # Frontend on 5000
+# API Server workflow
+pnpm install && PORT=8080 pnpm --filter @workspace/api-server run dev
+# dev script: (test -f ./dist/index.mjs || pnpm run build) && fuser -k 8080/tcp; pnpm run start
+# Smart build: skips esbuild rebuild on restart if dist/index.mjs already exists
+
+# artifacts/sahu-csc: web workflow
+pnpm install && fuser -k 5000/tcp 2>/dev/null; sleep 1; PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run dev
+# Port-kill on start prevents "address already in use" on rapid restarts
+
+# Seed Database workflow (manual, one-shot)
+PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server exec tsx src/scripts/seed.ts
 ```
 
 > **Remix / import safe**: Both workflow commands run `pnpm install` before starting. This ensures all dependencies are present even on a fresh clone, fork, or GitHub import — no manual setup step required.
@@ -584,6 +598,9 @@ Design exploration lives in `artifacts/mockup-sandbox/`. Each group is a folder 
 - **`pike.replit.dev` URL does not work on mobile**: The dev preview URL only works inside the Replit environment. For a stable mobile-accessible URL, publish/deploy the app — this creates a permanent `*.replit.app` domain.
 - **`session` table is auto-created**: `connect-pg-simple` creates the `session` table in PostgreSQL on first API startup — no migration needed. Do NOT drop this table manually or all logged-in users will be immediately logged out.
 - **`connect-pg-simple` must NOT be bundled by esbuild**: It reads `table.sql` via `path.join(__dirname, 'table.sql')` at runtime. Bundling breaks that path — sessions silently fail. It is listed in `external` in `artifacts/api-server/build.mjs`. Do not remove it.
+- **API `dev` script uses smart build check**: The `dev` script in `artifacts/api-server/package.json` is `(test -f ./dist/index.mjs || pnpm run build) && fuser -k 8080/tcp; pnpm run start`. It skips esbuild on restart if `dist/index.mjs` already exists — reducing restart time from ~90 s to ~2 s. To force a full rebuild, delete `artifacts/api-server/dist/` first.
+- **Frontend `dev` script kills port before starting**: `artifacts/sahu-csc/package.json` dev script runs `fuser -k ${PORT:-5000}/tcp 2>/dev/null; sleep 1;` before Vite starts. This prevents "address already in use" crashes when the workflow is restarted rapidly.
+- **Duplicate Preview panel entry**: The Replit artifact system registers a canvas artifact ("SAHU CSC FV1") alongside the real `artifacts/sahu-csc: web` workflow, causing two entries in the Preview panel. The **real app** is `artifacts/sahu-csc: web` (port 5000 → :80). Remove "SAHU CSC FV1" via ⋮ → Delete in the Preview panel — it does not affect the running app.
 - **Login redirect uses `setQueryData`, not refetch**: After login, `use-auth.tsx` sets `queryClient.setQueryData(["auth/me"], userData)` directly from the login response body. A `useEffect` in `login.tsx` then fires `setLocation("/")` when `user` becomes truthy. Never replace this with an invalidate+refetch pattern — the Replit proxy introduces a delay before the session cookie is forwarded, which causes a transient 401 that cancels the redirect.
 - **Auth `isLoading` must use `||` not `&&`**: In `use-auth.tsx`, the guard is `isLoading = liveLoading || !offlineChecked`. Using `&&` causes the app to briefly consider the user unauthenticated on page refresh (offline check completes before live fetch), triggering an incorrect logout redirect.
 - **LoadingScreen has a 3-phase timeout**: `AuthProvider` exposes `loadingPhase: "loading" | "slow" | "timeout"`. After 4 s → "slow" (message changes). After 12 s → "timeout" (spinner stops, Retry button shown, `offlineChecked` forced `true` to unblock redirect to login). Forcing `offlineChecked` at timeout is intentional — it ensures the app does not hang forever if the API never responds.
