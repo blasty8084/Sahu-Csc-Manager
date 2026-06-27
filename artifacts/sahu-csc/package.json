@@ -78,7 +78,9 @@
   },
   "dependencies": {
     "html2canvas": "^1.4.1",
+    "i18next": "^26.3.2",
     "jspdf": "^4.2.1",
+    "react-i18next": "^17.0.8",
     "react-qr-code": "^2.2.0",
     "workbox-background-sync": "^7.4.1",
     "workbox-cacheable-response": "^7.4.1",

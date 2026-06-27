@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { z } from "zod";

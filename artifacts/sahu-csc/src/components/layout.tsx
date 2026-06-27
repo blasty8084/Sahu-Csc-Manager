@@ -18,6 +18,8 @@ import { AppLogo } from "@/components/app-logo";
 import { PWAInstallBanner } from "@/components/pwa-install-banner";
 import { SyncStatusBar, SyncDot } from "@/components/sync-status-bar";
 import { prefetch } from "@/lib/prefetch";
+import { useTranslation } from "react-i18next";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 type NavItem = {
   href: string;
@@ -54,6 +56,7 @@ function SidebarNav({
   onToggleTheme,
   isDark,
 }: SidebarNavProps) {
+  const { t } = useTranslation();
   const isActive = (href: string) =>
     location === href || (href !== "/" && location.startsWith(href));
 
@@ -69,7 +72,7 @@ function SidebarNav({
         </div>
         <div className="flex-1 min-w-0">
           <h2 className="font-extrabold text-base leading-tight tracking-wide text-white">SAHU CSC</h2>
-          <p className="text-[11px] text-white/50 font-medium tracking-wide mt-0.5">Management Platform</p>
+          <p className="text-[11px] text-white/50 font-medium tracking-wide mt-0.5">{t('nav.management_platform')}</p>
         </div>
       </div>
 
@@ -112,7 +115,7 @@ function SidebarNav({
         {adminNavItems.length > 0 && (
           <>
             <p className="text-white/30 text-[10px] font-bold uppercase tracking-[0.15em] px-3 pt-4 pb-1.5">
-              Admin
+              {t('nav.admin')}
             </p>
             {adminNavItems.map((item) => {
               const Icon = item.icon;
@@ -154,6 +157,11 @@ function SidebarNav({
         <span className="text-[9px] text-white/20">© 2026</span>
       </div>
 
+      {/* ── Language Switcher ─────────────────────────────────── */}
+      <div className="px-3 pb-2">
+        <LanguageSwitcher variant="sidebar" />
+      </div>
+
       {/* ── User Footer ────────────────────────────────────────── */}
       <div className="mx-3 mb-3 mt-0.5 p-2.5 rounded-2xl bg-white/8 border border-white/10 flex items-center gap-2.5">
         <Link href="/profile" className="flex-shrink-0 cursor-pointer">
@@ -172,7 +180,7 @@ function SidebarNav({
 
         <button
           onClick={onToggleTheme}
-          title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+          title={isDark ? t('nav.switch_light') : t('nav.switch_dark')}
           className="
             flex-shrink-0 w-8 h-8 rounded-xl border border-white/15 bg-white/5
             flex items-center justify-center
@@ -185,7 +193,7 @@ function SidebarNav({
 
         <button
           onClick={onLogout}
-          title="Logout"
+          title={t('nav.logout')}
           className="
             flex-shrink-0 w-8 h-8 rounded-xl border border-white/15 bg-white/5
             flex items-center justify-center
@@ -204,6 +212,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, logout } = useAuth();
   const { theme, setTheme } = useTheme();
+  const { t } = useTranslation();
 
   const { data: unreadCount = 0 } = useUnreadCount();
   const isAdmin = user?.role === "admin";
@@ -218,27 +227,27 @@ export function Layout({ children }: { children: React.ReactNode }) {
   }, [isDark, setTheme]);
 
   const mainNavItems: NavItem[] = [
-    { href: "/", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/ledger", label: "Ledger", icon: BookOpen },
-    { href: "/udhari", label: "Udhari Khata", icon: HandCoins },
-    { href: "/aeps", label: "AePS Cash", icon: Fingerprint },
-    { href: "/services", label: "Services", icon: Briefcase },
-    { href: "/reports", label: "Reports", icon: BarChart3 },
-    { href: "/notifications", label: "Notifications", icon: Bell, badge: unreadCount },
-    { href: "/profile", label: "My Profile", icon: UserCircle },
-    { href: "/sessions", label: "Active Sessions", icon: MonitorSmartphone, mobileOnly: true },
-    { href: "/pwa-status", label: "App & Offline", icon: WifiOff },
-    { href: "/download-app", label: "Download App", icon: ArrowDownToLine },
-    { href: "/about", label: "About & Docs", icon: Info },
+    { href: "/", label: t('nav.dashboard'), icon: LayoutDashboard },
+    { href: "/ledger", label: t('nav.ledger'), icon: BookOpen },
+    { href: "/udhari", label: t('nav.udhari'), icon: HandCoins },
+    { href: "/aeps", label: t('nav.aeps'), icon: Fingerprint },
+    { href: "/services", label: t('nav.services'), icon: Briefcase },
+    { href: "/reports", label: t('nav.reports'), icon: BarChart3 },
+    { href: "/notifications", label: t('nav.notifications'), icon: Bell, badge: unreadCount },
+    { href: "/profile", label: t('nav.profile'), icon: UserCircle },
+    { href: "/sessions", label: t('nav.sessions'), icon: MonitorSmartphone, mobileOnly: true },
+    { href: "/pwa-status", label: t('nav.pwa_status'), icon: WifiOff },
+    { href: "/download-app", label: t('nav.download_app'), icon: ArrowDownToLine },
+    { href: "/about", label: t('nav.about'), icon: Info },
   ];
 
   const adminNavItems: NavItem[] = isAdmin ? [
-    { href: "/users", label: "User Management", icon: Users, badge: pendingCount },
-    { href: "/broadcast", label: "Broadcast", icon: Megaphone },
-    { href: "/receipt-export", label: "Receipt Export", icon: FileArchive },
-    { href: "/audit-logs", label: "Audit Logs", icon: History },
-    { href: "/backups", label: "Backups", icon: Database },
-    { href: "/server-health", label: "Server Health", icon: HeartPulse },
+    { href: "/users", label: t('nav.user_management'), icon: Users, badge: pendingCount },
+    { href: "/broadcast", label: t('nav.broadcast'), icon: Megaphone },
+    { href: "/receipt-export", label: t('nav.receipt_export'), icon: FileArchive },
+    { href: "/audit-logs", label: t('nav.audit_logs'), icon: History },
+    { href: "/backups", label: t('nav.backups'), icon: Database },
+    { href: "/server-health", label: t('nav.server_health'), icon: HeartPulse },
   ] : [];
 
   const initials = (user?.fullName || user?.username || "U")
@@ -252,7 +261,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const roleLabel = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "";
 
   const pageTitle = (() => {
-    if (location === "/") return "Dashboard";
+    if (location === "/") return t('nav.dashboard');
     const seg = location.split("/")[1];
     return seg.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   })();
@@ -260,9 +269,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const firstName = displayName.split(" ")[0];
   const greeting = (() => {
     const h = new Date().getHours();
-    if (h < 12) return "Good morning";
-    if (h < 17) return "Good afternoon";
-    return "Good evening";
+    if (h < 12) return t('nav.good_morning');
+    if (h < 17) return t('nav.good_afternoon');
+    return t('nav.good_evening');
   })();
   const greetingEmoji = (() => {
     const h = new Date().getHours();
@@ -327,7 +336,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <span style={{ fontSize: 15, fontWeight: 900, color: "#f97316", letterSpacing: "0.02em", lineHeight: 1 }}>CSC</span>
                 </div>
                 <span style={{ fontSize: 9.5, color: "#94a3b8", fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", lineHeight: 1, marginTop: 2, display: "block" }}>
-                  Management Platform
+                  {t('nav.management_platform')}
                 </span>
               </div>
             </div>
@@ -429,7 +438,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <SyncDot />
             <button
               onClick={handleToggleTheme}
-              title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+              title={isDark ? t('nav.switch_light') : t('nav.switch_dark')}
               className="h-8 w-8 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors duration-100"
             >
               {isDark ? <Sun size={15} /> : <Moon size={15} />}
@@ -437,7 +446,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Link href="/notifications">
               <Button variant="outline" size="sm" className="gap-2 relative bg-background hover:bg-muted">
                 <Bell size={15} />
-                <span>Notifications</span>
+                <span>{t('nav.notifications')}</span>
                 {unreadCount > 0 && (
                   <Badge variant="destructive" className="ml-1 px-1.5 min-w-5 h-5 flex items-center justify-center rounded-full text-xs">
                     {unreadCount}
@@ -469,10 +478,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-background border-t border-border shadow-[0_-2px_12px_rgba(0,0,0,0.08)]">
           <div className="flex items-stretch h-16">
             {[
-              { href: "/", label: "Dashboard", icon: LayoutDashboard },
-              { href: "/ledger", label: "Ledger", icon: BookOpen },
+              { href: "/", label: t('nav.dashboard'), icon: LayoutDashboard },
+              { href: "/ledger", label: t('nav.ledger'), icon: BookOpen },
               { href: "/aeps", label: "AePS", icon: Fingerprint },
-              { href: "/profile", label: "Profile", icon: UserCircle },
+              { href: "/profile", label: t('nav.profile'), icon: UserCircle },
             ].map((item) => {
               const Icon = item.icon;
               const active = location === item.href || (item.href !== "/" && location.startsWith(item.href));

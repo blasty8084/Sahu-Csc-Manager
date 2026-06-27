@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
@@ -79,6 +80,7 @@ async function apiFetch(path: string, options?: RequestInit) {
 }
 
 export default function Sessions() {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();

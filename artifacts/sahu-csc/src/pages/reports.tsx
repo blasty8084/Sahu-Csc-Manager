@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useGetDailyReport, useGetMonthlyReport, useGetServiceBreakdown } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout";
@@ -89,11 +90,12 @@ function MobileStatCard({ label, value, sub, accentColor, iconGrad, Icon, isLoad
 }
 
 function MobileReports() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("daily");
   const [showFilter, setShowFilter] = useState(false);
   const filters = useFilterState();
   const { daily, monthly, breakdown, aepsReport } = useReportsData(filters.dailyDate, filters.reportYear, filters.reportMonth, filters.aepsStart, filters.aepsEnd);
-  const tab = MOBILE_TABS.find(t => t.id === activeTab)!;
+  const tab = MOBILE_TABS.find(tab => tab.id === activeTab)!;
 
   const exportUrl = activeTab === "aeps"
     ? `${BASE}/api/reports/export?startDate=${filters.aepsStart}&endDate=${filters.aepsEnd}`
@@ -529,6 +531,7 @@ function KpiChip({ label, value, trend, pos }: { label: string; value: string | 
 }
 
 function DesktopReports() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("daily");
   const filters = useFilterState();
   const { daily, monthly, breakdown, aepsReport } = useReportsData(filters.dailyDate, filters.reportYear, filters.reportMonth, filters.aepsStart, filters.aepsEnd);

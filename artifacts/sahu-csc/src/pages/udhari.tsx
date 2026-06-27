@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
@@ -330,6 +331,7 @@ function CustomerRow({ c, onClick }: { c: any; onClick: () => void }) {
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function Udhari() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const [q, setQ] = useState("");
   const [sort, setSort] = useState("recent");

@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
@@ -244,6 +245,7 @@ function OpeningBalanceHeroCard({
 // Daily Tab
 // ─────────────────────────────────────────────────────────
 function DailyTab() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const qc = useQueryClient();
   const { data: bizSettings } = useGetSettings();
@@ -2330,6 +2332,7 @@ function AllTransactionsTab() {
 type Tab = "daily" | "all";
 
 export default function AePS() {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>("daily");
 
   return (

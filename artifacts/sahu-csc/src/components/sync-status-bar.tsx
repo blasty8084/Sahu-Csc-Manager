@@ -4,6 +4,7 @@ import { usePWA } from "@/hooks/use-pwa";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, WifiOff, Wifi, Clock, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 function timeAgo(date: Date): string {
   const secs = Math.floor((Date.now() - date.getTime()) / 1000);
@@ -19,12 +20,13 @@ export function SyncStatusBar() {
   const { quality, isOffline, isSlow } = useNetworkStatus();
   const { syncStatus, pendingCount, lastSyncTime, syncNow } = useSync();
   const { isInstallable } = usePWA();
+  const { t } = useTranslation();
   const [, forceUpdate] = useState(0);
   const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
-    const t = setInterval(() => forceUpdate((n) => n + 1), 30_000);
-    return () => clearInterval(t);
+    const timer = setInterval(() => forceUpdate((n) => n + 1), 30_000);
+    return () => clearInterval(timer);
   }, []);
 
   const handleSyncNow = async () => {
@@ -44,14 +46,14 @@ export function SyncStatusBar() {
     return (
       <div className="flex items-center justify-center gap-2 bg-destructive/10 border-b border-destructive/20 text-destructive text-xs py-1.5 px-4">
         <WifiOff size={12} />
-        <span className="font-semibold">Offline Mode</span>
+        <span className="font-semibold">{t('pwa.offline_mode')}</span>
         {pendingCount > 0 && (
           <span className="ml-1 bg-destructive/20 text-destructive font-bold px-1.5 py-0.5 rounded-full text-[10px]">
             {pendingCount} pending
           </span>
         )}
         <span className="text-destructive/70 hidden sm:inline">
-          — cached data shown, new entries saved locally
+          {t('pwa.cached_data')}
         </span>
       </div>
     );
@@ -61,10 +63,10 @@ export function SyncStatusBar() {
     return (
       <div className="flex items-center justify-center gap-2 bg-amber-500/10 border-b border-amber-500/20 text-amber-700 dark:text-amber-400 text-xs py-1.5 px-4">
         <Wifi size={12} />
-        <span className="font-semibold">Slow connection detected</span>
+        <span className="font-semibold">{t('pwa.slow_connection')}</span>
         {pendingCount > 0 && (
           <span className="ml-1 text-[10px] text-amber-600 dark:text-amber-400">
-            — {pendingCount} entries queued
+            {t('pwa.queued_n', { n: pendingCount })}
           </span>
         )}
       </div>
@@ -75,7 +77,9 @@ export function SyncStatusBar() {
     return (
       <div className="flex items-center justify-center gap-2 bg-primary/5 border-b border-primary/10 text-primary text-xs py-1.5 px-4">
         <RefreshCw size={12} className="animate-spin" />
-        <span className="font-semibold">Synchronising {pendingCount > 0 ? `${pendingCount} entries` : "data"}…</span>
+        <span className="font-semibold">
+          {pendingCount > 0 ? t('pwa.syncing_n', { n: pendingCount }) : t('pwa.syncing')}
+        </span>
       </div>
     );
   }
@@ -84,7 +88,7 @@ export function SyncStatusBar() {
     return (
       <div className="flex items-center justify-center gap-2 bg-orange-500/10 border-b border-orange-500/20 text-orange-700 dark:text-orange-400 text-xs py-1.5 px-4">
         <AlertCircle size={12} />
-        <span className="font-semibold">{pendingCount} entries failed to sync</span>
+        <span className="font-semibold">{pendingCount} {t('pwa.failed_sync')}</span>
         <Button
           variant="ghost"
           size="sm"
@@ -92,7 +96,7 @@ export function SyncStatusBar() {
           onClick={handleSyncNow}
           disabled={syncing}
         >
-          Retry
+          {t('common.retry')}
         </Button>
       </div>
     );
@@ -102,7 +106,7 @@ export function SyncStatusBar() {
     return (
       <div className="flex items-center justify-center gap-2 bg-amber-500/10 border-b border-amber-500/20 text-amber-700 dark:text-amber-400 text-xs py-1.5 px-4">
         <Clock size={12} />
-        <span className="font-semibold">{pendingCount} entries queued to sync</span>
+        <span className="font-semibold">{t('pwa.queued_n', { n: pendingCount })}</span>
         <Button
           variant="ghost"
           size="sm"
@@ -110,11 +114,11 @@ export function SyncStatusBar() {
           onClick={handleSyncNow}
           disabled={syncing}
         >
-          Sync now
+          {t('pwa.sync_now')}
         </Button>
         {lastSyncTime && (
           <span className="text-amber-600/60 dark:text-amber-400/60 hidden sm:inline text-[10px]">
-            Last: {timeAgo(lastSyncTime)}
+            {t('pwa.last_sync', { time: timeAgo(lastSyncTime) })}
           </span>
         )}
       </div>

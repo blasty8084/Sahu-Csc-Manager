@@ -12,11 +12,13 @@ import {
   Plus, Fingerprint, Briefcase, BarChart2,
   ChevronRight, WifiOff, HandCoins,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const DASHBOARD_CACHE_KEY = "dashboard-data";
 
 // ─── Udhari Summary Card ───────────────────────────────────────────────────────
 function UdhariSummaryCard({ mobile = false }: { mobile?: boolean }) {
+  const { t } = useTranslation();
   const { data, isLoading } = useGetUdhariSummary();
   const toCollect = data?.toCollect ?? 0;
   const toPay = data?.toPay ?? 0;
@@ -34,8 +36,8 @@ function UdhariSummaryCard({ mobile = false }: { mobile?: boolean }) {
             <HandCoins size={15} color="#fff" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-bold text-muted-foreground">Udhari Khata</p>
-            <p className="text-[10px] text-muted-foreground/60">Customer Credit Ledger</p>
+            <p className="text-[11px] font-bold text-muted-foreground">{t('nav.udhari')}</p>
+            <p className="text-[10px] text-muted-foreground/60">{t('dashboard.customer_credit_ledger')}</p>
           </div>
           {isLoading ? (
             <div className="flex gap-3">
@@ -45,13 +47,13 @@ function UdhariSummaryCard({ mobile = false }: { mobile?: boolean }) {
           ) : (
             <div className="flex gap-3 text-right">
               <div>
-                <p className="text-[9px] font-semibold text-muted-foreground uppercase">To Collect</p>
+                <p className="text-[9px] font-semibold text-muted-foreground uppercase">{t('dashboard.to_collect')}</p>
                 <p className="text-sm font-black" style={{ color: "#ea580c" }}>
                   ₹{toCollect.toLocaleString("en-IN")}
                 </p>
               </div>
               <div>
-                <p className="text-[9px] font-semibold text-muted-foreground uppercase">To Pay</p>
+                <p className="text-[9px] font-semibold text-muted-foreground uppercase">{t('dashboard.to_pay')}</p>
                 <p className="text-sm font-black" style={{ color: "#059669" }}>
                   ₹{toPay.toLocaleString("en-IN")}
                 </p>
@@ -67,6 +69,7 @@ function UdhariSummaryCard({ mobile = false }: { mobile?: boolean }) {
 
 // ─── Mobile Dashboard ──────────────────────────────────────────────────────────
 function MobileDashboard() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { isOffline } = useNetworkStatus();
   const { data: liveData, isLoading } = useGetDashboard();
@@ -86,28 +89,27 @@ function MobileDashboard() {
 
   const data = liveData ?? cachedData;
 
-
   const statCards = [
     {
-      label: "Balance",
+      label: t('dashboard.current_balance'),
       value: isLoading ? null : `₹${(data?.currentBalance ?? 0).toLocaleString("en-IN")}`,
-      change: data && data.currentBalance > 0 ? "Running balance" : "No entries yet",
+      change: data && data.currentBalance > 0 ? t('dashboard.running_balance') : t('dashboard.no_entries'),
       up: true,
       accent: "linear-gradient(90deg, #0b2c60, #1a4a9e)",
       iconGradient: "linear-gradient(135deg, #0b2c60 0%, #1a4a9e 100%)",
       Icon: Wallet,
     },
     {
-      label: "Today's Income",
+      label: t('dashboard.todays_income'),
       value: isLoading ? null : `₹${(data?.todayCredits ?? 0).toLocaleString("en-IN")}`,
-      change: `${data?.todayTransactions ?? 0} transactions`,
+      change: `${data?.todayTransactions ?? 0} ${t('dashboard.transactions')}`,
       up: true,
       accent: "linear-gradient(90deg, #10b981, #34d399)",
       iconGradient: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
       Icon: TrendingUp,
     },
     {
-      label: "Today's Expense",
+      label: t('dashboard.todays_expense'),
       value: isLoading ? null : `₹${(data?.todayDebits ?? 0).toLocaleString("en-IN")}`,
       change: `Month: ₹${(data?.monthDebits ?? 0).toLocaleString("en-IN")}`,
       up: false,
@@ -116,9 +118,9 @@ function MobileDashboard() {
       Icon: TrendingDown,
     },
     {
-      label: "Transactions",
+      label: t('dashboard.transactions'),
       value: isLoading ? null : String(data?.todayTransactions ?? 0),
-      change: `Month: ₹${(data?.netProfitMonth ?? 0).toLocaleString("en-IN")} net`,
+      change: `${t('common.total')}: ₹${(data?.netProfitMonth ?? 0).toLocaleString("en-IN")} ${t('dashboard.net')}`,
       up: (data?.netProfitMonth ?? 0) >= 0,
       accent: "linear-gradient(90deg, #8b5cf6, #a78bfa)",
       iconGradient: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
@@ -128,7 +130,7 @@ function MobileDashboard() {
 
   const quickActions = [
     {
-      label: "New Entry", href: "/ledger", Icon: Plus,
+      label: t('dashboard.new_entry'), href: "/ledger", Icon: Plus,
       iconGradient: "linear-gradient(135deg, #0b2c60 0%, #1a4a9e 100%)",
       iconShadow: "rgba(11,44,96,0.35)",
     },
@@ -138,12 +140,12 @@ function MobileDashboard() {
       iconShadow: "rgba(249,115,22,0.35)",
     },
     {
-      label: "Services", href: "/services", Icon: Briefcase,
+      label: t('nav.services'), href: "/services", Icon: Briefcase,
       iconGradient: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
       iconShadow: "rgba(59,130,246,0.35)",
     },
     {
-      label: "Reports", href: "/reports", Icon: BarChart2,
+      label: t('nav.reports'), href: "/reports", Icon: BarChart2,
       iconGradient: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
       iconShadow: "rgba(139,92,246,0.35)",
     },
@@ -155,7 +157,7 @@ function MobileDashboard() {
       {isOffline && cachedData && (
         <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/20 rounded-xl px-3 py-2">
           <WifiOff size={13} className="text-destructive flex-shrink-0" />
-          <p className="text-xs text-destructive font-medium">Offline — showing cached data</p>
+          <p className="text-xs text-destructive font-medium">{t('dashboard.offline_cached')}</p>
         </div>
       )}
 
@@ -205,7 +207,7 @@ function MobileDashboard() {
       {/* Quick Actions */}
       <div>
         <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 10 }}>
-          Quick Actions
+          {t('dashboard.quick_actions')}
         </p>
         <div className="grid grid-cols-4 gap-2">
           {quickActions.map((a) => (
@@ -237,10 +239,10 @@ function MobileDashboard() {
       <div>
         <div className="flex items-center justify-between mb-3">
           <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest">
-            Top Services Today
+            {t('dashboard.top_services_today')}
           </p>
           <Link href="/services">
-            <span className="text-primary text-xs font-semibold">See all</span>
+            <span className="text-primary text-xs font-semibold">{t('dashboard.see_all')}</span>
           </Link>
         </div>
 
@@ -250,7 +252,7 @@ function MobileDashboard() {
           </div>
         ) : !data?.topServicesMonth?.length ? (
           <div className="bg-card rounded-2xl p-6 text-center border border-border">
-            <p className="text-muted-foreground text-sm">No service data yet</p>
+            <p className="text-muted-foreground text-sm">{t('dashboard.no_service_data')}</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -269,7 +271,7 @@ function MobileDashboard() {
                     {svc.serviceType}
                   </span>
                   <div className="flex-shrink-0 text-right">
-                    <p className="text-foreground text-xs font-bold">{svc.count} txns</p>
+                    <p className="text-foreground text-xs font-bold">{svc.count} {t('dashboard.txns')}</p>
                     <p className="text-muted-foreground text-[10px]">₹{svc.revenue.toLocaleString("en-IN")}</p>
                   </div>
                 </div>
@@ -284,6 +286,7 @@ function MobileDashboard() {
 
 // ─── Desktop Dashboard ─────────────────────────────────────────────────────────
 function DesktopDashboard() {
+  const { t } = useTranslation();
   const { isOffline } = useNetworkStatus();
   const { data: liveData, isLoading } = useGetDashboard();
   const [cachedData, setCachedData] = useState<any>(null);
@@ -304,17 +307,17 @@ function DesktopDashboard() {
 
   const statCards = [
     {
-      label: "Current Balance",
-      sub: "Running balance",
+      label: t('dashboard.current_balance'),
+      sub: t('dashboard.running_balance'),
       value: isLoading ? null : `₹${(data?.currentBalance ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
-      change: "Live balance",
+      change: t('dashboard.live_balance'),
       up: true,
       iconBg: "bg-[#1a2040]",
       Icon: Wallet,
     },
     {
-      label: "Today's Income",
-      sub: `${data?.todayTransactions ?? 0} transactions`,
+      label: t('dashboard.todays_income'),
+      sub: `${data?.todayTransactions ?? 0} ${t('dashboard.transactions')}`,
       value: isLoading ? null : `₹${(data?.todayCredits ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
       change: `Month: ₹${(data?.monthCredits ?? 0).toLocaleString("en-IN")}`,
       up: true,
@@ -322,8 +325,8 @@ function DesktopDashboard() {
       Icon: TrendingUp,
     },
     {
-      label: "Today's Expense",
-      sub: "Outgoing today",
+      label: t('dashboard.todays_expense'),
+      sub: t('dashboard.outgoing_today'),
       value: isLoading ? null : `₹${(data?.todayDebits ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
       change: `Month: ₹${(data?.monthDebits ?? 0).toLocaleString("en-IN")}`,
       up: false,
@@ -331,10 +334,10 @@ function DesktopDashboard() {
       Icon: TrendingDown,
     },
     {
-      label: "Active Services",
-      sub: "All enabled",
+      label: t('dashboard.active_services'),
+      sub: t('dashboard.all_enabled'),
       value: isLoading ? null : "22",
-      change: `Net profit: ₹${Math.abs(data?.netProfitMonth ?? 0).toLocaleString("en-IN")}`,
+      change: `${t('dashboard.net_profit')}: ₹${Math.abs(data?.netProfitMonth ?? 0).toLocaleString("en-IN")}`,
       up: (data?.netProfitMonth ?? 0) >= 0,
       iconBg: "bg-purple-600",
       Icon: Activity,
@@ -346,7 +349,7 @@ function DesktopDashboard() {
   const todayExpense = data?.todayDebits ?? 0;
   const peak = Math.max(todayIncome, 1);
   const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const today = new Date().getDay(); // 0=Sun
+  const today = new Date().getDay();
   const todayIndex = today === 0 ? 6 : today - 1;
   const weekBars = dayLabels.map((day, i) => {
     if (i === todayIndex) return { day, income: todayIncome, expense: todayExpense };
@@ -362,7 +365,7 @@ function DesktopDashboard() {
         <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/20 rounded-xl px-4 py-2">
           <WifiOff size={13} className="text-destructive flex-shrink-0" />
           <p className="text-xs text-destructive font-medium">
-            Offline — {cachedData ? "showing cached data" : "no cached data available"}
+            {cachedData ? t('dashboard.offline_cached') : t('dashboard.offline_no_cache')}
           </p>
         </div>
       )}
@@ -398,15 +401,15 @@ function DesktopDashboard() {
         <div className="col-span-2 bg-card rounded-2xl border border-border shadow-sm p-5">
           <div className="flex items-center justify-between mb-1">
             <div>
-              <h2 className="text-foreground text-sm font-bold">Weekly Overview</h2>
-              <p className="text-muted-foreground text-[10px]">Income vs Expenses — this week</p>
+              <h2 className="text-foreground text-sm font-bold">{t('dashboard.weekly_overview')}</h2>
+              <p className="text-muted-foreground text-[10px]">{t('reports.income_vs_expenses')} — this week</p>
             </div>
             <div className="flex items-center gap-4 text-[10px] font-semibold text-muted-foreground">
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-sm bg-[#1a2040] inline-block" /> Income
+                <span className="w-2.5 h-2.5 rounded-sm bg-[#1a2040] inline-block" /> {t('common.income')}
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-sm bg-orange-400 inline-block" /> Expense
+                <span className="w-2.5 h-2.5 rounded-sm bg-orange-400 inline-block" /> {t('common.expense')}
               </span>
             </div>
           </div>
@@ -434,9 +437,9 @@ function DesktopDashboard() {
         {/* Top Services — 1 col */}
         <div className="bg-card rounded-2xl border border-border shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-foreground text-sm font-bold">Top Services</h2>
+            <h2 className="text-foreground text-sm font-bold">{t('dashboard.top_services')}</h2>
             <Link href="/services">
-              <span className="text-primary text-[10px] font-semibold cursor-pointer">See all</span>
+              <span className="text-primary text-[10px] font-semibold cursor-pointer">{t('dashboard.see_all')}</span>
             </Link>
           </div>
           {isLoading ? (
@@ -444,7 +447,7 @@ function DesktopDashboard() {
               {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}
             </div>
           ) : !data?.topServicesMonth?.length ? (
-            <p className="text-muted-foreground text-sm text-center py-6">No data yet</p>
+            <p className="text-muted-foreground text-sm text-center py-6">{t('dashboard.no_data')}</p>
           ) : (
             <div className="space-y-3">
               {data.topServicesMonth.slice(0, 5).map((svc: { serviceType: string; count: number; revenue: number }, i: number) => {
@@ -475,12 +478,12 @@ function DesktopDashboard() {
       <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
         <div className="px-5 py-3.5 border-b border-border flex items-center justify-between">
           <div>
-            <h2 className="text-foreground text-sm font-bold">Recent Transactions</h2>
+            <h2 className="text-foreground text-sm font-bold">{t('dashboard.recent_transactions')}</h2>
             <p className="text-muted-foreground text-[10px]">Latest ledger entries</p>
           </div>
           <Link href="/ledger">
             <span className="text-primary text-xs font-semibold flex items-center gap-0.5 cursor-pointer">
-              View all ledger <ChevronRight className="w-3 h-3" />
+              {t('dashboard.view_all_ledger')} <ChevronRight className="w-3 h-3" />
             </span>
           </Link>
         </div>
@@ -490,13 +493,16 @@ function DesktopDashboard() {
             {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
           </div>
         ) : !data?.recentEntries?.length ? (
-          <p className="text-center text-muted-foreground py-10 text-sm">No transactions yet</p>
+          <p className="text-center text-muted-foreground py-10 text-sm">{t('dashboard.no_transactions')}</p>
         ) : (
           <table className="w-full">
             <thead>
               <tr className="border-b border-border bg-muted/30">
-                {["#", "CUSTOMER", "SERVICE", "DATE", "CREDIT", "DEBIT", "BALANCE"].map((h) => (
-                  <th key={h} className="text-left px-5 py-2.5 text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
+                {[
+                  t('ledger.col_id'), t('ledger.col_customer'), t('ledger.col_service'),
+                  t('ledger.col_date'), t('ledger.col_amount'), t('ledger.col_amount'), t('common.balance'),
+                ].map((h, idx) => (
+                  <th key={idx} className="text-left px-5 py-2.5 text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
                     {h}
                   </th>
                 ))}

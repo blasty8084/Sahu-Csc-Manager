@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Link, useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -569,6 +570,7 @@ function useLockoutCountdown(lockoutUntil: Date | null, onExpired: () => void) {
 
 function LoginFormContent({ form, onSubmit, showPassword, setShowPassword, rememberMe, setRememberMe, onForgotPassword, attemptsLeft, lockoutUntil, onLockoutExpired, rejectedInfo, isPendingApproval, onDismissStatus, adminContact }: LoginFormContentProps) {
   const isSubmitting = form.formState.isSubmitting;
+  const { t } = useTranslation();
 
   const [appealCooldownMsg, setAppealCooldownMsg] = useState<string | null>(null);
 
@@ -899,7 +901,7 @@ function LoginFormContent({ form, onSubmit, showPassword, setShowPassword, remem
         <div className="flex items-center justify-between">
           <label className="flex items-center gap-2 cursor-pointer select-none">
             <Checkbox id="remember-me" checked={rememberMe} onCheckedChange={(v) => setRememberMe(!!v)} className="border-gray-300 data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500" />
-            <span className="text-sm text-gray-600">Remember me</span>
+            <span className="text-sm text-gray-600">{t('auth.login.remember_me')}</span>
           </label>
           <button
             type="button"
@@ -907,7 +909,7 @@ function LoginFormContent({ form, onSubmit, showPassword, setShowPassword, remem
             className="text-sm font-semibold cursor-pointer transition-colors"
             style={{ color: "#0b2c60" }}
           >
-            Forgot Password?
+            {t('auth.login.forgot_password')}
           </button>
         </div>
 
@@ -984,7 +986,7 @@ function LoginFormContent({ form, onSubmit, showPassword, setShowPassword, remem
 
         <motion.div whileHover={{ scale: 1.015 }} whileTap={{ scale: 0.985 }}>
           <Button type="submit" disabled={isSubmitting} className="w-full h-12 font-bold text-base tracking-wide text-white shadow-lg border-0" style={{ background: "linear-gradient(135deg, #1a2560, #0f1a4a)" }}>
-            {isSubmitting ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Authenticating...</span> : "Login →"}
+            {isSubmitting ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />{t('common.loading')}</span> : `${t('auth.login.submit')} →`}
           </Button>
         </motion.div>
 
@@ -1040,6 +1042,7 @@ function LoginFormContent({ form, onSubmit, showPassword, setShowPassword, remem
 // ── Mobile layout ────────────────────────────────────────────────────────────
 function MobileLogin(props: LoginFormContentProps) {
   const [showForgot, setShowForgot] = useState(false);
+  const { t } = useTranslation();
 
   return (
     <div className="h-screen flex flex-col overflow-hidden" style={{ background: "#0B1340" }}>
@@ -1050,18 +1053,18 @@ function MobileLogin(props: LoginFormContentProps) {
             <span className="text-white">SAHU </span>
             <span style={{ color: "#F97316" }}>CSC</span>
           </h1>
-          <p className="text-white/50 text-xs">Management Platform</p>
+          <p className="text-white/50 text-xs">{t('nav.management_platform')}</p>
         </div>
 
         <AnimatePresence mode="wait">
           {!showForgot ? (
             <motion.div key="login-header" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="mt-2 text-center">
-              <h2 className="text-white text-base font-bold">Welcome back!</h2>
+              <h2 className="text-white text-base font-bold">{t('auth.login.title')}</h2>
               <p className="text-white/45 text-xs mt-0.5">Sign in to continue to your dashboard</p>
             </motion.div>
           ) : (
             <motion.div key="forgot-header" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="mt-2 text-center">
-              <h2 className="text-white text-base font-bold">Password Recovery</h2>
+              <h2 className="text-white text-base font-bold">{t('auth.forgot_password.title')}</h2>
               <p className="text-white/45 text-xs mt-0.5">Reset your account password</p>
             </motion.div>
           )}
@@ -1097,9 +1100,9 @@ function MobileLogin(props: LoginFormContentProps) {
                       <UserPlus className="w-5 h-5" style={{ color: "#0b2c60" }} />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm text-gray-500">Don't have an account?</p>
+                      <p className="text-sm text-gray-500">{t('auth.login.no_account')}</p>
                       <p className="text-sm font-bold flex items-center gap-1 mt-0.5" style={{ color: "#0b2c60" }}>
-                        Register here <ArrowRight className="w-3.5 h-3.5" />
+                        {t('auth.login.register_cta')} <ArrowRight className="w-3.5 h-3.5" />
                       </p>
                     </div>
                   </div>
@@ -1107,7 +1110,7 @@ function MobileLogin(props: LoginFormContentProps) {
 
                 <div className="mt-5 flex items-center justify-center gap-1.5">
                   <Lock className="w-3 h-3 text-gray-400" />
-                  <p className="text-xs text-gray-400 tracking-wide">Trusted. Secure. Reliable.</p>
+                  <p className="text-xs text-gray-400 tracking-wide">{t('auth.login.trusted')}. {t('auth.login.secure')}. {t('auth.login.reliable')}.</p>
                 </div>
               </motion.div>
             ) : (
@@ -1125,6 +1128,7 @@ function MobileLogin(props: LoginFormContentProps) {
 // ── Desktop layout ───────────────────────────────────────────────────────────
 function DesktopLogin(props: LoginFormContentProps) {
   const [showForgot, setShowForgot] = useState(false);
+  const { t } = useTranslation();
 
   return (
     <div className="h-screen overflow-hidden flex flex-col" style={{ background: "#0B1340" }}>
@@ -1138,7 +1142,7 @@ function DesktopLogin(props: LoginFormContentProps) {
                 <span className="text-white font-black text-lg">SAHU </span>
                 <span style={{ color: "#F97316" }} className="font-black text-lg">CSC</span>
               </div>
-              <p className="text-white/40 text-xs -mt-0.5">Management Platform</p>
+              <p className="text-white/40 text-xs -mt-0.5">{t('nav.management_platform')}</p>
             </div>
           </div>
 
@@ -1206,7 +1210,7 @@ function DesktopLogin(props: LoginFormContentProps) {
                         <UserPlus className="w-5 h-5" style={{ color: "#0b2c60" }} />
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm text-gray-500">Don't have an account?</p>
+                        <p className="text-sm text-gray-500">{t('auth.login.no_account')}</p>
                         <p className="text-sm font-bold flex items-center gap-1 mt-0.5" style={{ color: "#0b2c60" }}>
                           Register here <ArrowRight className="w-3.5 h-3.5" />
                         </p>

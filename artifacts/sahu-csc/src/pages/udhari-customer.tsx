@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
 import { Layout } from "@/components/layout";
@@ -522,6 +523,7 @@ function sendReminder(customer: any) {
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function UdhariCustomer() {
+  const { t } = useTranslation();
   const { customerId } = useParams<{ customerId: string }>();
   const id = parseInt(customerId ?? "0");
   const [, setLocation] = useLocation();

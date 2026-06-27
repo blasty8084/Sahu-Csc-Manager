@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useListAuditLogs, getListAuditLogsQueryKey } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,7 @@ const ACTION_COLORS: Record<string, string> = {
 };
 
 export default function AuditLogs() {
+  const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [actionFilter, setActionFilter] = useState("");
   const [startDate, setStartDate] = useState("");

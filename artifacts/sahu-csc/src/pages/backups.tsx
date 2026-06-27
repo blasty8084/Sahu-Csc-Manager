@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useListBackups, useCreateBackup, useRestoreBackup, getListBackupsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
@@ -15,6 +16,7 @@ function formatSize(bytes: number): string {
 }
 
 export default function Backups() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const qc = useQueryClient();
   const [restoreId, setRestoreId] = useState<number | null>(null);

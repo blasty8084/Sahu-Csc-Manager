@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   useListLedgerEntries, useCreateLedgerEntry, useUpdateLedgerEntry, useDeleteLedgerEntry,
@@ -36,6 +37,7 @@ interface EntryForm {
 }
 
 export default function Ledger() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const qc = useQueryClient();
   const isMobile = useIsMobile();

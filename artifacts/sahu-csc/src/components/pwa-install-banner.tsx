@@ -2,9 +2,11 @@ import { useState } from "react";
 import { usePWA } from "@/hooks/use-pwa";
 import { Button } from "@/components/ui/button";
 import { Download, WifiOff, X, Smartphone } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export function PWAInstallBanner() {
   const { isInstallable, promptInstall } = usePWA();
+  const { t } = useTranslation();
   const [dismissed, setDismissed] = useState(false);
   const [installing, setInstalling] = useState(false);
 
@@ -24,22 +26,22 @@ export function PWAInstallBanner() {
           <Smartphone size={14} className="text-primary" />
         </div>
         <div className="min-w-0">
-          <p className="text-xs font-semibold text-foreground leading-none mb-0.5">Install SAHU CSC</p>
+          <p className="text-xs font-semibold text-foreground leading-none mb-0.5">{t('pwa.install_title')}</p>
           <p className="text-[11px] text-muted-foreground leading-none truncate">
-            Add to home screen for offline access &amp; faster loading
+            {t('pwa.install_desc')}
           </p>
         </div>
       </div>
       <div className="flex items-center gap-1.5 flex-shrink-0">
         <Button size="sm" className="h-7 px-3 text-xs gap-1.5" onClick={handleInstall} disabled={installing}>
           <Download size={12} />
-          {installing ? "Installing…" : "Install"}
+          {installing ? t('pwa.installing') : t('pwa.install')}
         </Button>
         <Button
           variant="ghost" size="icon"
           className="h-7 w-7 text-muted-foreground hover:text-foreground"
           onClick={() => setDismissed(true)}
-          aria-label="Dismiss"
+          aria-label={t('pwa.dismiss')}
         >
           <X size={13} />
         </Button>

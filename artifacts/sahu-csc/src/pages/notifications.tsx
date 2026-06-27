@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
@@ -65,6 +66,7 @@ async function deleteRead() {
 }
 
 export default function Notifications() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const qc = useQueryClient();
   const [tab, setTab] = useState("all");

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
@@ -87,6 +88,7 @@ function fmtDate(iso: string) {
 type Tab = "push" | "email" | "history";
 
 export default function BroadcastPage() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const qc = useQueryClient();

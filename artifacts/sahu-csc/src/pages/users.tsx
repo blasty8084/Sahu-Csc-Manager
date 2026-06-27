@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useListUsers, useCreateUser, useUpdateUser, useDeleteUser, getListUsersQueryKey, UserInputRole } from "@workspace/api-client-react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { customFetch } from "@workspace/api-client-react";
@@ -650,6 +651,7 @@ function CashOverviewTab() {
 }
 
 export default function Users() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const qc = useQueryClient();
   const isMobile = useIsMobile();

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useListServices, useCreateService, useUpdateService, useDeleteService, getListServicesQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
@@ -23,6 +24,7 @@ interface ServiceForm {
 }
 
 export default function Services() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const qc = useQueryClient();
   const isMobile = useIsMobile();

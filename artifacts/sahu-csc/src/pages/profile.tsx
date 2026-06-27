@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   useGetProfile, useUpdateProfile, useUploadAvatar, useDeleteAvatar,
@@ -215,6 +216,7 @@ const MOBILE_NAV: MobileNavItem[] = [
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function Profile() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { user, logout } = useAuth();
   const { setTheme } = useTheme();
