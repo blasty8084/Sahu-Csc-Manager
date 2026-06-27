@@ -28,6 +28,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/components/theme-provider";
 import { useForm } from "react-hook-form";
 import { useRegistrationStatus } from "@/hooks/use-registration-status";
+import { setLanguage } from "@/lib/i18n";
 import {
   Camera, Trash2, User, Lock, Palette, Globe, LayoutDashboard,
   FolderOpen, AlertCircle, Building2, Settings2, UserPlus,
@@ -286,7 +287,7 @@ export default function Profile() {
   });
 
   useEffect(() => { if (profile) profileForm.reset({ fullName: profile.fullName ?? "", email: profile.email, mobile: profile.mobile ?? "", bio: profile.bio ?? "", address: profile.address ?? "" }); }, [profile]);
-  useEffect(() => { if (prefs) prefsForm.reset({ theme: prefs.theme, language: prefs.language, dashboardLayout: prefs.dashboardLayout }); }, [prefs]);
+  useEffect(() => { if (prefs) { prefsForm.reset({ theme: prefs.theme, language: prefs.language, dashboardLayout: prefs.dashboardLayout }); if (prefs.language) setLanguage(prefs.language); } }, [prefs]);
   useEffect(() => {
     if (settings) settingsForm.reset({
       businessName: settings.businessName, businessAddress: settings.businessAddress,
@@ -529,7 +530,7 @@ export default function Profile() {
         <form onSubmit={onSavePreferences} className="space-y-4">
           {[
             { label:"Theme", icon:<Palette size={14} />, child:<Select value={prefsForm.watch("theme")} onValueChange={v => prefsForm.setValue("theme", v as "light"|"dark")}><SelectTrigger className="w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="light">☀️ Light</SelectItem><SelectItem value="dark">🌙 Dark</SelectItem></SelectContent></Select> },
-            { label:"Language", icon:<Globe size={14} />, badge:<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-medium">{currentLang.flag} {currentLang.name}</span>, child:<Select value={prefsForm.watch("language")} onValueChange={v => prefsForm.setValue("language", v as "en"|"hi"|"or")}><SelectTrigger className="w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="en">🇬🇧 English</SelectItem><SelectItem value="hi">🇮🇳 हिंदी</SelectItem><SelectItem value="or">🇮🇳 ଓଡ଼ିଆ</SelectItem></SelectContent></Select> },
+            { label:"Language", icon:<Globe size={14} />, badge:<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-medium">{currentLang.flag} {currentLang.name}</span>, child:<Select value={prefsForm.watch("language")} onValueChange={v => { prefsForm.setValue("language", v as "en"|"hi"|"or"); setLanguage(v); }}><SelectTrigger className="w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="en">🇬🇧 English</SelectItem><SelectItem value="hi">🇮🇳 हिंदी</SelectItem><SelectItem value="or">🇮🇳 ଓଡ଼ିଆ</SelectItem></SelectContent></Select> },
             { label:"Dashboard", icon:<LayoutDashboard size={14} />, child:<Select value={prefsForm.watch("dashboardLayout")} onValueChange={v => prefsForm.setValue("dashboardLayout", v)}><SelectTrigger className="w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="default">Default</SelectItem><SelectItem value="compact">Compact</SelectItem><SelectItem value="expanded">Expanded</SelectItem></SelectContent></Select> },
           ].map((row: any, i, arr) => (
             <div key={row.label} className={`flex items-center justify-between ${i < arr.length-1 ? "pb-4 border-b" : ""}`}>
@@ -745,7 +746,7 @@ export default function Profile() {
               <form onSubmit={onSavePreferences} className="space-y-4">
                 {[
                   { label: "Theme", icon: <Palette size={14} />, child: <Select value={prefsForm.watch("theme")} onValueChange={v => prefsForm.setValue("theme", v as "light"|"dark")}><SelectTrigger className="w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="light">☀️ Light</SelectItem><SelectItem value="dark">🌙 Dark</SelectItem></SelectContent></Select> },
-                  { label: "Language", icon: <Globe size={14} />, badge: <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-medium">{currentLang.flag} {currentLang.name}</span>, child: <Select value={prefsForm.watch("language")} onValueChange={v => prefsForm.setValue("language", v as "en"|"hi"|"or")}><SelectTrigger className="w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="en">🇬🇧 English</SelectItem><SelectItem value="hi">🇮🇳 हिंदी</SelectItem><SelectItem value="or">🇮🇳 ଓଡ଼ིଆ</SelectItem></SelectContent></Select> },
+                  { label: "Language", icon: <Globe size={14} />, badge: <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-medium">{currentLang.flag} {currentLang.name}</span>, child: <Select value={prefsForm.watch("language")} onValueChange={v => { prefsForm.setValue("language", v as "en"|"hi"|"or"); setLanguage(v); }}><SelectTrigger className="w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="en">🇬🇧 English</SelectItem><SelectItem value="hi">🇮🇳 हिंदी</SelectItem><SelectItem value="or">🇮🇳 ଓଡ଼ිଆ</SelectItem></SelectContent></Select> },
                   { label: "Dashboard", icon: <LayoutDashboard size={14} />, child: <Select value={prefsForm.watch("dashboardLayout")} onValueChange={v => prefsForm.setValue("dashboardLayout", v)}><SelectTrigger className="w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="default">Default</SelectItem><SelectItem value="compact">Compact</SelectItem><SelectItem value="expanded">Expanded</SelectItem></SelectContent></Select> },
                 ].map((row: any, i, arr) => (
                   <div key={row.label} className={`flex items-center justify-between ${i < arr.length - 1 ? "pb-4 border-b" : ""}`}>
