@@ -19,7 +19,6 @@ import { PWAInstallBanner } from "@/components/pwa-install-banner";
 import { SyncStatusBar, SyncDot } from "@/components/sync-status-bar";
 import { prefetch } from "@/lib/prefetch";
 import { useTranslation } from "react-i18next";
-import { LanguageSwitcher } from "@/components/language-switcher";
 
 type NavItem = {
   href: string;
@@ -155,11 +154,6 @@ function SidebarNav({
           SAHU CSC v{__APP_VERSION__}
         </span>
         <span className="text-[9px] text-white/20">© 2026</span>
-      </div>
-
-      {/* ── Language Switcher ─────────────────────────────────── */}
-      <div className="px-3 pb-2">
-        <LanguageSwitcher variant="sidebar" />
       </div>
 
       {/* ── User Footer ────────────────────────────────────────── */}
