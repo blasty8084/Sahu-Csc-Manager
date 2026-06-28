@@ -1523,3 +1523,32 @@ All success actions across `ledger.tsx`, `profile.tsx`, `login.tsx`, `broadcast.
 
 ### Timer management
 Auto-dismiss timer is paused on `onDragStart` and either restarted (snap-back) or permanently cleared (swipe-dismiss).
+
+
+---
+
+## 40. Language UX, Startup Reliability & Workflow Cleanup — v2.7.1 (June 27, 2026)
+
+### Language Switcher Removed from Sidebar
+The `LanguageSwitcher` component was removed from `layout.tsx`. Language is now only accessible via **Profile → Preferences → Language**. Consolidates all user preferences in one place and removes duplication.
+
+### Language Switching Fixed in Profile > Preferences
+Two bugs fixed in `profile.tsx`:
+- **Bug 1:** `onValueChange` for the language `<Select>` only called `prefsForm.setValue(...)` but never called `setLanguage(val)` — UI language never actually switched. Fixed by adding `setLanguage(val)` in both mobile + desktop handlers.
+- **Bug 2:** The `useEffect` that restores saved preferences on mount did not call `setLanguage(savedPrefs.language)` — language reverted to default on page navigation. Fixed by adding `setLanguage(savedPrefs.language)` inside the preferences `useEffect`.
+
+### Language Indicator Badge in Preferences
+A blue pill badge (`bg-blue-100 text-blue-800`) showing the current language (e.g., `🇬🇧 English`) was added below the Language label in the Preferences section — both mobile and desktop.
+
+### API Server Smart Build Check
+`dev` script in `artifacts/api-server/package.json` now skips esbuild if `dist/index.mjs` already exists:
+```bash
+export NODE_ENV=development && (test -f ./dist/index.mjs || pnpm run build) && fuser -k 8080/tcp 2>/dev/null; pnpm run start
+```
+Restart time drops from ~90 s → ~2 s. Force full rebuild: `rm -rf artifacts/api-server/dist/`.
+
+### Frontend Port-Kill on Startup
+`artifacts/sahu-csc: web` workflow command now includes `fuser -k 5000/tcp 2>/dev/null` before Vite starts — prevents `EADDRINUSE` on rapid restarts.
+
+### WORKFLOWS.md Corrected
+Full rewrite to reflect current state: removed references to defunct `Start application` workflow and port 8082; documented API on port 8080, smart build check, port-kill, duplicate Preview panel entry, and correct Seed Database command.

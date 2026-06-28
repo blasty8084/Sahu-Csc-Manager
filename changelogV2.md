@@ -63,7 +63,83 @@
 
 ---
 
-## 1. v2.6.0 — Broadcast Center, OTP UX & Resend Progress Ring (June 2026)
+## 1. v2.7.1 — Language UX, Startup Reliability & Workflow Cleanup (June 27, 2026)
+
+### 1.1 Language Switcher Moved to Profile → Preferences
+
+The global `LanguageSwitcher` component was **removed from the sidebar** (`layout.tsx`). Language selection is now exclusively available in **Profile → Preferences → Language**.
+
+- Sidebar no longer renders the language switcher component
+- The `LanguageSwitcher` component itself is still present but no longer used in the layout
+- Language is accessible at: Profile icon → Preferences → Language dropdown
+
+**Why:** Consolidates all user preferences into one place; avoids duplication between sidebar and profile page.
+
+---
+
+### 1.2 Language Switching Fixed in Profile > Preferences
+
+Two bugs were fixed in `profile.tsx`:
+
+**Bug 1 — Language not switching on select change:**  
+The `onValueChange` handler on the mobile and desktop language `<Select>` components only called `prefsForm.setValue("language", val)` but did not call `setLanguage(val)` from the `useTranslation` hook. UI language never actually switched.
+
+**Fix:** Added `setLanguage(val)` call inside the `onValueChange` handler for both mobile and desktop dropdowns.
+
+**Bug 2 — Language not restored on profile page load:**  
+The `useEffect` that loads saved preferences from the API (`savedPrefs` query) did not call `setLanguage()` when restoring the saved language. After a page navigation (not a full reload), the language reverted to the default until the user interacted.
+
+**Fix:** Added `setLanguage(savedPrefs.language)` inside the preferences `useEffect` alongside `prefsForm.reset()`.
+
+---
+
+### 1.3 Language Indicator Badge in Preferences
+
+A visual badge showing the currently active language was added to the **Language** row in the Preferences section — visible on both mobile and desktop layouts.
+
+**Badge appearance:** Blue pill (`bg-blue-100 text-blue-800`) with the flag emoji + locale name (e.g., `🇬🇧 English`, `🇮🇳 हिन्दी`, `🇮🇳 ଓଡ଼ିଆ`). Placed below the label in the same row as the Select dropdown.
+
+---
+
+### 1.4 API Server Smart Build Check
+
+The `dev` script in `artifacts/api-server/package.json` was updated to skip the esbuild compilation step if `dist/index.mjs` already exists:
+
+```bash
+export NODE_ENV=development && (test -f ./dist/index.mjs || pnpm run build) && fuser -k 8080/tcp 2>/dev/null; pnpm run start
+```
+
+**Impact:** API server restart time drops from ~90 s (full esbuild rebuild) to ~2 s when the bundle is already built. To force a fresh rebuild, delete `artifacts/api-server/dist/` before restarting.
+
+---
+
+### 1.5 Frontend Port-Kill on Startup
+
+The `artifacts/sahu-csc: web` workflow command now includes a `fuser -k 5000/tcp` before Vite starts:
+
+```bash
+pnpm install && fuser -k 5000/tcp 2>/dev/null; sleep 1; PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run dev
+```
+
+**Impact:** Prevents `EADDRINUSE` errors on rapid restarts or when a stale Vite process holds port 5000.
+
+---
+
+### 1.6 Workflow Documentation Corrected
+
+`WORKFLOWS.md` was rewritten to reflect the current actual workflow setup:
+
+| Old (stale) | Current (v2.7.1) |
+|---|---|
+| `Start application` workflow on port 8082 | No longer exists — API now on port 8080 |
+| Port 8082 for API | Port 8080 (held by `API Server` + artifact) |
+| `pnpm run seed` command | `tsx src/scripts/seed.ts` command (Seed Database workflow) |
+
+The Preview Panel section documents the duplicate `SAHU CSC FV1` artifact entry and how to remove it.
+
+---
+
+## 2. v2.7.0 — Bulk Receipt Export & Monthly Auto-Export (June 2026)
 
 ### 1.1 Broadcast Center
 
