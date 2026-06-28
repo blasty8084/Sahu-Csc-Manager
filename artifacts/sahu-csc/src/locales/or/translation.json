@@ -851,5 +851,21 @@
     "en": "EN",
     "hi": "हिं",
     "or": "ଓଡ଼"
+  },
+  "about": {
+    "tab_sysreq": "ସିଷ୍ଟମ ଆବଶ୍ୟକତା",
+    "tab_architecture": "ଆର୍କିଟେକ୍ଚର",
+    "tab_changelog": "ପରିବର୍ତ୍ତନ ଇତିହାସ",
+    "installation_by_device": "ଡିଭାଇସ ଅନୁଯାୟୀ ସ୍ଥାପନ",
+    "connectivity": "ସଂଯୋଗ",
+    "tech_stack": "ଟେକ ଷ୍ଟ୍ୟାକ",
+    "security_overview": "ସୁରକ୍ଷା ସାରାଂଶ",
+    "data_flow": "ତଥ୍ୟ ପ୍ରବାହ",
+    "recommended": "ପ୍ରସ୍ତାବିତ",
+    "minimum": "ନ୍ୟୂନତମ",
+    "how_to_install": "କିପରି ଇନ୍‌ଷ୍ଟଲ:",
+    "latest": "ସର୍ବଶେଷ",
+    "online_full": "ଅନ୍‌ଲାଇନ (ସମ୍ପୂର୍ଣ)",
+    "slow_2g": "ଧୀର / 2G"
   }
 }

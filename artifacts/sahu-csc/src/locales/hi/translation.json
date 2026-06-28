@@ -851,5 +851,21 @@
     "en": "EN",
     "hi": "हिं",
     "or": "ଓଡ଼"
+  },
+  "about": {
+    "tab_sysreq": "सिस्टम आवश्यकताएं",
+    "tab_architecture": "आर्किटेक्चर",
+    "tab_changelog": "परिवर्तन इतिहास",
+    "installation_by_device": "डिवाइस अनुसार इंस्टॉलेशन",
+    "connectivity": "कनेक्टिविटी",
+    "tech_stack": "टेक स्टैक",
+    "security_overview": "सुरक्षा अवलोकन",
+    "data_flow": "डेटा प्रवाह",
+    "recommended": "अनुशंसित",
+    "minimum": "न्यूनतम",
+    "how_to_install": "कैसे इंस्टॉल करें:",
+    "latest": "नवीनतम",
+    "online_full": "ऑनलाइन (पूर्ण)",
+    "slow_2g": "धीमा / 2G"
   }
 }

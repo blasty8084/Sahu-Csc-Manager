@@ -6,6 +6,7 @@ import {
   CheckCircle2, AlertCircle, Clock, BookOpen, Cpu, Cloud, Lock,
   Fingerprint, Bell, FileSpreadsheet, Download,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 declare const __APP_VERSION__: string;
 const APP_VERSION = __APP_VERSION__;
@@ -163,6 +164,7 @@ const ARCH = [
 ];
 
 export default function About() {
+  const { t } = useTranslation();
   return (
     <Layout>
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
@@ -202,9 +204,9 @@ export default function About() {
         {/* Tabs */}
         <Tabs defaultValue="sysreq">
           <TabsList className="grid grid-cols-3 w-full">
-            <TabsTrigger value="sysreq">System Requirements</TabsTrigger>
-            <TabsTrigger value="architecture">Architecture</TabsTrigger>
-            <TabsTrigger value="changelog">Changelog</TabsTrigger>
+            <TabsTrigger value="sysreq">{t("about.tab_sysreq")}</TabsTrigger>
+            <TabsTrigger value="architecture">{t("about.tab_architecture")}</TabsTrigger>
+            <TabsTrigger value="changelog">{t("about.tab_changelog")}</TabsTrigger>
           </TabsList>
 
           {/* ── System Requirements ── */}
@@ -231,7 +233,7 @@ export default function About() {
             </div>
 
             {/* Platform cards */}
-            <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider pt-2">Installation by Device</h2>
+            <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider pt-2">{t("about.installation_by_device")}</h2>
             <div className="space-y-4">
               {SYSTEM_REQUIREMENTS.map((req) => {
                 const Icon = req.icon;
@@ -253,16 +255,16 @@ export default function About() {
                     <div className="px-4 py-3 space-y-2.5">
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <div>
-                          <p className="text-muted-foreground font-medium">Recommended</p>
+                          <p className="text-muted-foreground font-medium">{t("about.recommended")}</p>
                           <p className="font-semibold mt-0.5">{req.recommended}</p>
                         </div>
                         <div>
-                          <p className="text-muted-foreground font-medium">Minimum</p>
+                          <p className="text-muted-foreground font-medium">{t("about.minimum")}</p>
                           <p className="font-semibold mt-0.5">{req.minimum}</p>
                         </div>
                       </div>
                       <div>
-                        <p className="text-xs font-semibold mb-1.5">How to install:</p>
+                        <p className="text-xs font-semibold mb-1.5">{t("about.how_to_install")}</p>
                         <ol className="space-y-1">
                           {req.install.map((step, i) => (
                             <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
@@ -288,12 +290,12 @@ export default function About() {
             </div>
 
             {/* Connectivity requirements */}
-            <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider pt-2">Connectivity</h2>
+            <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider pt-2">{t("about.connectivity")}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {[
-                { icon: Wifi, label: "Online (Full)", desc: "All features including push notifications, real-time sync, reports, and Excel export.", color: "#059669" },
-                { icon: Cloud, label: "Slow / 2G", desc: "Basic features work. Dashboard loads from cache. Ledger uses offline queue.", color: "#f97316" },
-                { icon: WifiOff, label: "Offline", desc: "Login works (24-hr cache). Ledger entries saved locally and synced on reconnect.", color: "#e11d48" },
+                { icon: Wifi, label: t("about.online_full"), desc: "All features including push notifications, real-time sync, reports, and Excel export.", color: "#059669" },
+                { icon: Cloud, label: t("about.slow_2g"), desc: "Basic features work. Dashboard loads from cache. Ledger uses offline queue.", color: "#f97316" },
+                { icon: WifiOff, label: t("pwa.offline"), desc: "Login works (24-hr cache). Ledger entries saved locally and synced on reconnect.", color: "#e11d48" },
               ].map((c) => {
                 const Icon = c.icon;
                 return (
@@ -313,7 +315,7 @@ export default function About() {
           <TabsContent value="architecture" className="space-y-4 mt-4">
             <div className="bg-card border rounded-xl overflow-hidden">
               <div className="px-4 py-3 border-b bg-muted/20">
-                <p className="text-sm font-semibold">Tech Stack</p>
+                <p className="text-sm font-semibold">{t("about.tech_stack")}</p>
                 <p className="text-xs text-muted-foreground">All layers running in the same Replit monorepo (pnpm workspaces)</p>
               </div>
               <div className="divide-y">
@@ -345,7 +347,7 @@ export default function About() {
             {/* Security overview */}
             <div className="bg-card border rounded-xl overflow-hidden">
               <div className="px-4 py-3 border-b bg-muted/20">
-                <p className="text-sm font-semibold">Security Overview</p>
+                <p className="text-sm font-semibold">{t("about.security_overview")}</p>
               </div>
               <div className="px-4 py-3 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {[
@@ -371,7 +373,7 @@ export default function About() {
             {/* Data flow */}
             <div className="bg-card border rounded-xl overflow-hidden">
               <div className="px-4 py-3 border-b bg-muted/20">
-                <p className="text-sm font-semibold">Data Flow</p>
+                <p className="text-sm font-semibold">{t("about.data_flow")}</p>
               </div>
               <div className="px-4 py-4 space-y-2">
                 {[
@@ -412,7 +414,7 @@ export default function About() {
                   <div>
                     <p className="text-sm font-bold">{entry.date}</p>
                     {idx === 0 && (
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-600">Latest</span>
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-600">{t("about.latest")}</span>
                     )}
                   </div>
                 </div>

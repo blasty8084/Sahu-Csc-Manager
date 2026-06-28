@@ -852,5 +852,21 @@
     "en": "EN",
     "hi": "हिं",
     "or": "ଓଡ଼"
+  },
+  "about": {
+    "tab_sysreq": "System Requirements",
+    "tab_architecture": "Architecture",
+    "tab_changelog": "Changelog",
+    "installation_by_device": "Installation by Device",
+    "connectivity": "Connectivity",
+    "tech_stack": "Tech Stack",
+    "security_overview": "Security Overview",
+    "data_flow": "Data Flow",
+    "recommended": "Recommended",
+    "minimum": "Minimum",
+    "how_to_install": "How to install:",
+    "latest": "Latest",
+    "online_full": "Online (Full)",
+    "slow_2g": "Slow / 2G"
   }
 }

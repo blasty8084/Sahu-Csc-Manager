@@ -1,7 +1,7 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 2.7.1** — last updated 2026-06-27
+**Version 2.8.0** — last updated 2026-06-28
 
-A full-stack CSC (Common Service Center) business management platform for tracking services, ledger accounting, AePS cash management, Udhari Khata (customer credit ledger), and reporting. Built for Odisha / India rural service centers. Supports PWA installation, offline operation, and Android TWA packaging.
+A full-stack CSC (Common Service Center) business management platform for tracking services, ledger accounting, AePS cash management, Udhari Khata (customer credit ledger), and reporting. Built for Odisha / India rural service centers. Supports PWA installation, offline operation, Android TWA packaging, and full multilingual UI (English / Hindi / Odia).
 
 ---
 
@@ -24,7 +24,7 @@ The Preview panel shows **two entries** due to the artifact system registering a
 - **`artifacts/sahu-csc: web`** — the real app (port 5000 → :80). **Use this one.**
 - **`SAHU CSC FV1`** — canvas artifact duplicate (port 21700). Remove via ⋮ → Delete in Preview.
 
-### Workflow commands (actual scripts as of v2.7.1)
+### Workflow commands (actual scripts as of v2.8.0)
 
 ```bash
 # API Server workflow
@@ -91,6 +91,7 @@ pnpm run build                                    # Typecheck + build all packag
 | API contracts | OpenAPI spec → Orval codegen → typed React Query hooks |
 | PWA | vite-plugin-pwa + Workbox service worker |
 | Push notifications | web-push (VAPID) |
+| i18n | i18next + react-i18next (EN / HI / OR locale JSON files) |
 | Build | esbuild (ESM bundle for API) |
 | Monorepo | pnpm workspaces |
 
@@ -138,21 +139,26 @@ artifacts/
       forgot-password.tsx / reset-password.tsx
       dashboard.tsx       — Real-time stats + offline cache fallback + Udhari summary card
       ledger.tsx          — Transactions with offline queue support
-      aeps.tsx            — AePS cash management (per-user)
+      aeps.tsx            — AePS cash management (per-user); AllTransactionsTab is a separate function component
       udhari.tsx          — Udhari Khata customer list: search, sort, To Collect / To Pay banner, FAB
       udhari-customer.tsx — Per-customer ledger: balance banner, You Gave/You Got, entry list, WhatsApp reminder, PDF export
       services.tsx
       reports.tsx         — Command Center design (v2.2): horizontal top nav bar, navy KPI strip, 2-col chart grid, Print Report + Excel export; MobileReports unchanged
-      notifications.tsx
+      notifications.tsx   — TYPE_CONFIG, PRIORITY_CONFIG, TABS defined inside component (use t())
       profile.tsx         — Unified Profile + Settings page (v2.3): Desktop V3 sticky side-nav + full-page scroll; Mobile V3 iOS drill-in. Sections: Photo, Personal Info, Security, Sessions, Preferences, Business Info (admin), System (admin). Replaces separate settings page.
+      preferences.tsx     — Standalone Preferences page (language + theme + dashboard layout; links from /profile)
       users.tsx           — User management (admin)
       users-overview.tsx  — Admin overview of all users' ledger/balance (admin)
-      audit-logs.tsx      — Full audit trail (admin)
+      audit-logs.tsx      — Full audit trail (admin); fully translated
       settings.tsx        — Redirects to /profile (deprecated standalone page)
-      backups.tsx         — Backup and restore (admin)
+      backups.tsx         — Backup and restore (admin); fully translated
       sessions.tsx        — Standalone sessions page: device cards, revoke, logout others, logout ALL (still accessible at /sessions; sessions also embedded in /profile)
-      pwa-status.tsx      — App & Offline Status page (network, sync, storage, push)
+      pwa-status.tsx      — App & Offline Status page (network, sync, storage, push); fully translated
+      server-health.tsx   — Live API/DB/VAPID health check page; fully translated (StatusBadge uses its own useTranslation hook)
+      broadcast.tsx       — Admin push + email broadcast center; fully translated (tabs, stats, history)
+      download-app.tsx    — PWA install guide for Android/iOS/Desktop/Web; fully translated
       receipts-verify.tsx — Public receipt verification page (/receipts/verify/:token); no auth required
+      about.tsx           — Docs & System Requirements: features list, platform install cards, tech stack, security overview, data flow, changelog
       offline.tsx         — Offline fallback page
       not-found.tsx
     components/
@@ -161,8 +167,15 @@ artifacts/
       pwa-install-banner.tsx  — Install prompt banner
       app-logo.tsx            — AppLogo (sidebar) + LoginLogo (auth pages); both use public/sahu-logo.png
       receipt-modal.tsx       — Receipt preview dialog: QR code, Print popup, PDF (html2canvas+jsPDF), Web Share API
+      language-switcher.tsx   — EN / हि / ଓ toggle in sidebar footer; calls i18n.changeLanguage + saves to localStorage
       theme-provider.tsx
       ui/                     — shadcn/ui components
+    locales/
+      en/translation.json     — English strings (~860 keys across 28+ namespaces)
+      hi/translation.json     — Hindi strings (identical structure)
+      or/translation.json     — Odia strings (identical structure)
+    lib/
+      i18n.ts                 — i18next init: reads localStorage "sahu-lang", falls back to "en"; namespaces auto-detected
     hooks/
       use-auth.tsx              — Auth context + offline session cache from IndexedDB
       use-network-status.ts     — Online/offline/slow detection + latency probe (30s)
@@ -404,6 +417,84 @@ Shows live: network quality + latency, sync queue, IndexedDB storage usage, app 
 
 ---
 
+## Internationalisation (i18n)
+
+### Supported Languages
+
+| Code | Language | Script |
+|------|----------|--------|
+| `en` | English | Latin |
+| `hi` | Hindi | Devanagari |
+| `or` | Odia | Odia |
+
+### Architecture
+
+- **Library**: `i18next` + `react-i18next`
+- **Init file**: `artifacts/sahu-csc/src/lib/i18n.ts` — reads `localStorage["sahu-lang"]`, falls back to `"en"`, uses `initReactI18next`
+- **Locale files**: `artifacts/sahu-csc/src/locales/{en,hi,or}/translation.json` — ~860 keys each, flat single-namespace JSON
+- **Language switcher**: `language-switcher.tsx` component in sidebar footer — three pill buttons (EN / हि / ଓ); calls `i18n.changeLanguage(code)` + `localStorage.setItem("sahu-lang", code)`
+- **Hook**: `const { t } = useTranslation()` at the top of every translated component
+- **Preference persistence**: Selected language saved in `user_preferences` DB table via `PATCH /api/preferences { language }` and loaded on login
+
+### Translation Key Namespaces (all flat in single `translation.json`)
+
+| Namespace prefix | Covers |
+|---|---|
+| `common.*` | Shared labels: save, cancel, loading, error, date, total, page_of, prev/next, etc. |
+| `nav.*` | Sidebar navigation labels |
+| `auth.*` | Login, register, forgot-password strings |
+| `dashboard.*` | Dashboard cards, stat labels, quick actions |
+| `ledger.*` | Ledger page, form fields, table headers, toasts |
+| `aeps.*` | AePS sessions, transactions, balance formula |
+| `udhari.*` | Udhari Khata customer list and entry forms |
+| `reports.*` | Reports page labels, chart titles, export buttons |
+| `notifications.*` | Notification type/priority labels, tab names |
+| `profile.*` | Profile/settings page sections and labels |
+| `audit.*` | Audit log page headers and column names |
+| `backups.*` | Backup & restore page labels and toasts |
+| `broadcast.*` | Broadcast center title, tabs, stat labels |
+| `pwa.*` | PWA install banner, sync status, offline labels, network/storage card titles |
+| `server_health.*` | Server health page labels and status messages |
+| `download_app.*` | Download app page section titles and step labels |
+| `receipts.*` | Receipt modal and verify page labels |
+| `services.*` | Services page labels |
+| `users.*` | User management page labels |
+| `sessions.*` | Session management labels |
+| `settings.*` | Settings page section labels |
+| `language_switcher.*` | Language switcher tooltip labels |
+
+### Pages Translation Status
+
+| Page | Status |
+|------|--------|
+| `login.tsx` | ✅ Full |
+| `register.tsx` | ✅ Full |
+| `forgot-password.tsx` | ✅ Full |
+| `dashboard.tsx` | ✅ Full |
+| `ledger.tsx` | ✅ Full |
+| `aeps.tsx` | ✅ Full (DailyTab + AllTransactionsTab both have `useTranslation`) |
+| `udhari.tsx` | ✅ Full |
+| `udhari-customer.tsx` | ✅ Full |
+| `services.tsx` | ✅ Full |
+| `reports.tsx` | ✅ Full |
+| `notifications.tsx` | ✅ Full (TYPE_CONFIG/PRIORITY_CONFIG/TABS moved inside component) |
+| `profile.tsx` | ✅ Full |
+| `preferences.tsx` | ✅ Full |
+| `users.tsx` | ✅ Full |
+| `users-overview.tsx` | ✅ Full |
+| `audit-logs.tsx` | ✅ Full |
+| `backups.tsx` | ✅ Full |
+| `sessions.tsx` | ✅ Full |
+| `pwa-status.tsx` | ✅ Full |
+| `server-health.tsx` | ✅ Full (StatusBadge sub-component has its own `useTranslation`) |
+| `broadcast.tsx` | ✅ Full |
+| `download-app.tsx` | ✅ Full |
+| `receipts-verify.tsx` | ✅ Full |
+| `about.tsx` | ✅ Full |
+| `layout.tsx` | ✅ Full (sidebar nav, idle dialog, sync bar) |
+
+---
+
 ## Android TWA Setup
 
 1. Install Bubblewrap CLI: `npm install -g @bubblewrap/cli`
@@ -487,6 +578,11 @@ Full config in `infrastructure/twa/twa-config.json`.
 - **Always use CSS for responsive layout, not JS `isMobile`**: `useIsMobile()` / `useDevice()` hooks have a render-before-measure delay that causes layout flicker (the wrong layout renders first, then switches). Always use Tailwind responsive classes (`sm:hidden` / `hidden sm:block`) so the correct layout renders on first paint. The only exception is cases where a behavior difference (not just layout) is required on mobile.
 - **Udhari mutation cache invalidation pattern**: Every Udhari mutation (create/update/delete entry, create/update/delete customer) must call `qc.invalidateQueries` on all affected query keys. For entry mutations: `/api/udhari/customers/${id}/entries`, `/api/udhari/customers/${id}` (balance changes), `/api/udhari/customers` (balance shown on list), `/api/udhari/summary`. For customer mutations: `/api/udhari/customers`, `/api/udhari/summary`. Missing any key causes the UI to show stale data until the next background refetch.
 - **Mobile FAB must clear the bottom nav**: Fixed FABs on mobile should use `bottom-20` (80px), not `bottom-6` (24px). The bottom nav bar is ~64px tall; `bottom-6` places the FAB behind it.
+- **i18n uses a single flat `translation.json`, not namespaced files**: All keys live in one JSON per locale under a flat dot-separated convention (`common.save`, `ledger.title`, etc.). Do not split into multiple namespace files — the current `initReactI18next` config uses a single `translation` resource. Adding a second namespace requires updating `i18n.ts` and all `useTranslation("ns")` call sites.
+- **i18n string constants must be inside the component**: Arrays like `TYPE_CONFIG`, `PRIORITY_CONFIG`, and tab definitions that contain translated strings must be declared inside the component function (after `const { t } = useTranslation()`), never at module scope. At module scope `t` is not in scope and the values freeze at the initial language. This pattern was confirmed in `notifications.tsx`.
+- **Sub-components with translated strings need their own `useTranslation` hook**: If a sub-component declared at file scope (e.g. `StatusBadge` in `server-health.tsx`) renders translated strings, it must call `const { t } = useTranslation()` inside itself — it cannot share the parent's `t`. React hooks cannot be passed as props.
+- **Language preference persisted in two places**: `localStorage["sahu-lang"]` for instant reload (read by `i18n.ts` before React mounts), and `user_preferences.language` in DB (loaded after login via `GET /api/preferences`, applied via `PATCH /api/preferences`). Both must be updated when the user changes language in `language-switcher.tsx`.
+- **`t("common.page_of", { page, total })` interpolation pattern**: Pagination uses `t("common.page_of", { page, total: totalPages })` — all 3 locales define `"page_of": "Page {{page}} of {{total}}"` (or equivalent). Do not hardcode `"Page X of Y"` inline.
 - **Notification `null` userId = true broadcast only**: Every call to `createNotification` without a `userId` produces a row with `userId = null`. The `userScope` helper includes `OR userId IS NULL`, so it appears in **every** user's feed. This is intentional for admin-broadcast-only events triggered from the admin broadcast endpoint. All other call sites must pass an explicit `userId`. Never omit it for user-specific or admin-specific events.
 - **Notification isolation — known violations fixed (v2.1.0)**: Seven isolation bugs were patched: (1) unknown-identifier failed login created a null-userId broadcast → removed; (2) `notifyNewRegistration` broadcast to all users → now queries admin user IDs and creates one notification per admin; (3) "Registration Setting Changed" was null userId → scoped to the acting admin's userId; (4) "User Approved" was null userId → scoped to the approved user's ID; (5–6) backup created/restored were null userId → scoped to `req.session.userId!`; (7) push unsubscribe had no user ownership check → now requires `AND userId = currentUser` on the delete.
 - **`notifyNewRegistration` queries admin IDs internally**: In `notificationTemplates.ts`, `notifyNewRegistration` does a DB query for all `role = 'admin'` users and creates a per-admin notification. Call it only once per registration event — it fans out internally.
@@ -531,6 +627,7 @@ Design exploration lives in `artifacts/mockup-sandbox/`. Each group is a folder 
 
 | Date | Change |
 |------|--------|
+| 2026-06-28 | **v2.8.0** — **Full multilingual UI (i18n complete)**: All 25 pages now fully translated into English / Hindi / Odia using i18next + react-i18next. Locale files at `src/locales/{en,hi,or}/translation.json` (~875 keys each, 22 top-level namespaces). Language switcher (EN / हि / ଓ) in sidebar footer persists selection to `localStorage` and `user_preferences` DB. `about.tsx` translated (tabs, section headings, labels). `aeps.tsx` AllTransactionsTab missing `useTranslation` hook fixed. New `pwa.*`, `broadcast.*`, `about.*` keys added across all 3 locales. Architecture Decisions updated with i18n string-placement rules. |
 | 2026-06-20 | **AePS opening balance redesign (live app)**: Replaced flat navy stat card with `OpeningBalanceHeroCard` — full-width navy gradient card showing ₹ amount at 44px, session notes pill, and mini-stats row (date / active / txn count). Balance formula bar replaced with visual color-coded chip tiles (Opening − Withdrawn + Deposited = Balance). Set/Edit dialog redesigned with navy gradient header, 60px rupee input, and ₹500–50K quick-amount chips. Dialog title auto-switches based on whether a session already exists. |
 | 2026-06-20 | **Mobile AePS entry form mockup** (`aeps-mobile-entry/AepsMobileEntry`): 3-step form flow — (1) form: amount + quick chips, customer name, Aadhaar (masked, 12-dot progress bar, eye toggle), bank dropdown (10 banks), account number (deposit-only), note; (2) confirm: summary card with masked Aadhaar, warning to verify before saving; (3) success: receipt-style card with Print/Share and New Transaction actions. |
 | 2026-06-20 | **AePS mobile page mockup — opening balance redesign**: `aeps-page/AePS.tsx` updated with new `OpeningBalanceCard` component — navy gradient hero card, inline edit mode (input + cancel/save buttons with validation), session notes pill, mini stats row. Visual `BalanceFormula` bar replaces plain text. Session start marker in transaction list replaces plain "OB" badge row. |
