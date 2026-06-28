@@ -1,404 +1,308 @@
-import { useState } from "react";
-
-const BLUE = "#3B82F6";
-const GREEN = "#22C55E";
-const ORANGE = "#F97316";
-const PURPLE = "#A855F7";
-const NAVY = "#0B1340";
-const HEADER_FROM = "#1a0533";
-const HEADER_TO = "#2d1b69";
-
-function WalletIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="5" width="20" height="14" rx="2"/>
-      <path d="M16 12h.01"/>
-      <path d="M2 10h20"/>
-    </svg>
-  );
-}
-function TrendUpIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-      <polyline points="17 6 23 6 23 12"/>
-    </svg>
-  );
-}
-function TrendDownIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/>
-      <polyline points="17 18 23 18 23 12"/>
-    </svg>
-  );
-}
-function ActivityIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-    </svg>
-  );
-}
-function PlusIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round">
-      <path d="M12 5v14M5 12h14"/>
-    </svg>
-  );
-}
-function FingerprintIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M2 12C2 6.477 6.477 2 12 2s10 4.477 10 10"/>
-      <path d="M5 12a7 7 0 0114 0"/>
-      <path d="M8 12a4 4 0 018 0"/>
-      <path d="M12 12v.01"/>
-    </svg>
-  );
-}
-function GridIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="7" height="7" rx="1"/>
-      <rect x="14" y="3" width="7" height="7" rx="1"/>
-      <rect x="14" y="14" width="7" height="7" rx="1"/>
-      <rect x="3" y="14" width="7" height="7" rx="1"/>
-    </svg>
-  );
-}
-function BarChartIcon({ color = "#fff", size = 24 }: { color?: string; size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="18" y="3" width="4" height="18"/>
-      <rect x="10" y="9" width="4" height="12"/>
-      <rect x="2" y="14" width="4" height="7"/>
-    </svg>
-  );
-}
-function HomeIcon({ color = "#fff" }: { color?: string }) {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 9.5L12 3l9 6.5V21a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/>
-      <path d="M9 22V12h6v10"/>
-    </svg>
-  );
-}
-function BookIcon({ color = "#fff" }: { color?: string }) {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/>
-      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>
-    </svg>
-  );
-}
-function PersonIcon({ color = "#fff" }: { color?: string }) {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-      <circle cx="12" cy="7" r="4"/>
-    </svg>
-  );
-}
-function BellIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-      <path d="M13.73 21a2 2 0 01-3.46 0"/>
-    </svg>
-  );
-}
-function HamburgerIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round">
-      <path d="M3 6h18M3 12h18M3 18h18"/>
-    </svg>
-  );
-}
-function StarIcon() {
-  return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="#F97316" stroke="#F97316" strokeWidth="1">
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-    </svg>
-  );
-}
-
-// Mini bar chart for promo card
-function MiniBarChart() {
-  const bars = [
-    { h: 40, color: "#F97316" },
-    { h: 60, color: "#3B82F6" },
-    { h: 35, color: "#22C55E" },
-    { h: 75, color: "#F97316" },
-    { h: 55, color: "#3B82F6" },
-  ];
-  return (
-    <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 80 }}>
-      {bars.map((b, i) => (
-        <div
-          key={i}
-          style={{
-            width: 16,
-            height: b.h,
-            background: b.color,
-            borderRadius: "4px 4px 0 0",
-            opacity: 0.9,
-          }}
-        />
-      ))}
-      {/* Up-arrow overlay */}
-      <div style={{ position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)" }}>
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2d1b69" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-          <polyline points="17 6 23 6 23 12"/>
-        </svg>
-      </div>
-    </div>
-  );
-}
-
-// Clipboard illustration for empty state
-function ClipboardIllustration() {
-  return (
-    <div style={{ position: "relative", width: 80, height: 90, margin: "0 auto 12px" }}>
-      {/* Clipboard body */}
-      <div style={{
-        width: 70, height: 80, background: "#E8F0FE",
-        borderRadius: 10, border: "2px solid #c7d8fb",
-        position: "absolute", bottom: 0, left: 5
-      }}>
-        {/* Lines */}
-        <div style={{ margin: "22px 12px 0", display: "flex", flexDirection: "column", gap: 7 }}>
-          {[80, 60, 70].map((w, i) => (
-            <div key={i} style={{ height: 6, width: `${w}%`, background: "#c7d8fb", borderRadius: 3 }} />
-          ))}
-        </div>
-      </div>
-      {/* Clip */}
-      <div style={{
-        width: 26, height: 14, background: "#93b5f9",
-        borderRadius: "4px 4px 0 0",
-        position: "absolute", top: 0, left: 22,
-        border: "2px solid #7aa4f7"
-      }} />
-      {/* Blue checkmark badge */}
-      <div style={{
-        position: "absolute", bottom: -6, right: -6,
-        width: 28, height: 28,
-        background: "#3B82F6",
-        borderRadius: "50%",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        border: "2px solid #fff"
-      }}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="20 6 9 17 4 12"/>
-        </svg>
-      </div>
-    </div>
-  );
-}
-
-// Wave SVG decoration for header
-function WaveDecoration() {
-  return (
-    <svg
-      style={{ position: "absolute", right: 0, top: 0, opacity: 0.18 }}
-      width="160" height="160" viewBox="0 0 160 160" fill="none"
-    >
-      <ellipse cx="130" cy="30" rx="80" ry="80" fill="white"/>
-      <ellipse cx="150" cy="90" rx="60" ry="60" fill="white"/>
-    </svg>
-  );
-}
-
 export function MobileDashboard() {
-  const [activeTab, setActiveTab] = useState(0);
-  const navTabs = [
-    { label: "Dashboard", icon: <HomeIcon color={activeTab === 0 ? ORANGE : "#fff"} /> },
-    { label: "Ledger", icon: <BookIcon color={activeTab === 1 ? ORANGE : "#fff"} /> },
-    { label: "AePS", icon: <FingerprintIcon /> },
-    { label: "My Profile", icon: <PersonIcon color={activeTab === 3 ? ORANGE : "#fff"} /> },
-  ];
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const greetingEmoji = hour < 12 ? "☀️" : hour < 17 ? "👋" : "🌙";
+  const dateStr = new Date().toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
 
   const stats = [
-    { label: "Balance", value: "₹0", Icon: <WalletIcon />, color: BLUE },
-    { label: "Income", value: "₹0", Icon: <TrendUpIcon />, color: GREEN },
-    { label: "Expense", value: "₹0", Icon: <TrendDownIcon />, color: ORANGE },
-    { label: "Transactions", value: "0", Icon: <ActivityIcon />, color: PURPLE },
+    {
+      label: "CURRENT BALANCE",
+      value: "₹0",
+      sub: "No entries yet",
+      subColor: "#10b981",
+      accent: "linear-gradient(90deg,#0b2c60,#1a4a9e)",
+      iconBg: "linear-gradient(135deg,#0b2c60,#1a4a9e)",
+      iconShadow: "rgba(11,44,96,0.35)",
+      Icon: () => (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M16 14h.01"/>
+        </svg>
+      ),
+    },
+    {
+      label: "TODAY'S INCOME",
+      value: "₹0",
+      sub: "0 Transactions",
+      subColor: "#10b981",
+      accent: "linear-gradient(90deg,#10b981,#34d399)",
+      iconBg: "linear-gradient(135deg,#10b981,#059669)",
+      iconShadow: "rgba(16,185,129,0.35)",
+      Icon: () => (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
+        </svg>
+      ),
+    },
+    {
+      label: "TODAY'S EXPENSE",
+      value: "₹0",
+      sub: "Month: ₹0",
+      subColor: "#f43f5e",
+      accent: "linear-gradient(90deg,#f97316,#fb923c)",
+      iconBg: "linear-gradient(135deg,#f97316,#ea580c)",
+      iconShadow: "rgba(249,115,22,0.35)",
+      Icon: () => (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/>
+        </svg>
+      ),
+    },
+    {
+      label: "TRANSACTIONS",
+      value: "0",
+      sub: "Total: ₹0 Net",
+      subColor: "#10b981",
+      accent: "linear-gradient(90deg,#8b5cf6,#a78bfa)",
+      iconBg: "linear-gradient(135deg,#8b5cf6,#7c3aed)",
+      iconShadow: "rgba(139,92,246,0.35)",
+      Icon: () => (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+      ),
+    },
   ];
 
   const quickActions = [
-    { label: "New Entry", icon: <PlusIcon />, bg: BLUE },
-    { label: "AePS", icon: <FingerprintIcon />, bg: ORANGE },
-    { label: "Services", icon: <GridIcon />, bg: GREEN },
-    { label: "Reports", icon: <BarChartIcon />, bg: PURPLE },
+    {
+      label: "New Entry",
+      bg: "linear-gradient(135deg,#0b2c60,#1a4a9e)",
+      shadow: "rgba(11,44,96,0.35)",
+      Icon: () => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+      ),
+    },
+    {
+      label: "AePS",
+      bg: "linear-gradient(135deg,#f97316,#ea580c)",
+      shadow: "rgba(249,115,22,0.35)",
+      Icon: () => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M2 12C2 6.477 6.477 2 12 2s10 4.477 10 10"/>
+          <path d="M5 12a7 7 0 0114 0"/>
+          <path d="M8 12a4 4 0 018 0"/>
+          <path d="M12 12v.01"/>
+        </svg>
+      ),
+    },
+    {
+      label: "Services",
+      bg: "linear-gradient(135deg,#3b82f6,#1d4ed8)",
+      shadow: "rgba(59,130,246,0.35)",
+      Icon: () => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="3" width="7" height="7" rx="1"/><rect x="15" y="3" width="7" height="7" rx="1"/>
+          <rect x="15" y="14" width="7" height="7" rx="1"/><rect x="2" y="14" width="7" height="7" rx="1"/>
+        </svg>
+      ),
+    },
+    {
+      label: "Reports",
+      bg: "linear-gradient(135deg,#8b5cf6,#7c3aed)",
+      shadow: "rgba(139,92,246,0.35)",
+      Icon: () => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="18" y="3" width="4" height="18"/><rect x="10" y="9" width="4" height="12"/><rect x="2" y="14" width="4" height="7"/>
+        </svg>
+      ),
+    },
   ];
 
-  // Get greeting
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
-  const dateStr = new Date().toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
+  const navTabs = [
+    {
+      label: "Dashboard", active: true,
+      Icon: ({ active }: { active: boolean }) => (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? "#f97316" : "#94a3b8"} strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
+        </svg>
+      ),
+    },
+    {
+      label: "Ledger", active: false,
+      Icon: ({ active }: { active: boolean }) => (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? "#f97316" : "#94a3b8"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>
+        </svg>
+      ),
+    },
+    {
+      label: "AePS", active: false,
+      Icon: ({ active }: { active: boolean }) => (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? "#f97316" : "#94a3b8"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M2 12C2 6.477 6.477 2 12 2s10 4.477 10 10"/>
+          <path d="M5 12a7 7 0 0114 0"/><path d="M8 12a4 4 0 018 0"/><path d="M12 12v.01"/>
+        </svg>
+      ),
+    },
+    {
+      label: "My Profile", active: false,
+      Icon: ({ active }: { active: boolean }) => (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? "#f97316" : "#94a3b8"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+        </svg>
+      ),
+    },
+  ];
 
   return (
     <div style={{
       width: 375,
       minHeight: "100vh",
-      background: "#F5F5F5",
+      background: "#f1f5f9",
       fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
       display: "flex",
       flexDirection: "column",
-      position: "relative",
       overflowX: "hidden",
     }}>
-      {/* ── HEADER ── */}
-      <div style={{
-        background: `linear-gradient(135deg, ${HEADER_FROM} 0%, ${HEADER_TO} 100%)`,
-        padding: "0 0 28px 0",
-        position: "relative",
-        overflow: "hidden",
-      }}>
-        <WaveDecoration />
 
-        {/* Top bar */}
-        <div style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "16px 20px 0",
-        }}>
-          {/* Left: hamburger + logo */}
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <button style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }}>
-              <HamburgerIcon />
-            </button>
+      {/* ── WHITE HEADER ── */}
+      <div style={{
+        background: "#fff",
+        boxShadow: "0 1px 0 rgba(0,0,0,0.06), 0 4px 20px rgba(11,44,96,0.08)",
+        position: "sticky", top: 0, zIndex: 20,
+      }}>
+        {/* Accent stripe */}
+        <div style={{ height: 3, background: "linear-gradient(90deg,#0b2c60 0%,#1e4fa8 35%,#f97316 70%,#fb923c 100%)" }} />
+
+        {/* Main bar */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", height: 60 }}>
+          {/* Left: CSC badge + brand */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{
+              width: 40, height: 40, borderRadius: 14,
+              background: "linear-gradient(135deg,#0b2c60,#1a4a9e)",
+              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+              boxShadow: "0 2px 8px rgba(11,44,96,0.30)",
+            }}>
+              <span style={{ fontSize: 11, fontWeight: 900, color: "#fff", letterSpacing: "0.05em", lineHeight: 1 }}>CSC</span>
+              <div style={{ width: 20, height: 1.5, background: "#f97316", borderRadius: 1, marginTop: 2 }} />
+            </div>
             <div>
-              <div style={{ display: "flex", gap: 0, lineHeight: 1 }}>
-                <span style={{ color: "#fff", fontWeight: 900, fontSize: 18, letterSpacing: 0.5 }}>SAHU </span>
-                <span style={{ color: ORANGE, fontWeight: 900, fontSize: 18, letterSpacing: 0.5 }}>CSC</span>
+              <div style={{ display: "flex", gap: 3, lineHeight: 1 }}>
+                <span style={{ fontSize: 15, fontWeight: 900, color: "#0b2c60", letterSpacing: "0.02em" }}>SAHU</span>
+                <span style={{ fontSize: 15, fontWeight: 900, color: "#f97316", letterSpacing: "0.02em" }}>CSC</span>
               </div>
-              <div style={{ color: "#c4b5e0", fontSize: 10, fontWeight: 500, marginTop: 1 }}>
+              <span style={{ fontSize: 9, color: "#94a3b8", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>
                 Management Platform
-              </div>
+              </span>
             </div>
           </div>
 
-          {/* Right: bell + avatar */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {/* Right: bell + avatar chip */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {/* Bell */}
             <div style={{ position: "relative" }}>
-              <button style={{
-                background: "rgba(255,255,255,0.12)", border: "none", cursor: "pointer",
+              <div style={{
                 width: 38, height: 38, borderRadius: 12,
+                background: "#f1f5f9", border: "1px solid #e2e8f0",
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
-                <BellIcon />
-              </button>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                  <path d="M13.73 21a2 2 0 01-3.46 0"/>
+                </svg>
+              </div>
               <div style={{
-                position: "absolute", top: 7, right: 7,
-                width: 9, height: 9, background: ORANGE,
-                borderRadius: "50%", border: "2px solid #1a0533"
+                position: "absolute", top: 8, right: 8,
+                width: 8, height: 8, background: "#f97316",
+                borderRadius: "50%", border: "2px solid white"
               }} />
             </div>
-            {/* Avatar */}
+
+            {/* Avatar chip */}
             <div style={{
-              width: 40, height: 40, borderRadius: "50%",
-              background: "linear-gradient(135deg, #f97316, #ea580c)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              color: "#fff", fontWeight: 900, fontSize: 14,
-              boxShadow: "0 2px 8px rgba(249,115,22,0.5)",
+              display: "flex", alignItems: "center", gap: 7,
+              padding: "4px 10px 4px 4px",
+              background: "linear-gradient(135deg,rgba(11,44,96,0.07),rgba(249,115,22,0.06))",
+              border: "1px solid rgba(11,44,96,0.12)",
+              borderRadius: 12,
             }}>
-              SA
+              <div style={{
+                width: 30, height: 30, borderRadius: 9,
+                background: "linear-gradient(135deg,#f97316,#ea580c)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: "#fff", fontSize: 10, fontWeight: 900,
+                boxShadow: "0 2px 6px rgba(249,115,22,0.40)",
+              }}>SA</div>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "#0b2c60" }}>SAHU</span>
             </div>
           </div>
         </div>
 
-        {/* Greeting */}
-        <div style={{ padding: "20px 20px 0" }}>
-          <div style={{ color: "#fff", fontWeight: 800, fontSize: 22, lineHeight: 1.2 }}>
-            {greeting}, SAHU 👋
+        {/* Greeting sub-bar */}
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "0 16px", height: 44,
+          background: "linear-gradient(135deg,#0b2c60 0%,#0f3872 100%)",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.92)" }}>{greeting}, SAHU</span>
+            <span style={{ fontSize: 15 }}>{greetingEmoji}</span>
           </div>
-          <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 13, marginTop: 4, fontWeight: 500 }}>
-            {dateStr}
-          </div>
+          <span style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", fontWeight: 500 }}>{dateStr}</span>
         </div>
       </div>
 
-      {/* ── SCROLLABLE CONTENT ── */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "0 0 88px 0" }}>
+      {/* ── SCROLLABLE BODY ── */}
+      <div style={{ flex: 1, padding: "14px 12px 88px", overflowY: "auto" }}>
 
-        {/* ── STATS CARD ── */}
-        <div style={{ margin: "-14px 16px 0", background: "#fff", borderRadius: 20, padding: "20px 12px", boxShadow: "0 4px 24px rgba(0,0,0,0.10)", display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 0 }}>
-          {stats.map((s, i) => (
+        {/* ── 2×2 STAT CARDS ── */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+          {stats.map((s) => (
             <div key={s.label} style={{
-              display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
-              borderRight: i < 3 ? "1px solid #f0f0f0" : "none",
-              padding: "4px 4px",
+              background: "#fff", borderRadius: 16, overflow: "hidden",
+              boxShadow: "0 2px 12px rgba(11,44,96,0.08),0 1px 3px rgba(0,0,0,0.04)",
             }}>
-              {/* Icon box */}
-              <div style={{
-                width: 46, height: 46, borderRadius: 14,
-                background: s.color,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                boxShadow: `0 4px 12px ${s.color}55`,
-              }}>
-                {s.Icon}
+              {/* Accent stripe */}
+              <div style={{ height: 3, background: s.accent }} />
+              <div style={{ padding: "12px 12px 12px" }}>
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
+                  <p style={{ fontSize: 9.5, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.07em", lineHeight: 1.3 }}>
+                    {s.label}
+                  </p>
+                  <div style={{
+                    width: 30, height: 30, borderRadius: 9,
+                    background: s.iconBg,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    boxShadow: `0 3px 8px ${s.iconShadow}`,
+                    flexShrink: 0,
+                  }}>
+                    <s.Icon />
+                  </div>
+                </div>
+                <p style={{ fontSize: 22, fontWeight: 900, color: "#0b2c60", lineHeight: 1.1, marginBottom: 5 }}>{s.value}</p>
+                <p style={{ fontSize: 10.5, fontWeight: 600, color: s.subColor }}>{s.sub}</p>
               </div>
-              <span style={{ fontSize: 10, color: "#8a8a9a", fontWeight: 500, textAlign: "center" }}>{s.label}</span>
-              <span style={{ fontSize: 15, fontWeight: 800, color: "#1a1a2e", lineHeight: 1 }}>{s.value}</span>
             </div>
           ))}
         </div>
 
-        {/* ── PROMO BANNER ── */}
-        <div style={{
-          margin: "16px 16px 0", background: "#fff", borderRadius: 20,
-          padding: "16px 16px", boxShadow: "0 2px 16px rgba(0,0,0,0.07)",
-          display: "flex", alignItems: "center", gap: 14, position: "relative", overflow: "hidden",
-        }}>
-          {/* Star badge */}
-          <div style={{
-            width: 52, height: 52, borderRadius: "50%",
-            background: "#1a0533",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            flexShrink: 0,
-          }}>
-            <StarIcon />
-          </div>
-          {/* Text */}
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 800, fontSize: 14, color: "#1a1a2e" }}>Grow your business</div>
-            <div style={{ fontSize: 11, color: "#8a8a9a", marginTop: 3, lineHeight: 1.4 }}>
-              Track, manage and grow your CSC business smarter.
-            </div>
-          </div>
-          {/* Mini chart */}
-          <div style={{ position: "relative", flexShrink: 0 }}>
-            <MiniBarChart />
-          </div>
-        </div>
-
         {/* ── QUICK ACTIONS ── */}
-        <div style={{ margin: "20px 16px 0" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-            <span style={{ fontWeight: 700, fontSize: 15, color: "#1a1a2e" }}>Quick Actions</span>
-            <span style={{ fontWeight: 600, fontSize: 13, color: ORANGE, cursor: "pointer" }}>View All</span>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10 }}>
+        <div style={{ marginBottom: 14 }}>
+          <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 10 }}>
+            Quick Actions
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8 }}>
             {quickActions.map((a) => (
               <div key={a.label} style={{
                 background: "#fff", borderRadius: 16,
-                boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
+                boxShadow: "0 2px 10px rgba(11,44,96,0.07),0 1px 3px rgba(0,0,0,0.04)",
                 padding: "16px 8px 12px",
-                display: "flex", flexDirection: "column", alignItems: "center", gap: 10,
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 9,
                 cursor: "pointer",
               }}>
                 <div style={{
-                  width: 50, height: 50, borderRadius: 16,
+                  width: 44, height: 44, borderRadius: 14,
                   background: a.bg,
+                  boxShadow: `0 4px 12px ${a.shadow}`,
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  boxShadow: `0 4px 14px ${a.bg}55`,
                 }}>
-                  {a.icon}
+                  <a.Icon />
                 </div>
-                <span style={{ fontSize: 11, fontWeight: 700, color: "#1a1a2e", textAlign: "center" }}>
+                <span style={{ fontSize: 10.5, fontWeight: 700, color: "#0b2c60", textAlign: "center", lineHeight: 1.2 }}>
                   {a.label}
                 </span>
               </div>
@@ -407,66 +311,56 @@ export function MobileDashboard() {
         </div>
 
         {/* ── TOP SERVICES TODAY ── */}
-        <div style={{ margin: "20px 16px 0" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-            <span style={{ fontWeight: 700, fontSize: 15, color: "#1a1a2e" }}>Top Services Today</span>
-            <span style={{ fontWeight: 600, fontSize: 13, color: ORANGE, cursor: "pointer" }}>See all</span>
+        <div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+              Top Services Today
+            </p>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#0b2c60" }}>See all</span>
           </div>
           {/* Empty state */}
           <div style={{
-            background: "#fff", borderRadius: 20,
-            boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
-            padding: "32px 20px 28px",
-            display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center",
+            background: "#fff", borderRadius: 16,
+            boxShadow: "0 2px 12px rgba(11,44,96,0.06)",
+            border: "1px solid #e2e8f0",
+            padding: "28px 16px",
+            textAlign: "center",
           }}>
-            <ClipboardIllustration />
-            <div style={{ fontWeight: 700, fontSize: 15, color: "#1a1a2e", marginTop: 6 }}>No service data yet</div>
-            <div style={{ fontSize: 12, color: "#9a9ab0", marginTop: 4 }}>
-              Use services to see top data here
-            </div>
+            <p style={{ fontSize: 13, color: "#94a3b8", fontWeight: 500 }}>No service data yet</p>
           </div>
         </div>
       </div>
 
       {/* ── BOTTOM NAV ── */}
       <div style={{
-        position: "fixed", bottom: 0, left: 0, right: 0,
-        background: NAVY,
-        borderRadius: "20px 20px 0 0",
-        height: 72,
-        display: "flex",
-        alignItems: "center",
-        boxShadow: "0 -4px 24px rgba(0,0,0,0.25)",
-        zIndex: 100,
+        position: "fixed", bottom: 0, left: 0,
         width: 375,
+        background: "#fff",
+        borderTop: "1px solid #e2e8f0",
+        boxShadow: "0 -2px 12px rgba(0,0,0,0.08)",
+        display: "flex", alignItems: "stretch", height: 64,
+        zIndex: 100,
       }}>
-        {navTabs.map((tab, i) => (
-          <button
-            key={tab.label}
-            onClick={() => setActiveTab(i)}
-            style={{
-              flex: 1, display: "flex", flexDirection: "column", alignItems: "center",
-              gap: 4, background: "none", border: "none", cursor: "pointer",
-              padding: "10px 0",
-            }}
-          >
-            <div style={{ color: i === activeTab ? ORANGE : "#fff", display: "flex" }}>
-              {i === 0 ? <HomeIcon color={i === activeTab ? ORANGE : "#fff"} /> :
-               i === 1 ? <BookIcon color={i === activeTab ? ORANGE : "#fff"} /> :
-               i === 2 ? (
-                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={i === activeTab ? ORANGE : "#fff"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                   <path d="M2 12C2 6.477 6.477 2 12 2s10 4.477 10 10"/><path d="M5 12a7 7 0 0114 0"/><path d="M8 12a4 4 0 018 0"/><path d="M12 12v.01"/>
-                 </svg>
-               ) :
-               <PersonIcon color={i === activeTab ? ORANGE : "#fff"} />}
-            </div>
+        {navTabs.map((tab) => (
+          <div key={tab.label} style={{
+            flex: 1, display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center", gap: 3,
+            cursor: "pointer", position: "relative",
+          }}>
+            {tab.active && (
+              <div style={{
+                position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
+                width: 32, height: 2.5, background: "#f97316", borderRadius: 2,
+              }} />
+            )}
+            <tab.Icon active={tab.active} />
             <span style={{
               fontSize: 10, fontWeight: 600, lineHeight: 1,
-              color: i === activeTab ? ORANGE : "#fff",
+              color: tab.active ? "#f97316" : "#94a3b8",
             }}>
               {tab.label}
             </span>
-          </button>
+          </div>
         ))}
       </div>
     </div>
