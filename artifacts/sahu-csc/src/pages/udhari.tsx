@@ -32,11 +32,12 @@ function fmt(n: number) {
 }
 
 function BalanceBadge({ balance }: { balance: number }) {
+  const { t } = useTranslation();
   if (balance > 0) {
     return (
       <span className="text-xs font-bold px-2 py-0.5 rounded-full"
         style={{ background: "rgba(249,115,22,0.12)", color: "#ea580c" }}>
-        To Collect {fmt(balance)}
+        {t("udhari.to_collect")} {fmt(balance)}
       </span>
     );
   }
@@ -44,19 +45,20 @@ function BalanceBadge({ balance }: { balance: number }) {
     return (
       <span className="text-xs font-bold px-2 py-0.5 rounded-full"
         style={{ background: "rgba(16,185,129,0.12)", color: "#059669" }}>
-        To Pay {fmt(balance)}
+        {t("udhari.to_pay")} {fmt(balance)}
       </span>
     );
   }
   return (
     <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-      Settled ₹0
+      {t("udhari.settled_zero")}
     </span>
   );
 }
 
 // ─── Add Customer Dialog / Desktop Panel ──────────────────────────────────────
 function AddCustomerDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const qc = useQueryClient();
   const isMobile = useIsMobile();
@@ -64,16 +66,16 @@ function AddCustomerDialog({ open, onClose }: { open: boolean; onClose: () => vo
   const create = useCreateUdhariCustomer();
 
   const handleSubmit = async () => {
-    if (!form.name.trim()) { toast({ title: "Name is required", variant: "destructive" }); return; }
+    if (!form.name.trim()) { toast({ title: t("udhari.toast_name_required"), variant: "destructive" }); return; }
     try {
       await create.mutateAsync({ data: { name: form.name.trim(), mobile: form.mobile || undefined, address: form.address || undefined, notes: form.notes || undefined } });
       qc.invalidateQueries({ queryKey: ["/api/udhari/customers"] });
       qc.invalidateQueries({ queryKey: ["/api/udhari/summary"] });
-      toast({ title: "Customer added!" });
+      toast({ title: t("udhari.toast_added") });
       setForm({ name: "", mobile: "", address: "", notes: "" });
       onClose();
     } catch {
-      toast({ title: "Failed to add customer", variant: "destructive" });
+      toast({ title: t("udhari.toast_add_fail"), variant: "destructive" });
     }
   };
 
@@ -82,31 +84,31 @@ function AddCustomerDialog({ open, onClose }: { open: boolean; onClose: () => vo
     <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
       <DialogContent className="w-[calc(100vw-2rem)] max-w-md rounded-2xl">
         <DialogHeader>
-          <DialogTitle className="text-base font-bold" style={{ color: "#0b2c60" }}>Add Customer</DialogTitle>
+          <DialogTitle className="text-base font-bold" style={{ color: "#0b2c60" }}>{t("udhari.add_customer")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3 py-1">
           <div>
-            <Label className="text-xs font-semibold">Name *</Label>
-            <Input className="mt-1 h-9 text-sm" placeholder="Customer name" value={form.name}
+            <Label className="text-xs font-semibold">{t("udhari.name_label")}</Label>
+            <Input className="mt-1 h-9 text-sm" placeholder={t("udhari.name_placeholder")} value={form.name}
               onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()} />
           </div>
           <div>
-            <Label className="text-xs font-semibold">Mobile (optional)</Label>
-            <Input className="mt-1 h-9 text-sm" inputMode="numeric" placeholder="9xxxxxxxxx" value={form.mobile}
+            <Label className="text-xs font-semibold">{t("udhari.mobile_label")}</Label>
+            <Input className="mt-1 h-9 text-sm" inputMode="numeric" placeholder={t("udhari.mobile_placeholder")} value={form.mobile}
               onChange={(e) => setForm((p) => ({ ...p, mobile: e.target.value }))} />
           </div>
           <div>
-            <Label className="text-xs font-semibold">Address / Notes (optional)</Label>
-            <Textarea className="mt-1 text-sm resize-none" rows={2} placeholder="Address or any notes"
+            <Label className="text-xs font-semibold">{t("udhari.address_label")}</Label>
+            <Textarea className="mt-1 text-sm resize-none" rows={2} placeholder={t("udhari.address_placeholder")}
               value={form.address} onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))} />
           </div>
         </div>
         <DialogFooter className="gap-2 pt-1 flex-row justify-end">
-          <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" size="sm" onClick={onClose}>{t("common.cancel")}</Button>
           <Button size="sm" disabled={create.isPending} onClick={handleSubmit}
             style={{ background: "linear-gradient(135deg,#0b2c60,#1a4a9e)", color: "#fff" }}>
-            {create.isPending ? "Adding…" : "Add Customer"}
+            {create.isPending ? t("udhari.adding") : t("udhari.add_customer")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -221,11 +223,11 @@ function AddCustomerDialog({ open, onClose }: { open: boolean; onClose: () => vo
 
           {/* Footer */}
           <div style={{ background: "#fff", borderTop: "1px solid #f1f5f9", padding: "20px 40px", display: "flex", alignItems: "center", gap: 14, flexShrink: 0 }}>
-            <button onClick={onClose} style={{ height: 50, padding: "0 28px", borderRadius: 14, border: "1.5px solid #e2e8f0", background: "#f8fafc", cursor: "pointer", fontWeight: 700, fontSize: 14, color: "#64748b" }}>Cancel</button>
+            <button onClick={onClose} style={{ height: 50, padding: "0 28px", borderRadius: 14, border: "1.5px solid #e2e8f0", background: "#f8fafc", cursor: "pointer", fontWeight: 700, fontSize: 14, color: "#64748b" }}>{t("common.cancel")}</button>
             <button onClick={handleSubmit} disabled={create.isPending}
               style={{ flex: 1, height: 50, borderRadius: 14, border: "none", cursor: "pointer", background: "linear-gradient(135deg,#7c2d12,#f97316)", color: "#fff", fontSize: 15, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "0 6px 20px rgba(249,115,22,0.35)", opacity: create.isPending ? 0.7 : 1 }}>
               <CheckCircle2 size={18} strokeWidth={2.5} />
-              {create.isPending ? "Adding…" : `Add Customer${form.name.trim() ? ` — ${form.name.trim()}` : ""}`}
+              {create.isPending ? t("udhari.adding") : `${t("udhari.add_customer")}${form.name.trim() ? ` — ${form.name.trim()}` : ""}`}
             </button>
           </div>
         </div>
@@ -236,19 +238,20 @@ function AddCustomerDialog({ open, onClose }: { open: boolean; onClose: () => vo
 
 // ─── Summary Banner ────────────────────────────────────────────────────────────
 function SummaryBanner() {
+  const { t } = useTranslation();
   const { data, isLoading } = useGetUdhariSummary();
   const cards = [
     {
-      label: "To Collect", value: (data as any)?.toCollect ?? 0,
+      label: t("udhari.to_collect"), value: (data as any)?.toCollect ?? 0,
       accent: "linear-gradient(135deg,#f97316,#ea580c)", color: "#ea580c",
       light: "rgba(249,115,22,0.07)", border: "rgba(249,115,22,0.18)",
-      icon: ArrowUpRight, sub: "Customers owe you",
+      icon: ArrowUpRight, sub: t("udhari.customers_owe"),
     },
     {
-      label: "To Pay", value: (data as any)?.toPay ?? 0,
+      label: t("udhari.to_pay"), value: (data as any)?.toPay ?? 0,
       accent: "linear-gradient(135deg,#10b981,#059669)", color: "#059669",
       light: "rgba(16,185,129,0.07)", border: "rgba(16,185,129,0.18)",
-      icon: ArrowDownLeft, sub: "You owe customers",
+      icon: ArrowDownLeft, sub: t("udhari.you_owe"),
     },
   ];
   return (
@@ -361,15 +364,15 @@ export default function Udhari() {
             </div>
             <div>
               <h1 className="font-black text-lg leading-tight" style={{ color: "#0b2c60" }}>
-                Udhari Khata
+                {t("udhari.title")}
               </h1>
-              <p className="text-[11px] text-muted-foreground leading-none">Customer Credit Ledger</p>
+              <p className="text-[11px] text-muted-foreground leading-none">{t("udhari.subtitle")}</p>
             </div>
           </div>
           {/* Desktop add button */}
           <Button size="sm" className="hidden sm:flex" onClick={() => setShowAdd(true)}
             style={{ background: "linear-gradient(135deg,#0b2c60,#1a4a9e)", color: "#fff" }}>
-            <Plus size={14} className="mr-1" /> Add Customer
+            <Plus size={14} className="mr-1" /> {t("udhari.add_customer")}
           </Button>
         </div>
 
@@ -380,7 +383,7 @@ export default function Udhari() {
         <div className="flex gap-2">
           <div className="relative flex-1 min-w-0">
             <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input className="pl-8 h-9 text-sm w-full" placeholder="Search by name or mobile…"
+            <Input className="pl-8 h-9 text-sm w-full" placeholder={t("udhari.search_placeholder")}
               value={q} onChange={(e) => setQ(e.target.value)} />
           </div>
           <Select value={sort} onValueChange={setSort}>
@@ -389,9 +392,9 @@ export default function Udhari() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="recent">Most Recent</SelectItem>
-              <SelectItem value="balance_desc">Highest Balance</SelectItem>
-              <SelectItem value="alpha">A → Z</SelectItem>
+              <SelectItem value="recent">{t("udhari.most_recent")}</SelectItem>
+              <SelectItem value="balance_desc">{t("udhari.highest_balance")}</SelectItem>
+              <SelectItem value="alpha">{t("udhari.a_to_z")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -403,8 +406,8 @@ export default function Udhari() {
           ) : sorted.length === 0 ? (
             <div className="text-center py-14">
               <Users size={32} className="mx-auto text-muted-foreground/30 mb-3" />
-              <p className="text-sm font-semibold text-muted-foreground">No customers yet</p>
-              <p className="text-xs text-muted-foreground/60 mt-1">Tap + to add your first customer</p>
+              <p className="text-sm font-semibold text-muted-foreground">{t("udhari.no_customers")}</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">{t("udhari.tap_to_add")}</p>
             </div>
           ) : (
             sorted.map((c: any) => <CustomerCard key={c.id} c={c} onClick={() => go(c.id)} />)
@@ -420,14 +423,14 @@ export default function Udhari() {
           ) : sorted.length === 0 ? (
             <div className="text-center py-16">
               <Users size={36} className="mx-auto text-muted-foreground/30 mb-3" />
-              <p className="text-sm font-semibold text-muted-foreground">No customers yet</p>
-              <p className="text-xs text-muted-foreground/60 mt-1">Click "Add Customer" to get started</p>
+              <p className="text-sm font-semibold text-muted-foreground">{t("udhari.no_customers")}</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">{t("udhari.click_to_add")}</p>
             </div>
           ) : (
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
-                  {["CUSTOMER", "MOBILE", "BALANCE", "LAST ACTIVITY", ""].map((h) => (
+                  {[t("udhari.col_customer"), t("udhari.col_mobile"), t("udhari.col_balance"), t("udhari.col_last_activity"), ""].map((h) => (
                     <th key={h} className="text-left px-5 py-2.5 text-[9px] font-bold text-muted-foreground uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>

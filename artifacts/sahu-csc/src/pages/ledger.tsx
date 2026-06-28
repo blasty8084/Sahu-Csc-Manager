@@ -296,8 +296,8 @@ export default function Ledger() {
   const fmtDateGroup = (d: string) => {
     const today = new Date().toISOString().split("T")[0];
     const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
-    if (d === today) return "Today";
-    if (d === yesterday) return "Yesterday";
+    if (d === today) return t("common.today");
+    if (d === yesterday) return t("common.yesterday");
     return new Date(d + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short", weekday: "short" });
   };
 
@@ -315,8 +315,8 @@ export default function Ledger() {
           {/* Top row */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18, position: "relative" }}>
             <div>
-              <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" }}>My Ledger</p>
-              <h1 style={{ color: "#fff", fontSize: 20, fontWeight: 900, lineHeight: 1.1, marginTop: 2 }}>Transaction Book</h1>
+              <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" }}>{t("ledger.title")}</p>
+              <h1 style={{ color: "#fff", fontSize: 20, fontWeight: 900, lineHeight: 1.1, marginTop: 2 }}>{t("ledger.subtitle")}</h1>
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               <a href="/api/reports/export" target="_blank" style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }}>
@@ -329,19 +329,19 @@ export default function Ledger() {
           </div>
           {/* Balance card */}
           <div style={{ background: "rgba(255,255,255,0.08)", borderRadius: 16, padding: "14px 16px", border: "1px solid rgba(255,255,255,0.12)", position: "relative" }}>
-            <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Current Balance</p>
+            <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>{t("ledger.current_balance")}</p>
             {balance === undefined
               ? <div style={{ height: 30, background: "rgba(255,255,255,0.1)", borderRadius: 8, marginBottom: 12, width: "55%" }} />
               : <p style={{ color: "#fff", fontSize: 26, fontWeight: 900, lineHeight: 1, marginBottom: 12 }}>₹{(balance?.balance ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p>}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               <div style={{ background: "rgba(16,185,129,0.15)", borderRadius: 10, padding: "8px 10px", border: "1px solid rgba(16,185,129,0.25)" }}>
-                <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>Credits</p>
+                <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>{t("ledger.credits")}</p>
                 {balance === undefined
                   ? <div style={{ height: 16, background: "rgba(255,255,255,0.12)", borderRadius: 4, marginTop: 4, width: "70%" }} />
                   : <p style={{ color: "#34d399", fontSize: 15, fontWeight: 900, marginTop: 2 }}>+₹{(balance?.totalCredits ?? 0).toLocaleString("en-IN")}</p>}
               </div>
               <div style={{ background: "rgba(244,63,94,0.15)", borderRadius: 10, padding: "8px 10px", border: "1px solid rgba(244,63,94,0.25)" }}>
-                <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>Debits</p>
+                <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>{t("ledger.debits")}</p>
                 {balance === undefined
                   ? <div style={{ height: 16, background: "rgba(255,255,255,0.12)", borderRadius: 4, marginTop: 4, width: "70%" }} />
                   : <p style={{ color: "#fb7185", fontSize: 15, fontWeight: 900, marginTop: 2 }}>−₹{(balance?.totalDebits ?? 0).toLocaleString("en-IN")}</p>}
@@ -357,7 +357,7 @@ export default function Ledger() {
             value={customerName}
             onChange={(val) => { setCustomerName(val); setPage(1); }}
             suggestions={customerNameSuggestions}
-            placeholder="Search customer or service…"
+            placeholder={t("ledger.search_placeholder")}
             style={{ width: "100%", height: 44, paddingLeft: 34, paddingRight: 46, borderRadius: 14, border: "1.5px solid #e2e8f0", background: "#fff", fontSize: 13, color: "#0b2c60", outline: "none", boxSizing: "border-box", fontWeight: 500, boxShadow: "0 1px 6px rgba(11,44,96,0.06)" }}
           />
           <button onClick={() => setShowFilters(!showFilters)} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", width: 30, height: 30, borderRadius: 8, background: hasFilters ? "#0b2c60" : "#f1f5f9", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", outline: "none" }}>
@@ -406,7 +406,7 @@ export default function Ledger() {
                 transition: "all 0.15s",
               }}
             >
-              {tab === "transactions" ? <><FileText size={13} />Transactions</> : <><Receipt size={13} />Receipts</>}
+              {tab === "transactions" ? <><FileText size={13} />{t("dashboard.transactions")}</> : <><Receipt size={13} />{t("ledger.receipts_tab")}</>}
             </button>
           ))}
         </div>
@@ -425,11 +425,11 @@ export default function Ledger() {
               <div style={{ position: "absolute", top: -24, right: -24, width: 100, height: 100, borderRadius: "50%", background: "rgba(249,115,22,0.12)", pointerEvents: "none" }} />
               <div style={{ position: "absolute", bottom: -18, left: 8, width: 64, height: 64, borderRadius: "50%", background: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
               <div style={{ position: "relative" }}>
-                <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 2 }}>My Ledger</p>
-                <h1 style={{ color: "#fff", fontSize: 18, fontWeight: 900, lineHeight: 1.1, marginBottom: 16 }}>Transaction Book</h1>
+                <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 2 }}>{t("ledger.title")}</p>
+                <h1 style={{ color: "#fff", fontSize: 18, fontWeight: 900, lineHeight: 1.1, marginBottom: 16 }}>{t("ledger.subtitle")}</h1>
                 {/* Balance glass card */}
                 <div style={{ background: "rgba(255,255,255,0.09)", borderRadius: 14, padding: "14px 14px", border: "1px solid rgba(255,255,255,0.13)", marginBottom: 12 }}>
-                  <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 5 }}>Current Balance</p>
+                  <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 5 }}>{t("ledger.current_balance")}</p>
                   {balance === undefined
                     ? <div style={{ height: 28, background: "rgba(255,255,255,0.1)", borderRadius: 6, width: "65%", marginBottom: 12 }} />
                     : <p style={{ color: "#fff", fontSize: 24, fontWeight: 900, lineHeight: 1, marginBottom: 12 }}>₹{(balance?.balance ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p>}
@@ -437,7 +437,7 @@ export default function Ledger() {
                     <div style={{ background: "rgba(16,185,129,0.15)", borderRadius: 9, padding: "8px 10px", border: "1px solid rgba(16,185,129,0.25)" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 3 }}>
                         <ArrowDownLeft size={10} color="#34d399" />
-                        <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 8, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>Credits</p>
+                        <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 8, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>{t("ledger.credits")}</p>
                       </div>
                       {balance === undefined
                         ? <div style={{ height: 14, background: "rgba(255,255,255,0.12)", borderRadius: 4, width: "80%" }} />
@@ -446,7 +446,7 @@ export default function Ledger() {
                     <div style={{ background: "rgba(244,63,94,0.15)", borderRadius: 9, padding: "8px 10px", border: "1px solid rgba(244,63,94,0.25)" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 3 }}>
                         <ArrowUpRight size={10} color="#fb7185" />
-                        <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 8, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>Debits</p>
+                        <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 8, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>{t("ledger.debits")}</p>
                       </div>
                       {balance === undefined
                         ? <div style={{ height: 14, background: "rgba(255,255,255,0.12)", borderRadius: 4, width: "80%" }} />
@@ -469,7 +469,7 @@ export default function Ledger() {
                   <div style={{ width: 22, height: 22, borderRadius: 7, background: "rgba(11,44,96,0.07)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <Filter size={11} color="#0b2c60" />
                   </div>
-                  <p style={{ fontSize: 11, fontWeight: 800, color: "#0b2c60", textTransform: "uppercase", letterSpacing: "0.08em" }}>Filters</p>
+                  <p style={{ fontSize: 11, fontWeight: 800, color: "#0b2c60", textTransform: "uppercase", letterSpacing: "0.08em" }}>{t("reports.filters")}</p>
                 </div>
                 {hasFilters && (
                   <button onClick={clearFilters} style={{ fontSize: 10, fontWeight: 700, color: "#f97316", background: "rgba(249,115,22,0.08)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 6, padding: "3px 9px", cursor: "pointer" }}>

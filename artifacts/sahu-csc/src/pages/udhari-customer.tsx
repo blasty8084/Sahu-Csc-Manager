@@ -41,6 +41,7 @@ function fmt(n: number) {
 
 // ─── Balance Banner ───────────────────────────────────────────────────────────
 function BalanceBanner({ balance }: { balance: number }) {
+  const { t } = useTranslation();
   const isCollect = balance > 0;
   const isPay = balance < 0;
   const color = isCollect ? "#ea580c" : isPay ? "#059669" : "#64748b";
@@ -53,10 +54,10 @@ function BalanceBanner({ balance }: { balance: number }) {
   return (
     <div className="rounded-2xl p-5 text-center" style={{ background: bg, boxShadow: `0 2px 16px ${color}22` }}>
       <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: `${color}99` }}>
-        {isCollect ? "To Collect" : isPay ? "To Pay" : "Settled"}
+        {isCollect ? t("udhari.customer.to_collect") : isPay ? t("udhari.customer.to_pay") : t("udhari.customer.settled")}
       </p>
       <p className="text-4xl font-black" style={{ color }}>{fmt(balance)}</p>
-      {balance === 0 && <p className="text-xs text-muted-foreground mt-1">No pending amount</p>}
+      {balance === 0 && <p className="text-xs text-muted-foreground mt-1">{t("udhari.customer.no_pending")}</p>}
     </div>
   );
 }
@@ -71,6 +72,7 @@ interface EntryFormProps {
   customer?: any;
 }
 function EntryFormDialog({ customerId, mode, existing, open, onClose, customer }: EntryFormProps) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const qc = useQueryClient();
   const isEdit = !!existing;
@@ -93,21 +95,21 @@ function EntryFormDialog({ customerId, mode, existing, open, onClose, customer }
   const handleSave = async () => {
     const amt = parseFloat(form.amount);
     if (!form.amount || isNaN(amt) || amt <= 0) {
-      toast({ title: "Enter a valid amount", variant: "destructive" }); return;
+      toast({ title: t("udhari.customer.toast_invalid_amount"), variant: "destructive" }); return;
     }
     try {
       if (isEdit) {
         await update.mutateAsync({ customerId, entryId: existing.id, data: { date: form.date, type: form.type, amount: amt, note: form.note } });
         invalidateAll();
-        toast({ title: "Entry updated" });
+        toast({ title: t("udhari.customer.toast_updated") });
       } else {
         await create.mutateAsync({ customerId, data: { date: form.date, type: form.type, amount: amt, note: form.note } });
         invalidateAll();
-        toast({ title: form.type === "gave" ? "₹ You Gave recorded" : "₹ You Got recorded" });
+        toast({ title: t(form.type === "gave" ? "udhari.customer.toast_gave_recorded" : "udhari.customer.toast_got_recorded") });
       }
       onClose();
     } catch {
-      toast({ title: "Failed to save", variant: "destructive" });
+      toast({ title: t("udhari.customer.toast_save_fail"), variant: "destructive" });
     }
   };
 
@@ -161,7 +163,7 @@ function EntryFormDialog({ customerId, mode, existing, open, onClose, customer }
               </div>
               <div>
                 <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" }}>Udhari Khata</p>
-                <h3 style={{ color: "#fff", fontSize: 16, fontWeight: 900, lineHeight: 1.1, marginTop: 2 }}>{isEdit ? "Edit Entry" : (isGave ? "You Gave" : "You Got")}</h3>
+                <h3 style={{ color: "#fff", fontSize: 16, fontWeight: 900, lineHeight: 1.1, marginTop: 2 }}>{isEdit ? t("udhari.customer.edit_entry") : (isGave ? t("udhari.customer.you_gave") : t("udhari.customer.you_got"))}</h3>
               </div>
             </div>
             <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", outline: "none" }}>
@@ -173,10 +175,10 @@ function EntryFormDialog({ customerId, mode, existing, open, onClose, customer }
         <div className="px-4 pt-3 pb-5 space-y-3">
           {!isEdit && (
             <div style={{ background: "#f1f5f9", borderRadius: 14, padding: 4, display: "flex", gap: 4 }}>
-              {(["gave", "got"] as const).map(t => (
-                <button key={t} type="button" onClick={() => setForm(p => ({ ...p, type: t }))}
-                  style={{ flex: 1, height: 42, borderRadius: 11, border: "none", cursor: "pointer", fontWeight: 800, fontSize: 13, background: form.type === t ? (t === "gave" ? "#ea580c" : "#059669") : "transparent", color: form.type === t ? "#fff" : "#94a3b8", transition: "all 0.15s", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, boxShadow: form.type === t ? `0 2px 10px ${t === "gave" ? "rgba(234,88,12,0.35)" : "rgba(5,150,105,0.35)"}` : "none" }}>
-                  {t === "gave" ? <><ArrowUpRight size={14} strokeWidth={2.5} /> You Gave</> : <><ArrowDownLeft size={14} strokeWidth={2.5} /> You Got</>}
+              {(["gave", "got"] as const).map(typ => (
+                <button key={typ} type="button" onClick={() => setForm(p => ({ ...p, type: typ }))}
+                  style={{ flex: 1, height: 42, borderRadius: 11, border: "none", cursor: "pointer", fontWeight: 800, fontSize: 13, background: form.type === typ ? (typ === "gave" ? "#ea580c" : "#059669") : "transparent", color: form.type === typ ? "#fff" : "#94a3b8", transition: "all 0.15s", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, boxShadow: form.type === typ ? `0 2px 10px ${typ === "gave" ? "rgba(234,88,12,0.35)" : "rgba(5,150,105,0.35)"}` : "none" }}>
+                  {typ === "gave" ? <><ArrowUpRight size={14} strokeWidth={2.5} /> {t("udhari.customer.you_gave")}</> : <><ArrowDownLeft size={14} strokeWidth={2.5} /> {t("udhari.customer.you_got")}</>}
                 </button>
               ))}
             </div>
@@ -186,7 +188,7 @@ function EntryFormDialog({ customerId, mode, existing, open, onClose, customer }
               <span style={{ fontSize: 16, fontWeight: 900, color: "#fff" }}>₹</span>
             </div>
             <div style={{ flex: 1 }}>
-              <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 2 }}>{isGave ? "Amount You Gave" : "Amount You Got"}</p>
+              <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 2 }}>{isGave ? t("udhari.customer.amount_gave") : t("udhari.customer.amount_got")}</p>
               <input type="number" min="0" step="0.01" value={form.amount} onChange={e => setForm(p => ({ ...p, amount: e.target.value }))} placeholder="0.00"
                 style={{ width: "100%", fontSize: 28, fontWeight: 900, color: accentColor, background: "transparent", border: "none", outline: "none", padding: 0 }} />
             </div>
@@ -210,12 +212,12 @@ function EntryFormDialog({ customerId, mode, existing, open, onClose, customer }
           <div style={{ display: "flex", gap: 10 }}>
             <button type="button" onClick={onClose}
               style={{ flex: 1, height: 52, borderRadius: 16, border: "1.5px solid #e2e8f0", background: "#f8fafc", cursor: "pointer", fontWeight: 700, fontSize: 14, color: "#64748b" }}>
-              Cancel
+              {t("common.cancel")}
             </button>
             <button type="button" onClick={handleSave} disabled={create.isPending || update.isPending}
               style={{ flex: 2, height: 52, borderRadius: 16, border: "none", cursor: "pointer", background: isGave ? "linear-gradient(135deg,#7c2d12,#ea580c)" : "linear-gradient(135deg,#064e3b,#059669)", color: "#fff", fontSize: 16, fontWeight: 900, letterSpacing: "0.02em", boxShadow: `0 6px 20px ${accentColor}40`, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, opacity: (create.isPending || update.isPending) ? 0.7 : 1 }}>
               <CheckCircle2 size={18} strokeWidth={2.5} />
-              {create.isPending || update.isPending ? "Saving…" : `Save — ${isGave ? "You Gave" : "You Got"}`}
+              {create.isPending || update.isPending ? t("common.saving") : `${t("common.save")} — ${isGave ? t("udhari.customer.you_gave") : t("udhari.customer.you_got")}`}
             </button>
           </div>
         </div>
@@ -259,10 +261,10 @@ function EntryFormDialog({ customerId, mode, existing, open, onClose, customer }
 
           <div style={{ marginBottom: 24, position: "relative" }}>
             <h1 style={{ color: "#fff", fontSize: 24, fontWeight: 900, lineHeight: 1.2, marginBottom: 6 }}>
-              {isEdit ? "Edit Entry" : isGave ? "You Gave" : "You Got"}
+              {isEdit ? t("udhari.customer.edit_entry") : isGave ? t("udhari.customer.you_gave") : t("udhari.customer.you_got")}
             </h1>
             <p style={{ color: "rgba(255,255,255,0.60)", fontSize: 13, lineHeight: 1.6 }}>
-              {isGave ? "Record money you lent to this customer." : "Record money you received from this customer."}
+              {isGave ? t("udhari.customer.desc_gave") : t("udhari.customer.desc_got")}
             </p>
           </div>
 
@@ -288,16 +290,16 @@ function EntryFormDialog({ customerId, mode, existing, open, onClose, customer }
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "#f8fafc" }}>
           <div style={{ background: "#fff", borderBottom: "1px solid #f1f5f9", padding: "18px 40px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
             <div>
-              <h2 style={{ fontSize: 18, fontWeight: 800, color: "#0b2c60", margin: 0 }}>{isEdit ? "Edit Entry" : isGave ? "You Gave Entry" : "You Got Entry"}</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 800, color: "#0b2c60", margin: 0 }}>{isEdit ? t("udhari.customer.edit_entry") : isGave ? t("udhari.customer.you_gave") : t("udhari.customer.you_got")}</h2>
               <p style={{ fontSize: 12, color: "#94a3b8", margin: 0, marginTop: 2 }}>Udhari Khata › {customer?.name}</p>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               {!isEdit && (
                 <div style={{ display: "flex", background: "#f1f5f9", borderRadius: 14, padding: 4, gap: 4 }}>
-                  {(["gave", "got"] as const).map(t => (
-                    <button key={t} type="button" onClick={() => setForm(p => ({ ...p, type: t }))}
-                      style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 11, border: "none", cursor: "pointer", background: form.type === t ? (t === "gave" ? "linear-gradient(135deg,#7c2d12,#ea580c)" : "linear-gradient(135deg,#064e3b,#059669)") : "transparent", color: form.type === t ? "#fff" : "#64748b", fontWeight: 700, fontSize: 13, boxShadow: form.type === t ? (t === "gave" ? "0 2px 10px rgba(234,88,12,0.35)" : "0 2px 10px rgba(5,150,105,0.35)") : "none", transition: "all 0.15s" }}>
-                      {t === "gave" ? <><ArrowUpRight size={14} strokeWidth={2.5} /> You Gave</> : <><ArrowDownLeft size={14} strokeWidth={2.5} /> You Got</>}
+                  {(["gave", "got"] as const).map(typ => (
+                    <button key={typ} type="button" onClick={() => setForm(p => ({ ...p, type: typ }))}
+                      style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 11, border: "none", cursor: "pointer", background: form.type === typ ? (typ === "gave" ? "linear-gradient(135deg,#7c2d12,#ea580c)" : "linear-gradient(135deg,#064e3b,#059669)") : "transparent", color: form.type === typ ? "#fff" : "#64748b", fontWeight: 700, fontSize: 13, boxShadow: form.type === typ ? (typ === "gave" ? "0 2px 10px rgba(234,88,12,0.35)" : "0 2px 10px rgba(5,150,105,0.35)") : "none", transition: "all 0.15s" }}>
+                      {typ === "gave" ? <><ArrowUpRight size={14} strokeWidth={2.5} /> {t("udhari.customer.you_gave")}</> : <><ArrowDownLeft size={14} strokeWidth={2.5} /> {t("udhari.customer.you_got")}</>}
                     </button>
                   ))}
                 </div>
@@ -354,11 +356,11 @@ function EntryFormDialog({ customerId, mode, existing, open, onClose, customer }
 
           {/* Footer */}
           <div style={{ background: "#fff", borderTop: "1px solid #f1f5f9", padding: "20px 40px", display: "flex", alignItems: "center", gap: 14, flexShrink: 0 }}>
-            <button onClick={onClose} style={{ height: 50, padding: "0 28px", borderRadius: 14, border: "1.5px solid #e2e8f0", background: "#f8fafc", cursor: "pointer", fontWeight: 700, fontSize: 14, color: "#64748b" }}>Cancel</button>
+            <button onClick={onClose} style={{ height: 50, padding: "0 28px", borderRadius: 14, border: "1.5px solid #e2e8f0", background: "#f8fafc", cursor: "pointer", fontWeight: 700, fontSize: 14, color: "#64748b" }}>{t("common.cancel")}</button>
             <button type="button" onClick={handleSave} disabled={create.isPending || update.isPending}
               style={{ flex: 1, height: 50, borderRadius: 14, border: "none", cursor: "pointer", background: amtGrad, color: "#fff", fontSize: 15, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: `0 6px 20px ${accentColor}40`, opacity: (create.isPending || update.isPending) ? 0.7 : 1 }}>
               <CheckCircle2 size={18} strokeWidth={2.5} />
-              {create.isPending || update.isPending ? "Saving…" : `Save — ${isGave ? "You Gave" : "You Got"}${entryAmt > 0 ? ` ₹${entryAmt.toLocaleString("en-IN")}` : ""}`}
+              {create.isPending || update.isPending ? t("common.saving") : `${t("common.save")} — ${isGave ? t("udhari.customer.you_gave") : t("udhari.customer.you_got")}${entryAmt > 0 ? ` ₹${entryAmt.toLocaleString("en-IN")}` : ""}`}
             </button>
           </div>
         </div>
@@ -369,50 +371,51 @@ function EntryFormDialog({ customerId, mode, existing, open, onClose, customer }
 
 // ─── Edit Customer Dialog ──────────────────────────────────────────────────────
 function EditCustomerDialog({ customer, open, onClose }: { customer: any; open: boolean; onClose: () => void }) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const qc = useQueryClient();
   const [form, setForm] = useState({ name: customer.name, mobile: customer.mobile ?? "", address: customer.address ?? "" });
   const update = useUpdateUdhariCustomer();
 
   const handleSave = async () => {
-    if (!form.name.trim()) { toast({ title: "Name required", variant: "destructive" }); return; }
+    if (!form.name.trim()) { toast({ title: t("udhari.customer.toast_name_required"), variant: "destructive" }); return; }
     try {
       await update.mutateAsync({ customerId: customer.id, data: { name: form.name.trim(), mobile: form.mobile || null, address: form.address || null } });
       qc.invalidateQueries({ queryKey: [`/api/udhari/customers/${customer.id}`] });
       qc.invalidateQueries({ queryKey: ["/api/udhari/customers"] });
-      toast({ title: "Customer updated" });
+      toast({ title: t("udhari.customer.toast_customer_updated") });
       onClose();
-    } catch { toast({ title: "Failed to update", variant: "destructive" }); }
+    } catch { toast({ title: t("udhari.customer.toast_update_fail"), variant: "destructive" }); }
   };
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle className="text-sm font-bold" style={{ color: "#0b2c60" }}>Edit Customer</DialogTitle>
+          <DialogTitle className="text-sm font-bold" style={{ color: "#0b2c60" }}>{t("udhari.customer.edit_customer")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3 py-1">
           <div>
-            <Label className="text-xs font-semibold">Name *</Label>
+            <Label className="text-xs font-semibold">{t("udhari.name_label")}</Label>
             <Input className="mt-1 h-9 text-sm" value={form.name}
               onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
           </div>
           <div>
-            <Label className="text-xs font-semibold">Mobile</Label>
-            <Input className="mt-1 h-9 text-sm" placeholder="Optional" value={form.mobile}
+            <Label className="text-xs font-semibold">{t("udhari.mobile_label")}</Label>
+            <Input className="mt-1 h-9 text-sm" placeholder={t("common.optional")} value={form.mobile}
               onChange={(e) => setForm((p) => ({ ...p, mobile: e.target.value }))} />
           </div>
           <div>
-            <Label className="text-xs font-semibold">Address / Notes</Label>
+            <Label className="text-xs font-semibold">{t("udhari.address_label")}</Label>
             <Textarea className="mt-1 text-sm resize-none" rows={2} value={form.address}
               onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))} />
           </div>
         </div>
         <DialogFooter className="gap-2">
-          <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" size="sm" onClick={onClose}>{t("common.cancel")}</Button>
           <Button size="sm" disabled={update.isPending} onClick={handleSave}
             style={{ background: "linear-gradient(135deg,#0b2c60,#1a4a9e)", color: "#fff" }}>
-            {update.isPending ? "Saving…" : "Save"}
+            {update.isPending ? t("common.saving") : t("common.save")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -422,10 +425,11 @@ function EditCustomerDialog({ customer, open, onClose }: { customer: any; open: 
 
 // ─── Entry Row ─────────────────────────────────────────────────────────────────
 function EntryRow({ e, onEdit, onDelete, onReceipt }: { e: any; onEdit: () => void; onDelete: () => void; onReceipt: () => void }) {
+  const { t } = useTranslation();
   const isGave = e.type === "gave";
   const color = isGave ? "#ea580c" : "#059669";
   const bg = isGave ? "rgba(249,115,22,0.08)" : "rgba(16,185,129,0.08)";
-  const label = isGave ? "You Gave" : "You Got";
+  const label = isGave ? t("udhari.customer.you_gave") : t("udhari.customer.you_got");
 
   return (
     <div className="bg-white rounded-xl flex items-start gap-3 px-4 py-3"

@@ -163,6 +163,7 @@ function OpeningBalanceHeroCard({
   session: NonNullable<AepsSession>;
   onEdit: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div
       className="rounded-3xl overflow-hidden"
@@ -184,7 +185,7 @@ function OpeningBalanceHeroCard({
               <Wallet size={14} color="#f97316" />
             </div>
             <span style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.70)", textTransform: "uppercase", letterSpacing: "0.09em" }}>
-              Opening Balance
+              {t("aeps.opening_balance")}
             </span>
           </div>
           <button
@@ -196,7 +197,7 @@ function OpeningBalanceHeroCard({
               color: "rgba(255,255,255,0.85)", fontSize: 11, fontWeight: 700,
             }}
           >
-            <Pencil size={11} /> Edit
+            <Pencil size={11} /> {t("common.edit")}
           </button>
         </div>
 
@@ -222,9 +223,9 @@ function OpeningBalanceHeroCard({
         {/* Mini stats row */}
         <div className="flex gap-2">
           {[
-            { label: "Date", value: fmtDate(session.date).split(",")[0] },
-            { label: "Session", value: "Active" },
-            { label: "Txns", value: String(session.transactions.length) },
+            { label: t("common.date"), value: fmtDate(session.date).split(",")[0] },
+            { label: t("aeps.active_session"), value: t("common.active") },
+            { label: t("dashboard.txns"), value: String(session.transactions.length) },
           ].map(({ label, value }) => (
             <div
               key={label}
@@ -309,7 +310,7 @@ function DailyTab() {
       qc.invalidateQueries({ queryKey: sessionKey });
       setShowOpenDialog(false);
       openForm.reset();
-      toast({ title: "Day opening balance set" });
+      toast({ title: t("aeps.toast_day_opened") });
     },
     onError: (e: Error) => toast({ title: e.message, variant: "destructive" }),
   });
@@ -332,7 +333,7 @@ function DailyTab() {
       qc.invalidateQueries({ queryKey: sessionKey });
       qc.invalidateQueries({ queryKey: ["aeps-all-tx"] });
       setEditingTx(null);
-      toast({ title: "Transaction updated" });
+      toast({ title: t("aeps.toast_updated") });
     },
     onError: (e: Error) => toast({ title: e.message, variant: "destructive" }),
   });
@@ -1966,7 +1967,7 @@ function AllTransactionsTab() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["aeps-all-tx"] });
       setEditingTx(null);
-      toast({ title: "Transaction updated" });
+      toast({ title: t("aeps.toast_updated") });
     },
     onError: (e: Error) => toast({ title: e.message, variant: "destructive" }),
   });
