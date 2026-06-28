@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Layout } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ const features = [
 ];
 
 export default function DownloadApp() {
+  const { t } = useTranslation();
   const { isInstallable, isInstalled, promptInstall } = usePWA();
   const [installing, setInstalling] = useState(false);
   const [installed, setInstalled] = useState(false);
@@ -110,14 +112,14 @@ export default function DownloadApp() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <Smartphone size={18} className="text-green-600" />
-              Install on Android
+              {t("download_app.android")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {isInstallable && !isInstalled && !installed && (
               <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-xl p-4 flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-green-800 dark:text-green-300">Ready to install!</p>
+                  <p className="text-sm font-semibold text-green-800 dark:text-green-300">{t("download_app.ready")}</p>
                   <p className="text-xs text-green-700 dark:text-green-400 mt-0.5">Chrome detected an installable PWA on this page.</p>
                 </div>
                 <Button onClick={handleInstall} disabled={installing} size="sm" className="shrink-0 bg-green-600 hover:bg-green-700 text-white gap-1.5">
@@ -127,7 +129,7 @@ export default function DownloadApp() {
               </div>
             )}
 
-            <p className="text-sm text-muted-foreground font-medium">Manual install steps:</p>
+            <p className="text-sm text-muted-foreground font-medium">{t("download_app.manual_steps")}</p>
             <ol className="space-y-3">
               {steps.android.map((step, i) => {
                 const Icon = step.icon;
@@ -151,7 +153,7 @@ export default function DownloadApp() {
             <div className="space-y-2">
               <p className="text-sm font-semibold flex items-center gap-2">
                 <Package size={15} className="text-primary" />
-                Download APK (Advanced)
+                {t("download_app.download_apk")}
               </p>
               <p className="text-xs text-muted-foreground">
                 Generate a native Android APK (Trusted Web Activity) using PWABuilder — a free Microsoft tool.
@@ -187,7 +189,7 @@ export default function DownloadApp() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <Apple size={18} className="text-gray-700 dark:text-gray-300" />
-              Install on iPhone / iPad
+              {t("download_app.iphone")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -219,7 +221,7 @@ export default function DownloadApp() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <Monitor size={18} className="text-blue-600" />
-              Install on Desktop (Windows / macOS)
+              {t("download_app.desktop")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -248,7 +250,7 @@ export default function DownloadApp() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <QrCode size={18} className="text-purple-600" />
-              Share App Link
+              {t("download_app.share_link")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">

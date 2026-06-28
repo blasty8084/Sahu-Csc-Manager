@@ -731,7 +731,14 @@
     "active_only": "କେବଳ ସକ୍ରିୟ",
     "smtp_not_configured": "SMTP ସ୍ଥାପିତ ନୁହେଁ",
     "history": "ବ୍ରଡ୍‌କାଷ୍ଟ ଇତିହାସ",
-    "no_broadcasts": "ଏ ପର୍ଯ୍ୟନ୍ତ ବ୍ରଡ୍‌କାଷ୍ଟ ନାହିଁ"
+    "no_broadcasts": "ଏ ପର୍ଯ୍ୟନ୍ତ ବ୍ରଡ୍‌କାଷ୍ଟ ନାହିଁ",
+    "tab_push": "ପୁସ ବିଜ୍ଞପ୍ତି",
+    "tab_push_short": "ପୁସ",
+    "tab_email": "ଇ-ମେଲ ବ୍ଲାଷ୍ଟ",
+    "tab_email_short": "ଇ-ମେଲ",
+    "tab_history": "ଇତିହାସ",
+    "push_subscribers": "ପୁସ ସଦସ୍ୟ",
+    "active_users": "ସକ୍ରିୟ ଉପଯୋଗକାରୀ"
   },
 
   "pwa": {
@@ -751,7 +758,15 @@
     "offline_mode": "ଅଫଲାଇନ ମୋଡ",
     "slow_connection": "ଧୀର ସଂଯୋଗ",
     "cached_data": "— କ୍ୟାଶ ତଥ୍ୟ ଦେଖାଉଛି, ନୂଆ ଏଣ୍ଟ୍ରି ସ୍ଥାନୀୟ ଭାବେ ସଂରକ୍ଷିତ",
-    "queued_n": "— {{n}} ଏଣ୍ଟ୍ରି ଲାଇନରେ"
+    "queued_n": "— {{n}} ଏଣ୍ଟ୍ରି ଲାଇନରେ",
+    "network_status": "ନେଟୱାର୍କ ସ୍ଥିତି",
+    "sync_queue": "ସିଙ୍କ ଅପେକ୍ଷା",
+    "offline_storage": "ଅଫଲାଇନ ଷ୍ଟୋରେଜ",
+    "app_installation": "ଆପ ସ୍ଥାପନ",
+    "device_capabilities": "ଡିଭାଇସ ସୁବିଧା",
+    "security": "ସୁରକ୍ଷା ଓ ଗୋପନୀୟତା",
+    "online": "ଅନଲାଇନ",
+    "slow": "ଧୀର"
   },
 
   "receipts": {

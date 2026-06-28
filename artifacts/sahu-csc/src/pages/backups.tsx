@@ -31,10 +31,10 @@ export default function Backups() {
   const handleCreate = async () => {
     try {
       await createMut.mutateAsync();
-      toast.success("Backup created successfully");
+      toast.success(t("backups.toast_created"));
       invalidate();
     } catch {
-      toast({ title: "Backup failed", variant: "destructive" });
+      toast({ title: t("backups.title"), variant: "destructive" });
     }
   };
 
@@ -55,12 +55,12 @@ export default function Backups() {
       <div className="space-y-5 max-w-2xl">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold">Backup & Restore</h2>
-            <p className="text-sm text-muted-foreground">{backups?.length ?? 0} backups available</p>
+            <h2 className="text-xl font-bold">{t("backups.title")}</h2>
+            <p className="text-sm text-muted-foreground">{backups?.length ?? 0} {t("backups.available")}</p>
           </div>
           <Button size="sm" onClick={handleCreate} disabled={createMut.isPending} data-testid="button-create-backup">
             <Plus size={14} className="mr-1.5" />
-            {createMut.isPending ? "Creating..." : "Create Backup"}
+            {createMut.isPending ? t("backups.creating") : t("backups.create")}
           </Button>
         </div>
 
@@ -69,9 +69,9 @@ export default function Backups() {
           <div className="flex gap-3">
             <HardDrive size={18} className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-amber-800 dark:text-amber-300">Backup Information</p>
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-300">{t("backups.info_title")}</p>
               <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
-                Backups contain a snapshot of your database. Restoring will replace current data. Always verify integrity before restoring.
+                {t("backups.info_desc")}
               </p>
             </div>
           </div>
@@ -85,7 +85,7 @@ export default function Backups() {
         ) : backups?.length === 0 ? (
           <div className="text-center py-16">
             <Database size={40} className="mx-auto text-muted-foreground/40 mb-3" />
-            <p className="text-muted-foreground">No backups yet. Create your first backup.</p>
+            <p className="text-muted-foreground">{t("backups.no_backups")}</p>
           </div>
         ) : (
           <div className="border rounded-lg overflow-hidden bg-card">
@@ -93,9 +93,9 @@ export default function Backups() {
             <table className="w-full text-sm min-w-[480px]">
               <thead className="border-b bg-muted/30">
                 <tr className="text-left">
-                  <th className="px-4 py-3 font-medium text-muted-foreground">Filename</th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground">Size</th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground">Created</th>
+                  <th className="px-4 py-3 font-medium text-muted-foreground">{t("common.name")}</th>
+                  <th className="px-4 py-3 font-medium text-muted-foreground">{t("common.total")}</th>
+                  <th className="px-4 py-3 font-medium text-muted-foreground">{t("common.date")}</th>
                   <th className="px-4 py-3"></th>
                 </tr>
               </thead>
@@ -118,7 +118,7 @@ export default function Backups() {
                         onClick={() => { setRestoreId(backup.id); setRestoreFilename(backup.filename); }}
                         data-testid={`button-restore-${backup.id}`}
                       >
-                        <RotateCcw size={12} className="mr-1" />Restore
+                        <RotateCcw size={12} className="mr-1" />{t("backups.restore")}
                       </Button>
                     </td>
                   </tr>
@@ -132,14 +132,14 @@ export default function Backups() {
 
       <Dialog open={restoreId !== null} onOpenChange={() => setRestoreId(null)}>
         <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Restore Backup?</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("backups.restore_title")}</DialogTitle></DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Restoring from <span className="font-mono text-xs">{restoreFilename}</span> will replace current database data. This cannot be undone.
+            {t("backups.restore_desc")}
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRestoreId(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setRestoreId(null)}>{t("common.cancel")}</Button>
             <Button variant="destructive" onClick={handleRestore} disabled={restoreMut.isPending}>
-              {restoreMut.isPending ? "Restoring..." : "Restore"}
+              {restoreMut.isPending ? t("common.loading") : t("backups.restore")}
             </Button>
           </DialogFooter>
         </DialogContent>

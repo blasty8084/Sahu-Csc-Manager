@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { Layout } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -68,30 +69,31 @@ function formatUptime(seconds: number): string {
 }
 
 function StatusBadge({ status }: { status: "ok" | "degraded" | "error" | "ephemeral" | "disabled" | string }) {
+  const { t } = useTranslation();
   if (status === "ok") {
     return (
       <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800 gap-1">
-        <CheckCircle2 size={11} /> Healthy
+        <CheckCircle2 size={11} /> {t("server_health.healthy")}
       </Badge>
     );
   }
   if (status === "degraded" || status === "ephemeral") {
     return (
       <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800 gap-1">
-        <AlertTriangle size={11} /> {status === "ephemeral" ? "Ephemeral" : "Degraded"}
+        <AlertTriangle size={11} /> {status === "ephemeral" ? t("server_health.ephemeral") : t("server_health.degraded")}
       </Badge>
     );
   }
   if (status === "disabled") {
     return (
       <Badge className="bg-muted text-muted-foreground gap-1">
-        <Info size={11} /> Disabled
+        <Info size={11} /> {t("server_health.disabled")}
       </Badge>
     );
   }
   return (
     <Badge variant="destructive" className="gap-1">
-      <XCircle size={11} /> Error
+      <XCircle size={11} /> {t("common.error")}
     </Badge>
   );
 }
@@ -107,6 +109,7 @@ function StatCell({ label, value, sub }: { label: string; value: string; sub?: s
 }
 
 export default function ServerHealth() {
+  const { t } = useTranslation();
   const [data, setData] = useState<HealthData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -157,7 +160,7 @@ export default function ServerHealth() {
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-xl font-bold text-foreground">Server Health</h1>
+            <h1 className="text-xl font-bold text-foreground">{t("server_health.title")}</h1>
             <p className="text-sm text-muted-foreground mt-0.5">
               Live status of API server, database connection, and push notifications
             </p>
@@ -170,7 +173,7 @@ export default function ServerHealth() {
             disabled={refreshing || loading}
           >
             <RefreshCw size={13} className={(refreshing || loading) ? "animate-spin" : ""} />
-            {refreshing ? "Checking…" : "Refresh"}
+            {refreshing ? t("server_health.checking") : t("server_health.refresh")}
           </Button>
         </div>
 
@@ -214,9 +217,9 @@ export default function ServerHealth() {
                 <Activity size={16} className={overallColor} />
                 <div>
                   <p className={`font-semibold text-sm ${overallColor}`}>
-                    {data.status === "ok" ? "All systems operational" :
-                     data.status === "degraded" ? "Systems degraded — some features may be limited" :
-                     "System error detected"}
+                    {data.status === "ok" ? t("server_health.all_ok") :
+                     data.status === "degraded" ? t("server_health.some_degraded") :
+                     t("server_health.error_detected")}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     Response time: {data.responseTimeMs} ms · Environment: {data.environment}
@@ -232,7 +235,7 @@ export default function ServerHealth() {
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Server size={16} className="text-primary" />
-                    API Server
+                    {t("server_health.api_server")}
                   </CardTitle>
                   <StatusBadge status={data.server.status} />
                 </div>
@@ -248,7 +251,7 @@ export default function ServerHealth() {
                 {/* Memory */}
                 <div>
                   <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
-                    <MemoryStick size={12} /> Memory Usage
+                    <MemoryStick size={12} /> {t("server_health.memory")}
                   </p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <StatCell
@@ -282,7 +285,7 @@ export default function ServerHealth() {
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Database size={16} className="text-primary" />
-                    Database (PostgreSQL)
+                    {t("server_health.database")}
                   </CardTitle>
                   <StatusBadge status={data.database.status} />
                 </div>
@@ -324,7 +327,7 @@ export default function ServerHealth() {
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Bell size={16} className="text-primary" />
-                    Push Notifications (VAPID)
+                    {t("server_health.push")}
                   </CardTitle>
                   <StatusBadge status={data.vapid.status} />
                 </div>
@@ -370,7 +373,7 @@ export default function ServerHealth() {
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
                   <Zap size={16} className="text-primary" />
-                  Quick Fixes
+                  {t("server_health.quick_fixes")}
                 </CardTitle>
               </CardHeader>
               <CardContent>

@@ -55,23 +55,23 @@ export default function AuditLogs() {
     <Layout>
       <div className="space-y-5">
         <div>
-          <h2 className="text-xl font-bold">Audit Logs</h2>
-          <p className="text-sm text-muted-foreground">{data?.total ?? 0} total events</p>
+          <h2 className="text-xl font-bold">{t("audit.title")}</h2>
+          <p className="text-sm text-muted-foreground">{data?.total ?? 0} {t("audit.total_events")}</p>
         </div>
 
         {/* Filters */}
         <div className="flex flex-wrap gap-2 bg-card border rounded-lg p-3">
           <Select value={actionFilter} onValueChange={(v) => { setActionFilter(v); setPage(1); }}>
-            <SelectTrigger className="w-44 h-8 text-sm"><SelectValue placeholder="All actions" /></SelectTrigger>
+            <SelectTrigger className="w-44 h-8 text-sm"><SelectValue placeholder={t("audit.all_actions")} /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All actions</SelectItem>
+              <SelectItem value="all">{t("audit.all_actions")}</SelectItem>
               {actions.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
             </SelectContent>
           </Select>
           <Input className="w-36 h-8 text-sm" type="date" value={startDate} onChange={(e) => { setStartDate(e.target.value); setPage(1); }} />
           <Input className="w-36 h-8 text-sm" type="date" value={endDate} onChange={(e) => { setEndDate(e.target.value); setPage(1); }} />
           {(actionFilter || startDate || endDate) && (
-            <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setActionFilter(""); setStartDate(""); setEndDate(""); setPage(1); }}>Clear</Button>
+            <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setActionFilter(""); setStartDate(""); setEndDate(""); setPage(1); }}>{t("common.clear")}</Button>
           )}
         </div>
 
@@ -81,7 +81,7 @@ export default function AuditLogs() {
             {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}
           </div>
         ) : data?.logs?.length === 0 ? (
-          <p className="text-center text-muted-foreground py-12 sm:hidden">No audit logs found</p>
+          <p className="text-center text-muted-foreground py-12 sm:hidden">{t("audit.no_logs")}</p>
         ) : (
           <div className="space-y-2 sm:hidden">
             {data?.logs?.map((log: any) => (
@@ -108,18 +108,18 @@ export default function AuditLogs() {
             <table className="w-full text-sm">
               <thead className="border-b bg-muted/30">
                 <tr className="text-left">
-                  <th className="px-4 py-3 font-medium text-muted-foreground">Time</th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground">User</th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground">Action</th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground">Details</th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground">IP Address</th>
+                  <th className="px-4 py-3 font-medium text-muted-foreground">{t("audit.col_time")}</th>
+                  <th className="px-4 py-3 font-medium text-muted-foreground">{t("audit.col_user")}</th>
+                  <th className="px-4 py-3 font-medium text-muted-foreground">{t("audit.col_action")}</th>
+                  <th className="px-4 py-3 font-medium text-muted-foreground">{t("audit.col_details")}</th>
+                  <th className="px-4 py-3 font-medium text-muted-foreground">{t("audit.col_ip")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {isLoading ? [...Array(8)].map((_, i) => (
                   <tr key={i}><td colSpan={5} className="px-4 py-3"><Skeleton className="h-5 w-full" /></td></tr>
                 )) : data?.logs?.length === 0 ? (
-                  <tr><td colSpan={5} className="text-center text-muted-foreground py-12">No audit logs found</td></tr>
+                  <tr><td colSpan={5} className="text-center text-muted-foreground py-12">{t("audit.no_logs")}</td></tr>
                 ) : data?.logs?.map((log: any) => (
                   <tr key={log.id} className="hover:bg-muted/20 transition-colors" data-testid={`row-audit-${log.id}`}>
                     <td className="px-4 py-3 font-mono text-xs text-muted-foreground whitespace-nowrap">
@@ -140,10 +140,10 @@ export default function AuditLogs() {
           </div>
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-4 py-3 border-t bg-muted/10">
-              <p className="text-xs text-muted-foreground">Page {page} of {totalPages}</p>
+              <p className="text-xs text-muted-foreground">{t("common.page_of", { page, total: totalPages })}</p>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setPage(p => p - 1)} disabled={page <= 1}>Prev</Button>
-                <Button variant="outline" size="sm" onClick={() => setPage(p => p + 1)} disabled={page >= totalPages}>Next</Button>
+                <Button variant="outline" size="sm" onClick={() => setPage(p => p - 1)} disabled={page <= 1}>{t("common.prev")}</Button>
+                <Button variant="outline" size="sm" onClick={() => setPage(p => p + 1)} disabled={page >= totalPages}>{t("common.next")}</Button>
               </div>
             </div>
           )}
@@ -152,10 +152,10 @@ export default function AuditLogs() {
         {/* Mobile pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between sm:hidden">
-            <p className="text-xs text-muted-foreground">Page {page} of {totalPages}</p>
+            <p className="text-xs text-muted-foreground">{t("common.page_of", { page, total: totalPages })}</p>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => setPage(p => p - 1)} disabled={page <= 1}>Prev</Button>
-              <Button variant="outline" size="sm" onClick={() => setPage(p => p + 1)} disabled={page >= totalPages}>Next</Button>
+              <Button variant="outline" size="sm" onClick={() => setPage(p => p - 1)} disabled={page <= 1}>{t("common.prev")}</Button>
+              <Button variant="outline" size="sm" onClick={() => setPage(p => p + 1)} disabled={page >= totalPages}>{t("common.next")}</Button>
             </div>
           </div>
         )}

@@ -731,7 +731,14 @@
     "active_only": "केवल सक्रिय यूज़र",
     "smtp_not_configured": "SMTP कॉन्फ़िगर नहीं है",
     "history": "ब्रॉडकास्ट इतिहास",
-    "no_broadcasts": "अभी कोई ब्रॉडकास्ट नहीं"
+    "no_broadcasts": "अभी कोई ब्रॉडकास्ट नहीं",
+    "tab_push": "पुश सूचना",
+    "tab_push_short": "पुश",
+    "tab_email": "ईमेल ब्लास्ट",
+    "tab_email_short": "ईमेल",
+    "tab_history": "इतिहास",
+    "push_subscribers": "पुश सदस्य",
+    "active_users": "सक्रिय उपयोगकर्ता"
   },
 
   "pwa": {
@@ -751,7 +758,15 @@
     "offline_mode": "ऑफ़लाइन मोड",
     "slow_connection": "धीमा कनेक्शन",
     "cached_data": "— कैश्ड डेटा दिखाया जा रहा है, नई एंट्री स्थानीय रूप से सहेजी गई हैं",
-    "queued_n": "— {{n}} एंट्री कतार में"
+    "queued_n": "— {{n}} एंट्री कतार में",
+    "network_status": "नेटवर्क स्थिति",
+    "sync_queue": "समन्वय कतार",
+    "offline_storage": "ऑफ़लाइन भंडारण",
+    "app_installation": "ऐप इंस्टॉलेशन",
+    "device_capabilities": "डिवाइस क्षमताएं",
+    "security": "सुरक्षा और गोपनीयता",
+    "online": "ऑनलाइन",
+    "slow": "धीमा"
   },
 
   "receipts": {

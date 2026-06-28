@@ -1923,6 +1923,7 @@ function DailyTab() {
 // All Transactions Tab
 // ─────────────────────────────────────────────────────────
 function AllTransactionsTab() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const qc = useQueryClient();
   const { data: bizSettings } = useGetSettings();

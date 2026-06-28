@@ -732,7 +732,14 @@
     "active_only": "Active Users Only",
     "smtp_not_configured": "SMTP not configured",
     "history": "Broadcast History",
-    "no_broadcasts": "No broadcasts yet"
+    "no_broadcasts": "No broadcasts yet",
+    "tab_push": "Push Notification",
+    "tab_push_short": "Push",
+    "tab_email": "Email Blast",
+    "tab_email_short": "Email",
+    "tab_history": "History",
+    "push_subscribers": "Push Subscribers",
+    "active_users": "Active Users"
   },
 
   "pwa": {
@@ -752,7 +759,15 @@
     "offline_mode": "Offline Mode",
     "slow_connection": "Slow connection",
     "cached_data": "— showing cached data, new entries saved locally",
-    "queued_n": "— {{n}} entries queued"
+    "queued_n": "— {{n}} entries queued",
+    "network_status": "Network Status",
+    "sync_queue": "Sync Queue",
+    "offline_storage": "Offline Storage",
+    "app_installation": "App Installation",
+    "device_capabilities": "Device Capabilities",
+    "security": "Security & Privacy",
+    "online": "Online",
+    "slow": "Slow"
   },
 
   "receipts": {

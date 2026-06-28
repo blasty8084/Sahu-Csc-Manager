@@ -171,9 +171,9 @@ export default function BroadcastPage() {
   const totalHistoryPages = history ? Math.ceil(history.total / 10) : 1;
 
   const tabs = [
-    { id: "push" as Tab, label: isMobile ? "Push" : "Push Notification", icon: Bell },
-    { id: "email" as Tab, label: isMobile ? "Email" : "Email Blast", icon: Mail },
-    { id: "history" as Tab, label: isMobile ? "History" : "History", icon: History },
+    { id: "push" as Tab, label: isMobile ? t("broadcast.tab_push_short") : t("broadcast.tab_push"), icon: Bell },
+    { id: "email" as Tab, label: isMobile ? t("broadcast.tab_email_short") : t("broadcast.tab_email"), icon: Mail },
+    { id: "history" as Tab, label: t("broadcast.tab_history"), icon: History },
   ];
 
   return (
@@ -188,7 +188,7 @@ export default function BroadcastPage() {
               <Megaphone size={18} color="#f97316" />
             </div>
             <div>
-              <h1 className="text-base font-bold text-white leading-tight">Broadcast Center</h1>
+              <h1 className="text-base font-bold text-white leading-tight">{t("broadcast.title")}</h1>
               <p className="text-[11px] text-white/50 leading-tight">Push notifications &amp; emails to all users</p>
             </div>
             <button className="ml-auto p-2 rounded-lg" style={{ background: "rgba(255,255,255,0.08)" }}
@@ -222,8 +222,8 @@ export default function BroadcastPage() {
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-3">
-                <StatCard icon={Bell} label="Push Subscribers" value={stats?.pushSubscribers ?? 0} accent="linear-gradient(135deg,#7c3aed,#a855f7)" />
-                <StatCard icon={Users} label="Active Users" value={stats?.activeUsers ?? 0} accent="linear-gradient(135deg,#0b2c60,#1e4da1)" />
+                <StatCard icon={Bell} label={t("broadcast.push_subscribers")} value={stats?.pushSubscribers ?? 0} accent="linear-gradient(135deg,#7c3aed,#a855f7)" />
+                <StatCard icon={Users} label={t("broadcast.active_users")} value={stats?.activeUsers ?? 0} accent="linear-gradient(135deg,#0b2c60,#1e4da1)" />
               </div>
             )
           )}
@@ -233,7 +233,7 @@ export default function BroadcastPage() {
             <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 flex gap-3">
               <AlertTriangle size={18} className="text-amber-500 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-semibold text-amber-800">SMTP not configured</p>
+                <p className="text-sm font-semibold text-amber-800">{t("broadcast.smtp_not_configured")}</p>
                 <p className="text-xs text-amber-700 mt-0.5 leading-relaxed">
                   Set <code className="font-mono bg-amber-100 px-1 rounded">SMTP_HOST</code>,{" "}
                   <code className="font-mono bg-amber-100 px-1 rounded">SMTP_USER</code>, and{" "}
@@ -309,7 +309,7 @@ export default function BroadcastPage() {
               style={{ boxShadow: "0 2px 12px rgba(11,44,96,0.07)" }}>
               <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
                 <Mail size={16} className="text-[#0b2c60]" />
-                <span className="font-semibold text-slate-800 text-sm">Compose Email Blast</span>
+                <span className="font-semibold text-slate-800 text-sm">{t("broadcast.tab_email")}</span>
                 <Badge className="ml-auto text-xs border-none" style={{ background: "#0b2c6015", color: "#0b2c60" }}>
                   {stats?.usersWithEmail ?? 0} with email
                 </Badge>
@@ -354,7 +354,7 @@ export default function BroadcastPage() {
                   <p className={`text-xs leading-relaxed ${stats?.smtpConfigured ? "text-green-700" : "text-amber-700"}`}>
                     {stats?.smtpConfigured
                       ? `SMTP configured — email will be sent to ${emailRecipientCount} recipient(s).`
-                      : "SMTP not configured. Add SMTP settings in Secrets to enable this feature."}
+                      : t("broadcast.smtp_not_configured")}
                   </p>
                 </div>
 
@@ -392,7 +392,7 @@ export default function BroadcastPage() {
                 <div className="rounded-2xl bg-white border border-slate-100 p-8 text-center"
                   style={{ boxShadow: "0 2px 8px rgba(11,44,96,0.04)" }}>
                   <History size={28} className="text-slate-300 mx-auto mb-3" />
-                  <p className="text-sm font-semibold text-slate-500">No broadcasts yet</p>
+                  <p className="text-sm font-semibold text-slate-500">{t("broadcast.no_broadcasts")}</p>
                   <p className="text-xs text-slate-400 mt-1">Your sent push notifications and emails will appear here.</p>
                 </div>
               ) : (

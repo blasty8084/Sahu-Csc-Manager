@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useGetPreferences, useUpdatePreferences, getGetPreferencesQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
@@ -13,6 +14,7 @@ import { useEffect } from "react";
 import { Palette, Globe, LayoutDashboard } from "lucide-react";
 
 export default function Preferences() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { setTheme } = useTheme();
   const qc = useQueryClient();
@@ -42,9 +44,9 @@ export default function Preferences() {
       await updateMut.mutateAsync({ data: values });
       qc.invalidateQueries({ queryKey: getGetPreferencesQueryKey() });
       setTheme(values.theme);
-      toast.success("Preferences saved successfully");
+      toast.success(t("profile.toast_prefs_saved"));
     } catch {
-      toast({ title: "Failed to save preferences", variant: "destructive" });
+      toast({ title: t("profile.save_preferences"), variant: "destructive" });
     }
   });
 
@@ -52,8 +54,8 @@ export default function Preferences() {
     <Layout>
       <div className="space-y-6 max-w-xl">
         <div>
-          <h2 className="text-xl font-bold">My Preferences</h2>
-          <p className="text-sm text-muted-foreground">Personalise your workspace experience</p>
+          <h2 className="text-xl font-bold">{t("profile.preferences")}</h2>
+          <p className="text-sm text-muted-foreground">{t("profile.language_hint")}</p>
         </div>
 
         {isLoading ? (
@@ -95,14 +97,14 @@ export default function Preferences() {
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Globe size={16} /> Language
+                  <Globe size={16} /> {t("profile.language")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label className="text-sm font-medium">Interface Language</Label>
-                    <p className="text-xs text-muted-foreground">Select your preferred display language</p>
+                    <Label className="text-sm font-medium">{t("profile.language")}</Label>
+                    <p className="text-xs text-muted-foreground">{t("profile.language_hint")}</p>
                   </div>
                   <Select
                     value={form.watch("language")}
@@ -152,7 +154,7 @@ export default function Preferences() {
             </Card>
 
             <Button type="submit" disabled={updateMut.isPending}>
-              {updateMut.isPending ? "Saving..." : "Save Preferences"}
+              {updateMut.isPending ? t("common.saving") : t("profile.save_preferences")}
             </Button>
           </form>
         )}

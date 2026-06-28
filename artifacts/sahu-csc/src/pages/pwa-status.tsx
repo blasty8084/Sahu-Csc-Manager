@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Layout } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,7 @@ function timeAgo(ms: number): string {
 }
 
 export default function PwaStatus() {
+  const { t } = useTranslation();
   const { quality, isOffline, isSlow, latencyMs, effectiveType } = useNetworkStatus();
   const { syncStatus, pendingCount, lastSyncTime, syncNow } = useSync();
   const { isInstallable, isInstalled, promptInstall, capabilities } = usePWA();
@@ -141,7 +143,7 @@ export default function PwaStatus() {
     <Layout>
       <div className="space-y-5 max-w-4xl">
         <div>
-          <h1 className="text-xl font-bold text-foreground">App & Offline Status</h1>
+          <h1 className="text-xl font-bold text-foreground">{t("pwa.install_title")}</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             Monitor network quality, offline storage, sync queue, and app installation
           </p>
@@ -152,7 +154,7 @@ export default function PwaStatus() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Wifi size={16} className="text-primary" />
-              Network Status
+              {t("pwa.network_status")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -161,7 +163,7 @@ export default function PwaStatus() {
                 <span className="text-xs text-muted-foreground">Status</span>
                 <div className={`flex items-center gap-1.5 font-semibold text-sm ${networkColor}`}>
                   <span className={`w-2 h-2 rounded-full ${networkBg} ${quality === "online" ? "animate-pulse" : ""}`} />
-                  {quality === "online" ? "Online" : quality === "slow" ? "Slow" : "Offline"}
+                  {quality === "online" ? t("pwa.online") : quality === "slow" ? t("pwa.slow") : t("pwa.offline")}
                 </div>
               </div>
               <div className="flex flex-col gap-1">
@@ -203,7 +205,7 @@ export default function PwaStatus() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <RefreshCw size={16} className="text-primary" />
-              Sync Queue
+              {t("pwa.sync_queue")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -258,7 +260,7 @@ export default function PwaStatus() {
                 disabled={syncing || isOffline}
               >
                 <RefreshCw size={13} className={syncing ? "animate-spin" : ""} />
-                {syncing ? "Syncing…" : "Sync Now"}
+                {syncing ? t("pwa.syncing") : t("pwa.sync_now")}
               </Button>
             </div>
           </CardContent>
@@ -269,7 +271,7 @@ export default function PwaStatus() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <HardDrive size={16} className="text-primary" />
-              Offline Storage
+              {t("pwa.offline_storage")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -325,7 +327,7 @@ export default function PwaStatus() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Smartphone size={16} className="text-primary" />
-              App Installation
+              {t("pwa.app_installation")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -383,7 +385,7 @@ export default function PwaStatus() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Bell size={16} className="text-primary" />
-              Push Notifications
+              {t("nav.notifications")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -435,7 +437,7 @@ export default function PwaStatus() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Zap size={16} className="text-primary" />
-              Device Capabilities
+              {t("pwa.device_capabilities")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -468,7 +470,7 @@ export default function PwaStatus() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Shield size={16} className="text-primary" />
-              Security &amp; Privacy
+              {t("pwa.security")}
             </CardTitle>
           </CardHeader>
           <CardContent>
