@@ -8,7 +8,6 @@ export const modules: ModuleMap = {
   "./components/mockups/aeps-entry-form/AepsEntry.tsx": () => import("../components/mockups/aeps-entry-form/AepsEntry.tsx"),
   "./components/mockups/aeps-mobile-entry/AepsMobileEntry.tsx": () => import("../components/mockups/aeps-mobile-entry/AepsMobileEntry.tsx"),
   "./components/mockups/aeps-page/AePS.tsx": () => import("../components/mockups/aeps-page/AePS.tsx"),
-  "./components/mockups/dashboard-redesign/MobileDashboard.tsx": () => import("../components/mockups/dashboard-redesign/MobileDashboard.tsx"),
   "./components/mockups/desktop-forms/AepsDeposit.tsx": () => import("../components/mockups/desktop-forms/AepsDeposit.tsx"),
   "./components/mockups/desktop-forms/AepsWithdrawal.tsx": () => import("../components/mockups/desktop-forms/AepsWithdrawal.tsx"),
   "./components/mockups/desktop-forms/LedgerEntryForm.tsx": () => import("../components/mockups/desktop-forms/LedgerEntryForm.tsx"),
