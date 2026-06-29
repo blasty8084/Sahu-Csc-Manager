@@ -28,8 +28,11 @@ export default defineConfig({
       injectRegister: "auto",
 
       includeAssets: [
-        "favicon.svg",
+        "favicon.ico",
+        "sahu-logo.png",
         "apple-touch-icon.png",
+        "pwa-96x96.png",
+        "pwa-144x144.png",
         "pwa-192x192.png",
         "pwa-512x512.png",
       ],
