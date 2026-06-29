@@ -1,55 +1,63 @@
 export function V2GradientGlow() {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <header
-        style={{ background: "linear-gradient(135deg, #0b2c60 0%, #1a56b0 60%, #f97316 140%)", position: "relative", overflow: "hidden" }}
-        className="w-full px-4 py-3 flex items-center justify-between"
-      >
-        {/* Glow orb */}
-        <div style={{ position: "absolute", right: -30, top: -30, width: 100, height: 100, background: "rgba(249,115,22,0.3)", borderRadius: "50%", filter: "blur(30px)" }} />
-        <div style={{ position: "absolute", left: 80, bottom: -20, width: 60, height: 60, background: "rgba(255,255,255,0.07)", borderRadius: "50%", filter: "blur(15px)" }} />
+    <div className="min-h-screen flex flex-col" style={{ background: "#0c0c1a" }}>
+      <header style={{ position: "relative", overflow: "hidden" }}>
+        {/* Aurora base gradient */}
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, #0b1d45 0%, #0d3068 40%, #1a1040 100%)" }} />
+        {/* Hexagon mesh texture */}
+        <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.12 }} preserveAspectRatio="none">
+          <defs>
+            <pattern id="hex" x="0" y="0" width="28" height="24" patternUnits="userSpaceOnUse">
+              <polygon points="14,2 26,8 26,20 14,26 2,20 2,8" fill="none" stroke="white" strokeWidth="0.8" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#hex)" />
+        </svg>
+        {/* Aurora blobs */}
+        <div style={{ position: "absolute", top: -30, right: 20, width: 120, height: 120, background: "radial-gradient(circle, rgba(249,115,22,0.35) 0%, transparent 70%)", filter: "blur(20px)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", top: -10, left: "40%", width: 80, height: 80, background: "radial-gradient(circle, rgba(99,102,241,0.3) 0%, transparent 70%)", filter: "blur(16px)", pointerEvents: "none" }} />
 
-        {/* Left */}
-        <div className="flex items-center gap-3" style={{ position: "relative" }}>
-          <div style={{ background: "white", borderRadius: 14, boxShadow: "0 4px 16px rgba(249,115,22,0.4)" }} className="w-12 h-12 flex items-center justify-center">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <rect x="3" y="3" width="8" height="8" rx="1.5" fill="#0b2c60" />
-              <rect x="13" y="3" width="8" height="8" rx="1.5" fill="#f97316" />
-              <rect x="3" y="13" width="8" height="8" rx="1.5" fill="#f97316" opacity="0.7" />
-              <rect x="13" y="13" width="8" height="8" rx="1.5" fill="#0b2c60" opacity="0.6" />
-            </svg>
-          </div>
-          <div>
-            <div className="flex items-baseline gap-1">
-              <span style={{ color: "white", fontWeight: 800, fontSize: 18, letterSpacing: 0.5, textShadow: "0 1px 8px rgba(0,0,0,0.3)" }}>SAHU</span>
-              <span style={{ color: "#fbbf24", fontWeight: 800, fontSize: 18, textShadow: "0 2px 8px rgba(249,115,22,0.6)" }}>CSC</span>
+        <div className="px-4 py-3 flex items-center justify-between" style={{ position: "relative", zIndex: 2 }}>
+          <div className="flex items-center gap-3">
+            {/* Glowing logo box */}
+            <div style={{ width: 46, height: 46, borderRadius: 15, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 20px rgba(249,115,22,0.25), inset 0 1px 0 rgba(255,255,255,0.15)" }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="3" width="8" height="8" rx="2" fill="white" />
+                <rect x="13" y="3" width="8" height="8" rx="2" fill="#f97316" />
+                <rect x="3" y="13" width="8" height="8" rx="2" fill="#818cf8" />
+                <rect x="13" y="13" width="8" height="8" rx="2" fill="rgba(255,255,255,0.4)" />
+              </svg>
             </div>
-            <div style={{ color: "rgba(255,255,255,0.65)", fontSize: 9.5, letterSpacing: 1.5, fontWeight: 600 }}>MANAGEMENT PLATFORM</div>
+            <div>
+              <div style={{ display: "flex", gap: 4, alignItems: "baseline" }}>
+                <span style={{ color: "white", fontWeight: 900, fontSize: 19, letterSpacing: 1, textShadow: "0 0 20px rgba(255,255,255,0.3)" }}>SAHU</span>
+                <span style={{ color: "#fb923c", fontWeight: 900, fontSize: 19, textShadow: "0 0 20px rgba(249,115,22,0.6)" }}>CSC</span>
+              </div>
+              <div style={{ color: "rgba(129,140,248,0.7)", fontSize: 9, letterSpacing: 2.5, fontWeight: 700, fontFamily: "monospace" }}>MANAGEMENT PLATFORM</div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(129,140,248,0.25)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", boxShadow: "0 0 12px rgba(129,140,248,0.15)" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c7d2fe" strokeWidth="2">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+              <span style={{ position: "absolute", top: 7, right: 7, width: 8, height: 8, background: "#f97316", borderRadius: "50%", boxShadow: "0 0 8px rgba(249,115,22,0.8)" }} />
+            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(129,140,248,0.25)", borderRadius: 12, padding: "5px 12px 5px 5px", backdropFilter: "blur(8px)" }}>
+              <div style={{ width: 30, height: 30, borderRadius: 9, background: "linear-gradient(135deg,#6366f1,#f97316)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 12px rgba(99,102,241,0.5)" }}>
+                <span style={{ color: "white", fontWeight: 800, fontSize: 11 }}>SA</span>
+              </div>
+              <span style={{ color: "#e0e7ff", fontWeight: 700, fontSize: 13 }}>SAHU</span>
+            </div>
           </div>
         </div>
 
-        {/* Right */}
-        <div className="flex items-center gap-2" style={{ position: "relative" }}>
-          <button style={{ background: "rgba(255,255,255,0.15)", borderRadius: 12, backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.25)", boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }} className="w-10 h-10 flex items-center justify-center relative">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-            </svg>
-            <span style={{ background: "#fbbf24", position: "absolute", top: 7, right: 7, width: 7, height: 7, borderRadius: "50%", boxShadow: "0 0 6px #fbbf24" }} />
-          </button>
-          <div style={{ background: "rgba(255,255,255,0.15)", borderRadius: 12, backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.25)", padding: "4px 10px 4px 4px" }} className="flex items-center gap-2">
-            <div style={{ background: "linear-gradient(135deg,#f97316,#fbbf24)", borderRadius: 9, width: 32, height: 32, boxShadow: "0 2px 8px rgba(249,115,22,0.5)" }} className="flex items-center justify-center">
-              <span style={{ color: "white", fontWeight: 800, fontSize: 12 }}>SA</span>
-            </div>
-            <span style={{ color: "white", fontWeight: 700, fontSize: 13 }}>SAHU</span>
-          </div>
+        <div style={{ background: "rgba(0,0,0,0.3)", borderTop: "1px solid rgba(129,140,248,0.1)", padding: "7px 16px", display: "flex", justifyContent: "space-between", position: "relative", zIndex: 2 }}>
+          <span style={{ color: "rgba(224,231,255,0.85)", fontWeight: 600, fontSize: 13 }}>Good morning, SAHU ☀️</span>
+          <span style={{ color: "rgba(129,140,248,0.5)", fontSize: 11, fontFamily: "monospace" }}>Mon, 29 Jun</span>
         </div>
       </header>
-      {/* Greeting */}
-      <div style={{ background: "linear-gradient(90deg,#1a3f7a,#0b2c60)", padding: "8px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-        <span style={{ color: "white", fontWeight: 600, fontSize: 13 }}>Good morning, SAHU ☀️</span>
-        <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 11 }}>Mon, 29 Jun</span>
-      </div>
     </div>
   );
 }
