@@ -292,6 +292,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Live clock — ticks every second
+  const [clockTime, setClockTime] = useState(() => {
+    const n = new Date();
+    return n.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+  });
+  useEffect(() => {
+    const id = setInterval(() => {
+      const n = new Date();
+      setClockTime(n.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true }));
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
+
   const greeting = greetingData.text;
   const greetingEmoji = greetingData.emoji;
   const shortDate = greetingData.date;
@@ -471,13 +484,21 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </span>
               <span style={{ fontSize: 14, lineHeight: 1 }}>{greetingEmoji}</span>
             </div>
-            <span
-              style={{
-                fontSize: 10, color: "rgba(255,255,255,0.42)", fontWeight: 500, fontFamily: "monospace",
-                transition: "opacity 0.35s ease",
-                opacity: greetingVisible ? 1 : 0,
-              }}
-            >{shortDate}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {/* Live clock */}
+              <span style={{
+                fontSize: 12, color: "white", fontWeight: 700, fontFamily: "monospace",
+                background: "rgba(255,255,255,0.12)", borderRadius: 6, padding: "2px 8px",
+                letterSpacing: "0.05em",
+              }}>{clockTime}</span>
+              <span
+                style={{
+                  fontSize: 10, color: "rgba(255,255,255,0.42)", fontWeight: 500,
+                  transition: "opacity 0.35s ease",
+                  opacity: greetingVisible ? 1 : 0,
+                }}
+              >{shortDate}</span>
+            </div>
           </div>
         </header>
 
@@ -518,6 +539,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <span style={{ fontSize: 12, lineHeight: 1 }}>{greetingEmoji}</span>
                 <span style={{ fontSize: 12, color: "#94a3b8" }}>·</span>
                 <span style={{ fontSize: 12, color: "#94a3b8", fontWeight: 400 }}>{shortDate}</span>
+                <span style={{ fontSize: 12, color: "#94a3b8" }}>·</span>
+                <span style={{
+                  fontSize: 11, fontWeight: 700, fontFamily: "monospace", letterSpacing: "0.05em",
+                  background: "linear-gradient(135deg, #0b2c60, #f97316)",
+                  WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
+                }}>{clockTime}</span>
               </div>
             </div>
 
