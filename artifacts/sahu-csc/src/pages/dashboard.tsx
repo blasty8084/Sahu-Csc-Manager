@@ -14,8 +14,6 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-const LOGO_URL = "/sahu-logo.png";
-
 const DASHBOARD_CACHE_KEY = "dashboard-data";
 
 // ─── Udhari Summary Card ───────────────────────────────────────────────────────
@@ -155,46 +153,6 @@ function MobileDashboard() {
 
   return (
     <div className="space-y-5">
-
-      {/* ── Logo Hero Banner ─────────────────────────────────── */}
-      <div style={{ position: "relative", overflow: "hidden", borderRadius: 20, background: "#0b2c60" }}>
-        {/* Hex mesh texture */}
-        <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.1, pointerEvents: "none" }} preserveAspectRatio="none">
-          <defs>
-            <pattern id="db-hex" x="0" y="0" width="28" height="24" patternUnits="userSpaceOnUse">
-              <polygon points="14,2 26,8 26,20 14,26 2,20 2,8" fill="none" stroke="white" strokeWidth="0.8" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#db-hex)" />
-        </svg>
-        {/* Aurora blob */}
-        <div style={{ position: "absolute", top: -20, right: -10, width: 100, height: 100, background: "radial-gradient(circle,rgba(249,115,22,0.45),transparent 70%)", filter: "blur(18px)", pointerEvents: "none" }} />
-        {/* Orange bottom strip */}
-        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 3, background: "linear-gradient(90deg,#f97316,#ea580c)" }} />
-
-        <div style={{ position: "relative", zIndex: 2, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}>
-          {/* Logo */}
-          <div style={{ width: 52, height: 52, borderRadius: 16, overflow: "hidden", flexShrink: 0, border: "2px solid rgba(255,255,255,0.25)", boxShadow: "0 4px 16px rgba(0,0,0,0.3)" }}>
-            <img src={LOGO_URL} alt="SAHU CSC" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          </div>
-          {/* Brand */}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-              <span style={{ color: "white", fontWeight: 900, fontSize: 18, letterSpacing: 0.5 }}>SAHU</span>
-              <span style={{ color: "#f97316", fontWeight: 900, fontSize: 18 }}>CSC</span>
-            </div>
-            <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 9, letterSpacing: 2, fontWeight: 600, fontFamily: "monospace", textTransform: "uppercase", marginTop: 1 }}>YOUR SERVICE, OUR COMMITMENT</p>
-          </div>
-          {/* Date badge */}
-          <div style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, padding: "4px 10px", textAlign: "center", flexShrink: 0 }}>
-            <p style={{ color: "white", fontSize: 14, fontWeight: 800, lineHeight: 1 }}>{new Date().getDate()}</p>
-            <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 9, fontWeight: 600, letterSpacing: 0.5 }}>
-              {new Date().toLocaleDateString("en-IN", { month: "short", year: "2-digit" })}
-            </p>
-          </div>
-        </div>
-      </div>
-
       {/* Offline indicator */}
       {isOffline && cachedData && (
         <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/20 rounded-xl px-3 py-2">
@@ -329,7 +287,6 @@ function MobileDashboard() {
 // ─── Desktop Dashboard ─────────────────────────────────────────────────────────
 function DesktopDashboard() {
   const { t } = useTranslation();
-  const { user } = useAuth();
   const { isOffline } = useNetworkStatus();
   const { data: liveData, isLoading } = useGetDashboard();
   const [cachedData, setCachedData] = useState<any>(null);
@@ -401,58 +358,8 @@ function DesktopDashboard() {
   });
   const maxBar = Math.max(...weekBars.map((b) => b.income), 1);
 
-  const firstName = user?.fullName?.split(" ")[0] ?? user?.username ?? "";
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
-  const greetingEmoji = hour < 12 ? "☀️" : hour < 17 ? "👋" : "🌙";
-  const todayLabel = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-
   return (
     <div className="space-y-5">
-
-      {/* ── Logo Hero Banner ─────────────────────────────────── */}
-      <div style={{ position: "relative", overflow: "hidden", borderRadius: 20, background: "linear-gradient(135deg,#0b2c60 0%,#0f3872 100%)" }}>
-        {/* Hex mesh texture */}
-        <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.08, pointerEvents: "none" }} preserveAspectRatio="none">
-          <defs>
-            <pattern id="db-hex-d" x="0" y="0" width="28" height="24" patternUnits="userSpaceOnUse">
-              <polygon points="14,2 26,8 26,20 14,26 2,20 2,8" fill="none" stroke="white" strokeWidth="0.8" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#db-hex-d)" />
-        </svg>
-        {/* Aurora blobs */}
-        <div style={{ position: "absolute", top: -30, right: 60, width: 160, height: 160, background: "radial-gradient(circle,rgba(249,115,22,0.35),transparent 70%)", filter: "blur(28px)", pointerEvents: "none" }} />
-        <div style={{ position: "absolute", bottom: -20, left: 100, width: 120, height: 120, background: "radial-gradient(circle,rgba(99,102,241,0.3),transparent 70%)", filter: "blur(20px)", pointerEvents: "none" }} />
-        {/* Orange bottom strip */}
-        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 3, background: "linear-gradient(90deg,#f97316,#ea580c)" }} />
-
-        <div style={{ position: "relative", zIndex: 2, padding: "18px 24px", display: "flex", alignItems: "center", gap: 18 }}>
-          {/* Logo */}
-          <div style={{ width: 64, height: 64, borderRadius: 18, overflow: "hidden", flexShrink: 0, border: "2px solid rgba(255,255,255,0.2)", boxShadow: "0 6px 24px rgba(0,0,0,0.35)" }}>
-            <img src={LOGO_URL} alt="SAHU CSC" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          </div>
-          {/* Brand + greeting */}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 2 }}>
-              <span style={{ color: "white", fontWeight: 900, fontSize: 22, letterSpacing: 0.5 }}>SAHU</span>
-              <span style={{ color: "#f97316", fontWeight: 900, fontSize: 22 }}>CSC</span>
-              <span style={{ color: "rgba(255,255,255,0.35)", fontWeight: 500, fontSize: 13, marginLeft: 4 }}>Common Service Center</span>
-            </div>
-            <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, fontWeight: 500 }}>
-              {greetingEmoji} {greeting}{firstName ? `, ${firstName}` : ""}! — {todayLabel}
-            </p>
-          </div>
-          {/* Date badge */}
-          <div style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 14, padding: "8px 18px", textAlign: "center", flexShrink: 0 }}>
-            <p style={{ color: "white", fontSize: 26, fontWeight: 900, lineHeight: 1 }}>{new Date().getDate()}</p>
-            <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 10, fontWeight: 600, letterSpacing: 0.5, marginTop: 2 }}>
-              {new Date().toLocaleDateString("en-IN", { month: "short", year: "numeric" })}
-            </p>
-          </div>
-        </div>
-      </div>
-
       {/* Offline indicator */}
       {isOffline && (
         <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/20 rounded-xl px-4 py-2">
