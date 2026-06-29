@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useUnreadCount } from "@/hooks/use-notifications";
@@ -261,21 +261,40 @@ export function Layout({ children }: { children: React.ReactNode }) {
   })();
 
   const firstName = displayName.split(" ")[0];
-  const greeting = (() => {
+
+  // Live-updating greeting — recalculates every minute
+  const getGreetingData = () => {
     const h = new Date().getHours();
-    if (h < 12) return t('nav.good_morning');
-    if (h < 17) return t('nav.good_afternoon');
-    return t('nav.good_evening');
-  })();
-  const greetingEmoji = (() => {
-    const h = new Date().getHours();
-    if (h < 12) return "☀️";
-    if (h < 17) return "👋";
-    return "🌙";
-  })();
-  const shortDate = new Date().toLocaleDateString("en-IN", {
-    weekday: "short", day: "numeric", month: "short",
-  });
+    return {
+      text: h < 12 ? t('nav.good_morning') : h < 17 ? t('nav.good_afternoon') : t('nav.good_evening'),
+      emoji: h < 12 ? "☀️" : h < 17 ? "👋" : "🌙",
+      date: new Date().toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" }),
+    };
+  };
+  const [greetingData, setGreetingData] = useState(getGreetingData);
+  const [greetingVisible, setGreetingVisible] = useState(true);
+  useEffect(() => {
+    const tick = () => {
+      setGreetingVisible(false);
+      setTimeout(() => {
+        setGreetingData(getGreetingData());
+        setGreetingVisible(true);
+      }, 350);
+    };
+    const now = new Date();
+    const msToNextMinute = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
+    let interval: ReturnType<typeof setInterval>;
+    const timeout = setTimeout(() => {
+      tick();
+      interval = setInterval(tick, 60_000);
+    }, msToNextMinute);
+    return () => { clearTimeout(timeout); clearInterval(interval); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const greeting = greetingData.text;
+  const greetingEmoji = greetingData.emoji;
+  const shortDate = greetingData.date;
 
   return (
     <div className="min-h-screen bg-muted/20 flex flex-col md:flex-row">
@@ -296,166 +315,260 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </div>
 
       <div className="flex-1 flex flex-col md:ml-64">
-        {/* Mobile Top Header — Redesigned */}
+        {/* Mobile Top Header — V2 White + Hex Mesh + Gradient */}
         <header className="sticky top-0 z-20 md:hidden">
-          {/* Top accent stripe: navy → saffron */}
-          <div style={{ height: 3, background: "linear-gradient(90deg, #0b2c60 0%, #1e4fa8 35%, #f97316 70%, #fb923c 100%)" }} />
-
           {/* Main header bar */}
-          <div
-            className="flex items-center justify-between px-4 bg-white"
-            style={{
-              height: 60,
-              boxShadow: "0 1px 0 rgba(0,0,0,0.06), 0 4px 20px rgba(11,44,96,0.08)",
-            }}
-          >
-            {/* ── Left: logo badge + brand ── */}
-            <div className="flex items-center gap-2.5">
-              <div
-                className="flex items-center justify-center rounded-2xl flex-shrink-0"
-                style={{
-                  width: 38, height: 38,
-                  background: "linear-gradient(135deg, #0b2c60 0%, #1a4a9e 100%)",
-                  boxShadow: "0 2px 8px rgba(11,44,96,0.30)",
-                }}
-              >
-                <div className="flex flex-col items-center">
-                  <span style={{ fontSize: 11, fontWeight: 900, color: "#fff", letterSpacing: "0.05em", lineHeight: 1 }}>CSC</span>
-                  <div style={{ width: 20, height: 1.5, background: "#f97316", borderRadius: 1, marginTop: 2 }} />
-                </div>
-              </div>
-              <div>
-                <div className="flex items-center gap-1">
-                  <span style={{ fontSize: 15, fontWeight: 900, color: "#0b2c60", letterSpacing: "0.02em", lineHeight: 1 }}>SAHU</span>
-                  <span style={{ fontSize: 15, fontWeight: 900, color: "#f97316", letterSpacing: "0.02em", lineHeight: 1 }}>CSC</span>
-                </div>
-                <span style={{ fontSize: 9.5, color: "#94a3b8", fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", lineHeight: 1, marginTop: 2, display: "block" }}>
-                  {t('nav.management_platform')}
-                </span>
-              </div>
-            </div>
+          <div style={{ position: "relative", overflow: "hidden", background: "white" }}>
+            {/* Top accent bar: navy → blue → saffron */}
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "linear-gradient(90deg, #0b2c60 0%, #1e40af 40%, #f97316 75%, #ea580c 100%)", zIndex: 3 }} />
 
-            {/* ── Right: bell + avatar chip (opens nav drawer) ── */}
-            <div className="flex items-center gap-2">
-              {/* Notification bell */}
-              <Link href="/notifications">
-                <button
-                  className="relative flex items-center justify-center rounded-xl"
-                  style={{ width: 38, height: 38, background: "#f1f5f9", border: "1px solid #e2e8f0" }}
+            {/* Hex mesh SVG texture */}
+            <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.07, pointerEvents: "none" }} preserveAspectRatio="none">
+              <defs>
+                <pattern id="hdr-hex" x="0" y="0" width="28" height="24" patternUnits="userSpaceOnUse">
+                  <polygon points="14,2 26,8 26,20 14,26 2,20 2,8" fill="none" stroke="#0b2c60" strokeWidth="0.9" />
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#hdr-hex)" />
+            </svg>
+
+            {/* Soft aurora blobs */}
+            <div style={{ position: "absolute", top: -20, right: 20, width: 100, height: 100, background: "radial-gradient(circle, rgba(249,115,22,0.12) 0%, transparent 70%)", filter: "blur(20px)", pointerEvents: "none" }} />
+            <div style={{ position: "absolute", top: -10, left: "38%", width: 80, height: 80, background: "radial-gradient(circle, rgba(11,44,96,0.08) 0%, transparent 70%)", filter: "blur(16px)", pointerEvents: "none" }} />
+
+            {/* Bottom shadow line */}
+            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 1, background: "linear-gradient(90deg,transparent,#e2e8f0,transparent)", zIndex: 2 }} />
+
+            <div
+              className="flex items-center justify-between px-4"
+              style={{ height: 60, position: "relative", zIndex: 2 }}
+            >
+              {/* ── Left: gradient logo badge + brand ── */}
+              <div className="flex items-center gap-2.5">
+                <div
+                  className="flex items-center justify-center rounded-2xl flex-shrink-0"
+                  style={{
+                    width: 40, height: 40,
+                    background: "linear-gradient(135deg, #0b2c60 0%, #1e40af 55%, #f97316 100%)",
+                    boxShadow: "0 3px 12px rgba(11,44,96,0.28), 0 0 0 1px rgba(11,44,96,0.1), inset 0 1px 0 rgba(255,255,255,0.18)",
+                  }}
                 >
-                  <Bell size={17} color="#475569" />
-                  {unreadCount > 0 && (
-                    <span
-                      className="absolute"
-                      style={{ top: 8, right: 8, width: 8, height: 8, borderRadius: "50%", background: "#f97316", border: "2px solid white" }}
-                    />
-                  )}
-                </button>
-              </Link>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <rect x="3" y="3" width="8" height="8" rx="2" fill="white" />
+                    <rect x="13" y="3" width="8" height="8" rx="2" fill="rgba(255,255,255,0.75)" />
+                    <rect x="3" y="13" width="8" height="8" rx="2" fill="rgba(255,255,255,0.6)" />
+                    <rect x="13" y="13" width="8" height="8" rx="2" fill="rgba(255,255,255,0.35)" />
+                  </svg>
+                </div>
+                <div>
+                  {/* Gradient text */}
+                  <div className="flex items-baseline gap-1">
+                    <span style={{
+                      fontSize: 16, fontWeight: 900, letterSpacing: "0.02em", lineHeight: 1,
+                      background: "linear-gradient(135deg, #0b2c60 0%, #1e40af 55%, #f97316 100%)",
+                      WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
+                    }}>SAHU</span>
+                    <span style={{
+                      fontSize: 16, fontWeight: 900, letterSpacing: "0.02em", lineHeight: 1,
+                      background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
+                      WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
+                    }}>CSC</span>
+                  </div>
+                  <span style={{ fontSize: 9, color: "#94a3b8", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", lineHeight: 1, marginTop: 2, display: "block" }}>
+                    {t('nav.management_platform')}
+                  </span>
+                </div>
+              </div>
 
-              {/* Avatar chip — tapping opens the nav drawer */}
-              <Sheet>
-                <SheetTrigger asChild>
+              {/* ── Right: bell + avatar chip ── */}
+              <div className="flex items-center gap-2">
+                <Link href="/notifications">
                   <button
-                    className="flex items-center gap-2 rounded-xl"
-                    style={{
-                      padding: "4px 10px 4px 4px",
-                      background: "linear-gradient(135deg, rgba(11,44,96,0.07), rgba(249,115,22,0.06))",
-                      border: "1px solid rgba(11,44,96,0.12)",
-                    }}
+                    className="relative flex items-center justify-center rounded-xl"
+                    style={{ width: 38, height: 38, background: "#f8fafc", border: "1.5px solid #e2e8f0", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}
                   >
-                    {avatarSrc ? (
-                      <img
-                        src={avatarSrc}
-                        alt={displayName}
-                        className="object-cover rounded-lg"
-                        style={{ width: 30, height: 30 }}
+                    <Bell size={17} color="#0b2c60" />
+                    {unreadCount > 0 && (
+                      <span
+                        className="absolute"
+                        style={{ top: 7, right: 7, width: 8, height: 8, borderRadius: "50%", background: "#f97316", border: "2px solid white", boxShadow: "0 0 6px rgba(249,115,22,0.5)" }}
                       />
-                    ) : (
-                      <div
-                        className="flex items-center justify-center rounded-lg"
-                        style={{
-                          width: 30, height: 30,
-                          background: "linear-gradient(135deg, #f97316, #ea580c)",
-                          boxShadow: "0 2px 6px rgba(249,115,22,0.40)",
-                          color: "#fff", fontSize: 10, fontWeight: 900,
-                        }}
-                      >
-                        {initials}
-                      </div>
                     )}
-                    <span style={{ fontSize: 12, fontWeight: 700, color: "#0b2c60" }}>{firstName}</span>
                   </button>
-                </SheetTrigger>
-                <SheetContent side="left" className="p-0 w-72 border-0">
-                  <SidebarNav
-                    mainNavItems={mainNavItems}
-                    adminNavItems={adminNavItems}
-                    initials={initials}
-                    avatarSrc={avatarSrc}
-                    displayName={displayName}
-                    roleLabel={roleLabel}
-                    location={location}
-                    onLogout={handleLogout}
-                    onToggleTheme={handleToggleTheme}
-                    isDark={isDark}
-                  />
-                </SheetContent>
-              </Sheet>
+                </Link>
+
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <button
+                      className="flex items-center gap-2 rounded-xl"
+                      style={{
+                        padding: "4px 10px 4px 4px",
+                        background: "#f8fafc",
+                        border: "1.5px solid #e2e8f0",
+                        boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
+                      }}
+                    >
+                      {avatarSrc ? (
+                        <img src={avatarSrc} alt={displayName} className="object-cover rounded-lg" style={{ width: 30, height: 30 }} />
+                      ) : (
+                        <div
+                          className="flex items-center justify-center rounded-lg"
+                          style={{
+                            width: 30, height: 30,
+                            background: "linear-gradient(135deg, #0b2c60 0%, #1e40af 55%, #f97316 100%)",
+                            boxShadow: "0 2px 6px rgba(11,44,96,0.3)",
+                            color: "#fff", fontSize: 10, fontWeight: 900,
+                          }}
+                        >
+                          {initials}
+                        </div>
+                      )}
+                      <span style={{
+                        fontSize: 12, fontWeight: 700,
+                        background: "linear-gradient(135deg, #0b2c60, #f97316)",
+                        WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
+                      }}>{firstName}</span>
+                    </button>
+                  </SheetTrigger>
+                  <SheetContent side="left" className="p-0 w-72 border-0">
+                    <SidebarNav
+                      mainNavItems={mainNavItems}
+                      adminNavItems={adminNavItems}
+                      initials={initials}
+                      avatarSrc={avatarSrc}
+                      displayName={displayName}
+                      roleLabel={roleLabel}
+                      location={location}
+                      onLogout={handleLogout}
+                      onToggleTheme={handleToggleTheme}
+                      isDark={isDark}
+                    />
+                  </SheetContent>
+                </Sheet>
+              </div>
             </div>
           </div>
 
-          {/* Greeting sub-bar */}
+          {/* Animated Greeting bar */}
           <div
-            className="flex items-center justify-between px-4"
-            style={{ height: 44, background: "linear-gradient(135deg, #0b2c60 0%, #0f3872 100%)" }}
+            style={{
+              background: "linear-gradient(90deg, #0b2c60 0%, #1e3a8a 60%, #1e40af 100%)",
+              padding: "0 16px",
+              height: 40,
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+            }}
           >
-            <div className="flex items-center gap-2">
-              <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.90)" }}>
+            <div
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                transition: "opacity 0.35s ease, transform 0.35s ease",
+                opacity: greetingVisible ? 1 : 0,
+                transform: greetingVisible ? "translateY(0)" : "translateY(4px)",
+              }}
+            >
+              <span style={{ fontSize: 13, fontWeight: 700, color: "white" }}>
                 {greeting}, {firstName}
               </span>
-              <span style={{ fontSize: 14 }}>{greetingEmoji}</span>
+              <span style={{ fontSize: 14, lineHeight: 1 }}>{greetingEmoji}</span>
             </div>
-            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.40)", fontWeight: 500 }}>{shortDate}</span>
+            <span
+              style={{
+                fontSize: 10, color: "rgba(255,255,255,0.42)", fontWeight: 500, fontFamily: "monospace",
+                transition: "opacity 0.35s ease",
+                opacity: greetingVisible ? 1 : 0,
+              }}
+            >{shortDate}</span>
           </div>
         </header>
 
-        {/* Desktop Top Header */}
-        <header className="h-16 bg-background border-b border-border hidden md:flex items-center justify-between px-8 sticky top-0 z-20">
-          <div>
-            <h1 className="text-xl font-bold text-foreground">{pageTitle}</h1>
-            <p className="text-xs text-muted-foreground">
-              {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <SyncDot />
-            <button
-              onClick={handleToggleTheme}
-              title={isDark ? t('nav.switch_light') : t('nav.switch_dark')}
-              className="h-8 w-8 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors duration-100"
-            >
-              {isDark ? <Sun size={15} /> : <Moon size={15} />}
-            </button>
-            <Link href="/notifications">
-              <Button variant="outline" size="sm" className="gap-2 relative bg-background hover:bg-muted">
-                <Bell size={15} />
-                <span>{t('nav.notifications')}</span>
-                {unreadCount > 0 && (
-                  <Badge variant="destructive" className="ml-1 px-1.5 min-w-5 h-5 flex items-center justify-center rounded-full text-xs">
-                    {unreadCount}
-                  </Badge>
-                )}
-              </Button>
-            </Link>
-            <Link href="/profile">
-              <Avatar className="h-8 w-8 ring-2 ring-[#f97316]/50 cursor-pointer hover:opacity-80 transition-opacity duration-100">
-                {avatarSrc ? <AvatarImage src={avatarSrc} alt="Profile" className="object-cover" /> : null}
-                <AvatarFallback className="bg-[#f97316] text-white text-sm font-black">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-            </Link>
+        {/* Desktop Top Header — V2 White + Hex Mesh + Gradient */}
+        <header className="hidden md:block sticky top-0 z-20" style={{ position: "relative", overflow: "hidden", background: "white" }}>
+          {/* Top accent bar */}
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "linear-gradient(90deg, #0b2c60 0%, #1e40af 40%, #f97316 75%, #ea580c 100%)", zIndex: 3 }} />
+          {/* Hex mesh texture */}
+          <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.06, pointerEvents: "none" }} preserveAspectRatio="none">
+            <defs>
+              <pattern id="dhdr-hex" x="0" y="0" width="28" height="24" patternUnits="userSpaceOnUse">
+                <polygon points="14,2 26,8 26,20 14,26 2,20 2,8" fill="none" stroke="#0b2c60" strokeWidth="0.9" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#dhdr-hex)" />
+          </svg>
+          {/* Aurora blobs */}
+          <div style={{ position: "absolute", top: -30, right: 60, width: 130, height: 130, background: "radial-gradient(circle, rgba(249,115,22,0.1) 0%, transparent 70%)", filter: "blur(24px)", pointerEvents: "none" }} />
+          <div style={{ position: "absolute", top: -10, left: "42%", width: 100, height: 80, background: "radial-gradient(circle, rgba(11,44,96,0.07) 0%, transparent 70%)", filter: "blur(18px)", pointerEvents: "none" }} />
+          {/* Bottom border */}
+          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 1, background: "linear-gradient(90deg,transparent,#e2e8f0,transparent)", zIndex: 2 }} />
+
+          <div className="flex items-center justify-between px-8" style={{ height: 64, position: "relative", zIndex: 2 }}>
+            {/* Left: page title + animated greeting */}
+            <div>
+              <h1 className="text-xl font-bold" style={{ color: "#0b2c60" }}>{pageTitle}</h1>
+              <div
+                style={{
+                  display: "flex", alignItems: "center", gap: 5,
+                  transition: "opacity 0.35s ease, transform 0.35s ease",
+                  opacity: greetingVisible ? 1 : 0,
+                  transform: greetingVisible ? "translateY(0)" : "translateY(3px)",
+                }}
+              >
+                <span style={{ fontSize: 12, color: "#64748b", fontWeight: 500 }}>
+                  {greeting}, {firstName}
+                </span>
+                <span style={{ fontSize: 12, lineHeight: 1 }}>{greetingEmoji}</span>
+                <span style={{ fontSize: 12, color: "#94a3b8" }}>·</span>
+                <span style={{ fontSize: 12, color: "#94a3b8", fontWeight: 400 }}>{shortDate}</span>
+              </div>
+            </div>
+
+            {/* Right controls */}
+            <div className="flex items-center gap-3">
+              <SyncDot />
+              <button
+                onClick={handleToggleTheme}
+                title={isDark ? t('nav.switch_light') : t('nav.switch_dark')}
+                className="h-8 w-8 rounded-lg flex items-center justify-center transition-colors duration-100"
+                style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0" }}
+              >
+                {isDark ? <Sun size={15} color="#64748b" /> : <Moon size={15} color="#64748b" />}
+              </button>
+              <Link href="/notifications">
+                <button
+                  className="relative flex items-center gap-2 rounded-xl px-3 h-8 text-sm font-medium transition-colors duration-100"
+                  style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0", color: "#0b2c60" }}
+                >
+                  <Bell size={15} color="#0b2c60" />
+                  <span>{t('nav.notifications')}</span>
+                  {unreadCount > 0 && (
+                    <span style={{ background: "#f97316", color: "white", borderRadius: 999, fontSize: 10, fontWeight: 700, padding: "0 5px", lineHeight: "18px", display: "inline-block" }}>
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+              </Link>
+              <Link href="/profile">
+                <div
+                  className="flex items-center gap-2 rounded-xl cursor-pointer transition-opacity duration-100 hover:opacity-80"
+                  style={{ padding: "4px 10px 4px 4px", background: "#f8fafc", border: "1.5px solid #e2e8f0" }}
+                >
+                  {avatarSrc ? (
+                    <img src={avatarSrc} alt="Profile" className="object-cover rounded-lg" style={{ width: 28, height: 28 }} />
+                  ) : (
+                    <div
+                      className="flex items-center justify-center rounded-lg"
+                      style={{ width: 28, height: 28, background: "linear-gradient(135deg, #0b2c60 0%, #1e40af 55%, #f97316 100%)", color: "#fff", fontSize: 10, fontWeight: 900 }}
+                    >
+                      {initials}
+                    </div>
+                  )}
+                  <span style={{
+                    fontSize: 12, fontWeight: 700,
+                    background: "linear-gradient(135deg, #0b2c60, #f97316)",
+                    WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
+                  }}>{firstName}</span>
+                </div>
+              </Link>
+            </div>
           </div>
         </header>
 
