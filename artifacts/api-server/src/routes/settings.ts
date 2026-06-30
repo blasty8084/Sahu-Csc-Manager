@@ -1,7 +1,8 @@
 import { Router, type IRouter } from "express";
 import { execSync } from "child_process";
-import { statSync, mkdirSync, existsSync } from "fs";
+import { statSync, mkdirSync, existsSync, unlinkSync } from "fs";
 import path from "path";
+import multer from "multer";
 import { db, settingsTable, backupsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { UpdateSettingsBody } from "@workspace/api-zod";
@@ -9,6 +10,18 @@ import { requireAuth, requireRole, auditLog, getClientIp } from "../lib/auth";
 import { createNotification } from "../lib/notify";
 
 const BACKUP_DIR = path.resolve(process.cwd(), "../../backups");
+
+const upload = multer({
+  dest: BACKUP_DIR,
+  limits: { fileSize: 500 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.originalname.endsWith(".sql")) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only .sql files are allowed"));
+    }
+  },
+});
 
 const router: IRouter = Router();
 
@@ -120,6 +133,41 @@ router.post("/backups", requireRole("admin"), async (req, res): Promise<void> =>
     });
   } catch (err: any) {
     res.status(500).json({ error: `Backup failed: ${err.message}` });
+  }
+});
+
+router.post("/backups/import", requireRole("admin"), upload.single("file"), async (req, res): Promise<void> => {
+  const dbUrl = process.env["DATABASE_URL"];
+  if (!dbUrl) { res.status(500).json({ error: "DATABASE_URL not configured" }); return; }
+  if (!req.file) { res.status(400).json({ error: "No .sql file uploaded" }); return; }
+
+  const originalName = req.file.originalname;
+  const tmpPath = req.file.path;
+  const filename = `imported_${Date.now()}_${originalName.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+  const finalPath = path.join(BACKUP_DIR, filename);
+
+  try {
+    mkdirSync(BACKUP_DIR, { recursive: true });
+    const { renameSync } = await import("fs");
+    renameSync(tmpPath, finalPath);
+    const size = statSync(finalPath).size;
+
+    execSync(`psql "${dbUrl}" -f "${finalPath}"`, { stdio: "pipe" });
+
+    const [backup] = await db.insert(backupsTable).values({ filename, size }).returning();
+    await auditLog(req.session.userId!, "backup.import", `Imported SQL backup: ${originalName}`, getClientIp(req));
+    await createNotification("Backup Imported", `SQL backup "${originalName}" imported successfully`, "success", req.session.userId!);
+
+    res.status(201).json({
+      id: backup.id,
+      filename: backup.filename,
+      size: backup.size,
+      createdAt: backup.createdAt instanceof Date ? backup.createdAt.toISOString() : backup.createdAt,
+    });
+  } catch (err: any) {
+    try { unlinkSync(finalPath); } catch {}
+    try { unlinkSync(tmpPath); } catch {}
+    res.status(500).json({ error: `Import failed: ${err.message}` });
   }
 });
 

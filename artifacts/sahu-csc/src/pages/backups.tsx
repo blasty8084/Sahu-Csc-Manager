@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Database, Download, RotateCcw, Plus, HardDrive } from "lucide-react";
-import { useState } from "react";
+import { Database, RotateCcw, Plus, HardDrive, Upload, FileUp, CheckCircle2, AlertTriangle } from "lucide-react";
+import { useState, useRef } from "react";
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -21,6 +21,11 @@ export default function Backups() {
   const qc = useQueryClient();
   const [restoreId, setRestoreId] = useState<number | null>(null);
   const [restoreFilename, setRestoreFilename] = useState("");
+
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importConfirm, setImportConfirm] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const { data: backups, isLoading } = useListBackups();
   const createMut = useCreateBackup();
@@ -50,9 +55,46 @@ export default function Backups() {
     }
   };
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.name.endsWith(".sql")) {
+      toast({ title: "Invalid file", description: "Only .sql files are allowed", variant: "destructive" });
+      return;
+    }
+    setImportFile(file);
+  };
+
+  const handleImport = async () => {
+    if (!importFile) return;
+    setImporting(true);
+    setImportConfirm(false);
+    try {
+      const formData = new FormData();
+      formData.append("file", importFile);
+      const res = await fetch("/api/backups/import", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Import failed" }));
+        throw new Error(err.error ?? "Import failed");
+      }
+      toast.success(`✅ "${importFile.name}" imported successfully! Data has been restored.`);
+      setImportFile(null);
+      if (fileRef.current) fileRef.current.value = "";
+      invalidate();
+    } catch (err: any) {
+      toast({ title: "Import failed", description: err.message, variant: "destructive" });
+    } finally {
+      setImporting(false);
+    }
+  };
+
   return (
     <Layout>
-      <div className="space-y-5 max-w-2xl">
+      <div className="space-y-6 max-w-2xl">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold">{t("backups.title")}</h2>
@@ -75,6 +117,51 @@ export default function Backups() {
               </p>
             </div>
           </div>
+        </div>
+
+        {/* ── Import Past SQL Backup ── */}
+        <div className="border-2 border-dashed border-blue-200 dark:border-blue-800 rounded-xl p-5 bg-blue-50/40 dark:bg-blue-900/10 space-y-4">
+          <div className="flex items-center gap-2">
+            <Upload size={18} className="text-blue-600 dark:text-blue-400" />
+            <h3 className="font-semibold text-blue-900 dark:text-blue-200">Import Past SQL Backup</h3>
+          </div>
+          <p className="text-xs text-blue-700 dark:text-blue-400">
+            Purani database ka <strong>.sql</strong> backup file yahan upload karo — past transactions, Ledger, AePS, aur Udhari sab restore ho jayenge.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+            <label className="flex-1 cursor-pointer">
+              <div className="flex items-center gap-2 px-4 py-2.5 border border-blue-300 dark:border-blue-700 rounded-lg bg-white dark:bg-muted hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors">
+                <FileUp size={15} className="text-blue-500" />
+                <span className="text-sm text-muted-foreground truncate">
+                  {importFile ? importFile.name : "Choose .sql file…"}
+                </span>
+              </div>
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".sql"
+                className="sr-only"
+                onChange={handleFileSelect}
+              />
+            </label>
+            <Button
+              size="sm"
+              disabled={!importFile || importing}
+              onClick={() => setImportConfirm(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white shrink-0"
+            >
+              <Upload size={13} className="mr-1.5" />
+              {importing ? "Importing…" : "Import"}
+            </Button>
+          </div>
+
+          {importFile && (
+            <div className="flex items-center gap-2 text-xs text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30 rounded-lg px-3 py-2">
+              <CheckCircle2 size={13} />
+              <span>Ready: <strong>{importFile.name}</strong> ({formatSize(importFile.size)})</span>
+            </div>
+          )}
         </div>
 
         {/* Backup List */}
@@ -130,6 +217,7 @@ export default function Backups() {
         )}
       </div>
 
+      {/* Restore from list dialog */}
       <Dialog open={restoreId !== null} onOpenChange={() => setRestoreId(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>{t("backups.restore_title")}</DialogTitle></DialogHeader>
@@ -140,6 +228,30 @@ export default function Backups() {
             <Button variant="outline" onClick={() => setRestoreId(null)}>{t("common.cancel")}</Button>
             <Button variant="destructive" onClick={handleRestore} disabled={restoreMut.isPending}>
               {restoreMut.isPending ? t("common.loading") : t("backups.restore")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import confirmation dialog */}
+      <Dialog open={importConfirm} onOpenChange={setImportConfirm}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle size={18} className="text-orange-500" />
+              Import SQL Backup — Confirm
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 text-sm text-muted-foreground">
+            <p>File: <strong className="text-foreground font-mono">{importFile?.name}</strong></p>
+            <p>Ye SQL file current database pe run hogi. Agar file mein <code>DROP TABLE</code> ya <code>TRUNCATE</code> commands hain, to existing data overwrite ho sakta hai.</p>
+            <p className="text-orange-600 dark:text-orange-400 font-medium">Pehle current backup zaroor le lo!</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setImportConfirm(false)}>{t("common.cancel")}</Button>
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={handleImport} disabled={importing}>
+              <Upload size={13} className="mr-1.5" />
+              {importing ? "Importing…" : "Import Karo"}
             </Button>
           </DialogFooter>
         </DialogContent>
