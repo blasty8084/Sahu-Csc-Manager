@@ -8,6 +8,7 @@ import { eq } from "drizzle-orm";
 import { UpdateSettingsBody } from "@workspace/api-zod";
 import { requireAuth, requireRole, auditLog, getClientIp } from "../lib/auth";
 import { createNotification } from "../lib/notify";
+import { applySchedule, type BackupScheduleConfig } from "../lib/backup-scheduler";
 
 const BACKUP_DIR = path.resolve(process.cwd(), "../../backups");
 
@@ -134,6 +135,71 @@ router.post("/backups", requireRole("admin"), async (req, res): Promise<void> =>
   } catch (err: any) {
     res.status(500).json({ error: `Backup failed: ${err.message}` });
   }
+});
+
+// ── Backup Schedule endpoints ─────────────────────────────────────────────
+
+const SCHEDULE_KEYS = ["backupEnabled", "backupFrequency", "backupTime", "backupDays", "backupRetention"];
+
+router.get("/backups/schedule", requireRole("admin"), async (_req, res): Promise<void> => {
+  const rows = await db.select().from(settingsTable);
+  const s: Record<string, string> = {};
+  for (const r of rows) s[r.key] = r.value;
+  res.json({
+    enabled: s["backupEnabled"] === "true",
+    frequency: s["backupFrequency"] ?? "daily",
+    time: s["backupTime"] ?? "02:00",
+    days: s["backupDays"] ? s["backupDays"].split(",").map(Number) : [1],
+    retention: parseInt(s["backupRetention"] ?? "7", 10),
+  });
+});
+
+router.post("/backups/schedule", requireRole("admin"), async (req, res): Promise<void> => {
+  const { enabled, frequency, time, days, retention } = req.body as {
+    enabled: boolean; frequency: string; time: string; days: number[]; retention: number;
+  };
+
+  if (!["daily", "weekly", "custom"].includes(frequency)) {
+    res.status(400).json({ error: "Invalid frequency. Use: daily, weekly, custom" }); return;
+  }
+  if (!/^\d{2}:\d{2}$/.test(time)) {
+    res.status(400).json({ error: "Invalid time format. Use HH:MM (24-hour)" }); return;
+  }
+  if (!Array.isArray(days) || days.some((d) => d < 0 || d > 6)) {
+    res.status(400).json({ error: "Invalid days. Use 0-6 (0=Sun, 6=Sat)" }); return;
+  }
+
+  const toSave: Record<string, string> = {
+    backupEnabled: String(enabled),
+    backupFrequency: frequency,
+    backupTime: time,
+    backupDays: days.join(","),
+    backupRetention: String(Math.max(1, Math.min(90, retention))),
+  };
+
+  for (const [key, value] of Object.entries(toSave)) {
+    const existing = await db.select().from(settingsTable).where(eq(settingsTable.key, key));
+    if (existing.length > 0) {
+      await db.update(settingsTable).set({ value }).where(eq(settingsTable.key, key));
+    } else {
+      await db.insert(settingsTable).values({ key, value });
+    }
+  }
+
+  const cfg: BackupScheduleConfig = {
+    enabled: Boolean(enabled),
+    frequency: frequency as BackupScheduleConfig["frequency"],
+    time,
+    days,
+    retention: Math.max(1, Math.min(90, retention)),
+  };
+  applySchedule(cfg);
+
+  await auditLog(req.session.userId!, "backup.schedule_update",
+    `Auto-backup schedule updated: enabled=${enabled}, freq=${frequency}, time=${time}, days=${days.join(",")}`,
+    getClientIp(req));
+
+  res.json({ message: "Schedule saved and applied.", ...cfg });
 });
 
 // ── Helper: parse pg_dump SQL into per-table COPY blocks ──────────────────

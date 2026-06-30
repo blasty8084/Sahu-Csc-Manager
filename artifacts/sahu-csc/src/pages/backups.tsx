@@ -9,8 +9,9 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Database, RotateCcw, Plus, HardDrive, Upload, FileUp,
   CheckCircle2, AlertTriangle, ChevronRight, Loader2, Table2,
+  Clock, CalendarDays, Save,
 } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -18,13 +19,26 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-interface TableInfo {
-  name: string;
-  label: string;
-  rowCount: number;
+interface TableInfo { name: string; label: string; rowCount: number; }
+type ImportStep = "idle" | "analyzing" | "select" | "importing" | "done";
+
+const DAYS = [
+  { value: 0, label: "Sun" }, { value: 1, label: "Mon" }, { value: 2, label: "Tue" },
+  { value: 3, label: "Wed" }, { value: 4, label: "Thu" }, { value: 5, label: "Fri" },
+  { value: 6, label: "Sat" },
+];
+
+interface ScheduleConfig {
+  enabled: boolean;
+  frequency: "daily" | "weekly" | "custom";
+  time: string;
+  days: number[];
+  retention: number;
 }
 
-type ImportStep = "idle" | "analyzing" | "select" | "importing" | "done";
+const DEFAULT_SCHEDULE: ScheduleConfig = {
+  enabled: false, frequency: "daily", time: "02:00", days: [1], retention: 7,
+};
 
 export default function Backups() {
   const { t } = useTranslation();
@@ -34,6 +48,7 @@ export default function Backups() {
   const [restoreId, setRestoreId] = useState<number | null>(null);
   const [restoreFilename, setRestoreFilename] = useState("");
 
+  // Import state
   const [importStep, setImportStep] = useState<ImportStep>("idle");
   const [importFile, setImportFile] = useState<File | null>(null);
   const [analyzedTables, setAnalyzedTables] = useState<TableInfo[]>([]);
@@ -43,11 +58,24 @@ export default function Backups() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Schedule state
+  const [schedule, setSchedule] = useState<ScheduleConfig>(DEFAULT_SCHEDULE);
+  const [scheduleLoading, setScheduleLoading] = useState(true);
+  const [scheduleSaving, setScheduleSaving] = useState(false);
+
   const { data: backups, isLoading } = useListBackups();
   const createMut = useCreateBackup();
   const restoreMut = useRestoreBackup();
-
   const invalidate = () => qc.invalidateQueries({ queryKey: getListBackupsQueryKey() });
+
+  // Load schedule on mount
+  useEffect(() => {
+    fetch("/api/backups/schedule", { credentials: "include" })
+      .then((r) => r.json())
+      .then((d) => setSchedule({ ...DEFAULT_SCHEDULE, ...d }))
+      .catch(() => {})
+      .finally(() => setScheduleLoading(false));
+  }, []);
 
   const handleCreate = async () => {
     try {
@@ -71,6 +99,33 @@ export default function Backups() {
     }
   };
 
+  // Schedule save
+  const handleScheduleSave = async () => {
+    setScheduleSaving(true);
+    try {
+      const res = await fetch("/api/backups/schedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(schedule),
+      });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Save failed");
+      toast.success("Auto-backup schedule saved successfully.");
+    } catch (err: any) {
+      toast({ title: "Save failed", description: err.message, variant: "destructive" });
+    } finally {
+      setScheduleSaving(false);
+    }
+  };
+
+  const toggleDay = (d: number) => {
+    setSchedule((s) => {
+      const next = s.days.includes(d) ? s.days.filter((x) => x !== d) : [...s.days, d].sort();
+      return { ...s, days: next.length ? next : [d] };
+    });
+  };
+
+  // Import handlers
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -90,15 +145,8 @@ export default function Backups() {
     try {
       const form = new FormData();
       form.append("file", importFile);
-      const res = await fetch("/api/backups/analyze", {
-        method: "POST",
-        body: form,
-        credentials: "include",
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Analysis failed" }));
-        throw new Error(err.error ?? "Analysis failed");
-      }
+      const res = await fetch("/api/backups/analyze", { method: "POST", body: form, credentials: "include" });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Analysis failed");
       const data = await res.json();
       setAnalyzedTables(data.tables);
       setTmpPath(data.tmpPath);
@@ -119,9 +167,6 @@ export default function Backups() {
     });
   };
 
-  const selectAll = () => setSelectedTables(new Set(analyzedTables.map((t) => t.name)));
-  const clearAll = () => setSelectedTables(new Set());
-
   const handleSelectiveImport = async () => {
     setConfirmOpen(false);
     setImportStep("importing");
@@ -130,19 +175,12 @@ export default function Backups() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({
-          tmpPath,
-          selectedTables: Array.from(selectedTables),
-          originalName,
-        }),
+        body: JSON.stringify({ tmpPath, selectedTables: Array.from(selectedTables), originalName }),
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Import failed" }));
-        throw new Error(err.error ?? "Import failed");
-      }
+      if (!res.ok) throw new Error((await res.json()).error ?? "Import failed");
       const data = await res.json();
       setImportStep("done");
-      toast.success(`✅ Successfully imported ${data.tablesImported.length} table(s) from "${originalName}".`);
+      toast.success(`Imported ${data.tablesImported.length} table(s) from "${originalName}".`);
       invalidate();
     } catch (err: any) {
       toast({ title: "Import failed", description: err.message, variant: "destructive" });
@@ -151,18 +189,16 @@ export default function Backups() {
   };
 
   const resetImport = () => {
-    setImportStep("idle");
-    setImportFile(null);
-    setAnalyzedTables([]);
-    setSelectedTables(new Set());
-    setTmpPath("");
-    setOriginalName("");
+    setImportStep("idle"); setImportFile(null);
+    setAnalyzedTables([]); setSelectedTables(new Set());
+    setTmpPath(""); setOriginalName("");
     if (fileRef.current) fileRef.current.value = "";
   };
 
   return (
     <Layout>
       <div className="space-y-6 max-w-2xl">
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -186,7 +222,156 @@ export default function Backups() {
           </div>
         </div>
 
-        {/* ── Import Past Data — Selective ── */}
+        {/* ── Auto-Backup Schedule ── */}
+        <div className="border rounded-xl overflow-hidden bg-card">
+          <div className="flex items-center gap-2 px-5 py-4 border-b bg-muted/30">
+            <Clock size={16} className="text-primary" />
+            <h3 className="font-semibold">Automatic Backup Schedule</h3>
+          </div>
+
+          {scheduleLoading ? (
+            <div className="p-5 space-y-3">
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-8 w-3/4" />
+            </div>
+          ) : (
+            <div className="p-5 space-y-5">
+
+              {/* Enable toggle */}
+              <label className="flex items-center justify-between cursor-pointer select-none">
+                <div>
+                  <p className="text-sm font-medium">Enable Automatic Backups</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {schedule.enabled ? "Backups will run automatically on your schedule." : "Automatic backups are currently off."}
+                  </p>
+                </div>
+                <div
+                  onClick={() => setSchedule((s) => ({ ...s, enabled: !s.enabled }))}
+                  className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer ${schedule.enabled ? "bg-primary" : "bg-muted-foreground/30"}`}
+                >
+                  <div className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${schedule.enabled ? "translate-x-5" : "translate-x-0"}`} />
+                </div>
+              </label>
+
+              {schedule.enabled && (
+                <>
+                  {/* Frequency */}
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Frequency</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(["daily", "weekly", "custom"] as const).map((f) => (
+                        <button
+                          key={f}
+                          onClick={() => {
+                            setSchedule((s) => ({
+                              ...s,
+                              frequency: f,
+                              days: f === "weekly" ? [1] : f === "custom" ? [1, 3, 5] : s.days,
+                            }));
+                          }}
+                          className={`py-2 rounded-lg border text-sm font-medium capitalize transition-colors ${
+                            schedule.frequency === f
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border hover:bg-muted/40"
+                          }`}
+                        >
+                          {f}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Time picker */}
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Time (24-hour)</p>
+                    <input
+                      type="time"
+                      value={schedule.time}
+                      onChange={(e) => setSchedule((s) => ({ ...s, time: e.target.value }))}
+                      className="px-3 py-2 border rounded-lg text-sm bg-background w-36 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                  </div>
+
+                  {/* Day picker — weekly = single, custom = multi */}
+                  {(schedule.frequency === "weekly" || schedule.frequency === "custom") && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">
+                        {schedule.frequency === "weekly" ? "Day of Week" : "Days of Week"}
+                        {schedule.frequency === "custom" && (
+                          <span className="ml-1 text-xs text-muted-foreground">(select multiple)</span>
+                        )}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {DAYS.map((d) => {
+                          const active = schedule.days.includes(d.value);
+                          return (
+                            <button
+                              key={d.value}
+                              onClick={() => {
+                                if (schedule.frequency === "weekly") {
+                                  setSchedule((s) => ({ ...s, days: [d.value] }));
+                                } else {
+                                  toggleDay(d.value);
+                                }
+                              }}
+                              className={`w-11 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${
+                                active
+                                  ? "border-primary bg-primary text-primary-foreground"
+                                  : "border-border hover:bg-muted/40"
+                              }`}
+                            >
+                              {d.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Retention */}
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Retention — Keep Last N Backups</p>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="number"
+                        min={1}
+                        max={90}
+                        value={schedule.retention}
+                        onChange={(e) => setSchedule((s) => ({ ...s, retention: Math.max(1, parseInt(e.target.value) || 1) }))}
+                        className="px-3 py-2 border rounded-lg text-sm bg-background w-24 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Older backups will be automatically deleted to save space.
+                        {schedule.retention >= 30 && " (30+ backups may use significant disk space)"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Summary */}
+                  <div className="bg-muted/40 rounded-lg px-4 py-3 text-sm flex items-start gap-2">
+                    <CalendarDays size={15} className="text-primary mt-0.5 shrink-0" />
+                    <p className="text-muted-foreground">
+                      <span className="text-foreground font-medium">Schedule: </span>
+                      {schedule.frequency === "daily" && `Every day at ${schedule.time}`}
+                      {schedule.frequency === "weekly" && `Every ${DAYS.find((d) => d.value === schedule.days[0])?.label ?? "Mon"} at ${schedule.time}`}
+                      {schedule.frequency === "custom" && `Every ${schedule.days.map((d) => DAYS.find((x) => x.value === d)?.label).join(", ")} at ${schedule.time}`}
+                      {` · Keep last ${schedule.retention} backup${schedule.retention !== 1 ? "s" : ""}`}
+                    </p>
+                  </div>
+                </>
+              )}
+
+              <Button size="sm" onClick={handleScheduleSave} disabled={scheduleSaving}>
+                {scheduleSaving
+                  ? <><Loader2 size={13} className="mr-1.5 animate-spin" /> Saving…</>
+                  : <><Save size={13} className="mr-1.5" /> Save Schedule</>
+                }
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* ── Import Past Data (Selective) ── */}
         <div className="border rounded-xl overflow-hidden bg-card">
           <div className="flex items-center gap-2 px-5 py-4 border-b bg-muted/30">
             <Upload size={16} className="text-primary" />
@@ -194,7 +379,6 @@ export default function Backups() {
           </div>
 
           <div className="p-5 space-y-4">
-            {/* Step 1 — File selection */}
             <div className="space-y-2">
               <p className="text-sm font-medium text-muted-foreground">Step 1 — Choose your old database backup file (.sql)</p>
               <div className="flex gap-3 items-center">
@@ -219,47 +403,29 @@ export default function Backups() {
                 )}
               </div>
               {importFile && (
-                <p className="text-xs text-muted-foreground">
-                  {importFile.name} &middot; {formatSize(importFile.size)}
-                </p>
+                <p className="text-xs text-muted-foreground">{importFile.name} · {formatSize(importFile.size)}</p>
               )}
             </div>
 
-            {/* Step 2 — Table selection */}
             {importStep === "select" && analyzedTables.length > 0 && (
               <div className="space-y-3 border-t pt-4">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium">
                     Step 2 — Select which tables to import
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      ({selectedTables.size} of {analyzedTables.length} selected)
-                    </span>
+                    <span className="ml-2 text-xs text-muted-foreground">({selectedTables.size} of {analyzedTables.length} selected)</span>
                   </p>
                   <div className="flex gap-2">
-                    <button onClick={selectAll} className="text-xs text-primary hover:underline">Select all</button>
+                    <button onClick={() => setSelectedTables(new Set(analyzedTables.map((t) => t.name)))} className="text-xs text-primary hover:underline">Select all</button>
                     <span className="text-muted-foreground text-xs">·</span>
-                    <button onClick={clearAll} className="text-xs text-muted-foreground hover:underline">Clear</button>
+                    <button onClick={() => setSelectedTables(new Set())} className="text-xs text-muted-foreground hover:underline">Clear</button>
                   </div>
                 </div>
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {analyzedTables.map((tbl) => {
                     const checked = selectedTables.has(tbl.name);
                     return (
-                      <label
-                        key={tbl.name}
-                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${
-                          checked
-                            ? "border-primary/50 bg-primary/5 dark:bg-primary/10"
-                            : "border-border hover:bg-muted/30"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => toggleTable(tbl.name)}
-                          className="accent-primary"
-                        />
+                      <label key={tbl.name} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${checked ? "border-primary/50 bg-primary/5 dark:bg-primary/10" : "border-border hover:bg-muted/30"}`}>
+                        <input type="checkbox" checked={checked} onChange={() => toggleTable(tbl.name)} className="accent-primary" />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">{tbl.label}</p>
                           <p className="text-xs text-muted-foreground">{tbl.rowCount.toLocaleString()} rows</p>
@@ -269,21 +435,9 @@ export default function Backups() {
                     );
                   })}
                 </div>
-
                 <div className="flex gap-3 pt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={resetImport}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    size="sm"
-                    disabled={selectedTables.size === 0}
-                    onClick={() => setConfirmOpen(true)}
-                    className="bg-primary text-primary-foreground"
-                  >
+                  <Button variant="outline" size="sm" onClick={resetImport}>Cancel</Button>
+                  <Button size="sm" disabled={selectedTables.size === 0} onClick={() => setConfirmOpen(true)}>
                     <Upload size={13} className="mr-1.5" />
                     Import {selectedTables.size} Table{selectedTables.size !== 1 ? "s" : ""}
                   </Button>
@@ -305,14 +459,12 @@ export default function Backups() {
             )}
 
             {importStep === "done" && (
-              <div className="border-t pt-4">
+              <div className="border-t pt-4 space-y-2">
                 <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-4 py-3">
                   <CheckCircle2 size={16} />
                   <span>Import complete! Your past data has been restored successfully.</span>
                 </div>
-                <button onClick={resetImport} className="mt-3 text-xs text-muted-foreground hover:underline">
-                  Import another file
-                </button>
+                <button onClick={resetImport} className="text-xs text-muted-foreground hover:underline">Import another file</button>
               </div>
             )}
           </div>
@@ -320,9 +472,7 @@ export default function Backups() {
 
         {/* Backup list */}
         {isLoading ? (
-          <div className="space-y-3">
-            {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}
-          </div>
+          <div className="space-y-3">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
         ) : backups?.length === 0 ? (
           <div className="text-center py-16">
             <Database size={40} className="mx-auto text-muted-foreground/40 mb-3" />
@@ -352,13 +502,9 @@ export default function Backups() {
                       <td className="px-4 py-3 text-sm text-muted-foreground">{formatSize(backup.size)}</td>
                       <td className="px-4 py-3 text-sm text-muted-foreground">{new Date(backup.createdAt).toLocaleString("en-IN")}</td>
                       <td className="px-4 py-3">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 text-xs"
+                        <Button variant="outline" size="sm" className="h-7 text-xs"
                           onClick={() => { setRestoreId(backup.id); setRestoreFilename(backup.filename); }}
-                          data-testid={`button-restore-${backup.id}`}
-                        >
+                          data-testid={`button-restore-${backup.id}`}>
                           <RotateCcw size={12} className="mr-1" />{t("backups.restore")}
                         </Button>
                       </td>
@@ -371,7 +517,7 @@ export default function Backups() {
         )}
       </div>
 
-      {/* Restore from list dialog */}
+      {/* Restore dialog */}
       <Dialog open={restoreId !== null} onOpenChange={() => setRestoreId(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>{t("backups.restore_title")}</DialogTitle></DialogHeader>
@@ -385,7 +531,7 @@ export default function Backups() {
         </DialogContent>
       </Dialog>
 
-      {/* Selective import confirmation dialog */}
+      {/* Import confirm dialog */}
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
@@ -395,9 +541,7 @@ export default function Backups() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 text-sm text-muted-foreground">
-            <p>
-              You are about to import <strong className="text-foreground">{selectedTables.size} table(s)</strong> from:
-            </p>
+            <p>You are about to import <strong className="text-foreground">{selectedTables.size} table(s)</strong> from:</p>
             <p className="font-mono text-xs bg-muted rounded px-2 py-1">{originalName}</p>
             <div className="flex flex-wrap gap-1">
               {Array.from(selectedTables).map((name) => {
@@ -410,14 +554,13 @@ export default function Backups() {
               })}
             </div>
             <p className="text-orange-600 dark:text-orange-400 text-xs font-medium">
-              ⚠️ Existing rows in these tables will be deleted and replaced with backup data. Make sure you have a current backup before proceeding.
+              ⚠️ Existing rows in these tables will be deleted and replaced. Make sure you have a current backup before proceeding.
             </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmOpen(false)}>Cancel</Button>
             <Button onClick={handleSelectiveImport}>
-              <Upload size={13} className="mr-1.5" />
-              Import Now
+              <Upload size={13} className="mr-1.5" /> Import Now
             </Button>
           </DialogFooter>
         </DialogContent>
