@@ -1,13 +1,51 @@
 # SAHU CSC — Change Log & Feature Documentation
-**Current version: 3.0.0 — June 30, 2026**
+**Current version: 3.1.0** — last updated 2026-06-30
 
 > Full record of every feature, change, and upgrade applied to the SAHU CSC platform.
 > Use this file as a reference for future development, onboarding, and audits.
 >
+> **v3.1.0 adds:** Backup page complete redesign (Minimal Clean layout) · SQL backup download endpoint · Auto-backup scheduler · Selective table import · SQL backup import  
 > **v3.0.0 adds:** Setup Wizard Banner · `/api/setup-status` public endpoint · SMTP fully configured · VAPID auto-generation on startup · `scripts/post-merge.sh` auto-import setup · Full V3 documentation overhaul · Package bump to 3.0.0 · TWA config v3.0.0  
 > See `CHANGELOG_V3.md` for the full V3 detailed changelog. See `changelogV2.md` for v2.x history.
 >
 > **v2.1.0 adds:** Udhari Khata (customer credit ledger) · Receipt system (CSC-YYYY-NNNN + QR + WhatsApp PDF sharing) · V2 multi-device sessions · RBAC `requirePermission` middleware · OTP password reset · Admin oversight pages · PWA Status page · Idle timeout (30 min) · Notification isolation fixes · UI Design System v2 (mobile header, gradient card language) · Canvas mockup exploration for Ledger / AePS / Add Entry / Udhari form redesigns
+
+---
+
+## v3.1.0 — Backup & Restore Redesign (June 30, 2026)
+
+### Backup Page — Complete UI Redesign (Minimal Clean)
+
+Complete redesign of `artifacts/sahu-csc/src/pages/backups.tsx` using the "Minimal Clean" design system:
+
+| Change | Detail |
+|--------|--------|
+| **Layout** | 2-column grid on desktop — Backup History (left 2/3) + Schedule & Import stacked (right 1/3). Previously single-column. |
+| **Color scheme** | Navy (`#0b2c60`) top-border accent on all cards. Saffron (`#f97316`) for Create Backup button, Import button, and upload icon. Navy bg for active day chips and frequency pills. |
+| **Header** | White card panel with page title, subtitle (snapshot count + description), and saffron Create Backup button. |
+| **Backup table** | Navy icon badges, size pills via `Badge` component, hover highlight, Download (turns navy on hover) + Restore (turns saffron on hover) action buttons. |
+| **Schedule card** | Navy toggle (saffron when enabled), active status dot + next-run label, `[10px] uppercase tracking-wider` labels for all fields, navy Save Schedule button. |
+| **Import card** | Dashed drop-zone with saffron upload icon; file-select → Analyze → table checkboxes (navy accent) → Import Now (saffron) flow inline within the card. |
+| **Dialogs** | Restore confirm: centered warning icon in red circle, filename in monospace code block, Cancel + destructive Restore buttons. Selective import confirm: navy table tags, orange warning note. |
+| **Empty state** | Centered navy icon circle + instructional copy. |
+
+### New API Endpoints (also in v3.0.x patches)
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| `GET` | `/api/backups/:id/download` | Streams `.sql` file with `Content-Disposition: attachment`. Logs `backup.download` audit event. |
+| `POST` | `/api/backups/analyze` | Multer file upload → parse pg_dump COPY blocks → return table list + row counts. |
+| `POST` | `/api/backups/selective-import` | Import only chosen tables: `DELETE` existing rows + replay `COPY` blocks with `session_replication_role = replica` (FK checks disabled). |
+| `GET/POST` | `/api/backups/schedule` | Read / write auto-backup cron schedule to settings table. |
+
+### Auto-Backup Scheduler
+
+`artifacts/api-server/src/lib/backup-scheduler.ts` — `node-cron` based scheduler:
+- Initialized in `index.ts` on server startup
+- Reads schedule from `settings` table on each tick
+- Supports `daily`, `weekly`, `custom` (multi-day) frequencies
+- Applies retention: deletes oldest backup records + files beyond the keep count
+- Logs `backup.auto` audit event on each run
 
 ---
 

@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v3
-**Current version: 3.0.0 — June 30, 2026**
+**Current version: 3.1.0 — June 30, 2026**
 
 > Detailed record of every feature, change, and upgrade from v3.0.0 onward.  
 > For v2.x history, see `changelogV2.md`.  
@@ -10,7 +10,67 @@
 
 ## Table of Contents
 
-1. [v3.0.0 — Setup Wizard, SMTP Integration & Auto-Import (June 30, 2026)](#1-v300--setup-wizard-smtp-integration--auto-import-june-30-2026)
+1. [v3.1.0 — Backup & Restore Redesign + Download + Scheduler (June 30, 2026)](#1-v310--backup--restore-redesign--download--scheduler-june-30-2026)
+2. [v3.0.0 — Setup Wizard, SMTP Integration & Auto-Import (June 30, 2026)](#2-v300--setup-wizard-smtp-integration--auto-import-june-30-2026)
+
+---
+
+## 1. v3.1.0 — Backup & Restore Redesign + Download + Scheduler (June 30, 2026)
+
+### Overview
+
+Full overhaul of the Backup & Restore admin page plus four new backend capabilities: backup file download, SQL file import, selective table import, and a `node-cron` auto-backup scheduler.
+
+### Frontend — Backup Page Redesign (`backups.tsx`)
+
+**Design system: "Minimal Clean"**
+
+The page was previously a single-column stacked layout. It is now a **2-column desktop grid**:
+- **Left 2/3** — Backup History card (table of snapshots with Download + Restore per row)
+- **Right 1/3** — Auto-Backup Schedule card + Import Data card stacked vertically
+
+**Color scheme:**
+- Navy (`#0b2c60`) — 3px top-border accent on all cards, card titles, icon badges, active day chips, frequency pills, Save Schedule button, Analyze button
+- Saffron (`#f97316`) — Create Backup button, Import Now button, upload dropzone icon, enabled schedule toggle
+- Red (`#dc2626`) — Restore confirm (destructive action)
+- Emerald — Active schedule status dot + "Active" label
+
+**Cards use a shared `NavyCard` + `CardHead` helper component** (defined inline in `backups.tsx`) to keep consistent styling across the three sections.
+
+**Action buttons:** Download turns navy on hover, Restore turns saffron on hover. Labels shown inline on `sm:` breakpoint, icon-only on mobile.
+
+**Import flow (inline in the Import card):**
+1. Dashed drop-zone with saffron `UploadCloud` icon → file selected → navy "Analyze File" button
+2. Table checkboxes appear (scrollable list, max-h-48) → All / None quick-select
+3. Saffron "Import N" button → selective import confirm dialog → import
+4. Green success banner + "Import another file" reset link
+
+**Schedule card:**
+- Saffron toggle (enabled) / slate toggle (disabled)
+- Active status: green dot + "Active · [frequency summary]" label
+- Fields: Frequency (3-pill grid), Time (time input), Day picker (individual day chips), Retention (number input)
+- All fields opacity-40 + pointer-events-none when schedule is disabled
+- Navy "Save Schedule" button at the bottom
+
+### Backend — New API Endpoints
+
+| Method | Route | Auth | Description |
+|--------|-------|------|-------------|
+| `GET` | `/api/backups/:id/download` | admin | Streams `.sql` file via `createReadStream`. Sets `Content-Disposition: attachment` + `Content-Length`. Logs `backup.download` audit event. |
+| `POST` | `/api/backups/analyze` | admin | Multer file upload → reads file → parses `COPY <table>` blocks → returns `{ tables: [{ name, label, rowCount }], tmpPath, originalName }`. |
+| `POST` | `/api/backups/selective-import` | admin | Receives `{ tmpPath, selectedTables[], originalName }`. Disables FK checks via `SET session_replication_role = replica`, replays `DELETE + COPY` for each selected table, then restores FK checks. |
+| `GET` | `/api/backups/schedule` | admin | Returns current schedule config from `settings` table. |
+| `POST` | `/api/backups/schedule` | admin | Saves schedule config to `settings` table, restarts the in-process cron job. |
+
+### Backend — Auto-Backup Scheduler (`backup-scheduler.ts`)
+
+`artifacts/api-server/src/lib/backup-scheduler.ts` — singleton `BackupScheduler` class:
+
+- Initialized in `index.ts` at startup: `initBackupScheduler()`
+- On each cron tick: reads `settings` table → checks `backupEnabled` → runs `pg_dump` → inserts into `backups` table → applies retention (deletes oldest files + DB rows beyond `backupRetention` count)
+- Supports `frequency: "daily" | "weekly" | "custom"` with `days[]` (0=Sun … 6=Sat) and `time` (HH:MM)
+- `restartScheduler(config)` called by `POST /api/backups/schedule` to apply changes immediately without server restart
+- Logs `backup.auto` audit event on success; logs error on failure (does not crash the server)
 
 ---
 

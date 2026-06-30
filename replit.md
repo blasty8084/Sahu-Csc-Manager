@@ -1,9 +1,18 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 3.0.0** — last updated 2026-06-30
+**Version 3.1.0** — last updated 2026-06-30
 
 A full-stack CSC (Common Service Center) business management platform for tracking services, ledger accounting, AePS cash management, Udhari Khata (customer credit ledger), and reporting. Built for Odisha / India rural service centers. Supports PWA installation, offline operation, Android TWA packaging, and full multilingual UI (English / Hindi / Odia).
 
 ---
+
+## What's New in v3.1.0
+
+| Feature | Description |
+|---------|-------------|
+| **Backup page redesign** | Complete "Minimal Clean" UI — 2-column desktop grid (history left, schedule+import right), navy card borders, saffron CTAs, dashed import dropzone, expand-on-hover action buttons. |
+| **Backup download** | `GET /api/backups/:id/download` — streams `.sql` file to browser with `Content-Disposition: attachment`. Download button on each table row. |
+| **Auto-backup scheduler** | `node-cron` scheduler (`backup-scheduler.ts`) — daily/weekly/custom cron, configurable time + retention. `GET/POST /api/backups/schedule` endpoints. |
+| **Selective table import** | `POST /api/backups/analyze` parses pg_dump COPY blocks. `POST /api/backups/selective-import` replays chosen tables with FK checks disabled. |
 
 ## What's New in v3.0.0
 
@@ -223,7 +232,7 @@ artifacts/
       users-overview.tsx   — Admin overview of all users' ledger/balance
       audit-logs.tsx       — Full audit trail (admin)
       settings.tsx         — Redirects to /profile (deprecated)
-      backups.tsx          — Backup and restore (admin)
+      backups.tsx          — Backup & Restore (admin) v3.1: Minimal Clean redesign — 2-col grid, navy card borders, saffron CTAs, dashed import dropzone, schedule + selective import
       sessions.tsx         — Standalone sessions page (also embedded in /profile)
       pwa-status.tsx       — App & Offline Status page
       server-health.tsx    — Live API/DB/VAPID health check page

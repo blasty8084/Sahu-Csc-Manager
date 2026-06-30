@@ -4,12 +4,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Database, RotateCcw, Plus, HardDrive, Upload, FileUp,
-  CheckCircle2, AlertTriangle, ChevronRight, Loader2, Table2,
-  Clock, CalendarDays, Save, Download,
+  Database, RotateCcw, Plus, Upload, FileUp,
+  CheckCircle2, AlertTriangle, Loader2, Table2,
+  CalendarClock, HardDriveDownload, Download, Save, Clock,
+  UploadCloud,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
@@ -40,6 +42,31 @@ const DEFAULT_SCHEDULE: ScheduleConfig = {
   enabled: false, frequency: "daily", time: "02:00", days: [1], retention: 7,
 };
 
+function NavyCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden [border-top:3px_solid_#0b2c60] ${className}`}>
+      {children}
+    </div>
+  );
+}
+
+function CardHead({ icon, title, description, right }: {
+  icon: React.ReactNode; title: string; description?: string; right?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4 px-5 py-4 border-b border-slate-100 bg-slate-50/60">
+      <div className="flex items-center gap-2.5">
+        <span className="text-[#0b2c60]">{icon}</span>
+        <div>
+          <p className="font-semibold text-[#0b2c60] text-sm leading-tight">{title}</p>
+          {description && <p className="text-xs text-slate-500 mt-0.5">{description}</p>}
+        </div>
+      </div>
+      {right && <div className="shrink-0">{right}</div>}
+    </div>
+  );
+}
+
 export default function Backups() {
   const { t } = useTranslation();
   const { toast } = useToast();
@@ -48,7 +75,6 @@ export default function Backups() {
   const [restoreId, setRestoreId] = useState<number | null>(null);
   const [restoreFilename, setRestoreFilename] = useState("");
 
-  // Import state
   const [importStep, setImportStep] = useState<ImportStep>("idle");
   const [importFile, setImportFile] = useState<File | null>(null);
   const [analyzedTables, setAnalyzedTables] = useState<TableInfo[]>([]);
@@ -58,7 +84,6 @@ export default function Backups() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Schedule state
   const [schedule, setSchedule] = useState<ScheduleConfig>(DEFAULT_SCHEDULE);
   const [scheduleLoading, setScheduleLoading] = useState(true);
   const [scheduleSaving, setScheduleSaving] = useState(false);
@@ -68,7 +93,6 @@ export default function Backups() {
   const restoreMut = useRestoreBackup();
   const invalidate = () => qc.invalidateQueries({ queryKey: getListBackupsQueryKey() });
 
-  // Load schedule on mount
   useEffect(() => {
     fetch("/api/backups/schedule", { credentials: "include" })
       .then((r) => r.json())
@@ -99,7 +123,6 @@ export default function Backups() {
     }
   };
 
-  // Schedule save
   const handleScheduleSave = async () => {
     setScheduleSaving(true);
     try {
@@ -110,7 +133,7 @@ export default function Backups() {
         body: JSON.stringify(schedule),
       });
       if (!res.ok) throw new Error((await res.json()).error ?? "Save failed");
-      toast.success("Auto-backup schedule saved successfully.");
+      toast.success("Auto-backup schedule saved.");
     } catch (err: any) {
       toast({ title: "Save failed", description: err.message, variant: "destructive" });
     } finally {
@@ -125,7 +148,6 @@ export default function Backups() {
     });
   };
 
-  // Import handlers
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -195,382 +217,451 @@ export default function Backups() {
     if (fileRef.current) fileRef.current.value = "";
   };
 
+  const nextRunLabel = (() => {
+    if (!schedule.enabled) return null;
+    const dayName = DAYS.find((d) => d.value === schedule.days[0])?.label;
+    if (schedule.frequency === "daily") return `Daily at ${schedule.time}`;
+    if (schedule.frequency === "weekly") return `${dayName} at ${schedule.time}`;
+    return `${schedule.days.map((d) => DAYS.find((x) => x.value === d)?.label).join(", ")} at ${schedule.time}`;
+  })();
+
   return (
     <Layout>
-      <div className="space-y-6 max-w-2xl">
+      <div className="space-y-6 max-w-6xl">
 
-        {/* Header */}
-        <div className="flex items-center justify-between">
+        {/* ── Page Header ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white rounded-xl border border-slate-200 shadow-sm px-5 py-4">
           <div>
-            <h2 className="text-xl font-bold">{t("backups.title")}</h2>
-            <p className="text-sm text-muted-foreground">{backups?.length ?? 0} {t("backups.available")}</p>
+            <h2 className="text-xl font-bold text-[#0b2c60]">{t("backups.title")}</h2>
+            <p className="text-sm text-slate-500 mt-0.5">
+              {backups?.length ?? 0} snapshot{(backups?.length ?? 0) !== 1 ? "s" : ""} available · Manage database backups and restore points
+            </p>
           </div>
-          <Button size="sm" onClick={handleCreate} disabled={createMut.isPending} data-testid="button-create-backup">
-            <Plus size={14} className="mr-1.5" />
-            {createMut.isPending ? t("backups.creating") : t("backups.create")}
+          <Button
+            onClick={handleCreate}
+            disabled={createMut.isPending}
+            data-testid="button-create-backup"
+            className="bg-[#f97316] hover:bg-[#ea580c] text-white shadow-sm shrink-0"
+          >
+            {createMut.isPending
+              ? <><Loader2 size={14} className="mr-1.5 animate-spin" />{t("backups.creating")}</>
+              : <><Plus size={14} className="mr-1.5" />{t("backups.create")}</>
+            }
           </Button>
         </div>
 
-        {/* Info banner */}
-        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
-          <div className="flex gap-3">
-            <HardDrive size={18} className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-medium text-amber-800 dark:text-amber-300">{t("backups.info_title")}</p>
-              <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">{t("backups.info_desc")}</p>
-            </div>
-          </div>
-        </div>
+        {/* ── Main Grid ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* ── Auto-Backup Schedule ── */}
-        <div className="border rounded-xl overflow-hidden bg-card">
-          <div className="flex items-center gap-2 px-5 py-4 border-b bg-muted/30">
-            <Clock size={16} className="text-primary" />
-            <h3 className="font-semibold">Automatic Backup Schedule</h3>
-          </div>
-
-          {scheduleLoading ? (
-            <div className="p-5 space-y-3">
-              <Skeleton className="h-8 w-full" />
-              <Skeleton className="h-8 w-3/4" />
-            </div>
-          ) : (
-            <div className="p-5 space-y-5">
-
-              {/* Enable toggle */}
-              <label className="flex items-center justify-between cursor-pointer select-none">
-                <div>
-                  <p className="text-sm font-medium">Enable Automatic Backups</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {schedule.enabled ? "Backups will run automatically on your schedule." : "Automatic backups are currently off."}
-                  </p>
-                </div>
-                <div
-                  onClick={() => setSchedule((s) => ({ ...s, enabled: !s.enabled }))}
-                  className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer ${schedule.enabled ? "bg-primary" : "bg-muted-foreground/30"}`}
-                >
-                  <div className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${schedule.enabled ? "translate-x-5" : "translate-x-0"}`} />
-                </div>
-              </label>
-
-              {schedule.enabled && (
-                <>
-                  {/* Frequency */}
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Frequency</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {(["daily", "weekly", "custom"] as const).map((f) => (
-                        <button
-                          key={f}
-                          onClick={() => {
-                            setSchedule((s) => ({
-                              ...s,
-                              frequency: f,
-                              days: f === "weekly" ? [1] : f === "custom" ? [1, 3, 5] : s.days,
-                            }));
-                          }}
-                          className={`py-2 rounded-lg border text-sm font-medium capitalize transition-colors ${
-                            schedule.frequency === f
-                              ? "border-primary bg-primary/10 text-primary"
-                              : "border-border hover:bg-muted/40"
-                          }`}
-                        >
-                          {f}
-                        </button>
-                      ))}
+          {/* ── Left: Backup History ── */}
+          <div className="lg:col-span-2">
+            <NavyCard>
+              <CardHead
+                icon={<Database size={16} />}
+                title="Backup History"
+                description="Available snapshots ready for restoration"
+              />
+              <div className="p-1">
+                {isLoading ? (
+                  <div className="p-4 space-y-3">
+                    {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-14 w-full rounded-lg" />)}
+                  </div>
+                ) : !backups?.length ? (
+                  <div className="text-center py-16">
+                    <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
+                      <Database size={24} className="text-slate-400" />
                     </div>
+                    <p className="text-slate-500 text-sm">{t("backups.no_backups")}</p>
+                    <p className="text-slate-400 text-xs mt-1">Create your first backup using the button above</p>
                   </div>
-
-                  {/* Time picker */}
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Time (24-hour)</p>
-                    <input
-                      type="time"
-                      value={schedule.time}
-                      onChange={(e) => setSchedule((s) => ({ ...s, time: e.target.value }))}
-                      className="px-3 py-2 border rounded-lg text-sm bg-background w-36 focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    />
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm min-w-[480px]">
+                      <thead className="border-b border-slate-100 bg-slate-50/70">
+                        <tr className="text-left">
+                          <th className="px-4 py-3 font-medium text-slate-500 text-xs uppercase tracking-wide">{t("common.name")}</th>
+                          <th className="px-4 py-3 font-medium text-slate-500 text-xs uppercase tracking-wide">{t("common.total")}</th>
+                          <th className="px-4 py-3 font-medium text-slate-500 text-xs uppercase tracking-wide">{t("common.date")}</th>
+                          <th className="px-4 py-3 font-medium text-slate-500 text-xs uppercase tracking-wide text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                        {backups?.map((backup: any) => (
+                          <tr key={backup.id} className="hover:bg-slate-50/80 transition-colors" data-testid={`row-backup-${backup.id}`}>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-7 h-7 rounded-md bg-[#0b2c60]/10 flex items-center justify-center shrink-0">
+                                  <Database size={13} className="text-[#0b2c60]" />
+                                </div>
+                                <span className="font-mono text-xs text-slate-700 truncate max-w-[200px]">{backup.filename}</span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <Badge variant="secondary" className="bg-slate-100 text-slate-600 font-normal text-xs">
+                                {formatSize(backup.size)}
+                              </Badge>
+                            </td>
+                            <td className="px-4 py-3 text-xs text-slate-500">
+                              {new Date(backup.createdAt).toLocaleString("en-IN")}
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <a
+                                  href={`/api/backups/${backup.id}/download`}
+                                  download={backup.filename}
+                                  title="Download .sql file"
+                                  className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-slate-200 text-xs font-medium text-slate-600 hover:bg-[#0b2c60] hover:text-white hover:border-[#0b2c60] transition-colors"
+                                >
+                                  <Download size={12} />
+                                  <span className="hidden sm:inline">Download</span>
+                                </a>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-xs px-2.5 text-slate-600 hover:bg-[#f97316] hover:text-white hover:border-[#f97316] transition-colors"
+                                  onClick={() => { setRestoreId(backup.id); setRestoreFilename(backup.filename); }}
+                                  data-testid={`button-restore-${backup.id}`}
+                                >
+                                  <RotateCcw size={12} className="mr-1" />
+                                  {t("backups.restore")}
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
+                )}
+              </div>
+            </NavyCard>
+          </div>
 
-                  {/* Day picker — weekly = single, custom = multi */}
-                  {(schedule.frequency === "weekly" || schedule.frequency === "custom") && (
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium">
-                        {schedule.frequency === "weekly" ? "Day of Week" : "Days of Week"}
-                        {schedule.frequency === "custom" && (
-                          <span className="ml-1 text-xs text-muted-foreground">(select multiple)</span>
-                        )}
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {DAYS.map((d) => {
-                          const active = schedule.days.includes(d.value);
-                          return (
-                            <button
-                              key={d.value}
-                              onClick={() => {
-                                if (schedule.frequency === "weekly") {
-                                  setSchedule((s) => ({ ...s, days: [d.value] }));
-                                } else {
-                                  toggleDay(d.value);
-                                }
-                              }}
-                              className={`w-11 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${
-                                active
-                                  ? "border-primary bg-primary text-primary-foreground"
-                                  : "border-border hover:bg-muted/40"
-                              }`}
-                            >
-                              {d.label}
-                            </button>
-                          );
-                        })}
+          {/* ── Right Column ── */}
+          <div className="space-y-6">
+
+            {/* Auto-Backup Schedule */}
+            <NavyCard>
+              <CardHead
+                icon={<CalendarClock size={16} />}
+                title="Auto-Backup"
+                description="Scheduled database snapshots"
+                right={
+                  <button
+                    onClick={() => setSchedule((s) => ({ ...s, enabled: !s.enabled }))}
+                    className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${schedule.enabled ? "bg-[#f97316]" : "bg-slate-300"}`}
+                  >
+                    <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${schedule.enabled ? "translate-x-5" : "translate-x-0"}`} />
+                  </button>
+                }
+              />
+
+              <div className="p-4">
+                {/* Active status */}
+                <div className="flex items-center gap-2 mb-4">
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${schedule.enabled ? "bg-emerald-500" : "bg-slate-300"}`} />
+                  {schedule.enabled ? (
+                    <span className="text-xs text-slate-600">
+                      <span className="font-medium text-emerald-700">Active</span>
+                      {nextRunLabel && <> · {nextRunLabel}</>}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-slate-500">Disabled</span>
+                  )}
+                </div>
+
+                {scheduleLoading ? (
+                  <div className="space-y-3">
+                    <Skeleton className="h-8 w-full" />
+                    <Skeleton className="h-8 w-3/4" />
+                  </div>
+                ) : (
+                  <div className={`space-y-4 transition-opacity ${schedule.enabled ? "opacity-100" : "opacity-40 pointer-events-none"}`}>
+                    {/* Frequency */}
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Frequency</p>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {(["daily", "weekly", "custom"] as const).map((f) => (
+                          <button
+                            key={f}
+                            onClick={() => setSchedule((s) => ({
+                              ...s, frequency: f,
+                              days: f === "weekly" ? [1] : f === "custom" ? [1, 3, 5] : s.days,
+                            }))}
+                            className={`py-1.5 rounded-lg border text-xs font-medium capitalize transition-colors ${
+                              schedule.frequency === f
+                                ? "border-[#0b2c60] bg-[#0b2c60] text-white"
+                                : "border-slate-200 hover:bg-slate-50 text-slate-600"
+                            }`}
+                          >
+                            {f}
+                          </button>
+                        ))}
                       </div>
                     </div>
-                  )}
 
-                  {/* Retention */}
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Retention — Keep Last N Backups</p>
-                    <div className="flex items-center gap-3">
+                    {/* Time */}
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Time (24h)</p>
+                      <input
+                        type="time"
+                        value={schedule.time}
+                        onChange={(e) => setSchedule((s) => ({ ...s, time: e.target.value }))}
+                        className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-slate-50 w-full focus:outline-none focus:ring-2 focus:ring-[#0b2c60]/20"
+                      />
+                    </div>
+
+                    {/* Day picker */}
+                    {(schedule.frequency === "weekly" || schedule.frequency === "custom") && (
+                      <div className="space-y-1.5">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                          {schedule.frequency === "weekly" ? "Day" : "Days"}
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                          {DAYS.map((d) => {
+                            const active = schedule.days.includes(d.value);
+                            return (
+                              <button
+                                key={d.value}
+                                onClick={() => {
+                                  if (schedule.frequency === "weekly") {
+                                    setSchedule((s) => ({ ...s, days: [d.value] }));
+                                  } else {
+                                    toggleDay(d.value);
+                                  }
+                                }}
+                                className={`w-8 h-8 rounded-md flex items-center justify-center text-[11px] font-semibold transition-colors ${
+                                  active
+                                    ? "bg-[#0b2c60] text-white"
+                                    : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                                }`}
+                              >
+                                {d.label.slice(0, 2)}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Retention */}
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Keep Last N Backups</p>
                       <input
                         type="number"
                         min={1}
                         max={90}
                         value={schedule.retention}
                         onChange={(e) => setSchedule((s) => ({ ...s, retention: Math.max(1, parseInt(e.target.value) || 1) }))}
-                        className="px-3 py-2 border rounded-lg text-sm bg-background w-24 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-slate-50 w-full focus:outline-none focus:ring-2 focus:ring-[#0b2c60]/20"
                       />
-                      <p className="text-xs text-muted-foreground">
-                        Older backups will be automatically deleted to save space.
-                        {schedule.retention >= 30 && " (30+ backups may use significant disk space)"}
+                    </div>
+
+                    <Button
+                      size="sm"
+                      onClick={handleScheduleSave}
+                      disabled={scheduleSaving}
+                      className="w-full bg-[#0b2c60] hover:bg-[#0a2456] text-white text-xs"
+                    >
+                      {scheduleSaving
+                        ? <><Loader2 size={12} className="mr-1.5 animate-spin" /> Saving…</>
+                        : <><Save size={12} className="mr-1.5" /> Save Schedule</>
+                      }
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </NavyCard>
+
+            {/* Import Data */}
+            <NavyCard>
+              <CardHead
+                icon={<HardDriveDownload size={16} />}
+                title="Import Past Data"
+                description="Restore from a local .sql file"
+              />
+              <div className="p-4 space-y-4">
+
+                {/* Idle / file select */}
+                {(importStep === "idle" || importStep === "analyzing") && (
+                  <div>
+                    <label className="cursor-pointer block">
+                      <div className={`border-2 border-dashed rounded-xl p-5 flex flex-col items-center justify-center text-center transition-colors ${
+                        importFile
+                          ? "border-[#0b2c60]/30 bg-[#0b2c60]/5"
+                          : "border-slate-200 bg-slate-50 hover:bg-slate-100"
+                      }`}>
+                        <div className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center mb-2.5">
+                          <UploadCloud size={18} className="text-[#f97316]" />
+                        </div>
+                        {importFile ? (
+                          <>
+                            <p className="text-sm font-medium text-[#0b2c60] truncate max-w-full">{importFile.name}</p>
+                            <p className="text-xs text-slate-500 mt-0.5">{formatSize(importFile.size)}</p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-sm font-medium text-slate-700">Click to choose file</p>
+                            <p className="text-xs text-slate-400 mt-0.5">or drag & drop · .sql only</p>
+                          </>
+                        )}
+                      </div>
+                      <input ref={fileRef} type="file" accept=".sql" className="sr-only" onChange={handleFileSelect} />
+                    </label>
+
+                    {importFile && (
+                      <Button
+                        size="sm"
+                        onClick={handleAnalyze}
+                        disabled={importStep === "analyzing"}
+                        className="w-full mt-3 bg-[#0b2c60] hover:bg-[#0a2456] text-white text-xs"
+                      >
+                        {importStep === "analyzing"
+                          ? <><Loader2 size={12} className="mr-1.5 animate-spin" /> Analyzing…</>
+                          : <><FileUp size={12} className="mr-1.5" /> Analyze File</>
+                        }
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                {/* Table selection */}
+                {importStep === "select" && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-medium text-slate-700">
+                        Select tables
+                        <span className="ml-1.5 text-slate-400">({selectedTables.size}/{analyzedTables.length})</span>
                       </p>
+                      <div className="flex gap-2 text-xs">
+                        <button onClick={() => setSelectedTables(new Set(analyzedTables.map((t) => t.name)))} className="text-[#0b2c60] hover:underline">All</button>
+                        <span className="text-slate-300">·</span>
+                        <button onClick={() => setSelectedTables(new Set())} className="text-slate-500 hover:underline">None</button>
+                      </div>
+                    </div>
+
+                    {analyzedTables.length === 0 ? (
+                      <p className="text-center text-xs text-slate-500 py-3">No data tables found in this file.</p>
+                    ) : (
+                      <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                        {analyzedTables.map((tbl) => {
+                          const checked = selectedTables.has(tbl.name);
+                          return (
+                            <label key={tbl.name} className={`flex items-center gap-2.5 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
+                              checked ? "border-[#0b2c60]/30 bg-[#0b2c60]/5" : "border-slate-100 hover:bg-slate-50"
+                            }`}>
+                              <input type="checkbox" checked={checked} onChange={() => toggleTable(tbl.name)} className="accent-[#0b2c60] shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium text-slate-700 truncate">{tbl.label}</p>
+                                <p className="text-[10px] text-slate-400">{tbl.rowCount.toLocaleString()} rows</p>
+                              </div>
+                              <Table2 size={12} className={checked ? "text-[#0b2c60]" : "text-slate-300"} />
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    <div className="flex gap-2 pt-1">
+                      <Button variant="outline" size="sm" onClick={resetImport} className="flex-1 text-xs h-7">Cancel</Button>
+                      <Button
+                        size="sm"
+                        disabled={selectedTables.size === 0}
+                        onClick={() => setConfirmOpen(true)}
+                        className="flex-1 text-xs h-7 bg-[#f97316] hover:bg-[#ea580c] text-white"
+                      >
+                        <Upload size={11} className="mr-1" />
+                        Import {selectedTables.size}
+                      </Button>
                     </div>
                   </div>
-
-                  {/* Summary */}
-                  <div className="bg-muted/40 rounded-lg px-4 py-3 text-sm flex items-start gap-2">
-                    <CalendarDays size={15} className="text-primary mt-0.5 shrink-0" />
-                    <p className="text-muted-foreground">
-                      <span className="text-foreground font-medium">Schedule: </span>
-                      {schedule.frequency === "daily" && `Every day at ${schedule.time}`}
-                      {schedule.frequency === "weekly" && `Every ${DAYS.find((d) => d.value === schedule.days[0])?.label ?? "Mon"} at ${schedule.time}`}
-                      {schedule.frequency === "custom" && `Every ${schedule.days.map((d) => DAYS.find((x) => x.value === d)?.label).join(", ")} at ${schedule.time}`}
-                      {` · Keep last ${schedule.retention} backup${schedule.retention !== 1 ? "s" : ""}`}
-                    </p>
-                  </div>
-                </>
-              )}
-
-              <Button size="sm" onClick={handleScheduleSave} disabled={scheduleSaving}>
-                {scheduleSaving
-                  ? <><Loader2 size={13} className="mr-1.5 animate-spin" /> Saving…</>
-                  : <><Save size={13} className="mr-1.5" /> Save Schedule</>
-                }
-              </Button>
-            </div>
-          )}
-        </div>
-
-        {/* ── Import Past Data (Selective) ── */}
-        <div className="border rounded-xl overflow-hidden bg-card">
-          <div className="flex items-center gap-2 px-5 py-4 border-b bg-muted/30">
-            <Upload size={16} className="text-primary" />
-            <h3 className="font-semibold">Import Past Transaction Data</h3>
-          </div>
-
-          <div className="p-5 space-y-4">
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">Step 1 — Choose your old database backup file (.sql)</p>
-              <div className="flex gap-3 items-center">
-                <label className="flex-1 cursor-pointer">
-                  <div className="flex items-center gap-2 px-4 py-2.5 border rounded-lg bg-background hover:bg-muted/40 transition-colors">
-                    <FileUp size={15} className="text-muted-foreground shrink-0" />
-                    <span className="text-sm text-muted-foreground truncate">
-                      {importFile ? importFile.name : "Choose .sql file…"}
-                    </span>
-                  </div>
-                  <input ref={fileRef} type="file" accept=".sql" className="sr-only" onChange={handleFileSelect} />
-                </label>
-                {importFile && importStep === "idle" && (
-                  <Button size="sm" onClick={handleAnalyze}>
-                    Analyze File <ChevronRight size={13} className="ml-1" />
-                  </Button>
                 )}
-                {importStep === "analyzing" && (
-                  <Button size="sm" disabled>
-                    <Loader2 size={13} className="mr-1.5 animate-spin" /> Analyzing…
-                  </Button>
-                )}
-              </div>
-              {importFile && (
-                <p className="text-xs text-muted-foreground">{importFile.name} · {formatSize(importFile.size)}</p>
-              )}
-            </div>
 
-            {importStep === "select" && analyzedTables.length > 0 && (
-              <div className="space-y-3 border-t pt-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium">
-                    Step 2 — Select which tables to import
-                    <span className="ml-2 text-xs text-muted-foreground">({selectedTables.size} of {analyzedTables.length} selected)</span>
-                  </p>
-                  <div className="flex gap-2">
-                    <button onClick={() => setSelectedTables(new Set(analyzedTables.map((t) => t.name)))} className="text-xs text-primary hover:underline">Select all</button>
-                    <span className="text-muted-foreground text-xs">·</span>
-                    <button onClick={() => setSelectedTables(new Set())} className="text-xs text-muted-foreground hover:underline">Clear</button>
+                {/* Importing */}
+                {importStep === "importing" && (
+                  <div className="flex items-center gap-2.5 text-sm text-slate-500 py-2">
+                    <Loader2 size={15} className="animate-spin text-[#0b2c60] shrink-0" />
+                    Importing selected tables… please wait.
                   </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {analyzedTables.map((tbl) => {
-                    const checked = selectedTables.has(tbl.name);
-                    return (
-                      <label key={tbl.name} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${checked ? "border-primary/50 bg-primary/5 dark:bg-primary/10" : "border-border hover:bg-muted/30"}`}>
-                        <input type="checkbox" checked={checked} onChange={() => toggleTable(tbl.name)} className="accent-primary" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{tbl.label}</p>
-                          <p className="text-xs text-muted-foreground">{tbl.rowCount.toLocaleString()} rows</p>
-                        </div>
-                        <Table2 size={14} className={checked ? "text-primary" : "text-muted-foreground"} />
-                      </label>
-                    );
-                  })}
-                </div>
-                <div className="flex gap-3 pt-2">
-                  <Button variant="outline" size="sm" onClick={resetImport}>Cancel</Button>
-                  <Button size="sm" disabled={selectedTables.size === 0} onClick={() => setConfirmOpen(true)}>
-                    <Upload size={13} className="mr-1.5" />
-                    Import {selectedTables.size} Table{selectedTables.size !== 1 ? "s" : ""}
-                  </Button>
-                </div>
-              </div>
-            )}
+                )}
 
-            {importStep === "select" && analyzedTables.length === 0 && (
-              <div className="border-t pt-4 text-center text-sm text-muted-foreground py-4">
-                No data tables with rows were found in this backup file.
-              </div>
-            )}
+                {/* Done */}
+                {importStep === "done" && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2.5">
+                      <CheckCircle2 size={14} className="shrink-0" />
+                      <span>Import complete! Past data restored successfully.</span>
+                    </div>
+                    <button onClick={resetImport} className="text-xs text-slate-400 hover:underline">Import another file</button>
+                  </div>
+                )}
 
-            {importStep === "importing" && (
-              <div className="border-t pt-4 flex items-center gap-3 text-sm text-muted-foreground">
-                <Loader2 size={16} className="animate-spin text-primary" />
-                Importing selected tables… please wait.
               </div>
-            )}
+            </NavyCard>
 
-            {importStep === "done" && (
-              <div className="border-t pt-4 space-y-2">
-                <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-4 py-3">
-                  <CheckCircle2 size={16} />
-                  <span>Import complete! Your past data has been restored successfully.</span>
-                </div>
-                <button onClick={resetImport} className="text-xs text-muted-foreground hover:underline">Import another file</button>
-              </div>
-            )}
           </div>
         </div>
-
-        {/* Backup list */}
-        {isLoading ? (
-          <div className="space-y-3">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
-        ) : backups?.length === 0 ? (
-          <div className="text-center py-16">
-            <Database size={40} className="mx-auto text-muted-foreground/40 mb-3" />
-            <p className="text-muted-foreground">{t("backups.no_backups")}</p>
-          </div>
-        ) : (
-          <div className="border rounded-lg overflow-hidden bg-card">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm min-w-[480px]">
-                <thead className="border-b bg-muted/30">
-                  <tr className="text-left">
-                    <th className="px-4 py-3 font-medium text-muted-foreground">{t("common.name")}</th>
-                    <th className="px-4 py-3 font-medium text-muted-foreground">{t("common.total")}</th>
-                    <th className="px-4 py-3 font-medium text-muted-foreground">{t("common.date")}</th>
-                    <th className="px-4 py-3"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {backups?.map((backup: any) => (
-                    <tr key={backup.id} className="hover:bg-muted/20 transition-colors" data-testid={`row-backup-${backup.id}`}>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <Database size={14} className="text-muted-foreground" />
-                          <span className="font-mono text-xs">{backup.filename}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-muted-foreground">{formatSize(backup.size)}</td>
-                      <td className="px-4 py-3 text-sm text-muted-foreground">{new Date(backup.createdAt).toLocaleString("en-IN")}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <a
-                            href={`/api/backups/${backup.id}/download`}
-                            download={backup.filename}
-                            className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-border text-xs font-medium hover:bg-muted/40 transition-colors"
-                            title="Download .sql file"
-                          >
-                            <Download size={12} />
-                          </a>
-                          <Button variant="outline" size="sm" className="h-7 text-xs"
-                            onClick={() => { setRestoreId(backup.id); setRestoreFilename(backup.filename); }}
-                            data-testid={`button-restore-${backup.id}`}>
-                            <RotateCcw size={12} className="mr-1" />{t("backups.restore")}
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Restore dialog */}
+      {/* ── Restore confirm dialog ── */}
       <Dialog open={restoreId !== null} onOpenChange={() => setRestoreId(null)}>
         <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>{t("backups.restore_title")}</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground">{t("backups.restore_desc")}</p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRestoreId(null)}>{t("common.cancel")}</Button>
-            <Button variant="destructive" onClick={handleRestore} disabled={restoreMut.isPending}>
+          <DialogHeader>
+            <div className="mx-auto w-11 h-11 bg-red-50 text-red-600 rounded-full flex items-center justify-center mb-3">
+              <AlertTriangle size={20} />
+            </div>
+            <DialogTitle className="text-center">{t("backups.restore_title")}</DialogTitle>
+            <DialogDescription className="text-center text-sm text-slate-500 pt-1">
+              {t("backups.restore_desc")}
+            </DialogDescription>
+            {restoreFilename && (
+              <p className="text-xs font-mono bg-slate-50 border rounded-md px-3 py-2 text-slate-700 mt-2 break-all">{restoreFilename}</p>
+            )}
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setRestoreId(null)} className="flex-1">{t("common.cancel")}</Button>
+            <Button
+              variant="destructive"
+              onClick={handleRestore}
+              disabled={restoreMut.isPending}
+              className="flex-1 bg-red-600 hover:bg-red-700"
+            >
               {restoreMut.isPending ? t("common.loading") : t("backups.restore")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Import confirm dialog */}
+      {/* ── Selective import confirm dialog ── */}
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle size={17} className="text-orange-500" />
+              <AlertTriangle size={16} className="text-orange-500" />
               Confirm Selective Import
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 text-sm text-muted-foreground">
-            <p>You are about to import <strong className="text-foreground">{selectedTables.size} table(s)</strong> from:</p>
-            <p className="font-mono text-xs bg-muted rounded px-2 py-1">{originalName}</p>
+          <div className="space-y-3 text-sm text-slate-500">
+            <p>Importing <strong className="text-slate-800">{selectedTables.size} table(s)</strong> from:</p>
+            <p className="font-mono text-xs bg-slate-50 rounded px-2 py-1.5 text-slate-700">{originalName}</p>
             <div className="flex flex-wrap gap-1">
               {Array.from(selectedTables).map((name) => {
                 const tbl = analyzedTables.find((t) => t.name === name);
                 return (
-                  <span key={name} className="text-xs bg-primary/10 text-primary rounded-full px-2 py-0.5">
+                  <span key={name} className="text-xs bg-[#0b2c60]/10 text-[#0b2c60] rounded-full px-2 py-0.5">
                     {tbl?.label ?? name}
                   </span>
                 );
               })}
             </div>
-            <p className="text-orange-600 dark:text-orange-400 text-xs font-medium">
-              ⚠️ Existing rows in these tables will be deleted and replaced. Make sure you have a current backup before proceeding.
+            <p className="text-orange-600 text-xs font-medium">
+              ⚠️ Existing rows in these tables will be deleted and replaced. Ensure you have a current backup first.
             </p>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmOpen(false)}>Cancel</Button>
-            <Button onClick={handleSelectiveImport}>
-              <Upload size={13} className="mr-1.5" /> Import Now
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setConfirmOpen(false)} className="flex-1">Cancel</Button>
+            <Button onClick={handleSelectiveImport} className="flex-1 bg-[#f97316] hover:bg-[#ea580c] text-white">
+              <Upload size={12} className="mr-1.5" /> Import Now
             </Button>
           </DialogFooter>
         </DialogContent>
