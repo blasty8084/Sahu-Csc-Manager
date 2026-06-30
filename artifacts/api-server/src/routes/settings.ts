@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { execSync } from "child_process";
-import { statSync, mkdirSync, existsSync, unlinkSync } from "fs";
+import { statSync, mkdirSync, existsSync, unlinkSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
 import multer from "multer";
 import { db, settingsTable, backupsTable } from "@workspace/db";
@@ -133,6 +133,160 @@ router.post("/backups", requireRole("admin"), async (req, res): Promise<void> =>
     });
   } catch (err: any) {
     res.status(500).json({ error: `Backup failed: ${err.message}` });
+  }
+});
+
+// ── Helper: parse pg_dump SQL into per-table COPY blocks ──────────────────
+interface TableBlock {
+  table: string;
+  header: string;
+  rows: string[];
+}
+
+function parseSqlBlocks(sql: string): TableBlock[] {
+  const blocks: TableBlock[] = [];
+  const lines = sql.split("\n");
+  let current: TableBlock | null = null;
+
+  for (const line of lines) {
+    const copyMatch = line.match(/^COPY (?:public\.)?(\w+)\s*\(/i);
+    if (copyMatch) {
+      current = { table: copyMatch[1], header: line, rows: [] };
+      continue;
+    }
+    if (current) {
+      if (line.trimEnd() === "\\.") {
+        blocks.push(current);
+        current = null;
+      } else {
+        current.rows.push(line);
+      }
+    }
+  }
+  return blocks;
+}
+
+// POST /backups/analyze — upload .sql, return table list + row counts (no DB write)
+router.post("/backups/analyze", requireRole("admin"), upload.single("file"), async (req, res): Promise<void> => {
+  if (!req.file) { res.status(400).json({ error: "No .sql file uploaded" }); return; }
+  const tmpPath = req.file.path;
+
+  try {
+    const sql = readFileSync(tmpPath, "utf8");
+    const blocks = parseSqlBlocks(sql);
+
+    const FRIENDLY: Record<string, string> = {
+      ledger: "Ledger Transactions",
+      aeps_daily: "AePS Daily Sessions",
+      aeps_transactions: "AePS Transactions",
+      udhari_customers: "Udhari Customers",
+      udhari_entries: "Udhari Entries",
+      users: "Users & Accounts",
+      user_sessions: "Login Sessions",
+      settings: "Business Settings",
+      notifications: "Notifications",
+      audit_logs: "Audit Logs",
+      receipt_counters: "Receipt Counters",
+      push_subscriptions: "Push Subscriptions",
+      password_reset_tokens: "Password Reset Tokens",
+      backups: "Backup Records",
+    };
+
+    const tables = blocks
+      .filter((b) => b.rows.filter((r) => r.trim()).length > 0)
+      .map((b) => ({
+        name: b.table,
+        label: FRIENDLY[b.table] ?? b.table,
+        rowCount: b.rows.filter((r) => r.trim()).length,
+      }));
+
+    res.json({ tables, originalName: req.file.originalname, tmpPath });
+  } catch (err: any) {
+    try { unlinkSync(tmpPath); } catch {}
+    res.status(500).json({ error: `Analysis failed: ${err.message}` });
+  }
+});
+
+// POST /backups/selective-import — import only selected tables from a previously analyzed file
+router.post("/backups/selective-import", requireRole("admin"), async (req, res): Promise<void> => {
+  const { tmpPath, selectedTables, originalName } = req.body as {
+    tmpPath: string;
+    selectedTables: string[];
+    originalName: string;
+  };
+
+  if (!tmpPath || !selectedTables?.length || !originalName) {
+    res.status(400).json({ error: "Missing tmpPath, selectedTables, or originalName" });
+    return;
+  }
+
+  if (!existsSync(tmpPath)) {
+    res.status(400).json({ error: "Upload session expired. Please re-upload the file." });
+    return;
+  }
+
+  const dbUrl = process.env["DATABASE_URL"];
+  if (!dbUrl) { res.status(500).json({ error: "DATABASE_URL not configured" }); return; }
+
+  const selectiveFile = path.join(BACKUP_DIR, `selective_${Date.now()}.sql`);
+
+  try {
+    mkdirSync(BACKUP_DIR, { recursive: true });
+    const sql = readFileSync(tmpPath, "utf8");
+    const blocks = parseSqlBlocks(sql);
+    const chosen = blocks.filter((b) => selectedTables.includes(b.table));
+
+    if (chosen.length === 0) {
+      res.status(400).json({ error: "None of the selected tables were found in the backup." });
+      return;
+    }
+
+    // Build a minimal SQL that only replays the chosen COPY blocks
+    const lines: string[] = [
+      "SET session_replication_role = replica;", // skip FK checks during restore
+    ];
+    for (const block of chosen) {
+      lines.push(`-- Importing table: ${block.table}`);
+      lines.push(`DELETE FROM "${block.table}";`);
+      lines.push(block.header);
+      lines.push(...block.rows);
+      lines.push("\\.");
+      lines.push("");
+    }
+    lines.push("SET session_replication_role = DEFAULT;");
+
+    writeFileSync(selectiveFile, lines.join("\n"), "utf8");
+    const size = statSync(selectiveFile).size;
+
+    execSync(`psql "${dbUrl}" -f "${selectiveFile}"`, { stdio: "pipe" });
+
+    const filename = `selective_import_${Date.now()}_${originalName.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+    const [backup] = await db.insert(backupsTable).values({ filename, size }).returning();
+
+    await auditLog(
+      req.session.userId!,
+      "backup.selective_import",
+      `Selective import from "${originalName}" — tables: ${selectedTables.join(", ")}`,
+      getClientIp(req)
+    );
+    await createNotification(
+      "Selective Import Complete",
+      `Imported ${selectedTables.length} table(s) from "${originalName}"`,
+      "success",
+      req.session.userId!
+    );
+
+    try { unlinkSync(tmpPath); } catch {}
+    try { unlinkSync(selectiveFile); } catch {}
+
+    res.status(201).json({
+      id: backup.id,
+      tablesImported: selectedTables,
+      message: `Successfully imported ${selectedTables.length} table(s).`,
+    });
+  } catch (err: any) {
+    try { unlinkSync(selectiveFile); } catch {}
+    res.status(500).json({ error: `Selective import failed: ${err.message}` });
   }
 });
 

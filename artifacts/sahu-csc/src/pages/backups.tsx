@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Database, RotateCcw, Plus, HardDrive, Upload, FileUp, CheckCircle2, AlertTriangle } from "lucide-react";
+import {
+  Database, RotateCcw, Plus, HardDrive, Upload, FileUp,
+  CheckCircle2, AlertTriangle, ChevronRight, Loader2, Table2,
+} from "lucide-react";
 import { useState, useRef } from "react";
 
 function formatSize(bytes: number): string {
@@ -15,16 +18,29 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+interface TableInfo {
+  name: string;
+  label: string;
+  rowCount: number;
+}
+
+type ImportStep = "idle" | "analyzing" | "select" | "importing" | "done";
+
 export default function Backups() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const qc = useQueryClient();
+
   const [restoreId, setRestoreId] = useState<number | null>(null);
   const [restoreFilename, setRestoreFilename] = useState("");
 
+  const [importStep, setImportStep] = useState<ImportStep>("idle");
   const [importFile, setImportFile] = useState<File | null>(null);
-  const [importing, setImporting] = useState(false);
-  const [importConfirm, setImportConfirm] = useState(false);
+  const [analyzedTables, setAnalyzedTables] = useState<TableInfo[]>([]);
+  const [selectedTables, setSelectedTables] = useState<Set<string>>(new Set());
+  const [tmpPath, setTmpPath] = useState("");
+  const [originalName, setOriginalName] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const { data: backups, isLoading } = useListBackups();
@@ -59,42 +75,95 @@ export default function Backups() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.name.endsWith(".sql")) {
-      toast({ title: "Invalid file", description: "Only .sql files are allowed", variant: "destructive" });
+      toast({ title: "Invalid file", description: "Only .sql files are allowed.", variant: "destructive" });
       return;
     }
     setImportFile(file);
+    setImportStep("idle");
+    setAnalyzedTables([]);
+    setSelectedTables(new Set());
   };
 
-  const handleImport = async () => {
+  const handleAnalyze = async () => {
     if (!importFile) return;
-    setImporting(true);
-    setImportConfirm(false);
+    setImportStep("analyzing");
     try {
-      const formData = new FormData();
-      formData.append("file", importFile);
-      const res = await fetch("/api/backups/import", {
+      const form = new FormData();
+      form.append("file", importFile);
+      const res = await fetch("/api/backups/analyze", {
         method: "POST",
-        body: formData,
+        body: form,
         credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Analysis failed" }));
+        throw new Error(err.error ?? "Analysis failed");
+      }
+      const data = await res.json();
+      setAnalyzedTables(data.tables);
+      setTmpPath(data.tmpPath);
+      setOriginalName(data.originalName);
+      setSelectedTables(new Set(data.tables.map((t: TableInfo) => t.name)));
+      setImportStep("select");
+    } catch (err: any) {
+      toast({ title: "Analysis failed", description: err.message, variant: "destructive" });
+      setImportStep("idle");
+    }
+  };
+
+  const toggleTable = (name: string) => {
+    setSelectedTables((prev) => {
+      const next = new Set(prev);
+      next.has(name) ? next.delete(name) : next.add(name);
+      return next;
+    });
+  };
+
+  const selectAll = () => setSelectedTables(new Set(analyzedTables.map((t) => t.name)));
+  const clearAll = () => setSelectedTables(new Set());
+
+  const handleSelectiveImport = async () => {
+    setConfirmOpen(false);
+    setImportStep("importing");
+    try {
+      const res = await fetch("/api/backups/selective-import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          tmpPath,
+          selectedTables: Array.from(selectedTables),
+          originalName,
+        }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: "Import failed" }));
         throw new Error(err.error ?? "Import failed");
       }
-      toast.success(`✅ "${importFile.name}" imported successfully! Data has been restored.`);
-      setImportFile(null);
-      if (fileRef.current) fileRef.current.value = "";
+      const data = await res.json();
+      setImportStep("done");
+      toast.success(`✅ Successfully imported ${data.tablesImported.length} table(s) from "${originalName}".`);
       invalidate();
     } catch (err: any) {
       toast({ title: "Import failed", description: err.message, variant: "destructive" });
-    } finally {
-      setImporting(false);
+      setImportStep("select");
     }
+  };
+
+  const resetImport = () => {
+    setImportStep("idle");
+    setImportFile(null);
+    setAnalyzedTables([]);
+    setSelectedTables(new Set());
+    setTmpPath("");
+    setOriginalName("");
+    if (fileRef.current) fileRef.current.value = "";
   };
 
   return (
     <Layout>
       <div className="space-y-6 max-w-2xl">
+        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold">{t("backups.title")}</h2>
@@ -106,65 +175,150 @@ export default function Backups() {
           </Button>
         </div>
 
-        {/* Info */}
+        {/* Info banner */}
         <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
           <div className="flex gap-3">
             <HardDrive size={18} className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-medium text-amber-800 dark:text-amber-300">{t("backups.info_title")}</p>
-              <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
-                {t("backups.info_desc")}
-              </p>
+              <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">{t("backups.info_desc")}</p>
             </div>
           </div>
         </div>
 
-        {/* ── Import Past SQL Backup ── */}
-        <div className="border-2 border-dashed border-blue-200 dark:border-blue-800 rounded-xl p-5 bg-blue-50/40 dark:bg-blue-900/10 space-y-4">
-          <div className="flex items-center gap-2">
-            <Upload size={18} className="text-blue-600 dark:text-blue-400" />
-            <h3 className="font-semibold text-blue-900 dark:text-blue-200">Import Past SQL Backup</h3>
+        {/* ── Import Past Data — Selective ── */}
+        <div className="border rounded-xl overflow-hidden bg-card">
+          <div className="flex items-center gap-2 px-5 py-4 border-b bg-muted/30">
+            <Upload size={16} className="text-primary" />
+            <h3 className="font-semibold">Import Past Transaction Data</h3>
           </div>
-          <p className="text-xs text-blue-700 dark:text-blue-400">
-            Purani database ka <strong>.sql</strong> backup file yahan upload karo — past transactions, Ledger, AePS, aur Udhari sab restore ho jayenge.
-          </p>
 
-          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-            <label className="flex-1 cursor-pointer">
-              <div className="flex items-center gap-2 px-4 py-2.5 border border-blue-300 dark:border-blue-700 rounded-lg bg-white dark:bg-muted hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors">
-                <FileUp size={15} className="text-blue-500" />
-                <span className="text-sm text-muted-foreground truncate">
-                  {importFile ? importFile.name : "Choose .sql file…"}
-                </span>
+          <div className="p-5 space-y-4">
+            {/* Step 1 — File selection */}
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-muted-foreground">Step 1 — Choose your old database backup file (.sql)</p>
+              <div className="flex gap-3 items-center">
+                <label className="flex-1 cursor-pointer">
+                  <div className="flex items-center gap-2 px-4 py-2.5 border rounded-lg bg-background hover:bg-muted/40 transition-colors">
+                    <FileUp size={15} className="text-muted-foreground shrink-0" />
+                    <span className="text-sm text-muted-foreground truncate">
+                      {importFile ? importFile.name : "Choose .sql file…"}
+                    </span>
+                  </div>
+                  <input ref={fileRef} type="file" accept=".sql" className="sr-only" onChange={handleFileSelect} />
+                </label>
+                {importFile && importStep === "idle" && (
+                  <Button size="sm" onClick={handleAnalyze}>
+                    Analyze File <ChevronRight size={13} className="ml-1" />
+                  </Button>
+                )}
+                {importStep === "analyzing" && (
+                  <Button size="sm" disabled>
+                    <Loader2 size={13} className="mr-1.5 animate-spin" /> Analyzing…
+                  </Button>
+                )}
               </div>
-              <input
-                ref={fileRef}
-                type="file"
-                accept=".sql"
-                className="sr-only"
-                onChange={handleFileSelect}
-              />
-            </label>
-            <Button
-              size="sm"
-              disabled={!importFile || importing}
-              onClick={() => setImportConfirm(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white shrink-0"
-            >
-              <Upload size={13} className="mr-1.5" />
-              {importing ? "Importing…" : "Import"}
-            </Button>
-          </div>
-
-          {importFile && (
-            <div className="flex items-center gap-2 text-xs text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30 rounded-lg px-3 py-2">
-              <CheckCircle2 size={13} />
-              <span>Ready: <strong>{importFile.name}</strong> ({formatSize(importFile.size)})</span>
+              {importFile && (
+                <p className="text-xs text-muted-foreground">
+                  {importFile.name} &middot; {formatSize(importFile.size)}
+                </p>
+              )}
             </div>
-          )}
+
+            {/* Step 2 — Table selection */}
+            {importStep === "select" && analyzedTables.length > 0 && (
+              <div className="space-y-3 border-t pt-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium">
+                    Step 2 — Select which tables to import
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      ({selectedTables.size} of {analyzedTables.length} selected)
+                    </span>
+                  </p>
+                  <div className="flex gap-2">
+                    <button onClick={selectAll} className="text-xs text-primary hover:underline">Select all</button>
+                    <span className="text-muted-foreground text-xs">·</span>
+                    <button onClick={clearAll} className="text-xs text-muted-foreground hover:underline">Clear</button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {analyzedTables.map((tbl) => {
+                    const checked = selectedTables.has(tbl.name);
+                    return (
+                      <label
+                        key={tbl.name}
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${
+                          checked
+                            ? "border-primary/50 bg-primary/5 dark:bg-primary/10"
+                            : "border-border hover:bg-muted/30"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleTable(tbl.name)}
+                          className="accent-primary"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{tbl.label}</p>
+                          <p className="text-xs text-muted-foreground">{tbl.rowCount.toLocaleString()} rows</p>
+                        </div>
+                        <Table2 size={14} className={checked ? "text-primary" : "text-muted-foreground"} />
+                      </label>
+                    );
+                  })}
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={resetImport}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    disabled={selectedTables.size === 0}
+                    onClick={() => setConfirmOpen(true)}
+                    className="bg-primary text-primary-foreground"
+                  >
+                    <Upload size={13} className="mr-1.5" />
+                    Import {selectedTables.size} Table{selectedTables.size !== 1 ? "s" : ""}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {importStep === "select" && analyzedTables.length === 0 && (
+              <div className="border-t pt-4 text-center text-sm text-muted-foreground py-4">
+                No data tables with rows were found in this backup file.
+              </div>
+            )}
+
+            {importStep === "importing" && (
+              <div className="border-t pt-4 flex items-center gap-3 text-sm text-muted-foreground">
+                <Loader2 size={16} className="animate-spin text-primary" />
+                Importing selected tables… please wait.
+              </div>
+            )}
+
+            {importStep === "done" && (
+              <div className="border-t pt-4">
+                <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-4 py-3">
+                  <CheckCircle2 size={16} />
+                  <span>Import complete! Your past data has been restored successfully.</span>
+                </div>
+                <button onClick={resetImport} className="mt-3 text-xs text-muted-foreground hover:underline">
+                  Import another file
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Backup List */}
+        {/* Backup list */}
         {isLoading ? (
           <div className="space-y-3">
             {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}
@@ -177,41 +331,41 @@ export default function Backups() {
         ) : (
           <div className="border rounded-lg overflow-hidden bg-card">
             <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[480px]">
-              <thead className="border-b bg-muted/30">
-                <tr className="text-left">
-                  <th className="px-4 py-3 font-medium text-muted-foreground">{t("common.name")}</th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground">{t("common.total")}</th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground">{t("common.date")}</th>
-                  <th className="px-4 py-3"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {backups?.map((backup: any) => (
-                  <tr key={backup.id} className="hover:bg-muted/20 transition-colors" data-testid={`row-backup-${backup.id}`}>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <Database size={14} className="text-muted-foreground" />
-                        <span className="font-mono text-xs">{backup.filename}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">{formatSize(backup.size)}</td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">{new Date(backup.createdAt).toLocaleString("en-IN")}</td>
-                    <td className="px-4 py-3">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-7 text-xs"
-                        onClick={() => { setRestoreId(backup.id); setRestoreFilename(backup.filename); }}
-                        data-testid={`button-restore-${backup.id}`}
-                      >
-                        <RotateCcw size={12} className="mr-1" />{t("backups.restore")}
-                      </Button>
-                    </td>
+              <table className="w-full text-sm min-w-[480px]">
+                <thead className="border-b bg-muted/30">
+                  <tr className="text-left">
+                    <th className="px-4 py-3 font-medium text-muted-foreground">{t("common.name")}</th>
+                    <th className="px-4 py-3 font-medium text-muted-foreground">{t("common.total")}</th>
+                    <th className="px-4 py-3 font-medium text-muted-foreground">{t("common.date")}</th>
+                    <th className="px-4 py-3"></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {backups?.map((backup: any) => (
+                    <tr key={backup.id} className="hover:bg-muted/20 transition-colors" data-testid={`row-backup-${backup.id}`}>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <Database size={14} className="text-muted-foreground" />
+                          <span className="font-mono text-xs">{backup.filename}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground">{formatSize(backup.size)}</td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground">{new Date(backup.createdAt).toLocaleString("en-IN")}</td>
+                      <td className="px-4 py-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => { setRestoreId(backup.id); setRestoreFilename(backup.filename); }}
+                          data-testid={`button-restore-${backup.id}`}
+                        >
+                          <RotateCcw size={12} className="mr-1" />{t("backups.restore")}
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
@@ -221,9 +375,7 @@ export default function Backups() {
       <Dialog open={restoreId !== null} onOpenChange={() => setRestoreId(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>{t("backups.restore_title")}</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            {t("backups.restore_desc")}
-          </p>
+          <p className="text-sm text-muted-foreground">{t("backups.restore_desc")}</p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setRestoreId(null)}>{t("common.cancel")}</Button>
             <Button variant="destructive" onClick={handleRestore} disabled={restoreMut.isPending}>
@@ -233,25 +385,39 @@ export default function Backups() {
         </DialogContent>
       </Dialog>
 
-      {/* Import confirmation dialog */}
-      <Dialog open={importConfirm} onOpenChange={setImportConfirm}>
+      {/* Selective import confirmation dialog */}
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle size={18} className="text-orange-500" />
-              Import SQL Backup — Confirm
+              <AlertTriangle size={17} className="text-orange-500" />
+              Confirm Selective Import
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-2 text-sm text-muted-foreground">
-            <p>File: <strong className="text-foreground font-mono">{importFile?.name}</strong></p>
-            <p>Ye SQL file current database pe run hogi. Agar file mein <code>DROP TABLE</code> ya <code>TRUNCATE</code> commands hain, to existing data overwrite ho sakta hai.</p>
-            <p className="text-orange-600 dark:text-orange-400 font-medium">Pehle current backup zaroor le lo!</p>
+          <div className="space-y-3 text-sm text-muted-foreground">
+            <p>
+              You are about to import <strong className="text-foreground">{selectedTables.size} table(s)</strong> from:
+            </p>
+            <p className="font-mono text-xs bg-muted rounded px-2 py-1">{originalName}</p>
+            <div className="flex flex-wrap gap-1">
+              {Array.from(selectedTables).map((name) => {
+                const tbl = analyzedTables.find((t) => t.name === name);
+                return (
+                  <span key={name} className="text-xs bg-primary/10 text-primary rounded-full px-2 py-0.5">
+                    {tbl?.label ?? name}
+                  </span>
+                );
+              })}
+            </div>
+            <p className="text-orange-600 dark:text-orange-400 text-xs font-medium">
+              ⚠️ Existing rows in these tables will be deleted and replaced with backup data. Make sure you have a current backup before proceeding.
+            </p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setImportConfirm(false)}>{t("common.cancel")}</Button>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={handleImport} disabled={importing}>
+            <Button variant="outline" onClick={() => setConfirmOpen(false)}>Cancel</Button>
+            <Button onClick={handleSelectiveImport}>
               <Upload size={13} className="mr-1.5" />
-              {importing ? "Importing…" : "Import Karo"}
+              Import Now
             </Button>
           </DialogFooter>
         </DialogContent>
