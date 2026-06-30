@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Server, Database, Bell, RefreshCw, CheckCircle2,
   AlertTriangle, XCircle, Clock, Cpu, MemoryStick,
-  Activity, Shield, Zap, Info,
+  Activity, Shield, Zap, Info, Table2,
 } from "lucide-react";
 
 interface HealthData {
@@ -47,6 +47,17 @@ interface HealthData {
     email: string;
   };
   environment: string;
+}
+
+interface DbTableStat {
+  table: string;
+  rowCount: number;
+  lastEntry: string | null;
+}
+
+interface DbStats {
+  tables: DbTableStat[];
+  queriedAt: string;
 }
 
 function formatBytes(bytes: number): string {
@@ -115,6 +126,21 @@ export default function ServerHealth() {
   const [error, setError] = useState<string | null>(null);
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [dbStats, setDbStats] = useState<DbStats | null>(null);
+  const [dbStatsLoading, setDbStatsLoading] = useState(false);
+
+  const fetchDbStats = useCallback(async () => {
+    setDbStatsLoading(true);
+    try {
+      const res = await fetch("/api/admin/db-stats");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setDbStats(await res.json());
+    } catch {
+      setDbStats(null);
+    } finally {
+      setDbStatsLoading(false);
+    }
+  }, []);
 
   const fetchHealth = useCallback(async (isManual = false) => {
     if (isManual) setRefreshing(true);
@@ -138,9 +164,10 @@ export default function ServerHealth() {
 
   useEffect(() => {
     fetchHealth();
-    const interval = setInterval(() => fetchHealth(), 30_000);
+    fetchDbStats();
+    const interval = setInterval(() => { fetchHealth(); fetchDbStats(); }, 30_000);
     return () => clearInterval(interval);
-  }, [fetchHealth]);
+  }, [fetchHealth, fetchDbStats]);
 
   const overallColor =
     !data ? "text-muted-foreground" :
@@ -364,6 +391,58 @@ export default function ServerHealth() {
                     <Info size={13} className="mt-0.5 flex-shrink-0" />
                     Push notifications are not configured. Set VAPID keys in Replit Secrets to enable them.
                   </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Database Table Stats — admin only */}
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Table2 size={16} className="text-primary" />
+                    Database Tables
+                  </CardTitle>
+                  {dbStatsLoading && <RefreshCw size={13} className="animate-spin text-muted-foreground" />}
+                </div>
+              </CardHeader>
+              <CardContent>
+                {dbStats ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-2 pr-4 text-xs font-medium text-muted-foreground">Table</th>
+                          <th className="text-right py-2 pr-4 text-xs font-medium text-muted-foreground">Rows</th>
+                          <th className="text-right py-2 text-xs font-medium text-muted-foreground">Last Entry</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {dbStats.tables.map((row) => (
+                          <tr key={row.table} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+                            <td className="py-2 pr-4 font-mono text-xs text-foreground">{row.table}</td>
+                            <td className="py-2 pr-4 text-right">
+                              <span className={`font-semibold tabular-nums text-xs ${row.rowCount === 0 ? "text-muted-foreground" : "text-foreground"}`}>
+                                {row.rowCount.toLocaleString("en-IN")}
+                              </span>
+                            </td>
+                            <td className="py-2 text-right text-xs text-muted-foreground">
+                              {row.lastEntry
+                                ? new Date(row.lastEntry).toLocaleString("en-IN", { dateStyle: "short", timeStyle: "short" })
+                                : "—"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <p className="text-xs text-muted-foreground mt-3 text-right">
+                      Queried at {new Date(dbStats.queriedAt).toLocaleTimeString("en-IN")}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    {dbStatsLoading ? "Loading table stats…" : "Could not load table stats"}
+                  </p>
                 )}
               </CardContent>
             </Card>

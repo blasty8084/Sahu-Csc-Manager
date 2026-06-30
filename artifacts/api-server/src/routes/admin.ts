@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, ledgerTable, usersTable, emailOtpsTable } from "@workspace/db";
+import { db, pool, ledgerTable, usersTable, emailOtpsTable } from "@workspace/db";
 import { eq, sum, count, desc } from "drizzle-orm";
 import { requireRole, getClientIp, auditLog } from "../lib/auth";
 import crypto from "node:crypto";
@@ -206,6 +206,49 @@ router.post("/admin/users/:id/email-reset-link", requireRole("admin"), async (re
   );
 
   res.json({ ok: true, sentTo: user.email });
+});
+
+router.get("/admin/db-stats", requireRole("admin"), async (_req, res): Promise<void> => {
+  const tableNames = [
+    "users", "ledger", "aeps_daily", "aeps_transactions",
+    "udhari_customers", "udhari_entries", "notifications",
+    "audit_logs", "user_sessions", "settings", "services",
+    "push_subscriptions", "receipt_counters", "email_otps",
+    "password_reset_tokens", "broadcast_logs",
+    "user_preferences", "user_notification_preferences",
+  ];
+
+  const tablesWithTimestamp = new Set([
+    "ledger", "users", "aeps_daily", "aeps_transactions",
+    "udhari_customers", "udhari_entries", "notifications",
+    "audit_logs", "user_sessions", "email_otps",
+    "password_reset_tokens", "broadcast_logs",
+  ]);
+
+  const rows = await Promise.all(
+    tableNames.map(async (table) => {
+      const countResult = await pool.query<{ count: string }>(
+        `SELECT COUNT(*) AS count FROM "${table}"`
+      );
+      const rowCount = parseInt(countResult.rows[0]?.count ?? "0", 10);
+
+      let lastEntry: string | null = null;
+      if (tablesWithTimestamp.has(table)) {
+        try {
+          const tsResult = await pool.query<{ ts: string }>(
+            `SELECT MAX(created_at) AS ts FROM "${table}"`
+          );
+          lastEntry = tsResult.rows[0]?.ts ?? null;
+        } catch {
+          lastEntry = null;
+        }
+      }
+
+      return { table, rowCount, lastEntry };
+    })
+  );
+
+  res.json({ tables: rows, queriedAt: new Date().toISOString() });
 });
 
 export default router;
