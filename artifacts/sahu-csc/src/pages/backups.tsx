@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Database, RotateCcw, Plus, HardDrive, Upload, FileUp,
   CheckCircle2, AlertTriangle, ChevronRight, Loader2, Table2,
-  Clock, CalendarDays, Save,
+  Clock, CalendarDays, Save, Download,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
@@ -502,11 +502,21 @@ export default function Backups() {
                       <td className="px-4 py-3 text-sm text-muted-foreground">{formatSize(backup.size)}</td>
                       <td className="px-4 py-3 text-sm text-muted-foreground">{new Date(backup.createdAt).toLocaleString("en-IN")}</td>
                       <td className="px-4 py-3">
-                        <Button variant="outline" size="sm" className="h-7 text-xs"
-                          onClick={() => { setRestoreId(backup.id); setRestoreFilename(backup.filename); }}
-                          data-testid={`button-restore-${backup.id}`}>
-                          <RotateCcw size={12} className="mr-1" />{t("backups.restore")}
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <a
+                            href={`/api/backups/${backup.id}/download`}
+                            download={backup.filename}
+                            className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-border text-xs font-medium hover:bg-muted/40 transition-colors"
+                            title="Download .sql file"
+                          >
+                            <Download size={12} />
+                          </a>
+                          <Button variant="outline" size="sm" className="h-7 text-xs"
+                            onClick={() => { setRestoreId(backup.id); setRestoreFilename(backup.filename); }}
+                            data-testid={`button-restore-${backup.id}`}>
+                            <RotateCcw size={12} className="mr-1" />{t("backups.restore")}
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}

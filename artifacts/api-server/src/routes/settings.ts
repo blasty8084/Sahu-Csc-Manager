@@ -137,6 +137,30 @@ router.post("/backups", requireRole("admin"), async (req, res): Promise<void> =>
   }
 });
 
+// GET /backups/:id/download — stream the .sql file to the browser
+router.get("/backups/:id/download", requireRole("admin"), async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id as string, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+
+  const [backup] = await db.select().from(backupsTable).where(eq(backupsTable.id, id));
+  if (!backup) { res.status(404).json({ error: "Backup not found" }); return; }
+
+  const filepath = path.join(BACKUP_DIR, backup.filename);
+  if (!existsSync(filepath)) {
+    res.status(404).json({ error: "Backup file not found on disk" });
+    return;
+  }
+
+  await auditLog(req.session.userId!, "backup.download", `Downloaded backup: ${backup.filename}`, getClientIp(req));
+
+  res.setHeader("Content-Disposition", `attachment; filename="${backup.filename}"`);
+  res.setHeader("Content-Type", "application/octet-stream");
+  res.setHeader("Content-Length", String(statSync(filepath).size));
+
+  const { createReadStream } = await import("fs");
+  createReadStream(filepath).pipe(res);
+});
+
 // ── Backup Schedule endpoints ─────────────────────────────────────────────
 
 const SCHEDULE_KEYS = ["backupEnabled", "backupFrequency", "backupTime", "backupDays", "backupRetention"];
