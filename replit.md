@@ -67,10 +67,10 @@ PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server exec tsx src/
 
 | Role | Username | Password |
 |------|----------|----------|
-| Admin | `admin` | `admin123` |
-| Operator | `operator` | `operator123` |
+| Admin | `admin` | set via `ADMIN_PASSWORD` Replit Secret |
+| Operator | `operator` | set via `OPERATOR_PASSWORD` Replit Secret |
 
-> Run the **Seed Database** workflow to reset these credentials or populate a fresh database.
+> Passwords are read from Replit Secrets — never hardcoded. Run the **Seed Database** workflow to create/reset accounts. The workflow will fail with a clear error if either secret is missing.
 
 ---
 

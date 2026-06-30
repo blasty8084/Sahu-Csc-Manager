@@ -6,7 +6,19 @@ async function seed() {
   console.log("🌱 Seeding database...");
 
   // ── Users (always upsert to restore default passwords) ────────────────────
-  const passwordHash = await bcrypt.hash("admin123", 12);
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  const operatorPassword = process.env.OPERATOR_PASSWORD;
+
+  if (!adminPassword) {
+    console.error("❌ ADMIN_PASSWORD secret is not set. Add it in Replit Secrets and re-run.");
+    process.exit(1);
+  }
+  if (!operatorPassword) {
+    console.error("❌ OPERATOR_PASSWORD secret is not set. Add it in Replit Secrets and re-run.");
+    process.exit(1);
+  }
+
+  const passwordHash = await bcrypt.hash(adminPassword, 12);
   await db
     .insert(usersTable)
     .values({
@@ -22,9 +34,9 @@ async function seed() {
       target: usersTable.username,
       set: { passwordHash, isActive: true },
     });
-  console.log("✅ Admin user created/reset (username: admin, password: admin123)");
+  console.log("✅ Admin user created/reset (username: admin, password: from ADMIN_PASSWORD secret)");
 
-  const opHash = await bcrypt.hash("operator123", 12);
+  const opHash = await bcrypt.hash(operatorPassword, 12);
   await db
     .insert(usersTable)
     .values({
@@ -40,7 +52,7 @@ async function seed() {
       target: usersTable.username,
       set: { passwordHash: opHash, isActive: true },
     });
-  console.log("✅ Operator user created/reset (username: operator, password: operator123)");
+  console.log("✅ Operator user created/reset (username: operator, password: from OPERATOR_PASSWORD secret)");
 
   // ── Services (skip if name already exists — unique constraint enforces this) ─
   const services = [
@@ -109,7 +121,8 @@ async function seed() {
   }
 
   console.log("\n🎉 Seed complete!");
-  console.log("   Login: admin / admin123 | operator / operator123");
+  console.log("   Login: admin / <ADMIN_PASSWORD> | operator / <OPERATOR_PASSWORD>");
+  console.log("   (passwords are from Replit Secrets — not printed for security)");
 }
 
 seed().catch(console.error).finally(() => process.exit(0));
