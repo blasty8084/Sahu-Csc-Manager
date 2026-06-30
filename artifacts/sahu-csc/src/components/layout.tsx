@@ -16,6 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { AppLogo } from "@/components/app-logo";
 import { PWAInstallBanner } from "@/components/pwa-install-banner";
+import { SetupWizardBanner } from "@/components/setup-wizard-banner";
 import { SyncStatusBar, SyncDot } from "@/components/sync-status-bar";
 import { prefetch } from "@/lib/prefetch";
 import { useTranslation } from "react-i18next";
@@ -602,6 +603,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {/* Sync + PWA banners */}
         <SyncStatusBar />
         <PWAInstallBanner />
+        {isAdmin && <SetupWizardBanner />}
 
         {/* Page Content */}
         <main className="flex-1 p-4 md:p-8 pb-24 md:pb-8 max-w-7xl mx-auto w-full">
