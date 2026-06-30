@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Layout } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -128,13 +128,22 @@ export default function ServerHealth() {
   const [refreshing, setRefreshing] = useState(false);
   const [dbStats, setDbStats] = useState<DbStats | null>(null);
   const [dbStatsLoading, setDbStatsLoading] = useState(false);
+  const prevCounts = useRef<Record<string, number>>({});
 
   const fetchDbStats = useCallback(async () => {
     setDbStatsLoading(true);
     try {
       const res = await fetch("/api/admin/db-stats");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      setDbStats(await res.json());
+      const data: DbStats = await res.json();
+      setDbStats((prev) => {
+        if (prev) {
+          const snapshot: Record<string, number> = {};
+          prev.tables.forEach((t) => { snapshot[t.table] = t.rowCount; });
+          prevCounts.current = snapshot;
+        }
+        return data;
+      });
     } catch {
       setDbStats(null);
     } finally {
@@ -414,25 +423,46 @@ export default function ServerHealth() {
                         <tr className="border-b">
                           <th className="text-left py-2 pr-4 text-xs font-medium text-muted-foreground">Table</th>
                           <th className="text-right py-2 pr-4 text-xs font-medium text-muted-foreground">Rows</th>
+                          <th className="text-center py-2 pr-4 text-xs font-medium text-muted-foreground">Trend</th>
                           <th className="text-right py-2 text-xs font-medium text-muted-foreground">Last Entry</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {dbStats.tables.map((row) => (
-                          <tr key={row.table} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-                            <td className="py-2 pr-4 font-mono text-xs text-foreground">{row.table}</td>
-                            <td className="py-2 pr-4 text-right">
-                              <span className={`font-semibold tabular-nums text-xs ${row.rowCount === 0 ? "text-muted-foreground" : "text-foreground"}`}>
-                                {row.rowCount.toLocaleString("en-IN")}
-                              </span>
-                            </td>
-                            <td className="py-2 text-right text-xs text-muted-foreground">
-                              {row.lastEntry
-                                ? new Date(row.lastEntry).toLocaleString("en-IN", { dateStyle: "short", timeStyle: "short" })
-                                : "—"}
-                            </td>
-                          </tr>
-                        ))}
+                        {dbStats.tables.map((row) => {
+                          const prev = prevCounts.current[row.table];
+                          const hasPrev = prev !== undefined;
+                          const delta = hasPrev ? row.rowCount - prev : 0;
+                          return (
+                            <tr key={row.table} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+                              <td className="py-2 pr-4 font-mono text-xs text-foreground">{row.table}</td>
+                              <td className="py-2 pr-4 text-right">
+                                <span className={`font-semibold tabular-nums text-xs ${row.rowCount === 0 ? "text-muted-foreground" : "text-foreground"}`}>
+                                  {row.rowCount.toLocaleString("en-IN")}
+                                </span>
+                              </td>
+                              <td className="py-2 pr-4 text-center">
+                                {!hasPrev ? (
+                                  <span className="text-xs text-muted-foreground">—</span>
+                                ) : delta > 0 ? (
+                                  <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-green-600 dark:text-green-400">
+                                    ↑ <span className="tabular-nums">+{delta}</span>
+                                  </span>
+                                ) : delta < 0 ? (
+                                  <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-red-500 dark:text-red-400">
+                                    ↓ <span className="tabular-nums">{delta}</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">→</span>
+                                )}
+                              </td>
+                              <td className="py-2 text-right text-xs text-muted-foreground">
+                                {row.lastEntry
+                                  ? new Date(row.lastEntry).toLocaleString("en-IN", { dateStyle: "short", timeStyle: "short" })
+                                  : "—"}
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                     <p className="text-xs text-muted-foreground mt-3 text-right">
