@@ -1,9 +1,12 @@
 # SAHU CSC — Change Log v2
-**Current version: 2.7.1 — June 27, 2026**
+**Current version: 2.7.1 — June 27, 2026 (superseded by v3.0.0)**
+
+> **⚡ V3.0.0 released June 30, 2026** — see `CHANGELOG_V3.md` for the full V3 changelog and `architectureV3.md` for the authoritative V3 architecture reference.
 
 > Comprehensive record of every feature, change, and upgrade from v2.0.0 onward.  
-> For a full description of the system architecture, see `architectureV2.md`.  
-> For the pre-v2.0 history, see `CHANGELOG.md`.
+> For a full description of the V2 system architecture, see `architectureV2.md`.  
+> For the pre-v2.0 history, see `CHANGELOG.md`.  
+> For the V3 history, see `CHANGELOG_V3.md`.
 
 ---
 

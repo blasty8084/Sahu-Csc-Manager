@@ -1,8 +1,11 @@
 # SAHU CSC — Change Log & Feature Documentation
-**Current version: 2.7.1 — June 27, 2026**
+**Current version: 3.0.0 — June 30, 2026**
 
 > Full record of every feature, change, and upgrade applied to the SAHU CSC platform.
 > Use this file as a reference for future development, onboarding, and audits.
+>
+> **v3.0.0 adds:** Setup Wizard Banner · `/api/setup-status` public endpoint · SMTP fully configured · VAPID auto-generation on startup · `scripts/post-merge.sh` auto-import setup · Full V3 documentation overhaul · Package bump to 3.0.0 · TWA config v3.0.0  
+> See `CHANGELOG_V3.md` for the full V3 detailed changelog. See `changelogV2.md` for v2.x history.
 >
 > **v2.1.0 adds:** Udhari Khata (customer credit ledger) · Receipt system (CSC-YYYY-NNNN + QR + WhatsApp PDF sharing) · V2 multi-device sessions · RBAC `requirePermission` middleware · OTP password reset · Admin oversight pages · PWA Status page · Idle timeout (30 min) · Notification isolation fixes · UI Design System v2 (mobile header, gradient card language) · Canvas mockup exploration for Ledger / AePS / Add Entry / Udhari form redesigns
 

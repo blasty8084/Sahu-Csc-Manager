@@ -1,7 +1,7 @@
 # Desktop Forms V2 — Full-Screen Split Layout
 
-**Version:** 2.1  
-**Date:** 2026-06-27  
+**Version:** 2.1 (active in SAHU CSC v3.0.0)  
+**Date:** 2026-06-27 (docs updated 2026-06-30)  
 **Scope:** All 5 desktop entry forms (Ledger, Udhari Add Customer, Udhari Entry, AePS Withdrawal, AePS Deposit)
 
 ---

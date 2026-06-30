@@ -1,357 +1,468 @@
 # SAHU CSC Manager — BUILD.md
-> **Single source of truth** for any AI agent, developer, or Claude session.  
+**Version 3.0.0 — June 30, 2026**
+
+> Single source of truth for any developer, AI agent, or new contributor.  
 > Read this file first — no other file analysis needed to understand the project.
 
 ---
 
 ## 1. Project Overview
 
-**SAHU CSC Manager** is a full-stack business management platform for CSC (Common Service Centre) operators in Odisha, India. It helps rural CSC operators manage their daily business operations digitally.
+**SAHU CSC Manager** is a full-stack business management platform for CSC (Common Service Centre) operators in Odisha, India. It helps rural CSC operators manage daily business operations digitally.
 
-**Target Users:** CSC operators in Odisha, India (rural/semi-urban)  
-**Languages Supported:** English, Hindi, Odia  
-**GitHub:** https://github.com/blasty8084/Sahu-Csc-Manager  
-**Hosted On:** Replit (dev), GitHub username: `blasty8084`
+| | |
+|---|---|
+| **Target users** | CSC operators in rural / semi-urban Odisha, India |
+| **Languages supported** | English · Hindi · Odia |
+| **GitHub** | https://github.com/blasty8084/Sahu-Csc-Manager |
+| **Hosting** | Replit (dev + production deploy) |
+| **Version** | 3.0.0 |
 
-**Core Business Domain:**
-- AePS (Aadhaar-enabled Payment System) transactions
-- Mobile recharge & bill payments
-- Financial ledger tracking (income/expense)
-- Customer credit tracking — "Udhari Khata"
-- Receipt generation with QR code verification
-- Admin-controlled user registration & RBAC
+### Core business domain
+
+- AePS (Aadhaar-enabled Payment System) cash management
+- Daily financial ledger (income / expense) with running balance
+- Customer credit ledger — "Udhari Khata" (gave / got)
+- Receipt generation: `CSC-YYYY-NNNN` number + QR code verification
+- Service catalog management (22 services, 5 categories)
+- Daily / monthly reports with Excel export
+- Admin-controlled user registration, RBAC, multi-device sessions
+- PWA (installable, offline-first) + Android TWA
+- Push notifications (VAPID), email (SMTP), broadcast center
 
 ---
 
-## 2. Tech Stack (Exact Versions)
+## 2. Tech Stack
 
 | Layer | Technology |
 |---|---|
 | Monorepo | pnpm workspaces |
-| Frontend | React 19 + Vite + TypeScript |
-| Styling | Tailwind CSS + shadcn/ui |
+| Runtime | Node.js 20, TypeScript 5.9 |
+| Frontend | React 19 + Vite 7 + Tailwind CSS v4 + shadcn/ui |
 | Backend | Express 5 + TypeScript |
-| Database | PostgreSQL via Neon (Drizzle ORM) |
-| Cache | Upstash Redis |
-| Auth | Firebase Phone Auth + session-based auth |
-| Email | Nodemailer (Gmail SMTP) |
-| PWA | Service Worker + Web Push (VAPID keys) |
-| API Design | Contract-first OpenAPI + Orval codegen |
-| Hosting | Replit (dev environment) |
+| Database | PostgreSQL via Replit DB (Drizzle ORM) |
+| Session store | connect-pg-simple (PostgreSQL-backed) |
+| Auth | express-session + bcrypt (session-based, no JWT) |
+| Email | Nodemailer (SMTP — any provider) |
+| PWA | vite-plugin-pwa + Workbox service worker |
+| Push | web-push (VAPID keys, auto-generated on startup) |
+| i18n | i18next + react-i18next (EN / HI / OR) |
+| API design | Contract-first OpenAPI → Orval codegen → typed React Query hooks |
+| Build | esbuild (API), Vite (frontend) |
+
+> No Firebase, no Upstash Redis, no Neon — this version uses only Replit-provisioned PostgreSQL.
 
 ---
 
 ## 3. Monorepo Structure
 
 ```
-Sahu-Csc-Manager/
+workspace/
 ├── artifacts/
-│   ├── api-server/              # Express 5 backend API
+│   ├── api-server/              # @workspace/api-server — Express 5 backend (port 8080)
 │   │   ├── src/
-│   │   │   ├── routes/          # All API route handlers
-│   │   │   ├── services/        # Business logic layer
-│   │   │   ├── middleware/      # Auth, validation, rate-limit
-│   │   │   ├── db/              # Drizzle schema + migrations
-│   │   │   │   ├── schema.ts    # All table definitions
-│   │   │   │   └── migrations/  # SQL migration files
-│   │   │   └── scripts/
-│   │   │       └── seed.ts      # Database seeder
-│   │   └── package.json
-│   ├── sahu-csc/                # Main React frontend (PWA)
-│   │   ├── src/
-│   │   │   ├── components/      # Reusable UI components
-│   │   │   ├── pages/           # Route-level page components
-│   │   │   ├── hooks/           # Custom React hooks
-│   │   │   ├── lib/             # Utilities, firebase config
-│   │   │   └── api/             # Orval-generated API client
-│   │   └── package.json
-│   └── mockup-sandbox/          # Component preview/design sandbox
-│       └── package.json
-├── openapi/                     # OpenAPI spec files (contract-first)
-│   └── spec.yaml                # Master API specification
-├── .replit                      # Replit workflow configuration
-├── BUILD.md                     # This file
-└── pnpm-workspace.yaml          # Workspace definition
+│   │   │   ├── app.ts           # Express app, middleware, session store
+│   │   │   ├── index.ts         # HTTP server entry point
+│   │   │   ├── routes/          # One file per resource group
+│   │   │   │   ├── index.ts                 # Router composition
+│   │   │   │   ├── auth.ts                  # Login / logout / me / register
+│   │   │   │   ├── password-reset.ts        # OTP-based forgot/reset
+│   │   │   │   ├── sessions.ts              # V2 multi-device session list + revoke
+│   │   │   │   ├── ledger.ts                # Ledger CRUD + balance/summary
+│   │   │   │   ├── aeps.ts                  # AePS daily sessions + transactions
+│   │   │   │   ├── services.ts              # Service catalog CRUD
+│   │   │   │   ├── users.ts                 # User management (admin)
+│   │   │   │   ├── admin.ts                 # Admin oversight (cross-user views)
+│   │   │   │   ├── admin-sessions.ts        # Admin session revocation
+│   │   │   │   ├── admin-registration.ts    # Pending user approvals
+│   │   │   │   ├── admin-receipt-export.ts  # Bulk receipt export (admin)
+│   │   │   │   ├── profile.ts               # Own profile + avatar
+│   │   │   │   ├── preferences.ts           # Per-user UI preferences
+│   │   │   │   ├── notifications.ts         # Notification inbox
+│   │   │   │   ├── reports.ts               # Reports, dashboard, export
+│   │   │   │   ├── audit.ts                 # Audit log viewer (admin)
+│   │   │   │   ├── settings.ts              # Global settings + backups
+│   │   │   │   ├── push.ts                  # Push subscription CRUD (VAPID)
+│   │   │   │   ├── udhari.ts                # Udhari Khata CRUD
+│   │   │   │   ├── receipts.ts              # Public receipt verify endpoint
+│   │   │   │   ├── broadcast.ts             # Admin push + email broadcast
+│   │   │   │   ├── health.ts                # GET /api/healthz (diagnostics)
+│   │   │   │   └── setup-status.ts          # GET /api/setup-status (public)
+│   │   │   └── lib/
+│   │   │       ├── auth.ts      # requireAuth / requireRole / requirePermission / parseDevice
+│   │   │       ├── notify.ts    # createNotification helper
+│   │   │       ├── logger.ts    # Pino structured logger
+│   │   │       ├── mailer.ts    # Nodemailer SMTP helpers (OTP, approval, broadcast)
+│   │   │       ├── push.ts      # web-push helpers (sendPushToUser, sendPushToAll)
+│   │   │       ├── vapid.ts     # VAPID key auto-generation / env detection
+│   │   │       └── otp-cleanup.ts # Hourly job: deletes expired OTP rows
+│   │   ├── build.mjs            # esbuild bundler (connect-pg-simple in external)
+│   │   └── scripts/
+│   │       ├── seed.ts          # DB seeder (users, services, settings, notifications)
+│   │       ├── backup.ts        # pg_dump to /backups/
+│   │       └── restore.ts       # psql restore from backup
+│   │
+│   ├── sahu-csc/                # @workspace/sahu-csc — React + Vite frontend (port 5000)
+│   │   ├── index.html
+│   │   ├── vite.config.ts       # Vite + VitePWA + Workbox + proxy → 8080
+│   │   ├── public/
+│   │   │   ├── sahu-logo.png        # Primary brand logo
+│   │   │   ├── apple-touch-icon.png # 180×180 iOS icon
+│   │   │   ├── pwa-*.png            # PWA icons (96/144/192/512)
+│   │   │   └── .well-known/
+│   │   │       └── assetlinks.json  # Digital Asset Links for TWA (Android)
+│   │   └── src/
+│   │       ├── App.tsx          # QueryClient, providers, router
+│   │       ├── main.tsx         # createRoot + registerSW + syncEngine init
+│   │       ├── pages/           # 25 pages (all fully translated EN/HI/OR)
+│   │       ├── components/      # Layout, banners, UI components
+│   │       ├── hooks/           # Auth, network, PWA, sync, push, idle, device
+│   │       ├── locales/         # {en,hi,or}/translation.json (~860 keys each)
+│   │       └── lib/             # offline-db, sync-engine, pwa-badge, utils, i18n
+│   │
+│   └── mockup-sandbox/          # Canvas component preview server (port 8081)
+│
+├── lib/
+│   ├── db/                      # @workspace/db — Drizzle ORM schema + pool
+│   ├── api-spec/                # @workspace/api-spec — openapi.yaml (source of truth)
+│   ├── api-client-react/        # @workspace/api-client-react — Orval-generated hooks
+│   └── api-zod/                 # @workspace/api-zod — Zod schemas
+│
+├── infrastructure/
+│   ├── pwa/manifest.json        # Full standalone PWA manifest reference
+│   └── twa/twa-config.json      # Android TWA config (Bubblewrap CLI)
+│
+├── docs/
+│   └── DESKTOP_FORMS_V2.md      # Full-screen split layout spec for desktop forms
+│
+├── scripts/
+│   └── post-merge.sh            # Auto-runs pnpm install + drizzle-kit push on import
+│
+├── BUILD.md                     # This file — project overview
+├── CHANGELOG.md                 # Full feature changelog (pre-v3)
+├── changelogV2.md               # v2.x detailed changelog
+├── CHANGELOG_V3.md              # v3.x detailed changelog
+├── ARCHITECTURE.md              # Full architecture reference (legacy, see architectureV3.md)
+├── architectureV2.md            # v2 architecture reference
+├── architectureV3.md            # v3 authoritative architecture (current)
+├── WORKFLOWS.md                 # Workflow guide (port map, quick-start, troubleshooting)
+├── ReplitV3.md                  # Quick-reference for agents and developers
+└── replit.md                    # Project README + user preferences
 ```
 
-**Package Names:**
-- `@workspace/api-server` — Express backend
-- `@workspace/sahu-csc` — React frontend
-- `@workspace/mockup-sandbox` — Design sandbox
+---
+
+## 4. Environment Variables & Secrets
+
+All secrets are stored in **Replit Secrets** (🔒 tab in sidebar) — never in `.env` files.
+
+### Required Secrets
+
+| Secret | Description |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection string — auto-provisioned by Replit |
+| `SESSION_SECRET` | Express session signing secret — any long random string |
+| `SMTP_HOST` | SMTP server hostname (e.g. `smtp.gmail.com`) |
+| `SMTP_PORT` | SMTP port (`587` for TLS, `465` for SSL) |
+| `SMTP_USER` | SMTP username / email address |
+| `SMTP_PASS` | SMTP password or app password |
+
+### Optional Secrets
+
+| Secret | Default | Description |
+|---|---|---|
+| `SMTP_FROM_EMAIL` | `SMTP_USER` | From address shown in emails |
+| `VAPID_PUBLIC_KEY` | Auto-generated | Web push public key (lost on restart if not set) |
+| `VAPID_PRIVATE_KEY` | Auto-generated | Web push private key |
+| `VAPID_EMAIL` | `mailto:admin@sahucsc.in` | VAPID contact email |
+
+> **VAPID auto-generation:** If VAPID keys are not set, the API generates temporary keys on startup. These are lost on server restart, so push subscriptions won't survive restarts. Set real keys for production via `node -e "const wp = require('web-push'); console.log(wp.generateVAPIDKeys())"`.
+
+> **SMTP:** If SMTP is not configured, OTP login, password reset, and admin email notifications are disabled. Username+password login still works.
 
 ---
 
-## 4. Environment Variables / Secrets
-
-All secrets are stored in **Replit Secrets** (not `.env` files).
-
-### Server-side Only (no VITE_ prefix)
-| Secret Key | Description | Source |
-|---|---|---|
-| `DATABASE_URL` | Neon PostgreSQL connection string | Neon Console |
-| `SESSION_SECRET` | Express session signing secret | Random strong string |
-| `FIREBASE_SERVICE_ACCOUNT` | Firebase Admin SDK JSON (stringified) | Firebase Console → Service Accounts |
-| `UPSTASH_REDIS_URL` | Upstash Redis REST URL | Upstash Console |
-| `UPSTASH_REDIS_TOKEN` | Upstash Redis REST token | Upstash Console |
-| `SMTP_HOST` | `smtp.gmail.com` | Gmail |
-| `SMTP_PORT` | `587` | Gmail |
-| `SMTP_USER` | Gmail address | Your Gmail |
-| `SMTP_PASS` | Gmail App Password (16-char) | Google Account → App Passwords |
-| `SMTP_FROM_EMAIL` | `SAHU CSC Manager <your@gmail.com>` | Your choice |
-| `VAPID_PUBLIC_KEY` | Web Push VAPID public key | Generated via web-push |
-| `VAPID_PRIVATE_KEY` | Web Push VAPID private key | Generated via web-push |
-| `VAPID_EMAIL` | mailto: email for VAPID | Your email |
-| `PORT` | `8080` (API server port) | Fixed value |
-
-### Client-side (must have VITE_ prefix for Vite to expose)
-| Secret Key | Description | Source |
-|---|---|---|
-| `VITE_FIREBASE_API_KEY` | Firebase web app API key (`AIzaSy...`) | Firebase Console → Project Settings → Your Apps |
-| `VITE_FIREBASE_AUTH_DOMAIN` | `sahu-csc.firebaseapp.com` | Firebase Console |
-| `VITE_FIREBASE_PROJECT_ID` | `sahu-csc` | Firebase Console |
-| `VITE_FIREBASE_STORAGE_BUCKET` | `sahu-csc.firebasestorage.app` | Firebase Console |
-| `VITE_FIREBASE_MESSAGING_SENDER_ID` | `119574308074` | Firebase Console |
-| `VITE_FIREBASE_APP_ID` | `1:119574308074:web:...` | Firebase Console |
-| `VITE_FIREBASE_MEASUREMENT_ID` | `G-QC0Y60V9NK` | Firebase Console |
-
-> ⚠️ **Important:** `VITE_` prefix is mandatory for any variable used in React frontend code. Without it, the value will be `undefined` at runtime.
-
----
-
-## 5. Database Schema
-
-### Tables
+## 5. Database Schema — 15 Tables
 
 | Table | Purpose |
 |---|---|
-| `users` | All registered users (admin + operators) |
-| `sessions` | Express session store |
-| `transactions` | All financial ledger entries (income/expense) |
-| `customers` | Udhari Khata customer records |
-| `customer_transactions` | Per-customer credit/debit entries |
-| `receipts` | Receipt records with `CSC-YYYY-NNNN` numbering |
-| `receipt_sequence` | Per-year sequential counter for receipt numbers |
-| `notifications` | Per-user notification records |
-| `push_subscriptions` | PWA push notification subscriptions (per user) |
-| `otp_codes` | Temporary OTP storage (email verification, password reset) |
-| `services` | CSC service catalog (recharge, AePS, bill pay, etc.) |
+| `users` | All user accounts (admin / operator / user roles) |
+| `user_sessions` | V2 multi-device session tracking — one row per active login |
+| `session` | Express session store (connect-pg-simple, auto-created) |
+| `ledger` | Per-user income/expense transactions with running balance |
+| `receipt_counters` | Atomic sequential counter per year for CSC-YYYY-NNNN |
+| `aeps_daily` | AePS daily cash float sessions (one per user per day) |
+| `aeps_transactions` | Individual AePS withdrawals/deposits per session |
+| `udhari_customers` | Udhari Khata customer records per user |
+| `udhari_entries` | Individual credit/debit entries per customer |
+| `push_subscriptions` | VAPID Web Push subscription records per device |
+| `notifications` | Per-user + system-wide notification records |
+| `settings` | Global key-value config store |
+| `audit_logs` | Immutable audit trail of all sensitive actions |
+| `password_reset_tokens` | One-time OTP tokens for password reset |
+| `broadcast_logs` | History of admin push/email broadcasts |
 
-### Key Relationships
-- `users` → `transactions` (one user has many transactions)
-- `users` → `customers` (one user/operator has many customers)
-- `customers` → `customer_transactions` (one customer has many udhari entries)
-- `transactions` → `receipts` (one transaction has one receipt)
-- `users` → `notifications` (strict per-user scoping, never shared)
-- `users` → `push_subscriptions` (one user, multiple devices)
-
-### Migration Commands
+Schema applied via:
 ```bash
-# Run pending migrations
-pnpm --filter @workspace/api-server run db:migrate
-
-# Push schema directly (dev only)
-pnpm --filter @workspace/api-server run db:push
-
-# Open Drizzle Studio (visual DB browser)
-pnpm --filter @workspace/api-server run db:studio
-
-# Seed database with initial data
-PORT=8080 NODE_ENV=development npx tsx artifacts/api-server/src/scripts/seed.ts
+pnpm --filter @workspace/db run push
 ```
+
+> ⚠️ `drizzle-kit push` can wipe table data on destructive changes. Always re-seed immediately after.
 
 ---
 
 ## 6. API Architecture (Contract-First)
 
-This project uses a **contract-first OpenAPI** approach — the spec is written first, then code is generated from it.
+This project uses a **contract-first OpenAPI** approach — spec is written first, code generated from it.
 
-### Mandatory Workflow for Every New Endpoint
+### Workflow for every new endpoint
+
 ```
-1. Update OpenAPI spec → openapi/spec.yaml
-2. Run Orval codegen → generates TypeScript client in artifacts/sahu-csc/src/api/
-3. Update Drizzle schema → artifacts/api-server/src/db/schema.ts
-4. Run migration → pnpm db:migrate
-5. Implement route handler → artifacts/api-server/src/routes/
-6. Build React component/page → artifacts/sahu-csc/src/pages/ or components/
+1. Update OpenAPI spec  →  lib/api-spec/openapi.yaml
+2. Run codegen          →  pnpm --filter @workspace/api-spec run codegen
+3. Update Drizzle schema→  lib/db/src/schema/<table>.ts
+4. Push schema          →  pnpm --filter @workspace/db run push
+5. Implement route      →  artifacts/api-server/src/routes/<resource>.ts
+6. Build React UI       →  artifacts/sahu-csc/src/pages/ or components/
 ```
 
-> ⚠️ **Never skip step 2 (codegen).** The frontend API client is auto-generated — manually writing fetch calls breaks the contract-first pattern.
-
-### Codegen Command
-```bash
-pnpm --filter @workspace/sahu-csc run codegen
-```
+> ⚠️ Never edit `lib/api-client-react/src/generated/` directly — auto-generated by Orval. Run codegen to regenerate.
 
 ---
 
-## 7. Running the Project (Replit Workflows)
+## 7. Running the Project
 
-### All 5 Workflows (configured in `.replit`)
+### Workflows (configured in `.replit`)
 
-| # | Workflow Name | Command |
-|---|---|---|
-| 1 | API Server | `PORT=8080 pnpm --filter @workspace/api-server run dev` |
-| 2 | Web | `pnpm --filter @workspace/sahu-csc run dev` |
-| 3 | Component Preview Server | `pnpm --filter @workspace/mockup-sandbox run dev` |
-| 4 | API Server (artifacts) | `pnpm --filter @workspace/api-server run dev` |
-| 5 | Seed Database | `PORT=8080 NODE_ENV=development npx tsx artifacts/api-server/src/scripts/seed.ts` |
+| Workflow | Port | Auto-start | Purpose |
+|---|---|---|---|
+| `API Server` | 8080 | ✅ Yes | Express API (primary) |
+| `artifacts/sahu-csc: web` | 5000 → :80 | ✅ Yes | Vite frontend webview |
+| `Seed Database` | — | ❌ Manual | One-shot DB seeder |
+| `artifacts/api-server: API Server` | 8080 | ⚠️ Platform | Platform duplicate (expected to fail — port taken by API Server) |
+| `artifacts/mockup-sandbox: Component Preview Server` | 8081 | ⚠️ Platform | Canvas UI mockups |
 
-### Install Dependencies
+### First-time setup (after import)
+
 ```bash
+# All three steps run automatically via scripts/post-merge.sh:
 pnpm install
+pnpm --filter @workspace/db run push
+
+# Run manually once:
+# Seed Database workflow (or shell):
+PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server exec tsx src/scripts/seed.ts
 ```
 
-### Common Errors & Fixes
+### Default login credentials
 
-| Error | Fix |
-|---|---|
-| `ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL` | Run `pnpm install` first, then retry the workflow |
-| `missing PORT variable` | Add `PORT=8080` before the command or set it in Replit Secrets |
-| `auth/api-key-not-valid` | `VITE_FIREBASE_API_KEY` is missing/wrong in Replit Secrets |
-| `Revert failed — unmerged files` | `git add artifacts/sahu-csc/dev-dist/sw.js && git commit -m "resolve"` |
-| Firebase OTP not sending | Add current `$REPLIT_DEV_DOMAIN` to Firebase Console → Authentication → Authorized Domains |
+| Username | Password | Role |
+|---|---|---|
+| `admin` | `admin123` | Admin |
+| `operator` | `operator123` | Operator |
 
 ---
 
 ## 8. Authentication Flow
 
-### Registration
-1. Admin creates a user account (admin-controlled registration, not self-signup)
-2. New user receives email OTP via Nodemailer (Gmail SMTP)
-3. User verifies email OTP → account activated
-4. Optionally: Firebase Phone OTP for mobile number verification
-
 ### Login
-1. User submits email + password
-2. Server verifies credentials, creates an Express session
-3. Session ID stored in cookie, session data in PostgreSQL/Redis
-4. `SESSION_SECRET` Replit Secret signs the session
+1. User submits username / email / mobile + password
+2. Server verifies credentials, bcrypt 12 rounds
+3. Creates `express-session` row (PostgreSQL via connect-pg-simple)
+4. Creates `user_sessions` row (V2 multi-device tracking)
+5. Session cookie set: `httpOnly`, `sameSite: strict` in production
+
+### Registration
+1. User submits registration form (self-signup)
+2. OTP sent via SMTP email
+3. Admin reviews pending registrations (approve / reject)
+4. Approved users receive email notification and can log in
+
+### Password Reset (4-step)
+1. `/forgot-password` — enter username or email
+2. OTP sent via SMTP
+3. Enter OTP (6-digit, 2-minute resend cooldown, SVG progress ring)
+4. Set new password (8+ chars, uppercase, lowercase, number)
 
 ### RBAC Roles
+
 | Role | Access |
 |---|---|
-| `admin` | Full access — manage users, view all reports, system settings |
-| `operator` | Own transactions, own Udhari Khata, own receipts, own notifications only |
-
-### Firebase Authorized Domain
-> ⚠️ Replit's dev URL changes every restart. Run `echo $REPLIT_DEV_DOMAIN` and add the output to:
-> - Firebase Console → Authentication → Settings → Authorized Domains
-> - Google Cloud Console → APIs & Services → Credentials → API Key → Application Restrictions
+| `admin` | All permissions (`["*"]`) |
+| `operator` | ledger, aeps, reports, udhari, services, profile, notifications |
+| `user` | Read-only: ledger, reports, services, profile, notifications |
 
 ---
 
-## 9. Features Already Implemented
+## 9. Features — Complete Reference
 
 | Feature | Key Files |
 |---|---|
-| Dashboard (balance, income, expense, transactions) | `pages/dashboard/` |
-| Ledger (income/expense entries) | `pages/ledger/` |
-| AePS transactions | `pages/aeps/` |
-| Udhari Khata (customer credit ledger) | `pages/udhari/`, `routes/customers.ts` |
-| Receipt generation (CSC-YYYY-NNNN) | `routes/receipts.ts`, `components/Receipt/` |
-| QR code on receipts (scan → open PDF) | Embedded in receipt component |
-| PWA push notifications | `service-worker.js`, `routes/push.ts` |
-| Per-user notification isolation | `routes/notifications.ts` (user_id scoped) |
-| Mobile bottom navigation bar | `components/BottomNav/` |
-| Idle session warning | `components/IdleWarning/` |
-| Email OTP (registration + forgot password) | `routes/auth/send-otp.ts`, Nodemailer |
-| Firebase Phone OTP | `lib/firebase.ts`, `pages/auth/` |
-| Admin-controlled user registration | `pages/admin/users/` |
-| RBAC middleware | `middleware/requireRole.ts` |
-| Loading/startup experience | Zustand state machine |
+| Dashboard | `pages/dashboard.tsx` |
+| Ledger (offline-capable) | `pages/ledger.tsx`, `lib/offline-db.ts`, `lib/sync-engine.ts` |
+| AePS cash management | `pages/aeps.tsx`, `routes/aeps.ts` |
+| Udhari Khata | `pages/udhari.tsx`, `pages/udhari-customer.tsx`, `routes/udhari.ts` |
+| Receipt generation (CSC-YYYY-NNNN) | `components/receipt-modal.tsx`, `routes/receipts.ts` |
+| QR code + public verify | `pages/receipts-verify.tsx`, `GET /api/receipts/verify/:token` |
+| Reports + Excel export | `pages/reports.tsx`, `routes/reports.ts` |
+| Push notifications (VAPID) | `routes/push.ts`, `lib/push.ts`, `lib/vapid.ts` |
+| Broadcast Center | `pages/broadcast.tsx`, `routes/broadcast.ts` |
+| Multi-device sessions | `pages/sessions.tsx`, `routes/sessions.ts` |
+| Admin user management | `pages/users.tsx`, `routes/users.ts` |
+| Admin oversight | `pages/users-overview.tsx`, `routes/admin.ts` |
+| Admin registration management | `routes/admin-registration.ts` |
+| Audit logs | `pages/audit-logs.tsx`, `routes/audit.ts` |
+| Bulk receipt export | `routes/admin-receipt-export.ts` |
+| Profile + Settings (unified) | `pages/profile.tsx` |
+| Preferences (language + theme) | `pages/preferences.tsx` |
+| Notifications | `pages/notifications.tsx`, `routes/notifications.ts` |
+| Server health check | `pages/server-health.tsx`, `routes/health.ts` |
+| PWA install guide | `pages/download-app.tsx` |
+| About / docs | `pages/about.tsx` |
+| Offline status | `pages/pwa-status.tsx` |
+| Setup Wizard Banner | `components/setup-wizard-banner.tsx`, `routes/setup-status.ts` |
+| OTP email + auto-fill | `lib/mailer.ts`, `pages/forgot-password.tsx`, `pages/register.tsx` |
+| i18n (EN/HI/OR) | `locales/`, `lib/i18n.ts`, `components/language-switcher.tsx` |
 
 ---
 
 ## 10. Branding & UI Guidelines
 
 ### Colors
+
 | Token | Value | Usage |
 |---|---|---|
-| Navy (Primary) | `#0B1340` | Header, bottom nav, buttons, dark backgrounds |
-| Orange (Accent) | `#F97316` | CTAs, active states, highlights, icons |
+| Navy (Primary) | `#0b2c60` | Header, sidebar, buttons, stat cards |
+| Saffron (Accent) | `#f97316` | CTAs, active states, highlights, icon badges |
 
-### Mobile-First Layout Rules
-- Use `min-h-[100dvh]` (not `min-h-screen`) for full-height containers — accounts for mobile browser chrome
-- Bottom navigation: `position: fixed; bottom: 0; left: 0; right: 0; z-index: 30`
-- Main content area: always add `pb-24` padding-bottom to avoid content hidden behind bottom nav
-- No parent element of bottom nav should have `transform`, `filter`, `will-change`, or `overflow: hidden` — these break `position: fixed`
+### Layout rules
 
-### Bottom Navigation Tabs
-`Dashboard` | `Ledger` | `AePS` | `Profile`
+- Use Tailwind responsive classes (`sm:hidden` / `hidden sm:block`) — not JS `isMobile` (causes flicker)
+- Mobile FAB: `bottom-20` (80px) — bottom nav is ~64px tall
+- **Never** add `willChange: transform` to any ancestor of the bottom `<nav>` — creates a CSS containing block that breaks `position: fixed`
+- Page transitions: no `willChange: transform` on motion.div wrappers
 
-### Component Library
-shadcn/ui — import from `@/components/ui/`
+### Desktop forms
+
+Full-screen split layout: 380px dark gradient left panel (stats) + `flex: 1` white right panel (form). Documented in `docs/DESKTOP_FORMS_V2.md`.
+
+### Component library
+
+shadcn/ui — import from `@/components/ui/`. Toast system: custom Framer Motion renderer in `toaster.tsx` (4 variants: default/navy, success, destructive, warning).
 
 ---
 
-## 11. Known Issues & Workarounds
+## 11. PWA & TWA
+
+### PWA
+
+- `vite-plugin-pwa` + Workbox (generateSW strategy)
+- Manifest: `display: standalone`, `orientation: portrait-primary`
+- Icons: 96 / 144 / 192 / 512px + 180px apple-touch-icon + maskable
+- 4 App Shortcuts: Dashboard, New Ledger Entry, AePS Cash, Reports
+- Offline-first: IndexedDB pending queue + Workbox caching
+- Push: VAPID via web-push; subscribe at `/api/push/*`
+
+### TWA (Android)
+
+1. Install Bubblewrap: `npm install -g @bubblewrap/cli`
+2. `bubblewrap init --manifest https://<your-domain>/manifest.webmanifest`
+3. Generate keystore: `keytool -genkey -v -keystore android.keystore -alias sahucsc -keyalg RSA -keysize 2048 -validity 10000`
+4. Get SHA-256: `keytool -list -v -keystore android.keystore | grep SHA256`
+5. Update `artifacts/sahu-csc/public/.well-known/assetlinks.json` with package name + fingerprint
+6. Deploy so assetlinks.json is live at `/.well-known/assetlinks.json`
+7. `bubblewrap build` → upload `.aab` to Google Play Console
+
+Config: `infrastructure/twa/twa-config.json`  
+Package ID: `com.sahucsc.app`  
+Min SDK: 21 (Android 5.0), Target SDK: 34
+
+---
+
+## 12. Setup Wizard Banner (V3)
+
+When an admin logs in with missing secrets, a banner appears at the top of every page (admin only):
+
+- **Red banner** — critical secrets missing (`SESSION_SECRET`, SMTP)
+- **Yellow banner** — only optional secrets missing (VAPID)
+- Expandable: lists each missing secret with label, severity, description
+- Dismissed per-session via `sessionStorage` — reappears on next login until fixed
+
+Detection: `GET /api/setup-status` (public endpoint, no auth required).
+
+---
+
+## 13. Known Issues & Workarounds
 
 | Issue | Workaround |
 |---|---|
-| Firebase authorized domain changes on Replit restart | Run `echo $REPLIT_DEV_DOMAIN` and re-add to Firebase Console after every restart |
-| `sw.js` merge conflict during git revert | `git add artifacts/sahu-csc/dev-dist/sw.js && git commit -m "resolve"` — this is an auto-generated build artifact, safe to just mark resolved |
-| `VITE_FIREBASE_API_KEY` blank in shell | Secret exists but without `VITE_` prefix — rename the secret in Replit Secrets panel |
-| Bottom nav disappears on scroll | Parent container must not have `overflow: hidden` or `transform` — check `SyncStatusBar` and `PWAInstallBanner` wrappers |
-| Git push auth failure | Use GitHub Personal Access Token (not password) — generate at github.com → Settings → Developer settings → Personal access tokens |
+| `artifacts/api-server: API Server` shows "failed" | Expected — platform duplicate; our `API Server` workflow already holds port 8080. App works normally. |
+| Port 21700 in use (canvas artifact) | `fuser -k 21700/tcp 2>/dev/null` then restart `artifacts/sahu-csc: web` |
+| `drizzle-kit push` wipes data | Always run "Seed Database" workflow immediately after schema push |
+| VAPID keys lost on restart | Set `VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` in Replit Secrets (see Section 4) |
+| Language not switching | Language is in Profile → Preferences → Language (not sidebar) |
+| Frontend shows stale content | Clear service worker: DevTools → Application → Storage → Clear site data → Reload |
+| API changes not reflected | `rm -rf artifacts/api-server/dist/` then restart `API Server` |
 
 ---
 
-## 12. How to Add New Features (Agent Instructions)
+## 14. Common Commands
 
-> Every AI agent must follow this sequence for every new feature — no exceptions.
-
-```
-Step 1: Update OpenAPI spec → openapi/spec.yaml
-Step 2: Run codegen → pnpm --filter @workspace/sahu-csc run codegen
-Step 3: Update Drizzle schema → artifacts/api-server/src/db/schema.ts
-Step 4: Run migration → pnpm --filter @workspace/api-server run db:migrate
-Step 5: Implement route → artifacts/api-server/src/routes/
-Step 6: Build React UI → artifacts/sahu-csc/src/pages/ or components/
-Step 7: Test on mobile viewport (375px width)
-```
-
-### Rules for Every UI Change
-- Always use `#0B1340` and `#F97316` — never hardcode other colors
-- Always mobile-first — test at 375px width
-- After every layout change, verify bottom nav is still visible and fixed
-- Use existing shadcn/ui components — don't install new UI libraries without discussion
-- Never use `localStorage` or `sessionStorage` — use server sessions + React Query cache
-
----
-
-## 13. Git & Deployment
-
-**Repo:** `https://github.com/blasty8084/Sahu-Csc-Manager`  
-**Branch:** `main`
-
-### Common Git Commands (Replit Shell)
 ```bash
-# Check status
-git status
+# Development
+pnpm --filter @workspace/api-server run dev      # API server (port 8080)
+pnpm --filter @workspace/sahu-csc run dev         # Frontend (port 5000)
 
-# Commit and push
-git add .
-git commit -m "feat: your feature description"
-git push origin main
+# Database
+pnpm --filter @workspace/db run push              # Push schema to DB
+pnpm --filter @workspace/api-server exec tsx src/scripts/seed.ts  # Seed data
 
-# View recent commits
-git log --oneline -10
+# Type checking
+pnpm run typecheck:libs                           # Build lib declarations first
+pnpm run typecheck                                # Full typecheck all packages
 
-# Safe rollback (creates new revert commit — preferred)
-git revert <commit-hash>
-git push origin main
+# API codegen
+pnpm --filter @workspace/api-spec run codegen     # Regenerate React Query hooks + Zod schemas
 
-# Destructive rollback (rewrites history — use carefully)
-git reset --hard <commit-hash>
-git push origin main --force
+# Build
+pnpm run build                                    # Typecheck + build all packages
+
+# Force API rebuild
+rm -rf artifacts/api-server/dist/                 # Delete cached bundle
+
+# Port cleanup
+fuser -k 8080/tcp 2>/dev/null                     # Free API port
+fuser -k 5000/tcp 2>/dev/null                     # Free frontend port
+fuser -k 21700/tcp 2>/dev/null                    # Free canvas artifact port
+
+# Generate VAPID keys
+node -e "const wp = require('web-push'); console.log(wp.generateVAPIDKeys())"
 ```
-
-### Push Authentication
-Use a **GitHub Personal Access Token** (not your password):
-1. github.com → Settings → Developer settings → Personal access tokens → Generate new token (classic)
-2. Select `repo` scope → Generate
-3. Use this token as the password when `git push` asks for credentials
 
 ---
 
-*Last updated: June 2026 | Maintained by: Uttam Sahu (blasty8084)*
+## 15. How to Add New Features
+
+```
+Step 1: Update OpenAPI spec    →  lib/api-spec/openapi.yaml
+Step 2: Run codegen            →  pnpm --filter @workspace/api-spec run codegen
+Step 3: Add Drizzle schema     →  lib/db/src/schema/<table>.ts + schema/index.ts
+Step 4: Push schema            →  pnpm --filter @workspace/db run push
+Step 5: Implement route        →  artifacts/api-server/src/routes/<resource>.ts
+Step 6: Register route         →  artifacts/api-server/src/routes/index.ts
+Step 7: Build React UI         →  artifacts/sahu-csc/src/pages/ or components/
+Step 8: Add i18n keys          →  src/locales/{en,hi,or}/translation.json
+Step 9: Test mobile (375px)
+Step 10: Force API rebuild     →  rm -rf artifacts/api-server/dist/ + restart API Server
+```
+
+### Rules for every UI change
+
+- Always use `#0b2c60` (navy) and `#f97316` (saffron) — never hardcode other brand colors
+- Always mobile-first — test at 375px width
+- Translated string constants (arrays, config objects) must be **inside** the component function after `const { t } = useTranslation()` — never at module scope
+- After every layout change, verify bottom nav is still visible and fixed position
+
+---
+
+*Last updated: June 30, 2026 | Version 3.0.0 | Maintained by: Uttam Sahu (blasty8084)*

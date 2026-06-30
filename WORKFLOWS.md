@@ -1,5 +1,5 @@
 # SAHU CSC — Workflow Guide
-**Version 2.7.1 — June 27, 2026**
+**Version 3.0.0 — June 30, 2026**
 
 > **Read this first.**
 > This file is the single source of truth for how to start, seed, and troubleshoot the SAHU CSC platform. All workflow definitions live in `.replit`.
@@ -17,6 +17,8 @@ monorepo root/
 ├── lib/api-spec/             — OpenAPI spec (source of truth for codegen)
 └── lib/api-client-react/     — Auto-generated React Query hooks (Orval)
 ```
+
+**v3.0.0 changes:** Setup Wizard Banner (admin-only, session-dismissed) · `/api/setup-status` public endpoint · SMTP fully configured · VAPID auto-generated on startup · `scripts/post-merge.sh` auto-runs on import · Full documentation overhaul (`architectureV3.md`, `ReplitV3.md`, `CHANGELOG_V3.md`, `BUILD.md`) · Package versions bumped to 3.0.0 · TWA config updated to v3.0.0 · Port 21700 conflict fix (fuser kills both 5000 + 21700 on frontend start)
 
 **v2.7.1 changes:** Language switcher removed from sidebar (now only in Profile → Preferences → Language) · Language switching fixed (calls `setLanguage()` on select change + on prefs load) · Language indicator badge in Preferences section · API smart build check (skips esbuild if `dist/index.mjs` exists) · Frontend port-kill on startup
 

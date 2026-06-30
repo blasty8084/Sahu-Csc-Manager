@@ -1,5 +1,9 @@
 # SAHU CSC — Complete App Logic & Architecture
-**Version 2.7.1 — June 27, 2026**
+**Version 2.7.1 — June 27, 2026 (superseded)**
+
+> ⚡ **This document is superseded by `architectureV3.md` (V3.0.0, June 30, 2026).**  
+> For the current authoritative reference: `architectureV3.md` (V3) · `architectureV2.md` (V2 detail)  
+> This file is retained for historical reference only.
 
 ## Table of Contents
 

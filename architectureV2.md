@@ -1,9 +1,10 @@
 # SAHU CSC — Architecture Reference v2
-**Version 2.7.1 — June 27, 2026**
+**Version 2.7.1 — June 27, 2026 (superseded)**
 
-> This document is the single authoritative reference for the SAHU CSC platform architecture.  
-> It supersedes any older architecture notes in `ARCHITECTURE.md`.  
-> For a per-feature change history, see `changelogV2.md`.
+> ⚡ **This document is superseded by `architectureV3.md` (V3.0.0, June 30, 2026).**  
+> For the current authoritative architecture reference, see `architectureV3.md`.  
+> This file is retained for historical reference of the v2.x architecture.  
+> For a per-feature v2 change history, see `changelogV2.md`.
 
 ---
 
