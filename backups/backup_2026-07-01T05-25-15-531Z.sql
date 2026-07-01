@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict gixLC4bzG0FYIPxpqXRhnaslYebDmqEIHi6V7Q0ofUIvmW3IBCT2h8kMzkUdkTS
+\restrict cpkJiDWxPHFy1kZCxqjBVXiIZFV5HHSf8cWxab1i9MY5Q0MQU6KBTxMGnjymOCC
 
 -- Dumped from database version 16.10
 -- Dumped by pg_dump version 16.10
@@ -72,6 +72,7 @@ CREATE TABLE public.aeps_transactions (
     amount numeric(12,2) NOT NULL,
     customer_name text NOT NULL,
     description text,
+    receipt_token text,
     created_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
@@ -175,6 +176,88 @@ ALTER SEQUENCE public.backups_id_seq OWNED BY public.backups.id;
 
 
 --
+-- Name: broadcast_logs; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.broadcast_logs (
+    id integer NOT NULL,
+    sent_by integer NOT NULL,
+    channel text NOT NULL,
+    subject text NOT NULL,
+    body text NOT NULL,
+    recipient_filter text,
+    recipient_count integer DEFAULT 0 NOT NULL,
+    failed_count integer DEFAULT 0 NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.broadcast_logs OWNER TO postgres;
+
+--
+-- Name: broadcast_logs_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.broadcast_logs_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.broadcast_logs_id_seq OWNER TO postgres;
+
+--
+-- Name: broadcast_logs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.broadcast_logs_id_seq OWNED BY public.broadcast_logs.id;
+
+
+--
+-- Name: email_otps; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.email_otps (
+    id integer NOT NULL,
+    email text NOT NULL,
+    purpose text NOT NULL,
+    otp_hash text NOT NULL,
+    verified_token text,
+    expires_at timestamp with time zone NOT NULL,
+    used_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    ip_address text
+);
+
+
+ALTER TABLE public.email_otps OWNER TO postgres;
+
+--
+-- Name: email_otps_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.email_otps_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.email_otps_id_seq OWNER TO postgres;
+
+--
+-- Name: email_otps_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.email_otps_id_seq OWNED BY public.email_otps.id;
+
+
+--
 -- Name: ledger; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -188,6 +271,8 @@ CREATE TABLE public.ledger (
     description text DEFAULT ''::text NOT NULL,
     balance numeric(12,2) DEFAULT '0'::numeric NOT NULL,
     created_by integer NOT NULL,
+    receipt_number text,
+    receipt_token text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -338,6 +423,18 @@ ALTER SEQUENCE public.push_subscriptions_id_seq OWNED BY public.push_subscriptio
 
 
 --
+-- Name: receipt_counters; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.receipt_counters (
+    year integer NOT NULL,
+    last_count integer DEFAULT 0 NOT NULL
+);
+
+
+ALTER TABLE public.receipt_counters OWNER TO postgres;
+
+--
 -- Name: services; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -424,6 +521,89 @@ ALTER SEQUENCE public.settings_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.settings_id_seq OWNED BY public.settings.id;
+
+
+--
+-- Name: udhari_customers; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.udhari_customers (
+    id integer NOT NULL,
+    name text NOT NULL,
+    mobile text,
+    address text,
+    notes text,
+    balance numeric(12,2) DEFAULT '0'::numeric NOT NULL,
+    created_by integer NOT NULL,
+    created_at timestamp without time zone DEFAULT now() NOT NULL,
+    updated_at timestamp without time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.udhari_customers OWNER TO postgres;
+
+--
+-- Name: udhari_customers_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.udhari_customers_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.udhari_customers_id_seq OWNER TO postgres;
+
+--
+-- Name: udhari_customers_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.udhari_customers_id_seq OWNED BY public.udhari_customers.id;
+
+
+--
+-- Name: udhari_entries; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.udhari_entries (
+    id integer NOT NULL,
+    customer_id integer NOT NULL,
+    date text NOT NULL,
+    type text NOT NULL,
+    amount numeric(12,2) NOT NULL,
+    note text DEFAULT ''::text NOT NULL,
+    receipt_token text,
+    created_by integer NOT NULL,
+    created_at timestamp without time zone DEFAULT now() NOT NULL,
+    updated_at timestamp without time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.udhari_entries OWNER TO postgres;
+
+--
+-- Name: udhari_entries_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.udhari_entries_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.udhari_entries_id_seq OWNER TO postgres;
+
+--
+-- Name: udhari_entries_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.udhari_entries_id_seq OWNED BY public.udhari_entries.id;
 
 
 --
@@ -570,6 +750,8 @@ CREATE TABLE public.users (
     bio text,
     address text,
     active_session_token text,
+    appeal_submitted_at timestamp with time zone,
+    appeal_dismissed_at timestamp with time zone,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -628,6 +810,20 @@ ALTER TABLE ONLY public.backups ALTER COLUMN id SET DEFAULT nextval('public.back
 
 
 --
+-- Name: broadcast_logs id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.broadcast_logs ALTER COLUMN id SET DEFAULT nextval('public.broadcast_logs_id_seq'::regclass);
+
+
+--
+-- Name: email_otps id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.email_otps ALTER COLUMN id SET DEFAULT nextval('public.email_otps_id_seq'::regclass);
+
+
+--
 -- Name: ledger id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -670,6 +866,20 @@ ALTER TABLE ONLY public.settings ALTER COLUMN id SET DEFAULT nextval('public.set
 
 
 --
+-- Name: udhari_customers id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.udhari_customers ALTER COLUMN id SET DEFAULT nextval('public.udhari_customers_id_seq'::regclass);
+
+
+--
+-- Name: udhari_entries id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.udhari_entries ALTER COLUMN id SET DEFAULT nextval('public.udhari_entries_id_seq'::regclass);
+
+
+--
 -- Name: user_notification_preferences id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -702,6 +912,7 @@ ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_
 --
 
 COPY public.aeps_daily (id, date, created_by, opening_balance, notes, created_at, updated_at) FROM stdin;
+1	2026-06-30	1	50000.00	\N	2026-06-30 15:59:56.952222+00	2026-06-30 15:59:56.952222+00
 \.
 
 
@@ -709,7 +920,8 @@ COPY public.aeps_daily (id, date, created_by, opening_balance, notes, created_at
 -- Data for Name: aeps_transactions; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.aeps_transactions (id, daily_id, type, amount, customer_name, description, created_at) FROM stdin;
+COPY public.aeps_transactions (id, daily_id, type, amount, customer_name, description, receipt_token, created_at) FROM stdin;
+1	1	withdrawal	5000.00	Tgh	Central Bank of India · Aadhaar XXXX9999	40dce855-0c20-4324-8328-39c748f989c6	2026-06-30 16:00:12.216493+00
 \.
 
 
@@ -718,23 +930,22 @@ COPY public.aeps_transactions (id, daily_id, type, amount, customer_name, descri
 --
 
 COPY public.audit_logs (id, user_id, action, details, ip_address, created_at) FROM stdin;
-1	1	login	Logged in from Chrome on Android	49.42.227.27	2026-06-16 05:49:08.205275+00
-2	1	logout	User logged out	49.42.226.134	2026-06-16 06:39:45.694687+00
-3	1	login.failed_password	Wrong password attempt 1/5 from Chrome on Linux	49.42.226.134	2026-06-16 06:40:15.054242+00
-4	1	login	Logged in from Chrome on Linux	49.42.226.134	2026-06-16 06:40:26.655791+00
-5	1	ledger.clear	Deleted ALL ledger transactions	49.42.226.134	2026-06-16 06:40:38.089346+00
-6	1	settings.update	Updated system settings	49.42.226.134	2026-06-16 06:40:54.998936+00
-7	1	settings.update	Updated system settings	49.42.226.134	2026-06-16 06:40:57.425018+00
-8	1	REGISTRATION_ENABLED	Registration enabled by admin	49.42.226.134	2026-06-16 06:42:05.350077+00
-9	1	logout	User logged out	49.42.226.134	2026-06-16 06:42:18.211618+00
-10	7	REGISTER_REQUEST	New registration submitted: Xyz	49.42.226.134	2026-06-16 06:43:08.154951+00
-11	1	login	Logged in from Chrome on Android	49.42.226.134	2026-06-16 06:43:56.252742+00
-12	1	logout	User logged out	49.42.226.134	2026-06-16 06:44:22.765383+00
-13	7	login.failed_inactive	Login blocked — account pending approval from Chrome on Linux	49.42.226.134	2026-06-16 06:44:28.86371+00
-14	7	login.failed_inactive	Login blocked — account pending approval from Chrome on Android	49.42.226.134	2026-06-16 06:44:46.579768+00
-15	1	login	Logged in from Chrome on Android	49.42.226.134	2026-06-16 06:56:17.644325+00
-16	1	APPROVED	Approved user: Xyz	49.42.226.134	2026-06-16 06:57:18.893471+00
-17	1	user.delete	Deleted user 7	49.42.226.134	2026-06-16 06:58:06.88165+00
+1	1	login.failed_password	Wrong password attempt 1/5 from Chrome on Android	49.42.223.160	2026-07-01 04:59:58.813954+00
+2	1	login	Logged in from Chrome on Android	49.42.223.160	2026-07-01 05:00:06.886675+00
+3	1	logout	User logged out	49.42.223.160	2026-07-01 05:04:09.29037+00
+4	2	login	Logged in from Chrome on Android	49.42.223.160	2026-07-01 05:04:25.855469+00
+5	2	preferences.update	User updated preferences	49.42.223.160	2026-07-01 05:04:45.720253+00
+6	2	logout	User logged out	49.42.223.160	2026-07-01 05:05:18.290314+00
+7	1	login	Logged in from Chrome on Android	49.42.223.160	2026-07-01 05:05:49.392669+00
+8	1	settings.update	Updated system settings	49.42.223.160	2026-07-01 05:06:42.242178+00
+9	1	preferences.update	User updated preferences	49.42.223.160	2026-07-01 05:07:00.360612+00
+10	1	logout	User logged out	49.42.223.160	2026-07-01 05:16:28.072967+00
+11	2	login	Logged in from Chrome on Android	49.42.223.160	2026-07-01 05:17:19.826735+00
+12	2	logout	User logged out	49.42.223.160	2026-07-01 05:21:07.783275+00
+13	1	login	Logged in from Chrome on Android	49.42.223.160	2026-07-01 05:24:24.773188+00
+14	1	backup.delete	Deleted backup: backup_2026-06-16T07-05-40-015Z.sql	49.42.223.160	2026-07-01 05:24:52.332329+00
+15	1	backup.delete	Deleted backup: backup_2026-06-19T02-10-08-281Z.sql	49.42.223.160	2026-07-01 05:24:55.582167+00
+16	1	backup.delete	Deleted backup: backup_2026-06-30T13-45-16-291Z.sql	49.42.223.160	2026-07-01 05:24:59.237867+00
 \.
 
 
@@ -743,6 +954,23 @@ COPY public.audit_logs (id, user_id, action, details, ip_address, created_at) FR
 --
 
 COPY public.backups (id, filename, size, created_at) FROM stdin;
+4	backup_2026-06-30T16-00-32-656Z.sql	49151	2026-06-30 16:00:32+00
+\.
+
+
+--
+-- Data for Name: broadcast_logs; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.broadcast_logs (id, sent_by, channel, subject, body, recipient_filter, recipient_count, failed_count, created_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: email_otps; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.email_otps (id, email, purpose, otp_hash, verified_token, expires_at, used_at, created_at, ip_address) FROM stdin;
 \.
 
 
@@ -750,7 +978,9 @@ COPY public.backups (id, filename, size, created_at) FROM stdin;
 -- Data for Name: ledger; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.ledger (id, date, customer_name, service_type, credit, debit, description, balance, created_by, created_at, updated_at) FROM stdin;
+COPY public.ledger (id, date, customer_name, service_type, credit, debit, description, balance, created_by, receipt_number, receipt_token, created_at, updated_at) FROM stdin;
+1	2026-06-30	Gghh	Residence Certificate	0.00	0.00		0.00	1	CSC-2026-0001	2be9f70a-dfab-4b37-8e5a-bc35d4dbcd2a	2026-06-30 15:59:32.045558+00	2026-06-30 15:59:32.045558+00
+2	2026-06-30	Ffgg	Income Certificate	5000.00	0.00		5000.00	1	CSC-2026-0002	01561331-32ef-4551-a8d2-8ed58482ff7c	2026-06-30 15:59:46.574991+00	2026-06-30 15:59:46.574991+00
 \.
 
 
@@ -759,18 +989,12 @@ COPY public.ledger (id, date, customer_name, service_type, credit, debit, descri
 --
 
 COPY public.notifications (id, user_id, title, message, type, priority, is_read, read_at, link, meta, created_at) FROM stdin;
-1	\N	Welcome to SAHU CSC!	Your Common Service Center management platform is ready. Start by adding ledger entries.	success	MEDIUM	f	\N	\N	\N	2026-06-16 05:27:02.839457+00
-2	\N	Welcome to SAHU CSC!	Your Common Service Center management platform is ready. Start by adding ledger entries.	success	MEDIUM	f	\N	\N	\N	2026-06-16 05:40:54.575303+00
-3	1	Login Successful	You logged in from Chrome on Android (49.42.227.27).	security	MEDIUM	f	\N	\N	{"ip": "49.42.227.27", "device": "Chrome on Android"}	2026-06-16 05:49:08.219644+00
-4	\N	Welcome to SAHU CSC!	Your Common Service Center management platform is ready. Start by adding ledger entries.	success	MEDIUM	f	\N	\N	\N	2026-06-16 06:20:33.199676+00
-5	1	Failed Login Attempt	Failed password attempt 1/5 from Chrome on Linux (49.42.226.134).	security	HIGH	f	\N	\N	{"ip": "49.42.226.134", "device": "Chrome on Linux", "attemptCount": 1}	2026-06-16 06:40:15.062199+00
-6	1	Login Successful	You logged in from Chrome on Linux (49.42.226.134).	security	MEDIUM	f	\N	\N	{"ip": "49.42.226.134", "device": "Chrome on Linux"}	2026-06-16 06:40:26.663356+00
-7	\N	Registration Setting Changed	Public registration has been enabled by admin.	info	MEDIUM	f	\N	\N	\N	2026-06-16 06:42:05.353976+00
-8	\N	New Registration Request	Xyz submitted a registration request — pending approval	info	MEDIUM	f	\N	/users	\N	2026-06-16 06:43:08.159989+00
-9	\N	Failed Login Attempt	Failed login for: Xyx	warning	MEDIUM	f	\N	\N	\N	2026-06-16 06:43:24.173963+00
-10	1	Login Successful	You logged in from Chrome on Android (49.42.226.134).	security	MEDIUM	f	\N	\N	{"ip": "49.42.226.134", "device": "Chrome on Android"}	2026-06-16 06:43:56.263554+00
-11	1	Login Successful	You logged in from Chrome on Android (49.42.226.134).	security	MEDIUM	f	\N	\N	{"ip": "49.42.226.134", "device": "Chrome on Android"}	2026-06-16 06:56:17.700901+00
-12	\N	User Approved	Xyz's account has been approved.	success	MEDIUM	f	\N	\N	\N	2026-06-16 06:57:18.898149+00
+1	\N	Welcome to SAHU CSC!	Your Common Service Center management platform is ready. Start by adding ledger entries.	success	MEDIUM	f	\N	\N	\N	2026-07-01 04:59:25.452264+00
+2	1	Failed Login Attempt	Failed password attempt 1/5 from Chrome on Android (49.42.223.160).	security	HIGH	f	\N	\N	{"ip": "49.42.223.160", "device": "Chrome on Android", "attemptCount": 1}	2026-07-01 04:59:58.843545+00
+3	1	Login Successful	You logged in from Chrome on Android (49.42.223.160).	security	MEDIUM	f	\N	\N	{"ip": "49.42.223.160", "device": "Chrome on Android"}	2026-07-01 05:00:06.892368+00
+4	2	Login Successful	You logged in from Chrome on Android (49.42.223.160).	security	MEDIUM	f	\N	\N	{"ip": "49.42.223.160", "device": "Chrome on Android"}	2026-07-01 05:04:25.861429+00
+5	1	Login Successful	You logged in from Chrome on Android (49.42.223.160).	security	MEDIUM	f	\N	\N	{"ip": "49.42.223.160", "device": "Chrome on Android"}	2026-07-01 05:05:49.396975+00
+6	1	Login Successful	You logged in from Chrome on Android (49.42.223.160).	security	MEDIUM	f	\N	\N	{"ip": "49.42.223.160", "device": "Chrome on Android"}	2026-07-01 05:24:24.778494+00
 \.
 
 
@@ -787,7 +1011,15 @@ COPY public.password_reset_tokens (id, user_id, token, expires_at, used_at, crea
 --
 
 COPY public.push_subscriptions (id, user_id, endpoint, p256dh, auth, user_agent, created_at) FROM stdin;
-1	1	https://fcm.googleapis.com/fcm/send/dp4TEiSE84U:APA91bFdG5Vv-R2yQvpREff_7JBU_HnO-R_-1SC6ndwacyU8B1sR-DDcNFykBFI4ar8e7y9XKRVTSVvNTdjCXohRknIdb0abcE0JYebQQdE2H_Y8dWDleui2zqkBhvAq5UPijoHQ7Igp	BG6aZk-WgYKAMf7H4Ec85TVNxn29QNgVZd0NcMzFhVUzGnxHc1xEhskF1YN9iq1WyhRtFBH1TIp43PBPmjr6ZXU	lIruWozgnwOdgAwwyKe5Vw	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36	2026-06-16 06:57:57.880821
+\.
+
+
+--
+-- Data for Name: receipt_counters; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.receipt_counters (year, last_count) FROM stdin;
+2026	2
 \.
 
 
@@ -796,72 +1028,28 @@ COPY public.push_subscriptions (id, user_id, endpoint, p256dh, auth, user_agent,
 --
 
 COPY public.services (id, name, description, price, category, is_active, created_at, updated_at) FROM stdin;
-1	PAN Card	PAN card application and correction	107.00	Government ID	t	2026-06-16 05:27:02.356805+00	2026-06-16 05:27:02.356805+00
-2	Aadhaar Update	Aadhaar card update and correction	50.00	Government ID	t	2026-06-16 05:27:02.361621+00	2026-06-16 05:27:02.361621+00
-3	Voter ID	Voter ID card enrollment and correction	0.00	Government ID	t	2026-06-16 05:27:02.365275+00	2026-06-16 05:27:02.365275+00
-4	Passport Application	Passport application assistance	500.00	Government ID	t	2026-06-16 05:27:02.369555+00	2026-06-16 05:27:02.369555+00
-5	Driving License	DL application and renewal	300.00	Government ID	t	2026-06-16 05:27:02.372996+00	2026-06-16 05:27:02.372996+00
-6	Income Certificate	Income certificate from state govt	30.00	Certificates	t	2026-06-16 05:27:02.377229+00	2026-06-16 05:27:02.377229+00
-7	Caste Certificate	Caste certificate application	30.00	Certificates	t	2026-06-16 05:27:02.380837+00	2026-06-16 05:27:02.380837+00
-8	Residence Certificate	Residence proof certificate	30.00	Certificates	t	2026-06-16 05:27:02.384453+00	2026-06-16 05:27:02.384453+00
-9	Birth Certificate	Birth certificate correction/copy	50.00	Certificates	t	2026-06-16 05:27:02.387757+00	2026-06-16 05:27:02.387757+00
-10	Insurance Premium	Life / health insurance premium payment	20.00	Insurance & Finance	t	2026-06-16 05:27:02.391277+00	2026-06-16 05:27:02.391277+00
-11	Loan Application	Bank loan application assistance	200.00	Insurance & Finance	t	2026-06-16 05:27:02.395539+00	2026-06-16 05:27:02.395539+00
-12	Bank Account Opening	Zero-balance savings account	0.00	Insurance & Finance	t	2026-06-16 05:27:02.400712+00	2026-06-16 05:27:02.400712+00
-13	Electricity Bill	Electricity bill payment	10.00	Utility Bills	t	2026-06-16 05:27:02.403828+00	2026-06-16 05:27:02.403828+00
-14	Water Bill	Water supply bill payment	10.00	Utility Bills	t	2026-06-16 05:27:02.40708+00	2026-06-16 05:27:02.40708+00
-15	Mobile Recharge	Prepaid mobile recharge	5.00	Utility Bills	t	2026-06-16 05:27:02.410067+00	2026-06-16 05:27:02.410067+00
-16	DTH Recharge	DTH / cable TV recharge	10.00	Utility Bills	t	2026-06-16 05:27:02.413243+00	2026-06-16 05:27:02.413243+00
-17	PMKVY Enrollment	Skill training enrollment	0.00	Government Schemes	t	2026-06-16 05:27:02.416376+00	2026-06-16 05:27:02.416376+00
-18	PM Kisan	PM Kisan beneficiary registration	0.00	Government Schemes	t	2026-06-16 05:27:02.423564+00	2026-06-16 05:27:02.423564+00
-19	Ayushman Bharat	Health card registration	30.00	Government Schemes	t	2026-06-16 05:27:02.428929+00	2026-06-16 05:27:02.428929+00
-20	Photo Print	Passport size photo printing	30.00	Other Services	t	2026-06-16 05:27:02.432301+00	2026-06-16 05:27:02.432301+00
-21	Photocopy	Document photocopying	2.00	Other Services	t	2026-06-16 05:27:02.434895+00	2026-06-16 05:27:02.434895+00
-22	Scanning	Document scanning	10.00	Other Services	t	2026-06-16 05:27:02.439092+00	2026-06-16 05:27:02.439092+00
-23	PAN Card	PAN card application and correction	107.00	Government ID	t	2026-06-16 05:40:54.470935+00	2026-06-16 05:40:54.470935+00
-24	Aadhaar Update	Aadhaar card update and correction	50.00	Government ID	t	2026-06-16 05:40:54.477963+00	2026-06-16 05:40:54.477963+00
-25	Voter ID	Voter ID card enrollment and correction	0.00	Government ID	t	2026-06-16 05:40:54.482481+00	2026-06-16 05:40:54.482481+00
-26	Passport Application	Passport application assistance	500.00	Government ID	t	2026-06-16 05:40:54.487749+00	2026-06-16 05:40:54.487749+00
-27	Driving License	DL application and renewal	300.00	Government ID	t	2026-06-16 05:40:54.496639+00	2026-06-16 05:40:54.496639+00
-28	Income Certificate	Income certificate from state govt	30.00	Certificates	t	2026-06-16 05:40:54.500232+00	2026-06-16 05:40:54.500232+00
-29	Caste Certificate	Caste certificate application	30.00	Certificates	t	2026-06-16 05:40:54.504097+00	2026-06-16 05:40:54.504097+00
-30	Residence Certificate	Residence proof certificate	30.00	Certificates	t	2026-06-16 05:40:54.510104+00	2026-06-16 05:40:54.510104+00
-31	Birth Certificate	Birth certificate correction/copy	50.00	Certificates	t	2026-06-16 05:40:54.512624+00	2026-06-16 05:40:54.512624+00
-32	Insurance Premium	Life / health insurance premium payment	20.00	Insurance & Finance	t	2026-06-16 05:40:54.516382+00	2026-06-16 05:40:54.516382+00
-33	Loan Application	Bank loan application assistance	200.00	Insurance & Finance	t	2026-06-16 05:40:54.519062+00	2026-06-16 05:40:54.519062+00
-34	Bank Account Opening	Zero-balance savings account	0.00	Insurance & Finance	t	2026-06-16 05:40:54.52156+00	2026-06-16 05:40:54.52156+00
-35	Electricity Bill	Electricity bill payment	10.00	Utility Bills	t	2026-06-16 05:40:54.52608+00	2026-06-16 05:40:54.52608+00
-36	Water Bill	Water supply bill payment	10.00	Utility Bills	t	2026-06-16 05:40:54.528895+00	2026-06-16 05:40:54.528895+00
-37	Mobile Recharge	Prepaid mobile recharge	5.00	Utility Bills	t	2026-06-16 05:40:54.53206+00	2026-06-16 05:40:54.53206+00
-38	DTH Recharge	DTH / cable TV recharge	10.00	Utility Bills	t	2026-06-16 05:40:54.534634+00	2026-06-16 05:40:54.534634+00
-39	PMKVY Enrollment	Skill training enrollment	0.00	Government Schemes	t	2026-06-16 05:40:54.536999+00	2026-06-16 05:40:54.536999+00
-40	PM Kisan	PM Kisan beneficiary registration	0.00	Government Schemes	t	2026-06-16 05:40:54.539786+00	2026-06-16 05:40:54.539786+00
-41	Ayushman Bharat	Health card registration	30.00	Government Schemes	t	2026-06-16 05:40:54.542131+00	2026-06-16 05:40:54.542131+00
-42	Photo Print	Passport size photo printing	30.00	Other Services	t	2026-06-16 05:40:54.544743+00	2026-06-16 05:40:54.544743+00
-43	Photocopy	Document photocopying	2.00	Other Services	t	2026-06-16 05:40:54.547499+00	2026-06-16 05:40:54.547499+00
-44	Scanning	Document scanning	10.00	Other Services	t	2026-06-16 05:40:54.554447+00	2026-06-16 05:40:54.554447+00
-45	PAN Card	PAN card application and correction	107.00	Government ID	t	2026-06-16 06:20:33.09166+00	2026-06-16 06:20:33.09166+00
-46	Aadhaar Update	Aadhaar card update and correction	50.00	Government ID	t	2026-06-16 06:20:33.104269+00	2026-06-16 06:20:33.104269+00
-47	Voter ID	Voter ID card enrollment and correction	0.00	Government ID	t	2026-06-16 06:20:33.108525+00	2026-06-16 06:20:33.108525+00
-48	Passport Application	Passport application assistance	500.00	Government ID	t	2026-06-16 06:20:33.114204+00	2026-06-16 06:20:33.114204+00
-49	Driving License	DL application and renewal	300.00	Government ID	t	2026-06-16 06:20:33.116666+00	2026-06-16 06:20:33.116666+00
-50	Income Certificate	Income certificate from state govt	30.00	Certificates	t	2026-06-16 06:20:33.119304+00	2026-06-16 06:20:33.119304+00
-51	Caste Certificate	Caste certificate application	30.00	Certificates	t	2026-06-16 06:20:33.122429+00	2026-06-16 06:20:33.122429+00
-52	Residence Certificate	Residence proof certificate	30.00	Certificates	t	2026-06-16 06:20:33.126785+00	2026-06-16 06:20:33.126785+00
-53	Birth Certificate	Birth certificate correction/copy	50.00	Certificates	t	2026-06-16 06:20:33.12976+00	2026-06-16 06:20:33.12976+00
-54	Insurance Premium	Life / health insurance premium payment	20.00	Insurance & Finance	t	2026-06-16 06:20:33.132162+00	2026-06-16 06:20:33.132162+00
-55	Loan Application	Bank loan application assistance	200.00	Insurance & Finance	t	2026-06-16 06:20:33.137055+00	2026-06-16 06:20:33.137055+00
-56	Bank Account Opening	Zero-balance savings account	0.00	Insurance & Finance	t	2026-06-16 06:20:33.141504+00	2026-06-16 06:20:33.141504+00
-57	Electricity Bill	Electricity bill payment	10.00	Utility Bills	t	2026-06-16 06:20:33.146098+00	2026-06-16 06:20:33.146098+00
-58	Water Bill	Water supply bill payment	10.00	Utility Bills	t	2026-06-16 06:20:33.148961+00	2026-06-16 06:20:33.148961+00
-59	Mobile Recharge	Prepaid mobile recharge	5.00	Utility Bills	t	2026-06-16 06:20:33.152686+00	2026-06-16 06:20:33.152686+00
-60	DTH Recharge	DTH / cable TV recharge	10.00	Utility Bills	t	2026-06-16 06:20:33.156458+00	2026-06-16 06:20:33.156458+00
-61	PMKVY Enrollment	Skill training enrollment	0.00	Government Schemes	t	2026-06-16 06:20:33.158755+00	2026-06-16 06:20:33.158755+00
-62	PM Kisan	PM Kisan beneficiary registration	0.00	Government Schemes	t	2026-06-16 06:20:33.161044+00	2026-06-16 06:20:33.161044+00
-63	Ayushman Bharat	Health card registration	30.00	Government Schemes	t	2026-06-16 06:20:33.163354+00	2026-06-16 06:20:33.163354+00
-64	Photo Print	Passport size photo printing	30.00	Other Services	t	2026-06-16 06:20:33.165994+00	2026-06-16 06:20:33.165994+00
-65	Photocopy	Document photocopying	2.00	Other Services	t	2026-06-16 06:20:33.168091+00	2026-06-16 06:20:33.168091+00
-66	Scanning	Document scanning	10.00	Other Services	t	2026-06-16 06:20:33.170182+00	2026-06-16 06:20:33.170182+00
+1	PAN Card	PAN card application and correction	107.00	Government ID	t	2026-07-01 04:59:25.341876+00	2026-07-01 04:59:25.341876+00
+2	Aadhaar Update	Aadhaar card update and correction	50.00	Government ID	t	2026-07-01 04:59:25.348936+00	2026-07-01 04:59:25.348936+00
+3	Voter ID	Voter ID card enrollment and correction	0.00	Government ID	t	2026-07-01 04:59:25.353416+00	2026-07-01 04:59:25.353416+00
+4	Passport Application	Passport application assistance	500.00	Government ID	t	2026-07-01 04:59:25.35942+00	2026-07-01 04:59:25.35942+00
+5	Driving License	DL application and renewal	300.00	Government ID	t	2026-07-01 04:59:25.362489+00	2026-07-01 04:59:25.362489+00
+6	Income Certificate	Income certificate from state govt	30.00	Certificates	t	2026-07-01 04:59:25.365832+00	2026-07-01 04:59:25.365832+00
+7	Caste Certificate	Caste certificate application	30.00	Certificates	t	2026-07-01 04:59:25.368815+00	2026-07-01 04:59:25.368815+00
+8	Residence Certificate	Residence proof certificate	30.00	Certificates	t	2026-07-01 04:59:25.372535+00	2026-07-01 04:59:25.372535+00
+9	Birth Certificate	Birth certificate correction/copy	50.00	Certificates	t	2026-07-01 04:59:25.375672+00	2026-07-01 04:59:25.375672+00
+10	Insurance Premium	Life / health insurance premium payment	20.00	Insurance & Finance	t	2026-07-01 04:59:25.378355+00	2026-07-01 04:59:25.378355+00
+11	Loan Application	Bank loan application assistance	200.00	Insurance & Finance	t	2026-07-01 04:59:25.381162+00	2026-07-01 04:59:25.381162+00
+12	Bank Account Opening	Zero-balance savings account	0.00	Insurance & Finance	t	2026-07-01 04:59:25.384695+00	2026-07-01 04:59:25.384695+00
+13	Electricity Bill	Electricity bill payment	10.00	Utility Bills	t	2026-07-01 04:59:25.387641+00	2026-07-01 04:59:25.387641+00
+14	Water Bill	Water supply bill payment	10.00	Utility Bills	t	2026-07-01 04:59:25.3904+00	2026-07-01 04:59:25.3904+00
+15	Mobile Recharge	Prepaid mobile recharge	5.00	Utility Bills	t	2026-07-01 04:59:25.393005+00	2026-07-01 04:59:25.393005+00
+16	DTH Recharge	DTH / cable TV recharge	10.00	Utility Bills	t	2026-07-01 04:59:25.396318+00	2026-07-01 04:59:25.396318+00
+17	PMKVY Enrollment	Skill training enrollment	0.00	Government Schemes	t	2026-07-01 04:59:25.399196+00	2026-07-01 04:59:25.399196+00
+18	PM Kisan	PM Kisan beneficiary registration	0.00	Government Schemes	t	2026-07-01 04:59:25.402224+00	2026-07-01 04:59:25.402224+00
+19	Ayushman Bharat	Health card registration	30.00	Government Schemes	t	2026-07-01 04:59:25.405349+00	2026-07-01 04:59:25.405349+00
+20	Photo Print	Passport size photo printing	30.00	Other Services	t	2026-07-01 04:59:25.40905+00	2026-07-01 04:59:25.40905+00
+21	Photocopy	Document photocopying	2.00	Other Services	t	2026-07-01 04:59:25.412537+00	2026-07-01 04:59:25.412537+00
+22	Scanning	Document scanning	10.00	Other Services	t	2026-07-01 04:59:25.415265+00	2026-07-01 04:59:25.415265+00
 \.
 
 
@@ -870,7 +1058,8 @@ COPY public.services (id, name, description, price, category, is_active, created
 --
 
 COPY public.session (sid, sess, expire) FROM stdin;
-AGmRVX94TtwFjpfWkAj_Cdo4ESgS0mt-	{"cookie":{"originalMaxAge":28800000,"expires":"2026-06-16T14:56:17.706Z","secure":false,"httpOnly":true,"path":"/","sameSite":"lax"},"userId":1,"userRole":"admin","sessionToken":"6ef8dd7a-2735-4de2-8997-2d53603e2590","sessionId":"6ef8dd7a-2735-4de2-8997-2d53603e2590"}	2026-06-16 15:05:37
+IcJgL_rzxslkg_0gvmxXnr5gelMtfloi	{"cookie":{"originalMaxAge":28800000,"expires":"2026-06-30T21:20:57.069Z","secure":false,"httpOnly":true,"path":"/","sameSite":"lax"},"userId":1,"userRole":"admin","sessionToken":"8c08253d-6719-4d4d-8390-dd3e10608054","sessionId":"8c08253d-6719-4d4d-8390-dd3e10608054"}	2026-07-01 00:00:32
+C-0u83LhA_SY8D0NQfvEF6vmIl3R2WbX	{"cookie":{"originalMaxAge":28800000,"expires":"2026-07-01T13:24:24.782Z","secure":false,"httpOnly":true,"path":"/","sameSite":"lax"},"userId":1,"userRole":"admin","sessionToken":"88b2a5de-6643-4051-ad06-1dbc103a2bf4","sessionId":"88b2a5de-6643-4051-ad06-1dbc103a2bf4"}	2026-07-01 13:25:06
 \.
 
 
@@ -879,16 +1068,37 @@ AGmRVX94TtwFjpfWkAj_Cdo4ESgS0mt-	{"cookie":{"originalMaxAge":28800000,"expires":
 --
 
 COPY public.settings (id, key, value, updated_at) FROM stdin;
-1	businessName	SAHU CSC Center	2026-06-16 06:40:57.392+00
-2	businessAddress	Village Road, Block HQ, Dist-XXX, Odisha - 000000	2026-06-16 06:40:57.396+00
-3	businessMobile	9876543210	2026-06-16 06:40:57.4+00
-4	businessEmail	admin@sahucsc.in	2026-06-16 06:40:57.403+00
-5	language	en	2026-06-16 06:40:57.406+00
-6	theme	light	2026-06-16 06:40:57.411+00
-7	currency	INR	2026-06-16 06:40:57.414+00
-8	autoBackup	true	2026-06-16 06:40:57.418+00
-9	backupFrequencyDays	1	2026-06-16 06:40:57.421+00
-28	registration_open	true	2026-06-16 06:42:05.309+00
+10	backupEnabled	true	2026-07-01 05:03:31.609155+00
+11	backupFrequency	daily	2026-07-01 05:03:31.609155+00
+12	backupTime	02:00	2026-07-01 05:03:31.609155+00
+13	backupDays	0	2026-07-01 05:03:31.609155+00
+14	backupRetention	30	2026-07-01 05:03:31.609155+00
+15	registration_open	false	2026-07-01 05:06:34.152737+00
+1	businessName	SAHU CSC Center	2026-07-01 05:06:42.209+00
+2	businessAddress	Village Road, Block HQ, Dist-XXX, Odisha - 000000	2026-07-01 05:06:42.213+00
+3	businessMobile	9876543210	2026-07-01 05:06:42.217+00
+4	businessEmail	admin@sahucsc.in	2026-07-01 05:06:42.221+00
+5	language	en	2026-07-01 05:06:42.225+00
+6	theme	light	2026-07-01 05:06:42.228+00
+7	currency	INR	2026-07-01 05:06:42.232+00
+8	autoBackup	false	2026-07-01 05:06:42.235+00
+9	backupFrequencyDays	7	2026-07-01 05:06:42.238+00
+\.
+
+
+--
+-- Data for Name: udhari_customers; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.udhari_customers (id, name, mobile, address, notes, balance, created_by, created_at, updated_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: udhari_entries; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.udhari_entries (id, customer_id, date, type, amount, note, receipt_token, created_by, created_at, updated_at) FROM stdin;
 \.
 
 
@@ -905,7 +1115,8 @@ COPY public.user_notification_preferences (id, user_id, enabled, security_alerts
 --
 
 COPY public.user_preferences (id, user_id, theme, language, dashboard_layout, updated_at) FROM stdin;
-1	1	light	en	default	2026-06-16 05:57:32.172243+00
+1	2	light	or	default	2026-07-01 05:04:45.715+00
+2	1	light	en	default	2026-07-01 05:07:00.356+00
 \.
 
 
@@ -914,10 +1125,11 @@ COPY public.user_preferences (id, user_id, theme, language, dashboard_layout, up
 --
 
 COPY public.user_sessions (id, user_id, session_id, device_info, browser, os, ip_address, is_active, remember_me, last_activity, expires_at, created_at) FROM stdin;
-1	1	d2e652ad-d229-45ea-90d9-a7bfc3ebb5ee	Chrome on Android	Chrome	Android	49.42.227.27	f	f	2026-06-16 06:39:05.306+00	2026-06-16 13:49:07.896+00	2026-06-16 05:49:08.193689+00
-2	1	a70d7b83-e746-4118-8f86-37e05543e411	Chrome on Linux	Chrome	Linux	49.42.226.134	f	f	2026-06-16 06:41:34.478+00	2026-06-16 14:40:26.62+00	2026-06-16 06:40:26.646361+00
-3	1	7bc62412-ecee-4d8c-a78b-ce978bbbd4bf	Chrome on Android	Chrome	Android	49.42.226.134	f	f	2026-06-16 06:43:56.239929+00	2026-06-16 14:43:56.174+00	2026-06-16 06:43:56.239929+00
-4	1	6ef8dd7a-2735-4de2-8997-2d53603e2590	Chrome on Android	Chrome	Android	49.42.226.134	t	f	2026-06-16 07:05:24.858+00	2026-06-16 14:56:17.357+00	2026-06-16 06:56:17.636764+00
+1	1	b6bc5e6d-5008-4662-b066-df484285ef94	Chrome on Android	Chrome	Android	49.42.223.160	f	f	2026-07-01 05:03:59.76+00	2026-07-01 13:00:06.873+00	2026-07-01 05:00:06.879228+00
+2	2	8b86ae9f-327b-4bfc-a956-01addbf56211	Chrome on Android	Chrome	Android	49.42.223.160	f	f	2026-07-01 05:04:25.849553+00	2026-07-01 13:04:25.84+00	2026-07-01 05:04:25.849553+00
+3	1	a13b2c9e-2921-4c8f-a607-9bf5737b88c1	Chrome on Android	Chrome	Android	49.42.223.160	f	f	2026-07-01 05:15:42.823+00	2026-07-01 13:05:49.38+00	2026-07-01 05:05:49.388346+00
+4	2	ed309f69-23e6-4678-a750-04dc178c3373	Chrome on Android	Chrome	Android	49.42.223.160	f	f	2026-07-01 05:20:45.549+00	2026-07-01 13:17:19.783+00	2026-07-01 05:17:19.822505+00
+5	1	88b2a5de-6643-4051-ad06-1dbc103a2bf4	Chrome on Android	Chrome	Android	49.42.223.160	t	f	2026-07-01 05:24:24.769291+00	2026-07-01 13:24:24.735+00	2026-07-01 05:24:24.769291+00
 \.
 
 
@@ -925,9 +1137,9 @@ COPY public.user_sessions (id, user_id, session_id, device_info, browser, os, ip
 -- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.users (id, username, email, mobile, full_name, password_hash, role, is_active, status, failed_login_attempts, locked_until, rejection_reason, profile_picture, bio, address, active_session_token, created_at, updated_at) FROM stdin;
-2	operator	operator@sahucsc.in	9876543211	CSC Operator	$2b$12$/bpsOBQhDD3claX9TrYavOq1qKFEyMKn0oP7U/.SRjNXY5N2jfX4y	operator	t	ACTIVE	0	\N	\N	\N	\N	\N	\N	2026-06-16 05:27:02.352536+00	2026-06-16 05:27:02.352536+00
-1	admin	admin@sahucsc.in	9876543210	SAHU Admin	$2b$12$7YkpwLxjDhIdd9nuRsksnesJp7ZG/dV.5fA9Wf5VSH5ahi.aOhcDO	admin	t	ACTIVE	0	\N	\N	\N	\N	\N	6ef8dd7a-2735-4de2-8997-2d53603e2590	2026-06-16 05:27:02.045636+00	2026-06-16 06:56:17.358+00
+COPY public.users (id, username, email, mobile, full_name, password_hash, role, is_active, status, failed_login_attempts, locked_until, rejection_reason, profile_picture, bio, address, active_session_token, appeal_submitted_at, appeal_dismissed_at, created_at, updated_at) FROM stdin;
+2	operator	operator@sahucsc.in	9876543211	CSC Operator	$2b$12$a5PhyrlohrgfweWNcX80Q.j/YBxH7A8u0JXDbc6UDNm/vLymCzbgm	operator	t	ACTIVE	0	\N	\N	\N	\N	\N	\N	\N	\N	2026-07-01 04:59:25.335216+00	2026-07-01 05:21:07.778+00
+1	admin	admin@sahucsc.in	9876543210	SAHU Admin	$2b$12$v/pVzaAR2P2U89lptR6hcOaf0nBMfcck9grHq7GjnHYfsL4vxJnke	admin	t	ACTIVE	0	\N	\N	\N	\N	\N	88b2a5de-6643-4051-ad06-1dbc103a2bf4	\N	\N	2026-07-01 04:59:24.795333+00	2026-07-01 05:24:24.735+00
 \.
 
 
@@ -935,42 +1147,56 @@ COPY public.users (id, username, email, mobile, full_name, password_hash, role, 
 -- Name: aeps_daily_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.aeps_daily_id_seq', 1, false);
+SELECT pg_catalog.setval('public.aeps_daily_id_seq', 1, true);
 
 
 --
 -- Name: aeps_transactions_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.aeps_transactions_id_seq', 1, false);
+SELECT pg_catalog.setval('public.aeps_transactions_id_seq', 1, true);
 
 
 --
 -- Name: audit_logs_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.audit_logs_id_seq', 17, true);
+SELECT pg_catalog.setval('public.audit_logs_id_seq', 16, true);
 
 
 --
 -- Name: backups_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.backups_id_seq', 1, false);
+SELECT pg_catalog.setval('public.backups_id_seq', 1, true);
+
+
+--
+-- Name: broadcast_logs_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.broadcast_logs_id_seq', 1, false);
+
+
+--
+-- Name: email_otps_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.email_otps_id_seq', 1, false);
 
 
 --
 -- Name: ledger_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.ledger_id_seq', 102, true);
+SELECT pg_catalog.setval('public.ledger_id_seq', 2, true);
 
 
 --
 -- Name: notifications_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.notifications_id_seq', 12, true);
+SELECT pg_catalog.setval('public.notifications_id_seq', 6, true);
 
 
 --
@@ -984,21 +1210,35 @@ SELECT pg_catalog.setval('public.password_reset_tokens_id_seq', 1, false);
 -- Name: push_subscriptions_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.push_subscriptions_id_seq', 1, true);
+SELECT pg_catalog.setval('public.push_subscriptions_id_seq', 1, false);
 
 
 --
 -- Name: services_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.services_id_seq', 66, true);
+SELECT pg_catalog.setval('public.services_id_seq', 22, true);
 
 
 --
 -- Name: settings_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.settings_id_seq', 28, true);
+SELECT pg_catalog.setval('public.settings_id_seq', 15, true);
+
+
+--
+-- Name: udhari_customers_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.udhari_customers_id_seq', 1, false);
+
+
+--
+-- Name: udhari_entries_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.udhari_entries_id_seq', 1, false);
 
 
 --
@@ -1019,14 +1259,14 @@ SELECT pg_catalog.setval('public.user_preferences_id_seq', 1, true);
 -- Name: user_sessions_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.user_sessions_id_seq', 4, true);
+SELECT pg_catalog.setval('public.user_sessions_id_seq', 5, true);
 
 
 --
 -- Name: users_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.users_id_seq', 7, true);
+SELECT pg_catalog.setval('public.users_id_seq', 2, true);
 
 
 --
@@ -1070,11 +1310,51 @@ ALTER TABLE ONLY public.backups
 
 
 --
+-- Name: broadcast_logs broadcast_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.broadcast_logs
+    ADD CONSTRAINT broadcast_logs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: email_otps email_otps_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.email_otps
+    ADD CONSTRAINT email_otps_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: email_otps email_otps_verified_token_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.email_otps
+    ADD CONSTRAINT email_otps_verified_token_unique UNIQUE (verified_token);
+
+
+--
 -- Name: ledger ledger_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.ledger
     ADD CONSTRAINT ledger_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ledger ledger_receipt_number_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ledger
+    ADD CONSTRAINT ledger_receipt_number_unique UNIQUE (receipt_number);
+
+
+--
+-- Name: ledger ledger_receipt_token_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ledger
+    ADD CONSTRAINT ledger_receipt_token_unique UNIQUE (receipt_token);
 
 
 --
@@ -1118,6 +1398,22 @@ ALTER TABLE ONLY public.push_subscriptions
 
 
 --
+-- Name: receipt_counters receipt_counters_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.receipt_counters
+    ADD CONSTRAINT receipt_counters_pkey PRIMARY KEY (year);
+
+
+--
+-- Name: services services_name_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.services
+    ADD CONSTRAINT services_name_unique UNIQUE (name);
+
+
+--
 -- Name: services services_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1147,6 +1443,22 @@ ALTER TABLE ONLY public.settings
 
 ALTER TABLE ONLY public.settings
     ADD CONSTRAINT settings_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: udhari_customers udhari_customers_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.udhari_customers
+    ADD CONSTRAINT udhari_customers_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: udhari_entries udhari_entries_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.udhari_entries
+    ADD CONSTRAINT udhari_entries_pkey PRIMARY KEY (id);
 
 
 --
@@ -1257,6 +1569,27 @@ CREATE INDEX idx_audit_logs_user_id ON public.audit_logs USING btree (user_id);
 
 
 --
+-- Name: idx_broadcast_logs_channel; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_broadcast_logs_channel ON public.broadcast_logs USING btree (channel);
+
+
+--
+-- Name: idx_broadcast_logs_created_at; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_broadcast_logs_created_at ON public.broadcast_logs USING btree (created_at);
+
+
+--
+-- Name: idx_broadcast_logs_sent_by; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_broadcast_logs_sent_by ON public.broadcast_logs USING btree (sent_by);
+
+
+--
 -- Name: idx_ledger_created_by; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1320,6 +1653,41 @@ CREATE INDEX idx_notifications_user_read ON public.notifications USING btree (us
 
 
 --
+-- Name: idx_udhari_customers_created_by; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_udhari_customers_created_by ON public.udhari_customers USING btree (created_by);
+
+
+--
+-- Name: idx_udhari_customers_mobile; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_udhari_customers_mobile ON public.udhari_customers USING btree (mobile);
+
+
+--
+-- Name: idx_udhari_entries_created_by; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_udhari_entries_created_by ON public.udhari_entries USING btree (created_by);
+
+
+--
+-- Name: idx_udhari_entries_customer_id; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_udhari_entries_customer_id ON public.udhari_entries USING btree (customer_id);
+
+
+--
+-- Name: idx_udhari_entries_date; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_udhari_entries_date ON public.udhari_entries USING btree (date);
+
+
+--
 -- Name: idx_user_sessions_active_expires; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1349,6 +1717,30 @@ ALTER TABLE ONLY public.aeps_transactions
 
 
 --
+-- Name: udhari_customers udhari_customers_created_by_users_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.udhari_customers
+    ADD CONSTRAINT udhari_customers_created_by_users_id_fk FOREIGN KEY (created_by) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: udhari_entries udhari_entries_created_by_users_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.udhari_entries
+    ADD CONSTRAINT udhari_entries_created_by_users_id_fk FOREIGN KEY (created_by) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: udhari_entries udhari_entries_customer_id_udhari_customers_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.udhari_entries
+    ADD CONSTRAINT udhari_entries_customer_id_udhari_customers_id_fk FOREIGN KEY (customer_id) REFERENCES public.udhari_customers(id) ON DELETE CASCADE;
+
+
+--
 -- Name: user_notification_preferences user_notification_preferences_user_id_users_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1368,5 +1760,5 @@ ALTER TABLE ONLY public.user_sessions
 -- PostgreSQL database dump complete
 --
 
-\unrestrict gixLC4bzG0FYIPxpqXRhnaslYebDmqEIHi6V7Q0ofUIvmW3IBCT2h8kMzkUdkTS
+\unrestrict cpkJiDWxPHFy1kZCxqjBVXiIZFV5HHSf8cWxab1i9MY5Q0MQU6KBTxMGnjymOCC
 
