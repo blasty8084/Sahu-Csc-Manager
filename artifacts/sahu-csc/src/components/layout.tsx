@@ -7,13 +7,14 @@ import {
   LayoutDashboard, BookOpen, Briefcase, BarChart3, Bell,
   History, Users, Database, Menu, Megaphone, FileArchive,
   Fingerprint, UserCircle, WifiOff, ArrowDownToLine, HeartPulse, MonitorSmartphone,
-  LogIn, Sun, Moon, Info, HandCoins,
+  LogIn, Sun, Moon, Info, HandCoins, LogOut, AlertTriangle,
 } from "lucide-react";
 import { usePendingCount } from "@/hooks/use-pending-count";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { AppLogo } from "@/components/app-logo";
 import { PWAInstallBanner } from "@/components/pwa-install-banner";
 import { SetupWizardBanner } from "@/components/setup-wizard-banner";
@@ -215,7 +216,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const { data: pendingCountData } = usePendingCount();
   const pendingCount = isAdmin ? (pendingCountData?.count ?? 0) : 0;
 
-  const handleLogout = useCallback(() => { logout(); }, [logout]);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const handleLogout = useCallback(() => { setShowLogoutConfirm(true); }, []);
+  const confirmLogout = useCallback(() => { setShowLogoutConfirm(false); logout(); }, [logout]);
 
   const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
   const handleToggleTheme = useCallback(() => {
@@ -647,6 +650,38 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </nav>
       </div>
+
+      {/* ── Logout Confirmation Dialog ── */}
+      <Dialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <div className="mx-auto w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center mb-3">
+              <AlertTriangle size={22} className="text-amber-500" />
+            </div>
+            <DialogTitle className="text-center text-[#0b2c60]">Sign out?</DialogTitle>
+            <DialogDescription className="text-center text-sm text-slate-500 pt-1">
+              You will be logged out of this session. Any unsaved changes may be lost.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2 sm:gap-2 pt-1">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setShowLogoutConfirm(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="flex-1 bg-[#0b2c60] hover:bg-[#0a2456] text-white"
+              onClick={confirmLogout}
+            >
+              <LogOut size={14} className="mr-1.5" />
+              Sign out
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
