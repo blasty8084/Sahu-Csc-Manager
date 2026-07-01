@@ -55,7 +55,7 @@ function fmtDateShort(d: string) {
   return new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-type MobileScreen = "list" | "preview" | "export";
+type MobileTab = "receipts" | "byDate" | "summary" | "export";
 
 export default function ReceiptExport() {
   const now          = new Date();
@@ -81,7 +81,8 @@ export default function ReceiptExport() {
   const [expandedEntry, setExpandedEntry] = useState<string | null>(null);
 
   /* ── Mobile-specific state ── */
-  const [mobileScreen, setMobileScreen] = useState<MobileScreen>("list");
+  const [mobileTab,    setMobileTab]    = useState<MobileTab>("receipts");
+  const [showPreview,  setShowPreview]  = useState(false);
   const [activeEntry,  setActiveEntry]  = useState<PreviewEntry | null>(null);
   const [exportFormat, setExportFormat] = useState<"pdf" | "excel">("pdf");
   const [exported,     setExported]     = useState(false);
@@ -634,72 +635,48 @@ export default function ReceiptExport() {
      ██████████  MOBILE LAYOUT  ██████████
   ═══════════════════════════════════════════════════════ */
   const MobileLayout = (
-    <div className="sm:hidden flex flex-col h-screen bg-slate-100 overflow-hidden relative">
+    <div className="sm:hidden flex flex-col bg-slate-100" style={{ height: "100dvh", overflow: "hidden" }}>
 
-      {/* ── Status Bar ── */}
-      <div className="bg-[#0b2c60] px-5 pt-3 pb-0 flex items-center justify-between shrink-0">
-        <span className="text-white text-[11px] font-semibold">
-          {now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: false })}
-        </span>
-        <div className="flex items-center gap-1.5">
-          <div className="flex gap-0.5">
-            {[3, 3, 3, 2].map((h, i) => <div key={i} className="w-1 bg-white rounded-sm" style={{ height: h * 2.5 }} />)}
-          </div>
-          <svg width="14" height="10" viewBox="0 0 14 10" fill="white" className="opacity-90">
-            <path d="M7 2.5C8.8 2.5 10.4 3.2 11.6 4.4L13 3C11.4 1.4 9.3 0.5 7 0.5C4.7 0.5 2.6 1.4 1 3L2.4 4.4C3.6 3.2 5.2 2.5 7 2.5Z"/>
-            <path d="M7 5.5C8 5.5 8.9 5.9 9.6 6.6L11 5.2C9.9 4.2 8.5 3.5 7 3.5C5.5 3.5 4.1 4.2 3 5.2L4.4 6.6C5.1 5.9 6 5.5 7 5.5Z"/>
-            <circle cx="7" cy="9" r="1.5"/>
-          </svg>
-          <div className="w-5 h-2.5 bg-white rounded-sm opacity-90" />
-        </div>
-      </div>
-
-      {/* ── Top Nav ── */}
-      <div className="bg-[#0b2c60] px-4 py-3 shrink-0">
-        <div className="flex items-center gap-3">
-          {mobileScreen !== "list" ? (
-            <button onClick={() => setMobileScreen("list")} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-              <ArrowLeft size={16} className="text-white" />
-            </button>
-          ) : (
-            <button onClick={() => window.history.length > 1 ? window.history.back() : setLocation("/")}
-              className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-              <ArrowLeft size={16} className="text-white" />
-            </button>
-          )}
-          <div className="flex-1">
-            <h1 className="text-base font-bold text-white leading-tight">
-              {mobileScreen === "list" ? "Receipt Export" : mobileScreen === "preview" ? "Receipt Preview" : "Export Options"}
+      {/* ── Top Header ── */}
+      <div className="bg-[#0b2c60] px-4 pt-3 pb-3 shrink-0">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => showPreview ? setShowPreview(false) : (window.history.length > 1 ? window.history.back() : setLocation("/"))}
+            className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center shrink-0">
+            <ArrowLeft size={16} className="text-white" />
+          </button>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-[15px] font-bold text-white leading-tight truncate">
+              {showPreview && activeEntry ? activeEntry.receiptNumber : "Receipt Export"}
             </h1>
-            <p className="text-[11px] text-white/60">
-              {mobileScreen === "list"
-                ? `${filteredEntries.length > 0 ? filteredEntries.length : preview?.count ?? 0} receipts`
-                : mobileScreen === "preview"
-                  ? activeEntry?.receiptNumber ?? ""
-                  : "Choose format & scope"}
+            <p className="text-[11px] text-white/55 leading-none mt-0.5">
+              {showPreview && activeEntry
+                ? fmtDate(activeEntry.date)
+                : `${preview?.count ?? 0} receipts`}
             </p>
           </div>
-          {mobileScreen === "list" && (
-            <button onClick={() => setMobileScreen("export")}
-              className="flex items-center gap-1.5 bg-[#f97316] text-white text-xs font-semibold px-3 py-2 rounded-xl">
-              <ArrowDownToLine size={13} />
+          {!showPreview && (
+            <button
+              onClick={() => setMobileTab("export")}
+              className="flex items-center gap-1.5 bg-[#f97316] text-white text-[13px] font-semibold px-4 py-2 rounded-full shrink-0">
+              <ArrowDownToLine size={14} />
               Export
             </button>
           )}
         </div>
 
-        {/* KPI strip */}
-        {mobileScreen === "list" && (
+        {/* KPI strip — always shown in header (not when preview) */}
+        {!showPreview && (
           <div className="mt-3 grid grid-cols-3 gap-2">
             {[
-              { label: "Total",    value: preview ? String(preview.count) : "—",                             icon: Receipt },
-              { label: "Amount",   value: preview ? `₹${totalAmount.toLocaleString("en-IN")}` : "—",         icon: IndianRupee },
-              { label: "Selected", value: String(selected.size),                                              icon: CheckSquare },
+              { label: "Total",    value: preview ? String(preview.count) : "—",                         icon: Receipt },
+              { label: "Amount",   value: preview ? `₹${totalAmount.toLocaleString("en-IN")}` : "—",     icon: IndianRupee },
+              { label: "Selected", value: String(selected.size),                                          icon: CheckSquare },
             ].map(s => (
-              <div key={s.label} className="bg-white/10 rounded-xl px-3 py-2.5 flex items-center gap-2">
+              <div key={s.label} className="bg-[#0d3272] rounded-xl px-3 py-2.5 flex items-center gap-2">
                 <s.icon size={14} className="text-[#f97316] shrink-0" />
-                <div>
-                  <p className="text-sm font-bold text-white leading-none">{s.value}</p>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-white leading-none truncate">{s.value}</p>
                   <p className="text-[10px] text-white/50 mt-0.5">{s.label}</p>
                 </div>
               </div>
@@ -708,39 +685,122 @@ export default function ReceiptExport() {
         )}
       </div>
 
-      {/* ══ LIST SCREEN ══ */}
-      {mobileScreen === "list" && (
-        <div className="flex-1 overflow-y-auto">
-          {/* Search + Filter */}
-          <div className="bg-white border-b border-slate-100 px-4 py-3 flex gap-2 sticky top-0 z-10">
-            <div className="relative flex-1">
-              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input value={searchQ} onChange={e => setSearchQ(e.target.value)}
-                placeholder="Search receipts…"
-                className="w-full pl-8 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0b2c60]/20" />
+      {/* ══ PREVIEW OVERLAY ══ */}
+      {showPreview && activeEntry && (
+        <div className="flex-1 overflow-y-auto bg-slate-100 px-4 py-4">
+          <div className="bg-white rounded-3xl shadow-lg overflow-hidden border border-slate-100">
+            <div className="bg-[#0b2c60] px-5 py-5 text-center">
+              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-2">
+                <Receipt size={22} className="text-white" />
+              </div>
+              <p className="text-white font-bold text-lg tracking-tight">SAHU CSC</p>
+              <p className="text-white/60 text-xs mt-0.5">Common Service Center, Odisha</p>
             </div>
-            <button onClick={() => setShowFilters(!showFilters)}
-              className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${showFilters ? "bg-[#0b2c60] border-[#0b2c60] text-white" : "bg-slate-50 border-slate-200 text-slate-500"}`}>
+            <div className="flex items-center">
+              <div className="w-4 h-4 rounded-full bg-slate-100 -ml-2 shrink-0" />
+              <div className="flex-1 border-t-2 border-dashed border-slate-200" />
+              <div className="w-4 h-4 rounded-full bg-slate-100 -mr-2 shrink-0" />
+            </div>
+            <div className="px-5 pb-5 space-y-3">
+              {[
+                { label: "Receipt No.", value: activeEntry.receiptNumber, mono: true },
+                { label: "Date",        value: fmtDate(activeEntry.date) },
+                { label: "Customer",    value: activeEntry.customerName },
+                { label: "Service",     value: activeEntry.serviceType },
+              ].map(row => (
+                <div key={row.label} className="flex items-start justify-between gap-3">
+                  <span className="text-xs text-slate-500 shrink-0 mt-0.5">{row.label}</span>
+                  <span className={`text-sm font-medium text-slate-800 text-right ${row.mono ? "font-mono text-xs bg-slate-100 px-2 py-0.5 rounded-lg" : ""}`}>
+                    {row.value}
+                  </span>
+                </div>
+              ))}
+              <div className="flex items-center">
+                <div className="w-4 h-4 rounded-full bg-slate-100 -ml-9 shrink-0" />
+                <div className="flex-1 border-t-2 border-dashed border-slate-200 mx-2" />
+                <div className="w-4 h-4 rounded-full bg-slate-100 -mr-9 shrink-0" />
+              </div>
+              <div className="flex items-center justify-between py-1">
+                <span className="text-base font-bold text-slate-800">Total Paid</span>
+                <span className={`text-2xl font-bold ${activeEntry.type === "credit" ? "text-emerald-600" : "text-rose-500"}`}>
+                  {activeEntry.type === "credit" ? "+" : "-"}₹{activeEntry.amount.toLocaleString("en-IN")}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${activeEntry.type === "credit" ? "bg-emerald-400" : "bg-rose-400"}`} />
+                <span className={`text-xs font-semibold ${activeEntry.type === "credit" ? "text-emerald-600" : "text-rose-500"}`}>
+                  {activeEntry.type === "credit" ? "Payment Confirmed" : "Debit Entry"}
+                </span>
+              </div>
+              <div className="flex flex-col items-center py-3">
+                <div className="w-24 h-24 bg-slate-100 border-2 border-dashed border-slate-200 rounded-2xl flex items-center justify-center">
+                  <QrCode size={44} className="text-slate-400" />
+                </div>
+                <p className="text-[10px] text-slate-400 mt-2">Scan to verify online</p>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 rounded-full bg-slate-100 -ml-9 shrink-0" />
+                <div className="flex-1 border-t-2 border-dashed border-slate-200 mx-2" />
+                <div className="w-4 h-4 rounded-full bg-slate-100 -mr-9 shrink-0" />
+              </div>
+              <p className="text-center text-xs text-slate-400">Thank you for using SAHU CSC</p>
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-3 gap-3">
+            {[
+              { icon: Printer,  label: "Print", color: "bg-[#0b2c60] text-white" },
+              { icon: Download, label: "PDF",   color: "bg-[#f97316] text-white" },
+              { icon: Share2,   label: "Share", color: "bg-white text-slate-700 border border-slate-200" },
+            ].map(({ icon: Icon, label, color }) => (
+              <button key={label} className={`${color} rounded-2xl py-4 flex flex-col items-center gap-2 shadow-sm font-medium text-sm`}>
+                <Icon size={20} />{label}
+              </button>
+            ))}
+          </div>
+          <button className="mt-3 w-full bg-[#25D366] text-white rounded-2xl py-4 flex items-center justify-center gap-2 font-semibold shadow-sm">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+            </svg>
+            Send via WhatsApp
+          </button>
+          <div className="h-4" />
+        </div>
+      )}
+
+      {/* ══ RECEIPTS TAB ══ */}
+      {!showPreview && mobileTab === "receipts" && (
+        <div className="flex-1 overflow-y-auto flex flex-col">
+          {/* Search + filter row */}
+          <div className="bg-white border-b border-slate-100 px-3 py-2.5 flex gap-2 shrink-0">
+            <div className="relative flex-1">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                value={searchQ}
+                onChange={e => setSearchQ(e.target.value)}
+                placeholder="Search receipts..."
+                className="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0b2c60]/20 text-slate-700 placeholder:text-slate-400"
+              />
+            </div>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 transition-colors ${showFilters ? "bg-[#0b2c60] border-[#0b2c60] text-white" : "bg-white border-slate-200 text-slate-500"}`}>
               <SlidersHorizontal size={16} />
             </button>
           </div>
 
-          {/* Expandable filter panel */}
+          {/* Filter panel */}
           {showFilters && (
-            <div className="bg-white border-b border-slate-100 px-4 py-3 space-y-3">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Quick Range</p>
-                <div className="flex gap-1.5 flex-wrap">
-                  {(["today","week","month","lastMonth"] as const).map(v => {
-                    const l = v === "today" ? "Today" : v === "week" ? "Week" : v === "month" ? "This Month" : "Last Month";
-                    return (
-                      <button key={v} onClick={() => { setQuickRange(v); setDateRange(v); }}
-                        className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${dateRange === v ? "bg-[#0b2c60] text-white" : "bg-slate-100 text-slate-600"}`}>
-                        {l}
-                      </button>
-                    );
-                  })}
-                </div>
+            <div className="bg-white border-b border-slate-100 px-4 py-3 space-y-3 shrink-0">
+              <div className="flex gap-1.5 flex-wrap">
+                {(["today","week","month","lastMonth"] as const).map(v => {
+                  const l = v === "today" ? "Today" : v === "week" ? "Week" : v === "month" ? "This Month" : "Last Month";
+                  return (
+                    <button key={v} onClick={() => { setQuickRange(v); setDateRange(v); }}
+                      className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${dateRange === v ? "bg-[#0b2c60] text-white" : "bg-slate-100 text-slate-600"}`}>
+                      {l}
+                    </button>
+                  );
+                })}
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <input type="date" value={startDate} max={endDate}
@@ -764,56 +824,67 @@ export default function ReceiptExport() {
                 <ChevronDown size={11} className="text-slate-400" />
               </div>
               <button onClick={handlePreview} disabled={previewing || !startDate || !endDate}
-                className="w-full py-2.5 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-2.5 text-white text-sm font-bold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50"
                 style={{ background: `linear-gradient(135deg, ${NAVY}, #1a4a9e)` }}>
-                {previewing ? <><Loader2 size={13} className="animate-spin" /> Searching…</> : <><Search size={13} /> Preview Receipts</>}
+                {previewing ? <><Loader2 size={14} className="animate-spin" /> Searching…</> : <><Search size={14} /> Preview Receipts</>}
               </button>
             </div>
           )}
 
-          {/* Bulk bar */}
-          {selected.size > 0 && preview && (
-            <div className="mx-3 mt-3 bg-[#0b2c60]/5 border border-[#0b2c60]/20 rounded-2xl px-4 py-3 flex items-center gap-2">
+          {/* Bulk action bar */}
+          {selected.size > 0 && preview && !showFilters && (
+            <div className="mx-3 mt-2 bg-[#0b2c60]/5 border border-[#0b2c60]/20 rounded-2xl px-4 py-2.5 flex items-center gap-2 shrink-0">
               <span className="flex-1 text-xs font-semibold text-[#0b2c60]">{selected.size} selected · ₹{selTotal.toLocaleString("en-IN")}</span>
               <button onClick={() => setSelected(new Set())} className="p-1 text-slate-400"><X size={14} /></button>
-              <button onClick={() => setMobileScreen("export")}
+              <button onClick={() => setMobileTab("export")}
                 className="bg-[#f97316] text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1">
                 <Download size={12} /> Export
               </button>
             </div>
           )}
 
-          {/* No preview yet */}
+          {/* Empty / No-preview state */}
           {!preview ? (
-            <div className="flex flex-col items-center text-center gap-3 py-16 px-6 text-slate-400">
-              <FileArchive size={40} className="opacity-25" />
-              <p className="text-sm font-semibold text-slate-500">How it works</p>
-              <ol className="text-xs text-slate-400 space-y-2 text-left list-none max-w-xs">
-                <li className="flex gap-2"><span className="font-bold text-[#0b2c60]">1.</span> Tap the filter icon to set a date range</li>
-                <li className="flex gap-2"><span className="font-bold text-[#0b2c60]">2.</span> Preview to see how many receipts will be exported</li>
-                <li className="flex gap-2"><span className="font-bold text-[#0b2c60]">3.</span> Download as ZIP — each receipt is a separate named PDF</li>
+            <div className="flex-1 flex flex-col items-center justify-center text-center px-8 py-6">
+              <div className="mb-4">
+                <FileArchive size={52} className="text-slate-300 mx-auto" />
+              </div>
+              <h3 className="text-base font-bold text-slate-700 mb-3">How it works</h3>
+              <ol className="text-sm text-left space-y-3 mb-6 w-full max-w-xs">
+                <li className="flex gap-3">
+                  <span className="font-bold text-[#f97316] shrink-0">1.</span>
+                  <span className="text-slate-500">Tap the filter icon to set a date range</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="font-bold text-[#f97316] shrink-0">2.</span>
+                  <span className="text-slate-500">Preview to see how many receipts will be exported</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="font-bold text-[#f97316] shrink-0">3.</span>
+                  <span className="text-slate-500">Download as ZIP — each receipt is a separate named PDF</span>
+                </li>
               </ol>
               {!showFilters && (
-                <button onClick={() => setShowFilters(true)}
-                  className="mt-2 px-5 py-2.5 text-sm font-semibold text-white rounded-xl"
-                  style={{ background: `linear-gradient(135deg, ${NAVY}, #1a4a9e)` }}>
+                <button
+                  onClick={() => setShowFilters(true)}
+                  className="px-8 py-3 text-sm font-semibold text-white rounded-2xl"
+                  style={{ background: NAVY }}>
                   Open Filters
                 </button>
               )}
             </div>
           ) : preview.count === 0 ? (
-            <div className="mx-4 mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-center">
-              <AlertCircle size={28} className="text-amber-400 mx-auto mb-2" />
+            <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
+              <AlertCircle size={36} className="text-amber-400 mb-2" />
               <p className="text-sm font-semibold text-amber-700">No receipts found</p>
               <p className="text-xs text-amber-600 mt-1">Adjust dates and try again.</p>
             </div>
           ) : (
-            /* Receipt cards */
-            <div className="px-3 py-3 space-y-2 pb-6">
+            <div className="px-3 py-3 space-y-2 pb-4">
               {filteredEntries.map((e) => (
                 <div key={e.receiptNumber}
-                  onClick={() => { setActiveEntry(e); setMobileScreen("preview"); }}
-                  className={`bg-white rounded-2xl border shadow-sm transition-all active:scale-[0.98] ${selected.has(e.receiptNumber) ? "border-[#0b2c60]/30 bg-[#0b2c60]/[0.02]" : "border-slate-200"}`}>
+                  onClick={() => { setActiveEntry(e); setShowPreview(true); }}
+                  className={`bg-white rounded-2xl border shadow-sm active:scale-[0.98] transition-transform ${selected.has(e.receiptNumber) ? "border-[#0b2c60]/30" : "border-slate-200"}`}>
                   <div className="p-4 flex items-center gap-3">
                     <div onClick={ev => { ev.stopPropagation(); toggleEntry(e.receiptNumber); }} className="p-1">
                       <Checkbox checked={selected.has(e.receiptNumber)} onChange={() => toggleEntry(e.receiptNumber)} size={18} />
@@ -844,108 +915,92 @@ export default function ReceiptExport() {
         </div>
       )}
 
-      {/* ══ PREVIEW SCREEN ══ */}
-      {mobileScreen === "preview" && activeEntry && (
-        <div className="flex-1 overflow-y-auto bg-slate-100 px-4 py-5">
-          {/* Receipt paper */}
-          <div className="bg-white rounded-3xl shadow-lg overflow-hidden border border-slate-100">
-            <div className="bg-[#0b2c60] px-5 py-5 text-center">
-              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-2">
-                <Receipt size={22} className="text-white" />
-              </div>
-              <p className="text-white font-bold text-lg tracking-tight">SAHU CSC</p>
-              <p className="text-white/60 text-xs mt-0.5">Common Service Center, Odisha</p>
+      {/* ══ BY DATE TAB ══ */}
+      {!showPreview && mobileTab === "byDate" && (
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Quick Range</p>
+            <div className="flex gap-2 flex-wrap">
+              {(["today","week","month","lastMonth","year"] as const).map(v => {
+                const l = v === "today" ? "Today" : v === "week" ? "This Week" : v === "month" ? "This Month" : v === "lastMonth" ? "Last Month" : "This Year";
+                return (
+                  <button key={v} onClick={() => { setQuickRange(v); setDateRange(v); }}
+                    className={`px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${dateRange === v ? "bg-[#0b2c60] text-white" : "bg-slate-100 text-slate-600"}`}>
+                    {l}
+                  </button>
+                );
+              })}
             </div>
-
-            {/* Tear line */}
-            <div className="flex items-center px-5 py-2">
-              <div className="w-4 h-4 rounded-full bg-slate-100 -ml-8 shrink-0" />
-              <div className="flex-1 border-t-2 border-dashed border-slate-200 mx-2" />
-              <div className="w-4 h-4 rounded-full bg-slate-100 -mr-8 shrink-0" />
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">From</label>
+                <input type="date" value={startDate} max={endDate}
+                  onChange={e => { setStartDate(e.target.value); setPreview(null); }}
+                  className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2.5 bg-slate-50 focus:outline-none text-slate-700" />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">To</label>
+                <input type="date" value={endDate} min={startDate} max={today}
+                  onChange={e => { setEndDate(e.target.value); setPreview(null); }}
+                  className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2.5 bg-slate-50 focus:outline-none text-slate-700" />
+              </div>
             </div>
-
-            <div className="px-5 pb-5 space-y-3">
-              {[
-                { label: "Receipt No.", value: activeEntry.receiptNumber, mono: true },
-                { label: "Date",        value: fmtDate(activeEntry.date) },
-                { label: "Customer",    value: activeEntry.customerName },
-                { label: "Service",     value: activeEntry.serviceType },
-              ].map(row => (
-                <div key={row.label} className="flex items-start justify-between gap-3">
-                  <span className="text-xs text-slate-500 shrink-0 mt-0.5">{row.label}</span>
-                  <span className={`text-sm font-medium text-slate-800 text-right ${row.mono ? "font-mono text-xs bg-slate-100 px-2 py-0.5 rounded-lg" : ""}`}>
-                    {row.value}
-                  </span>
-                </div>
-              ))}
-
-              {/* Tear line */}
-              <div className="flex items-center">
-                <div className="w-4 h-4 rounded-full bg-slate-100 -ml-9 shrink-0" />
-                <div className="flex-1 border-t-2 border-dashed border-slate-200 mx-2" />
-                <div className="w-4 h-4 rounded-full bg-slate-100 -mr-9 shrink-0" />
-              </div>
-
-              <div className="flex items-center justify-between py-1">
-                <span className="text-base font-bold text-slate-800">Total Paid</span>
-                <span className={`text-2xl font-bold ${activeEntry.type === "credit" ? "text-emerald-600" : "text-rose-500"}`}>
-                  {activeEntry.type === "credit" ? "+" : "-"}₹{activeEntry.amount.toLocaleString("en-IN")}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${activeEntry.type === "credit" ? "bg-emerald-400" : "bg-rose-400"}`} />
-                <span className={`text-xs font-semibold ${activeEntry.type === "credit" ? "text-emerald-600" : "text-rose-500"}`}>
-                  {activeEntry.type === "credit" ? "Payment Confirmed" : "Debit Entry"}
-                </span>
-              </div>
-
-              <div className="flex flex-col items-center py-3">
-                <div className="w-24 h-24 bg-slate-100 border-2 border-dashed border-slate-200 rounded-2xl flex items-center justify-center">
-                  <QrCode size={44} className="text-slate-400" />
-                </div>
-                <p className="text-[10px] text-slate-400 mt-2">Scan to verify online</p>
-              </div>
-
-              {/* Tear line */}
-              <div className="flex items-center">
-                <div className="w-4 h-4 rounded-full bg-slate-100 -ml-9 shrink-0" />
-                <div className="flex-1 border-t-2 border-dashed border-slate-200 mx-2" />
-                <div className="w-4 h-4 rounded-full bg-slate-100 -mr-9 shrink-0" />
-              </div>
-              <p className="text-center text-xs text-slate-400">Thank you for using SAHU CSC</p>
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5">
+              <User size={13} className="text-slate-400 shrink-0" />
+              <select value={userId} onChange={e => { setUserId(e.target.value); setPreview(null); }}
+                className="flex-1 bg-transparent text-sm text-slate-600 focus:outline-none">
+                <option value="all">All Operators</option>
+                {usersOverview.map((u: any) => (
+                  <option key={u.userId} value={String(u.userId)}>
+                    {u.fullName ? `${u.fullName} (@${u.username})` : `@${u.username}`}
+                  </option>
+                ))}
+              </select>
             </div>
+            <button onClick={() => { handlePreview(); setMobileTab("receipts"); }} disabled={previewing || !startDate || !endDate}
+              className="w-full py-3 text-white text-sm font-bold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50"
+              style={{ background: `linear-gradient(135deg, ${NAVY}, #1a4a9e)` }}>
+              {previewing ? <><Loader2 size={14} className="animate-spin" /> Searching…</> : <><Search size={14} /> Preview Receipts</>}
+            </button>
           </div>
-
-          <div className="mt-4 grid grid-cols-3 gap-3">
-            {[
-              { icon: Printer, label: "Print",  color: "bg-[#0b2c60] text-white" },
-              { icon: Download, label: "PDF",   color: "bg-[#f97316] text-white" },
-              { icon: Share2,  label: "Share",  color: "bg-white text-slate-700 border border-slate-200" },
-            ].map(({ icon: Icon, label, color }) => (
-              <button key={label} className={`${color} rounded-2xl py-4 flex flex-col items-center gap-2 shadow-sm font-medium text-sm`}>
-                <Icon size={20} />
-                {label}
-              </button>
-            ))}
-          </div>
-
-          <button className="mt-3 w-full bg-[#25D366] text-white rounded-2xl py-4 flex items-center justify-center gap-2 font-semibold shadow-sm">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
-            </svg>
-            Send via WhatsApp
-          </button>
-
-          <div className="h-6" />
         </div>
       )}
 
-      {/* ══ EXPORT SCREEN ══ */}
-      {mobileScreen === "export" && (
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      {/* ══ SUMMARY TAB ══ */}
+      {!showPreview && mobileTab === "summary" && (
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+          {!preview ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-center py-16">
+              <TrendingUp size={40} className="text-slate-300 mb-3" />
+              <p className="text-sm font-semibold text-slate-500">No data yet</p>
+              <p className="text-xs text-slate-400 mt-1">Preview receipts first to see summary</p>
+            </div>
+          ) : (
+            <>
+              {[
+                { label: "Total Receipts", value: String(preview.count), icon: Receipt, color: "bg-[#0b2c60]" },
+                { label: "Total Amount",   value: `₹${totalAmount.toLocaleString("en-IN")}`, icon: IndianRupee, color: "bg-emerald-600" },
+                { label: "Credit Entries", value: String(displayedEntries.filter(e => e.type === "credit").length), icon: TrendingUp, color: "bg-[#f97316]" },
+                { label: "Debit Entries",  value: String(displayedEntries.filter(e => e.type === "debit").length), icon: ArrowDownToLine, color: "bg-violet-600" },
+              ].map(s => (
+                <div key={s.label} className={`${s.color} rounded-2xl p-4 flex items-center gap-4`}>
+                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
+                    <s.icon size={20} className="text-white" />
+                  </div>
+                  <div>
+                    <p className="text-xl font-bold text-white">{s.value}</p>
+                    <p className="text-xs text-white/70">{s.label}</p>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      )}
 
-          {/* Summary */}
+      {/* ══ EXPORT TAB ══ */}
+      {!showPreview && mobileTab === "export" && (
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
           <div className="bg-[#0b2c60]/5 border border-[#0b2c60]/15 rounded-2xl px-4 py-3.5 flex items-center gap-3">
             <div className="w-10 h-10 bg-[#0b2c60] rounded-xl flex items-center justify-center shrink-0">
               <ArrowDownToLine size={18} className="text-white" />
@@ -955,12 +1010,11 @@ export default function ReceiptExport() {
                 {selected.size > 0 ? `${selected.size} receipts selected` : preview ? `Export all ${preview.count} receipts` : "No receipts previewed"}
               </p>
               <p className="text-xs text-slate-500 mt-0.5">
-                {selected.size > 0 ? `Total: ₹${selTotal.toLocaleString("en-IN")}` : preview ? `Total: ₹${totalAmount.toLocaleString("en-IN")}` : "Set a date range and preview first"}
+                {selected.size > 0 ? `₹${selTotal.toLocaleString("en-IN")}` : preview ? `₹${totalAmount.toLocaleString("en-IN")}` : "Preview receipts first"}
               </p>
             </div>
           </div>
 
-          {/* Format */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
             <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Format</p>
             <div className="grid grid-cols-2 gap-3">
@@ -986,7 +1040,6 @@ export default function ReceiptExport() {
               {[
                 { label: "All Receipts",  sub: preview ? `${preview.count} receipts · ₹${totalAmount.toLocaleString("en-IN")}` : "Preview first", active: selected.size === 0 && !!preview },
                 { label: "Selected Only", sub: `${selected.size} selected · ₹${selTotal.toLocaleString("en-IN")}`, active: selected.size > 0 },
-                { label: "This Month",    sub: `${MONTH_OPTIONS.find(m => m.v === now.getMonth() + 1)?.l} ${now.getFullYear()}`, active: false },
               ].map(opt => (
                 <div key={opt.label} className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${opt.active ? "bg-[#0b2c60]/5 border border-[#0b2c60]/20" : "bg-slate-50"}`}>
                   <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${opt.active ? "border-[#0b2c60]" : "border-slate-300"}`}>
@@ -1001,71 +1054,53 @@ export default function ReceiptExport() {
             </div>
           </div>
 
-          {/* Include options */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Include</p>
-            <div className="space-y-3">
-              {[
-                { label: "QR Code",       sub: "Scan-to-verify link",     on: true },
-                { label: "Business Stamp", sub: "Official SAHU CSC seal",  on: true },
-                { label: "Signature Row", sub: "Customer sign space",      on: false },
-              ].map(opt => (
-                <div key={opt.label} className="flex items-center gap-3">
-                  <div className={`w-5 h-5 rounded-lg flex items-center justify-center ${opt.on ? "bg-[#0b2c60]" : "border-2 border-slate-300"}`}>
-                    {opt.on && <Check size={12} className="text-white" />}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-800">{opt.label}</p>
-                    <p className="text-xs text-slate-400">{opt.sub}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
           {/* Monthly section */}
           {MonthlyPanel}
 
-          {/* Export button */}
+          {/* Download button */}
           <button onClick={handleDownload} disabled={downloading || !preview || preview.count === 0}
             className="w-full py-4 bg-[#f97316] hover:bg-[#ea580c] text-white text-base font-bold rounded-2xl flex items-center justify-center gap-2 transition-colors shadow-lg shadow-[#f97316]/30 disabled:opacity-50">
             {downloading
               ? <><Loader2 size={18} className="animate-spin" /> Generating ZIP…</>
               : exported
                 ? <><Check size={18} /> Exported!</>
-                : <><Download size={18} /> Export {selected.size > 0 ? selected.size : preview?.count ?? "All"}</>}
+                : <><Download size={18} /> Download {selected.size > 0 ? selected.size : preview?.count ?? "All"} as ZIP</>}
           </button>
 
           {!preview && (
-            <p className="text-center text-xs text-slate-400 pb-4">Use the filter in the list screen to preview receipts first</p>
+            <p className="text-center text-xs text-slate-400">Go to Receipts tab and set a date range first</p>
           )}
 
           <div className="h-4" />
         </div>
       )}
 
-      {/* ── Bottom Nav (list screen only) ── */}
-      {mobileScreen === "list" && (
-        <div className="shrink-0 bg-white border-t border-slate-200 px-4 py-3 flex items-center justify-around">
-          {[
-            { icon: Receipt,        label: "Receipts", active: true,  action: undefined },
-            { icon: Calendar,       label: "By Date",  active: false, action: undefined },
-            { icon: IndianRupee,    label: "Summary",  active: false, action: undefined },
-            { icon: ArrowDownToLine, label: "Export",  active: false, action: () => setMobileScreen("export") },
-          ].map(({ icon: Icon, label, active, action }) => (
-            <button key={label} onClick={action} className="flex flex-col items-center gap-1">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${active ? "bg-[#0b2c60]" : "bg-transparent"}`}>
-                <Icon size={18} className={active ? "text-white" : "text-slate-400"} />
-              </div>
-              <span className={`text-[10px] font-medium ${active ? "text-[#0b2c60]" : "text-slate-400"}`}>{label}</span>
-            </button>
-          ))}
+      {/* ── Bottom Nav (always visible, not shown during preview) ── */}
+      {!showPreview && (
+        <div className="shrink-0 bg-white border-t border-slate-100 px-2 pt-2 pb-3 flex items-center justify-around">
+          {([
+            { icon: Receipt,         label: "Receipts", tab: "receipts"  as MobileTab },
+            { icon: Calendar,        label: "By Date",  tab: "byDate"    as MobileTab },
+            { icon: IndianRupee,     label: "Summary",  tab: "summary"   as MobileTab },
+            { icon: ArrowDownToLine, label: "Export",   tab: "export"    as MobileTab },
+          ] as const).map(({ icon: Icon, label, tab }) => {
+            const active = mobileTab === tab;
+            return (
+              <button key={tab} onClick={() => setMobileTab(tab)}
+                className="flex flex-col items-center gap-1 flex-1 py-1">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${active ? "bg-[#0b2c60]" : ""}`}>
+                  <Icon size={18} className={active ? "text-white" : "text-slate-400"} />
+                </div>
+                <span className={`text-[10px] font-semibold transition-colors ${active ? "text-[#0b2c60]" : "text-slate-400"}`}>{label}</span>
+              </button>
+            );
+          })}
         </div>
       )}
 
       {/* ── Home indicator ── */}
-      <div className="bg-white shrink-0 flex justify-center py-2">
-        <div className="w-28 h-1 bg-slate-300 rounded-full" />
+      <div className="shrink-0 bg-white flex justify-center pb-2">
+        <div className="w-28 h-1 bg-slate-200 rounded-full" />
       </div>
     </div>
   );
