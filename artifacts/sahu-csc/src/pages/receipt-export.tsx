@@ -3,23 +3,24 @@ import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { customFetch } from "@workspace/api-client-react";
 import {
-  Download, FileText, Search, Calendar, User,
-  CheckSquare, Square, ChevronDown, ChevronRight, X, Check,
-  Share2, QrCode, Clock, Mail,
-  FileArchive, Loader2, Receipt, IndianRupee,
-  AlertCircle, TrendingUp, Eye, Printer, Filter,
-  ArrowLeft, Hash,
+  Download, FileText, FileSpreadsheet, Search, Filter,
+  Calendar, Eye, Printer, CheckSquare, Square, ChevronDown,
+  Receipt, IndianRupee, X, Check,
+  ArrowDownToLine, Share2, QrCode, Clock, Mail,
+  FileArchive, Loader2, TrendingUp,
+  AlertCircle, ChevronRight, ArrowLeft, User,
+  SlidersHorizontal, Hash,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-const NAVY = "#0b2c60";
+const NAVY    = "#0b2c60";
 const SAFFRON = "#f97316";
 
 const MONTH_OPTIONS = [
-  { v: 1, l: "January" }, { v: 2, l: "February" }, { v: 3, l: "March" },
-  { v: 4, l: "April" }, { v: 5, l: "May" }, { v: 6, l: "June" },
-  { v: 7, l: "July" }, { v: 8, l: "August" }, { v: 9, l: "September" },
-  { v: 10, l: "October" }, { v: 11, l: "November" }, { v: 12, l: "December" },
+  { v: 1,  l: "January" },  { v: 2,  l: "February" }, { v: 3,  l: "March" },
+  { v: 4,  l: "April" },    { v: 5,  l: "May" },       { v: 6,  l: "June" },
+  { v: 7,  l: "July" },     { v: 8,  l: "August" },    { v: 9,  l: "September" },
+  { v: 10, l: "October" },  { v: 11, l: "November" },  { v: 12, l: "December" },
 ];
 
 interface PreviewEntry {
@@ -37,12 +38,12 @@ interface CountResult {
   entries: PreviewEntry[];
 }
 
-function Cb({ checked, onChange, size = 15 }: { checked: boolean; onChange: () => void; size?: number }) {
+function Checkbox({ checked, onChange, size = 16 }: { checked: boolean; onChange: () => void; size?: number }) {
   return (
-    <button onClick={onChange} className="shrink-0 p-0.5">
+    <button onClick={onChange} className="shrink-0">
       {checked
         ? <CheckSquare size={size} className="text-[#0b2c60]" />
-        : <Square size={size} className="text-slate-300" />}
+        : <Square     size={size} className="text-slate-300" />}
     </button>
   );
 }
@@ -50,45 +51,50 @@ function Cb({ checked, onChange, size = 15 }: { checked: boolean; onChange: () =
 function fmtDate(d: string) {
   return new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
-
 function fmtDateShort(d: string) {
   return new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-type MobileTab = "bulk" | "monthly";
+type MobileScreen = "list" | "preview" | "export";
 
 export default function ReceiptExport() {
-  const now = new Date();
+  const now          = new Date();
   const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
-  const today = now.toISOString().split("T")[0];
+  const today        = now.toISOString().split("T")[0];
 
-  const [, setLocation] = useLocation();
-  const { toast } = useToast();
+  const [, setLocation]    = useLocation();
+  const { toast }          = useToast();
 
-  /* ── Filter state ── */
-  const [startDate, setStartDate] = useState(firstOfMonth);
-  const [endDate, setEndDate] = useState(today);
-  const [userId, setUserId] = useState("all");
-  const [searchQ, setSearchQ] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
+  /* ── Shared filter state ── */
+  const [startDate,    setStartDate]    = useState(firstOfMonth);
+  const [endDate,      setEndDate]      = useState(today);
+  const [userId,       setUserId]       = useState("all");
+  const [searchQ,      setSearchQ]      = useState("");
+  const [showFilters,  setShowFilters]  = useState(false);
+  const [dateRange,    setDateRange]    = useState("month");
 
   /* ── Results state ── */
-  const [preview, setPreview] = useState<CountResult | null>(null);
-  const [previewing, setPreviewing] = useState(false);
-  const [downloading, setDownloading] = useState(false);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [preview,       setPreview]       = useState<CountResult | null>(null);
+  const [previewing,    setPreviewing]    = useState(false);
+  const [downloading,   setDownloading]   = useState(false);
+  const [selected,      setSelected]      = useState<Set<string>>(new Set());
   const [expandedEntry, setExpandedEntry] = useState<string | null>(null);
 
+  /* ── Mobile-specific state ── */
+  const [mobileScreen, setMobileScreen] = useState<MobileScreen>("list");
+  const [activeEntry,  setActiveEntry]  = useState<PreviewEntry | null>(null);
+  const [exportFormat, setExportFormat] = useState<"pdf" | "excel">("pdf");
+  const [exported,     setExported]     = useState(false);
+
   /* ── Monthly export state ── */
-  const [mobileTab, setMobileTab] = useState<MobileTab>("bulk");
-  const [trigMonth, setTrigMonth] = useState(now.getMonth() === 0 ? 12 : now.getMonth());
-  const [trigYear, setTrigYear] = useState(now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear());
-  const [emailing, setEmailing] = useState(false);
+  const [trigMonth,        setTrigMonth]        = useState(now.getMonth() === 0 ? 12 : now.getMonth());
+  const [trigYear,         setTrigYear]         = useState(now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear());
+  const [emailing,         setEmailing]         = useState(false);
   const [monthDownloading, setMonthDownloading] = useState(false);
 
   const { data: usersOverview = [] } = useQuery<any[]>({
     queryKey: ["admin", "users-overview"],
-    queryFn: () => customFetch<any[]>("/api/admin/users-overview"),
+    queryFn:  () => customFetch<any[]>("/api/admin/users-overview"),
   });
 
   /* ── Quick presets ── */
@@ -97,20 +103,19 @@ export default function ReceiptExport() {
     let start: Date;
     let end = new Date(n);
     switch (preset) {
-      case "today":    start = new Date(n); break;
-      case "week":     start = new Date(n); start.setDate(start.getDate() - 6); break;
-      case "month":    start = new Date(n.getFullYear(), n.getMonth(), 1); break;
+      case "today":     start = new Date(n); break;
+      case "week":      start = new Date(n); start.setDate(start.getDate() - 6); break;
+      case "month":     start = new Date(n.getFullYear(), n.getMonth(), 1); break;
       case "lastMonth":
         start = new Date(n.getFullYear(), n.getMonth() - 1, 1);
         end   = new Date(n.getFullYear(), n.getMonth(), 0);
         break;
-      case "year":     start = new Date(n.getFullYear(), 0, 1); break;
+      case "year":      start = new Date(n.getFullYear(), 0, 1); break;
+      default:          start = new Date(n);
     }
-    setStartDate(start!.toISOString().split("T")[0]);
+    setStartDate(start.toISOString().split("T")[0]);
     setEndDate(end.toISOString().split("T")[0]);
-    setPreview(null);
-    setSelected(new Set());
-    setExpandedEntry(null);
+    setPreview(null); setSelected(new Set()); setExpandedEntry(null);
   };
 
   const buildParams = () => {
@@ -122,20 +127,15 @@ export default function ReceiptExport() {
   /* ── Preview ── */
   const handlePreview = async () => {
     if (!startDate || !endDate) { toast({ title: "Select both dates", variant: "destructive" }); return; }
-    if (startDate > endDate) { toast({ title: "Start date must be before end date", variant: "destructive" }); return; }
-    setPreviewing(true);
-    setPreview(null);
-    setSelected(new Set());
-    setExpandedEntry(null);
+    if (startDate > endDate)    { toast({ title: "Start date must be before end date", variant: "destructive" }); return; }
+    setPreviewing(true); setPreview(null); setSelected(new Set()); setExpandedEntry(null);
     try {
       const data: CountResult = await customFetch(`/api/admin/receipts/bulk-export/count?${buildParams()}`);
       setPreview(data);
       if (data.entries.length > 0) setSelected(new Set(data.entries.map(e => e.receiptNumber)));
     } catch (err: unknown) {
       toast({ title: "Preview failed", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
-    } finally {
-      setPreviewing(false);
-    }
+    } finally { setPreviewing(false); }
   };
 
   /* ── Bulk download ── */
@@ -143,35 +143,34 @@ export default function ReceiptExport() {
     if (!preview || preview.count === 0) { toast({ title: "No receipts to download", variant: "destructive" }); return; }
     setDownloading(true);
     try {
-      const res = await fetch(`/api/admin/receipts/bulk-export/download?${buildParams()}`, { credentials: "include" });
+      const res  = await fetch(`/api/admin/receipts/bulk-export/download?${buildParams()}`, { credentials: "include" });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? "Download failed");
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
       a.href = url; a.download = `receipts-${startDate}-to-${endDate}.zip`; a.click();
       URL.revokeObjectURL(url);
       toast({ title: "Download started", description: `${preview.count} PDF receipt${preview.count !== 1 ? "s" : ""} in ZIP` });
+      setExported(true); setTimeout(() => setExported(false), 2000);
     } catch (err: unknown) {
       toast({ title: "Download failed", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
-    } finally {
-      setDownloading(false);
-    }
+    } finally { setDownloading(false); }
   };
 
   /* ── Monthly download ── */
   const handleMonthDownload = async () => {
     setMonthDownloading(true);
     try {
-      const res = await fetch(`/api/admin/receipts/monthly-export/download?year=${trigYear}&month=${trigMonth}`, { credentials: "include" });
+      const res  = await fetch(`/api/admin/receipts/monthly-export/download?year=${trigYear}&month=${trigMonth}`, { credentials: "include" });
       if (!res.ok) throw new Error("Download failed");
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
       a.href = url; a.download = `receipts-${trigYear}-${String(trigMonth).padStart(2, "0")}.zip`; a.click();
       URL.revokeObjectURL(url);
       toast({ title: "Downloaded!", description: `ZIP for ${MONTH_OPTIONS.find(m => m.v === trigMonth)?.l} ${trigYear} saved.` });
     } catch { toast({ title: "Download failed", variant: "destructive" }); }
-    finally { setMonthDownloading(false); }
+    finally  { setMonthDownloading(false); }
   };
 
   /* ── Monthly email ── */
@@ -190,18 +189,16 @@ export default function ReceiptExport() {
     } finally { setEmailing(false); }
   };
 
-  const nextExport = new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 5, 0)
-    .toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
-
-  const displayedEntries = preview?.entries ?? [];
-  const filteredEntries = displayedEntries.filter(e =>
-    e.customerName.toLowerCase().includes(searchQ.toLowerCase()) ||
-    e.receiptNumber.toLowerCase().includes(searchQ.toLowerCase()) ||
+  const displayedEntries  = preview?.entries ?? [];
+  const filteredEntries   = displayedEntries.filter(e =>
+    e.customerName.toLowerCase().includes(searchQ.toLowerCase())   ||
+    e.receiptNumber.toLowerCase().includes(searchQ.toLowerCase())  ||
     e.serviceType.toLowerCase().includes(searchQ.toLowerCase())
   );
-  const selTotal = filteredEntries.filter(e => selected.has(e.receiptNumber)).reduce((s, e) => s + e.amount, 0);
+  const selTotal    = filteredEntries.filter(e => selected.has(e.receiptNumber)).reduce((s, e) => s + e.amount, 0);
+  const totalAmount = displayedEntries.reduce((s, e) => s + e.amount, 0);
 
-  const toggleAll = () => {
+  const toggleAll   = () => {
     if (selected.size === filteredEntries.length) setSelected(new Set());
     else setSelected(new Set(filteredEntries.map(e => e.receiptNumber)));
   };
@@ -209,80 +206,16 @@ export default function ReceiptExport() {
     const s = new Set(selected); if (s.has(id)) s.delete(id); else s.add(id); setSelected(s);
   };
 
+  const nextExport = new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 5, 0)
+    .toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+
   const years = [now.getFullYear(), now.getFullYear() - 1, now.getFullYear() - 2];
 
-  /* ═══════════════════════════════════════════════════════════════
-     SHARED HEADER (navy gradient + saffron stripe + stat pills)
-  ═══════════════════════════════════════════════════════════════ */
-  const Header = (
-    <div className="sticky top-0 z-20" style={{ background: `linear-gradient(135deg, ${NAVY} 0%, #1a3d80 100%)` }}>
-      <div className="h-0.5 sm:h-1" style={{ background: `linear-gradient(90deg, ${SAFFRON}, #fbbf24, ${SAFFRON})` }} />
-
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 pt-3 sm:pt-4 pb-2 sm:pb-3 flex items-center gap-3">
-        <button
-          onClick={() => window.history.length > 1 ? window.history.back() : setLocation("/")}
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors"
-        >
-          <ArrowLeft size={17} />
-        </button>
-        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shadow-lg" style={{ background: `linear-gradient(135deg, ${SAFFRON}, #ea580c)` }}>
-          <FileArchive size={15} className="text-white" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-sm sm:text-base font-bold text-white tracking-tight">Bulk Receipt Export</h1>
-          <p className="text-[10px] sm:text-[11px] text-white/50 truncate">Download all receipts as a ZIP of individual PDFs</p>
-        </div>
-        <span className="hidden sm:block text-[10px] text-white/50 bg-white/10 border border-white/10 rounded-full px-3 py-1">Admin Only</span>
-      </div>
-
-      {/* Stat pills — horizontal scroll on mobile, 4-col grid on desktop */}
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 pb-3 sm:pb-5 pt-1 sm:pt-2">
-        <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0 sm:grid sm:grid-cols-4 no-scrollbar">
-          {[
-            { label: "Receipts",  value: preview ? String(preview.count) : "—",
-              sub: "In range",      gradient: "from-[#0b2c60] to-[#1a4a9e]",    icon: Receipt },
-            { label: "Amount",    value: preview ? `₹${displayedEntries.reduce((s,e) => s+e.amount, 0).toLocaleString("en-IN")}` : "—",
-              sub: "Total value",   gradient: "from-emerald-600 to-emerald-500", icon: IndianRupee },
-            { label: "Credit",    value: preview ? String(displayedEntries.filter(e => e.type==="credit").length) : "—",
-              sub: "Income",        gradient: "from-[#f97316] to-orange-400",    icon: TrendingUp },
-            { label: "Pending",   value: preview ? String(preview.count) : "—",
-              sub: "Ready",         gradient: "from-violet-600 to-violet-500",   icon: Eye },
-          ].map(s => (
-            <div key={s.label} className={`bg-gradient-to-br ${s.gradient} shrink-0 sm:shrink rounded-xl p-3 sm:p-3.5 text-white flex items-center gap-2.5 shadow-md min-w-[110px] sm:min-w-0`}>
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/15 rounded-xl flex items-center justify-center shrink-0">
-                <s.icon size={16} />
-              </div>
-              <div className="min-w-0">
-                <p className="text-base sm:text-lg font-extrabold leading-none">{s.value}</p>
-                <p className="text-[10px] text-white/65 mt-0.5">{s.label}</p>
-                <p className="text-[9px] text-white/35 hidden sm:block mt-0.5">{s.sub}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Mobile-only tab bar */}
-      <div className="flex border-t border-white/10 sm:hidden">
-        {([["bulk", "Bulk Export"], ["monthly", "Monthly"]] as const).map(([v, l]) => (
-          <button
-            key={v}
-            onClick={() => setMobileTab(v)}
-            className={`flex-1 py-2.5 text-xs font-semibold transition-colors border-b-2 ${mobileTab === v ? "text-white" : "text-white/50 border-transparent"}`}
-            style={mobileTab === v ? { borderBottomColor: SAFFRON } : {}}
-          >
-            {l}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-
-  /* ═══════════════════════════════════════════════════════════════
-     MONTHLY SECTION (shared between mobile tab and desktop panel)
-  ═══════════════════════════════════════════════════════════════ */
-  const MonthlySection = (
-    <div className="bg-white rounded-xl sm:rounded-xl border border-orange-100 shadow-sm overflow-hidden">
+  /* ═══════════════════════════════════════════════════════
+     MONTHLY PANEL (reused by both layouts)
+  ═══════════════════════════════════════════════════════ */
+  const MonthlyPanel = (
+    <div className="bg-white rounded-xl border border-orange-100 shadow-sm overflow-hidden">
       <div className="px-4 py-3 flex items-center gap-2.5" style={{ background: `linear-gradient(135deg, ${SAFFRON}, #ea580c)` }}>
         <div className="w-7 h-7 bg-white/20 rounded-lg flex items-center justify-center shrink-0">
           <Clock size={14} className="text-white" />
@@ -296,8 +229,8 @@ export default function ReceiptExport() {
         <div className="rounded-lg bg-orange-50 border border-orange-100 px-3 py-2 flex items-start gap-2">
           <Mail size={11} className="text-orange-500 mt-0.5 shrink-0" />
           <p className="text-[10px] text-orange-700 leading-relaxed">
-            ZIP is automatically emailed to all admin accounts on the 1st. Requires{" "}
-            <code className="bg-orange-100 rounded px-1">SMTP_HOST</code>,{" "}
+            ZIP is automatically emailed to admin accounts on the 1st.
+            Requires <code className="bg-orange-100 rounded px-1">SMTP_HOST</code>,{" "}
             <code className="bg-orange-100 rounded px-1">SMTP_USER</code>,{" "}
             <code className="bg-orange-100 rounded px-1">SMTP_PASS</code>.
           </p>
@@ -343,290 +276,484 @@ export default function ReceiptExport() {
     </div>
   );
 
-  return (
-    <div className="min-h-screen bg-slate-50">
-      {Header}
+  /* ═══════════════════════════════════════════════════════
+     ██████████  DESKTOP LAYOUT  ██████████
+  ═══════════════════════════════════════════════════════ */
+  const DesktopLayout = (
+    <div className="hidden sm:block min-h-screen bg-slate-50">
 
-      {/* ════════════════════════════════════════
-          MOBILE LAYOUT  (hidden on sm+)
-      ════════════════════════════════════════ */}
-      <div className="sm:hidden flex flex-col">
+      {/* ── Top Header ── */}
+      <div className="bg-[#0b2c60] text-white px-6 py-4 sticky top-0 z-20">
+        <div className="h-0.5 absolute top-0 left-0 right-0" style={{ background: `linear-gradient(90deg, ${SAFFRON}, #fbbf24, ${SAFFRON})` }} />
+        <div className="max-w-[1200px] mx-auto flex items-center gap-3">
+          <button
+            onClick={() => window.history.length > 1 ? window.history.back() : setLocation("/")}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors">
+            <ArrowLeft size={17} />
+          </button>
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-lg shrink-0" style={{ background: `linear-gradient(135deg, ${SAFFRON}, #ea580c)` }}>
+            <Receipt size={16} className="text-white" />
+          </div>
+          <div className="flex-1">
+            <h1 className="text-base font-bold tracking-tight">Receipt Export</h1>
+            <p className="text-xs text-white/60">Download & share transaction receipts</p>
+          </div>
+          <span className="text-[10px] text-white/50 bg-white/10 border border-white/10 rounded-full px-3 py-1">Admin Only</span>
+        </div>
+      </div>
 
-        {/* ── BULK TAB ── */}
-        {mobileTab === "bulk" && (
-          <>
-            {/* Filter bar */}
-            <div className="bg-white border-b border-slate-100 px-4 py-3 flex items-center gap-2">
-              <div className="relative flex-1">
-                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input value={searchQ} onChange={e => setSearchQ(e.target.value)}
-                  placeholder="Search receipts…"
-                  className="w-full pl-8 pr-8 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" />
-                {searchQ && (
-                  <button onClick={() => setSearchQ("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400">
-                    <X size={12} />
-                  </button>
-                )}
+      {/* ── Stat Cards ── */}
+      <div className="bg-[#0b2c60]/95 px-6 pb-5 pt-2">
+        <div className="max-w-[1200px] mx-auto grid grid-cols-4 gap-3">
+          {[
+            { label: "Total Receipts", value: preview ? String(preview.count)                : "—", icon: Receipt,         color: "bg-[#0b2c60] border border-white/10", iconBg: "bg-white/15" },
+            { label: "Total Amount",   value: preview ? `₹${totalAmount.toLocaleString("en-IN")}` : "—", icon: IndianRupee, color: "bg-emerald-600",                          iconBg: "bg-white/15" },
+            { label: "Credit Entries", value: preview ? String(displayedEntries.filter(e => e.type === "credit").length) : "—", icon: TrendingUp, color: "bg-[#f97316]", iconBg: "bg-white/15" },
+            { label: "Selected",       value: String(selected.size),                          icon: ArrowDownToLine,  color: "bg-violet-600",                          iconBg: "bg-white/15" },
+          ].map((s) => (
+            <div key={s.label} className={`${s.color} rounded-xl p-3.5 text-white flex items-center gap-3`}>
+              <div className={`${s.iconBg} w-9 h-9 rounded-lg flex items-center justify-center shrink-0`}>
+                <s.icon size={18} />
               </div>
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="w-9 h-9 rounded-xl border flex items-center justify-center transition-colors shrink-0"
-                style={showFilters ? { background: NAVY, borderColor: NAVY } : { borderColor: "#e2e8f0", color: "#94a3b8" }}>
-                <Filter size={14} className={showFilters ? "text-white" : ""} />
+              <div>
+                <p className="text-xl font-bold leading-none">{s.value}</p>
+                <p className="text-[11px] text-white/70 mt-0.5">{s.label}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="max-w-[1200px] mx-auto px-6 py-5 flex gap-5">
+
+        {/* ── Left: Filter + Table ── */}
+        <div className="flex-1 min-w-0 space-y-4">
+
+          {/* Filter bar */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-3.5 flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Calendar size={13} className="text-slate-400" />
+              <input type="date" value={startDate} max={endDate}
+                onChange={e => { setStartDate(e.target.value); setPreview(null); }}
+                className="text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-slate-50 focus:outline-none text-slate-700 h-9" />
+              <span className="text-slate-300 text-xs">→</span>
+              <input type="date" value={endDate} min={startDate} max={today}
+                onChange={e => { setEndDate(e.target.value); setPreview(null); }}
+                className="text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-slate-50 focus:outline-none text-slate-700 h-9" />
+            </div>
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1">
+              {(["today","week","month","lastMonth"] as const).map(v => {
+                const l = v === "today" ? "Today" : v === "week" ? "Week" : v === "month" ? "This Month" : "Last Month";
+                return (
+                  <button key={v} onClick={() => { setQuickRange(v); setDateRange(v); }}
+                    className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${dateRange === v ? "bg-[#0b2c60] text-white" : "text-slate-500 hover:text-slate-800"}`}>
+                    {l}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-600">
+              <User size={12} className="text-slate-400" />
+              <select value={userId} onChange={e => { setUserId(e.target.value); setPreview(null); }}
+                className="bg-transparent text-xs text-slate-600 focus:outline-none cursor-pointer">
+                <option value="all">All Operators</option>
+                {usersOverview.map((u: any) => (
+                  <option key={u.userId} value={String(u.userId)}>
+                    {u.fullName ? `${u.fullName} (@${u.username})` : `@${u.username}`}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={11} className="text-slate-400" />
+            </div>
+            <button onClick={handlePreview} disabled={previewing || !startDate || !endDate}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-lg transition-all disabled:opacity-50 h-9 ml-auto"
+              style={{ background: `linear-gradient(135deg, ${NAVY}, #1a4a9e)` }}>
+              {previewing ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />}
+              {previewing ? "Searching…" : "Preview Receipts"}
+            </button>
+          </div>
+
+          {/* Bulk action bar */}
+          {selected.size > 0 && preview && (
+            <div className="bg-[#0b2c60]/5 border border-[#0b2c60]/20 rounded-xl px-4 py-2.5 flex items-center gap-3">
+              <div className="w-5 h-5 rounded flex items-center justify-center" style={{ background: NAVY }}>
+                <Hash size={9} className="text-white" />
+              </div>
+              <span className="text-xs font-semibold text-[#0b2c60]">{selected.size} selected · ₹{selTotal.toLocaleString("en-IN")}</span>
+              <div className="flex-1" />
+              <button onClick={() => setSelected(new Set())} className="text-xs text-slate-500 hover:text-slate-800 flex items-center gap-1">
+                <X size={12} /> Clear
+              </button>
+              <button onClick={handleDownload} disabled={downloading}
+                className="bg-[#f97316] hover:bg-[#ea580c] text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors disabled:opacity-50">
+                {downloading
+                  ? <><Loader2 size={12} className="animate-spin" /> Generating…</>
+                  : <><Download size={12} /> Download {selected.size} ZIP</>}
               </button>
             </div>
+          )}
 
-            {/* Expandable filter panel */}
-            {showFilters && (
-              <div className="bg-white border-b border-slate-100 px-4 py-3 space-y-3">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Quick Range</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {([["Today","today"],["Week","week"],["Month","month"],["Last Month","lastMonth"]] as const).map(([l,v]) => (
-                      <button key={v} onClick={() => setQuickRange(v)}
-                        className="text-[10px] px-3 py-1.5 rounded-full border font-medium transition-all"
-                        style={{ borderColor: "#e2e8f0", color: "#64748b" }}>
-                        {l}
+          {/* Table / empty state */}
+          {!preview ? (
+            <div className="bg-white rounded-xl border border-dashed border-slate-200 shadow-sm">
+              <div className="flex flex-col items-center text-center gap-3 py-16 px-6 text-slate-400">
+                <FileArchive size={40} className="opacity-25" />
+                <p className="text-sm font-semibold text-slate-500">How it works</p>
+                <ol className="text-xs text-slate-400 space-y-2 text-left list-none max-w-xs">
+                  <li className="flex gap-2"><span className="font-bold text-[#0b2c60]">1.</span> Choose a date range and optional operator filter above</li>
+                  <li className="flex gap-2"><span className="font-bold text-[#0b2c60]">2.</span> Click Preview Receipts to see how many will be exported</li>
+                  <li className="flex gap-2"><span className="font-bold text-[#0b2c60]">3.</span> Download as ZIP — each receipt is a separately named PDF</li>
+                </ol>
+              </div>
+            </div>
+          ) : preview.count === 0 ? (
+            <div className="bg-white rounded-xl border border-amber-200 shadow-sm p-8 text-center">
+              <AlertCircle size={32} className="text-amber-400 mx-auto mb-2" />
+              <p className="text-sm font-semibold text-amber-700">No receipts found</p>
+              <p className="text-xs text-amber-600 mt-1">Adjust dates and try again.</p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              {/* Table toolbar */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+                <div className="relative max-w-xs flex-1">
+                  <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input value={searchQ} onChange={e => setSearchQ(e.target.value)}
+                    placeholder="Search receipts…"
+                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0b2c60]/20" />
+                </div>
+                <div className="flex items-center gap-3 ml-3">
+                  <span className="text-[10px] bg-slate-100 text-slate-500 font-medium px-2 py-0.5 rounded-full">{filteredEntries.length} receipts</span>
+                  <span className="text-xs font-bold text-emerald-600">₹{totalAmount.toLocaleString("en-IN")}</span>
+                </div>
+              </div>
+
+              <table className="w-full text-sm">
+                <thead className="border-b border-slate-100 bg-slate-50">
+                  <tr>
+                    <th className="px-4 py-3 w-8">
+                      <Checkbox checked={selected.size === filteredEntries.length && filteredEntries.length > 0} onChange={toggleAll} />
+                    </th>
+                    {["Receipt #", "Date", "Customer", "Service", "Amount", "Actions"].map((h, i) => (
+                      <th key={h} className={`px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide ${i >= 4 ? "text-right" : "text-left"}`}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {filteredEntries.map((e) => (
+                    <tr key={e.receiptNumber}
+                      onClick={() => setExpandedEntry(expandedEntry === e.receiptNumber ? null : e.receiptNumber)}
+                      className={`cursor-pointer transition-colors ${expandedEntry === e.receiptNumber ? "bg-[#0b2c60]/5" : "hover:bg-slate-50"}`}>
+                      <td className="px-4 py-3" onClick={ev => { ev.stopPropagation(); toggleEntry(e.receiptNumber); }}>
+                        <Checkbox checked={selected.has(e.receiptNumber)} onChange={() => toggleEntry(e.receiptNumber)} />
+                      </td>
+                      <td className="px-3 py-3">
+                        <span className={`font-mono text-xs font-semibold px-2 py-0.5 rounded ${expandedEntry === e.receiptNumber ? "bg-[#0b2c60] text-white" : "bg-slate-100 text-slate-700"}`}>
+                          {e.receiptNumber}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3 text-xs text-slate-500 whitespace-nowrap">{fmtDateShort(e.date)}</td>
+                      <td className="px-3 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] text-white font-bold shrink-0"
+                            style={{ background: `linear-gradient(135deg, ${NAVY}, #1a4a9e)` }}>
+                            {e.customerName.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="text-xs font-medium text-slate-800 truncate max-w-[110px]">{e.customerName}</span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-3 text-xs text-slate-500 max-w-[130px] truncate">{e.serviceType}</td>
+                      <td className="px-3 py-3 text-right whitespace-nowrap">
+                        <span className={`text-sm font-bold ${e.type === "credit" ? "text-emerald-600" : "text-rose-500"}`}>
+                          {e.type === "credit" ? "+" : "-"}₹{e.amount.toLocaleString("en-IN")}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3 text-right" onClick={ev => ev.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1">
+                          {[Eye, Printer, Share2].map((Icon, i) => (
+                            <button key={i} className="w-6 h-6 rounded hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-700 transition-colors">
+                              <Icon size={12} />
+                            </button>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="px-4 py-3 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                <span className="text-xs text-slate-500">{filteredEntries.length} receipts · {fmtDate(startDate)} → {fmtDate(endDate)}</span>
+                <span className="text-sm font-bold text-emerald-600">₹{totalAmount.toLocaleString("en-IN")}</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── Right: Export Options + Preview + Monthly ── */}
+        <div className="w-[280px] shrink-0 space-y-4">
+
+          {/* Export Options Card */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-[#0b2c60] px-4 py-3 flex items-center gap-2">
+              <ArrowDownToLine size={14} className="text-white/80" />
+              <span className="text-sm font-semibold text-white">Export Options</span>
+            </div>
+            <div className="p-4 space-y-3">
+              {/* Format toggle */}
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2">Format</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={() => setExportFormat("pdf")}
+                    className={`flex flex-col items-center gap-1.5 py-2.5 rounded-lg border-2 text-xs font-medium transition-all ${exportFormat === "pdf" ? "border-[#f97316] bg-[#f97316]/5 text-[#f97316]" : "border-slate-200 text-slate-500 hover:border-slate-300"}`}>
+                    <FileText size={18} />
+                    PDF
+                  </button>
+                  <button onClick={() => setExportFormat("excel")}
+                    className={`flex flex-col items-center gap-1.5 py-2.5 rounded-lg border-2 text-xs font-medium transition-all ${exportFormat === "excel" ? "border-emerald-500 bg-emerald-50 text-emerald-600" : "border-slate-200 text-slate-500 hover:border-slate-300"}`}>
+                    <FileSpreadsheet size={18} />
+                    Excel
+                  </button>
+                </div>
+              </div>
+
+              {/* Scope */}
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2">Scope</p>
+                <div className="space-y-1.5">
+                  {[
+                    { label: "All Receipts",   sub: preview ? `${preview.count} receipts` : "Preview first" },
+                    { label: "Selected Only",  sub: `${selected.size} selected` },
+                    { label: "Date Range",     sub: startDate && endDate ? `${fmtDate(startDate)} → ${fmtDate(endDate)}` : "Set dates above" },
+                  ].map((opt, i) => (
+                    <label key={opt.label} className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-slate-50 cursor-pointer">
+                      <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 ${i === (selected.size > 0 ? 1 : 0) ? "border-[#0b2c60]" : "border-slate-300"}`}>
+                        {i === (selected.size > 0 ? 1 : 0) && <div className="w-1.5 h-1.5 rounded-full bg-[#0b2c60]" />}
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-slate-700">{opt.label}</p>
+                        <p className="text-[10px] text-slate-400">{opt.sub}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Include options */}
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2">Include</p>
+                <div className="space-y-1.5">
+                  {["QR Code", "Business Stamp", "Customer Signature Row"].map((opt, i) => (
+                    <label key={opt} className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+                      <div className={`w-3.5 h-3.5 rounded flex items-center justify-center ${i < 2 ? "bg-[#0b2c60]" : "border border-slate-300"}`}>
+                        {i < 2 && <Check size={9} className="text-white" />}
+                      </div>
+                      {opt}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <button onClick={handleDownload} disabled={downloading || !preview || preview.count === 0}
+                className="w-full py-2.5 bg-[#f97316] hover:bg-[#ea580c] text-white text-sm font-semibold rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50">
+                {downloading
+                  ? <><Loader2 size={14} className="animate-spin" /> Generating…</>
+                  : exported
+                    ? <><Check size={14} /> Done!</>
+                    : <><Download size={14} /> Export {selected.size > 0 ? selected.size : "All"}</>}
+              </button>
+              {!preview && (
+                <p className="text-center text-[10px] text-slate-400">Preview receipts first to enable export</p>
+              )}
+            </div>
+          </div>
+
+          {/* Receipt Preview */}
+          {expandedEntry && (() => {
+            const e = filteredEntries.find(x => x.receiptNumber === expandedEntry);
+            if (!e) return null;
+            return (
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="bg-slate-700 px-4 py-2.5 flex items-center gap-2">
+                  <Eye size={13} className="text-white/70" />
+                  <span className="text-xs font-semibold text-white">Receipt Preview</span>
+                </div>
+                <div className="p-4">
+                  <div className="border border-dashed border-slate-200 rounded-lg p-3 bg-slate-50/50 text-center">
+                    <div className="w-8 h-8 bg-[#0b2c60] rounded-full flex items-center justify-center mx-auto mb-1.5">
+                      <Receipt size={14} className="text-white" />
+                    </div>
+                    <p className="text-[10px] font-bold text-[#0b2c60] uppercase tracking-wider">SAHU CSC</p>
+                    <p className="text-[9px] text-slate-400 mb-2">Common Service Center, Odisha</p>
+                    <div className="border-t border-dashed border-slate-200 pt-2 text-left space-y-1">
+                      {[["Receipt #", e.receiptNumber], ["Date", fmtDate(e.date)], ["Customer", e.customerName], ["Service", e.serviceType]].map(([k, v]) => (
+                        <div key={k} className="flex justify-between text-[10px]">
+                          <span className="text-slate-500">{k}</span>
+                          <span className="font-semibold text-slate-800 text-right max-w-[110px] truncate">{v}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="border-t border-dashed border-slate-200 mt-2 pt-2 flex justify-between items-center">
+                      <span className="text-[10px] font-bold text-slate-800">Total Paid</span>
+                      <span className={`text-sm font-bold ${e.type === "credit" ? "text-emerald-600" : "text-rose-500"}`}>
+                        {e.type === "credit" ? "+" : "-"}₹{e.amount.toLocaleString("en-IN")}
+                      </span>
+                    </div>
+                    <div className="mt-2.5 flex justify-center">
+                      <div className="w-14 h-14 bg-slate-100 border border-slate-200 rounded flex items-center justify-center">
+                        <QrCode size={28} className="text-slate-400" />
+                      </div>
+                    </div>
+                    <p className="text-[9px] text-slate-400 mt-1">Scan to verify online</p>
+                    <div className="mt-2 flex items-center gap-1 justify-center">
+                      <div className="h-px flex-1 border-t border-dashed border-slate-200" />
+                      <span className="text-[9px] text-slate-400">Thank you</span>
+                      <div className="h-px flex-1 border-t border-dashed border-slate-200" />
+                    </div>
+                  </div>
+                  <div className="mt-3 grid grid-cols-3 gap-1.5">
+                    {[{ icon: Printer, label: "Print" }, { icon: Download, label: "PDF" }, { icon: Share2, label: "Share" }].map(({ icon: Icon, label }) => (
+                      <button key={label} className="flex flex-col items-center gap-1 py-2 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors text-slate-600">
+                        <Icon size={13} />
+                        <span className="text-[10px] font-medium">{label}</span>
                       </button>
                     ))}
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <input type="date" value={startDate} max={endDate}
-                    onChange={e => { setStartDate(e.target.value); setPreview(null); }}
-                    className="text-xs border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 focus:outline-none text-slate-700" />
-                  <input type="date" value={endDate} min={startDate} max={today}
-                    onChange={e => { setEndDate(e.target.value); setPreview(null); }}
-                    className="text-xs border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 focus:outline-none text-slate-700" />
-                </div>
-                <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
-                  <User size={12} className="text-slate-400 shrink-0" />
-                  <select value={userId} onChange={e => { setUserId(e.target.value); setPreview(null); }}
-                    className="flex-1 bg-transparent text-xs text-slate-600 focus:outline-none">
-                    <option value="all">All Operators</option>
-                    {usersOverview.map((u: any) => (
-                      <option key={u.userId} value={String(u.userId)}>
-                        {u.fullName ? `${u.fullName} (@${u.username})` : `@${u.username}`}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown size={11} className="text-slate-400" />
-                </div>
-                <button onClick={handlePreview} disabled={previewing || !startDate || !endDate}
-                  className="w-full py-2.5 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50"
-                  style={{ background: `linear-gradient(135deg, ${NAVY}, #1a4a9e)` }}>
-                  {previewing ? <><Loader2 size={13} className="animate-spin" /> Searching…</> : <><Search size={13} /> Preview Receipts</>}
-                </button>
               </div>
-            )}
+            );
+          })()}
 
-            {/* Bulk action bar */}
-            {selected.size > 0 && preview && (
-              <div className="bg-[#0b2c60]/5 border-b border-[#0b2c60]/15 px-4 py-2.5 flex items-center gap-2">
-                <div className="w-5 h-5 rounded flex items-center justify-center shrink-0" style={{ background: NAVY }}>
-                  <Hash size={9} className="text-white" />
+          {/* Monthly Auto-Export */}
+          {MonthlyPanel}
+        </div>
+      </div>
+    </div>
+  );
+
+  /* ═══════════════════════════════════════════════════════
+     ██████████  MOBILE LAYOUT  ██████████
+  ═══════════════════════════════════════════════════════ */
+  const MobileLayout = (
+    <div className="sm:hidden flex flex-col h-screen bg-slate-100 overflow-hidden relative">
+
+      {/* ── Status Bar ── */}
+      <div className="bg-[#0b2c60] px-5 pt-3 pb-0 flex items-center justify-between shrink-0">
+        <span className="text-white text-[11px] font-semibold">
+          {now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: false })}
+        </span>
+        <div className="flex items-center gap-1.5">
+          <div className="flex gap-0.5">
+            {[3, 3, 3, 2].map((h, i) => <div key={i} className="w-1 bg-white rounded-sm" style={{ height: h * 2.5 }} />)}
+          </div>
+          <svg width="14" height="10" viewBox="0 0 14 10" fill="white" className="opacity-90">
+            <path d="M7 2.5C8.8 2.5 10.4 3.2 11.6 4.4L13 3C11.4 1.4 9.3 0.5 7 0.5C4.7 0.5 2.6 1.4 1 3L2.4 4.4C3.6 3.2 5.2 2.5 7 2.5Z"/>
+            <path d="M7 5.5C8 5.5 8.9 5.9 9.6 6.6L11 5.2C9.9 4.2 8.5 3.5 7 3.5C5.5 3.5 4.1 4.2 3 5.2L4.4 6.6C5.1 5.9 6 5.5 7 5.5Z"/>
+            <circle cx="7" cy="9" r="1.5"/>
+          </svg>
+          <div className="w-5 h-2.5 bg-white rounded-sm opacity-90" />
+        </div>
+      </div>
+
+      {/* ── Top Nav ── */}
+      <div className="bg-[#0b2c60] px-4 py-3 shrink-0">
+        <div className="flex items-center gap-3">
+          {mobileScreen !== "list" ? (
+            <button onClick={() => setMobileScreen("list")} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+              <ArrowLeft size={16} className="text-white" />
+            </button>
+          ) : (
+            <button onClick={() => window.history.length > 1 ? window.history.back() : setLocation("/")}
+              className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+              <ArrowLeft size={16} className="text-white" />
+            </button>
+          )}
+          <div className="flex-1">
+            <h1 className="text-base font-bold text-white leading-tight">
+              {mobileScreen === "list" ? "Receipt Export" : mobileScreen === "preview" ? "Receipt Preview" : "Export Options"}
+            </h1>
+            <p className="text-[11px] text-white/60">
+              {mobileScreen === "list"
+                ? `${filteredEntries.length > 0 ? filteredEntries.length : preview?.count ?? 0} receipts`
+                : mobileScreen === "preview"
+                  ? activeEntry?.receiptNumber ?? ""
+                  : "Choose format & scope"}
+            </p>
+          </div>
+          {mobileScreen === "list" && (
+            <button onClick={() => setMobileScreen("export")}
+              className="flex items-center gap-1.5 bg-[#f97316] text-white text-xs font-semibold px-3 py-2 rounded-xl">
+              <ArrowDownToLine size={13} />
+              Export
+            </button>
+          )}
+        </div>
+
+        {/* KPI strip */}
+        {mobileScreen === "list" && (
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            {[
+              { label: "Total",    value: preview ? String(preview.count) : "—",                             icon: Receipt },
+              { label: "Amount",   value: preview ? `₹${totalAmount.toLocaleString("en-IN")}` : "—",         icon: IndianRupee },
+              { label: "Selected", value: String(selected.size),                                              icon: CheckSquare },
+            ].map(s => (
+              <div key={s.label} className="bg-white/10 rounded-xl px-3 py-2.5 flex items-center gap-2">
+                <s.icon size={14} className="text-[#f97316] shrink-0" />
+                <div>
+                  <p className="text-sm font-bold text-white leading-none">{s.value}</p>
+                  <p className="text-[10px] text-white/50 mt-0.5">{s.label}</p>
                 </div>
-                <span className="text-xs font-semibold flex-1 min-w-0 truncate" style={{ color: NAVY }}>
-                  {selected.size} selected · ₹{selTotal.toLocaleString("en-IN")}
-                </span>
-                <button onClick={() => setSelected(new Set())} className="text-slate-400 p-1"><X size={12} /></button>
               </div>
-            )}
-
-            {/* No preview yet */}
-            {!preview ? (
-              <div className="flex flex-col items-center text-center gap-3 py-16 px-6 text-slate-400">
-                <FileArchive size={36} className="opacity-30" />
-                <p className="text-sm font-semibold text-slate-500">How it works</p>
-                <ol className="text-xs text-slate-400 space-y-2 text-left list-none max-w-xs">
-                  <li className="flex gap-2"><span className="font-bold" style={{ color: NAVY }}>1.</span> Tap the filter icon to set a date range</li>
-                  <li className="flex gap-2"><span className="font-bold" style={{ color: NAVY }}>2.</span> Preview to see how many receipts will be exported</li>
-                  <li className="flex gap-2"><span className="font-bold" style={{ color: NAVY }}>3.</span> Download as ZIP — each receipt is a separate named PDF</li>
-                </ol>
-                {!showFilters && (
-                  <button onClick={() => setShowFilters(true)}
-                    className="mt-2 px-5 py-2.5 text-sm font-semibold text-white rounded-xl"
-                    style={{ background: `linear-gradient(135deg, ${NAVY}, #1a4a9e)` }}>
-                    Open Filters
-                  </button>
-                )}
-              </div>
-            ) : preview.count === 0 ? (
-              <div className="mx-4 mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-center">
-                <AlertCircle size={28} className="text-amber-400 mx-auto mb-2" />
-                <p className="text-sm font-semibold text-amber-700">No receipts found</p>
-                <p className="text-xs text-amber-600 mt-1">Adjust dates and try again.</p>
-              </div>
-            ) : (
-              <>
-                {/* Select all */}
-                <div className="bg-white border-b border-slate-100 px-4 py-2.5 flex items-center gap-2">
-                  <Cb checked={selected.size === filteredEntries.length && filteredEntries.length > 0} onChange={toggleAll} />
-                  <span className="text-xs text-slate-500 flex-1">Select all ({filteredEntries.length})</span>
-                  <span className="text-xs font-bold text-emerald-600">
-                    ₹{filteredEntries.reduce((s,e) => s+e.amount,0).toLocaleString("en-IN")}
-                  </span>
-                </div>
-
-                {/* Receipt cards */}
-                <div className="divide-y divide-slate-100 pb-24">
-                  {filteredEntries.map((e) => (
-                    <div key={e.receiptNumber} className="bg-white">
-                      <div className="flex items-center px-4 py-3.5 gap-3 active:bg-slate-50"
-                        onClick={() => setExpandedEntry(expandedEntry === e.receiptNumber ? null : e.receiptNumber)}>
-                        <div onClick={ev => { ev.stopPropagation(); toggleEntry(e.receiptNumber); }}>
-                          <Cb checked={selected.has(e.receiptNumber)} onChange={() => toggleEntry(e.receiptNumber)} size={16} />
-                        </div>
-                        <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xs text-white font-bold shrink-0"
-                          style={{ background: `linear-gradient(135deg, ${NAVY}, #1a4a9e)` }}>
-                          {e.customerName.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-xs font-semibold text-slate-800 truncate">{e.customerName}</span>
-                            <span className={`text-sm font-bold shrink-0 ${e.type==="credit" ? "text-emerald-600" : "text-rose-500"}`}>
-                              {e.type==="credit" ? "+" : "-"}₹{e.amount.toLocaleString("en-IN")}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between gap-2 mt-0.5">
-                            <span className="font-mono text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500">
-                              {e.receiptNumber}
-                            </span>
-                            <span className="text-[10px] text-slate-400 shrink-0">{fmtDateShort(e.date)}</span>
-                          </div>
-                          <p className="text-[10px] text-slate-400 mt-0.5 truncate">{e.serviceType}</p>
-                        </div>
-                        <ChevronRight size={14} className="text-slate-300 shrink-0 transition-transform"
-                          style={expandedEntry === e.receiptNumber ? { transform: "rotate(90deg)", color: NAVY } : {}} />
-                      </div>
-
-                      {/* Inline receipt preview */}
-                      {expandedEntry === e.receiptNumber && (
-                        <div className="px-4 pb-4">
-                          <div className="rounded-2xl border border-slate-100 overflow-hidden shadow-sm">
-                            <div className="py-3 px-4 text-center" style={{ background: NAVY }}>
-                              <p className="text-[11px] font-black text-white tracking-[0.2em]">
-                                SAHU <span style={{ color: SAFFRON }}>CSC</span>
-                              </p>
-                              <p className="text-[9px] text-white/40 mt-0.5">Common Service Center, Odisha</p>
-                            </div>
-                            <div className="bg-slate-50 px-4 py-3 space-y-2">
-                              {[
-                                ["Receipt #", e.receiptNumber],
-                                ["Date",      fmtDate(e.date)],
-                                ["Customer",  e.customerName],
-                                ["Service",   e.serviceType],
-                              ].map(([k, v]) => (
-                                <div key={k} className="flex justify-between text-xs">
-                                  <span className="text-slate-400">{k}</span>
-                                  <span className="font-semibold text-slate-700 text-right max-w-[200px] truncate">{v}</span>
-                                </div>
-                              ))}
-                              <div className="border-t border-dashed border-slate-200 pt-2 flex justify-between items-center">
-                                <span className="text-sm font-bold text-slate-700">Total Paid</span>
-                                <span className={`text-lg font-extrabold ${e.type==="credit" ? "text-emerald-600" : "text-rose-500"}`}>
-                                  {e.type==="credit" ? "+" : "-"}₹{e.amount.toLocaleString("en-IN")}
-                                </span>
-                              </div>
-                              <div className="flex justify-center py-1">
-                                <div className="w-16 h-16 bg-white border border-slate-200 rounded-xl flex items-center justify-center">
-                                  <QrCode size={32} className="text-slate-300" />
-                                </div>
-                              </div>
-                              <p className="text-[9px] text-center text-slate-300">Scan to verify</p>
-                            </div>
-                            <div className="grid grid-cols-3 border-t border-slate-100 divide-x divide-slate-100">
-                              {[{icon:Printer,label:"Print"},{icon:Download,label:"PDF"},{icon:Share2,label:"Share"}].map(({icon:Icon,label}) => (
-                                <button key={label} className="flex flex-col items-center gap-1 py-2.5 bg-white hover:bg-slate-50 text-slate-500">
-                                  <Icon size={13} /><span className="text-[10px] font-medium">{label}</span>
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {/* Sticky bottom CTA */}
-            {preview && preview.count > 0 && (
-              <div className="fixed bottom-16 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-slate-200 px-4 py-3 shadow-lg z-10">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-slate-500">
-                    {selected.size > 0 ? `${selected.size} selected` : `${filteredEntries.length} receipts`}
-                  </span>
-                  <span className="text-xs font-bold text-emerald-600">
-                    ₹{(selected.size > 0 ? selTotal : filteredEntries.reduce((s,e) => s+e.amount,0)).toLocaleString("en-IN")}
-                  </span>
-                </div>
-                <button onClick={handleDownload} disabled={downloading}
-                  className="w-full py-3 text-white text-sm font-bold rounded-2xl flex items-center justify-center gap-2 shadow-md disabled:opacity-60"
-                  style={{ background: `linear-gradient(135deg, ${SAFFRON}, #ea580c)` }}>
-                  {downloading
-                    ? <><Loader2 size={16} className="animate-spin" /> Generating ZIP…</>
-                    : <><Download size={16} /> Download {selected.size > 0 ? selected.size : filteredEntries.length} PDF{filteredEntries.length !== 1 ? "s" : ""} as ZIP</>}
-                </button>
-              </div>
-            )}
-          </>
-        )}
-
-        {/* ── MONTHLY TAB (mobile) ── */}
-        {mobileTab === "monthly" && (
-          <div className="px-4 py-5 space-y-4 pb-8">
-            <div className="rounded-2xl border border-orange-100 bg-orange-50 px-4 py-3.5 flex items-start gap-3">
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: `linear-gradient(135deg, ${SAFFRON}, #ea580c)` }}>
-                <Clock size={14} className="text-white" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-orange-800">Automatic Monthly Export</p>
-                <p className="text-[11px] text-orange-600 mt-0.5 leading-relaxed">
-                  A ZIP of all receipts is automatically emailed to admin accounts on the 1st of every month.
-                </p>
-                <p className="text-[10px] text-orange-500 mt-1.5 font-medium">Next auto-run: {nextExport}</p>
-              </div>
-            </div>
-            {MonthlySection}
+            ))}
           </div>
         )}
       </div>
 
-      {/* ════════════════════════════════════════
-          DESKTOP LAYOUT  (hidden on mobile)
-      ════════════════════════════════════════ */}
-      <div className="hidden sm:block">
-        <div className="max-w-[1200px] mx-auto px-6 py-5 flex gap-5">
+      {/* ══ LIST SCREEN ══ */}
+      {mobileScreen === "list" && (
+        <div className="flex-1 overflow-y-auto">
+          {/* Search + Filter */}
+          <div className="bg-white border-b border-slate-100 px-4 py-3 flex gap-2 sticky top-0 z-10">
+            <div className="relative flex-1">
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input value={searchQ} onChange={e => setSearchQ(e.target.value)}
+                placeholder="Search receipts…"
+                className="w-full pl-8 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0b2c60]/20" />
+            </div>
+            <button onClick={() => setShowFilters(!showFilters)}
+              className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${showFilters ? "bg-[#0b2c60] border-[#0b2c60] text-white" : "bg-slate-50 border-slate-200 text-slate-500"}`}>
+              <SlidersHorizontal size={16} />
+            </button>
+          </div>
 
-          {/* ── LEFT: Filter + Table ── */}
-          <div className="flex-1 min-w-0 space-y-4">
-
-            {/* Filter bar */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-3 flex flex-wrap items-center gap-2.5">
-              <div className="flex items-center gap-2">
-                <Calendar size={13} className="text-slate-400" />
+          {/* Expandable filter panel */}
+          {showFilters && (
+            <div className="bg-white border-b border-slate-100 px-4 py-3 space-y-3">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Quick Range</p>
+                <div className="flex gap-1.5 flex-wrap">
+                  {(["today","week","month","lastMonth"] as const).map(v => {
+                    const l = v === "today" ? "Today" : v === "week" ? "Week" : v === "month" ? "This Month" : "Last Month";
+                    return (
+                      <button key={v} onClick={() => { setQuickRange(v); setDateRange(v); }}
+                        className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${dateRange === v ? "bg-[#0b2c60] text-white" : "bg-slate-100 text-slate-600"}`}>
+                        {l}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
                 <input type="date" value={startDate} max={endDate}
                   onChange={e => { setStartDate(e.target.value); setPreview(null); }}
-                  className="text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-slate-50 focus:outline-none text-slate-700 h-9" />
-                <span className="text-slate-300 text-xs">→</span>
+                  className="text-xs border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 focus:outline-none text-slate-700" />
                 <input type="date" value={endDate} min={startDate} max={today}
                   onChange={e => { setEndDate(e.target.value); setPreview(null); }}
-                  className="text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-slate-50 focus:outline-none text-slate-700 h-9" />
+                  className="text-xs border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 focus:outline-none text-slate-700" />
               </div>
-              <div className="flex flex-wrap gap-1.5">
-                {([["Today","today"],["Week","week"],["Month","month"],["Last Month","lastMonth"]] as const).map(([l,v]) => (
-                  <button key={v} onClick={() => setQuickRange(v)}
-                    className="text-[10px] px-2.5 py-1 rounded-full border border-slate-200 font-medium text-slate-500 hover:border-[#0b2c60] hover:text-[#0b2c60] transition-colors">
-                    {l}
-                  </button>
-                ))}
-              </div>
-              <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-600 cursor-pointer hover:border-slate-300">
-                <User size={12} className="text-slate-400" />
+              <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+                <User size={12} className="text-slate-400 shrink-0" />
                 <select value={userId} onChange={e => { setUserId(e.target.value); setPreview(null); }}
-                  className="bg-transparent text-xs text-slate-600 focus:outline-none cursor-pointer">
+                  className="flex-1 bg-transparent text-xs text-slate-600 focus:outline-none">
                   <option value="all">All Operators</option>
                   {usersOverview.map((u: any) => (
                     <option key={u.userId} value={String(u.userId)}>
@@ -637,263 +764,316 @@ export default function ReceiptExport() {
                 <ChevronDown size={11} className="text-slate-400" />
               </div>
               <button onClick={handlePreview} disabled={previewing || !startDate || !endDate}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-lg transition-all disabled:opacity-50 h-9 ml-auto"
+                className="w-full py-2.5 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50"
                 style={{ background: `linear-gradient(135deg, ${NAVY}, #1a4a9e)` }}>
-                {previewing ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />}
-                {previewing ? "Searching…" : "Preview Receipts"}
+                {previewing ? <><Loader2 size={13} className="animate-spin" /> Searching…</> : <><Search size={13} /> Preview Receipts</>}
               </button>
             </div>
+          )}
 
-            {/* Bulk action bar */}
-            {selected.size > 0 && preview && (
-              <div className="rounded-xl px-4 py-2.5 flex items-center gap-3 border" style={{ background: `${NAVY}08`, borderColor: `${NAVY}25` }}>
-                <div className="w-5 h-5 rounded flex items-center justify-center" style={{ background: NAVY }}>
-                  <Hash size={10} className="text-white" />
-                </div>
-                <span className="text-xs font-semibold" style={{ color: NAVY }}>
-                  {selected.size} selected · ₹{selTotal.toLocaleString("en-IN")}
-                </span>
-                <div className="flex-1" />
-                <button onClick={() => setSelected(new Set())} className="text-xs text-slate-400 hover:text-slate-700 flex items-center gap-1">
-                  <X size={11} /> Clear
+          {/* Bulk bar */}
+          {selected.size > 0 && preview && (
+            <div className="mx-3 mt-3 bg-[#0b2c60]/5 border border-[#0b2c60]/20 rounded-2xl px-4 py-3 flex items-center gap-2">
+              <span className="flex-1 text-xs font-semibold text-[#0b2c60]">{selected.size} selected · ₹{selTotal.toLocaleString("en-IN")}</span>
+              <button onClick={() => setSelected(new Set())} className="p-1 text-slate-400"><X size={14} /></button>
+              <button onClick={() => setMobileScreen("export")}
+                className="bg-[#f97316] text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1">
+                <Download size={12} /> Export
+              </button>
+            </div>
+          )}
+
+          {/* No preview yet */}
+          {!preview ? (
+            <div className="flex flex-col items-center text-center gap-3 py-16 px-6 text-slate-400">
+              <FileArchive size={40} className="opacity-25" />
+              <p className="text-sm font-semibold text-slate-500">How it works</p>
+              <ol className="text-xs text-slate-400 space-y-2 text-left list-none max-w-xs">
+                <li className="flex gap-2"><span className="font-bold text-[#0b2c60]">1.</span> Tap the filter icon to set a date range</li>
+                <li className="flex gap-2"><span className="font-bold text-[#0b2c60]">2.</span> Preview to see how many receipts will be exported</li>
+                <li className="flex gap-2"><span className="font-bold text-[#0b2c60]">3.</span> Download as ZIP — each receipt is a separate named PDF</li>
+              </ol>
+              {!showFilters && (
+                <button onClick={() => setShowFilters(true)}
+                  className="mt-2 px-5 py-2.5 text-sm font-semibold text-white rounded-xl"
+                  style={{ background: `linear-gradient(135deg, ${NAVY}, #1a4a9e)` }}>
+                  Open Filters
                 </button>
-                <button onClick={handleDownload} disabled={downloading}
-                  className="text-xs font-semibold text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 disabled:opacity-50"
-                  style={{ background: `linear-gradient(135deg, ${SAFFRON}, #ea580c)` }}>
-                  {downloading
-                    ? <><Loader2 size={11} className="animate-spin" /> Generating…</>
-                    : <><Download size={11} /> Download {selected.size} PDF{selected.size!==1?"s":""} as ZIP</>}
-                </button>
-              </div>
-            )}
-
-            {/* Empty / no-preview state */}
-            {!preview ? (
-              <div className="bg-white rounded-xl border border-dashed border-slate-200 shadow-sm">
-                <div className="flex flex-col items-center text-center gap-3 py-14 px-6 text-slate-400">
-                  <FileArchive size={36} className="opacity-30" />
-                  <p className="text-sm font-semibold text-slate-500">How it works</p>
-                  <ol className="text-xs text-slate-400 space-y-1 text-left list-none max-w-xs">
-                    <li className="flex gap-2"><span className="font-bold" style={{ color: NAVY }}>1.</span> Choose a date range and optional operator filter above</li>
-                    <li className="flex gap-2"><span className="font-bold" style={{ color: NAVY }}>2.</span> Click <em>Preview Receipts</em> to see how many will be exported</li>
-                    <li className="flex gap-2"><span className="font-bold" style={{ color: NAVY }}>3.</span> Click <em>Download as ZIP</em> — each receipt is a separately named PDF</li>
-                  </ol>
-                </div>
-              </div>
-            ) : preview.count === 0 ? (
-              <div className="bg-white rounded-xl border border-amber-200 shadow-sm p-6 text-center">
-                <AlertCircle size={28} className="text-amber-400 mx-auto mb-2" />
-                <p className="text-sm font-semibold text-amber-700">No receipts found</p>
-                <p className="text-xs text-amber-600 mt-1">No receipts with receipt numbers exist for the selected range. Adjust dates and try again.</p>
-              </div>
-            ) : (
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                {/* Table header */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-                  <div className="relative max-w-xs flex-1">
-                    <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input value={searchQ} onChange={e => setSearchQ(e.target.value)}
-                      placeholder="Filter by receipt, customer, service…"
-                      className="w-full pl-7 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none" />
-                  </div>
-                  <div className="flex items-center gap-2 ml-3">
-                    <span className="text-[10px] bg-slate-100 text-slate-500 font-medium px-2 py-0.5 rounded-full">{filteredEntries.length} receipts</span>
-                    <span className="text-xs font-bold text-emerald-600">
-                      ₹{displayedEntries.reduce((s,e) => s+e.amount,0).toLocaleString("en-IN")}
-                    </span>
-                    {preview.count > displayedEntries.length && (
-                      <span className="text-[10px] text-slate-400">· {preview.count - displayedEntries.length} more not shown</span>
-                    )}
+              )}
+            </div>
+          ) : preview.count === 0 ? (
+            <div className="mx-4 mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-center">
+              <AlertCircle size={28} className="text-amber-400 mx-auto mb-2" />
+              <p className="text-sm font-semibold text-amber-700">No receipts found</p>
+              <p className="text-xs text-amber-600 mt-1">Adjust dates and try again.</p>
+            </div>
+          ) : (
+            /* Receipt cards */
+            <div className="px-3 py-3 space-y-2 pb-6">
+              {filteredEntries.map((e) => (
+                <div key={e.receiptNumber}
+                  onClick={() => { setActiveEntry(e); setMobileScreen("preview"); }}
+                  className={`bg-white rounded-2xl border shadow-sm transition-all active:scale-[0.98] ${selected.has(e.receiptNumber) ? "border-[#0b2c60]/30 bg-[#0b2c60]/[0.02]" : "border-slate-200"}`}>
+                  <div className="p-4 flex items-center gap-3">
+                    <div onClick={ev => { ev.stopPropagation(); toggleEntry(e.receiptNumber); }} className="p-1">
+                      <Checkbox checked={selected.has(e.receiptNumber)} onChange={() => toggleEntry(e.receiptNumber)} size={18} />
+                    </div>
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
+                      style={{ background: `linear-gradient(135deg, ${NAVY}, #1a4a9e)` }}>
+                      {e.customerName.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-semibold text-slate-800 truncate">{e.customerName}</p>
+                        <span className={`text-sm font-bold shrink-0 ${e.type === "credit" ? "text-emerald-600" : "text-rose-500"}`}>
+                          {e.type === "credit" ? "+" : "-"}₹{e.amount.toLocaleString("en-IN")}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 truncate mt-0.5">{e.serviceType}</p>
+                      <div className="flex items-center justify-between mt-1.5">
+                        <span className="font-mono text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{e.receiptNumber}</span>
+                        <span className="text-[10px] text-slate-400">{fmtDateShort(e.date)}</span>
+                      </div>
+                    </div>
+                    <ChevronRight size={14} className="text-slate-300 shrink-0" />
                   </div>
                 </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-slate-50/80">
-                      <tr>
-                        <th className="px-4 py-2.5 w-8">
-                          <Cb checked={selected.size===filteredEntries.length && filteredEntries.length>0} onChange={toggleAll} />
-                        </th>
-                        {["Receipt #","Date","Customer","Service","Amount","Actions"].map((h,i) => (
-                          <th key={h} className={`px-3 py-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap ${i>=4?"text-right":"text-left"}`}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredEntries.map((e) => (
-                        <tr key={e.receiptNumber}
-                          className="border-t border-slate-50 transition-colors cursor-pointer hover:bg-slate-50/60"
-                          style={expandedEntry===e.receiptNumber ? { background:`${NAVY}06` } : {}}>
-                          <td className="px-4 py-3" onClick={ev => { ev.stopPropagation(); toggleEntry(e.receiptNumber); }}>
-                            <Cb checked={selected.has(e.receiptNumber)} onChange={() => toggleEntry(e.receiptNumber)} />
-                          </td>
-                          <td className="px-3 py-3" onClick={() => setExpandedEntry(expandedEntry===e.receiptNumber ? null : e.receiptNumber)}>
-                            <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-md"
-                              style={expandedEntry===e.receiptNumber ? { background:NAVY, color:"#fff" } : { background:"#f1f5f9", color:"#475569" }}>
-                              {e.receiptNumber}
-                            </span>
-                          </td>
-                          <td className="px-3 py-3 text-[11px] text-slate-400 whitespace-nowrap" onClick={() => setExpandedEntry(expandedEntry===e.receiptNumber ? null : e.receiptNumber)}>
-                            {fmtDateShort(e.date)}
-                          </td>
-                          <td className="px-3 py-3" onClick={() => setExpandedEntry(expandedEntry===e.receiptNumber ? null : e.receiptNumber)}>
-                            <div className="flex items-center gap-2">
-                              <div className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] text-white font-bold shrink-0"
-                                style={{ background:`linear-gradient(135deg, ${NAVY}, #1a4a9e)` }}>
-                                {e.customerName.charAt(0).toUpperCase()}
-                              </div>
-                              <span className="text-xs font-medium text-slate-800 truncate max-w-[100px]">{e.customerName}</span>
-                            </div>
-                          </td>
-                          <td className="px-3 py-3 text-[11px] text-slate-500 max-w-[120px] truncate" onClick={() => setExpandedEntry(expandedEntry===e.receiptNumber ? null : e.receiptNumber)}>
-                            {e.serviceType}
-                          </td>
-                          <td className="px-3 py-3 text-right whitespace-nowrap" onClick={() => setExpandedEntry(expandedEntry===e.receiptNumber ? null : e.receiptNumber)}>
-                            <span className={`text-sm font-bold ${e.type==="credit" ? "text-emerald-600" : "text-rose-500"}`}>
-                              {e.type==="credit" ? "+" : "-"}₹{e.amount.toLocaleString("en-IN")}
-                            </span>
-                          </td>
-                          <td className="px-3 py-3 text-right" onClick={ev => ev.stopPropagation()}>
-                            <div className="flex items-center justify-end gap-1">
-                              {[Eye, Printer, Share2].map((Icon, i) => (
-                                <button key={i} className="w-6 h-6 rounded hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-700 transition-colors">
-                                  <Icon size={11} />
-                                </button>
-                              ))}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="px-4 py-2.5 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
-                  <span className="text-[11px] text-slate-400">
-                    {fmtDate(startDate)} → {fmtDate(endDate)}
-                    {userId !== "all" && (() => {
-                      const u = usersOverview.find((x: any) => String(x.userId) === userId) as any;
-                      return u ? ` · @${u.username}` : "";
-                    })()}
-                  </span>
-                  <span className="text-sm font-bold text-emerald-600">
-                    ₹{displayedEntries.reduce((s,e) => s+e.amount,0).toLocaleString("en-IN")}
-                  </span>
-                </div>
+      {/* ══ PREVIEW SCREEN ══ */}
+      {mobileScreen === "preview" && activeEntry && (
+        <div className="flex-1 overflow-y-auto bg-slate-100 px-4 py-5">
+          {/* Receipt paper */}
+          <div className="bg-white rounded-3xl shadow-lg overflow-hidden border border-slate-100">
+            <div className="bg-[#0b2c60] px-5 py-5 text-center">
+              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-2">
+                <Receipt size={22} className="text-white" />
               </div>
-            )}
-          </div>
-
-          {/* ── RIGHT: Export + Preview + Monthly panels ── */}
-          <div className="w-[280px] shrink-0 space-y-4">
-
-            {/* Bulk ZIP Export Card */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-              <div className="px-4 py-3 flex items-center gap-2.5" style={{ background:`linear-gradient(135deg, ${NAVY}, #1a3d80)` }}>
-                <div className="w-7 h-7 bg-white/15 rounded-lg flex items-center justify-center">
-                  <FileArchive size={14} className="text-white" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-white">Bulk ZIP Export</p>
-                  <p className="text-[10px] text-white/50">PDFs by date range</p>
-                </div>
-              </div>
-              <div className="p-4 space-y-3.5">
-                <div className="rounded-lg border px-3 py-2.5 flex items-start gap-2" style={{ background:`${NAVY}05`, borderColor:`${NAVY}15` }}>
-                  <FileText size={12} className="mt-0.5 shrink-0" style={{ color:NAVY }} />
-                  <p className="text-[10px] leading-relaxed" style={{ color:NAVY }}>
-                    Use the filters to choose a date range, preview the receipts, then download all as a ZIP of individual PDFs.
-                  </p>
-                </div>
-                {preview && preview.count > 0 ? (
-                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 flex items-center gap-3">
-                    <div className="w-9 h-9 bg-emerald-600 rounded-lg flex items-center justify-center shrink-0">
-                      <FileText size={16} className="text-white" />
-                    </div>
-                    <div>
-                      <p className="text-base font-bold text-emerald-700">{preview.count} PDF{preview.count!==1?"s":""}</p>
-                      <p className="text-[10px] text-emerald-600">Ready to download as ZIP</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 flex items-center gap-3">
-                    <div className="w-9 h-9 bg-slate-200 rounded-lg flex items-center justify-center shrink-0">
-                      <FileText size={16} className="text-slate-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-slate-400">No results yet</p>
-                      <p className="text-[10px] text-slate-400">Preview receipts first</p>
-                    </div>
-                  </div>
-                )}
-                <button onClick={handleDownload} disabled={downloading || !preview || preview.count===0}
-                  className="w-full py-2.5 text-white text-sm font-bold rounded-xl flex items-center justify-center gap-2 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ background:`linear-gradient(135deg, ${SAFFRON}, #ea580c)` }}>
-                  {downloading
-                    ? <><Loader2 size={14} className="animate-spin" /> Generating ZIP…</>
-                    : <><Download size={14} /> Download as ZIP</>}
-                </button>
-                {preview && preview.count > 0 && (
-                  <p className="text-center text-[10px] text-slate-400">
-                    e.g. <code className="bg-slate-100 rounded px-1">{preview.entries[0]?.receiptNumber ?? "CSC-2026-0001"}.pdf</code>
-                  </p>
-                )}
-              </div>
+              <p className="text-white font-bold text-lg tracking-tight">SAHU CSC</p>
+              <p className="text-white/60 text-xs mt-0.5">Common Service Center, Odisha</p>
             </div>
 
-            {/* Receipt preview (expands when row clicked) */}
-            {expandedEntry && (() => {
-              const e = filteredEntries.find(x => x.receiptNumber === expandedEntry);
-              if (!e) return null;
-              return (
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                  <div className="px-4 py-2.5 flex items-center gap-2 bg-slate-700">
-                    <Eye size={12} className="text-white/60" />
-                    <span className="text-xs font-semibold text-white">Receipt Preview</span>
+            {/* Tear line */}
+            <div className="flex items-center px-5 py-2">
+              <div className="w-4 h-4 rounded-full bg-slate-100 -ml-8 shrink-0" />
+              <div className="flex-1 border-t-2 border-dashed border-slate-200 mx-2" />
+              <div className="w-4 h-4 rounded-full bg-slate-100 -mr-8 shrink-0" />
+            </div>
+
+            <div className="px-5 pb-5 space-y-3">
+              {[
+                { label: "Receipt No.", value: activeEntry.receiptNumber, mono: true },
+                { label: "Date",        value: fmtDate(activeEntry.date) },
+                { label: "Customer",    value: activeEntry.customerName },
+                { label: "Service",     value: activeEntry.serviceType },
+              ].map(row => (
+                <div key={row.label} className="flex items-start justify-between gap-3">
+                  <span className="text-xs text-slate-500 shrink-0 mt-0.5">{row.label}</span>
+                  <span className={`text-sm font-medium text-slate-800 text-right ${row.mono ? "font-mono text-xs bg-slate-100 px-2 py-0.5 rounded-lg" : ""}`}>
+                    {row.value}
+                  </span>
+                </div>
+              ))}
+
+              {/* Tear line */}
+              <div className="flex items-center">
+                <div className="w-4 h-4 rounded-full bg-slate-100 -ml-9 shrink-0" />
+                <div className="flex-1 border-t-2 border-dashed border-slate-200 mx-2" />
+                <div className="w-4 h-4 rounded-full bg-slate-100 -mr-9 shrink-0" />
+              </div>
+
+              <div className="flex items-center justify-between py-1">
+                <span className="text-base font-bold text-slate-800">Total Paid</span>
+                <span className={`text-2xl font-bold ${activeEntry.type === "credit" ? "text-emerald-600" : "text-rose-500"}`}>
+                  {activeEntry.type === "credit" ? "+" : "-"}₹{activeEntry.amount.toLocaleString("en-IN")}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${activeEntry.type === "credit" ? "bg-emerald-400" : "bg-rose-400"}`} />
+                <span className={`text-xs font-semibold ${activeEntry.type === "credit" ? "text-emerald-600" : "text-rose-500"}`}>
+                  {activeEntry.type === "credit" ? "Payment Confirmed" : "Debit Entry"}
+                </span>
+              </div>
+
+              <div className="flex flex-col items-center py-3">
+                <div className="w-24 h-24 bg-slate-100 border-2 border-dashed border-slate-200 rounded-2xl flex items-center justify-center">
+                  <QrCode size={44} className="text-slate-400" />
+                </div>
+                <p className="text-[10px] text-slate-400 mt-2">Scan to verify online</p>
+              </div>
+
+              {/* Tear line */}
+              <div className="flex items-center">
+                <div className="w-4 h-4 rounded-full bg-slate-100 -ml-9 shrink-0" />
+                <div className="flex-1 border-t-2 border-dashed border-slate-200 mx-2" />
+                <div className="w-4 h-4 rounded-full bg-slate-100 -mr-9 shrink-0" />
+              </div>
+              <p className="text-center text-xs text-slate-400">Thank you for using SAHU CSC</p>
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-3 gap-3">
+            {[
+              { icon: Printer, label: "Print",  color: "bg-[#0b2c60] text-white" },
+              { icon: Download, label: "PDF",   color: "bg-[#f97316] text-white" },
+              { icon: Share2,  label: "Share",  color: "bg-white text-slate-700 border border-slate-200" },
+            ].map(({ icon: Icon, label, color }) => (
+              <button key={label} className={`${color} rounded-2xl py-4 flex flex-col items-center gap-2 shadow-sm font-medium text-sm`}>
+                <Icon size={20} />
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <button className="mt-3 w-full bg-[#25D366] text-white rounded-2xl py-4 flex items-center justify-center gap-2 font-semibold shadow-sm">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+            </svg>
+            Send via WhatsApp
+          </button>
+
+          <div className="h-6" />
+        </div>
+      )}
+
+      {/* ══ EXPORT SCREEN ══ */}
+      {mobileScreen === "export" && (
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+
+          {/* Summary */}
+          <div className="bg-[#0b2c60]/5 border border-[#0b2c60]/15 rounded-2xl px-4 py-3.5 flex items-center gap-3">
+            <div className="w-10 h-10 bg-[#0b2c60] rounded-xl flex items-center justify-center shrink-0">
+              <ArrowDownToLine size={18} className="text-white" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-[#0b2c60]">
+                {selected.size > 0 ? `${selected.size} receipts selected` : preview ? `Export all ${preview.count} receipts` : "No receipts previewed"}
+              </p>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {selected.size > 0 ? `Total: ₹${selTotal.toLocaleString("en-IN")}` : preview ? `Total: ₹${totalAmount.toLocaleString("en-IN")}` : "Set a date range and preview first"}
+              </p>
+            </div>
+          </div>
+
+          {/* Format */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Format</p>
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={() => setExportFormat("pdf")}
+                className={`flex flex-col items-center gap-2 py-4 rounded-2xl border-2 transition-all ${exportFormat === "pdf" ? "border-[#f97316] bg-[#f97316]/5" : "border-slate-200"}`}>
+                <FileText size={24} className={exportFormat === "pdf" ? "text-[#f97316]" : "text-slate-400"} />
+                <span className={`text-sm font-semibold ${exportFormat === "pdf" ? "text-[#f97316]" : "text-slate-500"}`}>PDF</span>
+                <span className="text-[10px] text-slate-400">Printable receipt</span>
+              </button>
+              <button onClick={() => setExportFormat("excel")}
+                className={`flex flex-col items-center gap-2 py-4 rounded-2xl border-2 transition-all ${exportFormat === "excel" ? "border-emerald-500 bg-emerald-50" : "border-slate-200"}`}>
+                <FileSpreadsheet size={24} className={exportFormat === "excel" ? "text-emerald-600" : "text-slate-400"} />
+                <span className={`text-sm font-semibold ${exportFormat === "excel" ? "text-emerald-600" : "text-slate-500"}`}>Excel</span>
+                <span className="text-[10px] text-slate-400">Spreadsheet report</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Scope */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Scope</p>
+            <div className="space-y-2">
+              {[
+                { label: "All Receipts",  sub: preview ? `${preview.count} receipts · ₹${totalAmount.toLocaleString("en-IN")}` : "Preview first", active: selected.size === 0 && !!preview },
+                { label: "Selected Only", sub: `${selected.size} selected · ₹${selTotal.toLocaleString("en-IN")}`, active: selected.size > 0 },
+                { label: "This Month",    sub: `${MONTH_OPTIONS.find(m => m.v === now.getMonth() + 1)?.l} ${now.getFullYear()}`, active: false },
+              ].map(opt => (
+                <div key={opt.label} className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${opt.active ? "bg-[#0b2c60]/5 border border-[#0b2c60]/20" : "bg-slate-50"}`}>
+                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${opt.active ? "border-[#0b2c60]" : "border-slate-300"}`}>
+                    {opt.active && <div className="w-2 h-2 rounded-full bg-[#0b2c60]" />}
                   </div>
-                  <div className="p-3">
-                    <div className="border border-dashed border-slate-200 rounded-lg overflow-hidden">
-                      <div className="py-2.5 px-3 text-center" style={{ background:NAVY }}>
-                        <p className="text-[10px] font-black text-white tracking-[0.2em]">SAHU <span style={{ color:SAFFRON }}>CSC</span></p>
-                        <p className="text-[8px] text-white/40 mt-0.5">Common Service Center, Odisha</p>
-                      </div>
-                      <div className="px-3 py-2.5 bg-slate-50/50 space-y-1.5">
-                        {[["Receipt #",e.receiptNumber],["Date",fmtDate(e.date)],["Customer",e.customerName],["Service",e.serviceType]].map(([k,v]) => (
-                          <div key={k} className="flex justify-between text-[10px]">
-                            <span className="text-slate-400">{k}</span>
-                            <span className="font-semibold text-slate-700 text-right max-w-[130px] truncate">{v}</span>
-                          </div>
-                        ))}
-                        <div className="border-t border-dashed border-slate-200 pt-2 mt-1 flex justify-between items-center">
-                          <span className="text-[10px] font-bold text-slate-700">Total Paid</span>
-                          <span className={`text-sm font-extrabold ${e.type==="credit" ? "text-emerald-600" : "text-rose-500"}`}>
-                            {e.type==="credit" ? "+" : "-"}₹{e.amount.toLocaleString("en-IN")}
-                          </span>
-                        </div>
-                        <div className="flex justify-center pt-1">
-                          <div className="w-12 h-12 bg-slate-100 border border-slate-200 rounded flex items-center justify-center">
-                            <QrCode size={24} className="text-slate-300" />
-                          </div>
-                        </div>
-                        <p className="text-[8px] text-center text-slate-300">Scan to verify</p>
-                      </div>
-                    </div>
-                    <div className="mt-2.5 grid grid-cols-3 gap-1.5">
-                      {[{icon:Printer,label:"Print"},{icon:Download,label:"PDF"},{icon:Share2,label:"Share"}].map(({icon:Icon,label}) => (
-                        <button key={label} className="flex flex-col items-center gap-1 py-2 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-500">
-                          <Icon size={12} /><span className="text-[9px] font-medium">{label}</span>
-                        </button>
-                      ))}
-                    </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-800">{opt.label}</p>
+                    <p className="text-xs text-slate-500">{opt.sub}</p>
                   </div>
                 </div>
-              );
-            })()}
-
-            {/* Monthly Auto-Export */}
-            {MonthlySection}
+              ))}
+            </div>
           </div>
+
+          {/* Include options */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Include</p>
+            <div className="space-y-3">
+              {[
+                { label: "QR Code",       sub: "Scan-to-verify link",     on: true },
+                { label: "Business Stamp", sub: "Official SAHU CSC seal",  on: true },
+                { label: "Signature Row", sub: "Customer sign space",      on: false },
+              ].map(opt => (
+                <div key={opt.label} className="flex items-center gap-3">
+                  <div className={`w-5 h-5 rounded-lg flex items-center justify-center ${opt.on ? "bg-[#0b2c60]" : "border-2 border-slate-300"}`}>
+                    {opt.on && <Check size={12} className="text-white" />}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-800">{opt.label}</p>
+                    <p className="text-xs text-slate-400">{opt.sub}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Monthly section */}
+          {MonthlyPanel}
+
+          {/* Export button */}
+          <button onClick={handleDownload} disabled={downloading || !preview || preview.count === 0}
+            className="w-full py-4 bg-[#f97316] hover:bg-[#ea580c] text-white text-base font-bold rounded-2xl flex items-center justify-center gap-2 transition-colors shadow-lg shadow-[#f97316]/30 disabled:opacity-50">
+            {downloading
+              ? <><Loader2 size={18} className="animate-spin" /> Generating ZIP…</>
+              : exported
+                ? <><Check size={18} /> Exported!</>
+                : <><Download size={18} /> Export {selected.size > 0 ? selected.size : preview?.count ?? "All"}</>}
+          </button>
+
+          {!preview && (
+            <p className="text-center text-xs text-slate-400 pb-4">Use the filter in the list screen to preview receipts first</p>
+          )}
+
+          <div className="h-4" />
         </div>
+      )}
+
+      {/* ── Bottom Nav (list screen only) ── */}
+      {mobileScreen === "list" && (
+        <div className="shrink-0 bg-white border-t border-slate-200 px-4 py-3 flex items-center justify-around">
+          {[
+            { icon: Receipt,        label: "Receipts", active: true,  action: undefined },
+            { icon: Calendar,       label: "By Date",  active: false, action: undefined },
+            { icon: IndianRupee,    label: "Summary",  active: false, action: undefined },
+            { icon: ArrowDownToLine, label: "Export",  active: false, action: () => setMobileScreen("export") },
+          ].map(({ icon: Icon, label, active, action }) => (
+            <button key={label} onClick={action} className="flex flex-col items-center gap-1">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${active ? "bg-[#0b2c60]" : "bg-transparent"}`}>
+                <Icon size={18} className={active ? "text-white" : "text-slate-400"} />
+              </div>
+              <span className={`text-[10px] font-medium ${active ? "text-[#0b2c60]" : "text-slate-400"}`}>{label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* ── Home indicator ── */}
+      <div className="bg-white shrink-0 flex justify-center py-2">
+        <div className="w-28 h-1 bg-slate-300 rounded-full" />
       </div>
     </div>
+  );
+
+  return (
+    <>
+      {DesktopLayout}
+      {MobileLayout}
+    </>
   );
 }
