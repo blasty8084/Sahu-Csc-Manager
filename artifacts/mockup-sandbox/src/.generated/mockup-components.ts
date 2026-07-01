@@ -47,6 +47,7 @@ export const modules: ModuleMap = {
   "./components/mockups/profile-settings/V4Desktop.tsx": () => import("../components/mockups/profile-settings/V4Desktop.tsx"),
   "./components/mockups/profile-settings/V4Mobile.tsx": () => import("../components/mockups/profile-settings/V4Mobile.tsx"),
   "./components/mockups/receipt/ReceiptDesign.tsx": () => import("../components/mockups/receipt/ReceiptDesign.tsx"),
+  "./components/mockups/receipt-export/ReceiptExport.tsx": () => import("../components/mockups/receipt-export/ReceiptExport.tsx"),
   "./components/mockups/receipt-variants/DarkMode.tsx": () => import("../components/mockups/receipt-variants/DarkMode.tsx"),
   "./components/mockups/receipt-variants/MinimalClean.tsx": () => import("../components/mockups/receipt-variants/MinimalClean.tsx"),
   "./components/mockups/receipt-variants/Premium.tsx": () => import("../components/mockups/receipt-variants/Premium.tsx"),
