@@ -43,9 +43,10 @@ router.get("/healthz", async (_req, res) => {
   const freeMem = os.freemem();
 
   // ── Overall status ──────────────────────────────────────────────────────────
+  // VAPID is optional — its absence does not degrade overall API health
   const overallStatus: "ok" | "degraded" | "error" =
     dbStatus === "error" ? "error" :
-    vapidStatus === "disabled" ? "degraded" :
+    vapidStatus === "ephemeral" ? "degraded" :
     "ok";
 
   const responseTimeMs = Date.now() - startTime;

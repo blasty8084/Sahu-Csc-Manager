@@ -214,7 +214,7 @@ router.get("/admin/db-stats", requireRole("admin"), async (_req, res): Promise<v
     "udhari_customers", "udhari_entries", "notifications",
     "audit_logs", "user_sessions", "settings", "services",
     "push_subscriptions", "receipt_counters", "email_otps",
-    "password_reset_tokens", "broadcast_logs",
+    "password_reset_tokens", "broadcast_logs", "backups",
     "user_preferences", "user_notification_preferences",
   ];
 
@@ -222,7 +222,8 @@ router.get("/admin/db-stats", requireRole("admin"), async (_req, res): Promise<v
     "ledger", "users", "aeps_daily", "aeps_transactions",
     "udhari_customers", "udhari_entries", "notifications",
     "audit_logs", "user_sessions", "email_otps",
-    "password_reset_tokens", "broadcast_logs",
+    "password_reset_tokens", "broadcast_logs", "backups",
+    "push_subscriptions", "services",
   ]);
 
   const rows = await Promise.all(

@@ -205,7 +205,7 @@ export default function ServerHealth() {
             size="sm"
             variant="outline"
             className="gap-1.5 flex-shrink-0"
-            onClick={() => fetchHealth(true)}
+            onClick={() => { fetchHealth(true); fetchDbStats(); }}
             disabled={refreshing || loading}
           >
             <RefreshCw size={13} className={(refreshing || loading) ? "animate-spin" : ""} />
