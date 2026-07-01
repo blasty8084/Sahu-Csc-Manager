@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, pool, ledgerTable, usersTable, emailOtpsTable } from "@workspace/db";
+import { db, pool, ledgerTable, usersTable, emailOtpsTable, auditLogsTable } from "@workspace/db";
 import { eq, sum, count, desc } from "drizzle-orm";
 import { requireRole, getClientIp, auditLog } from "../lib/auth";
 import crypto from "node:crypto";
@@ -206,6 +206,38 @@ router.post("/admin/users/:id/email-reset-link", requireRole("admin"), async (re
   );
 
   res.json({ ok: true, sentTo: user.email });
+});
+
+router.get("/admin/audit-recent", requireRole("admin"), async (req, res): Promise<void> => {
+  const limit = Math.min(parseInt(String(req.query.limit ?? "25"), 10), 100);
+
+  const logs = await db
+    .select({
+      id: auditLogsTable.id,
+      userId: auditLogsTable.userId,
+      action: auditLogsTable.action,
+      details: auditLogsTable.details,
+      ipAddress: auditLogsTable.ipAddress,
+      createdAt: auditLogsTable.createdAt,
+      username: usersTable.username,
+    })
+    .from(auditLogsTable)
+    .leftJoin(usersTable, eq(auditLogsTable.userId, usersTable.id))
+    .orderBy(desc(auditLogsTable.createdAt))
+    .limit(limit);
+
+  res.json({
+    logs: logs.map((l) => ({
+      id: l.id,
+      userId: l.userId,
+      username: l.username ?? null,
+      action: l.action,
+      details: l.details ?? null,
+      ipAddress: l.ipAddress,
+      createdAt: l.createdAt instanceof Date ? l.createdAt.toISOString() : l.createdAt,
+    })),
+    queriedAt: new Date().toISOString(),
+  });
 });
 
 router.get("/admin/db-stats", requireRole("admin"), async (_req, res): Promise<void> => {

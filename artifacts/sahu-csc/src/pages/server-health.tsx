@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import {
   Server, Database, Bell, RefreshCw, CheckCircle2,
   AlertTriangle, XCircle, Clock, Cpu, MemoryStick,
-  Activity, Shield, Zap, Info, Table2,
+  Activity, Shield, Zap, Info, Table2, ScrollText,
+  LogIn, LogOut, UserCog, KeyRound, ShieldAlert, ChevronRight,
 } from "lucide-react";
 
 interface HealthData {
@@ -57,6 +58,21 @@ interface DbTableStat {
 
 interface DbStats {
   tables: DbTableStat[];
+  queriedAt: string;
+}
+
+interface AuditEntry {
+  id: number;
+  userId: number;
+  username: string | null;
+  action: string;
+  details: string | null;
+  ipAddress: string;
+  createdAt: string;
+}
+
+interface AuditRecent {
+  logs: AuditEntry[];
   queriedAt: string;
 }
 
@@ -129,6 +145,9 @@ export default function ServerHealth() {
   const [dbStats, setDbStats] = useState<DbStats | null>(null);
   const [dbStatsLoading, setDbStatsLoading] = useState(false);
   const prevCounts = useRef<Record<string, number>>({});
+  const [auditRecent, setAuditRecent] = useState<AuditRecent | null>(null);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const auditEndRef = useRef<HTMLDivElement>(null);
 
   const fetchDbStats = useCallback(async () => {
     setDbStatsLoading(true);
@@ -148,6 +167,20 @@ export default function ServerHealth() {
       setDbStats(null);
     } finally {
       setDbStatsLoading(false);
+    }
+  }, []);
+
+  const fetchAuditRecent = useCallback(async () => {
+    setAuditLoading(true);
+    try {
+      const res = await fetch("/api/admin/audit-recent?limit=25");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data: AuditRecent = await res.json();
+      setAuditRecent(data);
+    } catch {
+      setAuditRecent(null);
+    } finally {
+      setAuditLoading(false);
     }
   }, []);
 
@@ -174,9 +207,10 @@ export default function ServerHealth() {
   useEffect(() => {
     fetchHealth();
     fetchDbStats();
-    const interval = setInterval(() => { fetchHealth(); fetchDbStats(); }, 30_000);
+    fetchAuditRecent();
+    const interval = setInterval(() => { fetchHealth(); fetchDbStats(); fetchAuditRecent(); }, 30_000);
     return () => clearInterval(interval);
-  }, [fetchHealth, fetchDbStats]);
+  }, [fetchHealth, fetchDbStats, fetchAuditRecent]);
 
   const overallColor =
     !data ? "text-muted-foreground" :
@@ -205,7 +239,7 @@ export default function ServerHealth() {
             size="sm"
             variant="outline"
             className="gap-1.5 flex-shrink-0"
-            onClick={() => { fetchHealth(true); fetchDbStats(); }}
+            onClick={() => { fetchHealth(true); fetchDbStats(); fetchAuditRecent(); }}
             disabled={refreshing || loading}
           >
             <RefreshCw size={13} className={(refreshing || loading) ? "animate-spin" : ""} />
@@ -473,6 +507,96 @@ export default function ServerHealth() {
                   <p className="text-sm text-muted-foreground text-center py-4">
                     {dbStatsLoading ? "Loading table stats…" : "Could not load table stats"}
                   </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Recent Activity — audit log tail */}
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <ScrollText size={16} className="text-primary" />
+                    Recent Activity
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    {auditLoading && <RefreshCw size={13} className="animate-spin text-muted-foreground" />}
+                    {auditRecent && (
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(auditRecent.queriedAt).toLocaleTimeString("en-IN")}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {!auditRecent && !auditLoading && (
+                  <p className="text-sm text-muted-foreground text-center py-4">Could not load audit log</p>
+                )}
+                {auditLoading && !auditRecent && (
+                  <p className="text-sm text-muted-foreground text-center py-4">Loading…</p>
+                )}
+                {auditRecent && auditRecent.logs.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-4">No activity recorded yet</p>
+                )}
+                {auditRecent && auditRecent.logs.length > 0 && (
+                  <div className="space-y-0 divide-y divide-border rounded-lg border overflow-hidden max-h-[480px] overflow-y-auto">
+                    {auditRecent.logs.map((entry) => {
+                      const isError = entry.action.includes("failed") || entry.action.includes("locked") || entry.action.includes("error");
+                      const isWarning = entry.action.includes("revoke") || entry.action.includes("reset") || entry.action.includes("delete");
+                      const isSuccess = entry.action.includes("login.success") || entry.action.includes(".create") || entry.action.includes("register");
+
+                      let ActionIcon = ChevronRight;
+                      if (entry.action.startsWith("login")) ActionIcon = LogIn;
+                      else if (entry.action === "logout") ActionIcon = LogOut;
+                      else if (entry.action.startsWith("user.") || entry.action.startsWith("password")) ActionIcon = UserCog;
+                      else if (entry.action.startsWith("session")) ActionIcon = KeyRound;
+                      else if (isError || isWarning) ActionIcon = ShieldAlert;
+
+                      const dotColor = isError
+                        ? "bg-destructive"
+                        : isWarning
+                        ? "bg-amber-500"
+                        : isSuccess
+                        ? "bg-green-500"
+                        : "bg-muted-foreground";
+
+                      const iconColor = isError
+                        ? "text-destructive"
+                        : isWarning
+                        ? "text-amber-500"
+                        : isSuccess
+                        ? "text-green-600 dark:text-green-400"
+                        : "text-muted-foreground";
+
+                      return (
+                        <div key={entry.id} className="flex items-start gap-3 px-3 py-2.5 hover:bg-muted/30 transition-colors">
+                          {/* dot */}
+                          <span className={`mt-2 h-1.5 w-1.5 rounded-full flex-shrink-0 ${dotColor}`} />
+                          {/* icon */}
+                          <ActionIcon size={13} className={`mt-0.5 flex-shrink-0 ${iconColor}`} />
+                          {/* body */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-mono text-xs font-medium text-foreground">{entry.action}</span>
+                              {entry.username && (
+                                <span className="text-xs text-muted-foreground">
+                                  · <span className="font-medium text-foreground">{entry.username}</span>
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground">
+                              <span>{new Date(entry.createdAt).toLocaleString("en-IN", { dateStyle: "short", timeStyle: "short" })}</span>
+                              {entry.ipAddress && entry.ipAddress !== "unknown" && (
+                                <span className="font-mono opacity-60">{entry.ipAddress}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div ref={auditEndRef} />
+                  </div>
                 )}
               </CardContent>
             </Card>
