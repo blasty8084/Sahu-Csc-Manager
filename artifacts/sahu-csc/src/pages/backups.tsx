@@ -21,6 +21,30 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function relativeTime(date: string | Date): string {
+  const diff = Date.now() - new Date(date).getTime();
+  const mins  = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days  = Math.floor(diff / 86400000);
+  if (mins  <  1) return "Just now";
+  if (mins  < 60) return `${mins}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days  <  7) return `${days}d ago`;
+  return new Date(date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function parseBackupMeta(filename: string): { label: string; type: "auto" | "manual" } {
+  const isAuto = filename.startsWith("auto_backup_");
+  const raw = filename.replace(/^(auto_backup_|backup_)/, "").replace(/\.sql$/, "");
+  // raw looks like: 2026-06-16T07-05-40-015Z → convert dashes back to colons/dots
+  const iso = raw.replace(/T(\d{2})-(\d{2})-(\d{2})-\d+Z$/, "T$1:$2:$3Z");
+  const d = new Date(iso);
+  const label = isNaN(d.getTime())
+    ? filename
+    : d.toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true });
+  return { label, type: isAuto ? "auto" : "manual" };
+}
+
 interface TableInfo { name: string; label: string; rowCount: number; }
 type ImportStep = "idle" | "analyzing" | "select" | "importing" | "done";
 
@@ -298,21 +322,31 @@ export default function Backups() {
                     <table className="w-full text-sm min-w-[480px]">
                       <thead className="border-b border-slate-100 bg-slate-50/70">
                         <tr className="text-left">
-                          <th className="px-4 py-3 font-medium text-slate-500 text-xs uppercase tracking-wide">{t("common.name")}</th>
-                          <th className="px-4 py-3 font-medium text-slate-500 text-xs uppercase tracking-wide">{t("common.total")}</th>
-                          <th className="px-4 py-3 font-medium text-slate-500 text-xs uppercase tracking-wide">{t("common.date")}</th>
+                          <th className="px-4 py-3 font-medium text-slate-500 text-xs uppercase tracking-wide">Backup</th>
+                          <th className="px-4 py-3 font-medium text-slate-500 text-xs uppercase tracking-wide">Size</th>
+                          <th className="px-4 py-3 font-medium text-slate-500 text-xs uppercase tracking-wide">Date</th>
                           <th className="px-4 py-3 font-medium text-slate-500 text-xs uppercase tracking-wide text-right">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-50">
-                        {backups?.map((backup: any) => (
+                        {backups?.map((backup: any) => {
+                          const meta = parseBackupMeta(backup.filename);
+                          return (
                           <tr key={backup.id} className="hover:bg-slate-50/80 transition-colors" data-testid={`row-backup-${backup.id}`}>
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-2.5">
-                                <div className="w-7 h-7 rounded-md bg-[#0b2c60]/10 flex items-center justify-center shrink-0">
-                                  <Database size={13} className="text-[#0b2c60]" />
+                                <div className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${meta.type === "auto" ? "bg-emerald-50" : "bg-[#0b2c60]/10"}`}>
+                                  <Database size={13} className={meta.type === "auto" ? "text-emerald-600" : "text-[#0b2c60]"} />
                                 </div>
-                                <span className="font-mono text-xs text-slate-700 truncate max-w-[200px]">{backup.filename}</span>
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="text-xs font-medium text-slate-800">{meta.label}</span>
+                                    <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${meta.type === "auto" ? "bg-emerald-100 text-emerald-700" : "bg-[#0b2c60]/10 text-[#0b2c60]"}`}>
+                                      {meta.type === "auto" ? "Auto" : "Manual"}
+                                    </span>
+                                  </div>
+                                  <p className="font-mono text-[10px] text-slate-400 truncate max-w-[220px] mt-0.5">{backup.filename}</p>
+                                </div>
                               </div>
                             </td>
                             <td className="px-4 py-3">
@@ -320,8 +354,11 @@ export default function Backups() {
                                 {formatSize(backup.size)}
                               </Badge>
                             </td>
-                            <td className="px-4 py-3 text-xs text-slate-500">
-                              {new Date(backup.createdAt).toLocaleString("en-IN")}
+                            <td className="px-4 py-3">
+                              <div title={new Date(backup.createdAt).toLocaleString("en-IN")}>
+                                <p className="text-xs font-medium text-slate-700">{relativeTime(backup.createdAt)}</p>
+                                <p className="text-[10px] text-slate-400 mt-0.5">{new Date(backup.createdAt).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true })}</p>
+                              </div>
                             </td>
                             <td className="px-4 py-3">
                               <div className="flex items-center justify-end gap-1.5">
@@ -357,7 +394,7 @@ export default function Backups() {
                               </div>
                             </td>
                           </tr>
-                        ))}
+                        ); })}
                       </tbody>
                     </table>
                   </div>
