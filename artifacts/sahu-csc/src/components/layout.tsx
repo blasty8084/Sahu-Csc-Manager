@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { AppLogo } from "@/components/app-logo";
 import { PWAInstallBanner } from "@/components/pwa-install-banner";
 import { SetupWizardBanner } from "@/components/setup-wizard-banner";
+import { WhatsNewModal } from "@/components/whats-new-modal";
 import { SyncStatusBar, SyncDot } from "@/components/sync-status-bar";
 import { prefetch } from "@/lib/prefetch";
 import { useTranslation } from "react-i18next";
@@ -604,6 +605,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <SyncStatusBar />
         <PWAInstallBanner />
         {isAdmin && <SetupWizardBanner />}
+
+        {/* What's New modal — shows once per version for all authenticated users */}
+        <WhatsNewModal />
 
         {/* Page Content */}
         <main className="flex-1 p-4 md:p-8 pb-24 md:pb-8 max-w-7xl mx-auto w-full">
