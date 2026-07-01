@@ -27,6 +27,22 @@ router.get("/setup-status", (_req, res) => {
     });
   }
 
+  if (!process.env.ADMIN_PASSWORD) {
+    missing.push({
+      key: "ADMIN_PASSWORD",
+      label: "Admin Default Password",
+      description: "Required by the Seed Database workflow to create/reset the admin account. Set any strong password in Replit Secrets.",
+    });
+  }
+
+  if (!process.env.OPERATOR_PASSWORD) {
+    missing.push({
+      key: "OPERATOR_PASSWORD",
+      label: "Operator Default Password",
+      description: "Required by the Seed Database workflow to create/reset the operator account. Set any strong password in Replit Secrets.",
+    });
+  }
+
   const vapidPublic = process.env.VAPID_PUBLIC_KEY;
   const vapidPrivate = process.env.VAPID_PRIVATE_KEY;
   const vapidPersistent = !!(process.env.VAPID_KEYS_FROM_ENV);
