@@ -20,6 +20,10 @@ author = "agent"
 task = "workflow.run"
 args = "artifacts/sahu-csc: web"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "API Server"
+
 [[workflows.workflow]]
 name = "Seed Database"
 author = "agent"
@@ -43,6 +47,18 @@ task = "shell.exec"
 args = "pnpm install && fuser -k 5000/tcp 2>/dev/null; sleep 1; PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run dev"
 waitForPort = 5000
 
+[[workflows.workflow]]
+name = "API Server"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "fuser -k 8080/tcp 2>/dev/null; sleep 1; PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server run dev"
+waitForPort = 8080
+
+[workflows.workflow.metadata]
+outputType = "console"
+
 [agent]
 stack = "BEST_EFFORT_FALLBACK"
 expertMode = true
@@ -57,11 +73,7 @@ externalPort = 80
 
 [[ports]]
 localPort = 8080
-externalPort = 3000
-
-[[ports]]
-localPort = 8081
-externalPort = 8081
+externalPort = 8080
 
 [[ports]]
 localPort = 8082
@@ -81,3 +93,4 @@ BASE_PATH = "/"
 VAPID_PUBLIC_KEY = "BAIqC04KRPkjuV9slRekhW3aJHuevCDSF9Q5hSkGmB8XtiDPS7eRMFemC7viKq-578m-kuBf_MyEh8mQIYug630"
 VAPID_PRIVATE_KEY = "bJV8IqXpVgKodPEsrjTaaxtyYZ8h3v5twt2PjY0knsI"
 VAPID_EMAIL = "mailto: uttamsahu0747@gmail.com"
+API_PORT = "8080"
