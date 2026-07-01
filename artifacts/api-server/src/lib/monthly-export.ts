@@ -4,6 +4,7 @@ import { logger } from "./logger";
 import { isSmtpConfigured } from "./mailer";
 import { createRequire } from "node:module";
 import nodemailer from "nodemailer";
+import cron from "node-cron";
 
 const _require = createRequire(import.meta.url);
 const PDFDocument = _require("pdfkit") as typeof import("pdfkit");
@@ -359,31 +360,27 @@ async function sendMonthlyExportEmail(year: number, month: number): Promise<void
   logger.info({ year, month, sent, failed }, "Monthly receipt export email sent");
 }
 
-function msUntilFirstOfNextMonth(): number {
-  const now = new Date();
-  const next = new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 5, 0, 0);
-  return next.getTime() - now.getTime();
-}
-
 function scheduleMonthlyExport(): void {
-  const delay = msUntilFirstOfNextMonth();
-  const days = Math.round(delay / 86_400_000);
-  logger.info({ daysUntilNext: days }, "Monthly receipt export scheduled");
-
-  setTimeout(async function tick() {
+  // Runs at 00:05 on the 1st of every month.
+  // node-cron handles long intervals correctly — no 32-bit setTimeout overflow.
+  cron.schedule("5 0 1 * *", async () => {
     const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth() === 0 ? 12 : now.getMonth();
-    const exportYear = month === 12 ? year - 1 : year;
+    // At 00:05 on the 1st, "last month" is now.getMonth() (0-indexed previous month)
+    // because getMonth() returns the current month (0 = Jan … 11 = Dec).
+    // We want the month that just ended, which is now.getMonth() (since we're on day 1).
+    const currentMonth = now.getMonth(); // 0-indexed: 0=Jan, so if it's March 1st this is 2
+    const month = currentMonth === 0 ? 12 : currentMonth;       // 1-indexed previous month
+    const exportYear = currentMonth === 0 ? now.getFullYear() - 1 : now.getFullYear();
 
+    logger.info({ exportYear, month }, "Monthly receipt export cron triggered");
     try {
       await sendMonthlyExportEmail(exportYear, month);
     } catch (err) {
       logger.error({ err }, "Monthly receipt export job failed");
     }
+  });
 
-    setTimeout(tick, msUntilFirstOfNextMonth());
-  }, delay);
+  logger.info("Monthly receipt export scheduled (cron: 5 0 1 * *)");
 }
 
 export { scheduleMonthlyExport, sendMonthlyExportEmail, buildMonthlyZip };
