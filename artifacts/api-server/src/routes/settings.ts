@@ -180,6 +180,23 @@ router.get("/backups/:id/download", requireRole("admin"), async (req, res): Prom
   createReadStream(filepath).pipe(res);
 });
 
+// DELETE /api/backups/:id — remove from DB and delete file from disk (admin only)
+router.delete("/backups/:id", requireRole("admin"), async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id as string, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+
+  const [backup] = await db.select().from(backupsTable).where(eq(backupsTable.id, id));
+  if (!backup) { res.status(404).json({ error: "Backup not found" }); return; }
+
+  const filepath = path.join(BACKUP_DIR, backup.filename);
+  try { unlinkSync(filepath); } catch {}
+
+  await db.delete(backupsTable).where(eq(backupsTable.id, id));
+  await auditLog(req.session.userId!, "backup.delete", `Deleted backup: ${backup.filename}`, getClientIp(req));
+
+  res.json({ message: "Backup deleted." });
+});
+
 // ── Backup Schedule endpoints ─────────────────────────────────────────────
 
 const SCHEDULE_KEYS = ["backupEnabled", "backupFrequency", "backupTime", "backupDays", "backupRetention"];

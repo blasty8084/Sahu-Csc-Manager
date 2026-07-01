@@ -11,7 +11,7 @@ import {
   Database, RotateCcw, Plus, Upload, FileUp,
   CheckCircle2, AlertTriangle, Loader2, Table2,
   CalendarClock, HardDriveDownload, Download, Save, Clock,
-  UploadCloud,
+  UploadCloud, Trash2,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
@@ -74,6 +74,9 @@ export default function Backups() {
 
   const [restoreId, setRestoreId] = useState<number | null>(null);
   const [restoreFilename, setRestoreFilename] = useState("");
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [deleteFilename, setDeleteFilename] = useState("");
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const [importStep, setImportStep] = useState<ImportStep>("idle");
   const [importFile, setImportFile] = useState<File | null>(null);
@@ -120,6 +123,22 @@ export default function Backups() {
       invalidate();
     } catch {
       toast({ title: "Restore failed", variant: "destructive" });
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    setDeleteLoading(true);
+    try {
+      const res = await fetch(`/api/backups/${deleteId}`, { method: "DELETE", credentials: "include" });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Delete failed");
+      toast.success(`Backup "${deleteFilename}" deleted.`);
+      setDeleteId(null);
+      invalidate();
+    } catch (err: any) {
+      toast({ title: "Delete failed", description: err.message, variant: "destructive" });
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -324,6 +343,16 @@ export default function Backups() {
                                 >
                                   <RotateCcw size={12} className="mr-1" />
                                   {t("backups.restore")}
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-xs px-2.5 text-slate-600 hover:bg-red-600 hover:text-white hover:border-red-600 transition-colors"
+                                  onClick={() => { setDeleteId(backup.id); setDeleteFilename(backup.filename); }}
+                                  data-testid={`button-delete-${backup.id}`}
+                                  title="Delete backup"
+                                >
+                                  <Trash2 size={12} />
                                 </Button>
                               </div>
                             </td>
@@ -602,6 +631,35 @@ export default function Backups() {
           </div>
         </div>
       </div>
+
+      {/* ── Delete confirm dialog ── */}
+      <Dialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <div className="mx-auto w-11 h-11 bg-red-50 text-red-600 rounded-full flex items-center justify-center mb-3">
+              <Trash2 size={20} />
+            </div>
+            <DialogTitle className="text-center">Delete Backup?</DialogTitle>
+            <DialogDescription className="text-center text-sm text-slate-500 pt-1">
+              This will permanently delete the backup file from disk and remove it from history. This cannot be undone.
+            </DialogDescription>
+            {deleteFilename && (
+              <p className="text-xs font-mono bg-slate-50 border rounded-md px-3 py-2 text-slate-700 mt-2 break-all">{deleteFilename}</p>
+            )}
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setDeleteId(null)} className="flex-1">Cancel</Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deleteLoading}
+              className="flex-1 bg-red-600 hover:bg-red-700"
+            >
+              {deleteLoading ? <><Loader2 size={12} className="mr-1.5 animate-spin" />Deleting…</> : <><Trash2 size={12} className="mr-1.5" />Delete</>}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Restore confirm dialog ── */}
       <Dialog open={restoreId !== null} onOpenChange={() => setRestoreId(null)}>
