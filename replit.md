@@ -1,11 +1,24 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 3.1.0** — last updated 2026-07-01
+**Version 3.1.1** — last updated 2026-07-01
 
 > Full platform documentation: **[DOCS.md](./DOCS.md)**
 
 A full-stack CSC (Common Service Center) business management platform for tracking services, ledger accounting, AePS cash management, Udhari Khata (customer credit ledger), and reporting. Built for Odisha / India rural service centers. Supports PWA installation, offline operation, Android TWA packaging, and full multilingual UI (English / Hindi / Odia).
 
 ---
+
+## What's New in v3.1.1
+
+| Feature | Description |
+|---------|-------------|
+| **Receipt Export mobile fit** | Outer container uses `height: 100dvh` — fills the dynamic viewport on any mobile browser without overflow or scroll bleed. |
+| **4-tab bottom nav** | Persistent bottom nav always visible: **Receipts / By Date / Summary / Export** — active tab gets navy icon circle + navy label. |
+| **KPI strip redesign** | Solid `#0d3272` stat cards (Total / Amount / Selected) with orange icons — no longer translucent; matches reference design. |
+| **Empty state redesign** | Large centred receipt icon, bold "How it works" heading, **orange-numbered** step list (1–3), solid navy pill "Open Filters" button. |
+| **Receipt preview overlay** | Tapping a receipt shows a full-screen overlay while the bottom nav stays visible underneath; back arrow closes it. |
+| **By Date tab** | Dedicated tab with 5 quick presets + custom date range + operator filter + Preview button. |
+| **Summary tab** | 4 colour-coded aggregate stat cards: Total Receipts (navy), Total Amount (green), Credit Entries (orange), Debit Entries (violet). |
+| **Export button** | Orange `rounded-full` pill in header with ↓ icon — matching reference design. |
 
 ## What's New in v3.1.0
 

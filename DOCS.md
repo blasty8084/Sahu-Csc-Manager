@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Platform Documentation
-**Version 3.1.0** — last updated 2026-07-01
+**Version 3.1.1** — last updated 2026-07-01
 
 > Common Service Center (CSC) Business Management Platform for Odisha / India rural service centers.
 > Full-stack · PWA · Offline-capable · Multilingual (English / Hindi / Odia)
@@ -55,6 +55,19 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 ---
 
 ## 2. Version History
+
+### v3.1.1 — Receipt Export Mobile Redesign (2026-07-01)
+
+| Feature | Description |
+|---------|-------------|
+| **Mobile screen fit** | Outer container uses `height: 100dvh` — fills exactly the dynamic viewport on all mobile browsers, no overflow |
+| **4-tab bottom nav** | Persistent bottom nav: **Receipts** / **By Date** / **Summary** / **Export** — always visible, active tab highlighted with navy icon circle |
+| **KPI strip** | Solid dark-navy (`#0d3272`) stat cards with orange icons — Total / Amount / Selected — always shown in header |
+| **Empty state redesign** | Large centred receipt icon, "How it works" heading, **orange-numbered** step list, solid navy "Open Filters" pill button |
+| **Preview overlay** | Receipt detail shown as a full-screen overlay; bottom nav remains visible underneath; back arrow collapses it |
+| **By Date tab** | Standalone date range picker with 5 quick presets (Today / Week / This Month / Last Month / Year) + operator filter + Preview button |
+| **Summary tab** | 4 colour-coded aggregate stat cards (Total Receipts, Total Amount, Credit Entries, Debit Entries) |
+| **Export button style** | Orange `rounded-full` pill in header, matching the reference design |
 
 ### v3.1.0 — Backup & Restore Overhaul (2026-06-30)
 

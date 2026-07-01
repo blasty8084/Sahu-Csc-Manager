@@ -13,6 +13,40 @@ const APP_VERSION = __APP_VERSION__;
 
 const CHANGELOG = [
   {
+    version: "v3.1.1",
+    date: "2026-07-01",
+    changes: [
+      "Receipt Export mobile UI redesigned — fits any screen with height: 100dvh",
+      "4-tab bottom nav (Receipts / By Date / Summary / Export) always visible",
+      "KPI strip: solid dark-navy stat cards with orange icons in header",
+      "Empty state: large icon, orange-numbered 'How it works' steps, Open Filters button",
+      "Receipt preview now a full-screen overlay — bottom nav stays visible underneath",
+      "New By Date tab: date range + quick presets + operator filter",
+      "New Summary tab: 4 colour-coded aggregate stat cards",
+    ],
+  },
+  {
+    version: "v3.1.0",
+    date: "2026-06-30",
+    changes: [
+      "Backup page redesigned — Minimal Clean UI: 2-column desktop grid, navy card borders, saffron CTAs",
+      "Backup download: GET /api/backups/:id/download streams .sql file with Content-Disposition: attachment",
+      "Auto-backup scheduler via node-cron — daily/weekly/custom cron with configurable retention",
+      "Selective table import: analyze pg_dump COPY blocks, replay chosen tables with FK checks disabled",
+    ],
+  },
+  {
+    version: "v3.0.0",
+    date: "2026-06-25",
+    changes: [
+      "Setup Wizard Banner — admin-only banner when secrets missing; red = critical, yellow = optional",
+      "GET /api/setup-status public endpoint — checks SESSION_SECRET, SMTP, ADMIN/OPERATOR passwords, VAPID",
+      "Automatic DB migration on import: scripts/post-merge.sh runs pnpm install + drizzle-kit push",
+      "Seed passwords read from ADMIN_PASSWORD / OPERATOR_PASSWORD Replit Secrets — never hardcoded",
+    ],
+  },
+  {
+    version: "v2.4",
     date: "2026-06-18",
     changes: [
       "Udhari Khata: full customer credit ledger (You Gave / You Got, WhatsApp reminder, PDF export)",
@@ -196,7 +230,7 @@ export default function About() {
                 </span>
               </div>
               <p className="text-white/60 text-xs mt-0.5">Management Platform · Odisha CSC</p>
-              <p className="text-white/40 text-[10px] mt-1">Last updated: June 2026</p>
+              <p className="text-white/40 text-[10px] mt-1">Last updated: July 2026</p>
             </div>
           </div>
         </div>
@@ -397,7 +431,7 @@ export default function About() {
           {/* ── Changelog ── */}
           <TabsContent value="changelog" className="space-y-3 mt-4">
             {CHANGELOG.map((entry, idx) => (
-              <div key={entry.date} className="bg-card border rounded-xl overflow-hidden">
+              <div key={entry.date + idx} className="bg-card border rounded-xl overflow-hidden">
                 <div className="flex items-center gap-3 px-4 py-3 border-b bg-muted/20">
                   <div
                     className="flex items-center justify-center rounded-xl flex-shrink-0"
@@ -411,11 +445,21 @@ export default function About() {
                   >
                     <Clock size={13} color="#fff" />
                   </div>
-                  <div>
-                    <p className="text-sm font-bold">{entry.date}</p>
-                    {idx === 0 && (
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-600">{t("about.latest")}</span>
-                    )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {(entry as any).version && (
+                        <span
+                          className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                          style={{ background: idx === 0 ? "rgba(249,115,22,0.15)" : "rgba(11,44,96,0.1)", color: idx === 0 ? "#f97316" : "#0b2c60" }}
+                        >
+                          {(entry as any).version}
+                        </span>
+                      )}
+                      <p className="text-sm font-bold">{entry.date}</p>
+                      {idx === 0 && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-600">{t("about.latest")}</span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <ul className="px-4 py-3 space-y-1.5">
