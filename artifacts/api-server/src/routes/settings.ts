@@ -101,6 +101,25 @@ router.patch("/settings", requireRole("admin"), async (req, res): Promise<void> 
 
 // Backups
 router.get("/backups", requireRole("admin"), async (_req, res): Promise<void> => {
+  // Auto-sync: register any .sql files on disk that aren't in the DB yet
+  try {
+    mkdirSync(BACKUP_DIR, { recursive: true });
+    const { readdirSync: readDir } = await import("fs");
+    const diskFiles = readDir(BACKUP_DIR).filter((f) => f.endsWith(".sql"));
+    const existing = await db.select().from(backupsTable);
+    const existingNames = new Set(existing.map((b) => b.filename));
+    for (const filename of diskFiles) {
+      if (!existingNames.has(filename)) {
+        try {
+          const filepath = path.join(BACKUP_DIR, filename);
+          const size = statSync(filepath).size;
+          await db.insert(backupsTable).values({ filename, size });
+          logger.info({ filename }, "Auto-registered orphan backup file");
+        } catch {}
+      }
+    }
+  } catch {}
+
   const backups = await db.select().from(backupsTable).orderBy(backupsTable.createdAt);
   res.json(backups.map((b) => ({
     id: b.id,
