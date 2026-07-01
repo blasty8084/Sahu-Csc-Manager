@@ -1,5 +1,7 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 3.1.0** — last updated 2026-06-30
+**Version 3.1.0** — last updated 2026-07-01
+
+> Full platform documentation: **[DOCS.md](./DOCS.md)**
 
 A full-stack CSC (Common Service Center) business management platform for tracking services, ledger accounting, AePS cash management, Udhari Khata (customer credit ledger), and reporting. Built for Odisha / India rural service centers. Supports PWA installation, offline operation, Android TWA packaging, and full multilingual UI (English / Hindi / Odia).
 
@@ -122,7 +124,7 @@ pnpm run build                                    # Typecheck + build all packag
 
 The app uses **3 tiers of storage** working together:
 
-### 1. PostgreSQL — 14 Tables (permanent data)
+### 1. PostgreSQL — 19 Tables (permanent data)
 
 | Table | Key Columns | Notes |
 |-------|-------------|-------|
@@ -331,9 +333,11 @@ Response:
 }
 ```
 
-Checks performed:
+Checks performed (in order):
 - `SESSION_SECRET` — required (critical)
 - `SMTP_HOST` + `SMTP_USER` + `SMTP_PASS` — required for email/OTP (critical)
+- `ADMIN_PASSWORD` — required for Seed Database workflow (critical)
+- `OPERATOR_PASSWORD` — required for Seed Database workflow (critical)
 - `VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` + persistent flag — optional (push notifications)
 
 ---
