@@ -252,6 +252,14 @@ export default function Ledger() {
     return Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name]) => name);
   }, [allEntriesData]);
 
+  const SERVICE_COLOR_MAP: Record<string, string> = {
+    "PAN Card": "#7c3aed", "Aadhar Enrolment": "#0891b2", "Passport Seva": "#0b2c60",
+    "Income Certificate": "#059669", "Voter ID": "#d97706", "Ration Card": "#dc2626",
+    "Death Certificate": "#64748b", "Birth Certificate": "#0284c7", "Driving License": "#9333ea",
+    "PMAY": "#b45309", "PM-Kisan": "#16a34a", "Jeevan Praman": "#0f766e",
+  };
+  const getServiceColor = (name: string) => SERVICE_COLOR_MAP[name] || "#475569";
+
   const receiptEntries = useMemo(() => {
     const all: any[] = allEntriesData?.entries ?? [];
     const q = receiptSearch.trim().toLowerCase();
@@ -412,173 +420,196 @@ export default function Ledger() {
         </div>
 
         {/* ═══════════════════════════════════════════════
-            DESKTOP LAYOUT — sidebar + main panel
+            DESKTOP LAYOUT v2 — dark sidebar + quick-add strip + main panel
             Hidden on mobile, shown on md+
         ═══════════════════════════════════════════════ */}
-        <div className="hidden md:flex gap-5" style={{ minHeight: "calc(100vh - 130px)" }}>
+        <div className="hidden md:flex gap-4" style={{ minHeight: "calc(100vh - 130px)" }}>
 
-          {/* ── LEFT SIDEBAR ── */}
-          <div style={{ width: 268, flexShrink: 0, display: "flex", flexDirection: "column", gap: 14 }}>
+          {/* ── LEFT SIDEBAR (dark navy) ── */}
+          <div style={{ width: 240, flexShrink: 0, display: "flex", flexDirection: "column", background: "#0b2c60", borderRadius: 20, color: "#fff", overflow: "hidden" }}>
 
-            {/* Brand + Balance + New Entry */}
-            <div style={{ background: "linear-gradient(145deg,#0b2c60 0%,#1a4a9e 100%)", borderRadius: 20, padding: "20px 18px 18px", position: "relative", overflow: "hidden" }}>
-              <div style={{ position: "absolute", top: -24, right: -24, width: 100, height: 100, borderRadius: "50%", background: "rgba(249,115,22,0.12)", pointerEvents: "none" }} />
-              <div style={{ position: "absolute", bottom: -18, left: 8, width: 64, height: 64, borderRadius: "50%", background: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
-              <div style={{ position: "relative" }}>
-                <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 2 }}>{t("ledger.title")}</p>
-                <h1 style={{ color: "#fff", fontSize: 18, fontWeight: 900, lineHeight: 1.1, marginBottom: 16 }}>{t("ledger.subtitle")}</h1>
-                {/* Balance glass card */}
-                <div style={{ background: "rgba(255,255,255,0.09)", borderRadius: 14, padding: "14px 14px", border: "1px solid rgba(255,255,255,0.13)", marginBottom: 12 }}>
-                  <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 5 }}>{t("ledger.current_balance")}</p>
+            {/* Balance */}
+            <div style={{ padding: "18px 18px 14px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+              <p style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 7 }}>{t("ledger.current_balance")}</p>
+              {balance === undefined
+                ? <div style={{ height: 34, background: "rgba(255,255,255,0.08)", borderRadius: 8, marginBottom: 12, width: "70%" }} />
+                : <p style={{ fontSize: 28, fontWeight: 900, letterSpacing: "-1px", lineHeight: 1, marginBottom: 12 }}>₹{(balance?.balance ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p>}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
+                <div style={{ background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.2)", borderRadius: 10, padding: "8px 10px" }}>
+                  <p style={{ fontSize: 9, fontWeight: 600, color: "rgba(255,255,255,0.5)", marginBottom: 3 }}>{t("ledger.credits")}</p>
                   {balance === undefined
-                    ? <div style={{ height: 28, background: "rgba(255,255,255,0.1)", borderRadius: 6, width: "65%", marginBottom: 12 }} />
-                    : <p style={{ color: "#fff", fontSize: 24, fontWeight: 900, lineHeight: 1, marginBottom: 12 }}>₹{(balance?.balance ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p>}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-                    <div style={{ background: "rgba(16,185,129,0.15)", borderRadius: 9, padding: "8px 10px", border: "1px solid rgba(16,185,129,0.25)" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 3 }}>
-                        <ArrowDownLeft size={10} color="#34d399" />
-                        <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 8, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>{t("ledger.credits")}</p>
-                      </div>
-                      {balance === undefined
-                        ? <div style={{ height: 14, background: "rgba(255,255,255,0.12)", borderRadius: 4, width: "80%" }} />
-                        : <p style={{ color: "#34d399", fontSize: 13, fontWeight: 900 }}>+₹{(balance?.totalCredits ?? 0).toLocaleString("en-IN")}</p>}
-                    </div>
-                    <div style={{ background: "rgba(244,63,94,0.15)", borderRadius: 9, padding: "8px 10px", border: "1px solid rgba(244,63,94,0.25)" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 3 }}>
-                        <ArrowUpRight size={10} color="#fb7185" />
-                        <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 8, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>{t("ledger.debits")}</p>
-                      </div>
-                      {balance === undefined
-                        ? <div style={{ height: 14, background: "rgba(255,255,255,0.12)", borderRadius: 4, width: "80%" }} />
-                        : <p style={{ color: "#fb7185", fontSize: 13, fontWeight: 900 }}>−₹{(balance?.totalDebits ?? 0).toLocaleString("en-IN")}</p>}
-                    </div>
-                  </div>
+                    ? <div style={{ height: 16, background: "rgba(255,255,255,0.1)", borderRadius: 4, width: "80%" }} />
+                    : <p style={{ fontSize: 13, fontWeight: 800, color: "#4ade80" }}>+₹{(balance?.totalCredits ?? 0).toLocaleString("en-IN")}</p>}
                 </div>
-                {/* New Entry */}
-                <button onClick={openCreate} data-testid="button-new-entry"
-                  style={{ width: "100%", height: 46, borderRadius: 13, background: "linear-gradient(135deg,#f97316,#fb923c)", border: "none", color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, boxShadow: "0 4px 18px rgba(249,115,22,0.45)", letterSpacing: "0.01em" }}>
-                  <Plus size={18} strokeWidth={2.5} />New Entry
-                </button>
+                <div style={{ background: "rgba(251,113,133,0.12)", border: "1px solid rgba(251,113,133,0.2)", borderRadius: 10, padding: "8px 10px" }}>
+                  <p style={{ fontSize: 9, fontWeight: 600, color: "rgba(255,255,255,0.5)", marginBottom: 3 }}>{t("ledger.debits")}</p>
+                  {balance === undefined
+                    ? <div style={{ height: 16, background: "rgba(255,255,255,0.1)", borderRadius: 4, width: "80%" }} />
+                    : <p style={{ fontSize: 13, fontWeight: 800, color: "#fb7185" }}>−₹{(balance?.totalDebits ?? 0).toLocaleString("en-IN")}</p>}
+                </div>
               </div>
+              <button onClick={openCreate} data-testid="button-new-entry"
+                style={{ width: "100%", height: 42, borderRadius: 12, border: "none", background: "#f97316", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "0 4px 16px rgba(249,115,22,0.45)" }}>
+                <Plus size={16} strokeWidth={2.5} />{t("ledger.new_entry")}
+              </button>
             </div>
 
-            {/* Filters card */}
-            <div style={{ background: "#fff", borderRadius: 16, padding: "16px 16px", boxShadow: "0 2px 12px rgba(11,44,96,0.07)", border: "1px solid rgba(11,44,96,0.06)" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <div style={{ width: 22, height: 22, borderRadius: 7, background: "rgba(11,44,96,0.07)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Filter size={11} color="#0b2c60" />
-                  </div>
-                  <p style={{ fontSize: 11, fontWeight: 800, color: "#0b2c60", textTransform: "uppercase", letterSpacing: "0.08em" }}>{t("reports.filters")}</p>
-                </div>
+            {/* Filters */}
+            <div style={{ flex: 1, padding: "14px 16px", overflowY: "auto", display: "flex", flexDirection: "column", gap: 13 }}>
+              <p style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.1em" }}>Filters</p>
+
+              {/* Date presets */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {([
+                  { label: t("common.today"), key: "today", action: () => { const d = new Date().toISOString().split("T")[0]; setStartDate(d); setEndDate(d); setPage(1); } },
+                  { label: "This Week", key: "week", action: () => { const d = new Date(); const mon = new Date(d); mon.setDate(d.getDate() - ((d.getDay() + 6) % 7)); setStartDate(mon.toISOString().split("T")[0]); setEndDate(d.toISOString().split("T")[0]); setPage(1); } },
+                  { label: "This Month", key: "month", action: () => { const d = new Date(); setStartDate(new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split("T")[0]); setEndDate(d.toISOString().split("T")[0]); setPage(1); } },
+                ] as { label: string; key: string; action: () => void }[]).map(({ label, key, action }) => {
+                  const td = new Date().toISOString().split("T")[0];
+                  const wk = (() => { const d = new Date(); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.toISOString().split("T")[0]; })();
+                  const mo = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split("T")[0];
+                  const isActive = key === "today" ? (startDate === td && endDate === td) : key === "week" ? (startDate === wk && endDate === td) : (startDate === mo && endDate === td);
+                  return (
+                    <button key={key} onClick={action} style={{ padding: "5px 11px", borderRadius: 20, border: `1px solid ${isActive ? "#f97316" : "rgba(255,255,255,0.15)"}`, background: isActive ? "#f97316" : "transparent", color: isActive ? "#fff" : "rgba(255,255,255,0.65)", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                      {label}
+                    </button>
+                  );
+                })}
                 {hasFilters && (
-                  <button onClick={clearFilters} style={{ fontSize: 10, fontWeight: 700, color: "#f97316", background: "rgba(249,115,22,0.08)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 6, padding: "3px 9px", cursor: "pointer" }}>
-                    Clear all
+                  <button onClick={clearFilters} style={{ padding: "5px 11px", borderRadius: 20, border: "1px solid rgba(251,113,133,0.3)", background: "rgba(225,29,72,0.1)", color: "#fb7185", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                    Clear ×
                   </button>
                 )}
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {frequentCustomers.length > 0 && (
-                  <div>
-                    <p style={{ fontSize: 9, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5 }}>Frequent</p>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                      {frequentCustomers.map(name => (
-                        <button
-                          key={name}
-                          type="button"
-                          onClick={() => { setCustomerName(customerName === name ? "" : name); setPage(1); }}
-                          style={{
-                            padding: "3px 9px", borderRadius: 10,
-                            border: `1px solid ${customerName === name ? "#0b2c60" : "rgba(11,44,96,0.18)"}`,
-                            background: customerName === name ? "#0b2c60" : "transparent",
-                            color: customerName === name ? "#fff" : "#0b2c60",
-                            fontSize: 10, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap",
-                          }}
-                        >
-                          {name}
-                        </button>
-                      ))}
-                    </div>
+
+              {/* Frequent customers */}
+              {frequentCustomers.length > 0 && (
+                <div>
+                  <p style={{ fontSize: 9, fontWeight: 600, color: "rgba(255,255,255,0.4)", marginBottom: 5 }}>Frequent</p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                    {frequentCustomers.map(name => (
+                      <button key={name} type="button" onClick={() => { setCustomerName(customerName === name ? "" : name); setPage(1); }}
+                        style={{ padding: "3px 9px", borderRadius: 10, border: `1px solid ${customerName === name ? "#f97316" : "rgba(255,255,255,0.15)"}`, background: customerName === name ? "#f97316" : "transparent", color: customerName === name ? "#fff" : "rgba(255,255,255,0.65)", fontSize: 10, fontWeight: 600, cursor: "pointer" }}>
+                        {name}
+                      </button>
+                    ))}
                   </div>
-                )}
-                <div style={{ position: "relative" }}>
-                  <Search size={12} color="#94a3b8" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", zIndex: 1 }} />
-                  <AutocompleteInput
-                    value={customerName}
-                    onChange={(val) => { setCustomerName(val); setPage(1); }}
-                    suggestions={customerNameSuggestions}
-                    placeholder="Search customer…"
-                    style={{ width: "100%", height: 36, paddingLeft: 28, paddingRight: 10, borderRadius: 10, border: "1.5px solid #e2e8f0", background: "#fafbff", fontSize: 12, color: "#0b2c60", outline: "none", boxSizing: "border-box", fontWeight: 500, transition: "border-color 0.15s" }}
-                    onFocus={e => ((e.target as HTMLInputElement).style.borderColor = "#0b2c60")}
-                    onBlur={e => ((e.target as HTMLInputElement).style.borderColor = "#e2e8f0")}
-                  />
+                </div>
+              )}
+
+              {/* Customer search */}
+              <div style={{ position: "relative" }}>
+                <Search size={12} color="rgba(255,255,255,0.3)" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", zIndex: 1 }} />
+                <input value={customerName} onChange={e => { setCustomerName(e.target.value); setPage(1); }} list="ledger-customer-names"
+                  placeholder="Search customer…"
+                  style={{ width: "100%", height: 36, paddingLeft: 28, paddingRight: 10, borderRadius: 10, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.07)", fontSize: 12, color: "#fff", outline: "none", fontWeight: 500, boxSizing: "border-box" }} />
+              </div>
+
+              {/* Date range */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <div>
+                  <p style={{ fontSize: 9, fontWeight: 600, color: "rgba(255,255,255,0.4)", marginBottom: 4 }}>From</p>
+                  <input type="date" value={startDate} onChange={e => { setStartDate(e.target.value); setPage(1); }}
+                    style={{ width: "100%", height: 34, paddingInline: 8, borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.07)", fontSize: 10, color: "#fff", outline: "none", colorScheme: "dark", boxSizing: "border-box" }} />
                 </div>
                 <div>
-                  <p style={{ fontSize: 9, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5 }}>From Date</p>
-                  <input type="date" value={startDate} onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
-                    style={{ width: "100%", height: 36, paddingInline: 10, borderRadius: 10, border: "1.5px solid #e2e8f0", background: "#fafbff", fontSize: 12, color: startDate ? "#0b2c60" : "#94a3b8", outline: "none", boxSizing: "border-box", fontWeight: 500 }} />
-                </div>
-                <div>
-                  <p style={{ fontSize: 9, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5 }}>To Date</p>
-                  <input type="date" value={endDate} onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
-                    style={{ width: "100%", height: 36, paddingInline: 10, borderRadius: 10, border: "1.5px solid #e2e8f0", background: "#fafbff", fontSize: 12, color: endDate ? "#0b2c60" : "#94a3b8", outline: "none", boxSizing: "border-box", fontWeight: 500 }} />
-                </div>
-                <div>
-                  <p style={{ fontSize: 9, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5 }}>Service</p>
-                  <Select value={serviceFilter} onValueChange={(v) => { setServiceFilter(v); setPage(1); }}>
-                    <SelectTrigger style={{ height: 36, borderRadius: 10, border: "1.5px solid #e2e8f0", background: "#fafbff", fontSize: 12, fontWeight: 500, color: "#0b2c60" }}>
-                      <SelectValue placeholder="All services" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-60 overflow-y-auto">
-                      <SelectItem value="all">All services</SelectItem>
-                      {serviceTypes.map((s: string) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <p style={{ fontSize: 9, fontWeight: 600, color: "rgba(255,255,255,0.4)", marginBottom: 4 }}>To</p>
+                  <input type="date" value={endDate} onChange={e => { setEndDate(e.target.value); setPage(1); }}
+                    style={{ width: "100%", height: 34, paddingInline: 8, borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.07)", fontSize: 10, color: "#fff", outline: "none", colorScheme: "dark", boxSizing: "border-box" }} />
                 </div>
               </div>
+
+              {/* Service type list */}
+              {serviceTypes.length > 0 && (
+                <div>
+                  <p style={{ fontSize: 9, fontWeight: 600, color: "rgba(255,255,255,0.4)", marginBottom: 6 }}>Service type</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    {serviceTypes.map((s: string) => {
+                      const color = getServiceColor(s);
+                      const active = serviceFilter === s;
+                      return (
+                        <button key={s} onClick={() => { setServiceFilter(active ? "" : s); setPage(1); }}
+                          style={{ textAlign: "left", padding: "6px 10px", borderRadius: 8, border: `1px solid ${active ? color + "60" : "transparent"}`, background: active ? color + "25" : "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.8)", fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ width: 8, height: 8, borderRadius: "50%", background: color, flexShrink: 0 }} />
+                          {s}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Actions */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {/* Bottom actions */}
+            <div style={{ padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,0.07)", display: "flex", flexDirection: "column", gap: 8 }}>
               <a href="/api/reports/export" target="_blank"
-                style={{ height: 42, borderRadius: 12, border: "1.5px solid rgba(11,44,96,0.15)", background: "#fff", color: "#0b2c60", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, textDecoration: "none", boxShadow: "0 1px 6px rgba(11,44,96,0.05)" }}>
-                <Download size={15} />Export to Excel
+                style={{ height: 38, borderRadius: 10, border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: "rgba(255,255,255,0.75)", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, textDecoration: "none" }}>
+                <Download size={14} />Export to Excel
               </a>
               <button onClick={() => setShowDeleteAll(true)}
-                style={{ height: 42, borderRadius: 12, border: "1.5px solid rgba(225,29,72,0.2)", background: "rgba(225,29,72,0.04)", color: "#e11d48", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                <Trash2 size={15} />Delete All Entries
+                style={{ height: 38, borderRadius: 10, border: "1px solid rgba(251,113,133,0.3)", background: "rgba(225,29,72,0.08)", color: "#fb7185", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                <Trash2 size={14} />Delete All Entries
               </button>
             </div>
           </div>
 
-          {/* ── RIGHT MAIN PANEL ── */}
-          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+          {/* ── RIGHT: quick-add strip + table card ── */}
+          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+
+            {/* ── Quick-add strip ── */}
+            <div style={{ background: "#fff", borderRadius: 16, padding: "10px 16px", display: "flex", gap: 8, alignItems: "center", boxShadow: "0 2px 12px rgba(11,44,96,0.07)", border: "1px solid rgba(11,44,96,0.06)", flexShrink: 0 }}>
+              <div style={{ width: 28, height: 28, borderRadius: 8, background: "linear-gradient(135deg,#f97316,#fb923c)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 2px 8px rgba(249,115,22,0.35)" }}>
+                <Plus size={14} color="#fff" strokeWidth={3} />
+              </div>
+              <input type="date" value={quickAdd.date} onChange={e => setQuickAdd(p => ({ ...p, date: e.target.value }))}
+                style={{ height: 36, paddingInline: 10, borderRadius: 9, border: "1.5px solid #e2e8f0", fontSize: 12, color: "#0b2c60", outline: "none", background: "#fafbff", width: 140, fontFamily: "monospace", fontWeight: 600, boxSizing: "border-box" }} />
+              <input value={quickAdd.customerName} onChange={e => setQuickAdd(p => ({ ...p, customerName: e.target.value }))}
+                onKeyDown={e => e.key === "Enter" && saveQuickAdd()}
+                placeholder="Customer name *" list="ledger-customer-names" autoComplete="off"
+                style={{ height: 36, paddingInline: 10, borderRadius: 9, border: "1.5px solid #e2e8f0", fontSize: 12, color: "#0b2c60", outline: "none", background: "#fafbff", flex: 1, fontWeight: 600, boxSizing: "border-box" }} />
+              <select value={quickAdd.serviceType} onChange={e => setQuickAdd(p => ({ ...p, serviceType: e.target.value }))}
+                style={{ height: 36, paddingInline: 10, borderRadius: 9, border: "1.5px solid #e2e8f0", fontSize: 12, color: quickAdd.serviceType ? "#0b2c60" : "#94a3b8", outline: "none", background: "#fafbff", width: 160, boxSizing: "border-box" }}>
+                <option value="">Service type *</option>
+                {serviceTypes.map((s: string) => <option key={s} value={s}>{s}</option>)}
+              </select>
+              <div style={{ display: "flex", borderRadius: 9, overflow: "hidden", border: "1.5px solid #e2e8f0", flexShrink: 0 }}>
+                <button onClick={() => setQuickAdd(p => ({ ...p, entryType: "credit" }))}
+                  style={{ height: 36, paddingInline: 12, border: "none", background: quickAdd.entryType === "credit" ? "rgba(5,150,105,0.1)" : "#fff", color: quickAdd.entryType === "credit" ? "#059669" : "#94a3b8", fontSize: 12, fontWeight: 800, cursor: "pointer", borderRight: "1px solid #e2e8f0" }}>
+                  Cr
+                </button>
+                <button onClick={() => setQuickAdd(p => ({ ...p, entryType: "debit" }))}
+                  style={{ height: 36, paddingInline: 12, border: "none", background: quickAdd.entryType === "debit" ? "rgba(225,29,72,0.08)" : "#fff", color: quickAdd.entryType === "debit" ? "#e11d48" : "#94a3b8", fontSize: 12, fontWeight: 800, cursor: "pointer" }}>
+                  Dr
+                </button>
+              </div>
+              <input type="number" value={quickAdd.amount} min="0" step="0.01"
+                onChange={e => setQuickAdd(p => ({ ...p, amount: e.target.value }))}
+                onKeyDown={e => e.key === "Enter" && saveQuickAdd()}
+                placeholder="Amount *"
+                style={{ height: 36, paddingInline: 10, borderRadius: 9, border: "1.5px solid #e2e8f0", fontSize: 13, color: "#0b2c60", outline: "none", background: "#fafbff", width: 120, textAlign: "right", fontWeight: 700, boxSizing: "border-box" }} />
+              <input value={quickAdd.description} onChange={e => setQuickAdd(p => ({ ...p, description: e.target.value }))}
+                onKeyDown={e => e.key === "Enter" && saveQuickAdd()}
+                placeholder="Note (optional)"
+                style={{ height: 36, paddingInline: 10, borderRadius: 9, border: "1.5px solid #e2e8f0", fontSize: 12, color: "#64748b", outline: "none", background: "#fafbff", width: 130, boxSizing: "border-box" }} />
+              <button onClick={saveQuickAdd} disabled={quickAddSaving}
+                style={{ height: 36, paddingInline: 18, borderRadius: 9, border: "none", background: quickAddSaving ? "#94a3b8" : "linear-gradient(135deg,#f97316,#fb923c)", color: "#fff", fontSize: 13, fontWeight: 800, cursor: quickAddSaving ? "wait" : "pointer", flexShrink: 0, boxShadow: quickAddSaving ? "none" : "0 2px 10px rgba(249,115,22,0.35)" }}>
+                {quickAddSaving ? "…" : "Add →"}
+              </button>
+            </div>
+
+            {/* ── Main table card ── */}
             <div style={{ background: "#fff", borderRadius: 20, overflow: "hidden", boxShadow: "0 2px 20px rgba(11,44,96,0.08)", border: "1px solid rgba(11,44,96,0.06)", flex: 1, display: "flex", flexDirection: "column" }}>
 
-              {/* Table toolbar + Tab switcher */}
+              {/* Tab toolbar */}
               <div style={{ padding: "14px 18px 0", borderBottom: "1px solid rgba(11,44,96,0.07)", flexShrink: 0 }}>
-                {/* Tab pills */}
                 <div style={{ display: "flex", background: "#f1f5f9", borderRadius: 13, padding: 4, gap: 4, marginBottom: 12 }}>
                   {(["transactions", "receipts"] as const).map(tab => (
-                    <button
-                      key={tab}
-                      onClick={() => setActiveTab(tab)}
-                      style={{
-                        flex: 1, height: 36, borderRadius: 10, border: "none", cursor: "pointer",
-                        background: activeTab === tab ? "#fff" : "transparent",
-                        color: activeTab === tab ? "#0b2c60" : "#64748b",
-                        fontWeight: activeTab === tab ? 800 : 600,
-                        fontSize: 13,
-                        boxShadow: activeTab === tab ? "0 2px 8px rgba(11,44,96,0.10)" : "none",
-                        display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-                        transition: "all 0.15s",
-                      }}
-                    >
+                    <button key={tab} onClick={() => setActiveTab(tab)}
+                      style={{ flex: 1, height: 36, borderRadius: 10, border: "none", cursor: "pointer", background: activeTab === tab ? "#fff" : "transparent", color: activeTab === tab ? "#0b2c60" : "#64748b", fontWeight: activeTab === tab ? 800 : 600, fontSize: 13, boxShadow: activeTab === tab ? "0 2px 8px rgba(11,44,96,0.10)" : "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, transition: "all 0.15s" }}>
                       {tab === "transactions" ? <><FileText size={13} />Transactions</> : <><Receipt size={13} />Receipt History</>}
                     </button>
                   ))}
                 </div>
-                {/* Subtitle row */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 12 }}>
                   <p style={{ fontSize: 11, color: "#94a3b8" }}>
                     {activeTab === "transactions"
@@ -587,9 +618,7 @@ export default function Ledger() {
                   </p>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     {activeTab === "transactions" && hasFilters && (
-                      <span style={{ fontSize: 10, fontWeight: 700, color: "#f97316", background: "rgba(249,115,22,0.08)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 20, padding: "4px 12px" }}>
-                        Filtered
-                      </span>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: "#f97316", background: "rgba(249,115,22,0.08)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 20, padding: "4px 12px" }}>Filtered</span>
                     )}
                     {isOffline && (
                       <span style={{ fontSize: 10, fontWeight: 700, color: "#d97706", background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.25)", borderRadius: 20, padding: "4px 10px", display: "flex", alignItems: "center", gap: 4 }}>
@@ -610,20 +639,15 @@ export default function Ledger() {
                 </div>
               )}
 
-              {/* Desktop Receipt History panel */}
+              {/* ── Receipt History tab ── */}
               {activeTab === "receipts" && (
                 <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
-                  {/* Search bar */}
                   <div style={{ position: "relative" }}>
                     <Search size={13} color="#94a3b8" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
-                    <input
-                      value={receiptSearch}
-                      onChange={(e) => setReceiptSearch(e.target.value)}
+                    <input value={receiptSearch} onChange={(e) => setReceiptSearch(e.target.value)}
                       placeholder="Search by receipt no., customer name, or service…"
-                      style={{ width: "100%", height: 40, paddingLeft: 34, paddingRight: 12, borderRadius: 12, border: "1.5px solid #e2e8f0", background: "#f8fafc", fontSize: 13, color: "#0b2c60", outline: "none", boxSizing: "border-box", fontWeight: 500, boxShadow: "0 1px 4px rgba(11,44,96,0.05)" }}
-                    />
+                      style={{ width: "100%", height: 40, paddingLeft: 34, paddingRight: 12, borderRadius: 12, border: "1.5px solid #e2e8f0", background: "#f8fafc", fontSize: 13, color: "#0b2c60", outline: "none", boxSizing: "border-box", fontWeight: 500, boxShadow: "0 1px 4px rgba(11,44,96,0.05)" }} />
                   </div>
-                  {/* Receipt list */}
                   {receiptEntries.length === 0 ? (
                     <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 0" }}>
                       <div style={{ width: 60, height: 60, borderRadius: 18, background: "rgba(11,44,96,0.06)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
@@ -637,14 +661,7 @@ export default function Ledger() {
                       <table style={{ width: "100%", borderCollapse: "collapse" }}>
                         <thead>
                           <tr style={{ background: "rgba(11,44,96,0.03)", borderBottom: "2px solid rgba(11,44,96,0.08)" }}>
-                            {[
-                              { label: "Receipt No", w: 140 },
-                              { label: "Date", w: 100 },
-                              { label: "Customer", w: undefined },
-                              { label: "Service", w: 156 },
-                              { label: "Amount", w: 120, right: true },
-                              { label: "Actions", w: 160, right: true },
-                            ].map(col => (
+                            {([{ label: "Receipt No", w: 140 }, { label: "Date", w: 100 }, { label: "Customer" }, { label: "Service", w: 156 }, { label: "Amount", w: 120, right: true }, { label: "Actions", w: 160, right: true }] as any[]).map((col: any) => (
                               <th key={col.label} style={{ padding: "10px 14px", textAlign: col.right ? "right" : "left", fontSize: 10, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase" as const, letterSpacing: "0.07em", whiteSpace: "nowrap" as const, width: col.w }}>
                                 {col.label}
                               </th>
@@ -658,37 +675,27 @@ export default function Ledger() {
                             const ec = isCredit ? "#059669" : "#e11d48";
                             const prefix = isCredit ? "+" : "−";
                             return (
-                              <tr key={entry.id}
-                                style={{ borderBottom: "1px solid rgba(11,44,96,0.05)", transition: "background 0.1s" }}
+                              <tr key={entry.id} style={{ borderBottom: "1px solid rgba(11,44,96,0.05)", transition: "background 0.1s" }}
                                 onMouseEnter={e => (e.currentTarget.style.background = "rgba(11,44,96,0.02)")}
-                                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-                              >
+                                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                                 <td style={{ padding: "12px 14px", whiteSpace: "nowrap" as const }}>
-                                  <span style={{ fontFamily: "monospace", fontSize: 11, fontWeight: 800, color: "#f97316", background: "rgba(249,115,22,0.07)", padding: "3px 8px", borderRadius: 6, border: "1px solid rgba(249,115,22,0.15)" }}>
-                                    {entry.receiptNumber}
-                                  </span>
+                                  <span style={{ fontFamily: "monospace", fontSize: 11, fontWeight: 800, color: "#f97316", background: "rgba(249,115,22,0.07)", padding: "3px 8px", borderRadius: 6, border: "1px solid rgba(249,115,22,0.15)" }}>{entry.receiptNumber}</span>
                                 </td>
                                 <td style={{ padding: "12px 14px", fontFamily: "monospace", fontSize: 12, color: "#64748b", whiteSpace: "nowrap" as const }}>{entry.date}</td>
                                 <td style={{ padding: "12px 14px", fontWeight: 700, fontSize: 13, color: "#0b2c60", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>{entry.customerName}</td>
                                 <td style={{ padding: "12px 14px" }}>
-                                  <span style={{ fontSize: 11, fontWeight: 700, color: "#475569", background: "rgba(71,85,105,0.07)", padding: "3px 10px", borderRadius: 20, whiteSpace: "nowrap" as const }}>
-                                    {entry.serviceType}
-                                  </span>
+                                  <span style={{ fontSize: 11, fontWeight: 700, color: getServiceColor(entry.serviceType), background: getServiceColor(entry.serviceType) + "14", padding: "3px 10px", borderRadius: 20, whiteSpace: "nowrap" as const }}>{entry.serviceType}</span>
                                 </td>
                                 <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 900, fontSize: 14, color: ec, whiteSpace: "nowrap" as const }}>
                                   {prefix}₹{amt.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                                 </td>
                                 <td style={{ padding: "12px 14px" }}>
                                   <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
-                                    <button
-                                      onClick={() => { setReceiptEntry(entry); setAutoDownloadReceipt(false); }}
-                                      title="View Receipt"
+                                    <button onClick={() => { setReceiptEntry(entry); setAutoDownloadReceipt(false); }} title="View Receipt"
                                       style={{ height: 32, paddingInline: 10, borderRadius: 8, border: "1.5px solid rgba(11,44,96,0.15)", background: "rgba(11,44,96,0.04)", color: "#0b2c60", fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
                                       <Receipt size={12} />View
                                     </button>
-                                    <button
-                                      onClick={() => { setReceiptEntry(entry); setAutoDownloadReceipt(true); }}
-                                      title="Download PDF"
+                                    <button onClick={() => { setReceiptEntry(entry); setAutoDownloadReceipt(true); }} title="Download PDF"
                                       style={{ height: 32, paddingInline: 10, borderRadius: 8, border: "none", background: "linear-gradient(135deg,#0b2c60,#1a4a9e)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, boxShadow: "0 2px 8px rgba(11,44,96,0.22)" }}>
                                       <Download size={12} />PDF
                                     </button>
@@ -704,23 +711,12 @@ export default function Ledger() {
                 </div>
               )}
 
-              {/* Table */}
+              {/* ── Transactions table ── */}
               <div style={{ flex: 1, overflowX: "auto", overflowY: "auto", display: activeTab !== "transactions" ? "none" : undefined }}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
-                    <tr style={{ background: "rgba(11,44,96,0.03)", borderBottom: "2px solid rgba(11,44,96,0.08)" }}>
-                      {[
-                        { label: "#", w: 44 },
-                        { label: "Receipt No", w: 126 },
-                        { label: "Date", w: 100 },
-                        { label: "Customer", w: undefined },
-                        { label: "Service", w: 156 },
-                        { label: "Credit", w: 108, right: true },
-                        { label: "Debit", w: 108, right: true },
-                        { label: "Balance", w: 118, right: true },
-                        { label: "Note", w: 130 },
-                        { label: "", w: 106 },
-                      ].map((col) => (
+                    <tr style={{ background: "#f8fafc", borderBottom: "2px solid rgba(11,44,96,0.08)" }}>
+                      {([{ label: "#", w: 44 }, { label: "Receipt No", w: 126 }, { label: "Date", w: 100 }, { label: "Customer" }, { label: "Service", w: 156 }, { label: "Credit", w: 108, right: true }, { label: "Debit", w: 108, right: true }, { label: "Balance", w: 118, right: true }, { label: "Note", w: 130 }, { label: "", w: 100 }] as any[]).map((col: any) => (
                         <th key={col.label} style={{ padding: "11px 14px", textAlign: col.right ? "right" : "left", fontSize: 10, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap", width: col.w }}>
                           {col.label}
                         </th>
@@ -728,80 +724,6 @@ export default function Ledger() {
                     </tr>
                   </thead>
                   <tbody>
-                    {/* ── Quick-add row (always pinned at top, desktop only) ── */}
-                    <tr style={{ borderBottom: "2px solid rgba(11,44,96,0.09)", background: "rgba(249,115,22,0.025)" }}>
-                      {/* + label */}
-                      <td style={{ padding: "8px 14px" }}>
-                        <div style={{ width: 22, height: 22, borderRadius: 6, background: "linear-gradient(135deg,#f97316,#fb923c)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          <Plus size={13} color="#fff" strokeWidth={3} />
-                        </div>
-                      </td>
-                      {/* Date — no receipt col in quick-add, spans receipt+date */}
-                      <td colSpan={2} style={{ padding: "6px 6px" }}>
-                        <input type="date" value={quickAdd.date}
-                          onChange={e => setQuickAdd(p => ({ ...p, date: e.target.value }))}
-                          style={{ width: "100%", height: 33, paddingInline: 8, borderRadius: 8, border: "1.5px solid rgba(249,115,22,0.35)", fontSize: 11, color: "#0b2c60", outline: "none", background: "#fff", fontFamily: "monospace", boxSizing: "border-box" }} />
-                      </td>
-                      {/* Customer */}
-                      <td style={{ padding: "6px 6px" }}>
-                        <input value={quickAdd.customerName}
-                          onChange={e => setQuickAdd(p => ({ ...p, customerName: e.target.value }))}
-                          onKeyDown={e => e.key === "Enter" && saveQuickAdd()}
-                          placeholder="Customer name *"
-                          list="ledger-customer-names"
-                          autoComplete="off"
-                          style={{ width: "100%", height: 33, paddingInline: 8, borderRadius: 8, border: "1.5px solid rgba(249,115,22,0.35)", fontSize: 12, color: "#0b2c60", outline: "none", background: "#fff", fontWeight: 600, boxSizing: "border-box" }}
-                          onFocus={e => (e.target.style.borderColor = "#f97316")}
-                          onBlur={e => (e.target.style.borderColor = "rgba(249,115,22,0.35)")} />
-                      </td>
-                      {/* Service */}
-                      <td style={{ padding: "6px 6px" }}>
-                        <select value={quickAdd.serviceType}
-                          onChange={e => setQuickAdd(p => ({ ...p, serviceType: e.target.value }))}
-                          style={{ width: "100%", height: 33, paddingInline: 7, borderRadius: 8, border: "1.5px solid rgba(249,115,22,0.35)", fontSize: 11, color: quickAdd.serviceType ? "#0b2c60" : "#94a3b8", outline: "none", background: "#fff", boxSizing: "border-box" }}>
-                          <option value="">Service *</option>
-                          {serviceTypes.map((s: string) => <option key={s} value={s}>{s}</option>)}
-                        </select>
-                      </td>
-                      {/* Cr/Dr toggle + amount (spans credit+debit cols) */}
-                      <td colSpan={2} style={{ padding: "6px 6px" }}>
-                        <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                          <button onClick={() => setQuickAdd(p => ({ ...p, entryType: "credit" }))}
-                            style={{ flexShrink: 0, height: 33, paddingInline: 10, borderRadius: 8, border: "1.5px solid", borderColor: quickAdd.entryType === "credit" ? "#059669" : "#e2e8f0", background: quickAdd.entryType === "credit" ? "rgba(5,150,105,0.1)" : "#fff", color: quickAdd.entryType === "credit" ? "#059669" : "#94a3b8", fontSize: 11, fontWeight: 800, cursor: "pointer" }}>
-                            Cr
-                          </button>
-                          <button onClick={() => setQuickAdd(p => ({ ...p, entryType: "debit" }))}
-                            style={{ flexShrink: 0, height: 33, paddingInline: 10, borderRadius: 8, border: "1.5px solid", borderColor: quickAdd.entryType === "debit" ? "#e11d48" : "#e2e8f0", background: quickAdd.entryType === "debit" ? "rgba(225,29,72,0.08)" : "#fff", color: quickAdd.entryType === "debit" ? "#e11d48" : "#94a3b8", fontSize: 11, fontWeight: 800, cursor: "pointer" }}>
-                            Dr
-                          </button>
-                          <input type="number" value={quickAdd.amount} min="0" step="0.01"
-                            onChange={e => setQuickAdd(p => ({ ...p, amount: e.target.value }))}
-                            onKeyDown={e => e.key === "Enter" && saveQuickAdd()}
-                            placeholder="Amount *"
-                            style={{ flex: 1, minWidth: 0, height: 33, paddingInline: 8, borderRadius: 8, border: "1.5px solid rgba(249,115,22,0.35)", fontSize: 12, color: "#0b2c60", outline: "none", background: "#fff", textAlign: "right", fontWeight: 700, boxSizing: "border-box" }}
-                            onFocus={e => (e.target.style.borderColor = "#f97316")}
-                            onBlur={e => (e.target.style.borderColor = "rgba(249,115,22,0.35)")} />
-                        </div>
-                      </td>
-                      {/* Balance placeholder */}
-                      <td style={{ padding: "8px 14px", textAlign: "right", color: "#cbd5e1", fontSize: 11 }}>—</td>
-                      {/* Note */}
-                      <td style={{ padding: "6px 6px" }}>
-                        <input value={quickAdd.description}
-                          onChange={e => setQuickAdd(p => ({ ...p, description: e.target.value }))}
-                          onKeyDown={e => e.key === "Enter" && saveQuickAdd()}
-                          placeholder="Note…"
-                          style={{ width: "100%", height: 33, paddingInline: 8, borderRadius: 8, border: "1.5px solid #e2e8f0", fontSize: 11, color: "#0b2c60", outline: "none", background: "#fff", boxSizing: "border-box" }} />
-                      </td>
-                      {/* Add button */}
-                      <td style={{ padding: "6px 8px" }}>
-                        <button onClick={saveQuickAdd} disabled={quickAddSaving}
-                          style={{ width: "100%", height: 33, borderRadius: 8, border: "none", background: quickAddSaving ? "#94a3b8" : "linear-gradient(135deg,#f97316,#fb923c)", color: "#fff", fontSize: 12, fontWeight: 800, cursor: quickAddSaving ? "wait" : "pointer", whiteSpace: "nowrap", boxShadow: quickAddSaving ? "none" : "0 2px 10px rgba(249,115,22,0.35)" }}>
-                          {quickAddSaving ? "…" : "Add"}
-                        </button>
-                      </td>
-                    </tr>
-
                     {isLoading ? (
                       [...Array(8)].map((_, i) => (
                         <tr key={i} style={{ borderBottom: "1px solid rgba(11,44,96,0.05)" }}>
@@ -821,9 +743,7 @@ export default function Ledger() {
                             </div>
                             <div>
                               <p style={{ fontSize: 15, fontWeight: 700, color: "#0b2c60", marginBottom: 5 }}>No entries found</p>
-                              <p style={{ fontSize: 12, color: "#94a3b8" }}>
-                                {hasFilters ? "Try clearing the filters" : "Use New Entry in the sidebar to add your first transaction"}
-                              </p>
+                              <p style={{ fontSize: 12, color: "#94a3b8" }}>{hasFilters ? "Try clearing the filters" : "Use New Entry in the sidebar to add your first transaction"}</p>
                             </div>
                           </div>
                         </td>
@@ -833,43 +753,33 @@ export default function Ledger() {
                         const rowNum = (page - 1) * 15 + idx + 1;
                         const balanceNum = Number(entry.balance);
                         const isEditing = inlineEditId === entry.id;
+                        const svcColor = getServiceColor(entry.serviceType);
 
                         if (isEditing) {
                           return (
                             <tr key={entry.id} data-testid={`row-ledger-${entry.id}`}
                               style={{ borderBottom: "1px solid rgba(11,44,96,0.1)", background: "rgba(11,44,96,0.025)" }}>
-                              {/* # */}
                               <td style={{ padding: "8px 14px", color: "#0b2c60", fontSize: 11, fontWeight: 700 }}>{rowNum}</td>
-                              {/* Receipt — read-only */}
                               <td style={{ padding: "8px 14px", whiteSpace: "nowrap" }}>
                                 <span style={{ fontFamily: "monospace", fontSize: 11, fontWeight: 800, color: "#f97316", background: "rgba(249,115,22,0.07)", padding: "3px 8px", borderRadius: 6, border: "1px solid rgba(249,115,22,0.15)" }}>
                                   {entry.receiptNumber ?? `CSC-${new Date(entry.createdAt).getFullYear()}-${String(entry.id).padStart(4, "0")}`}
                                 </span>
                               </td>
-                              {/* Date input */}
                               <td style={{ padding: "6px 6px" }}>
-                                <input type="date" value={inlineEdit.date}
-                                  onChange={e => setInlineEdit(p => ({ ...p, date: e.target.value }))}
+                                <input type="date" value={inlineEdit.date} onChange={e => setInlineEdit(p => ({ ...p, date: e.target.value }))}
                                   style={{ width: "100%", height: 32, paddingInline: 7, borderRadius: 8, border: "1.5px solid #0b2c60", fontSize: 11, color: "#0b2c60", outline: "none", background: "#fff", fontFamily: "monospace", boxSizing: "border-box" }} />
                               </td>
-                              {/* Customer input */}
                               <td style={{ padding: "6px 6px" }}>
-                                <input value={inlineEdit.customerName}
-                                  onChange={e => setInlineEdit(p => ({ ...p, customerName: e.target.value }))}
-                                  placeholder="Customer"
-                                  list="ledger-customer-names"
-                                  autoComplete="off"
+                                <input value={inlineEdit.customerName} onChange={e => setInlineEdit(p => ({ ...p, customerName: e.target.value }))}
+                                  placeholder="Customer" list="ledger-customer-names" autoComplete="off"
                                   style={{ width: "100%", height: 32, paddingInline: 8, borderRadius: 8, border: "1.5px solid #0b2c60", fontSize: 12, color: "#0b2c60", outline: "none", background: "#fff", fontWeight: 600, boxSizing: "border-box" }} />
                               </td>
-                              {/* Service select */}
                               <td style={{ padding: "6px 6px" }}>
-                                <select value={inlineEdit.serviceType}
-                                  onChange={e => setInlineEdit(p => ({ ...p, serviceType: e.target.value }))}
+                                <select value={inlineEdit.serviceType} onChange={e => setInlineEdit(p => ({ ...p, serviceType: e.target.value }))}
                                   style={{ width: "100%", height: 32, paddingInline: 7, borderRadius: 8, border: "1.5px solid #0b2c60", fontSize: 11, color: "#0b2c60", outline: "none", background: "#fff", boxSizing: "border-box" }}>
                                   {serviceTypes.map((s: string) => <option key={s} value={s}>{s}</option>)}
                                 </select>
                               </td>
-                              {/* Credit / Debit toggle + amount (spans 2 cols) */}
                               <td colSpan={2} style={{ padding: "6px 6px" }}>
                                 <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                                   <button onClick={() => setInlineEdit(p => ({ ...p, entryType: "credit" }))}
@@ -886,18 +796,14 @@ export default function Ledger() {
                                     style={{ flex: 1, minWidth: 0, height: 32, paddingInline: 8, borderRadius: 8, border: "1.5px solid #0b2c60", fontSize: 12, color: "#0b2c60", outline: "none", background: "#fff", textAlign: "right", fontWeight: 700, boxSizing: "border-box" }} />
                                 </div>
                               </td>
-                              {/* Balance — read-only */}
                               <td style={{ padding: "8px 14px", textAlign: "right", fontWeight: 900, fontSize: 13, color: balanceNum < 0 ? "#e11d48" : "#94a3b8", whiteSpace: "nowrap" }}>
                                 ₹{balanceNum.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                               </td>
-                              {/* Note input */}
                               <td style={{ padding: "6px 6px" }}>
-                                <input value={inlineEdit.description}
-                                  onChange={e => setInlineEdit(p => ({ ...p, description: e.target.value }))}
+                                <input value={inlineEdit.description} onChange={e => setInlineEdit(p => ({ ...p, description: e.target.value }))}
                                   placeholder="Note…"
                                   style={{ width: "100%", height: 32, paddingInline: 8, borderRadius: 8, border: "1.5px solid #e2e8f0", fontSize: 11, color: "#0b2c60", outline: "none", background: "#fff", boxSizing: "border-box" }} />
                               </td>
-                              {/* Save / Cancel */}
                               <td style={{ padding: "6px 8px" }}>
                                 <div style={{ display: "flex", gap: 5, justifyContent: "flex-end" }}>
                                   <button onClick={saveInlineEdit} disabled={updateMut.isPending}
@@ -915,62 +821,61 @@ export default function Ledger() {
                         }
 
                         return (
-                          <tr key={entry.id}
-                            data-testid={`row-ledger-${entry.id}`}
-                            style={{ borderBottom: "1px solid rgba(11,44,96,0.05)", transition: "background 0.1s" }}
-                            onMouseEnter={e => (e.currentTarget.style.background = "rgba(11,44,96,0.025)")}
-                            onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-                          >
-                            {/* # */}
-                            <td style={{ padding: "13px 14px", color: "#cbd5e1", fontSize: 11, fontWeight: 700 }}>{rowNum}</td>
-                            {/* Receipt */}
-                            <td style={{ padding: "13px 14px", whiteSpace: "nowrap" }}>
-                              <span style={{ fontFamily: "monospace", fontSize: 11, fontWeight: 800, color: "#f97316", background: "rgba(249,115,22,0.07)", padding: "3px 8px", borderRadius: 6, border: "1px solid rgba(249,115,22,0.15)" }}>
+                          <tr key={entry.id} data-testid={`row-ledger-${entry.id}`}
+                            style={{ borderBottom: "1px solid #f1f5f9", transition: "background 0.1s" }}
+                            onMouseEnter={e => (e.currentTarget.style.background = "rgba(11,44,96,0.018)")}
+                            onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                            <td style={{ padding: "14px 14px", color: "#d1d5db", fontSize: 11, fontWeight: 700 }}>{rowNum}</td>
+                            <td style={{ padding: "14px 14px", whiteSpace: "nowrap" }}>
+                              <code style={{ fontFamily: "monospace", fontSize: 11, fontWeight: 800, color: "#f97316", background: "rgba(249,115,22,0.07)", padding: "3px 8px", borderRadius: 6, border: "1px solid rgba(249,115,22,0.12)" }}>
                                 {entry.receiptNumber ?? `CSC-${new Date(entry.createdAt).getFullYear()}-${String(entry.id).padStart(4, "0")}`}
-                              </span>
+                              </code>
                             </td>
-                            {/* Date */}
-                            <td style={{ padding: "13px 14px", fontFamily: "monospace", fontSize: 12, color: "#64748b", whiteSpace: "nowrap" }}>{entry.date}</td>
-                            {/* Customer */}
-                            <td style={{ padding: "13px 14px", fontWeight: 700, fontSize: 13, color: "#0b2c60", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.customerName}</td>
-                            {/* Service */}
-                            <td style={{ padding: "13px 14px" }}>
-                              <span style={{ fontSize: 11, fontWeight: 700, color: "#475569", background: "rgba(71,85,105,0.07)", padding: "3px 10px", borderRadius: 20, whiteSpace: "nowrap", display: "inline-block", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", verticalAlign: "middle" }}>
-                                {entry.serviceType}
-                              </span>
+                            <td style={{ padding: "14px 14px", fontSize: 12, fontWeight: 600, color: "#64748b", whiteSpace: "nowrap" }}>{entry.date}</td>
+                            <td style={{ padding: "14px 14px" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <div style={{ width: 28, height: 28, borderRadius: 8, background: svcColor + "18", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                  <span style={{ fontSize: 11, fontWeight: 800, color: svcColor }}>{(entry.customerName || "?")[0].toUpperCase()}</span>
+                                </div>
+                                <span style={{ fontSize: 13, fontWeight: 700, color: "#0b2c60", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>{entry.customerName}</span>
+                              </div>
                             </td>
-                            {/* Credit */}
-                            <td style={{ padding: "13px 14px", textAlign: "right", fontWeight: 800, fontSize: 13, whiteSpace: "nowrap" }}>
-                              {entry.credit > 0
-                                ? <span style={{ color: "#059669", background: "rgba(5,150,105,0.07)", padding: "3px 8px", borderRadius: 7 }}>+₹{entry.credit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-                                : <span style={{ color: "#e2e8f0" }}>—</span>}
+                            <td style={{ padding: "14px 14px" }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: svcColor, background: svcColor + "14", padding: "4px 10px", borderRadius: 20, whiteSpace: "nowrap", display: "inline-block" }}>{entry.serviceType}</span>
                             </td>
-                            {/* Debit */}
-                            <td style={{ padding: "13px 14px", textAlign: "right", fontWeight: 800, fontSize: 13, whiteSpace: "nowrap" }}>
-                              {entry.debit > 0
-                                ? <span style={{ color: "#e11d48", background: "rgba(225,29,72,0.07)", padding: "3px 8px", borderRadius: 7 }}>−₹{entry.debit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-                                : <span style={{ color: "#e2e8f0" }}>—</span>}
+                            <td style={{ padding: "14px 14px", textAlign: "right", fontWeight: 800, fontSize: 13, whiteSpace: "nowrap" }}>
+                              {entry.credit > 0 ? (
+                                <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#059669", display: "inline-block", flexShrink: 0 }} />
+                                  <span style={{ color: "#059669" }}>+₹{entry.credit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                                </span>
+                              ) : <span style={{ color: "#e2e8f0" }}>—</span>}
                             </td>
-                            {/* Balance */}
-                            <td style={{ padding: "13px 14px", textAlign: "right", fontWeight: 900, fontSize: 13, color: balanceNum < 0 ? "#e11d48" : "#0b2c60", whiteSpace: "nowrap" }}>
+                            <td style={{ padding: "14px 14px", textAlign: "right", fontWeight: 800, fontSize: 13, whiteSpace: "nowrap" }}>
+                              {entry.debit > 0 ? (
+                                <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#e11d48", display: "inline-block", flexShrink: 0 }} />
+                                  <span style={{ color: "#e11d48" }}>−₹{entry.debit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                                </span>
+                              ) : <span style={{ color: "#e2e8f0" }}>—</span>}
+                            </td>
+                            <td style={{ padding: "14px 14px", textAlign: "right", fontWeight: 900, fontSize: 13, color: balanceNum < 0 ? "#e11d48" : "#0b2c60", whiteSpace: "nowrap" }}>
                               ₹{balanceNum.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                             </td>
-                            {/* Note */}
-                            <td style={{ padding: "13px 14px", color: "#94a3b8", fontSize: 11, maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.description || "—"}</td>
-                            {/* Actions */}
-                            <td style={{ padding: "13px 14px" }}>
-                              <div style={{ display: "flex", gap: 5, justifyContent: "flex-end" }}>
+                            <td style={{ padding: "14px 14px", fontSize: 11, color: "#94a3b8", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.description || "—"}</td>
+                            <td style={{ padding: "14px 10px" }}>
+                              <div style={{ display: "flex", gap: 4, justifyContent: "flex-end" }}>
                                 <button onClick={() => setReceiptEntry(entry)} title="Receipt"
-                                  style={{ width: 30, height: 30, borderRadius: 8, border: "1px solid #e2e8f0", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                                  <Receipt size={13} color="#64748b" />
+                                  style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #e2e8f0", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                                  <Receipt size={12} color="#64748b" />
                                 </button>
                                 <button onClick={() => openEdit(entry)} title="Edit"
-                                  style={{ width: 30, height: 30, borderRadius: 8, border: "1px solid rgba(11,44,96,0.15)", background: "rgba(11,44,96,0.04)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                                  <Pencil size={13} color="#0b2c60" />
+                                  style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid rgba(11,44,96,0.15)", background: "rgba(11,44,96,0.04)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                                  <Pencil size={12} color="#0b2c60" />
                                 </button>
                                 <button onClick={() => setDeleteId(entry.id)} title="Delete"
-                                  style={{ width: 30, height: 30, borderRadius: 8, border: "1px solid rgba(225,29,72,0.2)", background: "rgba(225,29,72,0.04)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                                  <Trash2 size={13} color="#e11d48" />
+                                  style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid rgba(225,29,72,0.2)", background: "rgba(225,29,72,0.04)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                                  <Trash2 size={12} color="#e11d48" />
                                 </button>
                               </div>
                             </td>
@@ -982,33 +887,47 @@ export default function Ledger() {
                 </table>
               </div>
 
-              {/* Pagination footer */}
-              <div style={{ display: activeTab !== "transactions" ? "none" : "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 22px", borderTop: "1px solid rgba(11,44,96,0.07)", background: "rgba(11,44,96,0.015)", flexShrink: 0 }}>
-                <p style={{ fontSize: 12, color: "#94a3b8" }}>
-                  {data?.total
-                    ? `Showing ${(page - 1) * 15 + 1}–${Math.min(page * 15, data.total)} of ${data.total} entries`
-                    : "No entries"}
-                </p>
+              {/* Footer: page summary + pagination */}
+              <div style={{ display: activeTab !== "transactions" ? "none" : "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 20px", borderTop: "1px solid #f1f5f9", flexShrink: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                  <p style={{ fontSize: 12, color: "#94a3b8", fontWeight: 500 }}>
+                    {data?.total ? `Showing ${(page - 1) * 15 + 1}–${Math.min(page * 15, data.total)} of ${data.total}` : "No entries"}
+                  </p>
+                  {(data?.entries?.length ?? 0) > 0 && (() => {
+                    const pCr = (data?.entries ?? []).reduce((s: number, e: any) => s + (Number(e.credit) || 0), 0);
+                    const pDb = (data?.entries ?? []).reduce((s: number, e: any) => s + (Number(e.debit) || 0), 0);
+                    const net = pCr - pDb;
+                    return (
+                      <span style={{ display: "flex", gap: 10, fontSize: 12, fontWeight: 600 }}>
+                        <span style={{ color: "#059669" }}>Cr: ₹{pCr.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                        <span style={{ color: "#cbd5e1" }}>·</span>
+                        <span style={{ color: "#e11d48" }}>Dr: ₹{pDb.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                        <span style={{ color: "#cbd5e1" }}>·</span>
+                        <span style={{ color: "#0b2c60", fontWeight: 700 }}>Net: {net >= 0 ? "+" : ""}₹{net.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                      </span>
+                    );
+                  })()}
+                </div>
                 {totalPages > 1 && (
-                  <div style={{ display: "flex", gap: 6 }}>
+                  <div style={{ display: "flex", gap: 4 }}>
                     <button onClick={() => setPage(p => p - 1)} disabled={page <= 1}
-                      style={{ height: 34, paddingInline: 14, borderRadius: 10, border: "1.5px solid #e2e8f0", background: page <= 1 ? "#f8fafc" : "#fff", color: page <= 1 ? "#cbd5e1" : "#0b2c60", fontSize: 12, fontWeight: 700, cursor: page <= 1 ? "default" : "pointer", display: "flex", alignItems: "center", gap: 5, transition: "all 0.1s" }}>
-                      <ChevronLeft size={14} />Previous
+                      style={{ height: 32, paddingInline: 12, borderRadius: 8, border: "1.5px solid #e2e8f0", background: page <= 1 ? "#f8fafc" : "#fff", color: page <= 1 ? "#cbd5e1" : "#0b2c60", fontSize: 12, fontWeight: 700, cursor: page <= 1 ? "default" : "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                      <ChevronLeft size={13} />Prev
                     </button>
                     <div style={{ display: "flex", gap: 4 }}>
                       {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
                         const p = totalPages <= 5 ? i + 1 : page <= 3 ? i + 1 : page >= totalPages - 2 ? totalPages - 4 + i : page - 2 + i;
                         return (
                           <button key={p} onClick={() => setPage(p)}
-                            style={{ width: 34, height: 34, borderRadius: 10, border: "1.5px solid", borderColor: p === page ? "#0b2c60" : "#e2e8f0", background: p === page ? "#0b2c60" : "#fff", color: p === page ? "#fff" : "#64748b", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                            style={{ width: 32, height: 32, borderRadius: 8, border: "1.5px solid", borderColor: p === page ? "#0b2c60" : "#e2e8f0", background: p === page ? "#0b2c60" : "#fff", color: p === page ? "#fff" : "#64748b", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                             {p}
                           </button>
                         );
                       })}
                     </div>
                     <button onClick={() => setPage(p => p + 1)} disabled={page >= totalPages}
-                      style={{ height: 34, paddingInline: 14, borderRadius: 10, border: "1.5px solid #e2e8f0", background: page >= totalPages ? "#f8fafc" : "#fff", color: page >= totalPages ? "#cbd5e1" : "#0b2c60", fontSize: 12, fontWeight: 700, cursor: page >= totalPages ? "default" : "pointer", display: "flex", alignItems: "center", gap: 5, transition: "all 0.1s" }}>
-                      Next<ChevronRight size={14} />
+                      style={{ height: 32, paddingInline: 12, borderRadius: 8, border: "1.5px solid #e2e8f0", background: page >= totalPages ? "#f8fafc" : "#fff", color: page >= totalPages ? "#cbd5e1" : "#0b2c60", fontSize: 12, fontWeight: 700, cursor: page >= totalPages ? "default" : "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                      Next<ChevronRight size={13} />
                     </button>
                   </div>
                 )}
