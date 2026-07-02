@@ -1,5 +1,5 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 3.1.1** — last updated 2026-07-02
+**Version 3.2.0** — last updated 2026-07-02
 
 > Full platform documentation: **[DOCS.md](./DOCS.md)**
 
@@ -7,7 +7,7 @@ A full-stack CSC (Common Service Center) business management platform for tracki
 
 ---
 
-## What's New in v3.1.1
+## What's New in v3.2.0
 
 | Feature | Description |
 |---------|-------------|
@@ -20,7 +20,7 @@ A full-stack CSC (Common Service Center) business management platform for tracki
 | **Summary tab** | 4 colour-coded aggregate stat cards: Total Receipts (navy), Total Amount (green), Credit Entries (orange), Debit Entries (violet). |
 | **Export button** | Orange `rounded-full` pill in header with ↓ icon — matching reference design. |
 
-## What's New in v3.1.1
+## What's New in v3.2.0
 
 | Feature | Description |
 |---------|-------------|
@@ -29,7 +29,7 @@ A full-stack CSC (Common Service Center) business management platform for tracki
 | **Auto-backup scheduler** | `node-cron` scheduler (`backup-scheduler.ts`) — daily/weekly/custom cron, configurable time + retention. `GET/POST /api/backups/schedule` endpoints. |
 | **Selective table import** | `POST /api/backups/analyze` parses pg_dump COPY blocks. `POST /api/backups/selective-import` replays chosen tables with FK checks disabled. |
 
-## What's New in v3.1.1
+## What's New in v3.2.0
 
 | Feature | Description |
 |---------|-------------|
