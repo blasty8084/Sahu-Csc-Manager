@@ -84,6 +84,7 @@
     "react-qr-code": "^2.2.0",
     "workbox-background-sync": "^7.4.1",
     "workbox-cacheable-response": "^7.4.1",
+    "workbox-core": "^7.4.1",
     "workbox-expiration": "^7.4.1",
     "workbox-navigation-preload": "^7.4.1",
     "workbox-precaching": "^7.4.1",

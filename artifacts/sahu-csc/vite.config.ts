@@ -113,114 +113,30 @@ export default defineConfig({
             label: "SAHU CSC Ledger",
           },
         ],
-      } as any,
-
-      workbox: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,webp}"],
-        navigateFallback: "/",
-        navigateFallbackDenylist: [/^\/api\//],
-        cleanupOutdatedCaches: true,
-        skipWaiting: true,
-        clientsClaim: true,
-        runtimeCaching: [
+        share_target: {
+          action: "/share-target",
+          method: "GET",
+          params: { title: "title", text: "text", url: "url" },
+        },
+        protocol_handlers: [
+          { protocol: "web+sahucsc", url: "/?action=%s" },
+        ],
+        file_handlers: [
           {
-            urlPattern: /^\/api\/auth\//,
-            handler: "NetworkOnly",
-          },
-          {
-            urlPattern: /^\/api\/dashboard/,
-            handler: "StaleWhileRevalidate",
-            options: {
-              cacheName: "api-dashboard",
-              expiration: { maxEntries: 5, maxAgeSeconds: 5 * 60 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-          {
-            urlPattern: /^\/api\/reports/,
-            handler: "StaleWhileRevalidate",
-            options: {
-              cacheName: "api-reports",
-              expiration: { maxEntries: 20, maxAgeSeconds: 10 * 60 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-          {
-            urlPattern: /^\/api\/settings/,
-            handler: "StaleWhileRevalidate",
-            options: {
-              cacheName: "api-settings",
-              expiration: { maxEntries: 5, maxAgeSeconds: 30 * 60 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-          {
-            urlPattern: /^\/api\/profile/,
-            handler: "StaleWhileRevalidate",
-            options: {
-              cacheName: "api-profile",
-              expiration: { maxEntries: 5, maxAgeSeconds: 5 * 60 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-          {
-            urlPattern: /^\/api\/preferences/,
-            handler: "StaleWhileRevalidate",
-            options: {
-              cacheName: "api-preferences",
-              expiration: { maxEntries: 5, maxAgeSeconds: 30 * 60 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-          {
-            urlPattern: /^\/api\/services/,
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "api-services",
-              networkTimeoutSeconds: 8,
-              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-          {
-            urlPattern: /^\/api\/ledger/,
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "api-ledger",
-              networkTimeoutSeconds: 8,
-              expiration: { maxEntries: 50, maxAgeSeconds: 5 * 60 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-          {
-            urlPattern: /^\/api\/notifications/,
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "api-notifications",
-              networkTimeoutSeconds: 8,
-              expiration: { maxEntries: 20, maxAgeSeconds: 2 * 60 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-          {
-            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/,
-            handler: "CacheFirst",
-            options: {
-              cacheName: "image-cache",
-              expiration: { maxEntries: 100, maxAgeSeconds: 30 * 24 * 60 * 60 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-          {
-            urlPattern: /\.(?:woff2|woff|ttf|eot)$/,
-            handler: "CacheFirst",
-            options: {
-              cacheName: "font-cache",
-              expiration: { maxEntries: 20, maxAgeSeconds: 365 * 24 * 60 * 60 },
-              cacheableResponse: { statuses: [0, 200] },
+            action: "/open-file",
+            accept: {
+              "text/csv": [".csv"],
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
             },
           },
         ],
+      } as any,
+
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.ts",
+      injectManifest: {
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,webp}"],
       },
 
       devOptions: {

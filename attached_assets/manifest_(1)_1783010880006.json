@@ -1,0 +1,124 @@
+{
+  "name": "SAHU CSC — Common Service Center",
+  "short_name": "SAHU CSC",
+  "description": "Business management platform for Common Service Centers — ledger, services, reports &amp; more.",
+  "start_url": "/?source=pwa",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0b2c60",
+  "lang": "en-IN",
+  "scope": "/",
+  "display_override": [
+    "fullscreen",
+    "standalone",
+    "window-controls-overlay"
+  ],
+  "orientation": "portrait-primary",
+  "id": "sahu-csc-app",
+  "categories": [
+    "business",
+    "finance",
+    "productivity"
+  ],
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "pwa-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
+    {
+      "src": "pwa-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    },
+    {
+      "src": "pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "View today's summary and stats",
+      "url": "/?source=shortcut",
+      "icons": [
+        {
+          "src": "pwa-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "New Ledger Entry",
+      "short_name": "Ledger",
+      "description": "Open the ledger to add a new entry",
+      "url": "/ledger?source=shortcut",
+      "icons": [
+        {
+          "src": "pwa-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "short_name": "Reports",
+      "description": "View daily and monthly reports",
+      "url": "/reports?source=shortcut",
+      "icons": [
+        {
+          "src": "pwa-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Settings",
+      "short_name": "Settings",
+      "description": "Application settings",
+      "url": "/settings?source=shortcut",
+      "icons": [
+        {
+          "src": "pwa-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "SAHU CSC Dashboard"
+    },
+    {
+      "src": "pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "SAHU CSC Ledger"
+    }
+  ],
+  "prefer_related_applications": false
+}

@@ -54,6 +54,14 @@ window.addEventListener("sahu-sync-complete", (e: Event) => {
   console.info(`[Sync] ${detail.synced} offline entries synced to server`);
 });
 
+// Background Sync: service worker tells the page to replay the queue
+navigator.serviceWorker?.addEventListener("message", (event: MessageEvent) => {
+  if (event.data?.type === "BG_SYNC_TRIGGERED") {
+    console.info("[PWA] Background Sync triggered by service worker — replaying queue");
+    syncEngine.sync().catch(() => {});
+  }
+});
+
 if (navigator.onLine) {
   syncEngine.sync().catch(() => {});
 }
