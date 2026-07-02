@@ -42,25 +42,36 @@ export default function Redesign() {
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
 
   return (
-    <div style={{ display: "flex", height: "100vh", background: "#f1f5f9", fontFamily: "Inter, -apple-system, sans-serif", overflow: "hidden" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#f1f5f9", fontFamily: "Inter, -apple-system, sans-serif", overflow: "hidden" }}>
+
+      {/* ══════════════════════════════════
+          TOP HEADER BAR  (same as Current)
+          ══════════════════════════════════ */}
+      <div style={{ height: 60, background: "#fff", borderBottom: "1px solid rgba(11,44,96,0.08)", display: "flex", alignItems: "center", justifyContent: "space-between", paddingInline: 24, flexShrink: 0, boxShadow: "0 1px 8px rgba(11,44,96,0.05)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 10, background: "linear-gradient(135deg,#0b2c60,#1a4a9e)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ color: "#fff", fontSize: 14, fontWeight: 900 }}>S</span>
+          </div>
+          <span style={{ fontSize: 16, fontWeight: 800, color: NAVY }}>Ledger</span>
+          <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 500 }}>Transaction Register</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 12, color: "#94a3b8" }}>admin</span>
+          <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg,#0b2c60,#1a4a9e)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ color: "#fff", fontSize: 13, fontWeight: 800 }}>A</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════
+          BODY ROW (sidebar + main)
+          ══════════════════════════════════ */}
+      <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
 
       {/* ══════════════════════════════════
           LEFT SIDEBAR  (240px)
           ══════════════════════════════════ */}
       <div style={{ width: 240, flexShrink: 0, display: "flex", flexDirection: "column", background: NAVY, color: "#fff" }}>
-
-        {/* Brand / logo */}
-        <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 34, height: 34, borderRadius: 10, background: SAFFRON, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <span style={{ fontSize: 14, fontWeight: 900 }}>S</span>
-            </div>
-            <div>
-              <p style={{ fontSize: 13, fontWeight: 800, letterSpacing: "-0.2px" }}>SAHU CSC</p>
-              <p style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", fontWeight: 500 }}>Ledger Register</p>
-            </div>
-          </div>
-        </div>
 
         {/* Balance summary */}
         <div style={{ padding: "16px 20px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
@@ -291,6 +302,7 @@ export default function Redesign() {
           </div>
         </div>
       </div>
+      </div>{/* end body row */}
     </div>
   );
 }
