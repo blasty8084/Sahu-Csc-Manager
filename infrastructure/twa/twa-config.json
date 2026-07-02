@@ -1,7 +1,6 @@
 {
   "_comment": "Android TWA (Trusted Web Activity) configuration for SAHU CSC",
   "_docs": "Use Bubblewrap CLI (npm i -g @bubblewrap/cli) to generate an Android project from this config.",
-
   "packageId": "com.sahucsc.app",
   "host": "nbxzs.sisko.replit.dev",
   "startUrl": "/?source=twa",
@@ -21,25 +20,45 @@
       "name": "Dashboard",
       "short_name": "Dashboard",
       "url": "/?source=shortcut",
-      "icons": [{ "src": "/pwa-96x96.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "/pwa-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
     },
     {
       "name": "Ledger",
       "short_name": "Ledger",
       "url": "/ledger?new=1&source=shortcut",
-      "icons": [{ "src": "/pwa-96x96.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "/pwa-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
     },
     {
       "name": "AePS Cash",
       "short_name": "AePS",
       "url": "/aeps?source=shortcut",
-      "icons": [{ "src": "/pwa-96x96.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "/pwa-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
     },
     {
       "name": "Reports",
       "short_name": "Reports",
       "url": "/reports?source=shortcut",
-      "icons": [{ "src": "/pwa-96x96.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "/pwa-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
     }
   ],
   "iconUrl": "/pwa-512x512.png",
@@ -56,18 +75,22 @@
     "path": "./android.keystore",
     "alias": "sahucsc"
   },
-  "appVersionName": "3.0.0",
+  "appVersionName": "3.1.1",
   "appVersionCode": 3,
   "features": {
-    "locationDelegation": { "enabled": false },
-    "playBilling": { "enabled": false }
+    "locationDelegation": {
+      "enabled": false
+    },
+    "playBilling": {
+      "enabled": false
+    }
   },
-  "alphaDependencies": { "enabled": false },
+  "alphaDependencies": {
+    "enabled": false
+  },
   "serviceAccountJsonFile": "./play-service-account.json",
   "fallbackType": "customtabs",
-  "enableSiteSettingsShortcut": true,
   "generatorApp": "bubblewrap-cli",
-
   "_setup_instructions": [
     "1. Install Bubblewrap: npm install -g @bubblewrap/cli",
     "2. Run: bubblewrap init --manifest https://<your-domain>/manifest.webmanifest",
