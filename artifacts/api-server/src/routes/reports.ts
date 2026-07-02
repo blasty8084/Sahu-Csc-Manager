@@ -3,7 +3,7 @@ import { db, ledgerTable, aepsDailyTable, aepsTransactionsTable, usersTable } fr
 import { and, gte, lte, eq, sql, sum, count, desc } from "drizzle-orm";
 import { GetDailyReportQueryParams, GetMonthlyReportQueryParams, GetServiceBreakdownQueryParams, ExportReportQueryParams } from "@workspace/api-zod";
 import { requireAuth, requirePermission } from "../lib/auth";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 
 const router: IRouter = Router();
 
@@ -239,32 +239,30 @@ router.get("/reports/export", requireAuth, requirePermission("reports:export"), 
     getAepsData(startDate, endDate),
   ]);
 
-  const wb = XLSX.utils.book_new();
+  const wb = new ExcelJS.Workbook();
 
-  const ledgerData = [
-    ["Date", "Customer Name", "Service Type", "Credit (₹)", "Debit (₹)", "Balance (₹)", "Description"],
-    ...ledgerEntries.map((e) => [
+  const ledgerSheet = wb.addWorksheet("Ledger Report");
+  ledgerSheet.addRow(["Date", "Customer Name", "Service Type", "Credit (₹)", "Debit (₹)", "Balance (₹)", "Description"]);
+  for (const e of ledgerEntries) {
+    ledgerSheet.addRow([
       e.date, e.customerName, e.serviceType,
       parseFloat(e.credit ?? "0"), parseFloat(e.debit ?? "0"), parseFloat(e.balance ?? "0"),
       e.description,
-    ]),
-  ];
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ledgerData), "Ledger Report");
+    ]);
+  }
 
-  const aepsData = [
-    ["Date", "Opening Balance (₹)", "Withdrawals (₹)", "Deposits (₹)", "Transactions", "Net Flow (₹)"],
-    ...aeps.sessions.map((s) => [
-      s.date, s.openingBalance, s.withdrawals, s.deposits, s.transactions, s.netFlow,
-    ]),
-    [],
-    ["", "TOTAL", aeps.totalWithdrawals, aeps.totalDeposits, aeps.totalTransactions, aeps.totalDeposits - aeps.totalWithdrawals],
-  ];
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aepsData), "AePS Report");
+  const aepsSheet = wb.addWorksheet("AePS Report");
+  aepsSheet.addRow(["Date", "Opening Balance (₹)", "Withdrawals (₹)", "Deposits (₹)", "Transactions", "Net Flow (₹)"]);
+  for (const s of aeps.sessions) {
+    aepsSheet.addRow([s.date, s.openingBalance, s.withdrawals, s.deposits, s.transactions, s.netFlow]);
+  }
+  aepsSheet.addRow([]);
+  aepsSheet.addRow(["", "TOTAL", aeps.totalWithdrawals, aeps.totalDeposits, aeps.totalTransactions, aeps.totalDeposits - aeps.totalWithdrawals]);
 
-  const buffer = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+  const buffer = await wb.xlsx.writeBuffer();
   res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
   res.setHeader("Content-Disposition", `attachment; filename="report_${startDate}_${endDate}.xlsx"`);
-  res.send(buffer);
+  res.send(Buffer.from(buffer));
 });
 
 router.get("/dashboard", requireAuth, requirePermission("reports:view"), async (req, res): Promise<void> => {
