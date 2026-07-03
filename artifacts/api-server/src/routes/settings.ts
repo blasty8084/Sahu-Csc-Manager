@@ -9,6 +9,7 @@ import { UpdateSettingsBody } from "@workspace/api-zod";
 import { requireAuth, requireRole, auditLog, getClientIp } from "../lib/auth";
 import { createNotification } from "../lib/notify";
 import { applySchedule, type BackupScheduleConfig } from "../lib/backup-scheduler";
+import { logger } from "../lib/logger";
 
 const BACKUP_DIR = path.resolve(process.cwd(), "backups");
 

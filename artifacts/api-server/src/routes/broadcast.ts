@@ -96,7 +96,7 @@ router.post("/admin/broadcast/push", requireRole("admin"), async (req: any, res)
     await sendPushToAll({ title, body, url: url || "/", tag: "admin-broadcast", requireInteraction: false });
 
     if (createInAppNotification) {
-      await createSystemNotification({ title, message: body, type: "info", priority: "HIGH", link: url ?? null });
+      await createSystemNotification({ title, message: body, type: "info", priority: "HIGH", link: url ?? undefined });
     }
 
     await db.insert(broadcastLogsTable).values({

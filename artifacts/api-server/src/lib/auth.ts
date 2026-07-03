@@ -163,11 +163,12 @@ export function requirePermission(permission: string) {
 
 // ─── auditLog helper ──────────────────────────────────────────────────────────
 export async function auditLog(
-  userId: number,
+  userId: number | null,
   action: string,
   details: string | null,
   ipAddress: string
 ): Promise<void> {
+  if (userId === null) return;
   try {
     await db.insert(auditLogsTable).values({ userId, action, details, ipAddress });
   } catch (err) {

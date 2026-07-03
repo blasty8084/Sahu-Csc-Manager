@@ -32,6 +32,10 @@ args = "SAHU CSC"
 task = "workflow.run"
 args = "Build API"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Typecheck"
+
 [[workflows.workflow]]
 name = "Seed Database"
 author = "agent"
@@ -58,13 +62,12 @@ outputType = "console"
 name = "API Server"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "fuser -k 8080/tcp 2>/dev/null; sleep 1; PORT=8080 NODE_ENV=development node --enable-source-maps artifacts/api-server/dist/index.mjs"
-waitForPort = 8080
-
 [workflows.workflow.metadata]
 outputType = "console"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "PORT=8080 NODE_ENV=development node --enable-source-maps artifacts/api-server/dist/index.mjs"
 
 [[workflows.workflow]]
 name = "SAHU CSC"
@@ -85,6 +88,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server run build"
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow]]
+name = "Typecheck"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --if-present run typecheck"
 
 [workflows.workflow.metadata]
 outputType = "console"

@@ -175,7 +175,7 @@ export default function Ledger() {
     }
     setQuickAddSaving(true);
     try {
-      await createMut.mutateAsync({ date: quickAdd.date, customerName: quickAdd.customerName.trim(), serviceType: quickAdd.serviceType, credit: quickAdd.entryType === "credit" ? amt : 0, debit: quickAdd.entryType === "debit" ? amt : 0, description: quickAdd.description });
+      await createMut.mutateAsync({ data: { date: quickAdd.date, customerName: quickAdd.customerName.trim(), serviceType: quickAdd.serviceType, credit: quickAdd.entryType === "credit" ? amt : 0, debit: quickAdd.entryType === "debit" ? amt : 0, description: quickAdd.description } });
       toast.success("Entry added");
       setQuickAdd({ date: todayStr, customerName: "", serviceType: "", entryType: "credit", amount: "", description: "" });
       invalidate();

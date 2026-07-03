@@ -8,7 +8,7 @@ import cron from "node-cron";
 
 const _require = createRequire(import.meta.url);
 const PDFDocument = _require("pdfkit") as typeof import("pdfkit");
-const archiver = _require("archiver") as typeof import("archiver");
+const archiver = _require("archiver") as (format: string, options?: object) => import("archiver").Archiver;
 
 function fmtDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("en-IN", {

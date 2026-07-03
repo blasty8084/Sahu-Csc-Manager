@@ -7,7 +7,7 @@ import { createRequire } from "node:module";
 
 const _require = createRequire(import.meta.url);
 const PDFDocument = _require("pdfkit") as typeof import("pdfkit");
-const archiver = _require("archiver") as typeof import("archiver");
+const archiver = _require("archiver") as (format: string, options?: object) => import("archiver").Archiver;
 
 const router: IRouter = Router();
 
@@ -330,7 +330,7 @@ router.get(
     res.setHeader("Content-Disposition", `attachment; filename="${label}.zip"`);
 
     const archive = archiver("zip", { zlib: { level: 6 } });
-    archive.on("error", (err) => {
+    archive.on("error", (err: Error) => {
       if (!res.headersSent) res.status(500).json({ error: err.message });
     });
     archive.pipe(res);

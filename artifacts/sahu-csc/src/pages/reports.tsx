@@ -9,8 +9,9 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, CartesianGrid, Legend,
-  LineChart, Line,
+  LineChart, Line, AreaChart, Area,
 } from "recharts";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Calendar, Download, TrendingUp, TrendingDown, Activity,
   Fingerprint, ChevronRight, BarChart2, Layers, Filter,

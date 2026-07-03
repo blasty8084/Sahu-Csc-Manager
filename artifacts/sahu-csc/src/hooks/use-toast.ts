@@ -189,15 +189,15 @@ function useToast() {
 }
 
 toast.success = (title: React.ReactNode, description?: React.ReactNode) =>
-  toast({ title, description, variant: "success" as any })
+  toast({ title: title as string, description: description as string, variant: "success" as any })
 
 toast.error = (title: React.ReactNode, description?: React.ReactNode) =>
-  toast({ title, description, variant: "destructive" })
+  toast({ title: title as string, description: description as string, variant: "destructive" })
 
 toast.warning = (title: React.ReactNode, description?: React.ReactNode) =>
-  toast({ title, description, variant: "warning" as any })
+  toast({ title: title as string, description: description as string, variant: "warning" as any })
 
 toast.info = (title: React.ReactNode, description?: React.ReactNode) =>
-  toast({ title, description, variant: "default" })
+  toast({ title: title as string, description: description as string, variant: "default" })
 
 export { useToast, toast }
