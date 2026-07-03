@@ -1,7 +1,7 @@
 import { useGetDashboard, useGetUdhariSummary } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout";
 import { Link } from "wouter";
-import { Skeleton } from "@/components/ui/skeleton";
+import { SectionLoader } from "@/components/section-loader";
 import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNetworkStatus } from "@/hooks/use-network-status";
@@ -189,7 +189,7 @@ function MobileDashboard() {
                 </div>
               </div>
               {isLoading ? (
-                <Skeleton className="h-6 w-20 mb-1" />
+                <div className="h-6 w-20 mb-1 rounded bg-slate-100 animate-pulse" />
               ) : (
                 <p style={{ fontSize: 19, fontWeight: 900, color: "#0b2c60", lineHeight: 1.1 }}>{s.value}</p>
               )}
@@ -247,9 +247,7 @@ function MobileDashboard() {
         </div>
 
         {isLoading ? (
-          <div className="space-y-2">
-            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}
-          </div>
+          <SectionLoader size="sm" message="Loading services…" minHeight={120} />
         ) : !data?.topServicesMonth?.length ? (
           <div className="bg-card rounded-2xl p-6 text-center border border-border">
             <p className="text-muted-foreground text-sm">{t('dashboard.no_service_data')}</p>
@@ -385,7 +383,7 @@ function DesktopDashboard() {
               </div>
             </div>
             {isLoading ? (
-              <Skeleton className="h-8 w-28 mb-1" />
+              <div className="h-8 w-28 mb-1 rounded-lg bg-slate-100 animate-pulse" />
             ) : (
               <p className="text-foreground text-2xl font-bold mb-0.5 leading-tight">{s.value}</p>
             )}
@@ -443,9 +441,7 @@ function DesktopDashboard() {
             </Link>
           </div>
           {isLoading ? (
-            <div className="space-y-3">
-              {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}
-            </div>
+            <SectionLoader size="sm" message="Loading services…" minHeight={100} />
           ) : !data?.topServicesMonth?.length ? (
             <p className="text-muted-foreground text-sm text-center py-6">{t('dashboard.no_data')}</p>
           ) : (
@@ -489,9 +485,7 @@ function DesktopDashboard() {
         </div>
 
         {isLoading ? (
-          <div className="p-5 space-y-3">
-            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
-          </div>
+          <SectionLoader size="sm" message="Loading transactions…" minHeight={120} />
         ) : !data?.recentEntries?.length ? (
           <p className="text-center text-muted-foreground py-10 text-sm">{t('dashboard.no_transactions')}</p>
         ) : (

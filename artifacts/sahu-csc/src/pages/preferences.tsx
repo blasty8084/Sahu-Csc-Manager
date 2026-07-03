@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
+import { SectionLoader } from "@/components/section-loader";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/components/theme-provider";
 import { useForm } from "react-hook-form";
@@ -59,9 +59,7 @@ export default function Preferences() {
         </div>
 
         {isLoading ? (
-          <div className="space-y-4">
-            {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-lg" />)}
-          </div>
+          <SectionLoader message="Loading preferences…" />
         ) : (
           <form onSubmit={onSubmit} className="space-y-6">
             {/* Theme */}

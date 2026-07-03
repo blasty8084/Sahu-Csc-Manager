@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+import { SectionLoader } from "@/components/section-loader";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -158,9 +158,7 @@ export default function Notifications() {
 
         {/* List */}
         {isLoading ? (
-          <div className="space-y-2">
-            {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}
-          </div>
+          <SectionLoader message="Loading notifications…" />
         ) : notifications.length === 0 ? (
           <div className="text-center py-16">
             <Bell size={40} className="mx-auto text-muted-foreground/30 mb-3" />

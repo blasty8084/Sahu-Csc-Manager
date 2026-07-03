@@ -6,7 +6,7 @@ import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
+import { SectionLoader } from "@/components/section-loader";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -578,11 +578,7 @@ export default function UdhariCustomer() {
   if (custLoading) {
     return (
       <Layout>
-        <div className="space-y-4">
-          <Skeleton className="h-10 w-40" />
-          <Skeleton className="h-32 w-full rounded-2xl" />
-          <Skeleton className="h-64 w-full rounded-2xl" />
-        </div>
+        <SectionLoader message="Loading customer…" minHeight="60vh" />
       </Layout>
     );
   }
@@ -698,9 +694,7 @@ export default function UdhariCustomer() {
             Transaction History
           </p>
           {entriesLoading ? (
-            <div className="space-y-2">
-              {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}
-            </div>
+            <SectionLoader size="sm" message="Loading transactions…" minHeight={120} />
           ) : entryList.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-2xl"
               style={{ boxShadow: "0 1px 6px rgba(11,44,96,0.06)" }}>

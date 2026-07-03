@@ -4,7 +4,7 @@ import { useListAuditLogs, getListAuditLogsQueryKey } from "@workspace/api-clien
 import { Layout } from "@/components/layout";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+import { SectionLoader } from "@/components/section-loader";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -77,8 +77,8 @@ export default function AuditLogs() {
 
         {/* Mobile cards */}
         {isLoading ? (
-          <div className="space-y-3 sm:hidden">
-            {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}
+          <div className="sm:hidden">
+            <SectionLoader message="Loading audit logs…" />
           </div>
         ) : data?.logs?.length === 0 ? (
           <p className="text-center text-muted-foreground py-12 sm:hidden">{t("audit.no_logs")}</p>
@@ -116,9 +116,9 @@ export default function AuditLogs() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {isLoading ? [...Array(8)].map((_, i) => (
-                  <tr key={i}><td colSpan={5} className="px-4 py-3"><Skeleton className="h-5 w-full" /></td></tr>
-                )) : data?.logs?.length === 0 ? (
+                {isLoading ? (
+                  <tr><td colSpan={5}><SectionLoader message="Loading logs…" /></td></tr>
+                ) : data?.logs?.length === 0 ? (
                   <tr><td colSpan={5} className="text-center text-muted-foreground py-12">{t("audit.no_logs")}</td></tr>
                 ) : data?.logs?.map((log: any) => (
                   <tr key={log.id} className="hover:bg-muted/20 transition-colors" data-testid={`row-audit-${log.id}`}>

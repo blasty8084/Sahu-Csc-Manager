@@ -6,7 +6,7 @@ import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
+import { SectionLoader } from "@/components/section-loader";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -264,7 +264,7 @@ function SummaryBanner() {
             <div className="min-w-0">
               <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase" as const, letterSpacing: "0.07em" }}>{c.label}</p>
               {isLoading
-                ? <Skeleton className="h-6 w-24 mt-1" />
+                ? <div className="h-6 w-24 mt-1 rounded bg-slate-100 animate-pulse" />
                 : <p style={{ fontSize: 18, fontWeight: 900, color: c.color, lineHeight: 1.1, marginTop: 3 }}>{fmt(c.value)}</p>}
               <p style={{ fontSize: 10, color: "#94a3b8", marginTop: 3 }}>{c.sub}</p>
             </div>
@@ -402,7 +402,7 @@ export default function Udhari() {
         {/* Mobile card list */}
         <div className="space-y-2 sm:hidden">
           {isLoading ? (
-            [...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-2xl" />)
+            <SectionLoader message="Loading customers…" />
           ) : sorted.length === 0 ? (
             <div className="text-center py-14">
               <Users size={32} className="mx-auto text-muted-foreground/30 mb-3" />

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { SectionLoader } from "@/components/section-loader";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -666,14 +666,7 @@ function DailyTab() {
 
       {/* ── Loading ── */}
       {isLoading ? (
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-20 rounded-2xl" />)}
-          </div>
-          <Skeleton className="h-12 rounded-2xl" />
-          <Skeleton className="h-72 rounded-2xl" />
-        </div>
-
+        <SectionLoader message="Loading AePS session…" minHeight={260} />
       ) : !session ? (
         /* ── No session ── */
         <div
@@ -2185,18 +2178,7 @@ function AllTransactionsTab() {
         style={{ boxShadow: "0 2px 14px rgba(11,44,96,0.08)" }}
       >
         {isLoading ? (
-          <div className="divide-y divide-border">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="px-4 py-3 flex items-center gap-3">
-                <Skeleton className="w-9 h-9 rounded-xl shrink-0" />
-                <div className="flex-1 space-y-1.5">
-                  <Skeleton className="h-3.5 w-40" />
-                  <Skeleton className="h-3 w-24" />
-                </div>
-                <Skeleton className="h-4 w-20" />
-              </div>
-            ))}
-          </div>
+          <SectionLoader size="sm" message="Loading transactions…" minHeight={160} />
         ) : !data || data.transactions.length === 0 ? (
           <div className="py-16 flex flex-col items-center gap-3 text-center">
             <div style={{

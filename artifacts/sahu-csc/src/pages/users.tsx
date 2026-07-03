@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
-import { Skeleton } from "@/components/ui/skeleton";
+import { SectionLoader } from "@/components/section-loader";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -128,7 +128,7 @@ function AdminSessionsTab() {
   const groups = Object.values(grouped);
 
   if (isLoading) {
-    return <div className="space-y-3">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}</div>;
+    return <SectionLoader size="sm" message="Loading sessions…" minHeight={140} />;
   }
 
   if (!sessions?.length) {
@@ -358,11 +358,7 @@ function AepsOverviewTab() {
   })();
 
   if (isLoading) {
-    return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-44 rounded-xl" />)}
-      </div>
-    );
+    return <SectionLoader message="Loading users overview…" minHeight={200} />;
   }
 
   if (summaries.length === 0) {

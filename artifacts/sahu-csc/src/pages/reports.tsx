@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useGetDailyReport, useGetMonthlyReport, useGetServiceBreakdown } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout";
-import { Skeleton } from "@/components/ui/skeleton";
+import { SectionLoader } from "@/components/section-loader";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
@@ -81,7 +81,7 @@ function MobileStatCard({ label, value, sub, accentColor, iconGrad, Icon, isLoad
           </div>
         </div>
         {isLoading
-          ? <Skeleton className="h-5 w-20 mb-1" />
+          ? <div className="h-5 w-20 mb-1 rounded bg-slate-100 animate-pulse" />
           : <p style={{ fontSize: 15, fontWeight: 900, color: "#0b2c60", lineHeight: 1.1 }}>{value}</p>}
         {sub && <p style={{ fontSize: 9, fontWeight: 600, color: "#94a3b8", marginTop: 3 }} className="truncate">{sub}</p>}
       </div>
@@ -197,7 +197,7 @@ function MobileReports() {
       {activeTab === "daily" && (
         <div className="space-y-4">
           {daily.isLoading ? (
-            <div className="space-y-3">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-2xl" />)}</div>
+            <SectionLoader message="Loading daily report…" />
           ) : daily.data ? (
             <>
               {/* Section label */}
@@ -263,7 +263,7 @@ function MobileReports() {
       {activeTab === "monthly" && (
         <div className="space-y-4">
           {monthly.isLoading ? (
-            <div className="space-y-3">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-2xl" />)}</div>
+            <SectionLoader message="Loading monthly report…" />
           ) : monthly.data ? (
             <>
               <div className="flex items-center gap-2">
@@ -484,7 +484,7 @@ function DesktopStatCard({ label, value, sub, accentColor, iconGrad, Icon, isLoa
           </div>
         </div>
         {isLoading
-          ? <Skeleton className="h-8 w-28 mb-2" />
+          ? <div className="h-8 w-28 mb-2 rounded-lg bg-slate-100 animate-pulse" />
           : <p style={{ fontSize: 26, fontWeight: 900, color: "#0b2c60", lineHeight: 1 }}>{value}</p>}
         {sub && <p style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", marginTop: 6 }}>{sub}</p>}
         {sparkData?.length >= 2 && <Sparkline data={sparkData} color={sparkColor ?? accentColor} />}
@@ -851,7 +851,7 @@ function DesktopReports() {
         {activeTab === "daily" && (
           <div className="space-y-5">
             {daily.isLoading ? (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-48 rounded-2xl" />)}</div>
+              <SectionLoader message="Loading daily report…" minHeight={200} />
             ) : daily.data ? (
               <>
                 {/* 2-col chart grid */}
@@ -994,7 +994,7 @@ function DesktopReports() {
         {activeTab === "monthly" && (
           <div className="space-y-5">
             {monthly.isLoading ? (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-48 rounded-2xl" />)}</div>
+              <SectionLoader message="Loading monthly report…" minHeight={200} />
             ) : monthly.data ? (
               <>
                 {/* 2-col: daily revenue bar + AePS area */}
@@ -1106,7 +1106,7 @@ function DesktopReports() {
         {activeTab === "aeps" && (
           <div className="space-y-5">
             {aepsReport.isLoading ? (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-48 rounded-2xl" />)}</div>
+              <SectionLoader message="Loading AePS report…" minHeight={200} />
             ) : aepsReport.data ? (
               <>
                 {aepsReport.data.dailyBreakdown?.length > 0 && (

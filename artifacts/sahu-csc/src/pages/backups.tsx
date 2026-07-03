@@ -3,7 +3,7 @@ import { useListBackups, useCreateBackup, useRestoreBackup, getListBackupsQueryK
 import { useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { SectionLoader } from "@/components/section-loader";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -334,9 +334,7 @@ export default function Backups() {
               />
               <div className="p-1">
                 {isLoading ? (
-                  <div className="p-4 space-y-3">
-                    {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-14 w-full rounded-lg" />)}
-                  </div>
+                  <SectionLoader message="Loading backups…" />
                 ) : !backups?.length ? (
                   <div className="text-center py-16">
                     <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
@@ -465,10 +463,7 @@ export default function Backups() {
                 </div>
 
                 {scheduleLoading ? (
-                  <div className="space-y-3">
-                    <Skeleton className="h-8 w-full" />
-                    <Skeleton className="h-8 w-3/4" />
-                  </div>
+                  <SectionLoader size="sm" message="Loading schedule…" minHeight={80} />
                 ) : (
                   <div className={`space-y-4 transition-opacity ${schedule.enabled ? "opacity-100" : "opacity-40 pointer-events-none"}`}>
                     {/* Frequency */}
