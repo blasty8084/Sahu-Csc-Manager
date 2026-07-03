@@ -24,10 +24,6 @@ args = "artifacts/sahu-csc: web"
 task = "workflow.run"
 args = "Update Version"
 
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "API Server"
-
 [[workflows.workflow]]
 name = "Seed Database"
 author = "agent"
@@ -58,18 +54,6 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "bash scripts/bump-version.sh ${VERSION:-3.1.1}"
-
-[workflows.workflow.metadata]
-outputType = "console"
-
-[[workflows.workflow]]
-name = "API Server"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "fuser -k 8080/tcp 2>/dev/null; sleep 1; PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server run dev"
-waitForPort = 8080
 
 [workflows.workflow.metadata]
 outputType = "console"
