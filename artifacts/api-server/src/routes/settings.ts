@@ -10,7 +10,9 @@ import { requireAuth, requireRole, auditLog, getClientIp } from "../lib/auth";
 import { createNotification } from "../lib/notify";
 import { applySchedule, type BackupScheduleConfig } from "../lib/backup-scheduler";
 
-const BACKUP_DIR = path.resolve(process.cwd(), "../../backups");
+const BACKUP_DIR = path.resolve(process.cwd(), "backups");
+
+mkdirSync(BACKUP_DIR, { recursive: true });
 
 const upload = multer({
   dest: BACKUP_DIR,

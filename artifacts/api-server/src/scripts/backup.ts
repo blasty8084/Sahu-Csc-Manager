@@ -3,7 +3,7 @@ import { statSync, mkdirSync } from "fs";
 import path from "path";
 import { db, backupsTable } from "@workspace/db";
 
-const BACKUP_DIR = path.resolve(process.cwd(), "../../backups");
+const BACKUP_DIR = path.resolve(process.cwd(), "backups");
 
 async function backup() {
   mkdirSync(BACKUP_DIR, { recursive: true });

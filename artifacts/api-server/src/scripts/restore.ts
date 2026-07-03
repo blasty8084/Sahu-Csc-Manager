@@ -4,7 +4,7 @@ import path from "path";
 import { db, backupsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
-const BACKUP_DIR = path.resolve(process.cwd(), "../../backups");
+const BACKUP_DIR = path.resolve(process.cwd(), "backups");
 
 async function restore() {
   const arg = process.argv[2];

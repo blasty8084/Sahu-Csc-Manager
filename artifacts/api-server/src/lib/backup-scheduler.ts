@@ -7,7 +7,7 @@ import { asc } from "drizzle-orm";
 import { logger } from "./logger";
 import { createNotification } from "./notify";
 
-const BACKUP_DIR = path.resolve(process.cwd(), "../../backups");
+const BACKUP_DIR = path.resolve(process.cwd(), "backups");
 
 let activeTask: ScheduledTask | null = null;
 
