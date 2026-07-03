@@ -4,14 +4,76 @@
 > Detailed record of every feature, change, and upgrade from v3.0.0 onward.  
 > For v2.x history, see `changelogV2.md`.  
 > For pre-v2 history, see `CHANGELOG.md`.  
-> For full architecture reference, see `architectureV3.md`.
+> For full architecture reference, see `architectureV3.md`.  
+> For session-by-session changes, see `UPDATES.md`.
 
 ---
 
 ## Table of Contents
 
-1. [v3.1.0 — Backup & Restore Redesign + Download + Scheduler (June 30, 2026)](#1-v310--backup--restore-redesign--download--scheduler-june-30-2026)
-2. [v3.0.0 — Setup Wizard, SMTP Integration & Auto-Import (June 30, 2026)](#2-v300--setup-wizard-smtp-integration--auto-import-june-30-2026)
+1. [v3.1.1 — Replit Environment Migration & TypeScript Clean (July 3, 2026)](#1-v311--replit-environment-migration--typescript-clean-july-3-2026)
+2. [v3.1.0 — Backup & Restore Redesign + Download + Scheduler (June 30, 2026)](#2-v310--backup--restore-redesign--download--scheduler-june-30-2026)
+3. [v3.0.0 — Setup Wizard, SMTP Integration & Auto-Import (June 30, 2026)](#3-v300--setup-wizard-smtp-integration--auto-import-june-30-2026)
+
+---
+
+## 1. v3.1.1 — Replit Environment Migration & TypeScript Clean (July 3, 2026)
+
+### Overview
+
+Full Replit environment setup: 7 workflows configured, all TypeScript errors resolved (0 errors across both packages), backup path bug fixed, dev script port bug fixed, ADMIN_PASSWORD + OPERATOR_PASSWORD secrets configured, and production build verified.
+
+### Workflows Added
+
+| Workflow | Port | Auto-starts | Purpose |
+|----------|------|-------------|---------|
+| `SAHU CSC` | 5000 | ✅ Yes | Vite frontend dev server |
+| `API Server` | 8080 | ✅ Yes | Runs pre-built `dist/index.mjs` |
+| `Build API` | — | ❌ No | Rebuilds API ESM bundle |
+| `Seed Database` | — | ❌ No | Seeds DB from secrets |
+| `Typecheck` | — | ❌ No | TypeScript check (0 errors) |
+| `Build Production` | — | ❌ No | Full production build |
+| `Production Preview` | 5000 | ❌ No | Build + serve production bundle |
+
+### Bug Fixes
+
+**Backup directory path** — `artifacts/api-server/src/routes/settings.ts` + `backup-scheduler.ts` + `scripts/backup.ts` + `scripts/restore.ts`
+- Was: `../../backups` — resolved to workspace root; wrong when running from `artifacts/api-server/`
+- Fixed: `backups` — relative to `process.cwd()` which is `artifacts/api-server/`
+- Added: `mkdirSync(BACKUP_DIR, { recursive: true })` to prevent crash on missing directory
+
+**Frontend dev script port** — `artifacts/sahu-csc/package.json`
+- Was: `fuser -k ${PORT:-21700}/tcp` — was killing the canvas artifact port instead of self
+- Fixed: `fuser -k ${PORT:-5000}/tcp`
+
+### TypeScript Fixes — API Server (6 → 0 errors)
+
+| File | Fix |
+|------|-----|
+| `routes/settings.ts` | Added missing `logger` import |
+| `routes/broadcast.ts` | `url ?? undefined` instead of `url ?? null` |
+| `lib/auth.ts` | `auditLog` signature: `userId: number` → `userId: number \| null`, added null guard |
+| `routes/admin-receipt-export.ts` | Cast `archiver` as any for callable type; typed `err: Error` |
+| `lib/monthly-export.ts` | Same archiver callable cast |
+
+### TypeScript Fixes — Frontend (7 → 0 errors)
+
+| File | Fix |
+|------|-----|
+| `pages/aeps.tsx` | Added `useEffect` to React imports |
+| `pages/reports.tsx` | Added `AreaChart`, `Area`, `Skeleton` imports |
+| `pages/udhari.tsx` | Added `Skeleton` import |
+| `pages/users.tsx` | Added `Skeleton` import |
+| `pages/ledger.tsx` | Wrapped `mutateAsync` args in `{ data: { ... } }` (Orval-generated API wrapper) |
+| `hooks/use-toast.ts` | Cast `ReactNode` to `string` where string is required |
+| `components/whats-new-modal.tsx` | Added `return undefined` to all branches |
+
+### Build Verification
+
+- **Typecheck:** 0 errors (both `@workspace/api-server` and `@workspace/sahu-csc`)
+- **API bundle:** 5.0 MB ESM, built in ~1.5s
+- **Frontend bundle:** All chunks under threshold; built in ~16s
+- **PWA service worker:** 76 precache entries, 5254 KiB
 
 ---
 

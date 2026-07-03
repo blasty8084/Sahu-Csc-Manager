@@ -236,30 +236,39 @@ This project uses a **contract-first OpenAPI** approach — spec is written firs
 
 | Workflow | Port | Auto-start | Purpose |
 |---|---|---|---|
-| `API Server` | 8080 | ✅ Yes | Express API (primary) |
-| `artifacts/sahu-csc: web` | 5000 → :80 | ✅ Yes | Vite frontend webview |
-| `Seed Database` | — | ❌ Manual | One-shot DB seeder |
-| `artifacts/api-server: API Server` | 8080 | ⚠️ Platform | Platform duplicate (expected to fail — port taken by API Server) |
-| `artifacts/mockup-sandbox: Component Preview Server` | 8081 | ⚠️ Platform | Canvas UI mockups |
+| `SAHU CSC` | 5000 → :80 | ✅ Yes | Vite frontend dev server |
+| `API Server` | 8080 | ✅ Yes | Express API (pre-built dist/index.mjs) |
+| `Build API` | — | ❌ Manual | Rebuild API ESM bundle after source changes |
+| `Seed Database` | — | ❌ Manual | One-shot DB seeder (requires ADMIN_PASSWORD + OPERATOR_PASSWORD secrets) |
+| `Typecheck` | — | ❌ Manual | TypeScript check across all packages (0 errors as of 2026-07-03) |
+| `Build Production` | — | ❌ Manual | Full production build: typecheck + API + Vite + PWA SW |
+| `Production Preview` | 5000 | ❌ Manual | Build + serve production bundle on port 5000 |
+
+> **After backend source changes:** Run `Build API` → restart `API Server`.
 
 ### First-time setup (after import)
 
 ```bash
-# All three steps run automatically via scripts/post-merge.sh:
+# 1. Install dependencies (auto-runs via post-merge.sh on GitHub import)
 pnpm install
+
+# 2. Push schema (auto-runs via post-merge.sh)
 pnpm --filter @workspace/db run push
 
-# Run manually once:
-# Seed Database workflow (or shell):
+# 3. Seed (manual — requires ADMIN_PASSWORD + OPERATOR_PASSWORD in Replit Secrets)
+# Run "Seed Database" workflow, or:
 PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server exec tsx src/scripts/seed.ts
+
+# 4. Start
+# Click ▶ Run button — starts SAHU CSC + API Server
 ```
 
 ### Default login credentials
 
 | Username | Password | Role |
 |---|---|---|
-| `admin` | `admin123` | Admin |
-| `operator` | `operator123` | Operator |
+| `admin` | value of `ADMIN_PASSWORD` secret | Admin |
+| `operator` | value of `OPERATOR_PASSWORD` secret | Operator |
 
 ---
 
@@ -396,13 +405,13 @@ Detection: `GET /api/setup-status` (public endpoint, no auth required).
 
 | Issue | Workaround |
 |---|---|
-| `artifacts/api-server: API Server` shows "failed" | Expected — platform duplicate; our `API Server` workflow already holds port 8080. App works normally. |
-| Port 21700 in use (canvas artifact) | `fuser -k 21700/tcp 2>/dev/null` then restart `artifacts/sahu-csc: web` |
 | `drizzle-kit push` wipes data | Always run "Seed Database" workflow immediately after schema push |
+| API changes not reflected | Run **Build API** workflow → restart **API Server** |
+| Login fails / "Invalid credentials" | Ensure `ADMIN_PASSWORD` + `OPERATOR_PASSWORD` secrets are set, then run **Seed Database** |
 | VAPID keys lost on restart | Set `VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` in Replit Secrets (see Section 4) |
 | Language not switching | Language is in Profile → Preferences → Language (not sidebar) |
 | Frontend shows stale content | Clear service worker: DevTools → Application → Storage → Clear site data → Reload |
-| API changes not reflected | `rm -rf artifacts/api-server/dist/` then restart `API Server` |
+| TypeScript errors | Run **Typecheck** workflow — 0 errors as of 2026-07-03 |
 
 ---
 
@@ -466,3 +475,4 @@ Step 10: Force API rebuild     →  rm -rf artifacts/api-server/dist/ + restart 
 ---
 
 *Last updated: July 3, 2026 | Version 3.1.1 | Maintained by: Uttam Sahu (blasty8084)*
+*See `UPDATES.md` for session-by-session change log. See `CHANGELOG_V3.md` for full v3.x feature history.*

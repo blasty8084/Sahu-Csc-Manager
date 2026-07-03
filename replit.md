@@ -7,36 +7,23 @@ A full-stack CSC (Common Service Center) business management platform for tracki
 
 ---
 
-## What's New in v3.1.1
+## What's New in v3.1.1 (July 3, 2026)
 
-| Feature | Description |
-|---------|-------------|
-| **Receipt Export mobile fit** | Outer container uses `height: 100dvh` — fills the dynamic viewport on any mobile browser without overflow or scroll bleed. |
-| **4-tab bottom nav** | Persistent bottom nav always visible: **Receipts / By Date / Summary / Export** — active tab gets navy icon circle + navy label. |
-| **KPI strip redesign** | Solid `#0d3272` stat cards (Total / Amount / Selected) with orange icons — no longer translucent; matches reference design. |
-| **Empty state redesign** | Large centred receipt icon, bold "How it works" heading, **orange-numbered** step list (1–3), solid navy pill "Open Filters" button. |
-| **Receipt preview overlay** | Tapping a receipt shows a full-screen overlay while the bottom nav stays visible underneath; back arrow closes it. |
-| **By Date tab** | Dedicated tab with 5 quick presets + custom date range + operator filter + Preview button. |
-| **Summary tab** | 4 colour-coded aggregate stat cards: Total Receipts (navy), Total Amount (green), Credit Entries (orange), Debit Entries (violet). |
-| **Export button** | Orange `rounded-full` pill in header with ↓ icon — matching reference design. |
-
-## What's New in v3.1.1
-
-| Feature | Description |
-|---------|-------------|
-| **Backup page redesign** | Complete "Minimal Clean" UI — 2-column desktop grid (history left, schedule+import right), navy card borders, saffron CTAs, dashed import dropzone, expand-on-hover action buttons. |
-| **Backup download** | `GET /api/backups/:id/download` — streams `.sql` file to browser with `Content-Disposition: attachment`. Download button on each table row. |
-| **Auto-backup scheduler** | `node-cron` scheduler (`backup-scheduler.ts`) — daily/weekly/custom cron, configurable time + retention. `GET/POST /api/backups/schedule` endpoints. |
-| **Selective table import** | `POST /api/backups/analyze` parses pg_dump COPY blocks. `POST /api/backups/selective-import` replays chosen tables with FK checks disabled. |
-
-## What's New in v3.1.1
-
-| Feature | Description |
-|---------|-------------|
-| **Setup Wizard Banner** | Admin-only banner shown after login when required secrets are missing. Red for critical, yellow for optional. Expandable with per-secret descriptions and Secrets docs link. Dismissible per session. |
-| **`/api/setup-status` endpoint** | Public endpoint (no auth) that returns `{ configured, missing[] }` — checks `SESSION_SECRET`, SMTP, and VAPID config. |
-| **Automatic DB migration on import** | `scripts/post-merge.sh` runs `pnpm install` + `drizzle-kit push` automatically on every GitHub import / task merge. No manual setup needed. |
-| **3-store data architecture documented** | PostgreSQL (14 tables), IndexedDB (5 stores), Service Worker cache (10 cache buckets) — all three tiers documented. |
+| Change | Description |
+|--------|-------------|
+| **Replit environment migration** | Project fully set up in Replit: DB schema pushed, DB seeded, both servers running. |
+| **7 workflows configured** | SAHU CSC · API Server · Build API · Seed Database · Typecheck · Build Production · Production Preview |
+| **TypeScript: 0 errors** | All 13 TypeScript errors fixed across API server and frontend. |
+| **Backup path fix** | `../../backups` → `backups` across 4 files; `mkdirSync` added before multer init. |
+| **Dev script port fix** | `${PORT:-21700}` → `${PORT:-5000}` in `sahu-csc/package.json`. |
+| **Production build verified** | Full build passes: API (5.0 MB ESM) + Vite frontend + PWA service worker (76 precache entries). |
+| **Backup page redesign** | "Minimal Clean" UI — 2-col desktop grid, navy borders, saffron CTAs, dashed dropzone. |
+| **Backup download** | `GET /api/backups/:id/download` — streams `.sql` to browser with `Content-Disposition: attachment`. |
+| **Auto-backup scheduler** | `node-cron` daily/weekly/custom cron, configurable time + retention. |
+| **Selective table import** | `POST /api/backups/analyze` + `POST /api/backups/selective-import` with FK checks disabled. |
+| **Setup Wizard Banner** | Admin-only, red/yellow severity, session-dismissed, expandable per-secret descriptions. |
+| **`/api/setup-status`** | Public endpoint (no auth) — returns missing secrets list. |
+| **Auto DB migration on import** | `scripts/post-merge.sh` runs `pnpm install` + `drizzle-kit push` automatically. |
 
 ---
 
@@ -44,37 +31,39 @@ A full-stack CSC (Common Service Center) business management platform for tracki
 
 | Workflow | Port | Purpose | Starts with Project |
 |----------|------|---------|---------------------|
-| `API Server` | 8080 | Express API server (main) | ✅ Yes |
-| `artifacts/sahu-csc: web` | 5000 → :80 | Vite frontend webview | ✅ Yes |
-| `Seed Database` | — | One-shot DB seeder; resets admin + operator passwords | ❌ Manual only |
-| `artifacts/api-server: API Server` | 8080 | Artifact-managed API (auto-added by platform) | ⚠️ Platform-injected |
-| `artifacts/mockup-sandbox: Component Preview Server` | 8081 | Design mockup sandbox (canvas) | ⚠️ Platform-injected |
+| `SAHU CSC` | 5000 → :80 | Vite frontend dev server | ✅ Yes |
+| `API Server` | 8080 | Express API (pre-built dist/index.mjs) | ✅ Yes |
+| `Build API` | — | Rebuild API ESM bundle after source changes | ❌ Manual only |
+| `Seed Database` | — | One-shot DB seeder; requires ADMIN_PASSWORD + OPERATOR_PASSWORD secrets | ❌ Manual only |
+| `Typecheck` | — | TypeScript check across all packages (currently 0 errors) | ❌ Manual only |
+| `Build Production` | — | Full production build: typecheck + API + Vite + PWA SW | ❌ Manual only |
+| `Production Preview` | 5000 | Build + serve production bundle (replaces dev server on port 5000) | ❌ Manual only |
 
-> **Note:** The `Project` run button starts `API Server` + `artifacts/sahu-csc: web` in parallel. The platform artifact system also injects `artifacts/api-server: API Server`, `artifacts/mockup-sandbox: Component Preview Server`, and a duplicate `artifacts/sahu-csc: web` — these extra tasks can be removed manually via **Workflows → Project** in the Replit UI.
->
-> Port 5000 is mapped to external port 80 (Replit proxy). The API runs on **port 8080**. The Vite proxy in `vite.config.ts` forwards `/api/*` to `http://localhost:8080`.
+> Port 5000 is the main app URL (Replit proxy → :80). The API runs on **port 8080**. The Vite proxy in `vite.config.ts` forwards `/api/*` to `http://localhost:8080`.
+> After any backend code change: run **Build API** workflow → restart **API Server**.
 
-### Preview panel
-The Preview panel shows **two entries** due to the artifact system:
-- **`artifacts/sahu-csc: web`** — the real app (port 5000 → :80). **Use this one.**
-- **`SAHU CSC FV1`** — canvas artifact duplicate (port 21700). Remove via ⋮ → Delete in Preview.
-
-### Workflow commands
+### Workflow commands (current)
 
 ```bash
-# API Server workflow
-pnpm install && PORT=8080 pnpm --filter @workspace/api-server run dev
-# dev script: (test -f ./dist/index.mjs || pnpm run build) && fuser -k 8080/tcp; pnpm run start
-# Smart build: skips esbuild rebuild on restart if dist/index.mjs already exists
+# SAHU CSC — frontend dev server (auto-start)
+PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run dev
+# dev script in package.json: fuser -k ${PORT:-5000}/tcp 2>/dev/null; sleep 1; vite --host 0.0.0.0
 
-# artifacts/sahu-csc: web workflow
-pnpm install && fuser -k 5000/tcp 2>/dev/null; sleep 1; PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run dev
+# API Server — runs pre-built bundle (auto-start)
+PORT=8080 NODE_ENV=development node --enable-source-maps artifacts/api-server/dist/index.mjs
 
-# Seed Database workflow (manual, one-shot)
+# Build API — rebuild after backend changes (manual)
+PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server run build
+
+# Seed Database — create/reset admin + operator (manual, requires secrets)
 PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server exec tsx src/scripts/seed.ts
-```
 
-> **Import-safe**: Both workflow commands run `pnpm install` before starting. `scripts/post-merge.sh` also runs `pnpm install` + `drizzle-kit push` automatically on every GitHub import or task merge.
+# Typecheck — 0 errors as of 2026-07-03 (manual)
+pnpm run typecheck:libs && pnpm -r --filter "./artifacts/**" --if-present run typecheck
+
+# Build Production — full build (manual)
+pnpm run typecheck:libs && pnpm --filter @workspace/api-server run build && PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run build
+```
 
 ---
 
