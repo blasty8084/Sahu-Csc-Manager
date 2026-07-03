@@ -22,6 +22,7 @@ import { Plus, Pencil, Trash2, Download, Filter, X, ChevronLeft, ChevronRight, C
 import { useForm } from "react-hook-form";
 import { addPendingEntry, getAllPendingEntries, type PendingLedgerEntry } from "@/lib/offline-db";
 import { syncEngine } from "@/lib/sync-engine";
+import { useSync } from "@/hooks/use-sync";
 import { ReceiptModal } from "@/components/receipt-modal";
 import { AutocompleteInput } from "@/components/autocomplete-input";
 
@@ -42,6 +43,7 @@ export default function Ledger() {
   const qc = useQueryClient();
   const isMobile = useIsMobile();
   const { isOffline } = useNetworkStatus();
+  const { bgSyncCount } = useSync();
   const [pendingEntries, setPendingEntries] = useState<PendingLedgerEntry[]>([]);
   const [page, setPage] = useState(1);
   const [startDate, setStartDate] = useState("");
@@ -625,6 +627,11 @@ export default function Ledger() {
                         <WifiOff size={10} /> Offline
                       </span>
                     )}
+                    {bgSyncCount > 0 && (
+                      <span style={{ fontSize: 10, fontWeight: 700, color: "#7c3aed", background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.2)", borderRadius: 20, padding: "4px 10px", display: "flex", alignItems: "center", gap: 4 }} title="Requests parked by the browser's Background Sync — will retry automatically">
+                        <Clock size={10} /> {bgSyncCount} retrying
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -635,6 +642,16 @@ export default function Ledger() {
                   <Clock size={13} style={{ color: "#d97706", flexShrink: 0 }} />
                   <p style={{ fontSize: 12, fontWeight: 600, color: "#92400e" }}>
                     {pendingEntries.length} offline {pendingEntries.length === 1 ? "entry" : "entries"} pending sync — will upload when reconnected
+                  </p>
+                </div>
+              )}
+
+              {/* Background Sync banner — requests that failed while online and are queued for automatic retry */}
+              {bgSyncCount > 0 && (
+                <div style={{ background: "rgba(124,58,237,0.06)", borderBottom: "1px solid rgba(124,58,237,0.16)", padding: "10px 22px", display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                  <Clock size={13} style={{ color: "#7c3aed", flexShrink: 0 }} />
+                  <p style={{ fontSize: 12, fontWeight: 600, color: "#5b21b6" }}>
+                    {bgSyncCount} {bgSyncCount === 1 ? "request" : "requests"} queued for background sync — the browser will retry automatically once connectivity is stable
                   </p>
                 </div>
               )}
@@ -952,6 +969,14 @@ export default function Ledger() {
                 </span>
               )}
             </div>
+            {bgSyncCount > 0 && (
+              <div className="flex items-center gap-2 bg-violet-50 dark:bg-violet-950/20 border border-violet-200 dark:border-violet-800/40 rounded-lg px-3 py-2">
+                <Clock size={12} className="text-violet-600 dark:text-violet-400 flex-shrink-0" />
+                <p className="text-[11px] font-semibold text-violet-700 dark:text-violet-400">
+                  {bgSyncCount} {bgSyncCount === 1 ? "request" : "requests"} retrying in background
+                </p>
+              </div>
+            )}
             <div className="space-y-2">
               {pendingEntries.slice(0, 5).map((entry) => (
                 <div key={entry.id} className="flex items-center gap-3 bg-white dark:bg-amber-950/30 rounded-lg px-3 py-2 border border-amber-100 dark:border-amber-800/30">

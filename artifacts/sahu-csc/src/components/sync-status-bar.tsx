@@ -18,7 +18,7 @@ function timeAgo(date: Date): string {
 
 export function SyncStatusBar() {
   const { quality, isOffline, isSlow } = useNetworkStatus();
-  const { syncStatus, pendingCount, lastSyncTime, syncNow } = useSync();
+  const { syncStatus, totalPendingCount: pendingCount, lastSyncTime, syncNow } = useSync();
   const { isInstallable } = usePWA();
   const { t } = useTranslation();
   const [, forceUpdate] = useState(0);
@@ -130,7 +130,7 @@ export function SyncStatusBar() {
 
 export function SyncDot() {
   const { quality } = useNetworkStatus();
-  const { syncStatus, pendingCount } = useSync();
+  const { syncStatus, totalPendingCount: pendingCount } = useSync();
 
   if (syncStatus === "syncing") {
     return (

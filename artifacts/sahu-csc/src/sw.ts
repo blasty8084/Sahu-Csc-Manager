@@ -15,7 +15,8 @@ import {
 } from "workbox-strategies";
 import { ExpirationPlugin } from "workbox-expiration";
 import { CacheableResponsePlugin } from "workbox-cacheable-response";
-import { BackgroundSyncPlugin } from "workbox-background-sync";
+import { Queue } from "workbox-background-sync";
+import type { WorkboxPlugin } from "workbox-core/types";
 
 // ─── Core ─────────────────────────────────────────────────────────────────────
 self.skipWaiting();
@@ -54,9 +55,43 @@ self.addEventListener("fetch", (event: FetchEvent) => {
 });
 
 // ─── Background Sync — retry failed ledger writes ─────────────────────────────
-const ledgerSyncPlugin = new BackgroundSyncPlugin("ledger-bg-sync", {
+// A custom Queue (instead of BackgroundSyncPlugin) lets us read the live queue
+// size and broadcast it to open tabs so the UI can show a real pending count.
+const LEDGER_QUEUE_NAME = "ledger-bg-sync";
+
+async function broadcastQueueSize(size: number) {
+  const clientsList = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+  clientsList.forEach((c) =>
+    c.postMessage({ type: "BG_SYNC_QUEUE_UPDATED", queue: LEDGER_QUEUE_NAME, size }),
+  );
+}
+
+const ledgerQueue = new Queue(LEDGER_QUEUE_NAME, {
   maxRetentionTime: 24 * 60, // 24 hours in minutes
+  onSync: async ({ queue }) => {
+    let entry;
+    while ((entry = await queue.shiftRequest())) {
+      try {
+        await fetch(entry.request.clone());
+      } catch (err) {
+        await queue.unshiftRequest(entry);
+        await broadcastQueueSize(await queue.size());
+        throw err;
+      }
+    }
+    await broadcastQueueSize(await queue.size());
+    await self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((list) => list.forEach((c) => c.postMessage({ type: "BG_SYNC_TRIGGERED" })));
+  },
 });
+
+const ledgerSyncPlugin: WorkboxPlugin = {
+  fetchDidFail: async ({ request }) => {
+    await ledgerQueue.pushRequest({ request: request.clone() });
+    await broadcastQueueSize(await ledgerQueue.size());
+  },
+};
 
 // ─── API routes ───────────────────────────────────────────────────────────────
 registerRoute(
@@ -268,24 +303,20 @@ self.addEventListener("periodicsync", (event: Event) => {
   }
 });
 
-// ─── Background sync event (manual from sync-engine) ─────────────────────────
-self.addEventListener("sync", (event: Event) => {
-  const syncEvent = event as unknown as {
-    tag: string;
-    waitUntil: (p: Promise<unknown>) => void;
-  };
-  if (syncEvent.tag === "ledger-bg-sync") {
-    syncEvent.waitUntil(
-      self.clients.matchAll({ type: "window" }).then((list) => {
-        list.forEach((c) => c.postMessage({ type: "BG_SYNC_TRIGGERED" }));
-      }),
-    );
-  }
-});
+// Note: the "sync" event for the ledger queue is handled internally by the
+// `Queue`'s own registered listener (via its `onSync` callback above), which
+// replays requests and broadcasts BG_SYNC_TRIGGERED / BG_SYNC_QUEUE_UPDATED.
 
 // ─── Message handler ──────────────────────────────────────────────────────────
 self.addEventListener("message", (event: ExtendableMessageEvent) => {
   if (event.data?.type === "SKIP_WAITING") {
     self.skipWaiting();
+  }
+  if (event.data?.type === "GET_BG_SYNC_COUNT") {
+    event.waitUntil(
+      ledgerQueue.size().then((size) => {
+        event.source?.postMessage({ type: "BG_SYNC_QUEUE_UPDATED", queue: LEDGER_QUEUE_NAME, size });
+      }),
+    );
   }
 });

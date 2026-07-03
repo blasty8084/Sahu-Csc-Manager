@@ -11,6 +11,8 @@ export type SyncStatus = "idle" | "syncing" | "partial" | "error";
 export interface SyncState {
   status: SyncStatus;
   pendingCount: number;
+  /** Requests parked in the service worker's Background Sync queue (retried automatically by the browser). */
+  bgSyncCount: number;
   lastSync: Date | null;
 }
 
@@ -19,7 +21,7 @@ type SyncListener = (state: SyncState) => void;
 const MAX_RETRIES = 3;
 
 class SyncEngine {
-  private state: SyncState = { status: "idle", pendingCount: 0, lastSync: null };
+  private state: SyncState = { status: "idle", pendingCount: 0, bgSyncCount: 0, lastSync: null };
   private listeners = new Set<SyncListener>();
   private syncInProgress = false;
 
@@ -30,6 +32,17 @@ class SyncEngine {
       });
       this.refreshCount();
       clearExpiredCache().catch(() => {});
+
+      navigator.serviceWorker?.addEventListener("message", (event: MessageEvent) => {
+        if (event.data?.type === "BG_SYNC_QUEUE_UPDATED" && event.data.queue === "ledger-bg-sync") {
+          this.state = { ...this.state, bgSyncCount: event.data.size ?? 0 };
+          this.notify();
+        }
+      });
+
+      navigator.serviceWorker?.ready
+        .then((reg) => reg.active?.postMessage({ type: "GET_BG_SYNC_COUNT" }))
+        .catch(() => {});
     }
   }
 
@@ -59,7 +72,7 @@ class SyncEngine {
     try {
       const entries = await getAllPendingEntries();
       if (entries.length === 0) {
-        this.state = { status: "idle", pendingCount: 0, lastSync: new Date() };
+        this.state = { ...this.state, status: "idle", pendingCount: 0, lastSync: new Date() };
         this.notify();
         return;
       }
@@ -106,7 +119,7 @@ class SyncEngine {
       const remaining = await getPendingCount();
       const status: SyncStatus = remaining === 0 ? "idle" : failed > 0 ? "partial" : "syncing";
 
-      this.state = { status, pendingCount: remaining, lastSync: new Date() };
+      this.state = { ...this.state, status, pendingCount: remaining, lastSync: new Date() };
       this.notify();
 
       if (synced > 0) {

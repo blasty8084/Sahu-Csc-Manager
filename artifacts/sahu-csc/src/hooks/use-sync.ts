@@ -5,6 +5,10 @@ import { useNetworkStatus } from "./use-network-status";
 export interface UseSyncResult {
   syncStatus: SyncStatus;
   pendingCount: number;
+  /** Requests parked in the service worker's Background Sync queue. */
+  bgSyncCount: number;
+  /** pendingCount + bgSyncCount, for a single combined badge. */
+  totalPendingCount: number;
   lastSyncTime: Date | null;
   syncNow: () => Promise<void>;
 }
@@ -22,6 +26,8 @@ export function useSync(): UseSyncResult {
   return {
     syncStatus: state.status,
     pendingCount: state.pendingCount,
+    bgSyncCount: state.bgSyncCount,
+    totalPendingCount: state.pendingCount + state.bgSyncCount,
     lastSyncTime: state.lastSync,
     syncNow,
   };
