@@ -64,7 +64,10 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
-      staleTime: 30_000,
+      staleTime: 60_000,           // 1 min — avoid unnecessary refetches
+      gcTime: 5 * 60_000,          // 5 min — keep data in cache when navigating back
+      refetchOnWindowFocus: false, // don't refetch every time the tab is focused
+      refetchOnReconnect: true,    // do refetch when network comes back
     },
   },
 });
@@ -344,13 +347,13 @@ function Router() {
   const [location] = useLocation();
 
   return (
-    <AnimatePresence mode="wait" initial={false}>
+    <AnimatePresence mode="sync" initial={false}>
       <motion.div
         key={location}
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -5 }}
-        transition={{ duration: 0.15, ease: "easeOut" }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.1, ease: "easeOut" }}
         style={{ minHeight: "100vh" }}
       >
         <Suspense fallback={<PageSkeleton />}>

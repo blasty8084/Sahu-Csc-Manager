@@ -181,11 +181,35 @@ export default defineConfig({
     },
     dedupe: ["react", "react-dom"],
   },
+  optimizeDeps: {
+    include: [
+      "react",
+      "react-dom",
+      "react/jsx-runtime",
+      "@tanstack/react-query",
+      "framer-motion",
+      "wouter",
+      "lucide-react",
+      "i18next",
+      "react-i18next",
+      "react-hook-form",
+      "zod",
+      "date-fns",
+      "clsx",
+      "tailwind-merge",
+    ],
+  },
+  esbuild: {
+    legalComments: "none",
+    target: "esnext",
+  },
   root: path.resolve(import.meta.dirname),
   build: {
+    target: "esnext",
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
     chunkSizeWarningLimit: 600,
+    cssCodeSplit: true,
     rollupOptions: {
       output: {
         manualChunks: {

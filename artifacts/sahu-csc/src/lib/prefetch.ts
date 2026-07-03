@@ -13,6 +13,10 @@ const routeImports: Record<string, () => Promise<unknown>> = {
   "/audit-logs":     () => import("@/pages/audit-logs"),
   "/backups":        () => import("@/pages/backups"),
   "/server-health":  () => import("@/pages/server-health"),
+  "/udhari":         () => import("@/pages/udhari"),
+  "/about":          () => import("@/pages/about"),
+  "/broadcast":      () => import("@/pages/broadcast"),
+  "/receipt-export": () => import("@/pages/receipt-export"),
 };
 
 const prefetched = new Set<string>();
