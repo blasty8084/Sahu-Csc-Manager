@@ -267,8 +267,6 @@ export default function Profile() {
     onError: (e: any) => toast({ variant: "destructive", title: e.message }),
   });
 
-  const isLoading = profileLoading || prefsLoading || (isAdmin && settingsLoading);
-
   // ── Forms ──
   const profileForm = useForm({ defaultValues: { fullName: "", email: "", mobile: "", bio: "", address: "" } });
   const passwordForm = useForm({ defaultValues: { currentPassword: "", password: "", confirmPassword: "" } });
@@ -335,8 +333,8 @@ export default function Profile() {
   const initials = (profile?.fullName || profile?.username || "U").charAt(0).toUpperCase();
   const currentSession = sessions.find(s => s.isCurrent);
   const otherSessions = sessions.filter(s => !s.isCurrent);
-  // ── Loading ──
-  if (isLoading) {
+  // ── Loading — only block if we have zero profile data yet (first visit) ──
+  if (profileLoading && !profile) {
     return (
       <Layout>
         <SectionLoader message="Loading profile…" minHeight="60vh" />

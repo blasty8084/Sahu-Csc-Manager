@@ -9,6 +9,15 @@ import {
   type UserSession,
 } from "@/lib/offline-db";
 import { useQueryClient } from "@tanstack/react-query";
+import {
+  getGetDashboardQueryOptions,
+  getGetBalanceQueryOptions,
+  getListLedgerEntriesQueryOptions,
+  getListNotificationsQueryOptions,
+  getGetProfileQueryOptions,
+  getListServicesQueryOptions,
+  getGetPreferencesQueryOptions,
+} from "@workspace/api-client-react";
 
 export interface LoginData extends LoginInput {
   rememberMe?: boolean;
@@ -110,6 +119,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Replit-proxy cookie-forwarding timing issues.
     const userData: AuthUser = await response.json();
     queryClient.setQueryData(["auth/me"], userData);
+    void queryClient.prefetchQuery(getGetDashboardQueryOptions());
+    void queryClient.prefetchQuery(getGetBalanceQueryOptions());
+    void queryClient.prefetchQuery(getListLedgerEntriesQueryOptions());
+    void queryClient.prefetchQuery(getListNotificationsQueryOptions());
+    void queryClient.prefetchQuery(getGetProfileQueryOptions());
+    void queryClient.prefetchQuery(getListServicesQueryOptions());
+    void queryClient.prefetchQuery(getGetPreferencesQueryOptions());
   };
 
   const handleLogout = async () => {
@@ -118,6 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setOfflineUser(null);
     queryClient.setQueryData(["auth/me"], null);
     queryClient.clear();
+    try { sessionStorage.removeItem("sahu-csc-rq-cache"); } catch { /* ignore */ }
     setLocation("/login");
   };
 

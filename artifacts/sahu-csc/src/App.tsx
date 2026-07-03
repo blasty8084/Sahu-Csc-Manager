@@ -1,7 +1,10 @@
 import React, { useState, useCallback, useEffect, lazy, Suspense } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
-import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from "@tanstack/react-query";
+import { QueryClient, QueryCache, MutationCache } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { motion, AnimatePresence } from "framer-motion";
+
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth, type LoadingPhase } from "@/hooks/use-auth";
@@ -14,7 +17,10 @@ import { SplashScreen } from "@/components/splash-screen";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { useListNotifications } from "@workspace/api-client-react";
 import { updateAppBadge } from "@/lib/pwa-badge";
+import { SyncBadge } from "@/components/sync-badge";
 import { Redirect } from "wouter";
+
+declare const __APP_VERSION__: string;
 
 // ─── Static imports (tiny / needed on first paint) ───────────────────────────
 import Login from "@/pages/login";
@@ -64,12 +70,20 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
-      staleTime: 60_000,           // 1 min — avoid unnecessary refetches
-      gcTime: 5 * 60_000,          // 5 min — keep data in cache when navigating back
-      refetchOnWindowFocus: false, // don't refetch every time the tab is focused
-      refetchOnReconnect: true,    // do refetch when network comes back
+      staleTime: 5 * 60_000,       // 5 min — serve cache instantly on repeat navigation
+      gcTime: 30 * 60_000,         // 30 min — keep data in memory the whole session
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
     },
   },
+});
+
+const CACHE_STORAGE_KEY = "sahu-csc-rq-cache";
+
+const persister = createSyncStoragePersister({
+  storage: typeof window !== "undefined" ? window.sessionStorage : undefined,
+  key: CACHE_STORAGE_KEY,
+  throttleTime: 1000,
 });
 
 // ─── Badge ────────────────────────────────────────────────────────────────────
@@ -77,6 +91,25 @@ function BadgeUpdater() {
   const { data } = useListNotifications({ unreadOnly: true });
   const count = Array.isArray(data) ? data.length : 0;
   useEffect(() => { updateAppBadge(count); }, [count]);
+  return null;
+}
+
+// ─── Eager chunk preloader — fires after login so navigation is instant ───────
+function EagerPreloader() {
+  const { user } = useAuth();
+  useEffect(() => {
+    if (!user) return;
+    import("@/pages/dashboard");
+    import("@/pages/ledger");
+    import("@/pages/aeps");
+    import("@/pages/udhari");
+    import("@/pages/reports");
+    import("@/pages/notifications");
+    import("@/pages/profile");
+    import("@/pages/services");
+    import("@/pages/sessions");
+    import("@/pages/udhari-customer");
+  }, [user]);
   return null;
 }
 
@@ -417,20 +450,35 @@ function App() {
   return (
     <>
       <SplashScreen visible={showSplash} onDone={handleSplashDone} />
-      <QueryClientProvider client={queryClient}>
+      <PersistQueryClientProvider
+        client={queryClient}
+        persistOptions={{
+          persister,
+          buster: typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "3.1.1",
+          maxAge: 8 * 60 * 60_000,
+          dehydrateOptions: {
+            shouldDehydrateQuery: (query) => {
+              const key = query.queryKey[0];
+              return key !== "auth/me" && query.state.status === "success";
+            },
+          },
+        }}
+      >
         <TooltipProvider>
           <ThemeProvider defaultTheme="light" storageKey="sahu-csc-theme">
             <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
               <AuthProvider>
                 <BadgeUpdater />
+                <EagerPreloader />
                 <SessionManager />
+                <SyncBadge />
                 <Router />
               </AuthProvider>
             </WouterRouter>
           </ThemeProvider>
           <Toaster />
         </TooltipProvider>
-      </QueryClientProvider>
+      </PersistQueryClientProvider>
     </>
   );
 }

@@ -77,6 +77,8 @@
     "zod": "catalog:"
   },
   "dependencies": {
+    "@tanstack/query-sync-storage-persister": "^5.101.2",
+    "@tanstack/react-query-persist-client": "^5.101.2",
     "html2canvas": "^1.4.1",
     "i18next": "^26.3.2",
     "jspdf": "^4.2.1",
