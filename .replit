@@ -1,4 +1,4 @@
-modules = ["nodejs-20", "web", "bash", "postgresql-16"]
+modules = ["nodejs-20", "web", "bash"]
 
 [deployment]
 router = "application"
@@ -23,6 +23,10 @@ args = "artifacts/sahu-csc: web"
 [[workflows.workflow.tasks]]
 task = "workflow.run"
 args = "Update Version"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "API Server"
 
 [[workflows.workflow]]
 name = "Seed Database"
@@ -58,6 +62,18 @@ args = "bash scripts/bump-version.sh ${VERSION:-3.1.1}"
 [workflows.workflow.metadata]
 outputType = "console"
 
+[[workflows.workflow]]
+name = "API Server"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "fuser -k 8080/tcp 2>/dev/null; sleep 1; PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server run dev"
+waitForPort = 8080
+
+[workflows.workflow.metadata]
+outputType = "console"
+
 [agent]
 stack = "BEST_EFFORT_FALLBACK"
 expertMode = true
@@ -73,10 +89,6 @@ externalPort = 80
 [[ports]]
 localPort = 8080
 externalPort = 8080
-
-[[ports]]
-localPort = 8082
-externalPort = 3001
 
 [[ports]]
 localPort = 21700
