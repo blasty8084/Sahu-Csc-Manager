@@ -2,6 +2,7 @@ import { useGetDashboard, useGetUdhariSummary } from "@workspace/api-client-reac
 import { Layout } from "@/components/layout";
 import { Link } from "wouter";
 import { SectionLoader } from "@/components/section-loader";
+import { DashboardStatsSkeleton, DashboardServicesSkeleton } from "@/components/skeletons";
 import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNetworkStatus } from "@/hooks/use-network-status";
@@ -247,7 +248,7 @@ function MobileDashboard() {
         </div>
 
         {isLoading ? (
-          <SectionLoader size="sm" message="Loading services…" minHeight={120} />
+          <DashboardServicesSkeleton />
         ) : !data?.topServicesMonth?.length ? (
           <div className="bg-card rounded-2xl p-6 text-center border border-border">
             <p className="text-muted-foreground text-sm">{t('dashboard.no_service_data')}</p>

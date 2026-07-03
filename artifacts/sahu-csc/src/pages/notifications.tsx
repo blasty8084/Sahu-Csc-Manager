@@ -5,6 +5,7 @@ import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SectionLoader } from "@/components/section-loader";
+import { NotificationsSkeleton } from "@/components/skeletons";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -158,7 +159,7 @@ export default function Notifications() {
 
         {/* List */}
         {isLoading ? (
-          <SectionLoader message="Loading notifications…" />
+          <NotificationsSkeleton />
         ) : notifications.length === 0 ? (
           <div className="text-center py-16">
             <Bell size={40} className="mx-auto text-muted-foreground/30 mb-3" />

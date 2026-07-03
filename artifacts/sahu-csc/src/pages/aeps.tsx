@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { SectionLoader } from "@/components/section-loader";
+import { AepsSkeleton, LedgerSkeleton } from "@/components/skeletons";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -666,7 +667,7 @@ function DailyTab() {
 
       {/* ── Loading ── */}
       {isLoading ? (
-        <SectionLoader message="Loading AePS session…" minHeight={260} />
+        <AepsSkeleton />
       ) : !session ? (
         /* ── No session ── */
         <div
@@ -2178,7 +2179,7 @@ function AllTransactionsTab() {
         style={{ boxShadow: "0 2px 14px rgba(11,44,96,0.08)" }}
       >
         {isLoading ? (
-          <SectionLoader size="sm" message="Loading transactions…" minHeight={160} />
+          <LedgerSkeleton />
         ) : !data || data.transactions.length === 0 ? (
           <div className="py-16 flex flex-col items-center gap-3 text-center">
             <div style={{

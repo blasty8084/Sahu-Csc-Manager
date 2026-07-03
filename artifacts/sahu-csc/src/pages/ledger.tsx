@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { SectionLoader } from "@/components/section-loader";
+import { LedgerSkeleton } from "@/components/skeletons";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -1103,7 +1104,7 @@ export default function Ledger() {
         {/* ── MOBILE: Date-grouped card list ── */}
         <div className="md:hidden space-y-1 pb-24" style={activeTab === "receipts" ? { display: "none" } : {}}>
           {isLoading ? (
-            <SectionLoader message="Loading transactions…" />
+            <LedgerSkeleton />
           ) : !data?.entries?.length ? (
             <div className="text-center text-muted-foreground py-16 text-sm">
               No entries found. Tap <strong>+</strong> to add your first entry.

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SectionLoader } from "@/components/section-loader";
+import { UdhariListSkeleton, UdhariSummarySkeleton } from "@/components/skeletons";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -403,7 +404,7 @@ export default function Udhari() {
         {/* Mobile card list */}
         <div className="space-y-2 sm:hidden">
           {isLoading ? (
-            <SectionLoader message="Loading customers…" />
+            <UdhariListSkeleton />
           ) : sorted.length === 0 ? (
             <div className="text-center py-14">
               <Users size={32} className="mx-auto text-muted-foreground/30 mb-3" />

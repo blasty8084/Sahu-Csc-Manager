@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useGetDailyReport, useGetMonthlyReport, useGetServiceBreakdown } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout";
 import { SectionLoader } from "@/components/section-loader";
+import { ReportsSkeleton } from "@/components/skeletons";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
@@ -198,7 +199,7 @@ function MobileReports() {
       {activeTab === "daily" && (
         <div className="space-y-4">
           {daily.isLoading ? (
-            <SectionLoader message="Loading daily report…" />
+            <ReportsSkeleton />
           ) : daily.data ? (
             <>
               {/* Section label */}
@@ -264,7 +265,7 @@ function MobileReports() {
       {activeTab === "monthly" && (
         <div className="space-y-4">
           {monthly.isLoading ? (
-            <SectionLoader message="Loading monthly report…" />
+            <ReportsSkeleton />
           ) : monthly.data ? (
             <>
               <div className="flex items-center gap-2">
@@ -995,7 +996,7 @@ function DesktopReports() {
         {activeTab === "monthly" && (
           <div className="space-y-5">
             {monthly.isLoading ? (
-              <SectionLoader message="Loading monthly report…" minHeight={200} />
+              <ReportsSkeleton />
             ) : monthly.data ? (
               <>
                 {/* 2-col: daily revenue bar + AePS area */}
@@ -1107,7 +1108,7 @@ function DesktopReports() {
         {activeTab === "aeps" && (
           <div className="space-y-5">
             {aepsReport.isLoading ? (
-              <SectionLoader message="Loading AePS report…" minHeight={200} />
+              <ReportsSkeleton />
             ) : aepsReport.data ? (
               <>
                 {aepsReport.data.dailyBreakdown?.length > 0 && (
