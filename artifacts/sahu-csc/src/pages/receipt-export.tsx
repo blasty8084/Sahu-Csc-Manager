@@ -142,9 +142,13 @@ export default function ReceiptExport() {
   /* ── Bulk download ── */
   const handleDownload = async () => {
     if (!preview || preview.count === 0) { toast({ title: "No receipts to download", variant: "destructive" }); return; }
+    if (selected.size === 0) { toast({ title: "Nothing selected", description: "Select at least one receipt to download.", variant: "destructive" }); return; }
     setDownloading(true);
     try {
-      const res  = await fetch(`/api/admin/receipts/bulk-export/download?${buildParams()}`, { credentials: "include" });
+      const params = new URLSearchParams(buildParams());
+      // Pass the exact selected receipt numbers so the backend downloads only those
+      params.set("receiptNumbers", Array.from(selected).join(","));
+      const res  = await fetch(`/api/admin/receipts/bulk-export/download?${params.toString()}`, { credentials: "include" });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? "Download failed");
       const blob = await res.blob();
       const url  = URL.createObjectURL(blob);
@@ -199,9 +203,18 @@ export default function ReceiptExport() {
   const selTotal    = filteredEntries.filter(e => selected.has(e.receiptNumber)).reduce((s, e) => s + e.amount, 0);
   const totalAmount = displayedEntries.reduce((s, e) => s + e.amount, 0);
 
+  const allFilteredSelected = filteredEntries.length > 0 && filteredEntries.every(e => selected.has(e.receiptNumber));
   const toggleAll   = () => {
-    if (selected.size === filteredEntries.length) setSelected(new Set());
-    else setSelected(new Set(filteredEntries.map(e => e.receiptNumber)));
+    if (allFilteredSelected) {
+      // Deselect only the filtered ones (keep any outside the filter selected)
+      const next = new Set(selected);
+      filteredEntries.forEach(e => next.delete(e.receiptNumber));
+      setSelected(next);
+    } else {
+      const next = new Set(selected);
+      filteredEntries.forEach(e => next.add(e.receiptNumber));
+      setSelected(next);
+    }
   };
   const toggleEntry = (id: string) => {
     const s = new Set(selected); if (s.has(id)) s.delete(id); else s.add(id); setSelected(s);
@@ -433,7 +446,7 @@ export default function ReceiptExport() {
                 <thead className="border-b border-slate-100 bg-slate-50">
                   <tr>
                     <th className="px-4 py-3 w-8">
-                      <Checkbox checked={selected.size === filteredEntries.length && filteredEntries.length > 0} onChange={toggleAll} />
+                      <Checkbox checked={allFilteredSelected} onChange={toggleAll} />
                     </th>
                     {["Receipt #", "Date", "Customer", "Service", "Amount", "Actions"].map((h, i) => (
                       <th key={h} className={`px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide ${i >= 4 ? "text-right" : "text-left"}`}>{h}</th>

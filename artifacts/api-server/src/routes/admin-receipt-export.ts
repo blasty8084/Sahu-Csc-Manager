@@ -62,10 +62,13 @@ function generateReceiptPdf(
     businessMobile: string;
     businessWebsite: string;
   }
-): Buffer {
+): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
   const chunks: Buffer[] = [];
   const doc = new PDFDocument({ size: "A4", margin: 0, bufferPages: true });
   doc.on("data", (chunk) => chunks.push(chunk));
+  doc.on("end", () => resolve(Buffer.concat(chunks)));
+  doc.on("error", reject);
 
   const W = 595.28;
   const NAVY = "#0b2c60";
@@ -210,7 +213,7 @@ function generateReceiptPdf(
   });
 
   doc.end();
-  return Buffer.concat(chunks);
+  }); // end Promise
 }
 
 // ── Count endpoint (preview before download) ─────────────────────────────────
@@ -253,7 +256,7 @@ router.get(
 
     res.json({
       count: entries.length,
-      entries: entries.slice(0, 10).map((e) => ({
+      entries: entries.map((e) => ({
         receiptNumber: e.receiptNumber,
         date: e.date,
         customerName: e.customerName,
@@ -271,12 +274,17 @@ router.get(
   "/admin/receipts/bulk-export/download",
   requireRole("admin"),
   async (req, res): Promise<void> => {
-    const { startDate, endDate, userId } = req.query as Record<string, string>;
+    const { startDate, endDate, userId, receiptNumbers: receiptNumbersParam } = req.query as Record<string, string>;
 
     if (!startDate || !endDate) {
       res.status(400).json({ error: "startDate and endDate are required" });
       return;
     }
+
+    // Parse optional comma-separated receipt numbers list (from user's selection)
+    const selectedNumbers = receiptNumbersParam
+      ? receiptNumbersParam.split(",").map((s) => s.trim()).filter(Boolean)
+      : null;
 
     const conditions = [
       gte(ledgerTable.date, startDate),
@@ -286,6 +294,9 @@ router.get(
     if (userId) {
       const uid = parseInt(userId, 10);
       if (!isNaN(uid)) conditions.push(eq(ledgerTable.createdBy, uid));
+    }
+    if (selectedNumbers && selectedNumbers.length > 0) {
+      conditions.push(inArray(ledgerTable.receiptNumber, selectedNumbers));
     }
 
     const entries = await db
@@ -325,7 +336,7 @@ router.get(
     archive.pipe(res);
 
     for (const entry of entries) {
-      const pdf = generateReceiptPdf(
+      const pdf = await generateReceiptPdf(
         {
           receiptNumber: entry.receiptNumber!,
           date: entry.date,

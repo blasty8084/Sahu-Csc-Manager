@@ -40,10 +40,13 @@ function generateReceiptPdf(
     businessMobile: string;
     businessWebsite: string;
   }
-): Buffer {
+): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
   const chunks: Buffer[] = [];
   const doc = new PDFDocument({ size: "A4", margin: 0, bufferPages: true });
   doc.on("data", (chunk) => chunks.push(chunk));
+  doc.on("end", () => resolve(Buffer.concat(chunks)));
+  doc.on("error", reject);
 
   const W = 595.28;
   const NAVY = "#0b2c60";
@@ -158,7 +161,7 @@ function generateReceiptPdf(
   doc.text("Computer generated receipt · No signature required", 0, footerY + 26, { width: W, align: "center" });
 
   doc.end();
-  return Buffer.concat(chunks);
+  }); // end Promise
 }
 
 async function buildMonthlyZip(year: number, month: number): Promise<Buffer> {
@@ -196,6 +199,26 @@ async function buildMonthlyZip(year: number, month: number): Promise<Buffer> {
     .where(and(gte(ledgerTable.date, startDate), lte(ledgerTable.date, endDate), isNotNull(ledgerTable.receiptNumber)))
     .orderBy(asc(ledgerTable.date), asc(ledgerTable.id));
 
+  // Generate all PDFs first (generateReceiptPdf is async), then stream into the ZIP
+  const pdfs: Array<{ name: string; buf: Buffer }> = [];
+  for (const entry of entries) {
+    const buf = await generateReceiptPdf(
+      {
+        receiptNumber: entry.receiptNumber!,
+        date: entry.date,
+        customerName: entry.customerName,
+        serviceType: entry.serviceType,
+        credit: parseFloat(entry.credit ?? "0"),
+        debit: parseFloat(entry.debit ?? "0"),
+        description: entry.description ?? null,
+        createdByName: entry.createdByName ?? null,
+        createdAt: entry.createdAt instanceof Date ? entry.createdAt.toISOString() : (entry.createdAt ?? new Date().toISOString()),
+      },
+      biz
+    );
+    pdfs.push({ name: `${entry.receiptNumber}.pdf`, buf });
+  }
+
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
     const archive = archiver("zip", { zlib: { level: 6 } });
@@ -203,22 +226,8 @@ async function buildMonthlyZip(year: number, month: number): Promise<Buffer> {
     archive.on("end", () => resolve(Buffer.concat(chunks)));
     archive.on("error", reject);
 
-    for (const entry of entries) {
-      const pdf = generateReceiptPdf(
-        {
-          receiptNumber: entry.receiptNumber!,
-          date: entry.date,
-          customerName: entry.customerName,
-          serviceType: entry.serviceType,
-          credit: parseFloat(entry.credit ?? "0"),
-          debit: parseFloat(entry.debit ?? "0"),
-          description: entry.description ?? null,
-          createdByName: entry.createdByName ?? null,
-          createdAt: entry.createdAt instanceof Date ? entry.createdAt.toISOString() : (entry.createdAt ?? new Date().toISOString()),
-        },
-        biz
-      );
-      archive.append(pdf, { name: `${entry.receiptNumber}.pdf` });
+    for (const { name, buf } of pdfs) {
+      archive.append(buf, { name });
     }
     archive.finalize();
   });

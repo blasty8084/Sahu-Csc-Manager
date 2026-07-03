@@ -4,62 +4,9 @@ import { eq, inArray } from "drizzle-orm";
 
 const router: IRouter = Router();
 
-// ── Ledger receipt verify ────────────────────────────────────────────────────
-router.get("/receipts/verify/:token", async (req, res): Promise<void> => {
-  const { token } = req.params;
-  if (!token || typeof token !== "string" || token.length < 16) {
-    res.status(400).json({ error: "Invalid token" });
-    return;
-  }
-
-  const [entry] = await db
-    .select({
-      id: ledgerTable.id,
-      date: ledgerTable.date,
-      customerName: ledgerTable.customerName,
-      serviceType: ledgerTable.serviceType,
-      credit: ledgerTable.credit,
-      debit: ledgerTable.debit,
-      description: ledgerTable.description,
-      receiptNumber: ledgerTable.receiptNumber,
-      createdAt: ledgerTable.createdAt,
-      createdByName: usersTable.username,
-    })
-    .from(ledgerTable)
-    .leftJoin(usersTable, eq(ledgerTable.createdBy, usersTable.id))
-    .where(eq(ledgerTable.receiptToken, token));
-
-  if (!entry || !entry.receiptNumber) {
-    res.status(404).json({ error: "Receipt not found" });
-    return;
-  }
-
-  const settingsRows = await db
-    .select({ key: settingsTable.key, value: settingsTable.value })
-    .from(settingsTable)
-    .where(inArray(settingsTable.key, ["businessName", "businessAddress", "businessMobile", "businessWebsite"]));
-
-  const getSetting = (key: string, fallback = "") =>
-    settingsRows.find((r) => r.key === key)?.value ?? fallback;
-
-  res.json({
-    receiptNumber: entry.receiptNumber,
-    date: entry.date,
-    customerName: entry.customerName,
-    serviceType: entry.serviceType,
-    credit: parseFloat(entry.credit ?? "0"),
-    debit: parseFloat(entry.debit ?? "0"),
-    description: entry.description,
-    createdByName: entry.createdByName ?? null,
-    createdAt: entry.createdAt instanceof Date ? entry.createdAt.toISOString() : entry.createdAt,
-    businessName: getSetting("businessName", "SAHU CSC Center"),
-    businessAddress: getSetting("businessAddress", ""),
-    businessMobile: getSetting("businessMobile", ""),
-    businessWebsite: getSetting("businessWebsite", ""),
-  });
-});
-
 // ── Udhari Khata receipt verify ───────────────────────────────────────────────
+// IMPORTANT: must be registered BEFORE /receipts/verify/:token so Express does
+// not swallow "udhari" as the :token value.
 router.get("/receipts/verify/udhari/:token", async (req, res): Promise<void> => {
   const { token } = req.params;
   if (!token || typeof token !== "string" || token.length < 16) {
@@ -117,6 +64,61 @@ router.get("/receipts/verify/udhari/:token", async (req, res): Promise<void> => 
     customerMobile: customer?.mobile ?? null,
     customerAddress: customer?.address ?? null,
     currentBalance: parseFloat(customer?.balance ?? "0"),
+    createdAt: entry.createdAt instanceof Date ? entry.createdAt.toISOString() : entry.createdAt,
+    businessName: getSetting("businessName", "SAHU CSC Center"),
+    businessAddress: getSetting("businessAddress", ""),
+    businessMobile: getSetting("businessMobile", ""),
+    businessWebsite: getSetting("businessWebsite", ""),
+  });
+});
+
+// ── Ledger receipt verify ────────────────────────────────────────────────────
+router.get("/receipts/verify/:token", async (req, res): Promise<void> => {
+  const { token } = req.params;
+  if (!token || typeof token !== "string" || token.length < 16) {
+    res.status(400).json({ error: "Invalid token" });
+    return;
+  }
+
+  const [entry] = await db
+    .select({
+      id: ledgerTable.id,
+      date: ledgerTable.date,
+      customerName: ledgerTable.customerName,
+      serviceType: ledgerTable.serviceType,
+      credit: ledgerTable.credit,
+      debit: ledgerTable.debit,
+      description: ledgerTable.description,
+      receiptNumber: ledgerTable.receiptNumber,
+      createdAt: ledgerTable.createdAt,
+      createdByName: usersTable.username,
+    })
+    .from(ledgerTable)
+    .leftJoin(usersTable, eq(ledgerTable.createdBy, usersTable.id))
+    .where(eq(ledgerTable.receiptToken, token));
+
+  if (!entry || !entry.receiptNumber) {
+    res.status(404).json({ error: "Receipt not found" });
+    return;
+  }
+
+  const settingsRows = await db
+    .select({ key: settingsTable.key, value: settingsTable.value })
+    .from(settingsTable)
+    .where(inArray(settingsTable.key, ["businessName", "businessAddress", "businessMobile", "businessWebsite"]));
+
+  const getSetting = (key: string, fallback = "") =>
+    settingsRows.find((r) => r.key === key)?.value ?? fallback;
+
+  res.json({
+    receiptNumber: entry.receiptNumber,
+    date: entry.date,
+    customerName: entry.customerName,
+    serviceType: entry.serviceType,
+    credit: parseFloat(entry.credit ?? "0"),
+    debit: parseFloat(entry.debit ?? "0"),
+    description: entry.description,
+    createdByName: entry.createdByName ?? null,
     createdAt: entry.createdAt instanceof Date ? entry.createdAt.toISOString() : entry.createdAt,
     businessName: getSetting("businessName", "SAHU CSC Center"),
     businessAddress: getSetting("businessAddress", ""),
