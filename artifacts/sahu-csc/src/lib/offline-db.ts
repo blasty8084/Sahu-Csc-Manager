@@ -1,5 +1,5 @@
 const DB_NAME = "sahu-csc-offline";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 export interface PendingLedgerEntry {
   id: string;
@@ -47,6 +47,20 @@ export interface CacheItem<T = unknown> {
   expiresAt: number;
 }
 
+export type PendingActionDomain = "aeps" | "udhari";
+
+export interface PendingAction {
+  id: string;
+  domain: PendingActionDomain;
+  /** Human-readable label shown in UI, e.g. "Withdrawal ₹500 — Ramesh" */
+  label: string;
+  endpoint: string;
+  method: "POST" | "PATCH" | "PUT" | "DELETE";
+  body: Record<string, unknown>;
+  createdAt: number;
+  retryCount: number;
+}
+
 let _db: IDBDatabase | null = null;
 
 function openDB(): Promise<IDBDatabase> {
@@ -72,6 +86,13 @@ function openDB(): Promise<IDBDatabase> {
         }
         if (!db.objectStoreNames.contains("user_session")) {
           db.createObjectStore("user_session", { keyPath: "id" });
+        }
+      }
+
+      if (oldVersion < 3) {
+        if (!db.objectStoreNames.contains("pending_actions")) {
+          const store = db.createObjectStore("pending_actions", { keyPath: "id" });
+          store.createIndex("domain", "domain", { unique: false });
         }
       }
     };
@@ -143,6 +164,61 @@ export async function getPendingCount(): Promise<number> {
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
+}
+
+// ─── Pending Actions (AePS / Udhari offline queue) ────────────────────────────
+
+export async function addPendingAction(action: PendingAction): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("pending_actions", "readwrite");
+    tx.objectStore("pending_actions").put(action);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+export async function getAllPendingActions(domain?: PendingActionDomain): Promise<PendingAction[]> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("pending_actions", "readonly");
+    const store = tx.objectStore("pending_actions");
+    const req = domain ? store.index("domain").getAll(domain) : store.getAll();
+    req.onsuccess = () => resolve((req.result as PendingAction[]) ?? []);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+export async function removePendingAction(id: string): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("pending_actions", "readwrite");
+    tx.objectStore("pending_actions").delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+export async function updatePendingActionRetry(id: string, retryCount: number): Promise<void> {
+  const db = await openDB();
+  const action = await new Promise<PendingAction | undefined>((resolve, reject) => {
+    const tx = db.transaction("pending_actions", "readonly");
+    const req = tx.objectStore("pending_actions").get(id);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+  if (!action) return;
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("pending_actions", "readwrite");
+    tx.objectStore("pending_actions").put({ ...action, retryCount });
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+export async function getPendingActionsCount(domain?: PendingActionDomain): Promise<number> {
+  const actions = await getAllPendingActions(domain);
+  return actions.length;
 }
 
 // ─── Generic Cache ────────────────────────────────────────────────────────────

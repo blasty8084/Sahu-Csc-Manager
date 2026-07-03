@@ -23,6 +23,11 @@ import { AepsReceiptModal } from "@/components/aeps-receipt-modal";
 import { AutocompleteInput } from "@/components/autocomplete-input";
 import { useForm } from "react-hook-form";
 import { useGetSettings } from "@workspace/api-client-react";
+import { useNetworkStatus } from "@/hooks/use-network-status";
+import { useSync } from "@/hooks/use-sync";
+import { addPendingAction, getAllPendingActions, type PendingAction } from "@/lib/offline-db";
+import { syncEngine } from "@/lib/sync-engine";
+import { WifiOff, Clock } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -256,6 +261,9 @@ function DailyTab() {
   const businessWebsite = (bizSettings as any)?.businessWebsite ?? "";
 
   const isMobile = useIsMobile();
+  const { isOffline } = useNetworkStatus();
+  const { bgSyncCount } = useSync();
+  const [pendingActions, setPendingActions] = useState<PendingAction[]>([]);
   const [selectedDate, setSelectedDate] = useState(todayStr());
   const [showOpenDialog, setShowOpenDialog] = useState(false);
   const [showTxDialog, setShowTxDialog] = useState(false);
@@ -272,6 +280,24 @@ function DailyTab() {
 
   const sessionKey = ["aeps-session", selectedDate];
   const isToday = selectedDate === todayStr();
+
+  const refreshPendingActions = async () => {
+    try {
+      const actions = await getAllPendingActions("aeps");
+      setPendingActions(actions.filter((a) => a.body?.date === selectedDate).sort((a, b) => a.createdAt - b.createdAt));
+    } catch {}
+  };
+
+  useEffect(() => {
+    refreshPendingActions();
+    const handler = () => refreshPendingActions();
+    window.addEventListener("sahu-sync-complete", handler);
+    window.addEventListener("online", handler);
+    return () => {
+      window.removeEventListener("sahu-sync-complete", handler);
+      window.removeEventListener("online", handler);
+    };
+  }, [selectedDate]);
 
   const { data: session, isLoading } = useQuery<AepsSession>({
     queryKey: sessionKey,
@@ -349,15 +375,70 @@ function DailyTab() {
     onError: (e: Error) => toast({ title: e.message, variant: "destructive" }),
   });
 
-  const onOpenSubmit = openForm.handleSubmit((v) => {
+  const onOpenSubmit = openForm.handleSubmit(async (v) => {
     const bal = parseFloat(v.openingBalance);
     if (isNaN(bal) || bal < 0) { toast({ title: "Enter a valid opening balance", variant: "destructive" }); return; }
+    if (isOffline) {
+      await addPendingAction({
+        id: `local-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        domain: "aeps",
+        label: `Open day ₹${bal} — ${selectedDate}`,
+        endpoint: "/api/aeps/session",
+        method: "POST",
+        body: { date: selectedDate, openingBalance: bal, notes: v.notes || undefined },
+        createdAt: Date.now(),
+        retryCount: 0,
+      });
+      await syncEngine.markPendingAdded();
+      await refreshPendingActions();
+      qc.setQueryData<AepsSession>(sessionKey, {
+        id: -1, date: selectedDate, openingBalance: bal, notes: v.notes || null,
+        transactions: [], totalWithdrawals: 0, totalDeposits: 0, currentBalance: bal,
+      });
+      setShowOpenDialog(false);
+      openForm.reset();
+      toast({ title: "Saved offline — will open when reconnected" });
+      return;
+    }
     openMut.mutate({ openingBalance: bal, notes: v.notes || undefined });
   });
 
-  const onTxSubmit = txForm.handleSubmit((v) => {
+  const onTxSubmit = txForm.handleSubmit(async (v) => {
     const amt = parseFloat(v.amount);
     if (isNaN(amt) || amt <= 0) { toast({ title: "Enter a valid amount", variant: "destructive" }); return; }
+    if (isOffline) {
+      if (!session) { toast({ title: "Open the day before adding transactions", variant: "destructive" }); return; }
+      await addPendingAction({
+        id: `local-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        domain: "aeps",
+        label: `${txType === "withdrawal" ? "Withdrawal" : "Deposit"} ₹${amt} — ${v.customerName}`,
+        endpoint: "/api/aeps/transaction",
+        method: "POST",
+        body: { date: selectedDate, type: txType, amount: amt, customerName: v.customerName, description: v.description || undefined },
+        createdAt: Date.now(),
+        retryCount: 0,
+      });
+      await syncEngine.markPendingAdded();
+      await refreshPendingActions();
+      qc.setQueryData<AepsSession>(sessionKey, (prev) => {
+        if (!prev) return prev;
+        const delta = txType === "withdrawal" ? -amt : amt;
+        const syntheticTx: AepsTx = {
+          id: -Date.now(), type: txType, amount: amt, customerName: v.customerName,
+          description: v.description || null, balance: prev.currentBalance + delta,
+          createdAt: new Date().toISOString(),
+        };
+        return {
+          ...prev,
+          transactions: [...prev.transactions, syntheticTx],
+          totalWithdrawals: prev.totalWithdrawals + (txType === "withdrawal" ? amt : 0),
+          totalDeposits: prev.totalDeposits + (txType === "deposit" ? amt : 0),
+          currentBalance: prev.currentBalance + delta,
+        };
+      });
+      setTxStep("success");
+      return;
+    }
     txMut.mutate({ type: txType, amount: amt, customerName: v.customerName, description: v.description || undefined });
   });
 
@@ -368,6 +449,8 @@ function DailyTab() {
 
   const onEditSubmit = editForm.handleSubmit((v) => {
     if (!editingTx) return;
+    if (editingTx.id < 0) { toast({ title: "This entry is still pending sync — try again once it uploads", variant: "destructive" }); return; }
+    if (isOffline) { toast({ title: "Editing requires a connection — try again once you're back online", variant: "destructive" }); return; }
     const amt = parseFloat(v.amount);
     if (isNaN(amt) || amt <= 0) { toast({ title: "Enter a valid amount", variant: "destructive" }); return; }
     editMut.mutate({ id: editingTx.id, data: { type: v.type, amount: amt, customerName: v.customerName, description: v.description || undefined } });

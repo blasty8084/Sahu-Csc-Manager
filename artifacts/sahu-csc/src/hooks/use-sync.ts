@@ -5,9 +5,11 @@ import { useNetworkStatus } from "./use-network-status";
 export interface UseSyncResult {
   syncStatus: SyncStatus;
   pendingCount: number;
+  /** Pending AePS + Udhari actions queued in IndexedDB awaiting sync. */
+  pendingActionsCount: number;
   /** Requests parked in the service worker's Background Sync queue. */
   bgSyncCount: number;
-  /** pendingCount + bgSyncCount, for a single combined badge. */
+  /** pendingCount + pendingActionsCount + bgSyncCount, for a single combined badge. */
   totalPendingCount: number;
   lastSyncTime: Date | null;
   syncNow: () => Promise<void>;
@@ -26,8 +28,9 @@ export function useSync(): UseSyncResult {
   return {
     syncStatus: state.status,
     pendingCount: state.pendingCount,
+    pendingActionsCount: state.pendingActionsCount,
     bgSyncCount: state.bgSyncCount,
-    totalPendingCount: state.pendingCount + state.bgSyncCount,
+    totalPendingCount: state.pendingCount + state.pendingActionsCount + state.bgSyncCount,
     lastSyncTime: state.lastSync,
     syncNow,
   };

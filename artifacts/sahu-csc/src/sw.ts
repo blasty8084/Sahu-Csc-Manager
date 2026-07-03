@@ -93,6 +93,47 @@ const ledgerSyncPlugin: WorkboxPlugin = {
   },
 };
 
+// A second Queue for AePS + Udhari mutations. These pages primarily rely on
+// the app-level `pending_actions` IndexedDB queue (offline-db.ts) for their
+// UI, but this SW-level queue also catches failed requests that slip through
+// (e.g. a request fired right as the network drops mid-flight) and retries
+// them automatically via Background Sync, same as the ledger queue.
+const APP_QUEUE_NAME = "app-bg-sync";
+
+async function broadcastAppQueueSize(size: number) {
+  const clientsList = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+  clientsList.forEach((c) =>
+    c.postMessage({ type: "BG_SYNC_QUEUE_UPDATED", queue: APP_QUEUE_NAME, size }),
+  );
+}
+
+const appQueue = new Queue(APP_QUEUE_NAME, {
+  maxRetentionTime: 24 * 60,
+  onSync: async ({ queue }) => {
+    let entry;
+    while ((entry = await queue.shiftRequest())) {
+      try {
+        await fetch(entry.request.clone());
+      } catch (err) {
+        await queue.unshiftRequest(entry);
+        await broadcastAppQueueSize(await queue.size());
+        throw err;
+      }
+    }
+    await broadcastAppQueueSize(await queue.size());
+    await self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((list) => list.forEach((c) => c.postMessage({ type: "BG_SYNC_TRIGGERED" })));
+  },
+});
+
+const appSyncPlugin: WorkboxPlugin = {
+  fetchDidFail: async ({ request }) => {
+    await appQueue.pushRequest({ request: request.clone() });
+    await broadcastAppQueueSize(await appQueue.size());
+  },
+};
+
 // ─── API routes ───────────────────────────────────────────────────────────────
 registerRoute(
   ({ url }) => url.pathname.startsWith("/api/auth/"),
@@ -202,6 +243,58 @@ registerRoute(
   new NetworkOnly({ plugins: [ledgerSyncPlugin] }),
   "DELETE",
 );
+
+// AePS GETs (daily session + all-transactions) — NetworkFirst so recently
+// viewed sessions remain available offline
+registerRoute(
+  ({ url, request }) =>
+    url.pathname.startsWith("/api/aeps") && request.method === "GET",
+  new NetworkFirst({
+    cacheName: "api-aeps",
+    networkTimeoutSeconds: 8,
+    plugins: [
+      new ExpirationPlugin({ maxEntries: 30, maxAgeSeconds: 5 * 60 }),
+      new CacheableResponsePlugin({ statuses: [0, 200] }),
+    ],
+  }),
+);
+
+// AePS mutations (open day, add/edit/delete transaction) — queue for
+// Background Sync when offline; app also queues these itself for instant UI
+// feedback (see offline-db.ts pending_actions + aeps.tsx)
+for (const method of ["POST", "PUT", "PATCH", "DELETE"] as const) {
+  registerRoute(
+    ({ url, request }) =>
+      url.pathname.startsWith("/api/aeps") && request.method === method,
+    new NetworkOnly({ plugins: [appSyncPlugin] }),
+    method,
+  );
+}
+
+// Udhari GETs (customers list, summary, per-customer entries) — NetworkFirst
+registerRoute(
+  ({ url, request }) =>
+    url.pathname.startsWith("/api/udhari") && request.method === "GET",
+  new NetworkFirst({
+    cacheName: "api-udhari",
+    networkTimeoutSeconds: 8,
+    plugins: [
+      new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 5 * 60 }),
+      new CacheableResponsePlugin({ statuses: [0, 200] }),
+    ],
+  }),
+);
+
+// Udhari mutations (customer/entry create/update/delete) — queue for
+// Background Sync when offline
+for (const method of ["POST", "PUT", "PATCH", "DELETE"] as const) {
+  registerRoute(
+    ({ url, request }) =>
+      url.pathname.startsWith("/api/udhari") && request.method === method,
+    new NetworkOnly({ plugins: [appSyncPlugin] }),
+    method,
+  );
+}
 
 registerRoute(
   ({ url }) => url.pathname.startsWith("/api/notifications"),
@@ -314,9 +407,14 @@ self.addEventListener("message", (event: ExtendableMessageEvent) => {
   }
   if (event.data?.type === "GET_BG_SYNC_COUNT") {
     event.waitUntil(
-      ledgerQueue.size().then((size) => {
-        event.source?.postMessage({ type: "BG_SYNC_QUEUE_UPDATED", queue: LEDGER_QUEUE_NAME, size });
-      }),
+      Promise.all([
+        ledgerQueue.size().then((size) => {
+          event.source?.postMessage({ type: "BG_SYNC_QUEUE_UPDATED", queue: LEDGER_QUEUE_NAME, size });
+        }),
+        appQueue.size().then((size) => {
+          event.source?.postMessage({ type: "BG_SYNC_QUEUE_UPDATED", queue: APP_QUEUE_NAME, size });
+        }),
+      ]),
     );
   }
 });
