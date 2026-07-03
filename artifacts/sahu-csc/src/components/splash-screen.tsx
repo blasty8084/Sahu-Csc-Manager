@@ -9,7 +9,7 @@ interface SplashScreenProps {
 export function SplashScreen({ visible, onDone }: SplashScreenProps) {
   useEffect(() => {
     if (!visible) return;
-    const t = setTimeout(onDone, 1200);
+    const t = setTimeout(onDone, 500);
     return () => clearTimeout(t);
   }, [visible, onDone]);
 
@@ -20,15 +20,14 @@ export function SplashScreen({ visible, onDone }: SplashScreenProps) {
           key="splash"
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.55, ease: "easeInOut" }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
           className="fixed inset-0 z-[9999] flex flex-col items-center justify-center select-none"
           style={{ background: "#0B1340" }}
         >
-          {/* Spinning ring + circular logo */}
           <motion.div
-            initial={{ scale: 0.55, opacity: 0 }}
+            initial={{ scale: 0.75, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.55, ease: [0.34, 1.4, 0.64, 1] }}
+            transition={{ duration: 0.28, ease: [0.34, 1.4, 0.64, 1] }}
             className="relative flex items-center justify-center"
           >
             {/* Outer spinning ring */}
@@ -71,9 +70,9 @@ export function SplashScreen({ visible, onDone }: SplashScreenProps) {
 
           {/* App name */}
           <motion.div
-            initial={{ opacity: 0, y: 14 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.45, duration: 0.5, ease: "easeOut" }}
+            transition={{ delay: 0.15, duration: 0.22, ease: "easeOut" }}
             className="mt-7 text-center"
           >
             <h1 className="text-2xl font-black tracking-wide">
@@ -85,29 +84,10 @@ export function SplashScreen({ visible, onDone }: SplashScreenProps) {
             </p>
           </motion.div>
 
-          {/* Progress bar */}
-          <motion.div
-            className="absolute bottom-14 overflow-hidden rounded-full"
-            style={{ width: "48px", height: "2px", background: "rgba(255,255,255,0.08)" }}
-          >
-            <motion.div
-              initial={{ x: "-100%" }}
-              animate={{ x: "0%" }}
-              transition={{ delay: 0.3, duration: 2, ease: "easeInOut" }}
-              className="w-full h-full rounded-full"
-              style={{ background: "linear-gradient(90deg, #F97316, rgba(249,115,22,0.4))" }}
-            />
-          </motion.div>
-
           {/* Version tag */}
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.8, duration: 0.4 }}
-            className="absolute bottom-8 text-white/20 text-xs tracking-wider"
-          >
+          <p className="absolute bottom-8 text-white/20 text-xs tracking-wider">
             CSC · Odisha
-          </motion.p>
+          </p>
         </motion.div>
       )}
     </AnimatePresence>

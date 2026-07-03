@@ -192,9 +192,9 @@ function LoadingScreen({ phase = "loading" }: { phase?: LoadingPhase }) {
 
       {/* Logo + spinner */}
       <motion.div
-        initial={{ scale: 0.7, opacity: 0 }}
+        initial={{ scale: 0.82, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.45, ease: [0.34, 1.4, 0.64, 1] }}
+        transition={{ duration: 0.22, ease: "easeOut" }}
         className="relative flex items-center justify-center"
       >
         {/* Outer ring — stops on timeout */}
@@ -239,9 +239,9 @@ function LoadingScreen({ phase = "loading" }: { phase?: LoadingPhase }) {
 
       {/* Brand name + status */}
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3, duration: 0.4 }}
+        transition={{ delay: 0.12, duration: 0.2 }}
         className="mt-7 text-center"
       >
         <h1 className="text-2xl font-black tracking-wide">
