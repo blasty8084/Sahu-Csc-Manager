@@ -28,6 +28,10 @@ args = "API Server"
 task = "workflow.run"
 args = "SAHU CSC"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Build API"
+
 [[workflows.workflow]]
 name = "Seed Database"
 author = "agent"
@@ -73,6 +77,17 @@ outputType = "webview"
 task = "shell.exec"
 args = "PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run dev"
 waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Build API"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server run build"
+
+[workflows.workflow.metadata]
+outputType = "console"
 
 [agent]
 stack = "BEST_EFFORT_FALLBACK"
