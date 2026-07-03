@@ -96,6 +96,13 @@ export default defineConfig({
             url: "/reports?source=shortcut",
             icons: [{ src: "pwa-96x96.png", sizes: "96x96" }],
           },
+          {
+            name: "Settings",
+            short_name: "Settings",
+            description: "Application settings",
+            url: "/profile?source=shortcut",
+            icons: [{ src: "pwa-96x96.png", sizes: "96x96" }],
+          },
         ],
         screenshots: [
           {

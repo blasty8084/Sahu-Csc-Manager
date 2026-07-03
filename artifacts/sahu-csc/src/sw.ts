@@ -4,8 +4,9 @@ declare const self: ServiceWorkerGlobalScope & {
 };
 
 import { clientsClaim } from "workbox-core";
-import { precacheAndRoute, cleanupOutdatedCaches } from "workbox-precaching";
-import { registerRoute, NavigationRoute } from "workbox-routing";
+import { precacheAndRoute, cleanupOutdatedCaches, matchPrecache } from "workbox-precaching";
+import { registerRoute } from "workbox-routing";
+import { enable as enableNavigationPreload } from "workbox-navigation-preload";
 import {
   NetworkOnly,
   StaleWhileRevalidate,
@@ -24,15 +25,33 @@ cleanupOutdatedCaches();
 // ─── Precaching (injected by vite-plugin-pwa) ─────────────────────────────────
 precacheAndRoute(self.__WB_MANIFEST);
 
-// ─── Navigation fallback (SPA) ────────────────────────────────────────────────
-const navRoute = new NavigationRoute(
-  new NetworkFirst({
-    cacheName: "navigate",
-    plugins: [new CacheableResponsePlugin({ statuses: [0, 200] })],
-  }),
-  { denylist: [/^\/api\//] },
-);
-registerRoute(navRoute);
+// ─── Navigation preload + offline app-shell fallback (PWABuilder pattern) ─────
+// Enables the browser to start the network request in parallel with SW boot-up,
+// then falls back to the precached SPA shell if the network is unreachable —
+// same approach as PWABuilder's offline-page recipe, backed by Workbox's
+// versioned precache instead of a hardcoded cache name.
+if (self.registration.navigationPreload) {
+  enableNavigationPreload();
+}
+
+self.addEventListener("fetch", (event: FetchEvent) => {
+  if (event.request.mode !== "navigate") return;
+  if (new URL(event.request.url).pathname.startsWith("/api/")) return;
+
+  event.respondWith(
+    (async () => {
+      try {
+        const preloadResponse = await event.preloadResponse;
+        if (preloadResponse) return preloadResponse;
+        return await fetch(event.request);
+      } catch {
+        const cachedShell =
+          (await matchPrecache("index.html")) || (await matchPrecache("/"));
+        return cachedShell ?? Response.error();
+      }
+    })(),
+  );
+});
 
 // ─── Background Sync — retry failed ledger writes ─────────────────────────────
 const ledgerSyncPlugin = new BackgroundSyncPlugin("ledger-bg-sync", {

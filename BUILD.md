@@ -1,5 +1,5 @@
 # SAHU CSC Manager — BUILD.md
-**Version 3.2.0 — July 2, 2026**
+**Version 3.1.1 — July 3, 2026**
 
 > Single source of truth for any developer, AI agent, or new contributor.  
 > Read this file first — no other file analysis needed to understand the project.
@@ -16,7 +16,7 @@
 | **Languages supported** | English · Hindi · Odia |
 | **GitHub** | https://github.com/blasty8084/Sahu-Csc-Manager |
 | **Hosting** | Replit (dev + production deploy) |
-| **Version** | 3.2.0 |
+| **Version** | 3.1.1 |
 
 ### Core business domain
 
@@ -465,4 +465,4 @@ Step 10: Force API rebuild     →  rm -rf artifacts/api-server/dist/ + restart 
 
 ---
 
-*Last updated: July 2, 2026 | Version 3.2.0 | Maintained by: Uttam Sahu (blasty8084)*
+*Last updated: July 3, 2026 | Version 3.1.1 | Maintained by: Uttam Sahu (blasty8084)*

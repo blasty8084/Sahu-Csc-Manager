@@ -1,5 +1,5 @@
 # SAHU CSC — Project Quick Reference v3
-**Version 3.2.0 — July 2, 2026**
+**Version 3.1.1 — July 3, 2026**
 
 > Authoritative quick-reference for the SAHU CSC platform.  
 > For deep architecture: `architectureV3.md` · Change history: `CHANGELOG_V3.md` (v3), `changelogV2.md` (v2) · Workflows: `WORKFLOWS.md`
@@ -38,7 +38,7 @@
 | Frontend | React 19 + Vite (port 5000 → :80) |
 | API | Express 5 (port 8080) |
 | Database | PostgreSQL — 15 tables |
-| Version | 3.2.0 |
+| Version | 3.1.1 |
 
 ### Core capabilities
 
@@ -410,7 +410,7 @@ Schema push: `pnpm --filter @workspace/db run push`
 4. Update `public/.well-known/assetlinks.json`
 5. Deploy → `bubblewrap build` → upload to Play Console
 
-Package: `com.sahucsc.app` · Min SDK: 21 · Target: 34 · Version: 3.2.0 (code: 3)
+Package: `com.sahucsc.app` · Min SDK: 21 · Target: 34 · Version: 3.1.1 (code: 3)
 
 ---
 
@@ -478,4 +478,4 @@ curl http://localhost:8080/api/setup-status
 
 ---
 
-*Last updated: July 2, 2026 | Version 3.2.0*
+*Last updated: July 3, 2026 | Version 3.1.1*

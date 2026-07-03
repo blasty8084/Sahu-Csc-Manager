@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v3
-**Current version: 3.2.0 — July 2, 2026**
+**Current version: 3.1.1 — July 3, 2026**
 
 > Detailed record of every feature, change, and upgrade from v3.0.0 onward.  
 > For v2.x history, see `changelogV2.md`.  

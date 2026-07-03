@@ -11,9 +11,12 @@ Use `strategies: "injectManifest", srcDir: "src", filename: "sw.ts"` in vite-plu
 **How to apply:**
 - Declare `self: ServiceWorkerGlobalScope & { __WB_MANIFEST: ... }` at the top of sw.ts
 - Install workbox packages explicitly in sahu-csc (vite-plugin-pwa transitive deps may not resolve in sw.ts)
+- In a pnpm workspace, Rollup's SW sub-build cannot resolve *transitive* workbox deps (e.g. `workbox-core` pulled in only via `workbox-precaching`) even though `tsc` may not complain — add every workbox package actually `import`ed in sw.ts as a **direct** dependency of the frontend package, or the production build fails with "Rollup failed to resolve import" while dev mode looks fine.
+- Exclude `sw.ts` from the package's main `tsconfig.json` (`exclude: [..., "src/sw.ts"]`) — it needs `/// <reference lib="webworker" />` which conflicts with the app's `dom` lib, and it's type-checked/compiled separately by vite-plugin-pwa's own Rollup pass during `vite build`, not by the app's `tsc --noEmit`.
 - For `PushManager.subscribe`, pass `applicationServerKey: urlBase64ToUint8Array(key).buffer as ArrayBuffer` — passing the Uint8Array directly causes TS2769
 - `vibrate` is not in TypeScript's `NotificationOptions` type — use `{ ... } as NotificationOptions` cast
 - Express route handlers must return `void`/`Promise<void>` and use early-return pattern (not `return res.json(...)`) with Express 5 strict mode
+- For SPA offline fallback (PWABuilder-style navigate-fallback pattern), prefer `workbox-precaching`'s `matchPrecache("index.html")` over a hardcoded cache name — the precache cache name is versioned/dynamic, so a raw `caches.open("my-cache-name")` lookup silently misses. Combine with `workbox-navigation-preload`'s `enable()` for the fastest online path.
 
 ## VAPID keys
 Stored in env vars: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_EMAIL. Generated once via `node -e "require('web-push').generateVAPIDKeys()"` from the api-server directory.
