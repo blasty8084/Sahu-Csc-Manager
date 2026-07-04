@@ -1,82 +1,86 @@
 import { useState, useEffect } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
-  Sparkles,
-  CalendarClock,
-  Download,
-  UploadCloud,
-  ShieldCheck,
-  Key,
+  Sparkles, Zap, Ghost, Layers3, RefreshCw, ArrowUpRight,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
-const VERSION = "3.1.0";
+const VERSION = "3.2.0";
 const STORAGE_KEY = `sahu-whats-new-v${VERSION}`;
 
-interface ChangeItem {
+interface Feature {
   icon: React.ReactNode;
+  color: string;
+  bg: string;
   title: string;
   description: string;
-  badge?: string;
-  badgeColor?: string;
+  tag?: string;
+  tagColor?: string;
 }
 
-const changes: ChangeItem[] = [
+const FEATURES: Feature[] = [
   {
-    icon: <Download size={15} />,
-    title: "Backup Download",
+    icon: <Zap size={15} />,
+    color: "#f97316",
+    bg: "rgba(249,115,22,0.12)",
+    title: "Instant Page Loading",
     description:
-      "Download any backup as a .sql file directly from the Backup & Restore page — one click, no manual server access needed.",
-    badge: "Admin",
-    badgeColor: "#0b2c60",
+      "All pages now load instantly on repeat visits. Your data is cached after first login — navigating between Dashboard, Ledger, AePS, and Reports feels like a native app.",
+    tag: "Performance",
+    tagColor: "#d97706",
   },
   {
-    icon: <CalendarClock size={15} />,
-    title: "Auto-Backup Scheduler",
+    icon: <Layers3 size={15} />,
+    color: "#0b2c60",
+    bg: "rgba(11,44,96,0.10)",
+    title: "Skeleton Screens",
     description:
-      "Schedule automatic backups daily, weekly, or on a custom cron. Configure the time and how many backups to keep.",
-    badge: "Admin",
-    badgeColor: "#0b2c60",
+      "Spinning loaders are gone. Every section now shows a content-shaped shimmer placeholder while data loads — no more blank white boxes or slow spinners.",
+    tag: "UX",
+    tagColor: "#0b2c60",
   },
   {
-    icon: <UploadCloud size={15} />,
-    title: "Selective Table Import",
+    icon: <ArrowUpRight size={15} />,
+    color: "#7c3aed",
+    bg: "rgba(124,58,237,0.10)",
+    title: "Smooth Page Transitions",
     description:
-      "When restoring a backup, choose exactly which tables to import — restore only ledger data, only Udhari records, or any combination.",
-    badge: "Admin",
-    badgeColor: "#0b2c60",
+      "Switching between pages now glides with a subtle slide-up animation. The header, sidebar, and bottom nav stay perfectly still — only the content moves.",
+    tag: "Design",
+    tagColor: "#7c3aed",
   },
   {
-    icon: <ShieldCheck size={15} />,
-    title: "Setup Wizard Banner",
+    icon: <RefreshCw size={15} />,
+    color: "#0891b2",
+    bg: "rgba(8,145,178,0.10)",
+    title: "Pre-loaded on Login",
     description:
-      "After a fresh install, a banner now guides admins through every required secret — red for critical, yellow for optional — with direct links to the Secrets panel.",
-    badge: "Admin",
-    badgeColor: "#0b2c60",
+      "After you log in, 7 key pages (Dashboard, Ledger, AePS, Reports, Services, Notifications, Udhari) are pre-fetched in the background so they open in milliseconds.",
+    tag: "Speed",
+    tagColor: "#0891b2",
   },
   {
-    icon: <Key size={15} />,
-    title: "Secure Password Secrets",
+    icon: <Ghost size={15} />,
+    color: "#15803d",
+    bg: "rgba(21,128,61,0.10)",
+    title: "Silent Background Sync",
     description:
-      "Admin and operator passwords are now read exclusively from Replit Secrets (ADMIN_PASSWORD, OPERATOR_PASSWORD). No hardcoded defaults.",
-    badge: "Security",
-    badgeColor: "#15803d",
+      "Data refreshes quietly in the background without any loading state. A tiny dot appears when syncing — you keep working, the app keeps updating.",
+    tag: "Reliability",
+    tagColor: "#15803d",
   },
 ];
 
 export function WhatsNewModal() {
   const [open, setOpen] = useState(false);
+  const [step, setStep] = useState(0);
 
   useEffect(() => {
     const seen = localStorage.getItem(STORAGE_KEY);
     if (!seen) {
-      const timer = setTimeout(() => setOpen(true), 800);
-      return () => clearTimeout(timer);
+      const t = setTimeout(() => setOpen(true), 900);
+      return () => clearTimeout(t);
     }
     return undefined;
   }, []);
@@ -86,106 +90,153 @@ export function WhatsNewModal() {
     setOpen(false);
   };
 
+  const isLast = step === FEATURES.length - 1;
+
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); }}>
       <DialogContent
-        className="max-w-md w-full p-0 overflow-hidden gap-0"
-        style={{ borderRadius: "1rem" }}
+        className="max-w-sm w-full p-0 overflow-hidden gap-0"
+        style={{ borderRadius: "1.25rem" }}
       >
-        {/* Header stripe */}
+        {/* ── Gradient header ── */}
         <div
-          className="px-6 pt-6 pb-5"
-          style={{
-            background: "linear-gradient(135deg, #0b2c60 0%, #1e4d9b 100%)",
-          }}
+          className="relative px-6 pt-6 pb-5 overflow-hidden"
+          style={{ background: "linear-gradient(135deg, #0b2c60 0%, #1e4d9b 60%, #1e40af 100%)" }}
         >
-          <div className="flex items-center gap-2.5 mb-2">
+          {/* decorative circles */}
+          <div style={{ position: "absolute", top: -28, right: -20, width: 100, height: 100, borderRadius: "50%", background: "rgba(249,115,22,0.12)", pointerEvents: "none" }} />
+          <div style={{ position: "absolute", bottom: -20, left: -16, width: 70, height: 70, borderRadius: "50%", background: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
+
+          <div className="flex items-center gap-2.5 mb-2 relative z-10">
             <div
-              className="h-8 w-8 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: "rgba(249,115,22,0.20)" }}
+              className="h-9 w-9 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: "rgba(249,115,22,0.22)", border: "1px solid rgba(249,115,22,0.30)" }}
             >
-              <Sparkles size={16} color="#f97316" />
+              <Sparkles size={17} color="#f97316" />
             </div>
             <DialogHeader className="p-0 space-y-0">
-              <DialogTitle
-                className="text-base font-bold leading-none"
-                style={{ color: "#ffffff" }}
-              >
+              <DialogTitle className="text-[15px] font-bold leading-tight" style={{ color: "#ffffff" }}>
                 What's New in v{VERSION}
               </DialogTitle>
             </DialogHeader>
           </div>
-          <p className="text-xs leading-snug" style={{ color: "rgba(255,255,255,0.70)" }}>
-            Here's what changed in this update of SAHU CSC.
+          <p className="text-[11px] leading-snug relative z-10" style={{ color: "rgba(255,255,255,0.65)" }}>
+            Faster, smoother, and smarter — here's what's new for everyone.
           </p>
-        </div>
 
-        {/* Change list */}
-        <div className="px-5 py-4 space-y-3 max-h-[52vh] overflow-y-auto">
-          {changes.map((item, i) => (
-            <div
-              key={i}
-              className="flex items-start gap-3 rounded-xl px-3.5 py-3 border"
-              style={{
-                background: "rgba(11,44,96,0.03)",
-                borderColor: "rgba(11,44,96,0.10)",
-              }}
-            >
-              {/* Icon */}
-              <div
-                className="h-7 w-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+          {/* step dots */}
+          <div className="flex items-center gap-1.5 mt-4 relative z-10">
+            {FEATURES.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setStep(i)}
+                className="transition-all duration-200"
                 style={{
-                  background: "rgba(11,44,96,0.08)",
-                  color: "#0b2c60",
+                  height: 4,
+                  width: i === step ? 20 : 8,
+                  borderRadius: 99,
+                  background: i === step ? "#f97316" : "rgba(255,255,255,0.28)",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: 0,
                 }}
-              >
-                {item.icon}
-              </div>
-
-              {/* Text */}
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                  <span className="text-xs font-semibold text-foreground leading-none">
-                    {item.title}
-                  </span>
-                  {item.badge && (
-                    <span
-                      className="text-[9px] font-bold tracking-wide px-1.5 py-0.5 rounded uppercase"
-                      style={{
-                        background: item.badgeColor
-                          ? `${item.badgeColor}18`
-                          : "rgba(11,44,96,0.10)",
-                        color: item.badgeColor ?? "#0b2c60",
-                      }}
-                    >
-                      {item.badge}
-                    </span>
-                  )}
-                </div>
-                <p className="text-[11px] text-muted-foreground leading-snug">
-                  {item.description}
-                </p>
-              </div>
-            </div>
-          ))}
+              />
+            ))}
+          </div>
         </div>
 
-        {/* Footer */}
+        {/* ── Feature card (animated) ── */}
+        <div className="px-5 py-5" style={{ minHeight: 178 }}>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={step}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {(() => {
+                const f = FEATURES[step];
+                return (
+                  <div
+                    className="rounded-2xl p-4"
+                    style={{ background: f.bg, border: `1.5px solid ${f.color}22` }}
+                  >
+                    {/* icon + tag row */}
+                    <div className="flex items-center gap-2 mb-3">
+                      <div
+                        className="h-9 w-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                        style={{ background: f.color + "18", color: f.color, border: `1px solid ${f.color}28` }}
+                      >
+                        {f.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-bold text-foreground leading-none">
+                            {f.title}
+                          </span>
+                          {f.tag && (
+                            <span
+                              className="text-[9px] font-bold tracking-widest px-1.5 py-0.5 rounded uppercase"
+                              style={{ background: (f.tagColor ?? f.color) + "16", color: f.tagColor ?? f.color }}
+                            >
+                              {f.tag}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* description */}
+                    <p className="text-[12px] leading-relaxed text-muted-foreground">
+                      {f.description}
+                    </p>
+                  </div>
+                );
+              })()}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* ── Footer ── */}
         <div
-          className="px-5 py-4 flex items-center justify-between border-t"
-          style={{ borderColor: "rgba(11,44,96,0.10)" }}
+          className="px-5 pb-5 flex items-center justify-between gap-3"
         >
-          <span className="text-[11px] text-muted-foreground">
-            SAHU CSC v{VERSION}
+          <span className="text-[11px] text-muted-foreground font-medium">
+            {step + 1} of {FEATURES.length}
           </span>
-          <Button
-            onClick={handleClose}
-            size="sm"
-            className="h-8 px-5 text-xs font-semibold"
-            style={{ background: "#f97316", color: "#fff" }}
-          >
-            Got it
-          </Button>
+
+          <div className="flex items-center gap-2">
+            {step > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setStep(step - 1)}
+                className="h-8 px-3 text-xs"
+              >
+                Back
+              </Button>
+            )}
+            {isLast ? (
+              <Button
+                onClick={handleClose}
+                size="sm"
+                className="h-8 px-5 text-xs font-semibold"
+                style={{ background: "#f97316", color: "#fff" }}
+              >
+                Let's go!
+              </Button>
+            ) : (
+              <Button
+                onClick={() => setStep(step + 1)}
+                size="sm"
+                className="h-8 px-4 text-xs font-semibold"
+                style={{ background: "#0b2c60", color: "#fff" }}
+              >
+                Next
+              </Button>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
