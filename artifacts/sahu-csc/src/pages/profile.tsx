@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { SectionLoader } from "@/components/section-loader";
+import { SessionsListSkeleton } from "@/components/skeletons";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -486,7 +487,7 @@ export default function Profile() {
               <RefreshCw size={12} className={sessionsFetching ? "animate-spin" : ""} />Refresh
             </Button>
           </div>
-          {sessionsLoading ? <SectionLoader size="sm" minHeight={80} /> : (
+          {sessionsLoading ? <SessionsListSkeleton /> : (
             <div className="space-y-2">
               {sessions.map(s => (
                 <div key={s.id} className={`flex items-start gap-3 p-3 rounded-lg border ${s.isCurrent ? "border-primary/25 bg-primary/5" : "border-border bg-background"}`}>

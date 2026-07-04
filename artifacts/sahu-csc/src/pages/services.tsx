@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { SectionLoader } from "@/components/section-loader";
+import { ServicesSkeleton } from "@/components/skeletons";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -100,7 +100,7 @@ export default function Services() {
         </div>
 
         {isLoading ? (
-          <SectionLoader message="Loading services…" />
+          <ServicesSkeleton />
         ) : !services?.length ? (
           <div className="text-center py-16 text-muted-foreground text-sm">No services yet. Add your first service.</div>
         ) : (

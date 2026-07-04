@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { SectionLoader } from "@/components/section-loader";
+import { PreferencesSkeleton } from "@/components/skeletons";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/components/theme-provider";
 import { useForm } from "react-hook-form";
@@ -59,7 +59,7 @@ export default function Preferences() {
         </div>
 
         {isLoading ? (
-          <SectionLoader message="Loading preferences…" />
+          <PreferencesSkeleton />
         ) : (
           <form onSubmit={onSubmit} className="space-y-6">
             {/* Theme */}

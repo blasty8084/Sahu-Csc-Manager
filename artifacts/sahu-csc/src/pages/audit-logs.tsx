@@ -4,7 +4,7 @@ import { useListAuditLogs, getListAuditLogsQueryKey } from "@workspace/api-clien
 import { Layout } from "@/components/layout";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { SectionLoader } from "@/components/section-loader";
+import { AuditLogsSkeleton } from "@/components/skeletons";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -78,7 +78,7 @@ export default function AuditLogs() {
         {/* Mobile cards */}
         {isLoading ? (
           <div className="sm:hidden">
-            <SectionLoader message="Loading audit logs…" />
+            <AuditLogsSkeleton mobile rows={5} />
           </div>
         ) : data?.logs?.length === 0 ? (
           <p className="text-center text-muted-foreground py-12 sm:hidden">{t("audit.no_logs")}</p>
@@ -117,7 +117,7 @@ export default function AuditLogs() {
               </thead>
               <tbody className="divide-y divide-border">
                 {isLoading ? (
-                  <tr><td colSpan={5}><SectionLoader message="Loading logs…" /></td></tr>
+                  <AuditLogsSkeleton rows={6} />
                 ) : data?.logs?.length === 0 ? (
                   <tr><td colSpan={5} className="text-center text-muted-foreground py-12">{t("audit.no_logs")}</td></tr>
                 ) : data?.logs?.map((log: any) => (

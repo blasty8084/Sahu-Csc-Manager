@@ -853,7 +853,7 @@ function DesktopReports() {
         {activeTab === "daily" && (
           <div className="space-y-5">
             {daily.isLoading ? (
-              <SectionLoader message="Loading daily report…" minHeight={200} />
+              <ReportsSkeleton />
             ) : daily.data ? (
               <>
                 {/* 2-col chart grid */}

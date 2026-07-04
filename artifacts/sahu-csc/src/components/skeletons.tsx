@@ -194,3 +194,101 @@ export function UdhariSummarySkeleton() {
     </div>
   );
 }
+
+export function RecentTxSkeleton() {
+  return (
+    <div className="p-4 space-y-3">
+      {[...Array(5)].map((_, i) => (
+        <div key={i} className="flex items-center gap-3 animate-pulse">
+          <Pulse className="h-3.5 w-8 flex-shrink-0" />
+          <Pulse className="h-3.5 flex-1" />
+          <Pulse className="h-3.5 w-20 flex-shrink-0" />
+          <Pulse className="h-3.5 w-16 flex-shrink-0" />
+          <Pulse className="h-3.5 w-14 flex-shrink-0" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function ServicesSkeleton() {
+  return (
+    <div className="space-y-3">
+      {[...Array(6)].map((_, i) => (
+        <div key={i} className="animate-pulse flex items-center gap-3 p-3 rounded-xl border border-border bg-card">
+          <Pulse className="h-8 w-8 rounded-lg flex-shrink-0" />
+          <div className="flex-1 space-y-1.5">
+            <Pulse className="h-3.5 w-32" />
+            <Pulse className="h-2.5 w-20" />
+          </div>
+          <Pulse className="h-5 w-16 rounded-full flex-shrink-0" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function PreferencesSkeleton() {
+  return (
+    <div className="space-y-4 max-w-xl">
+      {[120, 160, 100].map((w, i) => (
+        <div key={i} className="animate-pulse rounded-xl border border-border bg-card p-5 space-y-3">
+          <Pulse className="h-4 w-28" />
+          <Pulse className={`h-10 w-full`} />
+          {i === 1 && <Pulse className="h-10 w-full" />}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function SessionsListSkeleton() {
+  return (
+    <div className="space-y-2">
+      {[...Array(3)].map((_, i) => (
+        <div key={i} className="animate-pulse flex items-start gap-3 p-3 rounded-lg border border-border bg-background">
+          <Pulse className="h-8 w-8 rounded-full flex-shrink-0" />
+          <div className="flex-1 space-y-1.5">
+            <Pulse className="h-3.5 w-40" />
+            <Pulse className="h-2.5 w-28" />
+          </div>
+          <Pulse className="h-6 w-16 rounded-md flex-shrink-0" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function AuditLogsSkeleton({ rows = 6, mobile = false }: { rows?: number; mobile?: boolean }) {
+  if (mobile) {
+    return (
+      <div className="space-y-2">
+        {[...Array(rows)].map((_, i) => (
+          <div key={i} className="animate-pulse bg-card border rounded-xl p-3.5 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <Pulse className="h-5 w-24 rounded" />
+              <Pulse className="h-3 w-28" />
+            </div>
+            <div className="flex items-center justify-between">
+              <Pulse className="h-3.5 w-20" />
+              <Pulse className="h-3 w-24" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return (
+    <>
+      {[...Array(rows)].map((_, i) => (
+        <tr key={i} className="animate-pulse border-b border-border">
+          {[28, 20, 16, 40, 20].map((w, j) => (
+            <td key={j} className="px-4 py-3">
+              <Pulse className={`h-3.5`} style={{ width: `${w}%` }} />
+            </td>
+          ))}
+        </tr>
+      ))}
+    </>
+  );
+}

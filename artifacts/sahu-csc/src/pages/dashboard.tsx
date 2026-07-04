@@ -2,7 +2,7 @@ import { useGetDashboard, useGetUdhariSummary } from "@workspace/api-client-reac
 import { Layout } from "@/components/layout";
 import { Link } from "wouter";
 import { SectionLoader } from "@/components/section-loader";
-import { DashboardStatsSkeleton, DashboardServicesSkeleton } from "@/components/skeletons";
+import { DashboardStatsSkeleton, DashboardServicesSkeleton, RecentTxSkeleton } from "@/components/skeletons";
 import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNetworkStatus } from "@/hooks/use-network-status";
@@ -442,7 +442,7 @@ function DesktopDashboard() {
             </Link>
           </div>
           {isLoading ? (
-            <SectionLoader size="sm" message="Loading services…" minHeight={100} />
+            <DashboardServicesSkeleton />
           ) : !data?.topServicesMonth?.length ? (
             <p className="text-muted-foreground text-sm text-center py-6">{t('dashboard.no_data')}</p>
           ) : (
@@ -486,7 +486,7 @@ function DesktopDashboard() {
         </div>
 
         {isLoading ? (
-          <SectionLoader size="sm" message="Loading transactions…" minHeight={120} />
+          <RecentTxSkeleton />
         ) : !data?.recentEntries?.length ? (
           <p className="text-center text-muted-foreground py-10 text-sm">{t('dashboard.no_transactions')}</p>
         ) : (
