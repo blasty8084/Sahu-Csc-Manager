@@ -375,6 +375,23 @@ function ProtectedRoute({ component: Component, adminOnly = false, ...rest }: an
   return <Component {...rest} />;
 }
 
+// ─── Page transition variants ─────────────────────────────────────────────────
+// Only opacity — never willChange:transform (breaks position:fixed bottom nav)
+const PAGE_ENTER = {
+  opacity: 1,
+  transition: {
+    duration: 0.2,
+    ease: [0.22, 1, 0.36, 1] as const, // custom spring-like easeOut
+  },
+};
+const PAGE_EXIT = {
+  opacity: 0,
+  transition: {
+    duration: 0.08,
+    ease: "easeIn" as const,
+  },
+};
+
 // ─── Router with page transitions ────────────────────────────────────────────
 function Router() {
   const [location] = useLocation();
@@ -384,10 +401,9 @@ function Router() {
       <motion.div
         key={location}
         initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.1, ease: "easeOut" }}
-        style={{ minHeight: "100vh" }}
+        animate={PAGE_ENTER}
+        exit={PAGE_EXIT}
+        style={{ minHeight: "100vh", willChange: "opacity" }}
       >
         <Suspense fallback={<PageSkeleton />}>
           <Switch>
