@@ -16,6 +16,7 @@ import {
   Monitor, Smartphone, Tablet, Globe, Clock, MapPin,
   Trash2, LogOut, ShieldCheck, Loader2, RefreshCw, ShieldAlert,
 } from "lucide-react";
+import { SessionsListSkeleton } from "@/components/skeletons";
 
 interface SessionEntry {
   id: number;
@@ -202,11 +203,7 @@ export default function Sessions() {
           </div>
         )}
 
-        {isLoading && (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
-        )}
+        {isLoading && <SessionsListSkeleton />}
 
         {/* Current session */}
         {currentSession && (

@@ -6,7 +6,7 @@ import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { SectionLoader } from "@/components/section-loader";
+import { UdhariCustomerHeaderSkeleton, SessionsListSkeleton } from "@/components/skeletons";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -578,7 +578,7 @@ export default function UdhariCustomer() {
   if (custLoading) {
     return (
       <Layout>
-        <SectionLoader message="Loading customer…" minHeight="60vh" />
+        <UdhariCustomerHeaderSkeleton />
       </Layout>
     );
   }
@@ -694,7 +694,7 @@ export default function UdhariCustomer() {
             Transaction History
           </p>
           {entriesLoading ? (
-            <SectionLoader size="sm" message="Loading transactions…" minHeight={120} />
+            <SessionsListSkeleton />
           ) : entryList.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-2xl"
               style={{ boxShadow: "0 1px 6px rgba(11,44,96,0.06)" }}>

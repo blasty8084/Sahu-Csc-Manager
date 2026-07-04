@@ -3,7 +3,7 @@ import { useListBackups, useCreateBackup, useRestoreBackup, getListBackupsQueryK
 import { useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
-import { SectionLoader } from "@/components/section-loader";
+import { BackupHistorySkeleton, BackupScheduleSkeleton } from "@/components/skeletons";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -334,7 +334,7 @@ export default function Backups() {
               />
               <div className="p-1">
                 {isLoading ? (
-                  <SectionLoader message="Loading backups…" />
+                  <BackupHistorySkeleton />
                 ) : !backups?.length ? (
                   <div className="text-center py-16">
                     <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
@@ -463,7 +463,7 @@ export default function Backups() {
                 </div>
 
                 {scheduleLoading ? (
-                  <SectionLoader size="sm" message="Loading schedule…" minHeight={80} />
+                  <BackupScheduleSkeleton />
                 ) : (
                   <div className={`space-y-4 transition-opacity ${schedule.enabled ? "opacity-100" : "opacity-40 pointer-events-none"}`}>
                     {/* Frequency */}

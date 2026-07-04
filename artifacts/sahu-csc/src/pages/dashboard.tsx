@@ -1,7 +1,6 @@
 import { useGetDashboard, useGetUdhariSummary } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout";
 import { Link } from "wouter";
-import { SectionLoader } from "@/components/section-loader";
 import { DashboardStatsSkeleton, DashboardServicesSkeleton, RecentTxSkeleton } from "@/components/skeletons";
 import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-mobile";

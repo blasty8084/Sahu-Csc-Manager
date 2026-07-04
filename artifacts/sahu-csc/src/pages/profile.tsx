@@ -14,8 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { SectionLoader } from "@/components/section-loader";
-import { SessionsListSkeleton } from "@/components/skeletons";
+import { ProfileToggleSkeleton, ProfilePageSkeleton, SessionsListSkeleton } from "@/components/skeletons";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -155,7 +154,7 @@ function RegistrationControlSection() {
     finally { setToggling(false); }
   };
 
-  if (regLoading) return <SectionLoader size="sm" minHeight={64} />;
+  if (regLoading) return <ProfileToggleSkeleton />;
   return (
     <div className={`flex items-center justify-between p-4 rounded-xl border-2 transition-colors ${isOpen ? "border-green-200 bg-green-50/50 dark:border-green-900/40 dark:bg-green-950/20" : "border-red-200 bg-red-50/50 dark:border-red-900/40 dark:bg-red-950/20"}`}>
       <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -338,7 +337,7 @@ export default function Profile() {
   if (profileLoading && !profile) {
     return (
       <Layout>
-        <SectionLoader message="Loading profile…" minHeight="60vh" />
+        <ProfilePageSkeleton />
       </Layout>
     );
   }

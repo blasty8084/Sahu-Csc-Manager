@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
-import { SectionLoader } from "@/components/section-loader";
+import { AdminSessionsSkeleton, UsersOverviewSkeleton } from "@/components/skeletons";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -129,7 +129,7 @@ function AdminSessionsTab() {
   const groups = Object.values(grouped);
 
   if (isLoading) {
-    return <SectionLoader size="sm" message="Loading sessions…" minHeight={140} />;
+    return <AdminSessionsSkeleton />;
   }
 
   if (!sessions?.length) {
@@ -359,7 +359,7 @@ function AepsOverviewTab() {
   })();
 
   if (isLoading) {
-    return <SectionLoader message="Loading users overview…" minHeight={200} />;
+    return <UsersOverviewSkeleton />;
   }
 
   if (summaries.length === 0) {

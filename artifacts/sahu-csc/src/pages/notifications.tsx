@@ -4,7 +4,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { SectionLoader } from "@/components/section-loader";
 import { NotificationsSkeleton } from "@/components/skeletons";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
