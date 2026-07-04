@@ -375,44 +375,30 @@ function ProtectedRoute({ component: Component, adminOnly = false, ...rest }: an
   return <Component {...rest} />;
 }
 
-// ─── Page transition variants ─────────────────────────────────────────────────
-// Only opacity — never willChange:transform (breaks position:fixed bottom nav)
-const PAGE_ENTER = {
-  opacity: 1,
-  transition: {
-    duration: 0.2,
-    ease: [0.22, 1, 0.36, 1] as const, // custom spring-like easeOut
-  },
-};
-const PAGE_EXIT = {
-  opacity: 0,
-  transition: {
-    duration: 0.08,
-    ease: "easeIn" as const,
-  },
-};
-
-// ─── Router with page transitions ────────────────────────────────────────────
-function Router() {
-  const [location] = useLocation();
-
+// ─── Auth page fade — simple enter-only fade for non-Layout routes ───────────
+function AuthFade({ children }: { children: React.ReactNode }) {
   return (
-    <AnimatePresence mode="sync" initial={false}>
-      <motion.div
-        key={location}
-        initial={{ opacity: 0 }}
-        animate={PAGE_ENTER}
-        exit={PAGE_EXIT}
-        style={{ minHeight: "100vh", willChange: "opacity" }}
-      >
-        <Suspense fallback={<PageSkeleton />}>
-          <Switch>
-            <Route path="/login" component={Login} />
-            <Route path="/register" component={Register} />
-            <Route path="/register/closed" component={RegistrationClosed} />
-            <Route path="/register/pending" component={RegisterPending} />
-            <Route path="/forgot-password" component={ForgotPassword} />
-            <Route path="/reset-password" component={ResetPassword} />
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.18, ease: "easeOut" }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+// ─── Router — transitions live inside Layout's <main> for protected routes ───
+function Router() {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <Switch>
+            <Route path="/login">{() => <AuthFade><Login /></AuthFade>}</Route>
+            <Route path="/register">{() => <AuthFade><Register /></AuthFade>}</Route>
+            <Route path="/register/closed">{() => <AuthFade><RegistrationClosed /></AuthFade>}</Route>
+            <Route path="/register/pending">{() => <AuthFade><RegisterPending /></AuthFade>}</Route>
+            <Route path="/forgot-password">{() => <AuthFade><ForgotPassword /></AuthFade>}</Route>
+            <Route path="/reset-password">{() => <AuthFade><ResetPassword /></AuthFade>}</Route>
             <Route path="/">{() => <ProtectedRoute component={Dashboard} />}</Route>
             <Route path="/ledger">{() => <ProtectedRoute component={Ledger} />}</Route>
             <Route path="/services">{() => <ProtectedRoute component={Services} />}</Route>
@@ -444,8 +430,6 @@ function Router() {
             <Route component={NotFound} />
           </Switch>
         </Suspense>
-      </motion.div>
-    </AnimatePresence>
   );
 }
 

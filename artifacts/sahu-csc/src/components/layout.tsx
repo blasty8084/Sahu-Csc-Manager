@@ -1,4 +1,5 @@
 import React, { useCallback, useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useUnreadCount } from "@/hooks/use-notifications";
@@ -612,9 +613,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {/* What's New modal — shows once per version for all authenticated users */}
         <WhatsNewModal />
 
-        {/* Page Content */}
-        <main className="flex-1 p-4 md:p-8 pb-24 md:pb-8 max-w-7xl mx-auto w-full">
-          {children}
+        {/* Page Content — transition lives here so transform never touches position:fixed nav */}
+        <main className="flex-1 overflow-hidden">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={location}
+              className="p-4 md:p-8 pb-24 md:pb-8 max-w-7xl mx-auto w-full"
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
         </main>
 
         {/* Mobile Bottom Navigation */}
