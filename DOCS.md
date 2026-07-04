@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Platform Documentation
-**Version 3.1.1** — last updated 2026-07-03
+**Version 3.2.1** — last updated 2026-07-04
 
 > Common Service Center (CSC) Business Management Platform for Odisha / India rural service centers.
 > Full-stack · PWA · Offline-capable · Multilingual (English / Hindi / Odia)
@@ -55,6 +55,23 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 ---
 
 ## 2. Version History
+
+### v3.2.1 — Skeleton Screens Everywhere (2026-07-04)
+
+| Feature | Description |
+|---------|-------------|
+| **All remaining spinners replaced** | `backups.tsx`, `profile.tsx`, `udhari-customer.tsx`, `sessions.tsx` converted from spinner-based `SectionLoader`/`Loader2` to content-shaped skeletons |
+| **7 new skeleton components** | `AdminSessionsSkeleton`, `UsersOverviewSkeleton`, `BackupHistorySkeleton`, `BackupScheduleSkeleton`, `ProfileToggleSkeleton`, `ProfilePageSkeleton`, `UdhariCustomerHeaderSkeleton` added to `skeletons.tsx` |
+| **`SectionLoader` fully retired** | No page imports or renders the spinner component anymore; every loading state app-wide is now a shimmer skeleton matching final content shape |
+
+### v3.2.0 — Persistent Cache & Skeleton Loading (2026-07-04)
+
+| Feature | Description |
+|---------|-------------|
+| **Persistent React Query cache** | `PersistQueryClientProvider` + sessionStorage persister; 5 min staleTime / 30 min gcTime |
+| **`EagerPreloader`** | Prefetches 7 key queries right after login so pages are warm before navigation |
+| **14 initial skeleton components** | Dashboard, ledger, AePS, reports, notifications, udhari, services, preferences, sessions, audit logs |
+| **Smooth page transitions** | 200ms enter / 80ms exit, opacity-only (no transform, to avoid breaking fixed bottom nav) |
 
 ### v3.1.1 — Receipt Export Mobile Redesign (2026-07-01)
 
@@ -452,7 +469,7 @@ All pages are fully translated in English / Hindi / Odia.
 | `UdhariReceiptModal` | `udhari-receipt-modal.tsx` | Udhari customer statement modal |
 | `LanguageSwitcher` | `language-switcher.tsx` | EN / हि / ଓ toggle in sidebar footer |
 | `AutocompleteInput` | `autocomplete-input.tsx` | Searchable input with dropdown suggestions |
-| `PageSkeleton` | `page-skeleton.tsx` | Skeleton loading placeholder for page content |
+| `skeletons.tsx` | `skeletons.tsx` | Content-shaped shimmer skeletons for every page/section (dashboard, ledger, AePS, reports, notifications, udhari, services, preferences, sessions, audit logs, admin tabs, backups, profile) — replaces all spinner-based loaders app-wide |
 | `SplashScreen` | `splash-screen.tsx` | App loading splash screen |
 | `ThemeProvider` | `theme-provider.tsx` | Dark/light theme context |
 | `ui/` | `ui/*.tsx` | shadcn/ui primitives (button, card, dialog, input, etc.) |

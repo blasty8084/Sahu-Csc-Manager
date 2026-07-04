@@ -1,9 +1,21 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 3.2.0** — last updated 2026-07-04
+**Version 3.2.1** — last updated 2026-07-04
 
 > Full platform documentation: **[DOCS.md](./DOCS.md)**
 
 A full-stack CSC (Common Service Center) business management platform for tracking services, ledger accounting, AePS cash management, Udhari Khata (customer credit ledger), and reporting. Built for Odisha / India rural service centers. Supports PWA installation, offline operation, Android TWA packaging, and full multilingual UI (English / Hindi / Odia).
+
+---
+
+## What's New in v3.2.1 (July 4, 2026)
+
+| Change | Description |
+|--------|-------------|
+| **Remaining spinners eliminated app-wide** | Last 4 pages using the spinner-based `SectionLoader`/`Loader2` were converted to content-shaped skeletons: `backups.tsx` (history list, schedule form), `profile.tsx` (registration toggle, full profile load), `udhari-customer.tsx` (customer header, transaction list), `sessions.tsx` (sessions list). |
+| **7 new skeleton components** | Added to `skeletons.tsx`: `AdminSessionsSkeleton`, `UsersOverviewSkeleton`, `BackupHistorySkeleton`, `BackupScheduleSkeleton`, `ProfileToggleSkeleton`, `ProfilePageSkeleton`, `UdhariCustomerHeaderSkeleton`. |
+| **`users.tsx` admin tabs** | Admin Sessions tab and AePS Overview tab now use `AdminSessionsSkeleton` / `UsersOverviewSkeleton` instead of spinners. |
+| **Dead imports removed** | Unused `SectionLoader` imports cleaned up from `udhari.tsx`, `reports.tsx`, `notifications.tsx`, `ledger.tsx`, `dashboard.tsx`, `aeps.tsx` (those pages already used skeletons since v3.2.0). |
+| **`SectionLoader` component fully retired** | No page references the spinner component anymore; only the (now-unused) component file remains. |
 
 ---
 
