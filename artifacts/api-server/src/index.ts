@@ -3,6 +3,7 @@ import { logger } from "./lib/logger";
 import { startOtpCleanup } from "./lib/otp-cleanup";
 import { scheduleMonthlyExport } from "./lib/monthly-export";
 import { initBackupScheduler } from "./lib/backup-scheduler";
+import { recordBootAndCheckCrashLoop } from "./lib/boot-tracker";
 
 const rawPort = process.env["PORT"];
 
@@ -28,4 +29,5 @@ app.listen(port, (err) => {
   startOtpCleanup();
   scheduleMonthlyExport();
   initBackupScheduler();
+  recordBootAndCheckCrashLoop();
 });

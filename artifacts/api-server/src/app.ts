@@ -1,5 +1,6 @@
 import express, { type Express } from "express";
 import cors from "cors";
+import compression from "compression";
 import pinoHttp from "pino-http";
 import session from "express-session";
 import ConnectPgSimple from "connect-pg-simple";
@@ -35,6 +36,7 @@ app.use(
 
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(hpp());
+app.use(compression());
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,

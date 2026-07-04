@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { pool } from "@workspace/db";
 import os from "os";
+import { getBootHealth } from "../lib/boot-tracker";
 
 const router: IRouter = Router();
 
@@ -42,19 +43,50 @@ router.get("/healthz", async (_req, res) => {
   const totalMem = os.totalmem();
   const freeMem = os.freemem();
 
+  // ── Boot / crash-loop check ─────────────────────────────────────────────────
+  const bootHealth = getBootHealth();
+
+  // ── Warnings (human-readable, surfaced to admins in the UI) ─────────────────
+  const warnings: string[] = [];
+  const heapUsedRatio = mem.heapTotal > 0 ? mem.heapUsed / mem.heapTotal : 0;
+  const memFreeRatio = totalMem > 0 ? freeMem / totalMem : 1;
+
+  if (dbLatencyMs !== null && dbLatencyMs > 800) {
+    warnings.push(`Database response is slow (${dbLatencyMs} ms). This can make every page feel laggy.`);
+  }
+  if (heapUsedRatio > 0.9) {
+    warnings.push("Server memory (heap) usage is very high — the process may restart unexpectedly.");
+  }
+  if (memFreeRatio < 0.1) {
+    warnings.push("System memory is nearly exhausted.");
+  }
+  if (bootHealth.crashLoopSuspected) {
+    warnings.push(
+      `Server has restarted ${bootHealth.recentBootCount} times in the last 5 minutes. ` +
+      "This usually means a duplicate workflow/process is fighting over the same port — " +
+      "check for stray processes and restart cleanly.",
+    );
+  }
+  const elapsedSoFarMs = Date.now() - startTime;
+  if (elapsedSoFarMs > 500) {
+    warnings.push(`This health check itself took ${elapsedSoFarMs} ms to respond — the server may be overloaded.`);
+  }
+
   // ── Overall status ──────────────────────────────────────────────────────────
   // VAPID is optional — its absence does not degrade overall API health
   const overallStatus: "ok" | "degraded" | "error" =
     dbStatus === "error" ? "error" :
-    vapidStatus === "ephemeral" ? "degraded" :
+    (vapidStatus === "ephemeral" || warnings.length > 0) ? "degraded" :
     "ok";
 
-  const responseTimeMs = Date.now() - startTime;
+  const totalResponseTimeMs = Date.now() - startTime;
 
   res.json({
     status: overallStatus,
     timestamp: new Date().toISOString(),
-    responseTimeMs,
+    responseTimeMs: totalResponseTimeMs,
+    warnings,
+    boot: bootHealth,
 
     server: {
       status: "ok",

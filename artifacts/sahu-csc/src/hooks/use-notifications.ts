@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNetworkStatus } from "@/hooks/use-network-status";
 
 const BASE = "/api";
 
@@ -10,12 +11,15 @@ async function fetchUnreadCount(): Promise<number> {
 }
 
 export function useUnreadCount() {
+  const { isSlow, isOffline } = useNetworkStatus();
   return useQuery({
     queryKey: ["notifications", "unread-count"],
     queryFn: fetchUnreadCount,
-    refetchInterval: 30_000,
+    // Back off polling on slow connections to save bandwidth/battery;
+    // pause entirely while offline (React Query still serves cached data).
+    refetchInterval: isOffline ? false : isSlow ? 120_000 : 30_000,
     refetchIntervalInBackground: false,
-    staleTime: 15_000,
+    staleTime: isSlow ? 60_000 : 15_000,
   });
 }
 

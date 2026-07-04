@@ -19,6 +19,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { AppLogo } from "@/components/app-logo";
 import { PWAInstallBanner } from "@/components/pwa-install-banner";
 import { SetupWizardBanner } from "@/components/setup-wizard-banner";
+import { ServerHealthBanner } from "@/components/server-health-banner";
 import { WhatsNewModal } from "@/components/whats-new-modal";
 import { SyncStatusBar, SyncDot } from "@/components/sync-status-bar";
 import { prefetch } from "@/lib/prefetch";
@@ -609,6 +610,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <SyncStatusBar />
         <PWAInstallBanner />
         {isAdmin && <SetupWizardBanner />}
+        {isAdmin && <ServerHealthBanner />}
 
         {/* What's New modal — shows once per version for all authenticated users */}
         <WhatsNewModal />
