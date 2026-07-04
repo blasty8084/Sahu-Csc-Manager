@@ -1,14 +1,112 @@
 # SAHU CSC — Change Log & Feature Documentation
-**Current version: 3.1.1** — last updated 2026-07-03
+**Current version: 3.2.0** — last updated 2026-07-04
 
 > Full record of every feature, change, and upgrade applied to the SAHU CSC platform.
 > Use this file as a reference for future development, onboarding, and audits.
 >
+> **v3.2.0 adds:** Persistent React Query cache (sessionStorage) · 14 skeleton components · Zero loading-spinner UX · Smooth page transitions · EagerPreloader prefetch  
 > **v3.1.0 adds:** Backup page complete redesign (Minimal Clean layout) · SQL backup download endpoint · Auto-backup scheduler · Selective table import · SQL backup import  
 > **v3.0.0 adds:** Setup Wizard Banner · `/api/setup-status` public endpoint · SMTP fully configured · VAPID auto-generation on startup · `scripts/post-merge.sh` auto-import setup · Full V3 documentation overhaul · Package bump to 3.0.0 · TWA config v3.0.0  
 > See `CHANGELOG_V3.md` for the full V3 detailed changelog. See `changelogV2.md` for v2.x history.
 >
 > **v2.1.0 adds:** Udhari Khata (customer credit ledger) · Receipt system (CSC-YYYY-NNNN + QR + WhatsApp PDF sharing) · V2 multi-device sessions · RBAC `requirePermission` middleware · OTP password reset · Admin oversight pages · PWA Status page · Idle timeout (30 min) · Notification isolation fixes · UI Design System v2 (mobile header, gradient card language) · Canvas mockup exploration for Ledger / AePS / Add Entry / Udhari form redesigns
+
+---
+
+## v3.2.0 — Zero-Spinner UX & Persistent Cache (July 4, 2026)
+
+### Packages Added
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `@tanstack/react-query-persist-client` | ^5.x | `PersistQueryClientProvider` — wraps the app with sessionStorage-backed cache persistence |
+| `@tanstack/query-sync-storage-persister` | ^5.x | `createSyncStoragePersister` — serialises the React Query cache to/from `sessionStorage` |
+
+### Packages Removed / Import Cleanup
+
+| File | Removed import | Reason |
+|------|---------------|--------|
+| `preferences.tsx` | `SectionLoader` | Replaced by `PreferencesSkeleton` |
+| `services.tsx` | `SectionLoader` | Replaced by `ServicesSkeleton` |
+| `audit-logs.tsx` | `SectionLoader` | Replaced by `AuditLogsSkeleton` |
+
+### New Files
+
+| File | Description |
+|------|-------------|
+| `artifacts/sahu-csc/src/components/skeletons.tsx` | 14 `animate-pulse` skeleton components — one shaped to match each page section |
+| `artifacts/sahu-csc/src/components/sync-badge.tsx` | Subtle "Updating…" dot shown only during background refetch |
+
+### Changes — `App.tsx`
+
+| Before | After |
+|--------|-------|
+| `QueryClientProvider` | `PersistQueryClientProvider` with `createSyncStoragePersister` (key `sahu-csc-rq-cache`) |
+| No prefetch on boot | `EagerPreloader` component prefetches 7 queries after auth resolves |
+| `staleTime: 0` | `staleTime: 5 min`, `gcTime: 30 min` globally |
+| Page transitions: opacity + transform | Page transitions: opacity only (`willChange: opacity`) — transform breaks `position: fixed` bottom nav |
+
+### Changes — `use-auth.tsx`
+
+| What | Detail |
+|------|--------|
+| **Prefetch on login** | After successful login, `queryClient.prefetchQuery` fires for: `dashboard`, `ledger` (page 1), `aeps-daily`, `reports/daily`, `services`, `notifications`, `udhari/customers` |
+| **Cache clear on logout** | `sessionStorage.removeItem("sahu-csc-rq-cache")` called in `handleLogout` — no stale data when switching accounts |
+
+### Changes — `SectionLoader` → Skeleton replacements
+
+| Page | Section | Old | New |
+|------|---------|-----|-----|
+| `dashboard.tsx` | Top Services card | `SectionLoader` spinner | `DashboardServicesSkeleton` |
+| `dashboard.tsx` | Recent Transactions table | `SectionLoader` spinner | `RecentTxSkeleton` |
+| `reports.tsx` | Daily tab (desktop) | `SectionLoader` spinner | `ReportsSkeleton` |
+| `services.tsx` | Services list | `SectionLoader` spinner | `ServicesSkeleton` |
+| `preferences.tsx` | Settings form | `SectionLoader` spinner | `PreferencesSkeleton` |
+| `profile.tsx` | Sessions list section | `SectionLoader` spinner | `SessionsListSkeleton` |
+| `audit-logs.tsx` | Mobile card list | `SectionLoader` spinner | `AuditLogsSkeleton` (mobile) |
+| `audit-logs.tsx` | Desktop table body | `SectionLoader` spinner | `AuditLogsSkeleton` (table rows) |
+
+### Optimization — How the cache strategy works
+
+```
+First visit (cold):
+  isLoading = true  →  skeleton shown for ~100–300ms  →  data arrives  →  skeleton replaced
+
+Repeat visit within 5 min (warm):
+  isLoading = false (cache hit)  →  data renders instantly  →  no skeleton, no spinner
+
+Repeat visit after 5 min (stale):
+  isLoading = false (stale cache hit)  →  data renders instantly  →  background refetch fires
+  →  SyncBadge "Updating…" dot visible  →  data silently swapped when refetch completes
+
+Page refresh / new tab:
+  PersistQueryClientProvider rehydrates cache from sessionStorage on mount
+  →  all 7 prefetched queries available instantly before any API call completes
+
+Logout:
+  sessionStorage key "sahu-csc-rq-cache" removed
+  queryClient.clear() removes all in-memory cache
+  →  next login starts fresh with zero cross-account data leakage
+```
+
+### Skeleton Component Reference
+
+| Component | Shape | Used on |
+|-----------|-------|---------|
+| `DashboardStatsSkeleton` | 4 stat cards row | Dashboard hero stats |
+| `DashboardServicesSkeleton` | 5 shimmer rows | Dashboard top services card |
+| `RecentTxSkeleton` | 5 shimmer table rows | Dashboard recent transactions |
+| `LedgerSkeleton` | Table rows + pagination | Ledger page |
+| `LedgerBalanceSkeleton` | Balance card strip | Ledger balance header |
+| `AepsSkeleton` | Balance hero + rows | AePS page |
+| `ReportsSkeleton` | KPI strip + 2-col charts | Reports daily/monthly tab |
+| `NotificationsSkeleton` | 5 notification rows | Notifications page |
+| `UdhariListSkeleton` | Customer card rows | Udhari list |
+| `UdhariSummarySkeleton` | Summary banner | Udhari summary card |
+| `ServicesSkeleton` | Category + service rows | Services page |
+| `PreferencesSkeleton` | Form card blocks | Preferences page |
+| `SessionsListSkeleton` | Session card rows | Profile → Sessions section |
+| `AuditLogsSkeleton` | Mobile cards / table `<tr>` | Audit Logs page |
 
 ---
 

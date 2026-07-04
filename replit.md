@@ -1,9 +1,24 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 3.1.1** — last updated 2026-07-03
+**Version 3.2.0** — last updated 2026-07-04
 
 > Full platform documentation: **[DOCS.md](./DOCS.md)**
 
 A full-stack CSC (Common Service Center) business management platform for tracking services, ledger accounting, AePS cash management, Udhari Khata (customer credit ledger), and reporting. Built for Odisha / India rural service centers. Supports PWA installation, offline operation, Android TWA packaging, and full multilingual UI (English / Hindi / Odia).
+
+---
+
+## What's New in v3.2.0 (July 4, 2026)
+
+| Change | Description |
+|--------|-------------|
+| **Persistent React Query cache** | `PersistQueryClientProvider` + `createSyncStoragePersister` — sessionStorage-backed cache; staleTime 5 min, gcTime 30 min. Repeat page visits render instantly with zero loading states. |
+| **`EagerPreloader` component** | Prefetches 7 key queries (dashboard, ledger, AePS, reports, services, notifications, udhari) immediately after login so every page is warm before the user navigates. |
+| **14 skeleton components** | New `skeletons.tsx`: `DashboardStatsSkeleton`, `DashboardServicesSkeleton`, `RecentTxSkeleton`, `LedgerSkeleton`, `LedgerBalanceSkeleton`, `AepsSkeleton`, `ReportsSkeleton`, `NotificationsSkeleton`, `UdhariListSkeleton`, `UdhariSummarySkeleton`, `ServicesSkeleton`, `PreferencesSkeleton`, `SessionsListSkeleton`, `AuditLogsSkeleton`. |
+| **All `SectionLoader` spinners removed** | Dashboard (×2), Reports, Services, Preferences, Profile/Sessions, Audit Logs (×2) — all replaced with content-shaped `animate-pulse` shimmer skeletons. |
+| **Smooth page transitions** | `PAGE_ENTER` 200 ms cubic-bezier + `PAGE_EXIT` 80 ms easeIn; `willChange: opacity` only — no transform (avoids breaking `position: fixed` bottom nav). |
+| **`SyncBadge` indicator** | Subtle "Updating…" dot shown in header only during background refetch — never blocks the UI. |
+| **Session cache cleared on logout** | `sessionStorage.removeItem("sahu-csc-rq-cache")` in logout handler — switching accounts never shows stale data. |
+| **Packages added** | `@tanstack/react-query-persist-client` · `@tanstack/query-sync-storage-persister` |
 
 ---
 
