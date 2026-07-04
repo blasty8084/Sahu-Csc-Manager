@@ -245,3 +245,23 @@ html.dark, html.dark body {
     scroll-behavior: smooth;
   }
 }
+
+/* ── Adaptive performance tiers (set by PerformanceProvider) ─────────────────
+   High-end devices target 60-120fps with full motion; low-end devices target
+   30-40fps — decorative loops are traded for cheap compositor-only opacity
+   pulses and transition durations are shortened, not lengthened, since long
+   animations are what visibly drop frames on weak GPUs. */
+html[data-reduced-motion="true"] * {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+html[data-perf-tier="low"] {
+  scroll-behavior: auto;
+}
+
+html[data-perf-tier="low"] * {
+  scroll-behavior: auto !important;
+}

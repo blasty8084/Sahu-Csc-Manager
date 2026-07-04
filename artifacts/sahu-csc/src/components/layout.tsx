@@ -24,6 +24,7 @@ import { WhatsNewModal } from "@/components/whats-new-modal";
 import { SyncStatusBar, SyncDot } from "@/components/sync-status-bar";
 import { prefetch } from "@/lib/prefetch";
 import { useTranslation } from "react-i18next";
+import { usePerformanceTier } from "@/hooks/use-performance-tier";
 
 type NavItem = {
   href: string;
@@ -217,6 +218,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const isAdmin = user?.role === "admin";
   const { data: pendingCountData } = usePendingCount();
   const pendingCount = isAdmin ? (pendingCountData?.count ?? 0) : 0;
+  const { richAnimations, scaleDuration } = usePerformanceTier();
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const handleLogout = useCallback(() => { setShowLogoutConfirm(true); }, []);
@@ -621,10 +623,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <motion.div
               key={location}
               className="p-4 md:p-8 pb-24 md:pb-8 max-w-7xl mx-auto w-full"
-              initial={{ opacity: 0, y: 14 }}
+              initial={{ opacity: 0, y: richAnimations ? 14 : 0 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: scaleDuration(220) / 1000, ease: [0.22, 1, 0.36, 1] }}
             >
               {children}
             </motion.div>

@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth, type LoadingPhase } from "@/hooks/use-auth";
+import { PerformanceProvider, usePerformanceTier } from "@/hooks/use-performance-tier";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -207,6 +208,7 @@ function SessionManager() {
 
 // ─── Full-screen loading (used while auth is resolving) ───────────────────────
 function LoadingScreen({ phase = "loading" }: { phase?: LoadingPhase }) {
+  const { richAnimations, scaleDuration } = usePerformanceTier();
   return (
     <div
       className="fixed inset-0 z-50 flex flex-col items-center justify-center select-none"
@@ -227,11 +229,11 @@ function LoadingScreen({ phase = "loading" }: { phase?: LoadingPhase }) {
       <motion.div
         initial={{ scale: 0.82, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.22, ease: "easeOut" }}
+        transition={{ duration: scaleDuration(220) / 1000, ease: "easeOut" }}
         className="relative flex items-center justify-center"
       >
-        {/* Outer ring — stops on timeout */}
-        {phase !== "timeout" ? (
+        {/* Outer ring — stops on timeout; rotation loop skipped on low-end devices to save CPU */}
+        {phase !== "timeout" && richAnimations ? (
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
@@ -244,6 +246,11 @@ function LoadingScreen({ phase = "loading" }: { phase?: LoadingPhase }) {
               borderLeftColor: "rgba(249,115,22,0.08)",
               willChange: "transform",
             }}
+          />
+        ) : phase !== "timeout" ? (
+          <div
+            className="absolute w-32 h-32 rounded-full animate-pulse"
+            style={{ border: "2.5px solid rgba(249,115,22,0.30)" }}
           />
         ) : (
           <div
@@ -287,17 +294,29 @@ function LoadingScreen({ phase = "loading" }: { phase?: LoadingPhase }) {
 
         <div className="mt-4 min-h-[36px] flex flex-col items-center justify-center">
           {phase === "loading" && (
-            <motion.div className="flex items-center gap-1.5">
-              {[0, 1, 2].map((i) => (
-                <motion.div
-                  key={i}
-                  className="rounded-full"
-                  style={{ width: 5, height: 5, background: "rgba(249,115,22,0.7)" }}
-                  animate={{ opacity: [0.3, 1, 0.3], scale: [0.8, 1.1, 0.8] }}
-                  transition={{ duration: 1.1, repeat: Infinity, delay: i * 0.18 }}
-                />
-              ))}
-            </motion.div>
+            richAnimations ? (
+              <motion.div className="flex items-center gap-1.5">
+                {[0, 1, 2].map((i) => (
+                  <motion.div
+                    key={i}
+                    className="rounded-full"
+                    style={{ width: 5, height: 5, background: "rgba(249,115,22,0.7)" }}
+                    animate={{ opacity: [0.3, 1, 0.3], scale: [0.8, 1.1, 0.8] }}
+                    transition={{ duration: 1.1, repeat: Infinity, delay: i * 0.18 }}
+                  />
+                ))}
+              </motion.div>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className="rounded-full animate-pulse"
+                    style={{ width: 5, height: 5, background: "rgba(249,115,22,0.7)" }}
+                  />
+                ))}
+              </div>
+            )
           )}
 
           {phase === "slow" && (
@@ -322,18 +341,25 @@ function LoadingScreen({ phase = "loading" }: { phase?: LoadingPhase }) {
         </div>
       </motion.div>
 
-      {/* Bottom progress bar */}
+      {/* Bottom progress bar — animated sweep on capable devices, static fill on low-end */}
       {phase !== "timeout" && (
         <div
           className="absolute overflow-hidden rounded-full"
           style={{ bottom: 56, width: 56, height: 2, background: "rgba(255,255,255,0.08)" }}
         >
-          <motion.div
-            className="w-full h-full rounded-full"
-            style={{ background: "linear-gradient(90deg, #F97316, rgba(249,115,22,0.35))" }}
-            animate={{ x: ["-100%", "0%", "100%"] }}
-            transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-          />
+          {richAnimations ? (
+            <motion.div
+              className="w-full h-full rounded-full"
+              style={{ background: "linear-gradient(90deg, #F97316, rgba(249,115,22,0.35))" }}
+              animate={{ x: ["-100%", "0%", "100%"] }}
+              transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+            />
+          ) : (
+            <div
+              className="w-full h-full rounded-full animate-pulse"
+              style={{ background: "linear-gradient(90deg, #F97316, rgba(249,115,22,0.35))" }}
+            />
+          )}
         </div>
       )}
 
@@ -448,7 +474,7 @@ function App() {
   }, []);
 
   return (
-    <>
+    <PerformanceProvider>
       <SplashScreen visible={showSplash} onDone={handleSplashDone} />
       <PersistQueryClientProvider
         client={queryClient}
@@ -479,7 +505,7 @@ function App() {
           <Toaster />
         </TooltipProvider>
       </PersistQueryClientProvider>
-    </>
+    </PerformanceProvider>
   );
 }
 
