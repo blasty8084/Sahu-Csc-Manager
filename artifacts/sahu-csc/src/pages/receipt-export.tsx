@@ -651,7 +651,10 @@ export default function ReceiptExport() {
     <div className="sm:hidden flex flex-col bg-slate-100" style={{ height: "100dvh", overflow: "hidden" }}>
 
       {/* ── Top Header ── */}
-      <div className="bg-[#0b2c60] px-4 pt-3 pb-3 shrink-0">
+      <div
+        className="bg-[#0b2c60] px-4 pb-3 shrink-0"
+        style={{ paddingTop: "calc(0.75rem + env(safe-area-inset-top))" }}
+      >
         <div className="flex items-center gap-2">
           <button
             onClick={() => showPreview ? setShowPreview(false) : (window.history.length > 1 ? window.history.back() : setLocation("/"))}
