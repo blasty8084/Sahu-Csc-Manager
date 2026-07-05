@@ -1,9 +1,20 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 3.2.2** — last updated 2026-07-05
+**Version 3.2.3** — last updated 2026-07-05
 
 > Full platform documentation: **[DOCS.md](./DOCS.md)**
 
 A full-stack CSC (Common Service Center) business management platform for tracking services, ledger accounting, AePS cash management, Udhari Khata (customer credit ledger), and reporting. Built for Odisha / India rural service centers. Supports PWA installation, offline operation, Android TWA packaging, and full multilingual UI (English / Hindi / Odia).
+
+---
+
+## What's New in v3.2.3 (July 5, 2026)
+
+| Change | Description |
+|--------|-------------|
+| **Device Performance card on Server Health page** | New admin-only card shows live FPS (sampled continuously via `requestAnimationFrame`, updated twice/sec), target FPS, current tier (High/Medium/Low), rich-animations status, and reduced-motion status — lets an admin verify the adaptive performance system on any real device. |
+| **`useLiveFps` hook** | Added inline in `server-health.tsx` — separate from the one-time startup benchmark, this continuously measures real-time frame rate for live diagnostics. |
+| **Fixed false "degraded" health status** | `GET /api/healthz` previously flagged the server as degraded whenever heap usage passed 90% of `heapTotal` (currently-*allocated* heap) — but V8 normally runs heap usage near 90–98% of `heapTotal` between GC cycles as expected, steady-state behavior, not a leak. |
+| **Heap check now uses the real ceiling** | Memory warning now compares `heapUsed` against `v8.getHeapStatistics().heap_size_limit` (the actual out-of-memory crash boundary) instead of `heapTotal`. `heapSizeLimitBytes` is now also included in the `/api/healthz` response and shown on the Server Health page. |
 
 ---
 

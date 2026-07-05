@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Platform Documentation
-**Version 3.2.2** — last updated 2026-07-05
+**Version 3.2.3** — last updated 2026-07-05
 
 > Common Service Center (CSC) Business Management Platform for Odisha / India rural service centers.
 > Full-stack · PWA · Offline-capable · Multilingual (English / Hindi / Odia)
@@ -55,6 +55,14 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 ---
 
 ## 2. Version History
+
+### v3.2.3 — Server Health FPS Panel + Heap Check Fix (2026-07-05)
+
+| Feature | Description |
+|---------|-------------|
+| **Device Performance card** | `server-health.tsx` gained a card showing live FPS (via new `useLiveFps` hook, sampled continuously with `requestAnimationFrame`), target FPS, tier badge, rich-animations status, and reduced-motion status — so an admin can confirm the adaptive tier on any real device without dev tools |
+| **`/api/healthz` heap check fixed** | Was comparing `heapUsed` to `heapTotal` (currently-allocated heap, which V8 normally keeps 90–98% full between GC cycles) — a near-permanent false positive. Now compares against `v8.getHeapStatistics().heap_size_limit`, the actual out-of-memory ceiling |
+| **`heapSizeLimitBytes` added to health response** | Exposed in `server.memory` so the frontend can show "X of Y limit" instead of a meaningless allocated-heap ratio |
 
 ### v3.2.2 — Adaptive Animation Performance (2026-07-05)
 
@@ -158,26 +166,34 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 
 ## 4. Workflows
 
-| Workflow | Port | Purpose | Auto-starts |
-|----------|------|---------|-------------|
-| `API Server` | 8080 | Express API server (main project workflow) | ✅ |
-| `artifacts/sahu-csc: web` | 5000 → :80 | Vite frontend (Replit preview) | ✅ |
-| `Seed Database` | — | One-shot: creates/resets admin + operator accounts | ❌ Manual |
-| `artifacts/api-server: API Server` | 8080 | Platform-injected artifact API (same process) | ⚠️ Platform |
-| `artifacts/mockup-sandbox: Component Preview Server` | 8081 | Design canvas sandbox | ⚠️ Platform |
+| Workflow | Port | Purpose | Starts with Project |
+|----------|------|---------|---------------------|
+| `SAHU CSC` | 5000 → :80 | Vite frontend dev server | ✅ Yes |
+| `API Server` | 8080 | Express API (pre-built `dist/index.mjs`) | ✅ Yes |
+| `Build API` | — | Rebuild API ESM bundle after source changes | ❌ Manual only |
+| `Seed Database` | — | One-shot DB seeder; requires `ADMIN_PASSWORD` + `OPERATOR_PASSWORD` secrets | ❌ Manual only |
+| `Typecheck` | — | TypeScript check across all packages | ❌ Manual only |
+| `Build Production` | — | Full production build: typecheck + API + Vite + PWA SW | ❌ Manual only |
+| `Production Preview` | 5000 | Build + serve production bundle (replaces dev server on port 5000) | ❌ Manual only |
 
 > **Port note:** Port 5000 maps to external port 80 (Replit proxy). API runs on port 8080. Vite's `vite.config.ts` proxies `/api/*` → `http://localhost:8080`.
+> After any backend code change: run **Build API** → restart **API Server**.
+>
+> Replit occasionally auto-generates duplicate stray workflows named `artifacts/api-server: API Server`, `artifacts/sahu-csc: web`, and `artifacts/mockup-sandbox: Component Preview Server` alongside the real ones above — these are platform artifacts, not part of the app's own workflow config, and can be safely ignored if they show a port-conflict failure (the real `API Server`/`SAHU CSC` workflows already hold those ports).
 
 ### Workflow commands (exact)
 
 ```bash
-# API Server
-pnpm install && PORT=8080 pnpm --filter @workspace/api-server run dev
+# SAHU CSC — frontend dev server (auto-start)
+PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run dev
 
-# Frontend
-pnpm install && fuser -k 5000/tcp 2>/dev/null; sleep 1; PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run dev
+# API Server — runs pre-built bundle (auto-start)
+PORT=8080 NODE_ENV=development node --enable-source-maps artifacts/api-server/dist/index.mjs
 
-# Seed Database (manual only)
+# Build API — rebuild after backend changes (manual)
+PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server run build
+
+# Seed Database — create/reset admin + operator (manual, requires secrets)
 PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server exec tsx src/scripts/seed.ts
 ```
 
