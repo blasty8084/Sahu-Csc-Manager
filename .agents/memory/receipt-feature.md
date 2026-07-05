@@ -45,3 +45,9 @@ description: How the CSC receipt number generation, QR verification, and PDF exp
 **How to apply:**
 - Any future ledger refactor must preserve `receipt_number` and `receipt_token` generation on POST
 - The `receiptToken` field is now part of the `LedgerEntry` OpenAPI schema and generated hooks
+
+## Single-receipt action buttons (admin bulk-export style pages)
+- Bulk/preview list endpoints (e.g. `bulk-export/count`) intentionally return a lightweight row shape without `receiptToken`/`description` — not enough to Print/PDF/Share a single receipt.
+- Any per-row Print/PDF/Share/WhatsApp button needs a dedicated single-record fetch (e.g. `GET /api/admin/receipts/single/:receiptNumber`) that returns the full row + business settings before opening the shared `ReceiptModal`.
+- `ReceiptModal` (`components/receipt-modal.tsx`) supports an `autoAction?: "print"|"download"|"share"|"whatsapp"` prop that fires the corresponding handler ~400ms after opening — reuse this instead of re-implementing html2canvas/print/share logic on each page.
+- **Why:** icon-only action buttons with no onClick handlers are an easy silent-failure pattern in this codebase — always check buttons actually have wired handlers, not just correct icons/styling.

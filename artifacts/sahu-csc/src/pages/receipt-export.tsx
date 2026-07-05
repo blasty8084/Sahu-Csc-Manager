@@ -12,6 +12,7 @@ import {
   SlidersHorizontal, Hash,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { ReceiptModal } from "@/components/receipt-modal";
 
 const NAVY    = "#0b2c60";
 const SAFFRON = "#f97316";
@@ -37,6 +38,30 @@ interface CountResult {
   count: number;
   entries: PreviewEntry[];
 }
+
+interface FullReceiptEntry {
+  id: number;
+  date: string;
+  customerName: string;
+  serviceType: string;
+  credit: number;
+  debit: number;
+  description: string | null;
+  balance: number;
+  receiptNumber: string | null;
+  receiptToken: string | null;
+  createdByName: string | null;
+  createdAt: string;
+}
+
+interface BusinessInfo {
+  businessName: string;
+  businessAddress: string;
+  businessMobile: string;
+  businessWebsite: string;
+}
+
+type ModalAction = "print" | "download" | "share" | "whatsapp" | null;
 
 function Checkbox({ checked, onChange, size = 16 }: { checked: boolean; onChange: () => void; size?: number }) {
   return (
@@ -92,6 +117,32 @@ export default function ReceiptExport() {
   const [trigYear,         setTrigYear]         = useState(now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear());
   const [emailing,         setEmailing]         = useState(false);
   const [monthDownloading, setMonthDownloading] = useState(false);
+
+  /* ── Single-receipt action modal (Print / PDF / Share / WhatsApp) ── */
+  const [modalOpen,   setModalOpen]   = useState(false);
+  const [modalEntry,  setModalEntry]  = useState<FullReceiptEntry | null>(null);
+  const [modalAction, setModalAction] = useState<ModalAction>(null);
+  const [modalLoadingFor, setModalLoadingFor] = useState<string | null>(null);
+  const [business, setBusiness] = useState<BusinessInfo>({
+    businessName: "SAHU CSC Center", businessAddress: "", businessMobile: "", businessWebsite: "",
+  });
+
+  const openReceiptAction = async (receiptNumber: string, action: ModalAction = null) => {
+    setModalLoadingFor(receiptNumber);
+    try {
+      const data = await customFetch<FullReceiptEntry & { business: BusinessInfo }>(
+        `/api/admin/receipts/single/${encodeURIComponent(receiptNumber)}`
+      );
+      setBusiness(data.business);
+      setModalEntry(data);
+      setModalAction(action);
+      setModalOpen(true);
+    } catch (err: unknown) {
+      toast({ title: "Could not load receipt", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
+    } finally {
+      setModalLoadingFor(null);
+    }
+  };
 
   const { data: usersOverview = [] } = useQuery<any[]>({
     queryKey: ["admin", "users-overview"],
@@ -484,9 +535,16 @@ export default function ReceiptExport() {
                       </td>
                       <td className="px-3 py-3 text-right" onClick={ev => ev.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1">
-                          {[Eye, Printer, Share2].map((Icon, i) => (
-                            <button key={i} className="w-6 h-6 rounded hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-700 transition-colors">
-                              <Icon size={12} />
+                          {[
+                            { Icon: Eye, action: null as ModalAction },
+                            { Icon: Printer, action: "print" as ModalAction },
+                            { Icon: Share2, action: "share" as ModalAction },
+                          ].map(({ Icon, action }, i) => (
+                            <button key={i}
+                              onClick={() => openReceiptAction(e.receiptNumber, action)}
+                              disabled={modalLoadingFor === e.receiptNumber}
+                              className="w-6 h-6 rounded hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-700 transition-colors disabled:opacity-40">
+                              {modalLoadingFor === e.receiptNumber ? <Loader2 size={12} className="animate-spin" /> : <Icon size={12} />}
                             </button>
                           ))}
                         </div>
@@ -625,9 +683,16 @@ export default function ReceiptExport() {
                     </div>
                   </div>
                   <div className="mt-3 grid grid-cols-3 gap-1.5">
-                    {[{ icon: Printer, label: "Print" }, { icon: Download, label: "PDF" }, { icon: Share2, label: "Share" }].map(({ icon: Icon, label }) => (
-                      <button key={label} className="flex flex-col items-center gap-1 py-2 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors text-slate-600">
-                        <Icon size={13} />
+                    {[
+                      { icon: Printer, label: "Print", action: "print" as ModalAction },
+                      { icon: Download, label: "PDF", action: "download" as ModalAction },
+                      { icon: Share2, label: "Share", action: "share" as ModalAction },
+                    ].map(({ icon: Icon, label, action }) => (
+                      <button key={label}
+                        onClick={() => openReceiptAction(e.receiptNumber, action)}
+                        disabled={modalLoadingFor === e.receiptNumber}
+                        className="flex flex-col items-center gap-1 py-2 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors text-slate-600 disabled:opacity-40">
+                        {modalLoadingFor === e.receiptNumber ? <Loader2 size={13} className="animate-spin" /> : <Icon size={13} />}
                         <span className="text-[10px] font-medium">{label}</span>
                       </button>
                     ))}
@@ -764,16 +829,22 @@ export default function ReceiptExport() {
           </div>
           <div className="mt-4 grid grid-cols-3 gap-3">
             {[
-              { icon: Printer,  label: "Print", color: "bg-[#0b2c60] text-white" },
-              { icon: Download, label: "PDF",   color: "bg-[#f97316] text-white" },
-              { icon: Share2,   label: "Share", color: "bg-white text-slate-700 border border-slate-200" },
-            ].map(({ icon: Icon, label, color }) => (
-              <button key={label} className={`${color} rounded-2xl py-4 flex flex-col items-center gap-2 shadow-sm font-medium text-sm`}>
-                <Icon size={20} />{label}
+              { icon: Printer,  label: "Print", color: "bg-[#0b2c60] text-white", action: "print" as ModalAction },
+              { icon: Download, label: "PDF",   color: "bg-[#f97316] text-white", action: "download" as ModalAction },
+              { icon: Share2,   label: "Share", color: "bg-white text-slate-700 border border-slate-200", action: "share" as ModalAction },
+            ].map(({ icon: Icon, label, color, action }) => (
+              <button key={label}
+                onClick={() => openReceiptAction(activeEntry.receiptNumber, action)}
+                disabled={modalLoadingFor === activeEntry.receiptNumber}
+                className={`${color} rounded-2xl py-4 flex flex-col items-center gap-2 shadow-sm font-medium text-sm disabled:opacity-50`}>
+                {modalLoadingFor === activeEntry.receiptNumber ? <Loader2 size={20} className="animate-spin" /> : <Icon size={20} />}{label}
               </button>
             ))}
           </div>
-          <button className="mt-3 w-full bg-[#25D366] text-white rounded-2xl py-4 flex items-center justify-center gap-2 font-semibold shadow-sm">
+          <button
+            onClick={() => openReceiptAction(activeEntry.receiptNumber, "whatsapp")}
+            disabled={modalLoadingFor === activeEntry.receiptNumber}
+            className="mt-3 w-full bg-[#25D366] text-white rounded-2xl py-4 flex items-center justify-center gap-2 font-semibold shadow-sm disabled:opacity-50">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
               <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
             </svg>
@@ -1125,6 +1196,17 @@ export default function ReceiptExport() {
     <>
       {DesktopLayout}
       {MobileLayout}
+      <ReceiptModal
+        entry={modalEntry}
+        open={modalOpen}
+        onClose={() => { setModalOpen(false); setModalAction(null); }}
+        businessName={business.businessName}
+        businessAddress={business.businessAddress}
+        businessMobile={business.businessMobile}
+        businessWebsite={business.businessWebsite}
+        autoAction={modalAction}
+        onAutoActionComplete={() => setModalAction(null)}
+      />
     </>
   );
 }

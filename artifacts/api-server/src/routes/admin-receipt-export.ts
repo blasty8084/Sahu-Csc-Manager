@@ -360,6 +360,61 @@ router.get(
   }
 );
 
+// ── Single receipt lookup (for Print / PDF / Share actions) ──────────────────
+router.get(
+  "/admin/receipts/single/:receiptNumber",
+  requireRole("admin"),
+  async (req, res): Promise<void> => {
+    const receiptNumber = String(req.params.receiptNumber);
+
+    const [entry] = await db
+      .select({
+        id: ledgerTable.id,
+        receiptNumber: ledgerTable.receiptNumber,
+        date: ledgerTable.date,
+        customerName: ledgerTable.customerName,
+        serviceType: ledgerTable.serviceType,
+        credit: ledgerTable.credit,
+        debit: ledgerTable.debit,
+        description: ledgerTable.description,
+        balance: ledgerTable.balance,
+        receiptToken: ledgerTable.receiptToken,
+        createdAt: ledgerTable.createdAt,
+        createdByName: usersTable.username,
+      })
+      .from(ledgerTable)
+      .leftJoin(usersTable, eq(ledgerTable.createdBy, usersTable.id))
+      .where(eq(ledgerTable.receiptNumber, receiptNumber))
+      .limit(1);
+
+    if (!entry) {
+      res.status(404).json({ error: "Receipt not found" });
+      return;
+    }
+
+    const biz = await getSettings();
+
+    res.json({
+      id: entry.id,
+      receiptNumber: entry.receiptNumber,
+      date: entry.date,
+      customerName: entry.customerName,
+      serviceType: entry.serviceType,
+      credit: parseFloat(entry.credit ?? "0"),
+      debit: parseFloat(entry.debit ?? "0"),
+      description: entry.description ?? null,
+      balance: parseFloat(entry.balance ?? "0"),
+      receiptToken: entry.receiptToken,
+      createdByName: entry.createdByName ?? null,
+      createdAt:
+        entry.createdAt instanceof Date
+          ? entry.createdAt.toISOString()
+          : (entry.createdAt ?? new Date().toISOString()),
+      business: biz,
+    });
+  }
+);
+
 // ── Manual monthly export trigger (for testing / on-demand) ──────────────────
 router.post(
   "/admin/receipts/monthly-export/trigger",

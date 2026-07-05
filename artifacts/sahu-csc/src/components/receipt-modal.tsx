@@ -35,6 +35,8 @@ interface ReceiptModalProps {
   businessWebsite?: string;
   autoDownload?: boolean;
   onAutoDownloadComplete?: () => void;
+  autoAction?: "print" | "download" | "share" | "whatsapp" | null;
+  onAutoActionComplete?: () => void;
 }
 
 export function ReceiptModal({
@@ -47,6 +49,8 @@ export function ReceiptModal({
   businessWebsite = "",
   autoDownload = false,
   onAutoDownloadComplete,
+  autoAction = null,
+  onAutoActionComplete,
 }: ReceiptModalProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -54,29 +58,40 @@ export function ReceiptModal({
   const [sendingWa, setSendingWa] = useState(false);
 
   useEffect(() => {
-    if (!autoDownload || !open || !entry) return;
+    const action = autoAction ?? (autoDownload ? "download" : null);
+    if (!action || !open || !entry) return;
     const timer = setTimeout(async () => {
       if (!printRef.current) return;
-      setGeneratingPdf(true);
       try {
-        const blob = await generatePdfBlob();
-        if (!blob) return;
-        const receiptNum = entry.receiptNumber ?? `CSC-${new Date(entry.createdAt).getFullYear()}-${String(entry.id).padStart(4, "0")}`;
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${receiptNum}.pdf`;
-        a.click();
-        URL.revokeObjectURL(url);
+        if (action === "download") {
+          setGeneratingPdf(true);
+          const blob = await generatePdfBlob();
+          if (blob) {
+            const receiptNum = entry.receiptNumber ?? `CSC-${new Date(entry.createdAt).getFullYear()}-${String(entry.id).padStart(4, "0")}`;
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `${receiptNum}.pdf`;
+            a.click();
+            URL.revokeObjectURL(url);
+          }
+        } else if (action === "print") {
+          handlePrint();
+        } else if (action === "share") {
+          await handleShare();
+        } else if (action === "whatsapp") {
+          await handleWhatsApp();
+        }
+        onAutoActionComplete?.();
         onAutoDownloadComplete?.();
       } catch {
-        /* silently ignore auto-download failures */
+        /* silently ignore auto-action failures */
       } finally {
         setGeneratingPdf(false);
       }
     }, 400);
     return () => clearTimeout(timer);
-  }, [autoDownload, open, entry?.id]);
+  }, [autoAction, autoDownload, open, entry?.id]);
 
   if (!entry) return null;
 
