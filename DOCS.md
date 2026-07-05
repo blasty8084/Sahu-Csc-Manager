@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Platform Documentation
-**Version 3.2.1** — last updated 2026-07-04
+**Version 3.2.2** — last updated 2026-07-05
 
 > Common Service Center (CSC) Business Management Platform for Odisha / India rural service centers.
 > Full-stack · PWA · Offline-capable · Multilingual (English / Hindi / Odia)
@@ -55,6 +55,16 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 ---
 
 ## 2. Version History
+
+### v3.2.2 — Adaptive Animation Performance (2026-07-05)
+
+| Feature | Description |
+|---------|-------------|
+| **Device performance tiers** | `PerformanceProvider` (`hooks/use-performance-tier.tsx`) buckets the session into `high` / `medium` / `low` using CPU cores, `deviceMemory`, network `saveData`/`effectiveType`, and a one-time `requestAnimationFrame` benchmark |
+| **60-120fps on high-end, 30-40fps on low-end** | High tier keeps full decorative motion; low tier swaps infinite-loop animations (spinner ring, loading dots, progress sweep) for a cheap `animate-pulse` equivalent |
+| **Shorter, not longer, transitions on weak hardware** | `scaleDuration()` trims page-transition/splash durations on lower tiers since long animations are what visibly drop frames on weak GPUs |
+| **`prefers-reduced-motion` always wins** | Reduced-motion users get all animation durations forced to ~0 via global CSS — skips tier detection and benchmarking entirely |
+| **`data-perf-tier` / `data-reduced-motion` on `<html>`** | Lets any component or CSS rule react to device capability without prop drilling |
 
 ### v3.2.1 — Skeleton Screens Everywhere (2026-07-04)
 
@@ -481,6 +491,7 @@ All pages are fully translated in English / Hindi / Odia.
 | Hook | File | Description |
 |------|------|-------------|
 | `useAuth` | `use-auth.tsx` | Auth context + offline session cache from IndexedDB |
+| `usePerformanceTier` | `use-performance-tier.tsx` | Device performance tier (`high`/`medium`/`low`), target fps, `richAnimations` flag, `scaleDuration()` helper — set via `PerformanceProvider` in `App.tsx` |
 | `useNetworkStatus` | `use-network-status.ts` | Online / offline / slow detection + 30s latency probe |
 | `usePwa` | `use-pwa.ts` | Install prompt, badge, periodic sync, share, wake lock |
 | `useSync` | `use-sync.ts` | Offline queue state and manual sync trigger |

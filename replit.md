@@ -1,9 +1,23 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 3.2.1** — last updated 2026-07-04
+**Version 3.2.2** — last updated 2026-07-05
 
 > Full platform documentation: **[DOCS.md](./DOCS.md)**
 
 A full-stack CSC (Common Service Center) business management platform for tracking services, ledger accounting, AePS cash management, Udhari Khata (customer credit ledger), and reporting. Built for Odisha / India rural service centers. Supports PWA installation, offline operation, Android TWA packaging, and full multilingual UI (English / Hindi / Odia).
+
+---
+
+## What's New in v3.2.2 (July 5, 2026)
+
+| Change | Description |
+|--------|-------------|
+| **Adaptive animation performance** | New `PerformanceProvider` (`hooks/use-performance-tier.tsx`) detects device capability — CPU cores, RAM (`deviceMemory`), network `saveData`/`effectiveType`, plus a one-time `requestAnimationFrame` benchmark — and buckets the session into `high` / `medium` / `low` tiers. |
+| **Tier targets** | High-end devices target 60–120fps with full motion; low-end devices target 30–40fps with simplified, compositor-only effects. |
+| **Rich animations gated by tier** | Decorative infinite loops (login-screen spinner ring, staggered loading dots, progress-bar sweep) are skipped on `low` tier and replaced with a cheap `animate-pulse` equivalent — same visual language, far less CPU/GPU work. |
+| **Shorter transitions on weak hardware** | Page-transition and splash durations are *shortened* (not lengthened) on lower tiers — long-running animations are what visibly drop frames on weak GPUs, so `scaleDuration()` trims duration instead. |
+| **Respects `prefers-reduced-motion`** | If the OS reports reduced motion, all animation durations are forced to ~0 via a global CSS rule — takes priority over tier detection and is never benchmarked. |
+| **Session-cached tier** | Benchmark runs once per `sessionStorage` session (`sahu-perf-tier`) to avoid repeated rAF sampling on every page load. |
+| **`data-perf-tier` / `data-reduced-motion` attributes** | Set on `<html>` so any component or CSS rule can react to the current tier without prop drilling. |
 
 ---
 
