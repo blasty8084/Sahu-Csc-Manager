@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { pool } from "@workspace/db";
 import os from "os";
+import v8 from "v8";
 import { getBootHealth } from "../lib/boot-tracker";
 
 const router: IRouter = Router();
@@ -42,19 +43,24 @@ router.get("/healthz", async (_req, res) => {
   const mem = process.memoryUsage();
   const totalMem = os.totalmem();
   const freeMem = os.freemem();
+  const heapStats = v8.getHeapStatistics();
 
   // ── Boot / crash-loop check ─────────────────────────────────────────────────
   const bootHealth = getBootHealth();
 
   // ── Warnings (human-readable, surfaced to admins in the UI) ─────────────────
   const warnings: string[] = [];
-  const heapUsedRatio = mem.heapTotal > 0 ? mem.heapUsed / mem.heapTotal : 0;
+  // NOTE: heapUsed/heapTotal is NOT a good danger signal — V8 normally runs with heapUsed
+  // near 90-98% of heapTotal (its *currently allocated* heap) between GC cycles; that's
+  // expected steady-state behavior, not a leak. The real ceiling that matters is
+  // heap_size_limit (the point where V8 throws "JavaScript heap out of memory").
+  const heapLimitRatio = heapStats.heap_size_limit > 0 ? mem.heapUsed / heapStats.heap_size_limit : 0;
   const memFreeRatio = totalMem > 0 ? freeMem / totalMem : 1;
 
   if (dbLatencyMs !== null && dbLatencyMs > 800) {
     warnings.push(`Database response is slow (${dbLatencyMs} ms). This can make every page feel laggy.`);
   }
-  if (heapUsedRatio > 0.9) {
+  if (heapLimitRatio > 0.9) {
     warnings.push("Server memory (heap) usage is very high — the process may restart unexpectedly.");
   }
   if (memFreeRatio < 0.1) {
@@ -98,6 +104,7 @@ router.get("/healthz", async (_req, res) => {
         rssBytes: mem.rss,
         heapUsedBytes: mem.heapUsed,
         heapTotalBytes: mem.heapTotal,
+        heapSizeLimitBytes: heapStats.heap_size_limit,
         externalBytes: mem.external,
       },
       system: {

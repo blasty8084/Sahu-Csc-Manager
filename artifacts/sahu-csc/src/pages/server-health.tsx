@@ -84,6 +84,7 @@ interface HealthData {
       rssBytes: number;
       heapUsedBytes: number;
       heapTotalBytes: number;
+      heapSizeLimitBytes?: number;
       externalBytes: number;
     };
     system: {
@@ -428,12 +429,21 @@ export default function ServerHealth() {
                     <StatCell
                       label="Heap Used"
                       value={formatBytes(data.server.memory.heapUsedBytes)}
-                      sub={`of ${formatBytes(data.server.memory.heapTotalBytes)}`}
+                      sub={
+                        data.server.memory.heapSizeLimitBytes
+                          ? `of ${formatBytes(data.server.memory.heapSizeLimitBytes)} limit`
+                          : `of ${formatBytes(data.server.memory.heapTotalBytes)}`
+                      }
                     />
                     <StatCell label="RSS" value={formatBytes(data.server.memory.rssBytes)} />
                     <StatCell label="System Free" value={formatBytes(data.server.system.freeMemBytes)} />
                     <StatCell label="System Total" value={formatBytes(data.server.system.totalMemBytes)} />
                   </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    "Heap Used" is compared against the process's actual heap size limit (where V8 would crash with
+                    out-of-memory), not against currently-allocated heap — V8 normally runs near-full between GC
+                    cycles, so that ratio alone isn't a reliable danger signal.
+                  </p>
                 </div>
 
                 {/* CPU */}
