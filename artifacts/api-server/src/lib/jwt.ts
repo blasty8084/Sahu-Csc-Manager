@@ -96,7 +96,8 @@ export async function verifyReceiptToken(token: string): Promise<ReceiptTokenPay
   if (
     typeof payload.sub !== "string" ||
     typeof payload.eid !== "number" ||
-    typeof payload.rn !== "string"
+    typeof payload.rn !== "string" ||
+    (payload.typ !== "ledger" && payload.typ !== "udhari")
   ) {
     throw new Error("Invalid receipt token payload");
   }
