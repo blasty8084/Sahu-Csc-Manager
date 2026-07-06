@@ -29,7 +29,7 @@ router.get("/healthz", async (_req, res) => {
   // ── VAPID check ─────────────────────────────────────────────────────────────
   const vapidPublic = process.env.VAPID_PUBLIC_KEY;
   const vapidPrivate = process.env.VAPID_PRIVATE_KEY;
-  const vapidEmail = process.env.VAPID_EMAIL ?? "mailto:admin@sahucsc.in";
+  const vapidEmail = process.env.VAPID_EMAIL ?? "mailto:sahuuttam690@gmail.com";
 
   // Persistent = keys were set BEFORE server started (from real env secrets)
   // We detect ephemeral keys by checking a flag we set at startup

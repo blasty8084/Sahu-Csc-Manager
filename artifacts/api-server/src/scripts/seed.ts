@@ -23,7 +23,7 @@ async function seed() {
     .insert(usersTable)
     .values({
       username: "admin",
-      email: "admin@sahucsc.in",
+      email: "sahuuttam690@gmail.com",
       mobile: "9876543210",
       fullName: "SAHU Admin",
       passwordHash,
@@ -90,7 +90,7 @@ async function seed() {
     businessName: "SAHU CSC Center",
     businessAddress: "Village Road, Block HQ, Dist-XXX, Odisha - 000000",
     businessMobile: "9876543210",
-    businessEmail: "admin@sahucsc.in",
+    businessEmail: "sahuuttam690@gmail.com",
     language: "en",
     theme: "light",
     currency: "INR",

@@ -15,7 +15,7 @@ export let VAPID_PUBLIC_KEY: string | undefined;
 export function initPush(): void {
   const pubKey = process.env.VAPID_PUBLIC_KEY;
   const privKey = process.env.VAPID_PRIVATE_KEY;
-  const email = process.env.VAPID_EMAIL || "mailto:admin@sahucsc.in";
+  const email = process.env.VAPID_EMAIL || "mailto:sahuuttam690@gmail.com";
 
   if (pubKey && privKey) {
     webPush.setVapidDetails(email, pubKey, privKey);
