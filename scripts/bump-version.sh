@@ -14,10 +14,22 @@ if ! echo "$NEW_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
   exit 1
 fi
 
-# Derive today's date and major version for TWA
+# Derive today's date
 TODAY=$(date +"%Y-%m-%d")
 TODAY_LONG=$(date +"%B %-d, %Y")
-MAJOR=$(echo "$NEW_VERSION" | cut -d. -f1)
+
+# Compute the next TWA appVersionCode by reading the current value and incrementing.
+# The Play Store requires a strictly increasing integer on every upload — using the
+# semver major would never change on minor/patch bumps and cause upload rejections.
+TWA_CFG="infrastructure/twa/twa-config.json"
+if [ -f "$TWA_CFG" ]; then
+  NEW_VERSION_CODE=$(node -e "
+    const cfg = JSON.parse(require('fs').readFileSync('$TWA_CFG', 'utf8'));
+    process.stdout.write(String((cfg.appVersionCode || 0) + 1));
+  ")
+else
+  NEW_VERSION_CODE=1
+fi
 
 echo "[bump-version] Updating to v$NEW_VERSION (date: $TODAY)"
 echo ""
@@ -80,7 +92,7 @@ echo "    ✓ architectureV3.md"
 echo "  [ReplitV3.md]"
 sed -i -E "s/^\*\*Version [0-9]+\.[0-9]+\.[0-9]+ — .+\*\*/**Version $NEW_VERSION — $TODAY_LONG**/" ReplitV3.md
 sed -i -E "s/\| Version \| [0-9]+\.[0-9]+\.[0-9]+ \|/| Version | $NEW_VERSION |/" ReplitV3.md
-sed -i -E "s/Version: [0-9]+\.[0-9]+\.[0-9]+ \(code: [0-9]+\)/Version: $NEW_VERSION (code: $MAJOR)/" ReplitV3.md
+sed -i -E "s/Version: [0-9]+\.[0-9]+\.[0-9]+ \(code: [0-9]+\)/Version: $NEW_VERSION (code: $NEW_VERSION_CODE)/" ReplitV3.md
 sed -i -E "s/Last updated: [A-Za-z]+ [0-9]+, [0-9]{4} \| Version [0-9]+\.[0-9]+\.[0-9]+/Last updated: $TODAY_LONG | Version $NEW_VERSION/" ReplitV3.md
 echo "    ✓ ReplitV3.md"
 
@@ -92,10 +104,10 @@ if [ -f "$TWA" ]; then
     const fs = require('fs');
     const cfg = JSON.parse(fs.readFileSync('$TWA', 'utf8'));
     cfg.appVersionName = '$NEW_VERSION';
-    cfg.appVersionCode = $MAJOR;
+    cfg.appVersionCode = $NEW_VERSION_CODE;
     fs.writeFileSync('$TWA', JSON.stringify(cfg, null, 2) + '\n');
   "
-  echo "    ✓ $TWA"
+  echo "    ✓ $TWA (appVersionCode → $NEW_VERSION_CODE)"
 fi
 
 # ── 11. Rebuild API server ────────────────────────────────────────────────────

@@ -16,8 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useIdleTimer } from "@/hooks/use-idle-timer";
 import { SplashScreen } from "@/components/splash-screen";
 import { PageSkeleton } from "@/components/page-skeleton";
-import { useListNotifications } from "@workspace/api-client-react";
 import { updateAppBadge } from "@/lib/pwa-badge";
+import { useUnreadCount } from "@/hooks/use-notifications";
 import { SyncBadge } from "@/components/sync-badge";
 import { Redirect } from "wouter";
 
@@ -88,9 +88,10 @@ const persister = createSyncStoragePersister({
 });
 
 // ─── Badge ────────────────────────────────────────────────────────────────────
+// Uses the dedicated unread-count endpoint (polls every 30 s) so the OS badge
+// always reflects the true server count, not a truncated page of results.
 function BadgeUpdater() {
-  const { data } = useListNotifications({ unreadOnly: true });
-  const count = Array.isArray(data) ? data.length : 0;
+  const { data: count = 0 } = useUnreadCount();
   useEffect(() => { updateAppBadge(count); }, [count]);
   return null;
 }

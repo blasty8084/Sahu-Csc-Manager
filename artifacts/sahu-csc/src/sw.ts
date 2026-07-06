@@ -357,7 +357,29 @@ self.addEventListener("push", (event: PushEvent) => {
     silent: false,
   } as NotificationOptions;
 
-  event.waitUntil(self.registration.showNotification(title, options));
+  // Show the notification then sync the OS badge with the real server count.
+  // Using an async IIFE inside waitUntil so the SW stays alive for the fetch.
+  event.waitUntil(
+    (async () => {
+      await self.registration.showNotification(title, options);
+      try {
+        const res = await fetch("/api/notifications/unread-count", {
+          credentials: "include",
+        });
+        if (res.ok) {
+          const json: { count?: number } = await res.json();
+          const unread = json.count ?? 0;
+          if ("setAppBadge" in navigator) {
+            unread > 0
+              ? await (navigator as any).setAppBadge(unread)
+              : await (navigator as any).clearAppBadge();
+          }
+        }
+      } catch {
+        // Offline or unauthenticated — badge corrects itself when the app opens.
+      }
+    })()
+  );
 });
 
 // ─── Notification click ───────────────────────────────────────────────────────
