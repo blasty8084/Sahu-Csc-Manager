@@ -1,6 +1,24 @@
 # SAHU CSC — Common Service Center Management Platform
 **Version 3.2.5** — last updated 2026-07-06
 
+## Replit Setup
+
+### How to run
+- **Frontend** (port 5000): `SAHU CSC` workflow — `PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run dev`
+- **API Server** (port 8080): `API Server` workflow — `node --enable-source-maps artifacts/api-server/dist/index.mjs`
+- **Seed DB**: Run the `Seed Database` workflow (requires `ADMIN_PASSWORD` and `OPERATOR_PASSWORD` secrets)
+- **Rebuild API**: `node artifacts/api-server/build.mjs` from workspace root
+
+### First-time setup
+1. `pnpm install` from workspace root
+2. Schema is auto-applied by `drizzle-kit push` (runs via `scripts/post-merge.sh`)
+3. Run `Seed Database` workflow to create admin/operator accounts
+4. Secrets required: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`
+
+### Login credentials
+- Admin: `admin` / value of `ADMIN_PASSWORD` secret
+- Operator: `operator` / value of `OPERATOR_PASSWORD` secret
+
 > Full platform documentation: **[DOCS.md](./DOCS.md)**
 
 A full-stack CSC (Common Service Center) business management platform for tracking services, ledger accounting, AePS cash management, Udhari Khata (customer credit ledger), and reporting. Built for Odisha / India rural service centers. Supports PWA installation, offline operation, Android TWA packaging, and full multilingual UI (English / Hindi / Odia).
