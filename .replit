@@ -80,7 +80,6 @@ channel = "stable-25_05"
 [userenv.shared]
 PORT = "5000"
 BASE_PATH = "/"
-VAPID_PUBLIC_KEY = "BAIqC04KRPkjuV9slRekhW3aJHuevCDSF9Q5hSkGmB8XtiDPS7eRMFemC7viKq-578m-kuBf_MyEh8mQIYug630"
-VAPID_PRIVATE_KEY = "bJV8IqXpVgKodPEsrjTaaxtyYZ8h3v5twt2PjY0knsI"
+VAPID_PUBLIC_KEY = "BLIlte-nN-gxMlLAYEoIKjhHBVLy4cBVwHKqz_allKZBF31uvyBKLgBVzKczm407q5TfbfCBXTZ3-6UjvQsUdQA"
 VAPID_EMAIL = "mailto: uttamsahu0747@gmail.com"
 API_PORT = "8080"
