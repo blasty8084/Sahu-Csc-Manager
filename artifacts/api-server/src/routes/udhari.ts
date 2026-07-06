@@ -3,6 +3,7 @@ import { db, udhariCustomersTable, udhariEntriesTable } from "@workspace/db";
 import { eq, and, desc, sql, or, ilike } from "drizzle-orm";
 import { requireAuth, requirePermission, auditLog, getClientIp } from "../lib/auth";
 import { encryptField, decryptField } from "../lib/encryption";
+import { sanitize } from "../lib/sanitize";
 import { z } from "zod/v4";
 import { randomUUID } from "crypto";
 
@@ -157,10 +158,10 @@ router.post(
     const [customer] = await db
       .insert(udhariCustomersTable)
       .values({
-        name,
-        mobile,
-        address: await encryptField(address),
-        notes: await encryptField(notes),
+        name: sanitize(name),
+        mobile: mobile ? sanitize(mobile) : mobile,
+        address: await encryptField(sanitize(address)),
+        notes: await encryptField(sanitize(notes)),
         createdBy: userId,
       })
       .returning();
@@ -214,8 +215,10 @@ router.patch(
     if (!existing) { res.status(404).json({ error: "Customer not found" }); return; }
 
     const updateData: any = { ...parsed.data, updatedAt: new Date() };
-    if (parsed.data.address !== undefined) updateData.address = await encryptField(parsed.data.address);
-    if (parsed.data.notes !== undefined) updateData.notes = await encryptField(parsed.data.notes);
+    if (parsed.data.name !== undefined) updateData.name = sanitize(parsed.data.name);
+    if (parsed.data.mobile !== undefined) updateData.mobile = parsed.data.mobile ? sanitize(parsed.data.mobile) : parsed.data.mobile;
+    if (parsed.data.address !== undefined) updateData.address = await encryptField(sanitize(parsed.data.address));
+    if (parsed.data.notes !== undefined) updateData.notes = await encryptField(sanitize(parsed.data.notes));
 
     const [updated] = await db
       .update(udhariCustomersTable)
@@ -305,7 +308,7 @@ router.post(
 
     const [entry] = await db
       .insert(udhariEntriesTable)
-      .values({ customerId, date, type, amount: String(amount), note: note ?? "", receiptToken, createdBy: userId })
+      .values({ customerId, date, type, amount: String(amount), note: sanitize(note ?? ""), receiptToken, createdBy: userId })
       .returning();
 
     await recalcBalance(customerId);
@@ -348,6 +351,7 @@ router.patch(
 
     const updateData: any = { ...parsed.data, updatedAt: new Date() };
     if (parsed.data.amount !== undefined) updateData.amount = String(parsed.data.amount);
+    if (parsed.data.note !== undefined) updateData.note = sanitize(parsed.data.note);
 
     const [updated] = await db
       .update(udhariEntriesTable)

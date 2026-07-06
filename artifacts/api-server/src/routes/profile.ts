@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod/v4";
 import { requireAuth, hashPassword, auditLog, getClientIp } from "../lib/auth";
 import { encryptField, decryptField } from "../lib/encryption";
+import { sanitize } from "../lib/sanitize";
 import { passwordPolicySchema } from "../lib/password-policy";
 
 const router: IRouter = Router();
@@ -55,11 +56,11 @@ router.patch("/profile", requireAuth, async (req, res): Promise<void> => {
 
   const updates: Record<string, any> = {};
 
-  if (profileFields.fullName !== undefined) updates.fullName = profileFields.fullName;
+  if (profileFields.fullName !== undefined) updates.fullName = sanitize(profileFields.fullName);
   if (profileFields.email !== undefined) updates.email = profileFields.email;
-  if (profileFields.mobile !== undefined) updates.mobile = profileFields.mobile;
-  if (profileFields.bio !== undefined) updates.bio = await encryptField(profileFields.bio);
-  if (profileFields.address !== undefined) updates.address = await encryptField(profileFields.address);
+  if (profileFields.mobile !== undefined) updates.mobile = sanitize(profileFields.mobile);
+  if (profileFields.bio !== undefined) updates.bio = await encryptField(sanitize(profileFields.bio));
+  if (profileFields.address !== undefined) updates.address = await encryptField(sanitize(profileFields.address));
 
   if (password) {
     if (!currentPassword) {

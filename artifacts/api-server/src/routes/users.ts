@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { CreateUserBody, UpdateUserBody } from "@workspace/api-zod";
 import { requireRole, hashPassword, auditLog, getClientIp } from "../lib/auth";
 import { encryptField, decryptField } from "../lib/encryption";
+import { sanitize } from "../lib/sanitize";
 import { passwordPolicySchema } from "../lib/password-policy";
 
 const router: IRouter = Router();
@@ -42,10 +43,10 @@ router.post("/users", requireRole("admin"), async (req, res): Promise<void> => {
 
   const passwordHash = await hashPassword(parsed.data.password);
   const [u] = await db.insert(usersTable).values({
-    username: parsed.data.username,
+    username: sanitize(parsed.data.username),
     email: parsed.data.email,
-    mobile: parsed.data.mobile ?? null,
-    fullName: parsed.data.fullName ?? null,
+    mobile: parsed.data.mobile ? sanitize(parsed.data.mobile) : null,
+    fullName: parsed.data.fullName ? sanitize(parsed.data.fullName) : null,
     passwordHash,
     role: parsed.data.role,
     isActive: true,
@@ -69,10 +70,10 @@ router.patch("/users/:id", requireRole("admin"), async (req, res): Promise<void>
   if (!existing) { res.status(404).json({ error: "Not found" }); return; }
 
   const updates: Record<string, any> = {};
-  if (parsed.data.username !== undefined) updates.username = parsed.data.username;
+  if (parsed.data.username !== undefined) updates.username = sanitize(parsed.data.username);
   if (parsed.data.email !== undefined) updates.email = parsed.data.email;
-  if (parsed.data.mobile !== undefined) updates.mobile = parsed.data.mobile;
-  if (parsed.data.fullName !== undefined) updates.fullName = parsed.data.fullName;
+  if (parsed.data.mobile !== undefined) updates.mobile = parsed.data.mobile ? sanitize(parsed.data.mobile) : parsed.data.mobile;
+  if (parsed.data.fullName !== undefined) updates.fullName = parsed.data.fullName ? sanitize(parsed.data.fullName) : parsed.data.fullName;
   if (parsed.data.role !== undefined) updates.role = parsed.data.role;
   if (parsed.data.isActive !== undefined) {
     updates.isActive = parsed.data.isActive;

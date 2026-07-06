@@ -31,7 +31,7 @@ app.use(
   }),
 );
 
-app.use(helmet({ contentSecurityPolicy: false }));
+app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
 app.use(hpp());
 app.use(compression());
 
