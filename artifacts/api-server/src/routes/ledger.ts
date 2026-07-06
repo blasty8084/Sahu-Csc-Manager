@@ -9,6 +9,7 @@ import {
 } from "@workspace/api-zod";
 import { requireAuth, requireRole, requirePermission, auditLog, getClientIp } from "../lib/auth";
 import { notifyLargeTransaction } from "../services/notificationTemplates";
+import { signReceiptToken } from "../lib/jwt";
 import crypto from "crypto";
 
 const router: IRouter = Router();
@@ -173,7 +174,7 @@ router.post("/ledger", requireAuth, requirePermission("ledger:create"), async (r
 
   const txYear = new Date(date).getFullYear();
   const receiptNumber = await generateReceiptNumber(txYear);
-  const receiptToken = crypto.randomUUID();
+  const uuid = crypto.randomUUID();
 
   const [entry] = await db
     .insert(ledgerTable)
@@ -185,9 +186,17 @@ router.post("/ledger", requireAuth, requirePermission("ledger:create"), async (r
       balance: String(newBalance),
       createdBy: userId,
       receiptNumber,
-      receiptToken,
+      receiptToken: uuid,
     })
     .returning();
+
+  // Sign a tamper-proof JWT receipt token; store it back so future lookups use it.
+  const receiptJwt = await signReceiptToken(uuid, entry.id, receiptNumber, "ledger");
+  await db
+    .update(ledgerTable)
+    .set({ receiptToken: receiptJwt })
+    .where(eq(ledgerTable.id, entry.id));
+  entry.receiptToken = receiptJwt;
 
   await auditLog(userId, "ledger.create", `Created ledger entry for ${customerName} (${receiptNumber})`, getClientIp(req));
 

@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { db, ledgerTable, usersTable, settingsTable, udhariEntriesTable, udhariCustomersTable } from "@workspace/db";
 import { eq, inArray } from "drizzle-orm";
 import { decryptField } from "../lib/encryption";
+import { verifyReceiptToken, isJwt } from "../lib/jwt";
 
 const router: IRouter = Router();
 
@@ -13,6 +14,22 @@ router.get("/receipts/verify/udhari/:token", async (req, res): Promise<void> => 
   if (!token || typeof token !== "string" || token.length < 16) {
     res.status(400).json({ error: "Invalid token" });
     return;
+  }
+
+  // JWT-first: verify signature then look up by entry ID for guaranteed integrity
+  let entryId: number | null = null;
+  if (isJwt(token)) {
+    try {
+      const payload = await verifyReceiptToken(token);
+      if (payload.typ !== "udhari") {
+        res.status(400).json({ error: "Token type mismatch" });
+        return;
+      }
+      entryId = payload.eid;
+    } catch {
+      res.status(401).json({ error: "Invalid or tampered receipt token" });
+      return;
+    }
   }
 
   const [entry] = await db
@@ -27,7 +44,11 @@ router.get("/receipts/verify/udhari/:token", async (req, res): Promise<void> => 
       createdAt: udhariEntriesTable.createdAt,
     })
     .from(udhariEntriesTable)
-    .where(eq(udhariEntriesTable.receiptToken, token));
+    .where(
+      entryId !== null
+        ? eq(udhariEntriesTable.id, entryId)
+        : eq(udhariEntriesTable.receiptToken, token)
+    );
 
   if (!entry) {
     res.status(404).json({ error: "Receipt not found" });
@@ -70,6 +91,7 @@ router.get("/receipts/verify/udhari/:token", async (req, res): Promise<void> => 
     businessAddress: getSetting("businessAddress", ""),
     businessMobile: getSetting("businessMobile", ""),
     businessWebsite: getSetting("businessWebsite", ""),
+    verified: isJwt(token),
   });
 });
 
@@ -79,6 +101,22 @@ router.get("/receipts/verify/:token", async (req, res): Promise<void> => {
   if (!token || typeof token !== "string" || token.length < 16) {
     res.status(400).json({ error: "Invalid token" });
     return;
+  }
+
+  // JWT-first path: verify signature then fetch entry by ID (tamper-proof)
+  let entryId: number | null = null;
+  if (isJwt(token)) {
+    try {
+      const payload = await verifyReceiptToken(token);
+      if (payload.typ && payload.typ !== "ledger") {
+        res.status(400).json({ error: "Token type mismatch" });
+        return;
+      }
+      entryId = payload.eid;
+    } catch {
+      res.status(401).json({ error: "Invalid or tampered receipt token" });
+      return;
+    }
   }
 
   const [entry] = await db
@@ -96,7 +134,11 @@ router.get("/receipts/verify/:token", async (req, res): Promise<void> => {
     })
     .from(ledgerTable)
     .leftJoin(usersTable, eq(ledgerTable.createdBy, usersTable.id))
-    .where(eq(ledgerTable.receiptToken, token));
+    .where(
+      entryId !== null
+        ? eq(ledgerTable.id, entryId)
+        : eq(ledgerTable.receiptToken, token)
+    );
 
   if (!entry || !entry.receiptNumber) {
     res.status(404).json({ error: "Receipt not found" });
@@ -125,6 +167,7 @@ router.get("/receipts/verify/:token", async (req, res): Promise<void> => {
     businessAddress: getSetting("businessAddress", ""),
     businessMobile: getSetting("businessMobile", ""),
     businessWebsite: getSetting("businessWebsite", ""),
+    verified: isJwt(token),
   });
 });
 
