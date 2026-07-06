@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Platform Documentation
-**Version 3.2.3** — last updated 2026-07-05
+**Version 3.2.5** — last updated 2026-07-06
 
 > Common Service Center (CSC) Business Management Platform for Odisha / India rural service centers.
 > Full-stack · PWA · Offline-capable · Multilingual (English / Hindi / Odia)
@@ -55,6 +55,21 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 ---
 
 ## 2. Version History
+
+### v3.2.5 — Password Policy Correction (2026-07-06)
+
+| Feature | Description |
+|---------|-------------|
+| **Password length corrected to 6–8 chars** | The v3.2.4 policy required 10+ characters; adjusted to a 6–8 character range (still requires upper, lower, number, special character) across registration, password reset, profile self-service change, and admin user management |
+
+### v3.2.4 — Security Upgrade (2026-07-06)
+
+| Feature | Description |
+|---------|-------------|
+| **Unified password policy** | Shared `passwordPolicySchema` (`lib/password-policy.ts`) enforced everywhere a password is set — registration, password reset, profile self-service change, admin user management |
+| **Tighter rate limiting** | Login limiter 20→8/15min; new `authWriteLimiter` (10/15min) on register/appeal/send-otp/forgot-password; new `otpVerifyLimiter` (8/15min) on verify-otp/reset-password |
+| **Field-level encryption at rest** | AES-256-GCM (`lib/encryption.ts`) encrypts `udhari_customers.address/notes` and `users.address/bio` — fields that are never searched. Name/mobile/email stay plaintext since they're matched via `ILIKE`. Key auto-generates and persists in `settings`, overridable via `ENCRYPTION_KEY` secret |
+| **Password hashing reviewed** | Confirmed bcrypt cost factor 12 already meets industry standard — no change needed |
 
 ### v3.2.3 — Server Health FPS Panel + Heap Check Fix (2026-07-05)
 

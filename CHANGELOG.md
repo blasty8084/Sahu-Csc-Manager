@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log & Feature Documentation
-**Current version: 3.2.0** — last updated 2026-07-04
+**Current version: 3.2.5** — last updated 2026-07-06
 
 > Full record of every feature, change, and upgrade applied to the SAHU CSC platform.
 > Use this file as a reference for future development, onboarding, and audits.
@@ -12,6 +12,19 @@
 > **v2.1.0 adds:** Udhari Khata (customer credit ledger) · Receipt system (CSC-YYYY-NNNN + QR + WhatsApp PDF sharing) · V2 multi-device sessions · RBAC `requirePermission` middleware · OTP password reset · Admin oversight pages · PWA Status page · Idle timeout (30 min) · Notification isolation fixes · UI Design System v2 (mobile header, gradient card language) · Canvas mockup exploration for Ledger / AePS / Add Entry / Udhari form redesigns
 
 ---
+
+## v3.2.5 — Password Policy Correction (July 6, 2026)
+
+Password length requirement adjusted from 10+ characters (v3.2.4) to a 6–8 character range. Complexity rules (upper/lower/number/special character) unchanged. Applied via the shared `passwordPolicySchema`, so the fix took effect everywhere in one place: registration, password reset, profile self-service change, and admin user management.
+
+## v3.2.4 — Security Upgrade (July 6, 2026)
+
+| Change | Description |
+|--------|-------------|
+| Unified password policy | New shared `passwordPolicySchema` replacing duplicated, inconsistent rules (profile change was previously `min(6)` with no complexity check) |
+| Tighter rate limiting | Login 20→8/15min; new limiters on register/OTP/forgot-password/reset-password endpoints that previously relied only on the generous global limiter |
+| Field-level encryption at rest | AES-256-GCM on non-searched free-text fields (customer address/notes, user address/bio); searchable fields (name/mobile/email) intentionally left plaintext |
+| Password hashing reviewed | bcrypt cost factor 12 confirmed already industry-standard |
 
 ## v3.2.0 — Zero-Spinner UX & Persistent Cache (July 4, 2026)
 

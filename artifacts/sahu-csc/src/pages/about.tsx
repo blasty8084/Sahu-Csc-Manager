@@ -13,6 +13,15 @@ const APP_VERSION = __APP_VERSION__;
 
 const CHANGELOG = [
   {
+    version: "v3.2.5",
+    date: "2026-07-06",
+    changes: [
+      "Security upgrade: unified password policy (6-8 chars, upper/lower/number/special), applied everywhere passwords are set",
+      "Login rate limiting tightened; dedicated limits added for register, OTP, and password-reset endpoints",
+      "Sensitive fields (customer address/notes, staff address/bio) now encrypted at rest",
+    ],
+  },
+  {
     version: "v3.1.1",
     date: "2026-07-01",
     changes: [
@@ -387,6 +396,9 @@ export default function About() {
                 {[
                   "Session-based auth (no JWTs) via PostgreSQL session store",
                   "Passwords hashed with bcrypt (12 salt rounds)",
+                  "Unified password policy: 6-8 chars, upper/lower/number/special required",
+                  "Rate limiting on login, registration, OTP, and password-reset endpoints",
+                  "Sensitive fields encrypted at rest (AES-256-GCM)",
                   "Account lockout after 5 failed attempts (15-min lock)",
                   "Idle auto-logout after 30 minutes of inactivity",
                   "Full audit trail: every login, logout, data change",

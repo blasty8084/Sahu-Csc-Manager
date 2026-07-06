@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v3
-**Current version: 3.1.1 — July 3, 2026**
+**Current version: 3.2.5 — July 6, 2026**
 
 > Detailed record of every feature, change, and upgrade from v3.0.0 onward.  
 > For v2.x history, see `changelogV2.md`.  
@@ -11,9 +11,40 @@
 
 ## Table of Contents
 
+0. [v3.2.4 – v3.2.5 — Security Upgrade & Password Policy Correction (July 6, 2026)](#0-v324--v325--security-upgrade--password-policy-correction-july-6-2026)
 1. [v3.1.1 — Replit Environment Migration & TypeScript Clean (July 3, 2026)](#1-v311--replit-environment-migration--typescript-clean-july-3-2026)
 2. [v3.1.0 — Backup & Restore Redesign + Download + Scheduler (June 30, 2026)](#2-v310--backup--restore-redesign--download--scheduler-june-30-2026)
 3. [v3.0.0 — Setup Wizard, SMTP Integration & Auto-Import (June 30, 2026)](#3-v300--setup-wizard-smtp-integration--auto-import-june-30-2026)
+
+---
+
+## 0. v3.2.4 – v3.2.5 — Security Upgrade & Password Policy Correction (July 6, 2026)
+
+### Overview
+
+Platform-wide security hardening across four areas: password policy, rate limiting, encryption at rest, and a review of password hashing strength. Shipped as v3.2.4, then corrected in v3.2.5 after the initial password length (10+ chars) proved too strict — final policy is 6–8 characters with upper/lower/number/special-character complexity.
+
+### Password Policy
+
+- New shared `passwordPolicySchema` (`artifacts/api-server/src/lib/password-policy.ts`), applied consistently to registration, password reset (legacy + token flows), profile self-service password change, and admin-created/updated user accounts.
+- Removed the previous inconsistency where profile self-service change only required 6 characters with no complexity rules.
+
+### Rate Limiting
+
+- Login limiter reduced from 20 to 8 attempts / 15 minutes per IP.
+- New `authWriteLimiter` (10/15min) on register, appeal, send-otp, forgot-password.
+- New `otpVerifyLimiter` (8/15min) on verify-otp, reset-password.
+
+### Encryption at Rest
+
+- New AES-256-GCM helper (`lib/encryption.ts`) encrypts `udhari_customers.address`, `udhari_customers.notes`, `users.address`, `users.bio`.
+- `name` / `mobile` / `email` intentionally left plaintext — they're matched via `ILIKE` partial search, and encrypting them would break search.
+- Encryption key auto-generates on first use and persists in the `settings` table (same pattern as VAPID key generation); overridable via an `ENCRYPTION_KEY` secret.
+- Legacy plaintext rows are read transparently — no migration required.
+
+### Password Hashing
+
+- Reviewed: bcrypt cost factor 12 already meets current industry-standard strength. No change made.
 
 ---
 

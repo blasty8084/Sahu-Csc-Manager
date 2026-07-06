@@ -21,3 +21,4 @@
 - [archiver v8 breaking change](archiver-v8-esm.md) — archiver@8 is ESM-only, dropped the callable `archiver(format, opts)` factory; must use `new ZipArchive(opts)` from its named export instead
 - [Field-level encryption scope](field-encryption-scope.md) — only encrypt free-text PII not used in ILIKE search; searched fields (name/mobile/email) must stay plaintext or search breaks
 - [Auto-generated secrets pattern](field-encryption-scope.md) — persist generated crypto keys in the settings table (like VAPID keys) instead of requesting a secret from the user, when the key is purely internal
+- [Doc sprawl in this project](doc-sprawl.md) — many parallel versioned .md files (replit.md, DOCS.md, CHANGELOG.md, CHANGELOG_V3.md, BUILD.md, WORKFLOWS.md, ReplitV3.md, architectureV3.md) must all be updated together on version bumps; v2 files are superseded and skipped

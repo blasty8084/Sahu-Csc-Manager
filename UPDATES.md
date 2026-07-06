@@ -7,6 +7,20 @@
 
 ---
 
+## Session: 2026-07-06 — v3.2.5 Security Upgrade & Password Policy Correction
+
+**Version:** 3.2.5
+**Status:** ✅ Complete — password policy, rate limiting, encryption at rest, and hashing review all shipped and verified
+
+- Unified `passwordPolicySchema` across registration, password reset, profile change, and admin user management.
+- Password length corrected mid-session: initial rollout required 10+ characters (v3.2.4); adjusted to a 6–8 character range at the user's request (v3.2.5), complexity rules unchanged.
+- Login rate limiter tightened 20→8/15min; new dedicated limiters added for register/OTP/forgot-password/reset-password endpoints.
+- AES-256-GCM field-level encryption added for non-searched free-text fields (customer address/notes, user address/bio); searchable fields left plaintext by design.
+- bcrypt cost factor reviewed and confirmed already at industry-standard strength (12).
+- All docs (`replit.md`, `DOCS.md`, `CHANGELOG.md`, `CHANGELOG_V3.md`) and app version bumped to 3.2.5.
+
+---
+
 ## Session: 2026-07-04 — v3.2.0 Zero-Spinner UX & Persistent Cache
 
 **Version:** 3.2.0

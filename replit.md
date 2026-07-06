@@ -1,5 +1,5 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 3.2.4** — last updated 2026-07-06
+**Version 3.2.5** — last updated 2026-07-06
 
 > Full platform documentation: **[DOCS.md](./DOCS.md)**
 
