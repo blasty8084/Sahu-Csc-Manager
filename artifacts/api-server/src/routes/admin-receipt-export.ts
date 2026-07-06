@@ -4,10 +4,11 @@ import { eq, and, gte, lte, isNotNull, inArray, asc } from "drizzle-orm";
 import { requireRole } from "../lib/auth";
 import { buildMonthlyZip, sendMonthlyExportEmail } from "../lib/monthly-export";
 import { createRequire } from "node:module";
+import ExcelJS from "exceljs";
 
 const _require = createRequire(import.meta.url);
 const PDFDocument = _require("pdfkit") as typeof import("pdfkit");
-const archiver = _require("archiver") as (format: string, options?: object) => import("archiver").Archiver;
+const { ZipArchive } = _require("archiver") as typeof import("archiver");
 
 const router: IRouter = Router();
 
@@ -329,7 +330,7 @@ router.get(
     res.setHeader("Content-Type", "application/zip");
     res.setHeader("Content-Disposition", `attachment; filename="${label}.zip"`);
 
-    const archive = archiver("zip", { zlib: { level: 6 } });
+    const archive = new ZipArchive({ zlib: { level: 6 } });
     archive.on("error", (err: Error) => {
       if (!res.headersSent) res.status(500).json({ error: err.message });
     });
@@ -357,6 +358,107 @@ router.get(
     }
 
     await archive.finalize();
+  }
+);
+
+// ── Download Excel (.xlsx) summary endpoint ───────────────────────────────────
+router.get(
+  "/admin/receipts/bulk-export/excel",
+  requireRole("admin"),
+  async (req, res): Promise<void> => {
+    const { startDate, endDate, userId, receiptNumbers: receiptNumbersParam } = req.query as Record<string, string>;
+
+    if (!startDate || !endDate) {
+      res.status(400).json({ error: "startDate and endDate are required" });
+      return;
+    }
+
+    const selectedNumbers = receiptNumbersParam
+      ? receiptNumbersParam.split(",").map((s) => s.trim()).filter(Boolean)
+      : null;
+
+    const conditions = [
+      gte(ledgerTable.date, startDate),
+      lte(ledgerTable.date, endDate),
+      isNotNull(ledgerTable.receiptNumber),
+    ];
+    if (userId) {
+      const uid = parseInt(userId, 10);
+      if (!isNaN(uid)) conditions.push(eq(ledgerTable.createdBy, uid));
+    }
+    if (selectedNumbers && selectedNumbers.length > 0) {
+      conditions.push(inArray(ledgerTable.receiptNumber, selectedNumbers));
+    }
+
+    const entries = await db
+      .select({
+        receiptNumber: ledgerTable.receiptNumber,
+        date: ledgerTable.date,
+        customerName: ledgerTable.customerName,
+        serviceType: ledgerTable.serviceType,
+        credit: ledgerTable.credit,
+        debit: ledgerTable.debit,
+        balance: ledgerTable.balance,
+        description: ledgerTable.description,
+        createdByName: usersTable.username,
+      })
+      .from(ledgerTable)
+      .leftJoin(usersTable, eq(ledgerTable.createdBy, usersTable.id))
+      .where(and(...conditions))
+      .orderBy(asc(ledgerTable.date), asc(ledgerTable.id));
+
+    if (entries.length === 0) {
+      res.status(404).json({ error: "No receipts found for the selected range" });
+      return;
+    }
+
+    const wb = new ExcelJS.Workbook();
+    const sheet = wb.addWorksheet("Receipts");
+    sheet.columns = [
+      { header: "Receipt #",     key: "receiptNumber", width: 18 },
+      { header: "Date",          key: "date",           width: 14 },
+      { header: "Customer",      key: "customerName",   width: 24 },
+      { header: "Service",       key: "serviceType",    width: 20 },
+      { header: "Credit (₹)",    key: "credit",         width: 14 },
+      { header: "Debit (₹)",     key: "debit",          width: 14 },
+      { header: "Balance (₹)",   key: "balance",        width: 14 },
+      { header: "Operator",      key: "operator",       width: 16 },
+      { header: "Description",  key: "description",    width: 30 },
+    ];
+    sheet.getRow(1).font = { bold: true };
+
+    let totalCredit = 0;
+    let totalDebit = 0;
+    for (const e of entries) {
+      const credit = parseFloat(e.credit ?? "0");
+      const debit = parseFloat(e.debit ?? "0");
+      totalCredit += credit;
+      totalDebit += debit;
+      sheet.addRow({
+        receiptNumber: e.receiptNumber,
+        date: e.date,
+        customerName: e.customerName,
+        serviceType: e.serviceType,
+        credit,
+        debit,
+        balance: parseFloat(e.balance ?? "0"),
+        operator: e.createdByName ?? "",
+        description: e.description ?? "",
+      });
+    }
+    sheet.addRow({});
+    const totalsRow = sheet.addRow({
+      customerName: "TOTAL",
+      credit: totalCredit,
+      debit: totalDebit,
+    });
+    totalsRow.font = { bold: true };
+
+    const buffer = await wb.xlsx.writeBuffer();
+    const label = `receipts-${startDate}-to-${endDate}`;
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename="${label}.xlsx"`);
+    res.send(Buffer.from(buffer));
   }
 );
 

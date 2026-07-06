@@ -190,7 +190,7 @@ export default function ReceiptExport() {
     } finally { setPreviewing(false); }
   };
 
-  /* ── Bulk download ── */
+  /* ── Bulk download (PDF ZIP or Excel, based on selected format) ── */
   const handleDownload = async () => {
     if (!preview || preview.count === 0) { toast({ title: "No receipts to download", variant: "destructive" }); return; }
     if (selected.size === 0) { toast({ title: "Nothing selected", description: "Select at least one receipt to download.", variant: "destructive" }); return; }
@@ -199,14 +199,21 @@ export default function ReceiptExport() {
       const params = new URLSearchParams(buildParams());
       // Pass the exact selected receipt numbers so the backend downloads only those
       params.set("receiptNumbers", Array.from(selected).join(","));
-      const res  = await fetch(`/api/admin/receipts/bulk-export/download?${params.toString()}`, { credentials: "include" });
+      const isExcel  = exportFormat === "excel";
+      const endpoint = isExcel ? "/api/admin/receipts/bulk-export/excel" : "/api/admin/receipts/bulk-export/download";
+      const res  = await fetch(`${endpoint}?${params.toString()}`, { credentials: "include" });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? "Download failed");
       const blob = await res.blob();
       const url  = URL.createObjectURL(blob);
       const a    = document.createElement("a");
-      a.href = url; a.download = `receipts-${startDate}-to-${endDate}.zip`; a.click();
+      a.href = url; a.download = `receipts-${startDate}-to-${endDate}.${isExcel ? "xlsx" : "zip"}`; a.click();
       URL.revokeObjectURL(url);
-      toast({ title: "Download started", description: `${preview.count} PDF receipt${preview.count !== 1 ? "s" : ""} in ZIP` });
+      toast({
+        title: "Download started",
+        description: isExcel
+          ? `${preview.count} receipt${preview.count !== 1 ? "s" : ""} in Excel sheet`
+          : `${preview.count} PDF receipt${preview.count !== 1 ? "s" : ""} in ZIP`,
+      });
       setExported(true); setTimeout(() => setExported(false), 2000);
     } catch (err: unknown) {
       toast({ title: "Download failed", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });

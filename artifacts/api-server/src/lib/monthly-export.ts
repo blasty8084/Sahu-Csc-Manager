@@ -8,7 +8,7 @@ import cron from "node-cron";
 
 const _require = createRequire(import.meta.url);
 const PDFDocument = _require("pdfkit") as typeof import("pdfkit");
-const archiver = _require("archiver") as (format: string, options?: object) => import("archiver").Archiver;
+const { ZipArchive } = _require("archiver") as typeof import("archiver");
 
 function fmtDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("en-IN", {
@@ -221,7 +221,7 @@ async function buildMonthlyZip(year: number, month: number): Promise<Buffer> {
 
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
-    const archive = archiver("zip", { zlib: { level: 6 } });
+    const archive = new ZipArchive({ zlib: { level: 6 } });
     archive.on("data", (chunk: Buffer) => chunks.push(chunk));
     archive.on("end", () => resolve(Buffer.concat(chunks)));
     archive.on("error", reject);

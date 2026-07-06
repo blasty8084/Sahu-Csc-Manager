@@ -18,3 +18,4 @@
 - [setTimeout 32-bit overflow](settimeout-overflow.md) — setTimeout with >2.1B ms (>24.8 days) silently clamps to 1ms and loops; use node-cron for any interval longer than ~24 days
 - [Background Sync queue visibility](pwa-injectmanifest.md) — use workbox `Queue` (not `BackgroundSyncPlugin`) when the UI needs a live pending-request count; broadcast size via postMessage on push/replay
 - [Manual vendor chunking](vite-bundle-chunking.md) — split every heavy/independent npm lib (radix, i18n, forms, date, icons) into its own manualChunks entry to keep the app's main JS chunk under Vite's 500KB warning threshold
+- [archiver v8 breaking change](archiver-v8-esm.md) — archiver@8 is ESM-only, dropped the callable `archiver(format, opts)` factory; must use `new ZipArchive(opts)` from its named export instead
