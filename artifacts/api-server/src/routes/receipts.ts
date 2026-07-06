@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db, ledgerTable, usersTable, settingsTable, udhariEntriesTable, udhariCustomersTable } from "@workspace/db";
 import { eq, inArray } from "drizzle-orm";
+import { decryptField } from "../lib/encryption";
 
 const router: IRouter = Router();
 
@@ -62,7 +63,7 @@ router.get("/receipts/verify/udhari/:token", async (req, res): Promise<void> => 
     note: entry.note,
     customerName: customer?.name ?? "Unknown",
     customerMobile: customer?.mobile ?? null,
-    customerAddress: customer?.address ?? null,
+    customerAddress: (await decryptField(customer?.address)) ?? null,
     currentBalance: parseFloat(customer?.balance ?? "0"),
     createdAt: entry.createdAt instanceof Date ? entry.createdAt.toISOString() : entry.createdAt,
     businessName: getSetting("businessName", "SAHU CSC Center"),

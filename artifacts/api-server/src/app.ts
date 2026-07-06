@@ -48,8 +48,30 @@ app.use(limiter);
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20,
+  max: 8,
+  standardHeaders: true,
+  legacyHeaders: false,
   message: { error: "Too many login attempts, please try again later" },
+});
+
+// Registration / OTP endpoints are common brute-force & spam targets — keep
+// these tighter than the general API limiter.
+const authWriteLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests, please try again later" },
+});
+
+// OTP verification endpoints (short numeric code) need a stricter limit than
+// OTP request endpoints to make guessing impractical.
+const otpVerifyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 8,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many attempts, please try again later" },
 });
 
 app.use(cors({ origin: true, credentials: true }));
@@ -77,6 +99,12 @@ app.use(
 );
 
 app.use("/api/auth/login", loginLimiter);
+app.use("/api/auth/register", authWriteLimiter);
+app.use("/api/auth/appeal", authWriteLimiter);
+app.use("/api/auth/send-otp", authWriteLimiter);
+app.use("/api/auth/forgot-password", authWriteLimiter);
+app.use("/api/auth/verify-otp", otpVerifyLimiter);
+app.use("/api/auth/reset-password", otpVerifyLimiter);
 app.use("/api", router);
 
 export default app;

@@ -1,9 +1,20 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 3.2.3** — last updated 2026-07-05
+**Version 3.2.4** — last updated 2026-07-06
 
 > Full platform documentation: **[DOCS.md](./DOCS.md)**
 
 A full-stack CSC (Common Service Center) business management platform for tracking services, ledger accounting, AePS cash management, Udhari Khata (customer credit ledger), and reporting. Built for Odisha / India rural service centers. Supports PWA installation, offline operation, Android TWA packaging, and full multilingual UI (English / Hindi / Odia).
+
+---
+
+## What's New in v3.2.4 (July 6, 2026) — Security Upgrade
+
+| Change | Description |
+|--------|-------------|
+| **Stronger, unified password policy** | New shared `passwordPolicySchema` (`lib/password-policy.ts`) — min 10 chars, upper/lower/number/special-character required. Applied consistently across registration, password reset (both legacy + token flows), profile self-service password change (was previously only `min(6)`, the weakest link), and admin-created/updated user accounts (`users.ts`, enforced server-side since the generated `CreateUserBody`/`UpdateUserBody` schemas don't validate strength). |
+| **Tighter rate limiting** | Login limiter reduced from 20→8 attempts/15min per IP. New dedicated limiters: `authWriteLimiter` (10/15min) on register/appeal/send-otp/forgot-password, `otpVerifyLimiter` (8/15min) on verify-otp/reset-password — previously these endpoints were only covered by the generous global limiter (500/15min). |
+| **Field-level encryption at rest** | New AES-256-GCM helper (`lib/encryption.ts`) encrypts sensitive free-text fields that are never searched: `udhari_customers.address`, `udhari_customers.notes`, `users.address`, `users.bio`. `name`/`mobile`/`email` are intentionally left in plaintext since they're matched via `ILIKE` partial search — encrypting them would break search without a much heavier searchable-encryption scheme. Encryption key auto-generates on first use and persists in the `settings` table (same pattern as VAPID key auto-generation); can be overridden with an `ENCRYPTION_KEY` secret (32 bytes, base64) for advanced deployments. Legacy plaintext rows are read transparently (no migration needed — encryption applies going forward). |
+| **Password hashing reviewed** | Confirmed existing bcrypt cost factor 12 (`lib/auth.ts`) is already industry-standard strength — no change needed. |
 
 ---
 

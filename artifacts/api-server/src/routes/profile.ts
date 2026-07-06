@@ -3,6 +3,8 @@ import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { z } from "zod/v4";
 import { requireAuth, hashPassword, auditLog, getClientIp } from "../lib/auth";
+import { encryptField, decryptField } from "../lib/encryption";
+import { passwordPolicySchema } from "../lib/password-policy";
 
 const router: IRouter = Router();
 
@@ -12,7 +14,7 @@ const UpdateProfileBody = z.object({
   mobile: z.string().optional(),
   bio: z.string().max(500).optional(),
   address: z.string().max(500).optional(),
-  password: z.string().min(6).optional(),
+  password: passwordPolicySchema.optional(),
   currentPassword: z.string().optional(),
 });
 
@@ -20,7 +22,7 @@ const UpdateAvatarBody = z.object({
   profilePicture: z.string(), // base64 data URL (data:image/...;base64,...)
 });
 
-function fmtProfile(user: any) {
+async function fmtProfile(user: any) {
   return {
     id: user.id,
     username: user.username,
@@ -29,8 +31,8 @@ function fmtProfile(user: any) {
     fullName: user.fullName ?? null,
     role: user.role,
     profilePicture: user.profilePicture ?? null,
-    bio: user.bio ?? null,
-    address: user.address ?? null,
+    bio: await decryptField(user.bio),
+    address: await decryptField(user.address),
     createdAt: user.createdAt instanceof Date ? user.createdAt.toISOString() : user.createdAt,
   };
 }
@@ -38,7 +40,7 @@ function fmtProfile(user: any) {
 router.get("/profile", requireAuth, async (req, res): Promise<void> => {
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!));
   if (!user) { res.status(404).json({ error: "User not found" }); return; }
-  res.json(fmtProfile(user));
+  res.json(await fmtProfile(user));
 });
 
 router.patch("/profile", requireAuth, async (req, res): Promise<void> => {
@@ -56,8 +58,8 @@ router.patch("/profile", requireAuth, async (req, res): Promise<void> => {
   if (profileFields.fullName !== undefined) updates.fullName = profileFields.fullName;
   if (profileFields.email !== undefined) updates.email = profileFields.email;
   if (profileFields.mobile !== undefined) updates.mobile = profileFields.mobile;
-  if (profileFields.bio !== undefined) updates.bio = profileFields.bio;
-  if (profileFields.address !== undefined) updates.address = profileFields.address;
+  if (profileFields.bio !== undefined) updates.bio = await encryptField(profileFields.bio);
+  if (profileFields.address !== undefined) updates.address = await encryptField(profileFields.address);
 
   if (password) {
     if (!currentPassword) {
@@ -73,12 +75,12 @@ router.patch("/profile", requireAuth, async (req, res): Promise<void> => {
   }
 
   if (Object.keys(updates).length === 0) {
-    res.json(fmtProfile(user)); return;
+    res.json(await fmtProfile(user)); return;
   }
 
   const [updated] = await db.update(usersTable).set(updates).where(eq(usersTable.id, userId)).returning();
   await auditLog(userId, "profile.update", "User updated profile", getClientIp(req));
-  res.json(fmtProfile(updated));
+  res.json(await fmtProfile(updated));
 });
 
 router.post("/profile/avatar", requireAuth, async (req, res): Promise<void> => {

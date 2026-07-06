@@ -3,10 +3,12 @@ import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { CreateUserBody, UpdateUserBody } from "@workspace/api-zod";
 import { requireRole, hashPassword, auditLog, getClientIp } from "../lib/auth";
+import { encryptField, decryptField } from "../lib/encryption";
+import { passwordPolicySchema } from "../lib/password-policy";
 
 const router: IRouter = Router();
 
-function fmt(u: any) {
+async function fmt(u: any) {
   return {
     id: u.id,
     username: u.username,
@@ -17,20 +19,26 @@ function fmt(u: any) {
     isActive: u.isActive,
     status: u.status ?? "ACTIVE",
     profilePicture: u.profilePicture ?? null,
-    bio: u.bio ?? null,
-    address: u.address ?? null,
+    bio: await decryptField(u.bio),
+    address: await decryptField(u.address),
     createdAt: u.createdAt instanceof Date ? u.createdAt.toISOString() : u.createdAt,
   };
 }
 
 router.get("/users", requireRole("admin"), async (_req, res): Promise<void> => {
   const users = await db.select().from(usersTable).orderBy(usersTable.username);
-  res.json(users.map(fmt));
+  res.json(await Promise.all(users.map(fmt)));
 });
 
 router.post("/users", requireRole("admin"), async (req, res): Promise<void> => {
   const parsed = CreateUserBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+
+  const pwCheck = passwordPolicySchema.safeParse(parsed.data.password);
+  if (!pwCheck.success) {
+    res.status(400).json({ error: pwCheck.error.issues?.[0]?.message ?? "Password does not meet security requirements" });
+    return;
+  }
 
   const passwordHash = await hashPassword(parsed.data.password);
   const [u] = await db.insert(usersTable).values({
@@ -46,7 +54,7 @@ router.post("/users", requireRole("admin"), async (req, res): Promise<void> => {
   }).returning();
 
   await auditLog(req.session.userId!, "user.create", `Created user: ${u.username}`, getClientIp(req));
-  res.status(201).json(fmt(u));
+  res.status(201).json(await fmt(u));
 });
 
 router.patch("/users/:id", requireRole("admin"), async (req, res): Promise<void> => {
@@ -86,7 +94,14 @@ router.patch("/users/:id", requireRole("admin"), async (req, res): Promise<void>
       }
     }
   }
-  if (parsed.data.password) updates.passwordHash = await hashPassword(parsed.data.password);
+  if (parsed.data.password) {
+    const pwCheck = passwordPolicySchema.safeParse(parsed.data.password);
+    if (!pwCheck.success) {
+      res.status(400).json({ error: pwCheck.error.issues?.[0]?.message ?? "Password does not meet security requirements" });
+      return;
+    }
+    updates.passwordHash = await hashPassword(parsed.data.password);
+  }
 
   const [updated] = await db.update(usersTable).set(updates).where(eq(usersTable.id, id)).returning();
 
@@ -100,7 +115,7 @@ router.patch("/users/:id", requireRole("admin"), async (req, res): Promise<void>
   const action = updates.role && updates.role !== existing.role ? "user.role_change" : "user.update";
   await auditLog(req.session.userId!, action, detail, getClientIp(req));
 
-  res.json(fmt(updated));
+  res.json(await fmt(updated));
 });
 
 router.delete("/users/:id", requireRole("admin"), async (req, res): Promise<void> => {

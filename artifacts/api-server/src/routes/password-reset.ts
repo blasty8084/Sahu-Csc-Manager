@@ -7,6 +7,7 @@ import { sendOtpEmail, isSmtpConfigured } from "../lib/mailer";
 import crypto from "node:crypto";
 import { randomUUID } from "node:crypto";
 import { logger } from "../lib/logger";
+import { passwordPolicySchema } from "../lib/password-policy";
 
 const router: IRouter = Router();
 
@@ -313,22 +314,12 @@ router.post("/auth/forgot-password", async (req, res): Promise<void> => {
 const ResetPasswordLegacyBody = z.object({
   identifier: z.string().min(1),
   otp: z.string().length(6),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters")
-    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-    .regex(/[0-9]/, "Password must contain at least one number"),
+  password: passwordPolicySchema,
 });
 
 const ResetPasswordTokenBody = z.object({
   resetToken: z.string().uuid("Invalid reset token"),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters")
-    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-    .regex(/[0-9]/, "Password must contain at least one number"),
+  password: passwordPolicySchema,
 });
 
 router.post("/auth/reset-password", async (req, res): Promise<void> => {

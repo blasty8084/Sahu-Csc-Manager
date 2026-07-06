@@ -19,3 +19,5 @@
 - [Background Sync queue visibility](pwa-injectmanifest.md) — use workbox `Queue` (not `BackgroundSyncPlugin`) when the UI needs a live pending-request count; broadcast size via postMessage on push/replay
 - [Manual vendor chunking](vite-bundle-chunking.md) — split every heavy/independent npm lib (radix, i18n, forms, date, icons) into its own manualChunks entry to keep the app's main JS chunk under Vite's 500KB warning threshold
 - [archiver v8 breaking change](archiver-v8-esm.md) — archiver@8 is ESM-only, dropped the callable `archiver(format, opts)` factory; must use `new ZipArchive(opts)` from its named export instead
+- [Field-level encryption scope](field-encryption-scope.md) — only encrypt free-text PII not used in ILIKE search; searched fields (name/mobile/email) must stay plaintext or search breaks
+- [Auto-generated secrets pattern](field-encryption-scope.md) — persist generated crypto keys in the settings table (like VAPID keys) instead of requesting a secret from the user, when the key is purely internal

@@ -2,15 +2,18 @@ import { Router } from "express";
 import { db, udhariCustomersTable, udhariEntriesTable } from "@workspace/db";
 import { eq, and, desc, sql, or, ilike } from "drizzle-orm";
 import { requireAuth, requirePermission, auditLog, getClientIp } from "../lib/auth";
+import { encryptField, decryptField } from "../lib/encryption";
 import { z } from "zod/v4";
 import { randomUUID } from "crypto";
 
 const router = Router();
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-function fmt(c: any) {
+async function fmt(c: any) {
   return {
     ...c,
+    address: await decryptField(c.address),
+    notes: await decryptField(c.notes),
     balance: parseFloat(c.balance ?? "0"),
   };
 }
@@ -125,7 +128,7 @@ router.get(
 
     const customers = await query.orderBy(desc(udhariCustomersTable.updatedAt));
 
-    const formatted = customers.map(fmt);
+    const formatted = await Promise.all(customers.map(fmt));
 
     if (sort === "balance_desc") {
       formatted.sort((a, b) => Math.abs(b.balance) - Math.abs(a.balance));
@@ -153,11 +156,17 @@ router.post(
 
     const [customer] = await db
       .insert(udhariCustomersTable)
-      .values({ name, mobile, address, notes, createdBy: userId })
+      .values({
+        name,
+        mobile,
+        address: await encryptField(address),
+        notes: await encryptField(notes),
+        createdBy: userId,
+      })
       .returning();
 
     await auditLog(userId, "udhari.customer.create", `Created customer: ${name}`, getClientIp(req));
-    res.status(201).json(fmt(customer));
+    res.status(201).json(await fmt(customer));
   }
 );
 
@@ -177,7 +186,7 @@ router.get(
       .where(and(eq(udhariCustomersTable.id, id), eq(udhariCustomersTable.createdBy, userId)));
 
     if (!customer) { res.status(404).json({ error: "Customer not found" }); return; }
-    res.json(fmt(customer));
+    res.json(await fmt(customer));
   }
 );
 
@@ -204,14 +213,18 @@ router.patch(
 
     if (!existing) { res.status(404).json({ error: "Customer not found" }); return; }
 
+    const updateData: any = { ...parsed.data, updatedAt: new Date() };
+    if (parsed.data.address !== undefined) updateData.address = await encryptField(parsed.data.address);
+    if (parsed.data.notes !== undefined) updateData.notes = await encryptField(parsed.data.notes);
+
     const [updated] = await db
       .update(udhariCustomersTable)
-      .set({ ...parsed.data, updatedAt: new Date() })
+      .set(updateData)
       .where(eq(udhariCustomersTable.id, id))
       .returning();
 
     await auditLog(userId, "udhari.customer.update", `Updated customer: ${existing.name}`, getClientIp(req));
-    res.json(fmt(updated));
+    res.json(await fmt(updated));
   }
 );
 
@@ -300,7 +313,7 @@ router.post(
     const [updated] = await db.select().from(udhariCustomersTable).where(eq(udhariCustomersTable.id, customerId));
     await auditLog(userId, "udhari.entry.create", `${type === "gave" ? "Gave" : "Got"} ₹${amount} for customer: ${customer.name}`, getClientIp(req));
 
-    res.status(201).json({ entry: fmtEntry(entry), customer: fmt(updated) });
+    res.status(201).json({ entry: fmtEntry(entry), customer: await fmt(updated) });
   }
 );
 
@@ -345,7 +358,7 @@ router.patch(
     await recalcBalance(customerId);
     const [updatedCustomer] = await db.select().from(udhariCustomersTable).where(eq(udhariCustomersTable.id, customerId));
 
-    res.json({ entry: fmtEntry(updated), customer: fmt(updatedCustomer) });
+    res.json({ entry: fmtEntry(updated), customer: await fmt(updatedCustomer) });
   }
 );
 
@@ -376,7 +389,7 @@ router.delete(
     await recalcBalance(customerId);
     const [updatedCustomer] = await db.select().from(udhariCustomersTable).where(eq(udhariCustomersTable.id, customerId));
 
-    res.json({ message: "Entry deleted", customer: fmt(updatedCustomer) });
+    res.json({ message: "Entry deleted", customer: await fmt(updatedCustomer) });
   }
 );
 
