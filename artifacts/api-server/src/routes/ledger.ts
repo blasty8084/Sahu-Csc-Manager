@@ -10,6 +10,7 @@ import {
 import { requireAuth, requireRole, requirePermission, auditLog, getClientIp } from "../lib/auth";
 import { notifyLargeTransaction } from "../services/notificationTemplates";
 import { signReceiptToken } from "../lib/jwt";
+import { sanitize } from "../lib/sanitize";
 import crypto from "crypto";
 
 const router: IRouter = Router();
@@ -160,7 +161,9 @@ router.post("/ledger", requireAuth, requirePermission("ledger:create"), async (r
   const parsed = CreateLedgerEntryBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
-  const { date, customerName, serviceType, credit, debit, description } = parsed.data;
+  const { date, serviceType, credit, debit } = parsed.data;
+  const customerName = sanitize(parsed.data.customerName);
+  const description = parsed.data.description !== undefined ? sanitize(parsed.data.description) : parsed.data.description;
   const userId = req.session.userId!;
 
   const balanceResult = await db
@@ -250,11 +253,11 @@ router.patch("/ledger/:id", requireAuth, requirePermission("ledger:edit"), async
 
   const updateData: Record<string, any> = {};
   if (parsed.data.date !== undefined) updateData.date = parsed.data.date;
-  if (parsed.data.customerName !== undefined) updateData.customerName = parsed.data.customerName;
+  if (parsed.data.customerName !== undefined) updateData.customerName = sanitize(parsed.data.customerName);
   if (parsed.data.serviceType !== undefined) updateData.serviceType = parsed.data.serviceType;
   if (parsed.data.credit !== undefined) updateData.credit = String(parsed.data.credit);
   if (parsed.data.debit !== undefined) updateData.debit = String(parsed.data.debit);
-  if (parsed.data.description !== undefined) updateData.description = parsed.data.description;
+  if (parsed.data.description !== undefined) updateData.description = sanitize(parsed.data.description);
 
   const [updated] = await db.update(ledgerTable).set(updateData).where(eq(ledgerTable.id, id)).returning();
   await auditLog(req.session.userId!, "ledger.update", `Updated ledger entry ${id}`, getClientIp(req));

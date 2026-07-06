@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { db, aepsDailyTable, aepsTransactionsTable, usersTable, settingsTable } from "@workspace/db";
 import { eq, and, sum, count, desc, gte, lte, ilike, sql, inArray } from "drizzle-orm";
 import { requireAuth, requireRole, requirePermission, auditLog, getClientIp } from "../lib/auth";
+import { sanitize } from "../lib/sanitize";
 import { z } from "zod";
 import { randomUUID } from "crypto";
 
@@ -151,7 +152,8 @@ router.post("/aeps/session", requireAuth, requirePermission("aeps:manage"), asyn
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
   const userId = req.session.userId!;
-  const { date, openingBalance, notes } = parsed.data;
+  const { date, openingBalance } = parsed.data;
+  const notes = parsed.data.notes !== undefined ? sanitize(parsed.data.notes) : parsed.data.notes;
 
   const [existing] = await db
     .select()
@@ -182,7 +184,9 @@ router.post("/aeps/transaction", requireAuth, requirePermission("aeps:manage"), 
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
   const userId = req.session.userId!;
-  const { date, type, amount, customerName, description } = parsed.data;
+  const { date, type, amount } = parsed.data;
+  const customerName = sanitize(parsed.data.customerName);
+  const description = parsed.data.description !== undefined ? sanitize(parsed.data.description) : parsed.data.description;
 
   const [session] = await db
     .select()
@@ -241,8 +245,8 @@ router.patch("/aeps/transaction/:id", requireAuth, requirePermission("aeps:manag
   const updates: Record<string, any> = {};
   if (parsed.data.type !== undefined) updates.type = parsed.data.type;
   if (parsed.data.amount !== undefined) updates.amount = String(parsed.data.amount);
-  if (parsed.data.customerName !== undefined) updates.customerName = parsed.data.customerName;
-  if (parsed.data.description !== undefined) updates.description = parsed.data.description;
+  if (parsed.data.customerName !== undefined) updates.customerName = sanitize(parsed.data.customerName);
+  if (parsed.data.description !== undefined) updates.description = sanitize(parsed.data.description);
 
   const [updated] = await db.update(aepsTransactionsTable).set(updates).where(eq(aepsTransactionsTable.id, id)).returning();
   await auditLog(req.session.userId!, "aeps.edit", `Edited AePS transaction ${id}`, getClientIp(req));
