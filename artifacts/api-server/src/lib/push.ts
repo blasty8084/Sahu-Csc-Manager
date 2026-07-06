@@ -3,17 +3,27 @@ import { db, pushSubscriptionsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { logger } from "./logger";
 
-const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
-const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
-const VAPID_EMAIL = process.env.VAPID_EMAIL || "mailto:admin@sahucsc.in";
+// Mutable exports — set by initPush() after ensureVapidKeys() completes.
+// Routes that import these will always see the live values (ESM live bindings).
+export let pushEnabled = false;
+export let VAPID_PUBLIC_KEY: string | undefined;
 
-export const pushEnabled = !!(VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY);
+/**
+ * Called once from index.ts after ensureVapidKeys() has populated
+ * process.env.VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY.
+ */
+export function initPush(): void {
+  const pubKey = process.env.VAPID_PUBLIC_KEY;
+  const privKey = process.env.VAPID_PRIVATE_KEY;
+  const email = process.env.VAPID_EMAIL || "mailto:admin@sahucsc.in";
 
-if (pushEnabled) {
-  webPush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC_KEY!, VAPID_PRIVATE_KEY!);
+  if (pubKey && privKey) {
+    webPush.setVapidDetails(email, pubKey, privKey);
+    pushEnabled = true;
+    VAPID_PUBLIC_KEY = pubKey;
+    logger.info("Push notifications enabled");
+  }
 }
-
-export { VAPID_PUBLIC_KEY };
 
 export interface PushPayload {
   title: string;
