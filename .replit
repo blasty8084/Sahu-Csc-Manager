@@ -46,7 +46,7 @@ outputType = "console"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "PORT=8080 NODE_ENV=development node --enable-source-maps artifacts/api-server/dist/index.mjs"
+args = "[ -f artifacts/api-server/dist/index.mjs ] || node artifacts/api-server/build.mjs && PORT=8080 NODE_ENV=development node --enable-source-maps artifacts/api-server/dist/index.mjs"
 
 [[workflows.workflow]]
 name = "SAHU CSC"

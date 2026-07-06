@@ -93,7 +93,7 @@ A full-stack CSC (Common Service Center) business management platform for tracki
 | Change | Description |
 |--------|-------------|
 | **Replit environment migration** | Project fully set up in Replit: DB schema pushed, DB seeded, both servers running. |
-| **7 workflows configured** | SAHU CSC · API Server · Build API · Seed Database · Typecheck · Build Production · Production Preview |
+| **4 workflows configured** | SAHU CSC · API Server · Seed Database · Project (parallel launcher) |
 | **TypeScript: 0 errors** | All 13 TypeScript errors fixed across API server and frontend. |
 | **Backup path fix** | `../../backups` → `backups` across 4 files; `mkdirSync` added before multer init. |
 | **Dev script port fix** | `${PORT:-21700}` → `${PORT:-5000}` in `sahu-csc/package.json`. |
@@ -104,7 +104,7 @@ A full-stack CSC (Common Service Center) business management platform for tracki
 | **Selective table import** | `POST /api/backups/analyze` + `POST /api/backups/selective-import` with FK checks disabled. |
 | **Setup Wizard Banner** | Admin-only, red/yellow severity, session-dismissed, expandable per-secret descriptions. |
 | **`/api/setup-status`** | Public endpoint (no auth) — returns missing secrets list. |
-| **Auto DB migration on import** | `scripts/post-merge.sh` runs `pnpm install` + `drizzle-kit push` automatically. |
+| **Auto DB migration on import** | `scripts/post-merge.sh` runs `pnpm install` + `drizzle-kit push --force` automatically. |
 
 ---
 
@@ -113,15 +113,11 @@ A full-stack CSC (Common Service Center) business management platform for tracki
 | Workflow | Port | Purpose | Starts with Project |
 |----------|------|---------|---------------------|
 | `SAHU CSC` | 5000 → :80 | Vite frontend dev server | ✅ Yes |
-| `API Server` | 8080 | Express API (pre-built dist/index.mjs) | ✅ Yes |
-| `Build API` | — | Rebuild API ESM bundle after source changes | ❌ Manual only |
+| `API Server` | 8080 | Express API (auto-builds dist if missing, then runs it) | ✅ Yes |
 | `Seed Database` | — | One-shot DB seeder; requires ADMIN_PASSWORD + OPERATOR_PASSWORD secrets | ❌ Manual only |
-| `Typecheck` | — | TypeScript check across all packages (currently 0 errors) | ❌ Manual only |
-| `Build Production` | — | Full production build: typecheck + API + Vite + PWA SW | ❌ Manual only |
-| `Production Preview` | 5000 | Build + serve production bundle (replaces dev server on port 5000) | ❌ Manual only |
 
 > Port 5000 is the main app URL (Replit proxy → :80). The API runs on **port 8080**. The Vite proxy in `vite.config.ts` forwards `/api/*` to `http://localhost:8080`.
-> After any backend code change: run **Build API** workflow → restart **API Server**.
+> After any backend code change: `node artifacts/api-server/build.mjs` from workspace root, then restart **API Server**.
 
 ### Workflow commands (current)
 
@@ -130,20 +126,17 @@ A full-stack CSC (Common Service Center) business management platform for tracki
 PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run dev
 # dev script in package.json: fuser -k ${PORT:-5000}/tcp 2>/dev/null; sleep 1; vite --host 0.0.0.0
 
-# API Server — runs pre-built bundle (auto-start)
-PORT=8080 NODE_ENV=development node --enable-source-maps artifacts/api-server/dist/index.mjs
-
-# Build API — rebuild after backend changes (manual)
-PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server run build
+# API Server — auto-builds dist if missing, then runs pre-built bundle (auto-start)
+[ -f artifacts/api-server/dist/index.mjs ] || node artifacts/api-server/build.mjs && PORT=8080 NODE_ENV=development node --enable-source-maps artifacts/api-server/dist/index.mjs
 
 # Seed Database — create/reset admin + operator (manual, requires secrets)
 PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server exec tsx src/scripts/seed.ts
 
-# Typecheck — 0 errors as of 2026-07-03 (manual)
-pnpm run typecheck:libs && pnpm -r --filter "./artifacts/**" --if-present run typecheck
+# Rebuild API manually (shell, not a workflow)
+node artifacts/api-server/build.mjs
 
-# Build Production — full build (manual)
-pnpm run typecheck:libs && pnpm --filter @workspace/api-server run build && PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run build
+# Typecheck (shell, not a workflow)
+pnpm run typecheck:libs && pnpm -r --filter "./artifacts/**" --if-present run typecheck
 ```
 
 ---
@@ -371,7 +364,7 @@ infrastructure/
 
 scripts/
   post-merge.sh             — Runs automatically on GitHub import / task merge:
-                              pnpm install + drizzle-kit push (schema migration)
+                              pnpm install + drizzle-kit push --force (schema migration)
   start.sh                  — Starts API (8080) + frontend (5000) in parallel
 
 artifacts/sahu-csc/public/
@@ -436,7 +429,10 @@ echo "[post-merge] Installing dependencies..."
 pnpm install --frozen-lockfile
 
 echo "[post-merge] Pushing database schema..."
-pnpm --filter @workspace/db run push
+pnpm --filter @workspace/db run push-force
+
+echo "[post-merge] Ensuring session table exists..."
+psql "$DATABASE_URL" -c "CREATE TABLE IF NOT EXISTS ..."
 
 echo "[post-merge] Done."
 ```
@@ -444,7 +440,8 @@ echo "[post-merge] Done."
 This is configured in `.replit` under `[postMerge]` with a 20-second timeout. The script:
 - Is **idempotent** — safe to run multiple times
 - Uses `--frozen-lockfile` — never modifies the lockfile
-- Runs `drizzle-kit push` — creates all 14 tables if they don't exist, applies any new columns
+- Runs `drizzle-kit push --force` — creates all tables if they don't exist, applies any new columns
+- ⚠️ `push --force` is destructive on conflict — always re-run **Seed Database** after a schema change to restore default data
 
 **What still requires manual setup (secrets):**
 
