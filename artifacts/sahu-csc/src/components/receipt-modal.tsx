@@ -98,6 +98,7 @@ export function ReceiptModal({
   const receiptToken = entry.receiptToken;
   const receiptNumber = entry.receiptNumber ?? `CSC-${new Date(entry.createdAt).getFullYear()}-${String(entry.id).padStart(4, "0")}`;
   const isVerified = !!receiptToken;
+  const isCryptoVerified = !!receiptToken && /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(receiptToken);
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -318,12 +319,17 @@ export function ReceiptModal({
                 <span style={{ fontSize: 46, fontWeight: 900, color: amountColor, letterSpacing: "-0.03em", lineHeight: 1 }}>{amountWhole}</span>
                 <span style={{ fontSize: 22, fontWeight: 700, color: amountColor, opacity: 0.75, alignSelf: "flex-start", marginTop: 10 }}>{amountDecimal}</span>
               </div>
-              {isVerified && (
+              {isCryptoVerified ? (
                 <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 10, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: 20, padding: "4px 10px" }}>
-                  <CheckCircle2 size={11} color="#22c55e" strokeWidth={2.5} />
-                  <span style={{ fontSize: 10, fontWeight: 700, color: "#22c55e", letterSpacing: "0.07em" }}>VERIFIED</span>
+                  <ShieldCheck size={11} color="#22c55e" strokeWidth={2.5} />
+                  <span style={{ fontSize: 10, fontWeight: 700, color: "#22c55e", letterSpacing: "0.07em" }}>CRYPTOGRAPHICALLY VERIFIED</span>
                 </div>
-              )}
+              ) : isVerified ? (
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 10, background: "rgba(148,163,184,0.12)", border: "1px solid rgba(148,163,184,0.3)", borderRadius: 20, padding: "4px 10px" }}>
+                  <CheckCircle2 size={11} color="#94a3b8" strokeWidth={2.5} />
+                  <span style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.07em" }}>VERIFIED</span>
+                </div>
+              ) : null}
             </div>
 
             {/* Detail Rows — rounded card */}

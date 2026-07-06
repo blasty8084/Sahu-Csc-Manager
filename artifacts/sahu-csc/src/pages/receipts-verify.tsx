@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "wouter";
 import QRCode from "react-qr-code";
-import { CheckCircle2, MapPin, Phone, Globe, Download, Share2, Printer } from "lucide-react";
+import { CheckCircle2, MapPin, Phone, Globe, Download, Share2, Printer, ShieldCheck, ShieldAlert } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -25,6 +25,7 @@ interface ReceiptData {
   businessAddress: string;
   businessMobile: string;
   businessWebsite: string;
+  verified?: boolean;
 }
 
 export default function ReceiptsVerify() {
@@ -194,10 +195,17 @@ export default function ReceiptsVerify() {
       `}</style>
 
       {/* Verified badge banner */}
-      <div className="no-print" style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(34,197,94,0.18)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: 20, padding: "6px 16px", marginBottom: 18 }}>
-        <CheckCircle2 size={14} color="#22c55e" strokeWidth={2.5} />
-        <span style={{ color: "#4ade80", fontSize: 11, fontWeight: 700, letterSpacing: "0.08em" }}>VERIFIED RECEIPT</span>
-      </div>
+      {data.verified ? (
+        <div className="no-print" style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(34,197,94,0.18)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: 20, padding: "6px 16px", marginBottom: 18 }}>
+          <ShieldCheck size={14} color="#22c55e" strokeWidth={2.5} />
+          <span style={{ color: "#4ade80", fontSize: 11, fontWeight: 700, letterSpacing: "0.08em" }}>CRYPTOGRAPHICALLY VERIFIED</span>
+        </div>
+      ) : (
+        <div className="no-print" style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(251,191,36,0.15)", border: "1px solid rgba(251,191,36,0.35)", borderRadius: 20, padding: "6px 16px", marginBottom: 18 }}>
+          <ShieldAlert size={14} color="#fbbf24" strokeWidth={2.5} />
+          <span style={{ color: "#fbbf24", fontSize: 11, fontWeight: 700, letterSpacing: "0.08em" }}>LEGACY RECEIPT</span>
+        </div>
+      )}
 
       <div id="receipt-wrapper" style={{ width: "100%", maxWidth: 420 }}>
         {/* Receipt card */}
@@ -228,14 +236,25 @@ export default function ReceiptsVerify() {
                   <p style={{ color: "#f97316", fontSize: 15, fontWeight: 900, fontFamily: "monospace", letterSpacing: "0.03em" }}>
                     {data.receiptNumber}
                   </p>
-                  <div style={{
-                    display: "inline-flex", alignItems: "center", gap: 4,
-                    background: "rgba(34,197,94,0.18)", border: "1px solid rgba(34,197,94,0.4)",
-                    borderRadius: 20, padding: "3px 9px", marginTop: 6,
-                  }}>
-                    <CheckCircle2 size={10} color="#22c55e" strokeWidth={2.5} />
-                    <span style={{ fontSize: 9, fontWeight: 700, color: "#22c55e", letterSpacing: "0.07em" }}>VERIFIED</span>
-                  </div>
+                  {data.verified ? (
+                    <div style={{
+                      display: "inline-flex", alignItems: "center", gap: 4,
+                      background: "rgba(34,197,94,0.18)", border: "1px solid rgba(34,197,94,0.4)",
+                      borderRadius: 20, padding: "3px 9px", marginTop: 6,
+                    }}>
+                      <ShieldCheck size={10} color="#22c55e" strokeWidth={2.5} />
+                      <span style={{ fontSize: 9, fontWeight: 700, color: "#22c55e", letterSpacing: "0.07em" }}>VERIFIED</span>
+                    </div>
+                  ) : (
+                    <div style={{
+                      display: "inline-flex", alignItems: "center", gap: 4,
+                      background: "rgba(251,191,36,0.18)", border: "1px solid rgba(251,191,36,0.4)",
+                      borderRadius: 20, padding: "3px 9px", marginTop: 6,
+                    }}>
+                      <ShieldAlert size={10} color="#fbbf24" strokeWidth={2.5} />
+                      <span style={{ fontSize: 9, fontWeight: 700, color: "#fbbf24", letterSpacing: "0.07em" }}>LEGACY</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
