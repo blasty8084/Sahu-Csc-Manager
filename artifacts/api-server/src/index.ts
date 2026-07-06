@@ -6,6 +6,7 @@ import { initBackupScheduler } from "./lib/backup-scheduler";
 import { recordBootAndCheckCrashLoop } from "./lib/boot-tracker";
 import { ensureVapidKeys } from "./lib/vapid";
 import { initPush } from "./lib/push";
+import { ensureEncryptionKey } from "./lib/encryption";
 
 const rawPort = process.env["PORT"];
 
@@ -23,6 +24,7 @@ if (Number.isNaN(port) || port <= 0) {
 
 // Ensure VAPID keys exist (loads from DB or auto-generates + persists) before
 // initialising push so setVapidDetails is called with valid, stable keys.
+await ensureEncryptionKey();
 await ensureVapidKeys();
 initPush();
 

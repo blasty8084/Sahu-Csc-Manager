@@ -61,6 +61,15 @@ async function getKey(): Promise<Buffer> {
   return keyPromise;
 }
 
+/**
+ * Call once at startup to eagerly generate and persist the encryption key
+ * before any request can trigger lazy init. Ensures the key is always in
+ * the settings table before data is written.
+ */
+export async function ensureEncryptionKey(): Promise<void> {
+  await getKey();
+}
+
 const PREFIX = "enc:v1:";
 
 /** Encrypts a plaintext string. Returns null/undefined unchanged (no-op for empty fields). */
