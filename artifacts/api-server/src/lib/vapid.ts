@@ -12,6 +12,7 @@ export async function ensureVapidKeys(): Promise<void> {
   const envPrivate = process.env.VAPID_PRIVATE_KEY;
 
   if (envPublic && envPrivate) {
+    process.env.VAPID_KEYS_FROM_ENV = "true";
     logger.info("VAPID keys loaded from environment");
     return;
   }
