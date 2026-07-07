@@ -1,5 +1,16 @@
 import nodemailer from "nodemailer";
 
+/** Escape user-controlled strings before interpolating into HTML email templates. */
+function esc(str: string | null | undefined): string {
+  if (!str) return "";
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function createTransporter() {
   const host = process.env.SMTP_HOST;
   const port = parseInt(process.env.SMTP_PORT ?? "587", 10);
@@ -19,6 +30,103 @@ function createTransporter() {
     auth: { user, pass },
   });
 }
+
+// ── V2 Dark Premium HTML helpers ───────────────────────────────────────────────
+
+/**
+ * Shared dark-card email wrapper.
+ * Produces an email-client-safe table layout matching the V2 "Modern Dark Premium" design.
+ */
+function buildV2Html(opts: {
+  title: string;
+  icon: string;         // emoji or HTML entity
+  subtitle: string;     // uppercase label under brand name
+  accentColor: string;  // e.g. "#10b981"
+  accentText: string;   // lighter tint for subtitle text e.g. "#34d399"
+  accentDark: string;   // darker shade for icon badge gradient start e.g. "#059669"
+  bodyHtml: string;
+}): string {
+  const { title, icon, subtitle, accentColor, accentText, accentDark, bodyHtml } = opts;
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>SAHU CSC &mdash; ${title}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#0a1628;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#0a1628" style="background-color:#0a1628;padding:40px 16px 60px;">
+  <tr>
+    <td align="center">
+
+      <!-- ── Email card ── -->
+      <table width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;">
+
+        <!-- Accent top strip -->
+        <tr>
+          <td bgcolor="${accentColor}" style="background-color:${accentColor};height:4px;font-size:0;line-height:0;border-radius:16px 16px 0 0;">&nbsp;</td>
+        </tr>
+
+        <!-- Header -->
+        <tr>
+          <td bgcolor="#0f2244" style="background-color:#0f2244;padding:36px 32px 28px;text-align:center;border-left:1px solid rgba(255,255,255,0.08);border-right:1px solid rgba(255,255,255,0.08);">
+            <!-- Icon badge -->
+            <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 20px;">
+              <tr>
+                <td bgcolor="${accentDark}" style="background-color:${accentDark};border-radius:50%;width:64px;height:64px;text-align:center;vertical-align:middle;">
+                  <span style="font-size:30px;line-height:64px;display:block;">${icon}</span>
+                </td>
+              </tr>
+            </table>
+            <!-- Brand -->
+            <p style="margin:0 0 8px;font-size:24px;font-weight:900;letter-spacing:1px;color:#ffffff;">SAHU CSC</p>
+            <p style="margin:0;font-size:12px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:${accentText};">${subtitle}</p>
+          </td>
+        </tr>
+
+        <!-- Hairline divider -->
+        <tr>
+          <td bgcolor="#0f2244" style="background-color:#0f2244;border-left:1px solid rgba(255,255,255,0.08);border-right:1px solid rgba(255,255,255,0.08);">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="border-top:1px solid rgba(255,255,255,0.08);font-size:0;line-height:0;">&nbsp;</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+          <td bgcolor="#0f2244" style="background-color:#0f2244;padding:32px 32px 40px;border-left:1px solid rgba(255,255,255,0.08);border-right:1px solid rgba(255,255,255,0.08);border-bottom:1px solid rgba(255,255,255,0.08);border-radius:0 0 16px 16px;">
+            ${bodyHtml}
+          </td>
+        </tr>
+
+      </table>
+      <!-- /card -->
+
+      <!-- Footer -->
+      <table width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;margin-top:24px;">
+        <tr>
+          <td style="text-align:center;padding:0 16px;">
+            <p style="margin:0;font-size:13px;color:#475569;">
+              &copy; SAHU CSC Platform, Odisha &bull; Automated message &mdash; please do not reply.
+            </p>
+          </td>
+        </tr>
+      </table>
+
+    </td>
+  </tr>
+</table>
+
+</body>
+</html>`;
+}
+
+// ── OTP email ─────────────────────────────────────────────────────────────────
 
 function buildOtpText(
   otp: string,
@@ -67,14 +175,22 @@ function buildOtpHtml(
   expiresAt: Date
 ): string {
   const isReset = purpose === "password_reset";
-  const purposeLabel = isReset ? "Password Reset" : "Email Verification";
-  const purposeDesc = isReset
-    ? "We received a request to reset your SAHU CSC account password. Use the one-time password below to continue."
-    : "Welcome to SAHU CSC! Use the one-time password below to verify your email address and activate your account.";
-  const iconChar = isReset ? "&#128274;" : "&#9989;";
-  const accentColor = isReset ? "#f97316" : "#16a34a";
-  const accentLight = isReset ? "#fff7ed" : "#f0fdf4";
-  const accentBorder = isReset ? "rgba(249,115,22,0.3)" : "rgba(22,163,74,0.3)";
+
+  // V2 accent colours
+  const accentColor = isReset ? "#f59e0b" : "#10b981";
+  const accentText  = isReset ? "#fbbf24" : "#34d399";
+  const accentDark  = isReset ? "#d97706" : "#059669";
+  const accentBorder = isReset ? "rgba(245,158,11,0.5)" : "rgba(16,185,129,0.5)";
+
+  const icon     = isReset ? "&#128273;" : "&#9989;";
+  const subtitle = isReset ? "Password Reset" : "Email Verification";
+  const heading  = isReset ? "Reset Your Password" : "Verify Your Email";
+  const desc     = isReset
+    ? "We received a request to reset your password. Use the verification code below to authorise this change."
+    : "We received a request to verify this email address. Please use the verification code below to complete your setup.";
+  const secNote  = isReset
+    ? "If you did not request a password reset, please ignore this email or contact your administrator immediately."
+    : "We will never ask for this code over the phone. Do not share it with anyone.";
 
   const expiryTime = expiresAt.toLocaleTimeString("en-IN", {
     hour: "2-digit",
@@ -86,149 +202,59 @@ function buildOtpHtml(
     .map(
       (d) =>
         `<td style="padding:0 4px;">` +
-        `<div style="width:46px;height:56px;line-height:56px;text-align:center;` +
-        `font-size:28px;font-weight:900;color:#0b2c60;` +
-        `background:#ffffff;border:2.5px solid #cbd5e1;` +
-        `border-radius:10px;border-bottom:4px solid #94a3b8;` +
-        `font-family:Courier New,Courier,monospace;display:inline-block;">` +
+        `<div style="width:48px;height:56px;line-height:56px;text-align:center;` +
+        `font-size:28px;font-weight:900;color:#ffffff;` +
+        `background-color:#0b1e3d;border:1px solid ${accentBorder};` +
+        `border-radius:8px;font-family:'Courier New',Courier,monospace;display:inline-block;">` +
         `${d}</div></td>`
     )
     .join("");
 
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>SAHU CSC &mdash; ${purposeLabel}</title>
-</head>
-<body style="margin:0;padding:0;background:#eef2f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  const bodyHtml = `
+    <!-- Heading -->
+    <h2 style="margin:0 0 16px;font-size:22px;font-weight:700;color:#ffffff;text-align:center;">${heading}</h2>
+    <p style="margin:0 0 28px;font-size:15px;color:#cbd5e1;line-height:1.6;text-align:center;">${desc}</p>
 
-<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#eef2f7;padding:40px 16px 60px;">
-  <tr>
-    <td align="center">
+    <!-- OTP digit box -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
+      <tr>
+        <td bgcolor="#0b1e3d" style="background-color:#0b1e3d;border:1px dashed ${accentColor};border-radius:12px;padding:28px 16px;text-align:center;">
+          <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
+            <tr>${digitCells}</tr>
+          </table>
+        </td>
+      </tr>
+    </table>
 
-      <!-- Card -->
-      <table width="520" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;width:100%;">
+    <!-- Expiry pill -->
+    <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 28px;">
+      <tr>
+        <td style="border:1px solid ${accentColor};border-radius:999px;padding:6px 18px;text-align:center;">
+          <p style="margin:0;font-size:13px;font-weight:600;color:${accentColor};">&#9201;&nbsp; Expires at ${expiryTime} &bull; valid for 10 minutes</p>
+        </td>
+      </tr>
+    </table>
 
-        <!-- ── Header banner ── -->
-        <tr>
-          <td style="border-radius:18px 18px 0 0;overflow:hidden;background:#0b2c60;padding:0;">
-            <table width="100%" cellpadding="0" cellspacing="0" border="0">
-              <tr>
-                <td style="background:#0b2c60;padding:32px 36px 28px;text-align:center;">
-                  <!-- Logo area -->
-                  <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 16px;">
-                    <tr>
-                      <td style="background:rgba(255,255,255,0.08);border-radius:50%;width:64px;height:64px;text-align:center;vertical-align:middle;">
-                        <span style="font-size:30px;line-height:64px;">${iconChar}</span>
-                      </td>
-                    </tr>
-                  </table>
-                  <!-- Brand -->
-                  <p style="margin:0;font-size:26px;font-weight:900;letter-spacing:1px;line-height:1;">
-                    <span style="color:#ffffff;">SAHU&nbsp;</span><span style="color:${accentColor};">CSC</span>
-                  </p>
-                  <p style="margin:6px 0 0;color:rgba(255,255,255,0.4);font-size:10px;letter-spacing:4px;text-transform:uppercase;">Management Platform &bull; Odisha</p>
-                  <!-- Divider stripe -->
-                  <table cellpadding="0" cellspacing="0" border="0" style="margin:20px auto 0;">
-                    <tr>
-                      <td style="width:40px;height:3px;background:rgba(249,115,22,1);border-radius:99px;"></td>
-                      <td style="width:6px;"></td>
-                      <td style="width:18px;height:3px;background:rgba(255,255,255,0.2);border-radius:99px;"></td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-              <!-- Purpose badge strip -->
-              <tr>
-                <td style="background:${accentColor};padding:10px 36px;text-align:center;">
-                  <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#ffffff;">${purposeLabel}</p>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
+    <!-- Security note -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td bgcolor="#0b1e3d" style="background-color:#0b1e3d;border-left:4px solid ${accentColor};border-radius:0 8px 8px 0;padding:14px 16px;">
+          <p style="margin:0;font-size:13px;color:#94a3b8;line-height:1.6;">
+            <strong style="color:#ffffff;">Security Note:</strong>&nbsp;${secNote}
+          </p>
+        </td>
+      </tr>
+    </table>`;
 
-        <!-- ── Body ── -->
-        <tr>
-          <td style="background:#ffffff;padding:36px 36px 28px;border-left:1px solid #dde3ec;border-right:1px solid #dde3ec;">
-            <p style="margin:0 0 8px;font-size:20px;font-weight:700;color:#0b1a3a;">Hi there!</p>
-            <p style="margin:0 0 28px;font-size:14px;color:#4b5563;line-height:1.7;">${purposeDesc}</p>
-
-            <!-- OTP box -->
-            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:28px;">
-              <tr>
-                <td style="background:${accentLight};border:2px solid ${accentBorder};border-radius:14px;padding:28px 20px;text-align:center;">
-                  <p style="margin:0 0 18px;font-size:10px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#9ca3af;">Your One-Time Password</p>
-                  <!-- Digit boxes -->
-                  <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
-                    <tr>${digitCells}</tr>
-                  </table>
-                  <!-- Copy-code block -->
-                  <p style="margin:20px 0 8px;font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#9ca3af;">&#x2014;&nbsp; or copy the full code &nbsp;&#x2014;</p>
-                  <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
-                    <tr>
-                      <td style="background:#ffffff;border:2px dashed ${accentColor};border-radius:10px;padding:10px 28px;">
-                        <p style="margin:0;font-size:32px;font-weight:900;letter-spacing:10px;color:#0b2c60;font-family:Courier New,Courier,monospace;user-select:all;-webkit-user-select:all;mso-user-select:all;">${otp}</p>
-                      </td>
-                    </tr>
-                  </table>
-                  <p style="margin:8px 0 0;font-size:10px;color:#9ca3af;">Tap the code above to select &amp; copy it</p>
-                  <!-- Expiry -->
-                  <table cellpadding="0" cellspacing="0" border="0" style="margin:16px auto 0;">
-                    <tr>
-                      <td style="background:${accentColor};border-radius:99px;padding:6px 18px;">
-                        <p style="margin:0;font-size:12px;font-weight:600;color:#ffffff;">&#9201;&nbsp; Expires at ${expiryTime} &bull; valid for 10 minutes</p>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-
-            <!-- Security notice -->
-            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
-              <tr>
-                <td style="background:#f8fafc;border-left:4px solid ${accentColor};border-radius:0 8px 8px 0;padding:14px 16px;">
-                  <p style="margin:0;font-size:12px;color:#374151;line-height:1.6;">
-                    <strong style="color:#0b1a3a;">&#128274; Security Notice:</strong>&nbsp;
-                    Enter this code in the SAHU CSC app. <strong>Never share this code</strong> with anyone &mdash; our team will <em>never</em> ask for it.
-                  </p>
-                </td>
-              </tr>
-            </table>
-
-            <p style="margin:0;font-size:12px;color:#9ca3af;line-height:1.6;">
-              If you did not request this code, you can safely ignore this email. No changes have been made to your account.
-            </p>
-          </td>
-        </tr>
-
-        <!-- ── Footer ── -->
-        <tr>
-          <td style="background:#f1f5f9;border:1px solid #dde3ec;border-top:none;border-radius:0 0 18px 18px;padding:20px 36px;text-align:center;">
-            <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 10px;">
-              <tr>
-                <td style="width:28px;height:2px;background:#0b2c60;border-radius:99px;"></td>
-                <td style="width:6px;"></td>
-                <td style="width:12px;height:2px;background:${accentColor};border-radius:99px;"></td>
-              </tr>
-            </table>
-            <p style="margin:0 0 3px;font-size:11px;font-weight:600;color:#64748b;">SAHU CSC &bull; Common Service Center &bull; Odisha, India</p>
-            <p style="margin:0;font-size:10px;color:#94a3b8;">This is an automated message. Please do not reply to this email.</p>
-          </td>
-        </tr>
-
-      </table>
-      <!-- /Card -->
-
-    </td>
-  </tr>
-</table>
-
-</body>
-</html>`;
+  return buildV2Html({
+    title: subtitle,
+    icon,
+    subtitle,
+    accentColor,
+    accentText,
+    accentDark,
+    bodyHtml,
+  });
 }
 
 export async function sendOtpEmail(
@@ -261,135 +287,58 @@ export function isSmtpConfigured(): boolean {
   );
 }
 
-// ── Registration status emails ────────────────────────────────────────────────
-
-function buildStatusHtml(opts: {
-  heading: string;
-  subheading: string;
-  icon: string;
-  accentColor: string;
-  accentLight: string;
-  accentBorder: string;
-  bodyHtml: string;
-}): string {
-  const { heading, subheading, icon, accentColor, accentLight, accentBorder, bodyHtml } = opts;
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>SAHU CSC &mdash; ${heading}</title>
-</head>
-<body style="margin:0;padding:0;background:#eef2f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#eef2f7;padding:40px 16px 60px;">
-  <tr><td align="center">
-    <table width="520" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;width:100%;">
-      <!-- Header -->
-      <tr>
-        <td style="border-radius:18px 18px 0 0;overflow:hidden;background:#0b2c60;padding:0;">
-          <table width="100%" cellpadding="0" cellspacing="0" border="0">
-            <tr>
-              <td style="background:#0b2c60;padding:32px 36px 28px;text-align:center;">
-                <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 16px;">
-                  <tr>
-                    <td style="background:rgba(255,255,255,0.08);border-radius:50%;width:64px;height:64px;text-align:center;vertical-align:middle;">
-                      <span style="font-size:30px;line-height:64px;">${icon}</span>
-                    </td>
-                  </tr>
-                </table>
-                <p style="margin:0;font-size:26px;font-weight:900;letter-spacing:1px;line-height:1;">
-                  <span style="color:#ffffff;">SAHU&nbsp;</span><span style="color:#f97316;">CSC</span>
-                </p>
-                <p style="margin:6px 0 0;color:rgba(255,255,255,0.4);font-size:10px;letter-spacing:4px;text-transform:uppercase;">Management Platform &bull; Odisha</p>
-                <table cellpadding="0" cellspacing="0" border="0" style="margin:20px auto 0;">
-                  <tr>
-                    <td style="width:40px;height:3px;background:rgba(249,115,22,1);border-radius:99px;"></td>
-                    <td style="width:6px;"></td>
-                    <td style="width:18px;height:3px;background:rgba(255,255,255,0.2);border-radius:99px;"></td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-            <tr>
-              <td style="background:${accentColor};padding:10px 36px;text-align:center;">
-                <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#ffffff;">${subheading}</p>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-      <!-- Body -->
-      <tr>
-        <td style="background:#ffffff;padding:36px 36px 28px;border-left:1px solid #dde3ec;border-right:1px solid #dde3ec;">
-          ${bodyHtml}
-        </td>
-      </tr>
-      <!-- Footer -->
-      <tr>
-        <td style="background:#f1f5f9;border:1px solid #dde3ec;border-top:none;border-radius:0 0 18px 18px;padding:20px 36px;text-align:center;">
-          <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 10px;">
-            <tr>
-              <td style="width:28px;height:2px;background:#0b2c60;border-radius:99px;"></td>
-              <td style="width:6px;"></td>
-              <td style="width:12px;height:2px;background:#f97316;border-radius:99px;"></td>
-            </tr>
-          </table>
-          <p style="margin:0 0 3px;font-size:11px;font-weight:600;color:#64748b;">SAHU CSC &bull; Common Service Center &bull; Odisha, India</p>
-          <p style="margin:0;font-size:10px;color:#94a3b8;">This is an automated message. Please do not reply to this email.</p>
-        </td>
-      </tr>
-    </table>
-  </td></tr>
-</table>
-</body>
-</html>`;
-}
+// ── Account approved ──────────────────────────────────────────────────────────
 
 export async function sendApprovalEmail(to: string, name: string): Promise<void> {
   const transporter = createTransporter();
   const fromEmail = process.env.SMTP_FROM_EMAIL ?? process.env.SMTP_USER ?? "noreply@sahucsc.in";
 
   const displayName = name || to.split("@")[0];
+  const safeDisplayName = esc(displayName);
 
   const bodyHtml = `
-    <p style="margin:0 0 8px;font-size:20px;font-weight:700;color:#0b1a3a;">Hi ${displayName}!</p>
-    <p style="margin:0 0 24px;font-size:14px;color:#4b5563;line-height:1.7;">
-      Great news — your SAHU CSC account registration has been <strong style="color:#16a34a;">approved</strong>.
-      You can now log in and start using the platform.
+    <h2 style="margin:0 0 20px;font-size:28px;font-weight:700;color:#ffffff;text-align:center;">Account Approved</h2>
+    <p style="margin:0 0 24px;font-size:16px;color:#e2e8f0;line-height:1.6;text-align:center;">
+      Hi <strong>${safeDisplayName}</strong>, great news! Your SAHU CSC account is now active and ready to use.
     </p>
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:24px;">
+
+    <!-- Info box -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:28px;">
       <tr>
-        <td style="background:#f0fdf4;border:2px solid rgba(22,163,74,0.3);border-radius:14px;padding:24px;text-align:center;">
-          <p style="margin:0 0 6px;font-size:28px;">&#9989;</p>
-          <p style="margin:0;font-size:16px;font-weight:700;color:#15803d;">Account Approved</p>
-          <p style="margin:6px 0 0;font-size:13px;color:#4b5563;">Your account is active and ready to use.</p>
-        </td>
-      </tr>
-    </table>
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
-      <tr>
-        <td style="background:#f8fafc;border-left:4px solid #16a34a;border-radius:0 8px 8px 0;padding:14px 16px;">
-          <p style="margin:0;font-size:12px;color:#374151;line-height:1.6;">
-            Open the SAHU CSC app and log in with your registered username and password to get started.
+        <td bgcolor="#13284f" style="background-color:#13284f;border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:24px;text-align:center;">
+          <p style="margin:0;font-size:15px;color:#94a3b8;line-height:1.6;">
+            You can now log in and access all platform features, track applications, and manage operator services.
           </p>
         </td>
       </tr>
     </table>
-    <p style="margin:0;font-size:12px;color:#9ca3af;line-height:1.6;">
-      If you did not create this account, please contact your administrator immediately.
-    </p>`;
+
+    <!-- CTA button area -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td align="center">
+          <table cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td bgcolor="#10b981" style="background-color:#10b981;border-radius:999px;padding:14px 32px;">
+                <p style="margin:0;font-size:16px;font-weight:600;color:#ffffff;">Open SAHU CSC &rarr;</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>`;
 
   await transporter.sendMail({
     from: `"SAHU CSC" <${fromEmail}>`,
     to,
     subject: "SAHU CSC — Your account has been approved ✅",
-    html: buildStatusHtml({
-      heading: "Account Approved",
-      subheading: "Registration Approved",
+    html: buildV2Html({
+      title: "Account Approved",
       icon: "&#9989;",
-      accentColor: "#16a34a",
-      accentLight: "#f0fdf4",
-      accentBorder: "rgba(22,163,74,0.3)",
+      subtitle: "Status Update",
+      accentColor: "#10b981",
+      accentText: "#34d399",
+      accentDark: "#059669",
       bodyHtml,
     }),
     text: [
@@ -411,6 +360,74 @@ export async function sendApprovalEmail(to: string, name: string): Promise<void>
   });
 }
 
+// ── Registration declined ─────────────────────────────────────────────────────
+
+export async function sendRejectionEmail(to: string, name: string, reason: string | null): Promise<void> {
+  const transporter = createTransporter();
+  const fromEmail = process.env.SMTP_FROM_EMAIL ?? process.env.SMTP_USER ?? "noreply@sahucsc.in";
+
+  const displayName = name || to.split("@")[0];
+  const safeDisplayName = esc(displayName);
+
+  const reasonBlock = reason
+    ? `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 28px;">
+        <tr>
+          <td bgcolor="#0b1e3d" style="background-color:#0b1e3d;border-left:4px solid #f43f5e;border-radius:0 8px 8px 0;padding:18px 20px;">
+            <p style="margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;">Reason provided</p>
+            <p style="margin:0;font-size:14px;color:#ffffff;line-height:1.6;">${esc(reason)}</p>
+          </td>
+        </tr>
+      </table>`
+    : "";
+
+  const bodyHtml = `
+    <h2 style="margin:0 0 20px;font-size:22px;font-weight:600;color:#ffffff;text-align:center;">Registration Not Approved</h2>
+    <p style="margin:0 0 24px;font-size:15px;color:#cbd5e1;line-height:1.6;">
+      Hi <strong>${safeDisplayName}</strong>,<br/><br/>
+      Thank you for applying to join the SAHU CSC platform. We have reviewed your application, but we could not approve your registration request at this time.
+    </p>
+
+    ${reasonBlock}
+
+    <p style="margin:0;font-size:14px;color:#94a3b8;line-height:1.6;text-align:center;">
+      If you believe this was an error, please contact your SAHU CSC administrator directly.
+    </p>`;
+
+  await transporter.sendMail({
+    from: `"SAHU CSC" <${fromEmail}>`,
+    to,
+    subject: "SAHU CSC — Registration request update",
+    html: buildV2Html({
+      title: "Registration Declined",
+      icon: "&#10060;",
+      subtitle: "Status Update",
+      accentColor: "#f43f5e",
+      accentText: "#fb7185",
+      accentDark: "#e11d48",
+      bodyHtml,
+    }),
+    text: [
+      "SAHU CSC — Management Platform",
+      "=".repeat(40),
+      "",
+      "REGISTRATION DECLINED",
+      "",
+      `Hi ${displayName},`,
+      "",
+      "We're sorry — your SAHU CSC registration request has been declined.",
+      ...(reason ? ["", `Reason: ${reason}`] : []),
+      "",
+      "If you believe this is a mistake, please contact your SAHU CSC administrator.",
+      "",
+      "-".repeat(40),
+      "SAHU CSC · Common Service Center · Odisha, India",
+      "This is an automated message. Please do not reply.",
+    ].join("\n"),
+  });
+}
+
+// ── Admin new-registration alert ──────────────────────────────────────────────
+
 export async function sendNewRegistrationAdminEmail(opts: {
   adminEmail: string;
   adminName: string;
@@ -426,65 +443,76 @@ export async function sendNewRegistrationAdminEmail(opts: {
   const displayApplicant = applicantFullName ? `${applicantFullName} (@${applicantUsername})` : `@${applicantUsername}`;
   const timeStr = submittedAt.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
 
+  const safeAdminName      = esc(adminName);
+  const safeDisplayApplicant = esc(displayApplicant);
+  const safeApplicantEmail = esc(applicantEmail);
+  const safeTimeStr        = esc(timeStr);
+
   const bodyHtml = `
-    <p style="margin:0 0 8px;font-size:20px;font-weight:700;color:#0b1a3a;">Hi ${adminName},</p>
-    <p style="margin:0 0 24px;font-size:14px;color:#4b5563;line-height:1.7;">
-      A new registration request is waiting for your review on <strong>SAHU CSC</strong>.
+    <h2 style="margin:0 0 16px;font-size:22px;font-weight:600;color:#ffffff;text-align:center;">New Registration Request</h2>
+    <p style="margin:0 0 24px;font-size:15px;color:#cbd5e1;line-height:1.6;text-align:center;">
+      Hi <strong>${safeAdminName}</strong>, a new operator account request has been submitted and is waiting for your review.
     </p>
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:24px;">
+
+    <!-- Applicant card -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:28px;">
       <tr>
-        <td style="background:#eff6ff;border:2px solid rgba(37,99,235,0.25);border-radius:14px;padding:24px 26px;">
+        <td bgcolor="#13284f" style="background-color:#13284f;border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:20px 24px;">
+          <!-- Applicant row -->
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,0.06);">
+            <tr>
+              <td style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#7dd3fc;vertical-align:top;padding-right:12px;white-space:nowrap;">Applicant</td>
+              <td style="font-size:15px;color:#ffffff;text-align:right;">${safeDisplayApplicant}</td>
+            </tr>
+          </table>
+          <!-- Email row -->
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,0.06);">
+            <tr>
+              <td style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#7dd3fc;vertical-align:middle;padding-right:12px;white-space:nowrap;">Email</td>
+              <td style="font-size:14px;color:#ffffff;text-align:right;">${safeApplicantEmail}</td>
+            </tr>
+          </table>
+          <!-- Submitted row -->
           <table width="100%" cellpadding="0" cellspacing="0" border="0">
             <tr>
-              <td style="padding-bottom:14px;">
-                <p style="margin:0 0 3px;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#9ca3af;">Applicant</p>
-                <p style="margin:0;font-size:16px;font-weight:700;color:#0b1a3a;">${displayApplicant}</p>
-              </td>
+              <td style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#7dd3fc;vertical-align:middle;padding-right:12px;white-space:nowrap;">Submitted</td>
+              <td style="font-size:14px;color:#ffffff;text-align:right;">${safeTimeStr}</td>
             </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Action note -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
+      <tr>
+        <td align="center">
+          <table cellpadding="0" cellspacing="0" border="0">
             <tr>
-              <td style="border-top:1px solid #dbeafe;padding-top:14px;">
-                <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                  <tr>
-                    <td width="50%" style="padding-right:12px;">
-                      <p style="margin:0 0 2px;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#9ca3af;">Email</p>
-                      <p style="margin:0;font-size:13px;color:#374151;">${applicantEmail}</p>
-                    </td>
-                    <td width="50%">
-                      <p style="margin:0 0 2px;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#9ca3af;">Submitted</p>
-                      <p style="margin:0;font-size:13px;color:#374151;">${timeStr}</p>
-                    </td>
-                  </tr>
-                </table>
+              <td style="border:2px solid #38bdf8;border-radius:999px;padding:10px 24px;">
+                <p style="margin:0;font-size:14px;font-weight:600;color:#38bdf8;">Review in Dashboard &rarr;</p>
               </td>
             </tr>
           </table>
         </td>
       </tr>
     </table>
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
-      <tr>
-        <td style="background:#f8fafc;border-left:4px solid #0b2c60;border-radius:0 8px 8px 0;padding:14px 16px;">
-          <p style="margin:0;font-size:12px;color:#374151;line-height:1.6;">
-            Log in to SAHU CSC and go to <strong>User Management → Pending</strong> to approve or decline this request.
-          </p>
-        </td>
-      </tr>
-    </table>
-    <p style="margin:0;font-size:12px;color:#9ca3af;line-height:1.6;">
-      This alert was sent because you are an administrator on SAHU CSC. You will receive one email per new registration request.
+
+    <p style="margin:0;font-size:13px;color:#64748b;text-align:center;">
+      This is an automated administrative notification. You will receive one alert per new registration request.
     </p>`;
 
   await transporter.sendMail({
     from: `"SAHU CSC" <${fromEmail}>`,
     to: adminEmail,
     subject: `SAHU CSC — New registration request from @${applicantUsername}`,
-    html: buildStatusHtml({
-      heading: "New Registration Request",
-      subheading: "Action Required",
+    html: buildV2Html({
+      title: "New Registration Request",
       icon: "&#128276;",
-      accentColor: "#0b2c60",
-      accentLight: "#eff6ff",
-      accentBorder: "rgba(37,99,235,0.25)",
+      subtitle: "Admin Alert",
+      accentColor: "#38bdf8",
+      accentText: "#7dd3fc",
+      accentDark: "#0284c7",
       bodyHtml,
     }),
     text: [
@@ -510,6 +538,8 @@ export async function sendNewRegistrationAdminEmail(opts: {
   });
 }
 
+// ── Admin broadcast ───────────────────────────────────────────────────────────
+
 export async function sendBroadcastEmail(opts: {
   subject: string;
   body: string;
@@ -520,20 +550,33 @@ export async function sendBroadcastEmail(opts: {
   const fromEmail = process.env.SMTP_FROM_EMAIL ?? process.env.SMTP_USER ?? "noreply@sahucsc.in";
 
   const bodyHtml = `
-    <p style="margin:0 0 8px;font-size:20px;font-weight:700;color:#0b1a3a;">Hello,</p>
-    <div style="font-size:14px;color:#374151;line-height:1.8;white-space:pre-wrap;">${body.replace(/\n/g, "<br/>")}</div>
-    <hr style="margin:28px 0 16px;border:none;border-top:1px solid #e2e8f0;" />
-    <p style="margin:0;font-size:12px;color:#9ca3af;line-height:1.6;">
-      This message was sent by your SAHU CSC administrator. If you have questions, contact your center directly.
+    <h2 style="margin:0 0 24px;font-size:22px;font-weight:600;color:#ffffff;text-align:center;">Message from Admin</h2>
+
+    <!-- Message body card -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:24px;">
+      <tr>
+        <td bgcolor="#13284f" style="background-color:#13284f;border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:24px 28px;">
+          <div style="font-size:15px;color:#ffffff;line-height:1.7;white-space:pre-wrap;">${esc(body).replace(/\n/g, "<br/>")}</div>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Divider -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:16px;">
+      <tr><td style="border-top:1px solid rgba(255,255,255,0.08);font-size:0;line-height:0;">&nbsp;</td></tr>
+    </table>
+
+    <p style="margin:0;font-size:13px;color:#64748b;text-align:center;">
+      Sent by your administrator to all active platform users.
     </p>`;
 
-  const htmlContent = buildStatusHtml({
-    heading: "Message from Admin",
-    subheading: "Admin Broadcast",
+  const htmlContent = buildV2Html({
+    title: "Admin Broadcast",
     icon: "&#128226;",
-    accentColor: "#0b2c60",
-    accentLight: "#eff6ff",
-    accentBorder: "rgba(11,44,96,0.2)",
+    subtitle: "Platform Announcement",
+    accentColor: "#a78bfa",
+    accentText: "#c4b5fd",
+    accentDark: "#8b5cf6",
     bodyHtml,
   });
 
@@ -573,75 +616,7 @@ export async function sendBroadcastEmail(opts: {
   return { sent, failed };
 }
 
-export async function sendRejectionEmail(to: string, name: string, reason: string | null): Promise<void> {
-  const transporter = createTransporter();
-  const fromEmail = process.env.SMTP_FROM_EMAIL ?? process.env.SMTP_USER ?? "noreply@sahucsc.in";
-
-  const displayName = name || to.split("@")[0];
-  const reasonBlock = reason
-    ? `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px;">
-        <tr>
-          <td style="background:#fff7ed;border:2px solid rgba(249,115,22,0.3);border-radius:14px;padding:18px 20px;">
-            <p style="margin:0 0 4px;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#9ca3af;">Reason provided</p>
-            <p style="margin:0;font-size:14px;color:#374151;line-height:1.6;">${reason}</p>
-          </td>
-        </tr>
-      </table>`
-    : "";
-
-  const bodyHtml = `
-    <p style="margin:0 0 8px;font-size:20px;font-weight:700;color:#0b1a3a;">Hi ${displayName},</p>
-    <p style="margin:0 0 24px;font-size:14px;color:#4b5563;line-height:1.7;">
-      We're sorry to inform you that your SAHU CSC registration request has been <strong style="color:#dc2626;">declined</strong>.
-    </p>
-    ${reasonBlock}
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
-      <tr>
-        <td style="background:#f8fafc;border-left:4px solid #f97316;border-radius:0 8px 8px 0;padding:14px 16px;">
-          <p style="margin:0;font-size:12px;color:#374151;line-height:1.6;">
-            If you believe this is a mistake or would like clarification, please contact your SAHU CSC administrator directly.
-          </p>
-        </td>
-      </tr>
-    </table>
-    <p style="margin:0;font-size:12px;color:#9ca3af;line-height:1.6;">
-      If you did not submit a registration request, you can safely ignore this email.
-    </p>`;
-
-  await transporter.sendMail({
-    from: `"SAHU CSC" <${fromEmail}>`,
-    to,
-    subject: "SAHU CSC — Registration request update",
-    html: buildStatusHtml({
-      heading: "Registration Declined",
-      subheading: "Registration Declined",
-      icon: "&#10060;",
-      accentColor: "#dc2626",
-      accentLight: "#fef2f2",
-      accentBorder: "rgba(220,38,38,0.3)",
-      bodyHtml,
-    }),
-    text: [
-      "SAHU CSC — Management Platform",
-      "=".repeat(40),
-      "",
-      "REGISTRATION DECLINED",
-      "",
-      `Hi ${displayName},`,
-      "",
-      "We're sorry — your SAHU CSC registration request has been declined.",
-      ...(reason ? ["", `Reason: ${reason}`] : []),
-      "",
-      "If you believe this is a mistake, please contact your SAHU CSC administrator.",
-      "",
-      "-".repeat(40),
-      "SAHU CSC · Common Service Center · Odisha, India",
-      "This is an automated message. Please do not reply.",
-    ].join("\n"),
-  });
-}
-
-// ── Admin-generated password reset link email ─────────────────────────────────
+// ── Admin-generated password reset link ───────────────────────────────────────
 
 export async function sendAdminResetLinkEmail(opts: {
   to: string;
@@ -656,89 +631,82 @@ export async function sendAdminResetLinkEmail(opts: {
 
   const expiryTime = expiresAt.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
   const name = displayName || username;
+  const safeName     = esc(name);
+  const safeUsername = esc(username);
+  const safeExpiry   = esc(expiryTime);
+  const safeResetUrl = esc(resetUrl); // href attribute escaping
 
   const bodyHtml = `
-    <p style="margin:0 0 8px;font-size:20px;font-weight:700;color:#0b1a3a;">Hi ${name}!</p>
-    <p style="margin:0 0 24px;font-size:14px;color:#4b5563;line-height:1.7;">
-      Your administrator has generated a secure, one-time password reset link for your
-      <strong>SAHU CSC</strong> account (<strong>@${username}</strong>).
+    <h2 style="margin:0 0 16px;font-size:22px;font-weight:600;color:#ffffff;text-align:center;">Password Reset Link</h2>
+    <p style="margin:0 0 28px;font-size:15px;color:#cbd5e1;line-height:1.6;text-align:center;">
+      Hi <strong>${safeName}</strong>, your administrator has initiated a password reset for your account
+      <strong style="color:#ffffff;">@${safeUsername}</strong>.
       Click the button below to set a new password.
     </p>
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:24px;">
-      <tr><td align="center">
-        <table cellpadding="0" cellspacing="0" border="0">
-          <tr>
-            <td style="border-radius:10px;background:#f97316;">
-              <a href="${resetUrl}" style="display:inline-block;padding:14px 36px;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;letter-spacing:0.3px;border-radius:10px;">
-                &#128274;&nbsp; Reset My Password
-              </a>
-            </td>
-          </tr>
-        </table>
-      </td></tr>
-    </table>
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
-      <tr>
-        <td style="background:#fff7ed;border:2px solid rgba(249,115,22,0.3);border-radius:12px;padding:16px 18px;text-align:center;">
-          <p style="margin:0;font-size:13px;font-weight:600;color:#c2410c;">
-            &#9201;&nbsp; Expires at <strong>${expiryTime}</strong> &bull; valid 10 minutes &bull; one-time use only
-          </p>
-        </td>
-      </tr>
-    </table>
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
-      <tr>
-        <td style="background:#f8fafc;border-left:4px solid #f97316;border-radius:0 8px 8px 0;padding:14px 16px;">
-          <p style="margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#9ca3af;">If the button does not work, copy this link:</p>
-          <p style="margin:0;font-size:11px;color:#374151;word-break:break-all;font-family:Courier New,Courier,monospace;">${resetUrl}</p>
-        </td>
-      </tr>
-    </table>
+
+    <!-- CTA button -->
     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:16px;">
       <tr>
-        <td style="background:#f8fafc;border-left:4px solid #dc2626;border-radius:0 8px 8px 0;padding:14px 16px;">
-          <p style="margin:0;font-size:12px;color:#374151;line-height:1.6;">
-            <strong style="color:#0b1a3a;">&#128274; Security Notice:</strong>&nbsp;
-            Only use this link if your administrator told you to expect it.
-            <strong>Never share this link</strong> with anyone. Once used or expired, it becomes permanently invalid.
+        <td bgcolor="#f59e0b" style="background-color:#f59e0b;border-radius:12px;">
+          <a href="${safeResetUrl}" style="display:block;padding:16px 32px;font-size:16px;font-weight:700;color:#ffffff;text-decoration:none;text-align:center;border-radius:12px;">
+            &#128274;&nbsp; Reset My Password &rarr;
+          </a>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Expiry warning -->
+    <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 28px;">
+      <tr>
+        <td style="background-color:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:8px 16px;text-align:center;">
+          <p style="margin:0;font-size:12px;font-weight:600;color:#fbbf24;">
+            &#9888;&#65039;&nbsp; Single-use &bull; Expires at ${safeExpiry} (2 hours) &bull; Do not share
           </p>
         </td>
       </tr>
     </table>
-    <p style="margin:0;font-size:12px;color:#9ca3af;line-height:1.6;">
-      If you did not expect this email, you can safely ignore it — your password has not changed.
-    </p>`;
+
+    <!-- Security note -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td bgcolor="#0b1e3d" style="background-color:#0b1e3d;border-radius:8px;padding:16px;text-align:center;">
+          <p style="margin:0;font-size:13px;color:#94a3b8;line-height:1.6;">
+            If you did not request this, please contact your administrator immediately. This link is unique to your account.
+          </p>
+        </td>
+      </tr>
+    </table>`;
 
   await transporter.sendMail({
     from: `"SAHU CSC" <${fromEmail}>`,
     to,
-    subject: "SAHU CSC — Admin-generated password reset link",
-    html: buildStatusHtml({
-      heading: "Password Reset Link",
-      subheading: "Admin-Assisted Reset",
-      icon: "&#128274;",
-      accentColor: "#f97316",
-      accentLight: "#fff7ed",
-      accentBorder: "rgba(249,115,22,0.3)",
+    subject: "SAHU CSC — Your password reset link",
+    html: buildV2Html({
+      title: "Password Reset Link",
+      icon: "&#128273;",
+      subtitle: "Admin Action",
+      accentColor: "#f59e0b",
+      accentText: "#fbbf24",
+      accentDark: "#d97706",
       bodyHtml,
     }),
     text: [
       "SAHU CSC — Management Platform",
       "=".repeat(40),
       "",
-      "ADMIN-ASSISTED PASSWORD RESET",
+      "ADMIN-GENERATED PASSWORD RESET LINK",
       "",
       `Hi ${name},`,
       "",
-      "Your administrator has generated a secure password reset link for your SAHU CSC account.",
+      `Your administrator has generated a secure, one-time password reset link for @${username}.`,
       "",
-      "Use the link below to set a new password (valid for 10 minutes, one-time use):",
+      "Click the link below to set a new password:",
       "",
       resetUrl,
       "",
-      `Expires at: ${expiryTime}`,
+      `This link expires at ${expiryTime}. It is single-use — do NOT share it with anyone.`,
       "",
-      "If you did not expect this email, you can safely ignore it.",
+      "If you did not request this, contact your administrator immediately.",
       "",
       "-".repeat(40),
       "SAHU CSC · Common Service Center · Odisha, India",
