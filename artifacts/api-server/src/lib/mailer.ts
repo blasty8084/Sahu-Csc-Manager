@@ -186,18 +186,20 @@ function buildOtpHtml(
   const subtitle = isReset ? "Password Reset" : "Email Verification";
   const heading  = isReset ? "Reset Your Password" : "Verify Your Email";
   const desc     = isReset
-    ? "We received a request to reset your password. Use the verification code below to authorise this change."
-    : "We received a request to verify this email address. Please use the verification code below to complete your setup.";
+    ? "Use the code below to reset your password. It expires in <strong style=\"color:#ffffff;\">10 minutes</strong> and can only be used once."
+    : "Enter the code below in the SAHU CSC app to verify your email. It expires in <strong style=\"color:#ffffff;\">10 minutes</strong>.";
   const secNote  = isReset
-    ? "If you did not request a password reset, please ignore this email or contact your administrator immediately."
-    : "We will never ask for this code over the phone. Do not share it with anyone.";
+    ? "Didn't request this? Ignore this email — your password stays unchanged."
+    : "Never share this code. Our team will never ask for it.";
 
   const expiryTime = expiresAt.toLocaleTimeString("en-IN", {
     hour: "2-digit",
     minute: "2-digit",
   });
 
-  const digits = otp.split("");
+  // Sanitise OTP — only digits are valid; reject anything else
+  const safeOtp = /^\d+$/.test(otp) ? esc(otp) : "------";
+  const digits = safeOtp.split("");
   const digitCells = digits
     .map(
       (d) =>
@@ -216,12 +218,19 @@ function buildOtpHtml(
     <p style="margin:0 0 28px;font-size:15px;color:#cbd5e1;line-height:1.6;text-align:center;">${desc}</p>
 
     <!-- OTP digit box -->
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:12px;">
       <tr>
-        <td bgcolor="#0b1e3d" style="background-color:#0b1e3d;border:1px dashed ${accentColor};border-radius:12px;padding:28px 16px;text-align:center;">
+        <td bgcolor="#0b1e3d" style="background-color:#0b1e3d;border:1px dashed ${accentColor};border-radius:12px 12px 0 0;padding:28px 16px 20px;text-align:center;">
           <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
             <tr>${digitCells}</tr>
           </table>
+        </td>
+      </tr>
+      <!-- Copy strip -->
+      <tr>
+        <td bgcolor="#0f2a1e" style="background-color:${isReset ? "#1f1a0d" : "#0f2a1e"};border:1px solid ${accentColor};border-top:none;border-radius:0 0 12px 12px;padding:10px 16px;text-align:center;">
+          <p style="margin:0;font-size:11px;font-weight:600;letter-spacing:0.06em;color:${accentText};text-transform:uppercase;">&#128203;&nbsp; Copy this code</p>
+          <p style="margin:4px 0 0;font-size:22px;font-weight:900;letter-spacing:0.25em;color:#ffffff;font-family:'Courier New',Courier,monospace;">${safeOtp}</p>
         </td>
       </tr>
     </table>
