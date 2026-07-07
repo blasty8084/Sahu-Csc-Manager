@@ -37,12 +37,11 @@ const registerSchema = z
       .or(z.literal("")),
     password: z
       .string()
-      .min(6, "Minimum 6 characters")
-      .max(8, "Maximum 8 characters")
+      .min(8, "Minimum 8 characters")
       .regex(/[A-Z]/, "Must contain an uppercase letter")
       .regex(/[a-z]/, "Must contain a lowercase letter")
       .regex(/[0-9]/, "Must contain a number")
-      .regex(/[^A-Za-z0-9]/, "Must contain a special character"),
+      .regex(/[^A-Za-z0-9]/, "Must contain a special character (@#$%! etc.)"),
     confirmPassword: z.string(),
   })
   .refine((d) => d.password === d.confirmPassword, {
@@ -63,11 +62,11 @@ function maskEmail(email: string): string {
 
 function PasswordStrength({ password }: { password: string }) {
   const checks = [
-    { label: "6–8 chars", ok: password.length >= 6 && password.length <= 8 },
+    { label: "8+ chars", ok: password.length >= 8 },
     { label: "Uppercase", ok: /[A-Z]/.test(password) },
     { label: "Lowercase", ok: /[a-z]/.test(password) },
     { label: "Number", ok: /[0-9]/.test(password) },
-    { label: "Special (!@#…)", ok: /[^A-Za-z0-9]/.test(password) },
+    { label: "Special (@#$!…)", ok: /[^A-Za-z0-9]/.test(password) },
   ];
   const score = checks.filter((c) => c.ok).length;
   const colors = ["bg-red-400", "bg-orange-400", "bg-yellow-400", "bg-yellow-500", "bg-green-400", "bg-green-500"];
