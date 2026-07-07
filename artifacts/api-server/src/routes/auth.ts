@@ -27,8 +27,8 @@ import { passwordPolicySchema } from "../lib/password-policy";
 
 const router: IRouter = Router();
 
-const MAX_ATTEMPTS = 5;
-const LOCK_MINUTES = 15;
+const MAX_ATTEMPTS = 3;
+const LOCK_MINUTES = 5;
 
 function hashOtp(otp: string): string {
   return crypto.createHash("sha256").update(otp).digest("hex");
