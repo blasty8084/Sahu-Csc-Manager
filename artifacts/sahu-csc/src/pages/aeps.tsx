@@ -1218,7 +1218,7 @@ function DailyTab() {
             const accentBorder = isWd ? "rgba(244,63,94,0.22)" : "rgba(16,185,129,0.22)";
             const isValidAmount = !isNaN(amtNum) && amtNum > 0;
             const isValidName = txCustomerName.trim().length >= 2;
-            const isValidAadhaar = aadhaarDigits.length === 12;
+            const isValidAadhaar = aadhaarDigits.length === 0 || aadhaarDigits.length === 12;
             const isValidBank = txBankName.trim().length > 0;
             const isFormValid = isValidAmount && isValidName && isValidAadhaar && isValidBank;
             const displayAadhaar = txShowAadhaar
@@ -1255,7 +1255,7 @@ function DailyTab() {
                       </div>
                       {[
                         { label: "Customer", value: txCustomerName },
-                        { label: "Aadhaar", value: "XXXX XXXX " + aadhaarDigits.slice(-4) },
+                        ...(aadhaarDigits.length === 12 ? [{ label: "Aadhaar", value: "XXXX XXXX " + aadhaarDigits.slice(-4) }] : []),
                         { label: "Bank", value: txBankName },
                         ...(txAccountNo ? [{ label: "Account No", value: "XX" + txAccountNo.slice(-4) }] : []),
                         ...(txNote ? [{ label: "Note", value: txNote }] : []),
@@ -1315,7 +1315,7 @@ function DailyTab() {
                     <p style={{ fontSize: 9, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.09em" }}>Customer Details</p>
                     {[
                       { icon: User, label: "Customer", value: txCustomerName },
-                      { icon: Fingerprint, label: "Aadhaar", value: "XXXX XXXX " + aadhaarDigits.slice(-4) },
+                      ...(aadhaarDigits.length === 12 ? [{ icon: Fingerprint, label: "Aadhaar", value: "XXXX XXXX " + aadhaarDigits.slice(-4) }] : []),
                       { icon: Building2, label: "Bank", value: txBankName },
                       ...(txAccountNo ? [{ icon: Hash, label: "Account No", value: "XX" + txAccountNo.slice(-4) }] : []),
                       ...(txNote ? [{ icon: FileText, label: "Note", value: txNote }] : []),
@@ -1341,7 +1341,7 @@ function DailyTab() {
                     <button disabled={txMut.isPending}
                       onClick={() => {
                         const parts = [txBankName];
-                        if (isValidAadhaar) parts.push("Aadhaar XXXX" + aadhaarDigits.slice(-4));
+                        if (aadhaarDigits.length === 12) parts.push("Aadhaar XXXX" + aadhaarDigits.slice(-4));
                         if (txAccountNo) parts.push("A/C XX" + txAccountNo.slice(-4));
                         if (txNote) parts.push(txNote);
                         txMut.mutate({ type: txType, amount: amtNum, customerName: txCustomerName, description: parts.join(" · ") });
@@ -1457,7 +1457,7 @@ function DailyTab() {
                         </div>
                       </div>
                       <div>
-                        <label style={{ fontSize: 11, fontWeight: 700, color: "#475569", display: "block", marginBottom: 5 }}>Aadhaar Number * <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 400 }}>(12 digits)</span></label>
+                        <label style={{ fontSize: 11, fontWeight: 700, color: "#475569", display: "block", marginBottom: 5 }}>Aadhaar Number <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 400 }}>(12 digits, optional)</span></label>
                         <div className="relative">
                           <Fingerprint size={13} style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
                           <input inputMode="numeric"
@@ -1557,7 +1557,7 @@ function DailyTab() {
         const accentBorder = isWd ? "rgba(244,63,94,0.22)" : "rgba(16,185,129,0.22)";
         const isValidAmount = !isNaN(amtNum) && amtNum > 0;
         const isValidName = txCustomerName.trim().length >= 2;
-        const isValidAadhaar = aadhaarDigits.length === 12;
+        const isValidAadhaar = aadhaarDigits.length === 0 || aadhaarDigits.length === 12;
         const isValidBank = txBankName.trim().length > 0;
         const isFormValid = isValidAmount && isValidName && isValidAadhaar && isValidBank;
         const displayAadhaar = txShowAadhaar ? maskAadhaar(txAadhaar) : aadhaarDigits.length > 0 ? "XXXX XXXX " + aadhaarDigits.slice(-4) : "";
@@ -1678,7 +1678,7 @@ function DailyTab() {
                         </div>
                         {[
                           { label: "Customer", value: txCustomerName },
-                          { label: "Aadhaar", value: "XXXX XXXX " + aadhaarDigits.slice(-4) },
+                          ...(aadhaarDigits.length === 12 ? [{ label: "Aadhaar", value: "XXXX XXXX " + aadhaarDigits.slice(-4) }] : []),
                           { label: "Bank", value: txBankName },
                           ...(txAccountNo ? [{ label: "Account No", value: "XX" + txAccountNo.slice(-4) }] : []),
                           ...(txNote ? [{ label: "Note", value: txNote }] : []),
@@ -1723,7 +1723,7 @@ function DailyTab() {
                         <p style={{ fontSize: 10, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.09em", marginBottom: 4 }}>Customer Details</p>
                         {[
                           { icon: User, label: "Customer", value: txCustomerName },
-                          { icon: Fingerprint, label: "Aadhaar", value: "XXXX XXXX " + aadhaarDigits.slice(-4) },
+                          ...(aadhaarDigits.length === 12 ? [{ icon: Fingerprint, label: "Aadhaar", value: "XXXX XXXX " + aadhaarDigits.slice(-4) }] : []),
                           { icon: Building2, label: "Bank", value: txBankName },
                           ...(txAccountNo ? [{ icon: Hash, label: "Account No", value: "XX" + txAccountNo.slice(-4) }] : []),
                           ...(txNote ? [{ icon: FileText, label: "Note", value: txNote }] : []),
@@ -1809,7 +1809,7 @@ function DailyTab() {
                           </div>
                         </div>
                         <div>
-                          <label style={{ fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>Aadhaar * <span style={{ fontSize: 10, fontWeight: 400, color: "#cbd5e1" }}>(12 digits)</span></label>
+                          <label style={{ fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>Aadhaar <span style={{ fontSize: 10, fontWeight: 400, color: "#cbd5e1" }}>(12 digits, optional)</span></label>
                           <div style={{ position: "relative" }}>
                             <Fingerprint size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
                             <input inputMode="numeric"
@@ -1889,7 +1889,7 @@ function DailyTab() {
                     <button disabled={txMut.isPending}
                       onClick={() => {
                         const parts = [txBankName];
-                        if (isValidAadhaar) parts.push("Aadhaar XXXX" + aadhaarDigits.slice(-4));
+                        if (aadhaarDigits.length === 12) parts.push("Aadhaar XXXX" + aadhaarDigits.slice(-4));
                         if (txAccountNo) parts.push("A/C XX" + txAccountNo.slice(-4));
                         if (txNote) parts.push(txNote);
                         txMut.mutate({ type: txType, amount: amtNum, customerName: txCustomerName, description: parts.join(" · ") });
