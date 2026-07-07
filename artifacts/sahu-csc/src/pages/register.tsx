@@ -37,10 +37,12 @@ const registerSchema = z
       .or(z.literal("")),
     password: z
       .string()
-      .min(8, "Minimum 8 characters")
+      .min(6, "Minimum 6 characters")
+      .max(8, "Maximum 8 characters")
       .regex(/[A-Z]/, "Must contain an uppercase letter")
       .regex(/[a-z]/, "Must contain a lowercase letter")
-      .regex(/[0-9]/, "Must contain a number"),
+      .regex(/[0-9]/, "Must contain a number")
+      .regex(/[^A-Za-z0-9]/, "Must contain a special character"),
     confirmPassword: z.string(),
   })
   .refine((d) => d.password === d.confirmPassword, {
@@ -61,18 +63,19 @@ function maskEmail(email: string): string {
 
 function PasswordStrength({ password }: { password: string }) {
   const checks = [
-    { label: "8+ characters", ok: password.length >= 8 },
+    { label: "6–8 chars", ok: password.length >= 6 && password.length <= 8 },
     { label: "Uppercase", ok: /[A-Z]/.test(password) },
     { label: "Lowercase", ok: /[a-z]/.test(password) },
     { label: "Number", ok: /[0-9]/.test(password) },
+    { label: "Special (!@#…)", ok: /[^A-Za-z0-9]/.test(password) },
   ];
   const score = checks.filter((c) => c.ok).length;
-  const colors = ["bg-red-400", "bg-orange-400", "bg-yellow-400", "bg-green-400", "bg-green-500"];
+  const colors = ["bg-red-400", "bg-orange-400", "bg-yellow-400", "bg-yellow-500", "bg-green-400", "bg-green-500"];
   if (!password) return null;
   return (
     <div className="mt-1.5 space-y-1.5">
       <div className="flex gap-1">
-        {[0, 1, 2, 3].map((i) => (
+        {[0, 1, 2, 3, 4].map((i) => (
           <div key={i} className={`h-1 flex-1 rounded-full transition-all ${i < score ? colors[score] : "bg-gray-200"}`} />
         ))}
       </div>
