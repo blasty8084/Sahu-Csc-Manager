@@ -9,10 +9,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useInvalidateNotifications } from "@/hooks/use-notifications";
 import {
   Megaphone, Bell, Mail, Users, Send, Wifi, WifiOff,
   CheckCircle2, AlertTriangle, Info, RefreshCw, History,
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, BellRing,
 } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
@@ -72,6 +73,14 @@ function ChannelBadge({ channel }: { channel: string }) {
       </span>
     );
   }
+  if (channel === "inapp") {
+    return (
+      <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full"
+        style={{ background: "#dcfce7", color: "#16a34a" }}>
+        <BellRing size={10} /> In-App
+      </span>
+    );
+  }
   return (
     <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full"
       style={{ background: "#dbeafe", color: "#1d4ed8" }}>
@@ -85,23 +94,51 @@ function fmtDate(iso: string) {
   return d.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
 }
 
-type Tab = "push" | "email" | "history";
+const NOTIF_TYPES = [
+  { value: "info", label: "Info", color: "#0b2c60" },
+  { value: "success", label: "Success", color: "#16a34a" },
+  { value: "warning", label: "Warning", color: "#d97706" },
+  { value: "error", label: "Error", color: "#dc2626" },
+  { value: "system", label: "System", color: "#7c3aed" },
+  { value: "business", label: "Business", color: "#0891b2" },
+  { value: "security", label: "Security", color: "#ea580c" },
+] as const;
+
+const NOTIF_PRIORITIES = [
+  { value: "LOW", label: "Low" },
+  { value: "MEDIUM", label: "Medium" },
+  { value: "HIGH", label: "High" },
+  { value: "CRITICAL", label: "Critical" },
+] as const;
+
+type Tab = "push" | "email" | "inapp" | "history";
 
 export default function BroadcastPage() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const qc = useQueryClient();
+  const invalidateNotifications = useInvalidateNotifications();
   const [tab, setTab] = useState<Tab>("push");
 
+  // Push tab state
   const [pushTitle, setPushTitle] = useState("");
   const [pushBody, setPushBody] = useState("");
   const [pushUrl, setPushUrl] = useState("");
-  const [createInApp, setCreateInApp] = useState(true);
+  const [createInAppWithPush, setCreateInAppWithPush] = useState(true);
 
+  // Email tab state
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
   const [recipientFilter, setRecipientFilter] = useState<"all" | "active">("all");
+  const [createInAppWithEmail, setCreateInAppWithEmail] = useState(false);
+
+  // In-App tab state
+  const [inappTitle, setInappTitle] = useState("");
+  const [inappBody, setInappBody] = useState("");
+  const [inappType, setInappType] = useState<string>("info");
+  const [inappPriority, setInappPriority] = useState<string>("MEDIUM");
+  const [inappLink, setInappLink] = useState("");
 
   const [historyPage, setHistoryPage] = useState(1);
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -131,7 +168,7 @@ export default function BroadcastPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ title: pushTitle, body: pushBody, url: pushUrl || undefined, createInAppNotification: createInApp }),
+        body: JSON.stringify({ title: pushTitle, body: pushBody, url: pushUrl || undefined, createInAppNotification: createInAppWithPush }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to send");
@@ -141,6 +178,7 @@ export default function BroadcastPage() {
       toast.success("Push sent!", data.message);
       setPushTitle(""); setPushBody(""); setPushUrl("");
       refetchStats();
+      invalidateNotifications();
       qc.invalidateQueries({ queryKey: ["broadcast-history"] });
     },
     onError: (err: any) => toast({ title: "Push failed", description: err.message, variant: "destructive" }),
@@ -152,7 +190,7 @@ export default function BroadcastPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ subject: emailSubject, body: emailBody, recipientFilter }),
+        body: JSON.stringify({ subject: emailSubject, body: emailBody, recipientFilter, createInAppNotification: createInAppWithEmail }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to send");
@@ -161,19 +199,42 @@ export default function BroadcastPage() {
     onSuccess: (data) => {
       toast.success("Email sent!", data.message);
       setEmailSubject(""); setEmailBody("");
+      if (createInAppWithEmail) invalidateNotifications();
       refetchStats();
       qc.invalidateQueries({ queryKey: ["broadcast-history"] });
     },
     onError: (err: any) => toast({ title: "Email failed", description: err.message, variant: "destructive" }),
   });
 
+  const inappMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`${BASE}/api/admin/broadcast/inapp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ title: inappTitle, body: inappBody, type: inappType, priority: inappPriority, link: inappLink || undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to send");
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success("Notification sent!", data.message);
+      setInappTitle(""); setInappBody(""); setInappLink(""); setInappType("info"); setInappPriority("MEDIUM");
+      invalidateNotifications();
+      qc.invalidateQueries({ queryKey: ["broadcast-history"] });
+    },
+    onError: (err: any) => toast({ title: "Failed", description: err.message, variant: "destructive" }),
+  });
+
   const emailRecipientCount = recipientFilter === "active" ? (stats?.activeUsers ?? 0) : (stats?.usersWithEmail ?? 0);
   const totalHistoryPages = history ? Math.ceil(history.total / 10) : 1;
 
-  const tabs = [
-    { id: "push" as Tab, label: isMobile ? t("broadcast.tab_push_short") : t("broadcast.tab_push"), icon: Bell },
-    { id: "email" as Tab, label: isMobile ? t("broadcast.tab_email_short") : t("broadcast.tab_email"), icon: Mail },
-    { id: "history" as Tab, label: t("broadcast.tab_history"), icon: History },
+  const tabs: { id: Tab; label: string; shortLabel: string; icon: React.ElementType }[] = [
+    { id: "push", label: t("broadcast.tab_push"), shortLabel: t("broadcast.tab_push_short"), icon: Bell },
+    { id: "email", label: t("broadcast.tab_email"), shortLabel: t("broadcast.tab_email_short"), icon: Mail },
+    { id: "inapp", label: "In-App", shortLabel: "In-App", icon: BellRing },
+    { id: "history", label: t("broadcast.tab_history"), shortLabel: t("broadcast.tab_history"), icon: History },
   ];
 
   return (
@@ -189,7 +250,7 @@ export default function BroadcastPage() {
             </div>
             <div>
               <h1 className="text-base font-bold text-white leading-tight">{t("broadcast.title")}</h1>
-              <p className="text-[11px] text-white/50 leading-tight">Push notifications &amp; emails to all users</p>
+              <p className="text-[11px] text-white/50 leading-tight">Push · Email · In-App notifications to all users</p>
             </div>
             <button className="ml-auto p-2 rounded-lg" style={{ background: "rgba(255,255,255,0.08)" }}
               onClick={() => { refetchStats(); if (tab === "history") refetchHistory(); }}>
@@ -199,14 +260,14 @@ export default function BroadcastPage() {
 
           {/* Tab bar */}
           <div className="flex gap-1 px-4 pb-3">
-            {tabs.map(({ id, label, icon: Icon }) => (
+            {tabs.map(({ id, label, shortLabel, icon: Icon }) => (
               <button key={id} onClick={() => setTab(id)}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold transition-all"
                 style={tab === id
                   ? { background: "#f97316", color: "#fff" }
                   : { background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.55)" }}>
                 <Icon size={13} />
-                <span>{label}</span>
+                <span>{isMobile ? shortLabel : label}</span>
               </button>
             ))}
           </div>
@@ -214,7 +275,7 @@ export default function BroadcastPage() {
 
         <div className="max-w-2xl mx-auto px-4 py-5 space-y-4">
 
-          {/* ── Stats strip (push + email tabs) ── */}
+          {/* ── Stats strip (push / email / inapp tabs) ── */}
           {tab !== "history" && (
             statsLoading ? (
               <div className="grid grid-cols-2 gap-3">
@@ -279,9 +340,9 @@ export default function BroadcastPage() {
                 </div>
 
                 <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                  <input type="checkbox" checked={createInApp} onChange={(e) => setCreateInApp(e.target.checked)}
+                  <input type="checkbox" checked={createInAppWithPush} onChange={(e) => setCreateInAppWithPush(e.target.checked)}
                     className="w-4 h-4 accent-violet-600" />
-                  <span className="text-sm text-slate-700">Also create in-app notification</span>
+                  <span className="text-sm text-slate-700">Also create in-app notification (bell icon)</span>
                 </label>
 
                 <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 flex items-start gap-2">
@@ -347,6 +408,12 @@ export default function BroadcastPage() {
                     onChange={(e) => setEmailBody(e.target.value)} rows={8} className="text-sm resize-none font-mono" />
                 </div>
 
+                <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                  <input type="checkbox" checked={createInAppWithEmail} onChange={(e) => setCreateInAppWithEmail(e.target.checked)}
+                    className="w-4 h-4 accent-blue-700" />
+                  <span className="text-sm text-slate-700">Also create in-app notification (bell icon)</span>
+                </label>
+
                 <div className={`rounded-xl border p-3 flex items-start gap-2 ${stats?.smtpConfigured ? "bg-green-50 border-green-100" : "bg-amber-50 border-amber-100"}`}>
                   {stats?.smtpConfigured
                     ? <Wifi size={14} className="text-green-600 flex-shrink-0 mt-0.5" />
@@ -365,6 +432,94 @@ export default function BroadcastPage() {
                   {emailMutation.isPending
                     ? <><RefreshCw size={15} className="animate-spin mr-2" />Sending…</>
                     : <><Send size={15} className="mr-2" />Send Email to {emailRecipientCount} User{emailRecipientCount !== 1 ? "s" : ""}</>}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* ── IN-APP tab ── */}
+          {tab === "inapp" && (
+            <div className="rounded-2xl bg-white border border-slate-100 overflow-hidden"
+              style={{ boxShadow: "0 2px 12px rgba(11,44,96,0.07)" }}>
+              <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
+                <BellRing size={16} className="text-emerald-600" />
+                <span className="font-semibold text-slate-800 text-sm">Send In-App Notification</span>
+                <Badge className="ml-auto text-xs border-none" style={{ background: "#dcfce7", color: "#16a34a" }}>
+                  {stats?.activeUsers ?? 0} users
+                </Badge>
+              </div>
+
+              <div className="px-5 py-5 space-y-4">
+                <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3 flex items-start gap-2">
+                  <BellRing size={14} className="text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-emerald-700 leading-relaxed">
+                    Posts a notification directly to every user's bell icon — no push or email required.
+                    Ideal for announcements visible only inside the app.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Title *</Label>
+                  <Input placeholder="e.g. System maintenance tonight at 11 PM" value={inappTitle}
+                    onChange={(e) => setInappTitle(e.target.value)} maxLength={150} className="text-sm" />
+                  <p className="text-xs text-slate-400 text-right">{inappTitle.length}/150</p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Message *</Label>
+                  <Textarea placeholder="Write your notification message here..." value={inappBody}
+                    onChange={(e) => setInappBody(e.target.value)} maxLength={1000} rows={5} className="text-sm resize-none" />
+                  <p className="text-xs text-slate-400 text-right">{inappBody.length}/1000</p>
+                </div>
+
+                {/* Type + Priority row */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Type</Label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {NOTIF_TYPES.map(({ value, label, color }) => (
+                        <button key={value} onClick={() => setInappType(value)}
+                          className="px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all"
+                          style={inappType === value
+                            ? { background: color, color: "#fff", borderColor: color }
+                            : { background: "#f8fafc", color: "#64748b", borderColor: "#e2e8f0" }}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Priority</Label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {NOTIF_PRIORITIES.map(({ value, label }) => (
+                        <button key={value} onClick={() => setInappPriority(value)}
+                          className="px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all"
+                          style={inappPriority === value
+                            ? { background: "#0b2c60", color: "#fff", borderColor: "#0b2c60" }
+                            : { background: "#f8fafc", color: "#64748b", borderColor: "#e2e8f0" }}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                    Link URL <span className="font-normal text-slate-400">(optional — clicking the notification opens this)</span>
+                  </Label>
+                  <Input placeholder="/ledger or https://..." value={inappLink}
+                    onChange={(e) => setInappLink(e.target.value)} className="text-sm" />
+                </div>
+
+                <Button className="w-full font-bold text-sm h-11"
+                  style={{ background: "linear-gradient(135deg,#16a34a,#22c55e)", color: "#fff" }}
+                  disabled={!inappTitle.trim() || !inappBody.trim() || inappMutation.isPending}
+                  onClick={() => inappMutation.mutate()}>
+                  {inappMutation.isPending
+                    ? <><RefreshCw size={15} className="animate-spin mr-2" />Sending…</>
+                    : <><BellRing size={15} className="mr-2" />Send to All {stats?.activeUsers ?? 0} User{(stats?.activeUsers ?? 0) !== 1 ? "s" : ""}</>}
                 </Button>
               </div>
             </div>
@@ -393,17 +548,22 @@ export default function BroadcastPage() {
                   style={{ boxShadow: "0 2px 8px rgba(11,44,96,0.04)" }}>
                   <History size={28} className="text-slate-300 mx-auto mb-3" />
                   <p className="text-sm font-semibold text-slate-500">{t("broadcast.no_broadcasts")}</p>
-                  <p className="text-xs text-slate-400 mt-1">Your sent push notifications and emails will appear here.</p>
+                  <p className="text-xs text-slate-400 mt-1">Your sent push, email and in-app notifications will appear here.</p>
                 </div>
               ) : (
                 <>
                   {history.logs.map((log) => (
                     <div key={log.id} className="rounded-2xl bg-white border border-slate-100 overflow-hidden"
                       style={{ boxShadow: "0 2px 8px rgba(11,44,96,0.05)" }}>
-                      {/* Left accent stripe based on channel */}
                       <div className="flex">
                         <div className="w-1 flex-shrink-0 rounded-l-2xl"
-                          style={{ background: log.channel === "push" ? "linear-gradient(135deg,#7c3aed,#a855f7)" : "linear-gradient(135deg,#0b2c60,#1e4da1)" }} />
+                          style={{
+                            background: log.channel === "push"
+                              ? "linear-gradient(135deg,#7c3aed,#a855f7)"
+                              : log.channel === "inapp"
+                                ? "linear-gradient(135deg,#16a34a,#22c55e)"
+                                : "linear-gradient(135deg,#0b2c60,#1e4da1)",
+                          }} />
                         <div className="flex-1 px-4 py-3.5">
                           {/* Top row */}
                           <div className="flex items-start justify-between gap-2 mb-2">
@@ -474,7 +634,7 @@ export default function BroadcastPage() {
             </div>
           )}
 
-          {/* ── Tips card (push + email tabs only) ── */}
+          {/* ── Tips card (push / email / inapp tabs only) ── */}
           {tab !== "history" && (
             <div className="rounded-2xl border border-slate-100 bg-white px-5 py-4 space-y-3"
               style={{ boxShadow: "0 2px 8px rgba(11,44,96,0.04)" }}>
@@ -483,6 +643,7 @@ export default function BroadcastPage() {
                 {[
                   { icon: Bell, text: "Push notifications reach users even when the app is closed, if they've enabled it from the App & Offline page." },
                   { icon: Mail, text: "Email blasts go to all registered email addresses. Configure SMTP in Secrets first." },
+                  { icon: BellRing, text: "In-App notifications appear in the bell icon for every user — no push or email needed." },
                   { icon: History, text: "Every broadcast is logged in the History tab — see what was sent, when, and to how many users." },
                 ].map(({ icon: Icon, text }, i) => (
                   <div key={i} className="flex items-start gap-2.5">

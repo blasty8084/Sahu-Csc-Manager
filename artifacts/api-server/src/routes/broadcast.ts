@@ -96,7 +96,11 @@ router.post("/admin/broadcast/push", requireRole("admin"), async (req: any, res)
     await sendPushToAll({ title, body, url: url || "/", tag: "admin-broadcast", requireInteraction: false });
 
     if (createInAppNotification) {
-      await createSystemNotification({ title, message: body, type: "info", priority: "HIGH", link: url ?? undefined });
+      // skipPush=true because sendPushToAll already delivered the push above
+      await createSystemNotification(
+        { title, message: body, type: "info", priority: "HIGH", link: url ?? undefined },
+        { skipPush: true },
+      );
     }
 
     await db.insert(broadcastLogsTable).values({
@@ -117,12 +121,55 @@ router.post("/admin/broadcast/push", requireRole("admin"), async (req: any, res)
   }
 });
 
+// POST /api/admin/broadcast/inapp
+router.post("/admin/broadcast/inapp", requireRole("admin"), async (req: any, res): Promise<void> => {
+  const parsed = z.object({
+    title: z.string().min(1).max(150),
+    body: z.string().min(1).max(1000),
+    type: z.enum(["info", "warning", "success", "error", "security", "system", "business"]).optional().default("info"),
+    priority: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]).optional().default("MEDIUM"),
+    link: z.string().optional(),
+  }).safeParse(req.body);
+
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request body", details: parsed.error.issues });
+    return;
+  }
+
+  const { title, body, type, priority, link } = parsed.data;
+  const adminId: number = req.session?.userId;
+
+  try {
+    const sent = await createSystemNotification(
+      { title, message: body, type, priority, link: link ?? undefined },
+      { skipPush: false }, // allow per-user push preference to fire
+    );
+
+    await db.insert(broadcastLogsTable).values({
+      sentBy: adminId,
+      channel: "inapp",
+      subject: title,
+      body,
+      recipientFilter: "all",
+      recipientCount: sent,
+      failedCount: 0,
+    });
+
+    logger.info({ adminId, title, sent }, "admin broadcast inapp sent");
+    res.json({ success: true, sent, message: `In-app notification sent to ${sent} user(s)` });
+  } catch (err) {
+    logger.error({ err }, "broadcast inapp failed");
+    res.status(500).json({ error: "Failed to send in-app notification" });
+  }
+});
+
 // POST /api/admin/broadcast/email
 router.post("/admin/broadcast/email", requireRole("admin"), async (req: any, res): Promise<void> => {
   const parsed = z.object({
     subject: z.string().min(1).max(200),
     body: z.string().min(1),
     recipientFilter: z.enum(["all", "active"]).optional().default("all"),
+    createInAppNotification: z.boolean().optional().default(false),
   }).safeParse(req.body);
 
   if (!parsed.success) {
@@ -135,7 +182,7 @@ router.post("/admin/broadcast/email", requireRole("admin"), async (req: any, res
     return;
   }
 
-  const { subject, body, recipientFilter } = parsed.data;
+  const { subject, body, recipientFilter, createInAppNotification } = parsed.data;
   const adminId: number = req.session?.userId;
 
   try {
@@ -159,6 +206,13 @@ router.post("/admin/broadcast/email", requireRole("admin"), async (req: any, res
     }
 
     const results = await sendBroadcastEmail({ subject, body, recipients: withEmail as any });
+
+    if (createInAppNotification) {
+      await createSystemNotification(
+        { title: subject, message: body, type: "info", priority: "MEDIUM" },
+        { skipPush: false },
+      );
+    }
 
     await db.insert(broadcastLogsTable).values({
       sentBy: adminId,

@@ -14,6 +14,8 @@ export interface CreateNotificationPayload {
   priority?: NotificationPriority;
   link?: string;
   meta?: Record<string, unknown>;
+  /** Skip the push delivery step (e.g. when the caller already sent push separately). */
+  skipPush?: boolean;
 }
 
 export interface SystemNotificationPayload {
@@ -63,6 +65,7 @@ export async function createNotification(payload: CreateNotificationPayload): Pr
     priority = "MEDIUM",
     link,
     meta,
+    skipPush = false,
   } = payload;
 
   try {
@@ -75,47 +78,51 @@ export async function createNotification(payload: CreateNotificationPayload): Pr
       }
     }
 
-    const [inserted] = await db
+    await db
       .insert(notificationsTable)
-      .values({ title, message, type, priority, userId: userId ?? null, isRead: false, link: link ?? null, meta: meta ?? null })
-      .returning();
+      .values({ title, message, type, priority, userId: userId ?? null, isRead: false, link: link ?? null, meta: meta ?? null });
 
-    const pushPayload = {
-      title,
-      body: message,
-      url: link ?? "/notifications",
-      tag: `sahu-notif-${type}-${priority}`,
-    };
+    if (!skipPush) {
+      const pushPayload = {
+        title,
+        body: message,
+        url: link ?? "/notifications",
+        tag: `sahu-notif-${type}-${priority}`,
+      };
 
-    if (userId !== undefined) {
-      const prefs = await getPrefs(userId);
-      if (prefs?.pushEnabled) {
-        sendPushToUser(userId, pushPayload).catch(() => {});
+      if (userId !== undefined) {
+        const prefs = await getPrefs(userId);
+        if (prefs?.pushEnabled) {
+          sendPushToUser(userId, pushPayload).catch(() => {});
+        }
+      } else {
+        sendPushToAll(pushPayload).catch(() => {});
       }
-    } else {
-      sendPushToAll(pushPayload).catch(() => {});
     }
-
-    void inserted;
   } catch (err) {
     logger.error({ err }, "Failed to create notification");
   }
 }
 
-export async function createSystemNotification(payload: SystemNotificationPayload): Promise<number> {
+export async function createSystemNotification(
+  payload: SystemNotificationPayload,
+  options: { skipPush?: boolean } = {},
+): Promise<number> {
   const { userIds, ...rest } = payload;
+  const { skipPush = false } = options;
 
   if (userIds && userIds.length > 0) {
-    await Promise.all(userIds.map((uid) => createNotification({ ...rest, userId: uid })));
+    await Promise.all(userIds.map((uid) => createNotification({ ...rest, userId: uid, skipPush })));
     return userIds.length;
   }
 
+  // Broadcast to all active users
   const { usersTable: ut } = await import("@workspace/db");
   const { and: _and, eq: _eq } = await import("drizzle-orm");
   const users = await db
     .select({ id: ut.id })
     .from(ut)
     .where(_and(_eq(ut.isActive, true), _eq(ut.status, "ACTIVE")));
-  await Promise.all(users.map((u) => createNotification({ ...rest, userId: u.id })));
+  await Promise.all(users.map((u) => createNotification({ ...rest, userId: u.id, skipPush })));
   return users.length;
 }
