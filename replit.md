@@ -1,6 +1,8 @@
 # SAHU CSC — Common Service Center Management Platform
 **Version 3.3.0** — last updated 2026-07-08
 
+> Re-imported and re-set-up on Replit 2026-07-08: ran `pnpm install`, pushed schema (`pnpm --filter @workspace/db run push-force`), created the `session` table, seeded admin/operator via the `Seed Database` workflow, and started `API Server` + `SAHU CSC`. `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD` secrets are set.
+
 ## Replit Setup
 
 ### How to run
