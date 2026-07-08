@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v3
-**Current version: 3.2.5 — July 6, 2026**
+**Current version: 3.3.0 — July 8, 2026**
 
 > Detailed record of every feature, change, and upgrade from v3.0.0 onward.  
 > For v2.x history, see `changelogV2.md`.  
@@ -11,14 +11,45 @@
 
 ## Table of Contents
 
-0. [v3.2.4 – v3.2.5 — Security Upgrade & Password Policy Correction (July 6, 2026)](#0-v324--v325--security-upgrade--password-policy-correction-july-6-2026)
+0. [v3.3.0 — Email & Security Hardening (July 8, 2026)](#0-v330--email--security-hardening-july-8-2026)
+1. [v3.2.4 – v3.2.5 — Security Upgrade & Password Policy Correction (July 6, 2026)](#1-v324--v325--security-upgrade--password-policy-correction-july-6-2026)
 1. [v3.1.1 — Replit Environment Migration & TypeScript Clean (July 3, 2026)](#1-v311--replit-environment-migration--typescript-clean-july-3-2026)
 2. [v3.1.0 — Backup & Restore Redesign + Download + Scheduler (June 30, 2026)](#2-v310--backup--restore-redesign--download--scheduler-june-30-2026)
 3. [v3.0.0 — Setup Wizard, SMTP Integration & Auto-Import (June 30, 2026)](#3-v300--setup-wizard-smtp-integration--auto-import-june-30-2026)
 
 ---
 
-## 0. v3.2.4 – v3.2.5 — Security Upgrade & Password Policy Correction (July 6, 2026)
+## 0. v3.3.0 — Email & Security Hardening (July 8, 2026)
+
+### V2 Dark Premium Email Templates
+- All 7 transactional email types rewritten in `artifacts/api-server/src/lib/mailer.ts`
+- Dark gradient page (`#0a1628 → #1e3a5f`), dark navy card (`#0f2244`), 4px accent top strip per type
+- Per-type accents: OTP verify = emerald, password reset OTP = amber, approval = emerald, rejection = rose, admin alert = sky blue, broadcast = violet, admin reset link = amber
+- Single `buildV2Html()` wrapper — consistent structure across all types
+- `esc()` HTML-escape helper applied to every dynamic field (name, reason, body, username, resetUrl, expiryTime)
+
+### OTP Email Copy Strip
+- Digit boxes and copy strip joined in one card — full OTP shown in large spaced monospace below digits
+- Label "Copy this code" — no JS, works in all email clients
+- OTP validated `/^\d+$/` before rendering; non-numeric shows `------`
+- Description shortened to one action sentence with expiry bolded inline
+
+### SMTP Configured
+- Gmail: `smtp.gmail.com:587`, from `SAHU CSC Support <sahuuttam690@gmail.com>`
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_FROM_EMAIL` → shared env vars
+- `SMTP_PASS` → Replit Secret
+
+### Password Policy
+- Minimum 8 chars, no maximum (was 6–8)
+- Requires: uppercase + lowercase + number + special character
+- Frontend schema and strength bar (5 checks) synced with backend
+
+### Login Lockout
+- Locks after **3** failed attempts for **5 minutes** (was 5 attempts / 15 min)
+
+---
+
+## 1. v3.2.4 – v3.2.5 — Security Upgrade & Password Policy Correction (July 6, 2026)
 
 ### Overview
 

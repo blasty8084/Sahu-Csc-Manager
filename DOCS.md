@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Platform Documentation
-**Version 3.2.5** — last updated 2026-07-06
+**Version 3.3.0** — last updated 2026-07-08
 
 > Common Service Center (CSC) Business Management Platform for Odisha / India rural service centers.
 > Full-stack · PWA · Offline-capable · Multilingual (English / Hindi / Odia)
@@ -55,6 +55,18 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 ---
 
 ## 2. Version History
+
+### v3.3.0 — Email & Security Hardening (2026-07-08)
+
+| Change | Description |
+|--------|-------------|
+| **V2 dark premium email templates** | All 7 transactional email types rewritten. Dark gradient page + dark navy card + per-type glow accent. `esc()` helper applied to all dynamic fields. |
+| **OTP email copy strip** | Digit boxes joined to a copy strip showing the full OTP in large spaced monospace. Digit-only validation before render. |
+| **SMTP live** | Gmail (`smtp.gmail.com:587`) configured via env vars + `SMTP_PASS` secret. All transactional emails now deliver. |
+| **Password policy** | 8+ chars, no max, upper + lower + number + special required. Frontend and backend in sync. |
+| **Login lockout** | 3 failed attempts → 5-minute lock (was 5 / 15 min). |
+
+---
 
 ### v3.2.5 — Password Policy Correction (2026-07-06)
 

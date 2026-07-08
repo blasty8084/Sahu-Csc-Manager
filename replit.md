@@ -1,5 +1,5 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 3.2.5** — last updated 2026-07-06
+**Version 3.3.0** — last updated 2026-07-08
 
 ## Replit Setup
 
@@ -25,7 +25,19 @@ A full-stack CSC (Common Service Center) business management platform for tracki
 
 ---
 
-## What's New in v3.2.4 (July 6, 2026) — Security Upgrade
+## What's New in v3.3.0 (July 8, 2026) — Email & Security Hardening
+
+| Change | Description |
+|--------|-------------|
+| **V2 dark premium email templates** | All 7 transactional email types rewritten with dark gradient card design (`#0a1628→#1e3a5f` page, `#0f2244` card), per-type accent colours (emerald/amber/rose/sky/violet), and HTML-injection-safe `esc()` helper applied to every dynamic field. |
+| **OTP email copy strip** | Digit boxes now have a joined copy strip below showing the full OTP in large spaced monospace — easy tap-to-select on mobile. Tighter action-focused subject copy. OTP input validated as digits-only before rendering. |
+| **SMTP live** | Gmail connected (`smtp.gmail.com:587`, `sahuuttam690@gmail.com`). `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_FROM_EMAIL` set as shared env vars; `SMTP_PASS` stored as secret. All transactional emails (OTP, approval, rejection, admin alert, broadcast, reset link) now deliver. |
+| **Password policy** | Updated to 8+ chars, no maximum, uppercase + lowercase + number + special char required. Frontend schema and strength indicator synced with backend `passwordPolicySchema`. |
+| **Login lockout tightened** | Account locks after **3** failed attempts for **5 minutes** (was 5 attempts / 15 min). |
+
+---
+
+## What's New in v3.2.5 (July 6, 2026) — Security Upgrade
 
 | Change | Description |
 |--------|-------------|

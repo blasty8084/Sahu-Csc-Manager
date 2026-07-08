@@ -13,10 +13,21 @@ const APP_VERSION = __APP_VERSION__;
 
 const CHANGELOG = [
   {
+    version: "v3.3.0",
+    date: "2026-07-08",
+    changes: [
+      "V2 dark premium email templates — all 7 email types redesigned with dark gradient card, per-type accent colours, and HTML-injection-safe esc() helper",
+      "OTP email: digit boxes + copy strip below showing full code for easy tap-to-copy; tighter action-focused copy",
+      "SMTP configuration: Gmail (smtp.gmail.com:587) connected; all transactional emails now live",
+      "Password policy updated to 8+ chars (no max), uppercase + lowercase + number + special char required",
+      "Login lockout tightened: account locks after 3 failed attempts for 5 minutes (was 5 attempts / 15 min)",
+    ],
+  },
+  {
     version: "v3.2.5",
     date: "2026-07-06",
     changes: [
-      "Security upgrade: unified password policy (6-8 chars, upper/lower/number/special), applied everywhere passwords are set",
+      "Security upgrade: unified password policy (8 chars min, upper/lower/number/special), applied everywhere passwords are set",
       "Login rate limiting tightened; dedicated limits added for register, OTP, and password-reset endpoints",
       "Sensitive fields (customer address/notes, staff address/bio) now encrypted at rest",
     ],
@@ -191,7 +202,7 @@ const FEATURES = [
   { icon: Bell, label: "Push Notifications", desc: "Real-time alerts for large transactions and system events" },
   { icon: WifiOff, label: "Offline Mode", desc: "Create ledger entries offline; they auto-sync when you reconnect" },
   { icon: Shield, label: "Role-Based Access", desc: "Admin, Operator, and User roles with granular permissions" },
-  { icon: Lock, label: "Account Security", desc: "5-attempt lockout, idle auto-logout, full audit trail" },
+  { icon: Lock, label: "Account Security", desc: "3-attempt lockout (5 min), idle auto-logout, full audit trail" },
   { icon: Download, label: "Install as App", desc: "Install on any device as a PWA — works like a native app" },
 ];
 
@@ -210,14 +221,14 @@ export default function About() {
   const { t } = useTranslation();
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+      <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
         {/* Header */}
         <div
           className="rounded-2xl overflow-hidden"
           style={{ background: "linear-gradient(135deg, #0b2c60 0%, #1a4a9e 60%, #0f3872 100%)" }}
         >
           <div style={{ height: 3, background: "linear-gradient(90deg, #0b2c60, #f97316, #fb923c)" }} />
-          <div className="px-6 py-6 flex items-center gap-4">
+          <div className="px-4 py-4 sm:px-6 sm:py-6 flex items-center gap-3 sm:gap-4">
             <div
               className="flex items-center justify-center rounded-2xl flex-shrink-0"
               style={{
@@ -247,9 +258,9 @@ export default function About() {
         {/* Tabs */}
         <Tabs defaultValue="sysreq">
           <TabsList className="grid grid-cols-3 w-full">
-            <TabsTrigger value="sysreq">{t("about.tab_sysreq")}</TabsTrigger>
-            <TabsTrigger value="architecture">{t("about.tab_architecture")}</TabsTrigger>
-            <TabsTrigger value="changelog">{t("about.tab_changelog")}</TabsTrigger>
+            <TabsTrigger value="sysreq" className="text-[11px] sm:text-sm px-1 truncate">{t("about.tab_sysreq")}</TabsTrigger>
+            <TabsTrigger value="architecture" className="text-[11px] sm:text-sm px-1 truncate">{t("about.tab_architecture")}</TabsTrigger>
+            <TabsTrigger value="changelog" className="text-[11px] sm:text-sm px-1 truncate">{t("about.tab_changelog")}</TabsTrigger>
           </TabsList>
 
           {/* ── System Requirements ── */}
@@ -396,10 +407,10 @@ export default function About() {
                 {[
                   "Session-based auth (no JWTs) via PostgreSQL session store",
                   "Passwords hashed with bcrypt (12 salt rounds)",
-                  "Unified password policy: 6-8 chars, upper/lower/number/special required",
+                  "Password policy: 8+ chars, upper/lower/number/special char required",
                   "Rate limiting on login, registration, OTP, and password-reset endpoints",
                   "Sensitive fields encrypted at rest (AES-256-GCM)",
-                  "Account lockout after 5 failed attempts (15-min lock)",
+                  "Account lockout after 3 failed attempts (5-min lock)",
                   "Idle auto-logout after 30 minutes of inactivity",
                   "Full audit trail: every login, logout, data change",
                   "Per-user data isolation — users can't see each other's data",
@@ -423,17 +434,17 @@ export default function About() {
               </div>
               <div className="px-4 py-4 space-y-2">
                 {[
-                  { from: "Frontend (React PWA)", arrow: "→", to: "API Server (Express 5)", detail: "HTTPS requests with session cookie auth" },
-                  { from: "API Server", arrow: "→", to: "PostgreSQL DB", detail: "Drizzle ORM type-safe queries, per-user WHERE filters" },
-                  { from: "Offline client", arrow: "→", to: "IndexedDB", detail: "Ledger entries queued locally, synced on reconnect" },
-                  { from: "API Server", arrow: "→", to: "Browser (Push)", detail: "VAPID web-push to subscribed devices" },
-                  { from: "Service Worker", arrow: "→", to: "Cache API", detail: "Workbox: StaleWhileRevalidate / NetworkFirst strategies" },
+                  { from: "React PWA", to: "API Server", detail: "HTTPS + session cookie auth" },
+                  { from: "API Server", to: "PostgreSQL", detail: "Drizzle ORM, per-user WHERE filters" },
+                  { from: "Offline client", to: "IndexedDB", detail: "Queue locally, sync on reconnect" },
+                  { from: "API Server", to: "Browser (Push)", detail: "VAPID web-push notifications" },
+                  { from: "Service Worker", to: "Cache API", detail: "Workbox StaleWhileRevalidate" },
                 ].map((row, i) => (
-                  <div key={i} className="flex items-center gap-2 text-xs flex-wrap">
-                    <span className="font-semibold px-2 py-1 rounded bg-muted">{row.from}</span>
-                    <span className="text-muted-foreground font-bold">{row.arrow}</span>
-                    <span className="font-semibold px-2 py-1 rounded bg-muted">{row.to}</span>
-                    <span className="text-muted-foreground">— {row.detail}</span>
+                  <div key={i} className="flex items-center gap-1.5 text-xs flex-wrap">
+                    <span className="font-semibold px-2 py-0.5 rounded bg-muted whitespace-nowrap">{row.from}</span>
+                    <span className="text-muted-foreground font-bold">→</span>
+                    <span className="font-semibold px-2 py-0.5 rounded bg-muted whitespace-nowrap">{row.to}</span>
+                    <span className="text-muted-foreground text-[11px]">— {row.detail}</span>
                   </div>
                 ))}
               </div>
