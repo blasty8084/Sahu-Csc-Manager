@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNetworkStatus } from "@/hooks/use-network-status";
-import { Plus, Pencil, Trash2, Download, Filter, X, ChevronLeft, ChevronRight, Clock, WifiOff, Receipt, Search, IndianRupee, User, FileText, Calendar, CheckCircle2, ArrowDownLeft, ArrowUpRight, TrendingUp, TrendingDown, Wallet } from "lucide-react";
+import { Plus, Pencil, Trash2, Download, Filter, X, ChevronLeft, ChevronRight, Clock, WifiOff, Receipt, Search, IndianRupee, User, FileText, Calendar, CheckCircle2, ArrowDownLeft, ArrowUpRight, TrendingUp, TrendingDown, Wallet, Eye, SlidersHorizontal, RotateCcw, Lock, Database } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { addPendingEntry, getAllPendingEntries, type PendingLedgerEntry } from "@/lib/offline-db";
 import { syncEngine } from "@/lib/sync-engine";
@@ -422,219 +422,203 @@ export default function Ledger() {
         </div>
 
         {/* ═══════════════════════════════════════════════
-            DESKTOP LAYOUT v2 — dark sidebar + quick-add strip + main panel
+            DESKTOP LAYOUT v3 — mockup design
             Hidden on mobile, shown on md+
         ═══════════════════════════════════════════════ */}
-        <div className="hidden md:flex gap-4" style={{ height: "calc(100vh - 128px)", overflow: "hidden" }}>
+        <div className="hidden md:flex md:flex-col" style={{ height: "calc(100vh - 128px)", gap: 12 }}>
 
-          {/* ── LEFT SIDEBAR (dark navy) ── */}
-          <div style={{ width: 240, flexShrink: 0, display: "flex", flexDirection: "column", background: "#0b2c60", borderRadius: 20, color: "#fff", overflow: "hidden" }}>
-
-            {/* Balance */}
-            <div style={{ padding: "18px 18px 14px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-              <p style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 7 }}>{t("ledger.current_balance")}</p>
-              {balance === undefined
-                ? <div style={{ height: 34, background: "rgba(255,255,255,0.08)", borderRadius: 8, marginBottom: 12, width: "70%" }} />
-                : <p style={{ fontSize: 28, fontWeight: 900, letterSpacing: "-1px", lineHeight: 1, marginBottom: 12 }}>₹{(balance?.balance ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p>}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
-                <div style={{ background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.2)", borderRadius: 10, padding: "8px 10px" }}>
-                  <p style={{ fontSize: 9, fontWeight: 600, color: "rgba(255,255,255,0.5)", marginBottom: 3 }}>{t("ledger.credits")}</p>
-                  {balance === undefined
-                    ? <div style={{ height: 16, background: "rgba(255,255,255,0.1)", borderRadius: 4, width: "80%" }} />
-                    : <p style={{ fontSize: 13, fontWeight: 800, color: "#4ade80" }}>+₹{(balance?.totalCredits ?? 0).toLocaleString("en-IN")}</p>}
-                </div>
-                <div style={{ background: "rgba(251,113,133,0.12)", border: "1px solid rgba(251,113,133,0.2)", borderRadius: 10, padding: "8px 10px" }}>
-                  <p style={{ fontSize: 9, fontWeight: 600, color: "rgba(255,255,255,0.5)", marginBottom: 3 }}>{t("ledger.debits")}</p>
-                  {balance === undefined
-                    ? <div style={{ height: 16, background: "rgba(255,255,255,0.1)", borderRadius: 4, width: "80%" }} />
-                    : <p style={{ fontSize: 13, fontWeight: 800, color: "#fb7185" }}>−₹{(balance?.totalDebits ?? 0).toLocaleString("en-IN")}</p>}
-                </div>
+          {/* ── Row 1: Stat Cards ── */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, flexShrink: 0 }}>
+            {/* Current Balance */}
+            <div style={{ background: "linear-gradient(135deg,#0b2c60,#1e3a8a)", borderRadius: 20, padding: "18px 20px", position: "relative", overflow: "hidden", boxShadow: "0 4px 20px rgba(11,44,96,0.22)" }}>
+              <div style={{ position: "absolute", right: -16, top: -16, width: 110, height: 110, background: "rgba(255,255,255,0.10)", borderRadius: "50%", filter: "blur(20px)", pointerEvents: "none" }} />
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8, position: "relative", zIndex: 1 }}>
+                <span style={{ color: "rgba(255,255,255,0.70)", fontSize: 13, fontWeight: 500 }}>{t("ledger.current_balance")}</span>
+                <button style={{ background: "rgba(255,255,255,0.10)", borderRadius: 8, padding: 6, border: "none", cursor: "pointer" }}><Eye size={13} color="rgba(255,255,255,0.90)" /></button>
               </div>
-              <button onClick={openCreate} data-testid="button-new-entry"
-                style={{ width: "100%", height: 42, borderRadius: 12, border: "none", background: "#f97316", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "0 4px 16px rgba(249,115,22,0.45)" }}>
-                <Plus size={16} strokeWidth={2.5} />{t("ledger.new_entry")}
+              {balance === undefined
+                ? <div style={{ height: 34, background: "rgba(255,255,255,0.08)", borderRadius: 8, marginBottom: 14, width: "65%" }} />
+                : <p style={{ fontSize: 26, fontWeight: 900, color: "white", marginBottom: 14, lineHeight: 1, position: "relative", zIndex: 1 }}>₹{(balance?.balance ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p>}
+              <div style={{ display: "flex", alignItems: "center", gap: 6, position: "relative", zIndex: 1 }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#34d399", boxShadow: "0 0 8px rgba(52,211,153,0.8)" }} />
+                <span style={{ fontSize: 11, color: "rgba(255,255,255,0.50)", fontWeight: 500 }}>Last updated: Just now</span>
+              </div>
+            </div>
+            {/* Total Credits */}
+            <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 20, padding: "18px 20px", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                <span style={{ color: "#64748b", fontSize: 13, fontWeight: 600 }}>{t("ledger.credits")}</span>
+                <div style={{ background: "#d1fae5", border: "1px solid #a7f3d0", borderRadius: 12, padding: 8 }}><ArrowUpRight size={15} color="#059669" strokeWidth={2.5} /></div>
+              </div>
+              {balance === undefined
+                ? <div style={{ height: 32, background: "#f1f5f9", borderRadius: 8, marginBottom: 14, width: "65%" }} />
+                : <p style={{ fontSize: 24, fontWeight: 900, color: "#059669", marginBottom: 14, lineHeight: 1 }}>₹{(balance?.totalCredits ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p>}
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#fb923c" }} />
+                <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 500 }}>This month</span>
+              </div>
+            </div>
+            {/* Total Debits */}
+            <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 20, padding: "18px 20px", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                <span style={{ color: "#64748b", fontSize: 13, fontWeight: 600 }}>{t("ledger.debits")}</span>
+                <div style={{ background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 12, padding: 8 }}><ArrowDownLeft size={15} color="#ef4444" strokeWidth={2.5} /></div>
+              </div>
+              {balance === undefined
+                ? <div style={{ height: 32, background: "#f1f5f9", borderRadius: 8, marginBottom: 14, width: "65%" }} />
+                : <p style={{ fontSize: 24, fontWeight: 900, color: "#ef4444", marginBottom: 14, lineHeight: 1 }}>₹{(balance?.totalDebits ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p>}
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#fb923c" }} />
+                <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 500 }}>This month</span>
+              </div>
+            </div>
+            {/* Total Transactions */}
+            <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 20, padding: "18px 20px", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                <span style={{ color: "#64748b", fontSize: 13, fontWeight: 600 }}>Total Transactions</span>
+                <div style={{ background: "#dbeafe", border: "1px solid #93c5fd", borderRadius: 12, padding: 8 }}><FileText size={15} color="#2563eb" strokeWidth={2.5} /></div>
+              </div>
+              {isLoading
+                ? <div style={{ height: 32, background: "#f1f5f9", borderRadius: 8, marginBottom: 14, width: "40%" }} />
+                : <p style={{ fontSize: 24, fontWeight: 900, color: "#2563eb", marginBottom: 14, lineHeight: 1 }}>{data?.total ?? 0}</p>}
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#fb923c" }} />
+                <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 500 }}>All time</span>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Row 2: Quick Add Strip ── */}
+          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 20, padding: "10px 14px", display: "flex", gap: 8, alignItems: "center", flexShrink: 0, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+            <input type="date" value={quickAdd.date} onChange={e => setQuickAdd(p => ({ ...p, date: e.target.value }))}
+              style={{ height: 38, paddingInline: 10, borderRadius: 10, border: "1.5px solid #e2e8f0", fontSize: 12, color: "#0b2c60", outline: "none", background: "#f8fafc", width: 138, fontFamily: "monospace", fontWeight: 600, boxSizing: "border-box" }} />
+            <input value={quickAdd.customerName} onChange={e => setQuickAdd(p => ({ ...p, customerName: e.target.value }))}
+              onKeyDown={e => e.key === "Enter" && saveQuickAdd()}
+              placeholder="Customer name *" list="ledger-customer-names" autoComplete="off"
+              style={{ height: 38, paddingInline: 10, borderRadius: 10, border: "1.5px solid #e2e8f0", fontSize: 12, color: "#0b2c60", outline: "none", background: "#f8fafc", flex: 1, fontWeight: 600, boxSizing: "border-box" }} />
+            <select value={quickAdd.serviceType} onChange={e => setQuickAdd(p => ({ ...p, serviceType: e.target.value }))}
+              style={{ height: 38, paddingInline: 10, borderRadius: 10, border: "1.5px solid #e2e8f0", fontSize: 12, color: quickAdd.serviceType ? "#0b2c60" : "#94a3b8", outline: "none", background: "#f8fafc", width: 156, boxSizing: "border-box" }}>
+              <option value="">Service type *</option>
+              {serviceTypes.map((s: string) => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <div style={{ display: "flex", background: "#f8fafc", borderRadius: 10, border: "1.5px solid #e2e8f0", flexShrink: 0, overflow: "hidden" }}>
+              <button onClick={() => setQuickAdd(p => ({ ...p, entryType: "credit" }))}
+                style={{ height: 38, paddingInline: 14, border: "none", background: quickAdd.entryType === "credit" ? "#10b981" : "transparent", color: quickAdd.entryType === "credit" ? "#fff" : "#94a3b8", fontSize: 12, fontWeight: 800, cursor: "pointer", borderRight: "1px solid #e2e8f0" }}>
+                Cr
+              </button>
+              <button onClick={() => setQuickAdd(p => ({ ...p, entryType: "debit" }))}
+                style={{ height: 38, paddingInline: 14, border: "none", background: quickAdd.entryType === "debit" ? "#ef4444" : "transparent", color: quickAdd.entryType === "debit" ? "#fff" : "#94a3b8", fontSize: 12, fontWeight: 800, cursor: "pointer" }}>
+                Dr
               </button>
             </div>
+            <input type="number" value={quickAdd.amount} min="0" step="0.01"
+              onChange={e => setQuickAdd(p => ({ ...p, amount: e.target.value }))}
+              onKeyDown={e => e.key === "Enter" && saveQuickAdd()}
+              placeholder="Amount *"
+              style={{ height: 38, paddingInline: 10, borderRadius: 10, border: "1.5px solid #e2e8f0", fontSize: 13, color: "#0b2c60", outline: "none", background: "#f8fafc", width: 116, textAlign: "right", fontWeight: 700, boxSizing: "border-box" }} />
+            <input value={quickAdd.description} onChange={e => setQuickAdd(p => ({ ...p, description: e.target.value }))}
+              onKeyDown={e => e.key === "Enter" && saveQuickAdd()}
+              placeholder="Note (optional)"
+              style={{ height: 38, paddingInline: 10, borderRadius: 10, border: "1.5px solid #e2e8f0", fontSize: 12, color: "#64748b", outline: "none", background: "#f8fafc", flex: 1, boxSizing: "border-box" }} />
+            <button onClick={saveQuickAdd} disabled={quickAddSaving} data-testid="button-new-entry"
+              style={{ height: 38, paddingInline: 20, borderRadius: 10, border: "none", background: quickAddSaving ? "#94a3b8" : "#f97316", color: "#fff", fontSize: 13, fontWeight: 800, cursor: quickAddSaving ? "wait" : "pointer", flexShrink: 0, boxShadow: quickAddSaving ? "none" : "0 2px 10px rgba(249,115,22,0.35)" }}>
+              {quickAddSaving ? "…" : "Apply"}
+            </button>
+          </div>
 
-            {/* Filters */}
-            <div style={{ flex: 1, padding: "14px 16px", overflowY: "auto", display: "flex", flexDirection: "column", gap: 13 }}>
-              <p style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.1em" }}>Filters</p>
+          {/* ── Row 3+: Table area + Right panel ── */}
+          <div style={{ flex: 1, minHeight: 0, display: "flex", gap: 14 }}>
 
-              {/* Date presets */}
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {([
-                  { label: t("common.today"), key: "today", action: () => { const d = new Date().toISOString().split("T")[0]; setStartDate(d); setEndDate(d); setPage(1); } },
-                  { label: "This Week", key: "week", action: () => { const d = new Date(); const mon = new Date(d); mon.setDate(d.getDate() - ((d.getDay() + 6) % 7)); setStartDate(mon.toISOString().split("T")[0]); setEndDate(d.toISOString().split("T")[0]); setPage(1); } },
-                  { label: "This Month", key: "month", action: () => { const d = new Date(); setStartDate(new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split("T")[0]); setEndDate(d.toISOString().split("T")[0]); setPage(1); } },
-                ] as { label: string; key: string; action: () => void }[]).map(({ label, key, action }) => {
-                  const td = new Date().toISOString().split("T")[0];
-                  const wk = (() => { const d = new Date(); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.toISOString().split("T")[0]; })();
-                  const mo = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split("T")[0];
-                  const isActive = key === "today" ? (startDate === td && endDate === td) : key === "week" ? (startDate === wk && endDate === td) : (startDate === mo && endDate === td);
-                  return (
-                    <button key={key} onClick={action} style={{ padding: "5px 11px", borderRadius: 20, border: `1px solid ${isActive ? "#f97316" : "rgba(255,255,255,0.15)"}`, background: isActive ? "#f97316" : "transparent", color: isActive ? "#fff" : "rgba(255,255,255,0.65)", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-                      {label}
-                    </button>
-                  );
-                })}
+            {/* ── Main area ── */}
+            <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+
+              {/* Search & filter bar */}
+              <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: "10px 14px", display: "flex", gap: 10, alignItems: "center", flexShrink: 0, boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+                <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, borderRight: "1px solid #e2e8f0", paddingRight: 12, marginRight: 2 }}>
+                  <Search size={16} color="#94a3b8" />
+                  <input value={customerName} onChange={e => { setCustomerName(e.target.value); setPage(1); }}
+                    list="ledger-customer-names" placeholder="Search transactions…"
+                    style={{ flex: 1, outline: "none", fontSize: 13, color: "#0b2c60", fontWeight: 500, background: "transparent", border: "none" }} />
+                </div>
+                <button onClick={() => setShowFilters(!showFilters)}
+                  style={{ display: "flex", alignItems: "center", gap: 6, border: `1.5px solid ${showFilters || hasFilters ? "#0b2c60" : "#e2e8f0"}`, background: showFilters || hasFilters ? "#0b2c60" : "#f8fafc", color: showFilters || hasFilters ? "#fff" : "#334155", borderRadius: 10, padding: "0 12px", height: 34, fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
+                  <SlidersHorizontal size={13} />Filters{hasFilters && <span style={{ background: "#f97316", color: "#fff", borderRadius: 20, fontSize: 9, fontWeight: 800, padding: "1px 5px", marginLeft: 2 }}>{[startDate, endDate, serviceFilter].filter(Boolean).length}</span>}
+                </button>
+                <a href="/api/reports/export" target="_blank"
+                  style={{ display: "flex", alignItems: "center", gap: 6, border: "1.5px solid #e2e8f0", background: "#f8fafc", color: "#334155", borderRadius: 10, padding: "0 12px", height: 34, fontSize: 12, fontWeight: 600, cursor: "pointer", textDecoration: "none", flexShrink: 0 }}>
+                  <Download size={13} />Export
+                </a>
                 {hasFilters && (
-                  <button onClick={clearFilters} style={{ padding: "5px 11px", borderRadius: 20, border: "1px solid rgba(251,113,133,0.3)", background: "rgba(225,29,72,0.1)", color: "#fb7185", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-                    Clear ×
+                  <button onClick={clearFilters}
+                    style={{ display: "flex", alignItems: "center", gap: 5, border: "none", background: "transparent", color: "#64748b", fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0, padding: "0 4px" }}>
+                    <RotateCcw size={12} />Clear
                   </button>
                 )}
               </div>
 
-              {/* Frequent customers */}
-              {frequentCustomers.length > 0 && (
-                <div>
-                  <p style={{ fontSize: 9, fontWeight: 600, color: "rgba(255,255,255,0.4)", marginBottom: 5 }}>Frequent</p>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                    {frequentCustomers.map(name => (
-                      <button key={name} type="button" onClick={() => { setCustomerName(customerName === name ? "" : name); setPage(1); }}
-                        style={{ padding: "3px 9px", borderRadius: 10, border: `1px solid ${customerName === name ? "#f97316" : "rgba(255,255,255,0.15)"}`, background: customerName === name ? "#f97316" : "transparent", color: customerName === name ? "#fff" : "rgba(255,255,255,0.65)", fontSize: 10, fontWeight: 600, cursor: "pointer" }}>
-                        {name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Customer search */}
-              <div style={{ position: "relative" }}>
-                <Search size={12} color="rgba(255,255,255,0.3)" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", zIndex: 1 }} />
-                <input value={customerName} onChange={e => { setCustomerName(e.target.value); setPage(1); }} list="ledger-customer-names"
-                  placeholder="Search customer…"
-                  style={{ width: "100%", height: 36, paddingLeft: 28, paddingRight: 10, borderRadius: 10, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.07)", fontSize: 12, color: "#fff", outline: "none", fontWeight: 500, boxSizing: "border-box" }} />
-              </div>
-
-              {/* Date range */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                <div>
-                  <p style={{ fontSize: 9, fontWeight: 600, color: "rgba(255,255,255,0.4)", marginBottom: 4 }}>From</p>
-                  <input type="date" value={startDate} onChange={e => { setStartDate(e.target.value); setPage(1); }}
-                    style={{ width: "100%", height: 34, paddingInline: 8, borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.07)", fontSize: 10, color: "#fff", outline: "none", colorScheme: "dark", boxSizing: "border-box" }} />
-                </div>
-                <div>
-                  <p style={{ fontSize: 9, fontWeight: 600, color: "rgba(255,255,255,0.4)", marginBottom: 4 }}>To</p>
-                  <input type="date" value={endDate} onChange={e => { setEndDate(e.target.value); setPage(1); }}
-                    style={{ width: "100%", height: 34, paddingInline: 8, borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.07)", fontSize: 10, color: "#fff", outline: "none", colorScheme: "dark", boxSizing: "border-box" }} />
-                </div>
-              </div>
-
-              {/* Service type list */}
-              {serviceTypes.length > 0 && (
-                <div>
-                  <p style={{ fontSize: 9, fontWeight: 600, color: "rgba(255,255,255,0.4)", marginBottom: 6 }}>Service type</p>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                    {serviceTypes.map((s: string) => {
-                      const color = getServiceColor(s);
-                      const active = serviceFilter === s;
-                      return (
-                        <button key={s} onClick={() => { setServiceFilter(active ? "" : s); setPage(1); }}
-                          style={{ textAlign: "left", padding: "6px 10px", borderRadius: 8, border: `1px solid ${active ? color + "60" : "transparent"}`, background: active ? color + "25" : "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.8)", fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ width: 8, height: 8, borderRadius: "50%", background: color, flexShrink: 0 }} />
-                          {s}
-                        </button>
-                      );
+              {/* Filter panel (collapsible) */}
+              {showFilters && (
+                <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: "14px 16px", display: "flex", gap: 12, alignItems: "flex-start", flexShrink: 0, flexWrap: "wrap", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+                  <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginRight: 4 }}>Date</span>
+                    {([
+                      { label: t("common.today"), key: "today", action: () => { const d = new Date().toISOString().split("T")[0]; setStartDate(d); setEndDate(d); setPage(1); } },
+                      { label: "This Week", key: "week", action: () => { const d = new Date(); const mon = new Date(d); mon.setDate(d.getDate() - ((d.getDay() + 6) % 7)); setStartDate(mon.toISOString().split("T")[0]); setEndDate(d.toISOString().split("T")[0]); setPage(1); } },
+                      { label: "This Month", key: "month", action: () => { const d = new Date(); setStartDate(new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split("T")[0]); setEndDate(d.toISOString().split("T")[0]); setPage(1); } },
+                    ] as { label: string; key: string; action: () => void }[]).map(({ label, key, action }) => {
+                      const td = new Date().toISOString().split("T")[0];
+                      const wk = (() => { const d = new Date(); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.toISOString().split("T")[0]; })();
+                      const mo = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split("T")[0];
+                      const isActive = key === "today" ? (startDate === td && endDate === td) : key === "week" ? (startDate === wk && endDate === td) : (startDate === mo && endDate === td);
+                      return <button key={key} onClick={action} style={{ padding: "4px 10px", borderRadius: 20, border: `1px solid ${isActive ? "#f97316" : "#e2e8f0"}`, background: isActive ? "#f97316" : "#f8fafc", color: isActive ? "#fff" : "#334155", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{label}</button>;
                     })}
                   </div>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em" }}>From</span>
+                    <input type="date" value={startDate} onChange={e => { setStartDate(e.target.value); setPage(1); }}
+                      style={{ height: 32, paddingInline: 8, borderRadius: 8, border: "1.5px solid #e2e8f0", fontSize: 12, color: "#0b2c60", outline: "none", background: "#f8fafc", boxSizing: "border-box" }} />
+                    <span style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em" }}>To</span>
+                    <input type="date" value={endDate} onChange={e => { setEndDate(e.target.value); setPage(1); }}
+                      style={{ height: 32, paddingInline: 8, borderRadius: 8, border: "1.5px solid #e2e8f0", fontSize: 12, color: "#0b2c60", outline: "none", background: "#f8fafc", boxSizing: "border-box" }} />
+                  </div>
+                  {serviceTypes.length > 0 && (
+                    <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginRight: 2 }}>Service</span>
+                      {serviceTypes.slice(0, 8).map((s: string) => {
+                        const color = getServiceColor(s);
+                        const active = serviceFilter === s;
+                        return <button key={s} onClick={() => { setServiceFilter(active ? "" : s); setPage(1); }} style={{ padding: "4px 10px", borderRadius: 20, border: `1px solid ${active ? color + "80" : "#e2e8f0"}`, background: active ? color + "18" : "#f8fafc", color: active ? color : "#334155", fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
+                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: color, flexShrink: 0 }} />{s}
+                        </button>;
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
 
-            {/* Bottom actions */}
-            <div style={{ padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,0.07)", display: "flex", flexDirection: "column", gap: 8 }}>
-              <a href="/api/reports/export" target="_blank"
-                style={{ height: 38, borderRadius: 10, border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: "rgba(255,255,255,0.75)", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, textDecoration: "none" }}>
-                <Download size={14} />Export to Excel
-              </a>
-              <button onClick={() => setShowDeleteAll(true)}
-                style={{ height: 38, borderRadius: 10, border: "1px solid rgba(251,113,133,0.3)", background: "rgba(225,29,72,0.08)", color: "#fb7185", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                <Trash2 size={14} />Delete All Entries
-              </button>
-            </div>
-          </div>
+              {/* ── Main table card ── */}
+              <div style={{ background: "#fff", borderRadius: 20, overflow: "hidden", boxShadow: "0 2px 12px rgba(11,44,96,0.07)", border: "1px solid #e2e8f0", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
 
-          {/* ── RIGHT: quick-add strip + table card ── */}
-          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
-
-            {/* ── Quick-add strip ── */}
-            <div style={{ background: "#fff", borderRadius: 16, padding: "10px 16px", display: "flex", gap: 8, alignItems: "center", boxShadow: "0 2px 12px rgba(11,44,96,0.07)", border: "1px solid rgba(11,44,96,0.06)", flexShrink: 0 }}>
-              <div style={{ width: 28, height: 28, borderRadius: 8, background: "linear-gradient(135deg,#f97316,#fb923c)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 2px 8px rgba(249,115,22,0.35)" }}>
-                <Plus size={14} color="#fff" strokeWidth={3} />
-              </div>
-              <input type="date" value={quickAdd.date} onChange={e => setQuickAdd(p => ({ ...p, date: e.target.value }))}
-                style={{ height: 36, paddingInline: 10, borderRadius: 9, border: "1.5px solid #e2e8f0", fontSize: 12, color: "#0b2c60", outline: "none", background: "#fafbff", width: 140, fontFamily: "monospace", fontWeight: 600, boxSizing: "border-box" }} />
-              <input value={quickAdd.customerName} onChange={e => setQuickAdd(p => ({ ...p, customerName: e.target.value }))}
-                onKeyDown={e => e.key === "Enter" && saveQuickAdd()}
-                placeholder="Customer name *" list="ledger-customer-names" autoComplete="off"
-                style={{ height: 36, paddingInline: 10, borderRadius: 9, border: "1.5px solid #e2e8f0", fontSize: 12, color: "#0b2c60", outline: "none", background: "#fafbff", flex: 1, fontWeight: 600, boxSizing: "border-box" }} />
-              <select value={quickAdd.serviceType} onChange={e => setQuickAdd(p => ({ ...p, serviceType: e.target.value }))}
-                style={{ height: 36, paddingInline: 10, borderRadius: 9, border: "1.5px solid #e2e8f0", fontSize: 12, color: quickAdd.serviceType ? "#0b2c60" : "#94a3b8", outline: "none", background: "#fafbff", width: 160, boxSizing: "border-box" }}>
-                <option value="">Service type *</option>
-                {serviceTypes.map((s: string) => <option key={s} value={s}>{s}</option>)}
-              </select>
-              <div style={{ display: "flex", borderRadius: 9, overflow: "hidden", border: "1.5px solid #e2e8f0", flexShrink: 0 }}>
-                <button onClick={() => setQuickAdd(p => ({ ...p, entryType: "credit" }))}
-                  style={{ height: 36, paddingInline: 12, border: "none", background: quickAdd.entryType === "credit" ? "rgba(5,150,105,0.1)" : "#fff", color: quickAdd.entryType === "credit" ? "#059669" : "#94a3b8", fontSize: 12, fontWeight: 800, cursor: "pointer", borderRight: "1px solid #e2e8f0" }}>
-                  Cr
-                </button>
-                <button onClick={() => setQuickAdd(p => ({ ...p, entryType: "debit" }))}
-                  style={{ height: 36, paddingInline: 12, border: "none", background: quickAdd.entryType === "debit" ? "rgba(225,29,72,0.08)" : "#fff", color: quickAdd.entryType === "debit" ? "#e11d48" : "#94a3b8", fontSize: 12, fontWeight: 800, cursor: "pointer" }}>
-                  Dr
-                </button>
-              </div>
-              <input type="number" value={quickAdd.amount} min="0" step="0.01"
-                onChange={e => setQuickAdd(p => ({ ...p, amount: e.target.value }))}
-                onKeyDown={e => e.key === "Enter" && saveQuickAdd()}
-                placeholder="Amount *"
-                style={{ height: 36, paddingInline: 10, borderRadius: 9, border: "1.5px solid #e2e8f0", fontSize: 13, color: "#0b2c60", outline: "none", background: "#fafbff", width: 120, textAlign: "right", fontWeight: 700, boxSizing: "border-box" }} />
-              <input value={quickAdd.description} onChange={e => setQuickAdd(p => ({ ...p, description: e.target.value }))}
-                onKeyDown={e => e.key === "Enter" && saveQuickAdd()}
-                placeholder="Note (optional)"
-                style={{ height: 36, paddingInline: 10, borderRadius: 9, border: "1.5px solid #e2e8f0", fontSize: 12, color: "#64748b", outline: "none", background: "#fafbff", width: 130, boxSizing: "border-box" }} />
-              <button onClick={saveQuickAdd} disabled={quickAddSaving}
-                style={{ height: 36, paddingInline: 18, borderRadius: 9, border: "none", background: quickAddSaving ? "#94a3b8" : "linear-gradient(135deg,#f97316,#fb923c)", color: "#fff", fontSize: 13, fontWeight: 800, cursor: quickAddSaving ? "wait" : "pointer", flexShrink: 0, boxShadow: quickAddSaving ? "none" : "0 2px 10px rgba(249,115,22,0.35)" }}>
-                {quickAddSaving ? "…" : "Add →"}
-              </button>
-            </div>
-
-            {/* ── Main table card ── */}
-            <div style={{ background: "#fff", borderRadius: 20, overflow: "hidden", boxShadow: "0 2px 20px rgba(11,44,96,0.08)", border: "1px solid rgba(11,44,96,0.06)", flex: 1, display: "flex", flexDirection: "column" }}>
-
-              {/* Tab toolbar */}
-              <div style={{ padding: "14px 18px 0", borderBottom: "1px solid rgba(11,44,96,0.07)", flexShrink: 0 }}>
-                <div style={{ display: "flex", background: "#f1f5f9", borderRadius: 13, padding: 4, gap: 4, marginBottom: 12 }}>
+                {/* Tabs — underline style */}
+                <div style={{ display: "flex", borderBottom: "1px solid #e2e8f0", flexShrink: 0, paddingLeft: 4 }}>
                   {(["transactions", "receipts"] as const).map(tab => (
                     <button key={tab} onClick={() => setActiveTab(tab)}
-                      style={{ flex: 1, height: 36, borderRadius: 10, border: "none", cursor: "pointer", background: activeTab === tab ? "#fff" : "transparent", color: activeTab === tab ? "#0b2c60" : "#64748b", fontWeight: activeTab === tab ? 800 : 600, fontSize: 13, boxShadow: activeTab === tab ? "0 2px 8px rgba(11,44,96,0.10)" : "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, transition: "all 0.15s" }}>
-                      {tab === "transactions" ? <><FileText size={13} />Transactions</> : <><Receipt size={13} />Receipt History</>}
+                      style={{ display: "flex", alignItems: "center", gap: 6, padding: "14px 20px", borderBottom: `2px solid ${activeTab === tab ? "#0b2c60" : "transparent"}`, color: activeTab === tab ? "#0b2c60" : "#94a3b8", fontWeight: activeTab === tab ? 700 : 600, fontSize: 13, background: "transparent", border: "none", borderBottom: `2px solid ${activeTab === tab ? "#0b2c60" : "transparent"}`, cursor: "pointer", transition: "all 0.15s" }}>
+                      {tab === "transactions" ? <><FileText size={14} strokeWidth={2.5} />Transactions</> : <><Receipt size={14} strokeWidth={2.5} />Receipt History</>}
                     </button>
                   ))}
-                </div>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 12 }}>
-                  <p style={{ fontSize: 11, color: "#94a3b8" }}>
-                    {activeTab === "transactions"
-                      ? `${data?.total ?? 0} total entries · Page ${page} of ${Math.max(totalPages, 1)}`
-                      : `${receiptEntries.length} receipt${receiptEntries.length !== 1 ? "s" : ""} found`}
-                  </p>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    {activeTab === "transactions" && hasFilters && (
-                      <span style={{ fontSize: 10, fontWeight: 700, color: "#f97316", background: "rgba(249,115,22,0.08)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 20, padding: "4px 12px" }}>Filtered</span>
-                    )}
-                    {isOffline && (
-                      <span style={{ fontSize: 10, fontWeight: 700, color: "#d97706", background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.25)", borderRadius: 20, padding: "4px 10px", display: "flex", alignItems: "center", gap: 4 }}>
-                        <WifiOff size={10} /> Offline
-                      </span>
-                    )}
-                    {bgSyncCount > 0 && (
-                      <span style={{ fontSize: 10, fontWeight: 700, color: "#7c3aed", background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.2)", borderRadius: 20, padding: "4px 10px", display: "flex", alignItems: "center", gap: 4 }} title="Requests parked by the browser's Background Sync — will retry automatically">
-                        <Clock size={10} /> {bgSyncCount} retrying
-                      </span>
-                    )}
+                  <div style={{ flex: 1 }} />
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, paddingRight: 16 }}>
+                    <p style={{ fontSize: 11, color: "#94a3b8" }}>
+                      {activeTab === "transactions"
+                        ? `${data?.total ?? 0} entries · Page ${page} of ${Math.max(totalPages, 1)}`
+                        : `${receiptEntries.length} receipt${receiptEntries.length !== 1 ? "s" : ""}`}
+                    </p>
+                    {hasFilters && <span style={{ fontSize: 10, fontWeight: 700, color: "#f97316", background: "rgba(249,115,22,0.08)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 20, padding: "3px 10px" }}>Filtered</span>}
+                    {isOffline && <span style={{ fontSize: 10, fontWeight: 700, color: "#d97706", background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.25)", borderRadius: 20, padding: "3px 8px", display: "flex", alignItems: "center", gap: 3 }}><WifiOff size={9} />Offline</span>}
+                    {bgSyncCount > 0 && <span style={{ fontSize: 10, fontWeight: 700, color: "#7c3aed", background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.2)", borderRadius: 20, padding: "3px 8px", display: "flex", alignItems: "center", gap: 3 }}><Clock size={9} />{bgSyncCount} retrying</span>}
                   </div>
                 </div>
-              </div>
 
               {/* Pending entries banner */}
               {pendingEntries.length > 0 && (
@@ -950,9 +934,132 @@ export default function Ledger() {
                 )}
               </div>
 
-            </div>
-          </div>
-        </div>
+              </div>{/* close table card */}
+            </div>{/* close main area */}
+
+            {/* ── Right Panel ── */}
+            <div style={{ width: 252, flexShrink: 0, display: "flex", flexDirection: "column", gap: 14, overflowY: "auto" }}>
+
+              {/* Quick Actions */}
+              <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 20, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+                <div style={{ padding: "14px 16px", borderBottom: "1px solid #e2e8f0" }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: "#0b2c60" }}>Quick Actions</p>
+                </div>
+                <div style={{ padding: "8px 8px" }}>
+                  {([
+                    { icon: Plus, label: "Add New Entry", color: "#059669", bg: "#d1fae5", action: () => openCreate() },
+                    { icon: Receipt, label: "Receipt History", color: "#7c3aed", bg: "#ede9fe", action: () => setActiveTab("receipts" as const) },
+                    { icon: Download, label: "Export Ledger", color: "#2563eb", bg: "#dbeafe", href: "/api/reports/export" },
+                    { icon: Trash2, label: "Delete All Entries", color: "#dc2626", bg: "#fee2e2", action: () => setShowDeleteAll(true) },
+                  ] as { icon: React.ElementType; label: string; color: string; bg: string; action?: () => void; href?: string }[]).map(({ icon: Icon, label, color, bg, action, href }) => (
+                    href
+                      ? <a key={label} href={href} target="_blank" style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", borderRadius: 12, textDecoration: "none", cursor: "pointer" }}
+                          onMouseEnter={e => (e.currentTarget.style.background = "#f8fafc")}
+                          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                          <div style={{ width: 32, height: 32, borderRadius: 10, background: bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            <Icon size={14} color={color} strokeWidth={2.5} />
+                          </div>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: "#1e293b" }}>{label}</span>
+                        </a>
+                      : <button key={label} onClick={action}
+                          style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", borderRadius: 12, border: "none", background: "transparent", cursor: "pointer", textAlign: "left" }}
+                          onMouseEnter={e => (e.currentTarget.style.background = "#f8fafc")}
+                          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                          <div style={{ width: 32, height: 32, borderRadius: 10, background: bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            <Icon size={14} color={color} strokeWidth={2.5} />
+                          </div>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: "#1e293b" }}>{label}</span>
+                        </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Summary */}
+              <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 20, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+                <div style={{ padding: "14px 16px", borderBottom: "1px solid #e2e8f0" }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: "#0b2c60" }}>Summary</p>
+                </div>
+                <div style={{ padding: "20px 16px", display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+                  {(() => {
+                    const cr = (balance as any)?.totalCredits ?? 0;
+                    const db = (balance as any)?.totalDebits ?? 0;
+                    const total = cr + db || 1;
+                    const crPct = Math.round((cr / total) * 100);
+                    const dbPct = 100 - crPct;
+                    const r = 36; const circ = 2 * Math.PI * r;
+                    const crDash = (crPct / 100) * circ;
+                    return (
+                      <>
+                        <svg width={92} height={92} viewBox="0 0 92 92" style={{ flexShrink: 0 }}>
+                          <circle cx={46} cy={46} r={r} fill="none" stroke="#f1f5f9" strokeWidth={12} />
+                          {cr + db > 0 && <>
+                            <circle cx={46} cy={46} r={r} fill="none" stroke="#059669" strokeWidth={12}
+                              strokeDasharray={`${crDash} ${circ - crDash}`} strokeDashoffset={circ * 0.25}
+                              strokeLinecap="round" style={{ transition: "stroke-dasharray 0.5s" }} />
+                            <circle cx={46} cy={46} r={r} fill="none" stroke="#ef4444" strokeWidth={12}
+                              strokeDasharray={`${circ - crDash} ${crDash}`} strokeDashoffset={circ * 0.25 + crDash}
+                              strokeLinecap="round" style={{ opacity: dbPct > 0 ? 1 : 0 }} />
+                          </>}
+                          <text x={46} y={50} textAnchor="middle" fontSize={13} fontWeight={800} fill="#0b2c60">{crPct}%</text>
+                        </svg>
+                        <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 8 }}>
+                          {[{ label: "Income", val: cr, color: "#059669", bg: "#d1fae5" }, { label: "Expenses", val: db, color: "#ef4444", bg: "#fee2e2" }].map(({ label, val, color, bg }) => (
+                            <div key={label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                                <div style={{ width: 10, height: 10, borderRadius: 3, background: bg, border: `2px solid ${color}` }} />
+                                <span style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>{label}</span>
+                              </div>
+                              <span style={{ fontSize: 12, fontWeight: 700, color }}>₹{val.toLocaleString("en-IN")}</span>
+                            </div>
+                          ))}
+                          <div style={{ height: 1, background: "#e2e8f0", margin: "2px 0" }} />
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>Balance</span>
+                            <span style={{ fontSize: 13, fontWeight: 800, color: "#0b2c60" }}>₹{((balance as any)?.balance ?? 0).toLocaleString("en-IN")}</span>
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* Recent Activity */}
+              <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 20, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+                <div style={{ padding: "14px 16px", borderBottom: "1px solid #e2e8f0" }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: "#0b2c60" }}>Recent Activity</p>
+                </div>
+                <div style={{ padding: "8px 0" }}>
+                  {(data?.entries ?? []).slice(0, 4).length === 0
+                    ? <div style={{ padding: "24px 16px", textAlign: "center" }}>
+                        <Clock size={22} color="#cbd5e1" style={{ margin: "0 auto 8px" }} />
+                        <p style={{ fontSize: 12, color: "#94a3b8" }}>No recent activity</p>
+                      </div>
+                    : (data?.entries ?? []).slice(0, 4).map((entry: any) => {
+                        const isCr = entry.credit > 0;
+                        const amt = isCr ? entry.credit : entry.debit;
+                        const color = isCr ? "#059669" : "#ef4444";
+                        return (
+                          <div key={entry.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px" }}
+                            onMouseEnter={e => (e.currentTarget.style.background = "#f8fafc")}
+                            onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                            <div style={{ width: 30, height: 30, borderRadius: 9, background: isCr ? "#d1fae5" : "#fee2e2", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                              {isCr ? <ArrowUpRight size={13} color="#059669" strokeWidth={2.5} /> : <ArrowDownLeft size={13} color="#ef4444" strokeWidth={2.5} />}
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p style={{ fontSize: 12, fontWeight: 700, color: "#0b2c60", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.customerName}</p>
+                              <p style={{ fontSize: 10, color: "#94a3b8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.serviceType}</p>
+                            </div>
+                            <span style={{ fontSize: 12, fontWeight: 800, color, flexShrink: 0 }}>{isCr ? "+" : "−"}₹{amt.toLocaleString("en-IN")}</span>
+                          </div>
+                        );
+                      })}
+                </div>
+              </div>
+
+            </div>{/* close right panel */}
+          </div>{/* close row 3 (table + right panel) */}
+        </div>{/* close outer desktop section */}
         {/* ═══════════════════════════════════════════════ */}
 
         {/* Offline Pending Entries — mobile only (desktop shows banner inside table panel) */}
