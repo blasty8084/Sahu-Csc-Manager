@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNetworkStatus } from "@/hooks/use-network-status";
-import { Plus, Pencil, Trash2, Download, Filter, X, ChevronLeft, ChevronRight, Clock, WifiOff, Receipt, Search, IndianRupee, User, FileText, Calendar, CheckCircle2, ArrowDownLeft, ArrowUpRight, TrendingUp, TrendingDown, Wallet, Eye, SlidersHorizontal, RotateCcw, Lock, Database } from "lucide-react";
+import { Plus, Pencil, Trash2, Download, Filter, X, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Clock, WifiOff, Receipt, Search, IndianRupee, User, FileText, Calendar, CheckCircle2, ArrowDownLeft, ArrowUpRight, TrendingUp, TrendingDown, Wallet, Eye, SlidersHorizontal, RotateCcw, Lock, Database } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { addPendingEntry, getAllPendingEntries, type PendingLedgerEntry } from "@/lib/offline-db";
 import { syncEngine } from "@/lib/sync-engine";
@@ -427,6 +427,43 @@ export default function Ledger() {
         ═══════════════════════════════════════════════ */}
         <div className="hidden md:flex md:flex-col" style={{ height: "calc(100vh - 128px)", gap: 12 }}>
 
+          {/* ── Desktop Page Header ── */}
+          <div style={{ position: "relative", overflow: "hidden", background: "white", borderRadius: 20, flexShrink: 0, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", border: "1px solid #e2e8f0" }}>
+            {/* Gradient accent bar */}
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "linear-gradient(90deg,#0b2c60 0%,#1e40af 40%,#f97316 75%,#ea580c 100%)", zIndex: 3, borderRadius: "20px 20px 0 0" }} />
+            {/* Hex mesh */}
+            <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.05, pointerEvents: "none", borderRadius: 20 }} preserveAspectRatio="none">
+              <defs>
+                <pattern id="lhdr-hex" x="0" y="0" width="28" height="24" patternUnits="userSpaceOnUse">
+                  <polygon points="14,2 26,8 26,20 14,26 2,20 2,8" fill="none" stroke="#0b2c60" strokeWidth="0.9" />
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#lhdr-hex)" />
+            </svg>
+            {/* Aurora blobs */}
+            <div style={{ position: "absolute", top: -20, right: 60, width: 110, height: 110, background: "radial-gradient(circle,rgba(249,115,22,0.10) 0%,transparent 70%)", filter: "blur(20px)", pointerEvents: "none" }} />
+            <div style={{ position: "absolute", top: -5, left: "42%", width: 90, height: 70, background: "radial-gradient(circle,rgba(11,44,96,0.06) 0%,transparent 70%)", filter: "blur(16px)", pointerEvents: "none" }} />
+            {/* Bottom border */}
+            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 1, background: "linear-gradient(90deg,transparent,#e2e8f0,transparent)", zIndex: 2 }} />
+
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px", height: 60, position: "relative", zIndex: 2 }}>
+              <div>
+                <h1 style={{ fontSize: 18, fontWeight: 700, color: "#0b2c60", margin: 0 }}>{t("ledger.title") || "Ledger"}</h1>
+                <p style={{ fontSize: 11, color: "#64748b", fontWeight: 500, marginTop: 2 }}>{t("ledger.subtitle") || "Track all your transactions and manage records seamlessly."}</p>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <a href="/api/reports/export" target="_blank"
+                  style={{ display: "flex", alignItems: "center", gap: 6, height: 34, paddingInline: 14, borderRadius: 10, border: "1.5px solid #e2e8f0", background: "#f8fafc", color: "#334155", fontSize: 12, fontWeight: 600, textDecoration: "none", cursor: "pointer" }}>
+                  <Download size={13} />Export
+                </a>
+                <button onClick={() => setShowDeleteAll(true)}
+                  style={{ display: "flex", alignItems: "center", gap: 6, height: 34, paddingInline: 14, borderRadius: 10, border: "1.5px solid rgba(225,29,72,0.25)", background: "rgba(225,29,72,0.05)", color: "#e11d48", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                  <Trash2 size={13} />Delete All
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* ── Row 1: Stat Cards ── */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, flexShrink: 0 }}>
             {/* Current Balance */}
@@ -533,27 +570,31 @@ export default function Ledger() {
             <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
 
               {/* Search & filter bar */}
-              <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: "10px 14px", display: "flex", gap: 10, alignItems: "center", flexShrink: 0, boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
-                <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, borderRight: "1px solid #e2e8f0", paddingRight: 12, marginRight: 2 }}>
-                  <Search size={16} color="#94a3b8" />
+              <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 20, padding: "10px 14px", display: "flex", gap: 10, alignItems: "center", flexShrink: 0, boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+                <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8 }}>
+                  <Search size={17} color="#94a3b8" />
                   <input value={customerName} onChange={e => { setCustomerName(e.target.value); setPage(1); }}
                     list="ledger-customer-names" placeholder="Search transactions…"
-                    style={{ flex: 1, outline: "none", fontSize: 13, color: "#0b2c60", fontWeight: 500, background: "transparent", border: "none" }} />
+                    style={{ flex: 1, outline: "none", fontSize: 13, color: "#334155", fontWeight: 500, background: "transparent", border: "none" }} />
                 </div>
+                <div style={{ width: 1, height: 24, background: "#e2e8f0" }} />
                 <button onClick={() => setShowFilters(!showFilters)}
-                  style={{ display: "flex", alignItems: "center", gap: 6, border: `1.5px solid ${showFilters || hasFilters ? "#0b2c60" : "#e2e8f0"}`, background: showFilters || hasFilters ? "#0b2c60" : "#f8fafc", color: showFilters || hasFilters ? "#fff" : "#334155", borderRadius: 10, padding: "0 12px", height: 34, fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
+                  style={{ display: "flex", alignItems: "center", gap: 6, border: `1px solid ${showFilters || hasFilters ? "#0b2c60" : "#e2e8f0"}`, background: showFilters || hasFilters ? "#0b2c60" : "#f8fafc", color: showFilters || hasFilters ? "#fff" : "#334155", borderRadius: 12, padding: "0 14px", height: 36, fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
                   <SlidersHorizontal size={13} />Filters{hasFilters && <span style={{ background: "#f97316", color: "#fff", borderRadius: 20, fontSize: 9, fontWeight: 800, padding: "1px 5px", marginLeft: 2 }}>{[startDate, endDate, serviceFilter].filter(Boolean).length}</span>}
                 </button>
                 <a href="/api/reports/export" target="_blank"
-                  style={{ display: "flex", alignItems: "center", gap: 6, border: "1.5px solid #e2e8f0", background: "#f8fafc", color: "#334155", borderRadius: 10, padding: "0 12px", height: 34, fontSize: 12, fontWeight: 600, cursor: "pointer", textDecoration: "none", flexShrink: 0 }}>
+                  style={{ display: "flex", alignItems: "center", gap: 6, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#334155", borderRadius: 12, padding: "0 14px", height: 36, fontSize: 12, fontWeight: 600, cursor: "pointer", textDecoration: "none", flexShrink: 0 }}>
                   <Download size={13} />Export
                 </a>
-                {hasFilters && (
-                  <button onClick={clearFilters}
-                    style={{ display: "flex", alignItems: "center", gap: 5, border: "none", background: "transparent", color: "#64748b", fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0, padding: "0 4px" }}>
-                    <RotateCcw size={12} />Clear
-                  </button>
-                )}
+                <div style={{ width: 1, height: 24, background: "#e2e8f0" }} />
+                <button onClick={clearFilters}
+                  style={{ display: "flex", alignItems: "center", gap: 6, border: "none", background: "transparent", color: "#64748b", fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0, padding: "0 8px" }}>
+                  <RotateCcw size={13} />Clear
+                </button>
+                <button onClick={() => setPage(1)}
+                  style={{ background: "#f97316", color: "white", borderRadius: 12, padding: "0 20px", height: 36, fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", flexShrink: 0 }}>
+                  Apply
+                </button>
               </div>
 
               {/* Filter panel (collapsible) */}
@@ -603,7 +644,7 @@ export default function Ledger() {
                 <div style={{ display: "flex", borderBottom: "1px solid #e2e8f0", flexShrink: 0, paddingLeft: 4 }}>
                   {(["transactions", "receipts"] as const).map(tab => (
                     <button key={tab} onClick={() => setActiveTab(tab)}
-                      style={{ display: "flex", alignItems: "center", gap: 6, padding: "14px 20px", borderBottom: `2px solid ${activeTab === tab ? "#0b2c60" : "transparent"}`, color: activeTab === tab ? "#0b2c60" : "#94a3b8", fontWeight: activeTab === tab ? 700 : 600, fontSize: 13, background: "transparent", border: "none", borderBottom: `2px solid ${activeTab === tab ? "#0b2c60" : "transparent"}`, cursor: "pointer", transition: "all 0.15s" }}>
+                      style={{ display: "flex", alignItems: "center", gap: 6, padding: "14px 20px", borderBottom: `2px solid ${activeTab === tab ? "#0b2c60" : "transparent"}`, color: activeTab === tab ? "#0b2c60" : "#94a3b8", fontWeight: activeTab === tab ? 700 : 600, fontSize: 13, background: "transparent", border: "none", cursor: "pointer", transition: "all 0.15s" }}>
                       {tab === "transactions" ? <><FileText size={14} strokeWidth={2.5} />Transactions</> : <><Receipt size={14} strokeWidth={2.5} />Receipt History</>}
                     </button>
                   ))}
@@ -738,14 +779,18 @@ export default function Ledger() {
                     ) : !data?.entries?.length ? (
                       <tr>
                         <td colSpan={10} style={{ textAlign: "center", padding: "72px 0" }}>
-                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
-                            <div style={{ width: 60, height: 60, borderRadius: 18, background: "rgba(11,44,96,0.06)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                              <FileText size={26} color="#0b2c60" opacity={0.3} />
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+                            <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#ffedd5", outline: "6px solid #fff7ed", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                              <IndianRupee size={28} color="#f97316" strokeWidth={2.5} />
                             </div>
-                            <div>
-                              <p style={{ fontSize: 15, fontWeight: 700, color: "#0b2c60", marginBottom: 5 }}>No entries found</p>
-                              <p style={{ fontSize: 12, color: "#94a3b8" }}>{hasFilters ? "Try clearing the filters" : "Use New Entry in the sidebar to add your first transaction"}</p>
-                            </div>
+                            <p style={{ fontSize: 17, fontWeight: 700, color: "#1e293b", marginBottom: 2 }}>No transactions found</p>
+                            <p style={{ fontSize: 13, color: "#94a3b8", fontWeight: 500 }}>{hasFilters ? "Try clearing the filters" : "Add your first entry to get started"}</p>
+                            {!hasFilters && (
+                              <button onClick={openCreate}
+                                style={{ background: "#f97316", color: "white", borderRadius: 12, padding: "10px 24px", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", marginTop: 4 }}>
+                                + Add New Entry
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -889,49 +934,59 @@ export default function Ledger() {
               </div>
 
               {/* Footer: page summary + pagination */}
-              <div style={{ display: activeTab !== "transactions" ? "none" : "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 20px", borderTop: "1px solid #f1f5f9", flexShrink: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                  <p style={{ fontSize: 12, color: "#94a3b8", fontWeight: 500 }}>
-                    {data?.total ? `Showing ${(page - 1) * 15 + 1}–${Math.min(page * 15, data.total)} of ${data.total}` : "No entries"}
-                  </p>
-                  {(data?.entries?.length ?? 0) > 0 && (() => {
-                    const pCr = (data?.entries ?? []).reduce((s: number, e: any) => s + (Number(e.credit) || 0), 0);
-                    const pDb = (data?.entries ?? []).reduce((s: number, e: any) => s + (Number(e.debit) || 0), 0);
-                    const net = pCr - pDb;
-                    return (
-                      <span style={{ display: "flex", gap: 10, fontSize: 12, fontWeight: 600 }}>
-                        <span style={{ color: "#059669" }}>Cr: ₹{pCr.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-                        <span style={{ color: "#cbd5e1" }}>·</span>
-                        <span style={{ color: "#e11d48" }}>Dr: ₹{pDb.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-                        <span style={{ color: "#cbd5e1" }}>·</span>
-                        <span style={{ color: "#0b2c60", fontWeight: 700 }}>Net: {net >= 0 ? "+" : ""}₹{net.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-                      </span>
-                    );
-                  })()}
-                </div>
-                {totalPages > 1 && (
-                  <div style={{ display: "flex", gap: 4 }}>
-                    <button onClick={() => setPage(p => p - 1)} disabled={page <= 1}
-                      style={{ height: 32, paddingInline: 12, borderRadius: 8, border: "1.5px solid #e2e8f0", background: page <= 1 ? "#f8fafc" : "#fff", color: page <= 1 ? "#cbd5e1" : "#0b2c60", fontSize: 12, fontWeight: 700, cursor: page <= 1 ? "default" : "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-                      <ChevronLeft size={13} />Prev
+              <div style={{ display: activeTab !== "transactions" ? "none" : "flex", flexDirection: "column", gap: 0, borderTop: "1px solid #f1f5f9", flexShrink: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 20px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                    <p style={{ fontSize: 13, color: "#64748b", fontWeight: 500 }}>
+                      {data?.total ? `Showing ${(page - 1) * 15 + 1}–${Math.min(page * 15, data.total)} of ${data.total} transactions` : "Showing 0 of 0 transactions"}
+                    </p>
+                    {(data?.entries?.length ?? 0) > 0 && (() => {
+                      const pCr = (data?.entries ?? []).reduce((s: number, e: any) => s + (Number(e.credit) || 0), 0);
+                      const pDb = (data?.entries ?? []).reduce((s: number, e: any) => s + (Number(e.debit) || 0), 0);
+                      const net = pCr - pDb;
+                      return (
+                        <span style={{ display: "flex", gap: 10, fontSize: 12, fontWeight: 600 }}>
+                          <span style={{ color: "#059669" }}>Cr: ₹{pCr.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                          <span style={{ color: "#cbd5e1" }}>·</span>
+                          <span style={{ color: "#e11d48" }}>Dr: ₹{pDb.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                          <span style={{ color: "#cbd5e1" }}>·</span>
+                          <span style={{ color: "#0b2c60", fontWeight: 700 }}>Net: {net >= 0 ? "+" : ""}₹{net.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                        </span>
+                      );
+                    })()}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <button onClick={() => setPage(1)} disabled={page <= 1}
+                      style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, border: "1px solid transparent", background: "transparent", color: page <= 1 ? "#cbd5e1" : "#94a3b8", cursor: page <= 1 ? "default" : "pointer" }}>
+                      <ChevronsLeft size={15} />
                     </button>
-                    <div style={{ display: "flex", gap: 4 }}>
-                      {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                        const p = totalPages <= 5 ? i + 1 : page <= 3 ? i + 1 : page >= totalPages - 2 ? totalPages - 4 + i : page - 2 + i;
-                        return (
-                          <button key={p} onClick={() => setPage(p)}
-                            style={{ width: 32, height: 32, borderRadius: 8, border: "1.5px solid", borderColor: p === page ? "#0b2c60" : "#e2e8f0", background: p === page ? "#0b2c60" : "#fff", color: p === page ? "#fff" : "#64748b", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                            {p}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <button onClick={() => setPage(p => p + 1)} disabled={page >= totalPages}
-                      style={{ height: 32, paddingInline: 12, borderRadius: 8, border: "1.5px solid #e2e8f0", background: page >= totalPages ? "#f8fafc" : "#fff", color: page >= totalPages ? "#cbd5e1" : "#0b2c60", fontSize: 12, fontWeight: 700, cursor: page >= totalPages ? "default" : "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-                      Next<ChevronRight size={13} />
+                    <button onClick={() => setPage(p => p - 1)} disabled={page <= 1}
+                      style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, border: "1px solid transparent", background: "transparent", color: page <= 1 ? "#cbd5e1" : "#94a3b8", cursor: page <= 1 ? "default" : "pointer" }}>
+                      <ChevronLeft size={15} />
+                    </button>
+                    {Array.from({ length: Math.min(totalPages || 1, 5) }, (_, i) => {
+                      const p = (totalPages || 1) <= 5 ? i + 1 : page <= 3 ? i + 1 : page >= (totalPages || 1) - 2 ? (totalPages || 1) - 4 + i : page - 2 + i;
+                      return (
+                        <button key={p} onClick={() => setPage(p)}
+                          style={{ width: 32, height: 32, borderRadius: 8, border: "1.5px solid", borderColor: p === page ? "#0b2c60" : "transparent", background: p === page ? "#0b2c60" : "transparent", color: p === page ? "#fff" : "#94a3b8", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          {p}
+                        </button>
+                      );
+                    })}
+                    <button onClick={() => setPage(p => p + 1)} disabled={page >= (totalPages || 1)}
+                      style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, border: "1px solid transparent", background: "transparent", color: page >= (totalPages || 1) ? "#cbd5e1" : "#94a3b8", cursor: page >= (totalPages || 1) ? "default" : "pointer" }}>
+                      <ChevronRight size={15} />
+                    </button>
+                    <button onClick={() => setPage(totalPages || 1)} disabled={page >= (totalPages || 1)}
+                      style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, border: "1px solid transparent", background: "transparent", color: page >= (totalPages || 1) ? "#cbd5e1" : "#94a3b8", cursor: page >= (totalPages || 1) ? "default" : "pointer" }}>
+                      <ChevronsRight size={15} />
                     </button>
                   </div>
-                )}
+                </div>
+                {/* Security footer */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, paddingBottom: 10, color: "#94a3b8", fontSize: 11, fontWeight: 500 }}>
+                  <Lock size={11} />All your transactions are secure and encrypted
+                </div>
               </div>
 
               </div>{/* close table card */}
@@ -941,120 +996,129 @@ export default function Ledger() {
             <div style={{ width: 252, flexShrink: 0, display: "flex", flexDirection: "column", gap: 14, overflowY: "auto" }}>
 
               {/* Quick Actions */}
-              <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 20, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-                <div style={{ padding: "14px 16px", borderBottom: "1px solid #e2e8f0" }}>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: "#0b2c60" }}>Quick Actions</p>
-                </div>
-                <div style={{ padding: "8px 8px" }}>
-                  {([
-                    { icon: Plus, label: "Add New Entry", color: "#059669", bg: "#d1fae5", action: () => openCreate() },
-                    { icon: Receipt, label: "Receipt History", color: "#7c3aed", bg: "#ede9fe", action: () => setActiveTab("receipts" as const) },
-                    { icon: Download, label: "Export Ledger", color: "#2563eb", bg: "#dbeafe", href: "/api/reports/export" },
-                    { icon: Trash2, label: "Delete All Entries", color: "#dc2626", bg: "#fee2e2", action: () => setShowDeleteAll(true) },
-                  ] as { icon: React.ElementType; label: string; color: string; bg: string; action?: () => void; href?: string }[]).map(({ icon: Icon, label, color, bg, action, href }) => (
-                    href
-                      ? <a key={label} href={href} target="_blank" style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", borderRadius: 12, textDecoration: "none", cursor: "pointer" }}
-                          onMouseEnter={e => (e.currentTarget.style.background = "#f8fafc")}
-                          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                          <div style={{ width: 32, height: 32, borderRadius: 10, background: bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                            <Icon size={14} color={color} strokeWidth={2.5} />
-                          </div>
-                          <span style={{ fontSize: 13, fontWeight: 600, color: "#1e293b" }}>{label}</span>
-                        </a>
-                      : <button key={label} onClick={action}
-                          style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", borderRadius: 12, border: "none", background: "transparent", cursor: "pointer", textAlign: "left" }}
-                          onMouseEnter={e => (e.currentTarget.style.background = "#f8fafc")}
-                          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                          <div style={{ width: 32, height: 32, borderRadius: 10, background: bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                            <Icon size={14} color={color} strokeWidth={2.5} />
-                          </div>
-                          <span style={{ fontSize: 13, fontWeight: 600, color: "#1e293b" }}>{label}</span>
-                        </button>
-                  ))}
-                </div>
+              <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 20, padding: 16, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+                <h3 style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 700, color: "#1e293b", fontSize: 13, marginBottom: 14 }}>
+                  <span style={{ fontSize: 16 }}>⚡</span>Quick Actions
+                </h3>
+                {([
+                  { icon: Plus, label: "Add New Entry", sub: "Record a new transaction", grad: "linear-gradient(135deg,#f97316,#ea580c)", action: () => openCreate() },
+                  { icon: Receipt, label: "Receipt History", sub: "View all receipts", grad: "linear-gradient(135deg,#a855f7,#9333ea)", action: () => setActiveTab("receipts" as const) },
+                  { icon: Download, label: "Export Ledger", sub: "Download as Excel / PDF", grad: "linear-gradient(135deg,#10b981,#059669)", href: "/api/reports/export" },
+                  { icon: Database, label: "Backup Ledger", sub: "Create a ledger backup", grad: "linear-gradient(135deg,#3b82f6,#2563eb)", action: () => setShowDeleteAll(true) },
+                ] as { icon: React.ElementType; label: string; sub: string; grad: string; action?: () => void; href?: string }[]).map(({ icon: Icon, label, sub, grad, action, href }) => (
+                  href
+                    ? <a key={label} href={href} target="_blank" style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 12, textDecoration: "none", cursor: "pointer", marginBottom: 6 }}
+                        onMouseEnter={e => (e.currentTarget.style.background = "#f8fafc")}
+                        onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                        <div style={{ width: 40, height: 40, borderRadius: 10, background: grad, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <Icon size={17} color="white" strokeWidth={2.5} />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: 13, fontWeight: 700, color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</p>
+                          <p style={{ fontSize: 11, color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub}</p>
+                        </div>
+                        <ChevronRight size={15} color="#cbd5e1" />
+                      </a>
+                    : <button key={label} onClick={action}
+                        style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 12, border: "none", background: "transparent", cursor: "pointer", textAlign: "left", marginBottom: 6 }}
+                        onMouseEnter={e => (e.currentTarget.style.background = "#f8fafc")}
+                        onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                        <div style={{ width: 40, height: 40, borderRadius: 10, background: grad, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <Icon size={17} color="white" strokeWidth={2.5} />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: 13, fontWeight: 700, color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</p>
+                          <p style={{ fontSize: 11, color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub}</p>
+                        </div>
+                        <ChevronRight size={15} color="#cbd5e1" />
+                      </button>
+                ))}
               </div>
 
               {/* Summary */}
-              <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 20, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-                <div style={{ padding: "14px 16px", borderBottom: "1px solid #e2e8f0" }}>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: "#0b2c60" }}>Summary</p>
+              <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 20, padding: 16, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                  <h3 style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 700, color: "#1e293b", fontSize: 13 }}>
+                    <span style={{ fontSize: 14 }}>📊</span>Summary
+                  </h3>
+                  <span style={{ fontSize: 11, color: "#94a3b8", background: "#f1f5f9", borderRadius: 6, padding: "2px 8px" }}>This Month</span>
                 </div>
-                <div style={{ padding: "20px 16px", display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
-                  {(() => {
-                    const cr = (balance as any)?.totalCredits ?? 0;
-                    const db = (balance as any)?.totalDebits ?? 0;
-                    const total = cr + db || 1;
-                    const crPct = Math.round((cr / total) * 100);
-                    const dbPct = 100 - crPct;
-                    const r = 36; const circ = 2 * Math.PI * r;
-                    const crDash = (crPct / 100) * circ;
-                    return (
-                      <>
-                        <svg width={92} height={92} viewBox="0 0 92 92" style={{ flexShrink: 0 }}>
-                          <circle cx={46} cy={46} r={r} fill="none" stroke="#f1f5f9" strokeWidth={12} />
+                {(() => {
+                  const cr = (balance as any)?.totalCredits ?? 0;
+                  const db = (balance as any)?.totalDebits ?? 0;
+                  const bal = (balance as any)?.balance ?? 0;
+                  const total = cr + db || 1;
+                  const crPct = Math.round((cr / total) * 100);
+                  const dbPct = 100 - crPct;
+                  const r = 38; const circ = 2 * Math.PI * r;
+                  const crDash = (crPct / 100) * circ;
+                  return (
+                    <>
+                      <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+                        <svg width={100} height={100} viewBox="0 0 100 100">
+                          <circle cx={50} cy={50} r={r} fill="none" stroke="#e2e8f0" strokeWidth={14} />
                           {cr + db > 0 && <>
-                            <circle cx={46} cy={46} r={r} fill="none" stroke="#059669" strokeWidth={12}
+                            <circle cx={50} cy={50} r={r} fill="none" stroke="#10b981" strokeWidth={14}
                               strokeDasharray={`${crDash} ${circ - crDash}`} strokeDashoffset={circ * 0.25}
                               strokeLinecap="round" style={{ transition: "stroke-dasharray 0.5s" }} />
-                            <circle cx={46} cy={46} r={r} fill="none" stroke="#ef4444" strokeWidth={12}
+                            <circle cx={50} cy={50} r={r} fill="none" stroke="#ef4444" strokeWidth={14}
                               strokeDasharray={`${circ - crDash} ${crDash}`} strokeDashoffset={circ * 0.25 + crDash}
                               strokeLinecap="round" style={{ opacity: dbPct > 0 ? 1 : 0 }} />
                           </>}
-                          <text x={46} y={50} textAnchor="middle" fontSize={13} fontWeight={800} fill="#0b2c60">{crPct}%</text>
+                          <text x={50} y={46} textAnchor="middle" fontSize={10} fontWeight={700} fill="#0b2c60">{cr + db > 0 ? crPct : 0}</text>
+                          <text x={50} y={58} textAnchor="middle" fontSize={8} fill="#94a3b8">Total</text>
                         </svg>
-                        <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 8 }}>
-                          {[{ label: "Income", val: cr, color: "#059669", bg: "#d1fae5" }, { label: "Expenses", val: db, color: "#ef4444", bg: "#fee2e2" }].map(({ label, val, color, bg }) => (
-                            <div key={label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                                <div style={{ width: 10, height: 10, borderRadius: 3, background: bg, border: `2px solid ${color}` }} />
-                                <span style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>{label}</span>
-                              </div>
-                              <span style={{ fontSize: 12, fontWeight: 700, color }}>₹{val.toLocaleString("en-IN")}</span>
-                            </div>
-                          ))}
-                          <div style={{ height: 1, background: "#e2e8f0", margin: "2px 0" }} />
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                            <span style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>Balance</span>
-                            <span style={{ fontSize: 13, fontWeight: 800, color: "#0b2c60" }}>₹{((balance as any)?.balance ?? 0).toLocaleString("en-IN")}</span>
+                      </div>
+                      {[
+                        { label: "Credits", color: "#10b981", value: `₹${cr.toLocaleString("en-IN", { minimumFractionDigits: 2 })}` },
+                        { label: "Debits", color: "#ef4444", value: `₹${db.toLocaleString("en-IN", { minimumFractionDigits: 2 })}` },
+                        { label: "Balance", color: "#3b82f6", value: `₹${bal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}` },
+                      ].map(({ label, color, value }) => (
+                        <div key={label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 0" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <div style={{ width: 8, height: 8, borderRadius: "50%", background: color }} />
+                            <span style={{ fontSize: 12, color: "#64748b" }}>{label}</span>
                           </div>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: "#1e293b" }}>{value}</span>
                         </div>
-                      </>
-                    );
-                  })()}
-                </div>
+                      ))}
+                    </>
+                  );
+                })()}
               </div>
 
               {/* Recent Activity */}
-              <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 20, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-                <div style={{ padding: "14px 16px", borderBottom: "1px solid #e2e8f0" }}>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: "#0b2c60" }}>Recent Activity</p>
-                </div>
-                <div style={{ padding: "8px 0" }}>
-                  {(data?.entries ?? []).slice(0, 4).length === 0
-                    ? <div style={{ padding: "24px 16px", textAlign: "center" }}>
-                        <Clock size={22} color="#cbd5e1" style={{ margin: "0 auto 8px" }} />
-                        <p style={{ fontSize: 12, color: "#94a3b8" }}>No recent activity</p>
+              <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 20, padding: 16, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+                <h3 style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 700, color: "#1e293b", fontSize: 13, marginBottom: 12 }}>
+                  <span style={{ fontSize: 14 }}>🕐</span>Recent Activity
+                </h3>
+                {(data?.entries ?? []).slice(0, 4).length === 0
+                  ? <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, padding: "24px 0" }}>
+                      <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <Clock size={18} color="#94a3b8" />
                       </div>
-                    : (data?.entries ?? []).slice(0, 4).map((entry: any) => {
-                        const isCr = entry.credit > 0;
-                        const amt = isCr ? entry.credit : entry.debit;
-                        const color = isCr ? "#059669" : "#ef4444";
-                        return (
-                          <div key={entry.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px" }}
-                            onMouseEnter={e => (e.currentTarget.style.background = "#f8fafc")}
-                            onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                            <div style={{ width: 30, height: 30, borderRadius: 9, background: isCr ? "#d1fae5" : "#fee2e2", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                              {isCr ? <ArrowUpRight size={13} color="#059669" strokeWidth={2.5} /> : <ArrowDownLeft size={13} color="#ef4444" strokeWidth={2.5} />}
-                            </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <p style={{ fontSize: 12, fontWeight: 700, color: "#0b2c60", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.customerName}</p>
-                              <p style={{ fontSize: 10, color: "#94a3b8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.serviceType}</p>
-                            </div>
-                            <span style={{ fontSize: 12, fontWeight: 800, color, flexShrink: 0 }}>{isCr ? "+" : "−"}₹{amt.toLocaleString("en-IN")}</span>
+                      <p style={{ fontSize: 13, color: "#334155", fontWeight: 600 }}>No recent Activity</p>
+                      <p style={{ fontSize: 11, color: "#94a3b8", textAlign: "center" }}>Your recent transactions will appear here</p>
+                    </div>
+                  : (data?.entries ?? []).slice(0, 4).map((entry: any) => {
+                      const isCr = entry.credit > 0;
+                      const amt = isCr ? entry.credit : entry.debit;
+                      const color = isCr ? "#059669" : "#ef4444";
+                      return (
+                        <div key={entry.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid #f1f5f9" }}
+                          onMouseEnter={e => (e.currentTarget.style.background = "#f8fafc")}
+                          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                          <div style={{ width: 30, height: 30, borderRadius: 9, background: isCr ? "#d1fae5" : "#fee2e2", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            {isCr ? <ArrowUpRight size={13} color="#059669" strokeWidth={2.5} /> : <ArrowDownLeft size={13} color="#ef4444" strokeWidth={2.5} />}
                           </div>
-                        );
-                      })}
-                </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontSize: 12, fontWeight: 700, color: "#0b2c60", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.customerName}</p>
+                            <p style={{ fontSize: 10, color: "#94a3b8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.serviceType}</p>
+                          </div>
+                          <span style={{ fontSize: 12, fontWeight: 800, color, flexShrink: 0 }}>{isCr ? "+" : "−"}₹{amt.toLocaleString("en-IN")}</span>
+                        </div>
+                      );
+                    })}
               </div>
 
             </div>{/* close right panel */}
