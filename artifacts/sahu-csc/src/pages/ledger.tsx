@@ -425,7 +425,7 @@ export default function Ledger() {
             DESKTOP LAYOUT v2 — dark sidebar + quick-add strip + main panel
             Hidden on mobile, shown on md+
         ═══════════════════════════════════════════════ */}
-        <div className="hidden md:flex gap-4" style={{ minHeight: "calc(100vh - 130px)" }}>
+        <div className="hidden md:flex gap-4" style={{ height: "calc(100vh - 128px)", overflow: "hidden" }}>
 
           {/* ── LEFT SIDEBAR (dark navy) ── */}
           <div style={{ width: 240, flexShrink: 0, display: "flex", flexDirection: "column", background: "#0b2c60", borderRadius: 20, color: "#fff", overflow: "hidden" }}>

@@ -14,7 +14,6 @@ Complete structural guide for anyone importing or onboarding to this project.
 6. [Workspace Packages](#workspace-packages)
    - [artifacts/api-server](#artifactsapi-server)
    - [artifacts/sahu-csc](#artifactssahu-csc)
-   - [artifacts/mockup-sandbox](#artifactsmockup-sandbox)
    - [lib/db](#libdb)
    - [lib/api-spec](#libapi-spec)
    - [lib/api-zod](#libapi-zod)
@@ -346,23 +345,6 @@ artifacts/sahu-csc/
 | `backups.tsx` | `/backups` | admin only |
 | `broadcast.tsx` | `/broadcast` | admin only |
 | `not-found.tsx` | `*` | all |
-
----
-
-### artifacts/mockup-sandbox
-
-**Package name:** `@workspace/mockup-sandbox`  
-**Port:** 3000  
-**Purpose:** Isolated Vite dev server for designing and comparing UI components on the Replit canvas. Components are previewed at `/__mockup/preview/<folder>/<ComponentName>`. Not part of the production app.
-
-```
-artifacts/mockup-sandbox/src/components/mockups/
-└── ledger-desktop-v2/
-    ├── Current.tsx     ← static reproduction of the current ledger desktop layout
-    ├── Redesign.tsx    ← incremental redesign (V2)
-    ├── V3.tsx          ← "Accounting Clarity" redesign (top metric strip, filter sidebar)
-    └── _group.css      ← shared CSS variables and Inter font import
-```
 
 ---
 
