@@ -118,6 +118,19 @@ outputType = "console"
 task = "shell.exec"
 args = "echo 'Use the API Server workflow to run the API on port 8080. This stub prevents the platform-generated duplicate from conflicting.'"
 
+# Override the platform-auto-generated artifact workflow with a no-op stub
+# so it never conflicts with the real "SAHU CSC" workflow on port 5000.
+[[workflows.workflow]]
+name = "artifacts/sahu-csc: web"
+author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo 'Use the SAHU CSC workflow to run the frontend on port 5000. This stub prevents the platform-generated duplicate from conflicting.'"
+
 [agent]
 stack = "BEST_EFFORT_FALLBACK"
 expertMode = true
