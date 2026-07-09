@@ -1,432 +1,450 @@
-import React from 'react';
-import { 
-  LayoutDashboard, BookOpen, HandCoins, Fingerprint, Briefcase, BarChart3, 
-  Bell, UserCircle, WifiOff, Moon, LogOut, Crown, Sun, ChevronDown, 
-  Eye, ArrowUpRight, ArrowDownLeft, FileText, Calendar, SlidersHorizontal, 
-  Download, RotateCcw, Clock, IndianRupee, Plus, Database, ChevronRight, 
-  ChevronLeft, ChevronsLeft, ChevronsRight, Lock, LayoutGrid, Search
+import React, { useState } from 'react';
+import {
+  LayoutDashboard, BookOpen, HandCoins, Fingerprint, Briefcase, BarChart3,
+  Bell, UserCircle, WifiOff, ArrowDownToLine, Info,
+  Users, Megaphone, FileArchive, History, Database, HeartPulse,
+  Moon, Sun, LogIn,
+  ChevronDown, Eye, ArrowUpRight, ArrowDownLeft, FileText, Calendar,
+  SlidersHorizontal, Download, RotateCcw, Clock, IndianRupee, Plus,
+  ChevronRight, ChevronLeft, ChevronsLeft, ChevronsRight, Lock, Search,
 } from 'lucide-react';
 
-// NavItem Component
-function NavItem({ icon, label, active, badge }: { icon: React.ReactNode, label: string, active?: boolean, badge?: string }) {
+// ─── Types ───────────────────────────────────────────────────────────────────
+type NavItem = {
+  label: string;
+  icon: React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>;
+  active?: boolean;
+  badge?: number;
+};
+
+// ─── Data: exact nav items from layout.tsx ───────────────────────────────────
+const MAIN_NAV: NavItem[] = [
+  { label: 'Dashboard',    icon: LayoutDashboard },
+  { label: 'Ledger',       icon: BookOpen,        active: true },
+  { label: 'Udhari Khata', icon: HandCoins },
+  { label: 'AePS Cash',    icon: Fingerprint },
+  { label: 'Services',     icon: Briefcase },
+  { label: 'Reports',      icon: BarChart3 },
+  { label: 'Notifications',icon: Bell,            badge: 2 },
+  { label: 'My Profile',   icon: UserCircle },
+  { label: 'PWA Status',   icon: WifiOff },
+  { label: 'Download App', icon: ArrowDownToLine },
+  { label: 'About',        icon: Info },
+];
+
+const ADMIN_NAV: NavItem[] = [
+  { label: 'User Management', icon: Users },
+  { label: 'Broadcast',       icon: Megaphone },
+  { label: 'Receipt Export',  icon: FileArchive },
+  { label: 'Audit Logs',      icon: History },
+  { label: 'Backups',         icon: Database },
+  { label: 'Server Health',   icon: HeartPulse },
+];
+
+// ─── Sidebar — faithful copy of SidebarNav from layout.tsx ───────────────────
+function Sidebar() {
+  const [isDark, setIsDark] = useState(false);
+
   return (
-    <button className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${active ? 'bg-[#f97316] text-white shadow-md font-semibold' : 'text-white/65 hover:bg-white/8 hover:text-white font-medium'}`}>
-      {icon}
-      <span className="flex-1 text-left text-sm">{label}</span>
-      {badge && (
-        <span className="bg-white text-[#f97316] text-[10px] font-bold px-1.5 py-0.5 rounded-md min-w-[20px] text-center shadow-sm">
-          {badge}
+    <div className="flex flex-col h-full w-64 flex-shrink-0 shadow-2xl" style={{ background: 'hsl(217,79%,21%)' }}>
+
+      {/* ── Top Header ── */}
+      <div className="px-4 pt-5 pb-4 flex items-center gap-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.10)' }}>
+        <div className="relative flex-shrink-0">
+          <div className="w-11 h-11 rounded-full overflow-hidden shadow-md" style={{ outline: '2px solid rgba(255,255,255,0.20)', outlineOffset: 0 }}>
+            <img
+              src="/__mockup/images/sahu-logo.png"
+              alt="SAHU CSC Logo"
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.display = 'none';
+                (e.currentTarget.parentElement as HTMLElement).style.background = 'hsl(25,95%,53%)';
+                (e.currentTarget.parentElement as HTMLElement).innerHTML = '<span style="display:flex;align-items:center;justify-content:center;height:100%;color:white;font-weight:900;font-size:14px">S</span>';
+              }}
+            />
+          </div>
+        </div>
+        <div className="flex-1 min-w-0">
+          <h2 style={{ fontWeight: 800, fontSize: 16, lineHeight: 1.2, letterSpacing: '0.02em', color: 'white' }}>SAHU CSC</h2>
+          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.50)', fontWeight: 500, letterSpacing: '0.04em', marginTop: 2 }}>Management Platform</p>
+        </div>
+      </div>
+
+      {/* ── Nav Items ── */}
+      <div className="flex-1 overflow-y-auto py-3 px-3" style={{ scrollbarWidth: 'none' }}>
+        <style>{`.sidebar-scroll::-webkit-scrollbar{display:none}`}</style>
+
+        {/* Main nav */}
+        <div className="space-y-0.5">
+          {MAIN_NAV.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div
+                key={item.label}
+                className="flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer"
+                style={{
+                  background:   item.active ? '#f97316' : 'transparent',
+                  color:        item.active ? 'white' : 'rgba(255,255,255,0.65)',
+                  fontWeight:   item.active ? 600 : 400,
+                  boxShadow:    item.active ? '0 4px 12px rgba(249,115,22,0.30)' : 'none',
+                  transition:   'background 100ms, color 100ms',
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <Icon size={17} style={{ color: item.active ? 'white' : 'rgba(255,255,255,0.45)' }} />
+                  <span style={{ fontSize: 14, lineHeight: 1 }}>{item.label}</span>
+                </div>
+                {!!item.badge && item.badge > 0 && (
+                  <span style={{
+                    fontSize: 10, fontWeight: 700,
+                    padding: '2px 6px', borderRadius: 999, lineHeight: 1,
+                    background: item.active ? 'rgba(255,255,255,0.25)' : '#f97316',
+                    color: 'white',
+                  }}>
+                    {item.badge > 99 ? '99+' : item.badge}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Admin section */}
+        <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.30)', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', padding: '16px 12px 6px' }}>
+          Admin
+        </p>
+        <div className="space-y-0.5">
+          {ADMIN_NAV.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div
+                key={item.label}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer"
+                style={{ color: 'rgba(255,255,255,0.65)', transition: 'background 100ms, color 100ms' }}
+              >
+                <Icon size={17} style={{ color: 'rgba(255,255,255,0.45)' }} />
+                <span style={{ fontSize: 14, lineHeight: 1 }}>{item.label}</span>
+                {!!item.badge && item.badge > 0 && (
+                  <span style={{ marginLeft: 'auto', fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 999, background: '#f97316', color: 'white' }}>
+                    {item.badge}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Version ── */}
+      <div className="px-4 py-1.5 flex items-center justify-between">
+        <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.20)', fontFamily: 'monospace', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+          SAHU CSC v3.3.0
         </span>
-      )}
-    </button>
+        <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.20)' }}>© 2026</span>
+      </div>
+
+      {/* ── User Footer ── */}
+      <div className="mx-3 mb-3 mt-0.5 p-2.5 rounded-2xl flex items-center gap-2.5"
+        style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.10)' }}>
+
+        {/* Avatar */}
+        <div className="flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center font-black text-sm text-white shadow-sm"
+          style={{ background: '#f97316', outline: '2px solid rgba(249,115,22,0.60)', outlineOffset: 0 }}>
+          SA
+        </div>
+
+        {/* Name + role */}
+        <div className="flex-1 min-w-0">
+          <p style={{ fontSize: 13, fontWeight: 700, color: 'white', lineHeight: 1.2 }} className="truncate">SAHU Admin</p>
+          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2, textTransform: 'capitalize' }}>Admin</p>
+        </div>
+
+        {/* Theme toggle */}
+        <button
+          onClick={() => setIsDark(d => !d)}
+          className="flex-shrink-0 flex items-center justify-center rounded-xl cursor-pointer"
+          style={{ width: 32, height: 32, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.40)' }}
+        >
+          {isDark ? <Sun size={13} /> : <Moon size={13} />}
+        </button>
+
+        {/* Logout */}
+        <button
+          className="flex-shrink-0 flex items-center justify-center rounded-xl cursor-pointer"
+          style={{ width: 32, height: 32, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.40)' }}
+        >
+          <LogIn size={13} style={{ transform: 'rotate(180deg)' }} />
+        </button>
+      </div>
+    </div>
   );
 }
 
+// ─── Main Export ──────────────────────────────────────────────────────────────
 export function LedgerPage() {
-    return (
-        <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', fontFamily: 'Inter, sans-serif', background: '#f8fafc' }}>
-            <style>
-                {`
-                .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
-                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-                .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.2); border-radius: 4px; }
-                .custom-scrollbar:hover::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.4); }
-                `}
-            </style>
-            
-            {/* Sidebar — exact match from layout.tsx */}
-            <div className="flex flex-col h-full bg-[#0b2c60] w-[256px] flex-shrink-0 z-20 shadow-2xl">
+  return (
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', fontFamily: 'Inter, sans-serif', background: '#f8fafc' }}>
 
-                {/* ── Top Header ── */}
-                <div className="px-4 pt-5 pb-4 flex items-center gap-3 border-b border-white/10">
-                    <div className="relative flex-shrink-0">
-                        <div className="w-11 h-11 rounded-full overflow-hidden ring-2 ring-white/20 shadow-md">
-                            <img src="/__mockup/images/sahu-logo.png" alt="SAHU CSC Logo" className="w-full h-full object-cover" />
-                        </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <h2 className="font-extrabold text-base leading-tight tracking-wide text-white">SAHU CSC</h2>
-                        <p className="text-[11px] text-white/50 font-medium tracking-wide mt-0.5">Management Platform</p>
-                    </div>
-                </div>
+      {/* ── Sidebar ── */}
+      <Sidebar />
 
-                {/* ── Nav Items ── */}
-                <div className="flex-1 overflow-y-auto py-3 px-3 space-y-0.5 custom-scrollbar">
-                    {[
-                        { icon: <LayoutDashboard size={17} />, label: 'Dashboard', active: false },
-                        { icon: <BookOpen size={17} />, label: 'Ledger', active: true },
-                        { icon: <HandCoins size={17} />, label: 'Udhari Khata', active: false },
-                        { icon: <Fingerprint size={17} />, label: 'AePS Cash', active: false },
-                        { icon: <Briefcase size={17} />, label: 'Services', active: false },
-                        { icon: <BarChart3 size={17} />, label: 'Reports', active: false },
-                        { icon: <Bell size={17} />, label: 'Notifications', active: false, badge: 2 },
-                        { icon: <UserCircle size={17} />, label: 'My Profile', active: false },
-                        { icon: <WifiOff size={17} />, label: 'Ann & Offline', active: false },
-                    ].map((item) => (
-                        <div key={item.label} className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-colors duration-100 ${item.active ? 'bg-[#f97316] text-white font-semibold shadow-md shadow-orange-900/30' : 'text-white/65 hover:text-white hover:bg-white/8'}`}>
-                            <div className="flex items-center gap-3">
-                                <span className={item.active ? 'text-white' : 'text-white/45'}>{item.icon}</span>
-                                <span className="text-[14px] leading-none">{item.label}</span>
-                            </div>
-                            {item.badge && item.badge > 0 && (
-                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none ${item.active ? 'bg-white/25 text-white' : 'bg-[#f97316] text-white'}`}>
-                                    {item.badge}
-                                </span>
-                            )}
-                        </div>
-                    ))}
-                </div>
+      {/* ── Main Content ── */}
+      <div className="flex-1 flex flex-col min-w-0" style={{ background: '#f8fafc' }}>
 
-                {/* ── Version ── */}
-                <div className="px-4 py-1.5 flex items-center justify-between">
-                    <span className="text-[9px] text-white/20 font-mono tracking-wide uppercase">SAHU CSC v3.3.0</span>
-                    <span className="text-[9px] text-white/20">© 2026</span>
-                </div>
+        {/* ── Top Header ── */}
+        <div style={{ position: 'relative', overflow: 'hidden', background: 'white', flexShrink: 0 }}>
+          {/* Accent bar */}
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg,#0b2c60 0%,#1e40af 40%,#f97316 75%,#ea580c 100%)', zIndex: 3 }} />
+          {/* Hex mesh */}
+          <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.06, pointerEvents: 'none' }} preserveAspectRatio="none">
+            <defs>
+              <pattern id="dhdr-hex" x="0" y="0" width="28" height="24" patternUnits="userSpaceOnUse">
+                <polygon points="14,2 26,8 26,20 14,26 2,20 2,8" fill="none" stroke="#0b2c60" strokeWidth="0.9" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#dhdr-hex)" />
+          </svg>
+          {/* Aurora blobs */}
+          <div style={{ position: 'absolute', top: -30, right: 60, width: 130, height: 130, background: 'radial-gradient(circle,rgba(249,115,22,0.10) 0%,transparent 70%)', filter: 'blur(24px)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', top: -10, left: '42%', width: 100, height: 80, background: 'radial-gradient(circle,rgba(11,44,96,0.07) 0%,transparent 70%)', filter: 'blur(18px)', pointerEvents: 'none' }} />
+          {/* Bottom border */}
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg,transparent,#e2e8f0,transparent)', zIndex: 2 }} />
 
-                {/* ── User Footer ── */}
-                <div className="mx-3 mb-3 mt-0.5 p-2.5 rounded-2xl bg-white/8 border border-white/10 flex items-center gap-2.5">
-                    <div className="h-10 w-10 rounded-full ring-2 ring-[#f97316]/60 shadow-sm flex items-center justify-center bg-[#f97316] text-white text-sm font-black flex-shrink-0">
-                        SA
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <p className="text-[13px] font-bold text-white leading-tight truncate">SAHU Admin</p>
-                        <p className="text-[11px] text-white/45 mt-0.5 capitalize">Admin</p>
-                    </div>
-                    <button className="flex-shrink-0 w-8 h-8 rounded-xl border border-white/15 bg-white/5 flex items-center justify-center text-white/40 hover:text-white transition-colors duration-100 cursor-pointer">
-                        <Moon size={13} />
-                    </button>
-                    <button className="flex-shrink-0 w-8 h-8 rounded-xl border border-white/15 bg-white/5 flex items-center justify-center text-white/40 hover:text-white transition-colors duration-100 cursor-pointer">
-                        <LogOut size={13} className="rotate-180" />
-                    </button>
-                </div>
+          <div className="flex items-center justify-between px-8" style={{ height: 64, position: 'relative', zIndex: 2 }}>
+            <div>
+              <h1 style={{ fontSize: 20, fontWeight: 700, color: '#0b2c60' }}>Ledger</h1>
+              <p style={{ fontSize: 12, color: '#64748b', fontWeight: 500, marginTop: 2 }}>Track all your transactions and manage records seamlessly.</p>
             </div>
-
-            {/* Main Content */}
-            <div className="flex-1 flex flex-col min-w-0 bg-[#f8fafc]">
-                {/* Top Header */}
-                <div className="h-16 bg-white border-b border-slate-200 sticky top-0 z-10 flex flex-col justify-center px-6 relative flex-shrink-0">
-                    <div className="absolute top-0 left-0 w-full h-[3px]" style={{ background: 'linear-gradient(90deg, #0b2c60 0%, #1e40af 40%, #f97316 75%, #ea580c 100%)' }} />
-                    
-                    {/* Hex Mesh Pattern Overlay */}
-                    <div className="absolute inset-0 opacity-[0.06] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#0b2c60 1px, transparent 1px)', backgroundSize: '12px 12px' }} />
-                    
-                    {/* Aurora blobs */}
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/3" />
-                    <div className="absolute top-0 left-1/2 w-64 h-64 bg-blue-600/5 rounded-full blur-3xl pointer-events-none -translate-y-1/2 -translate-x-1/2" />
-
-                    <div className="flex justify-between items-center relative z-10">
-                        <div className="flex flex-col">
-                            <div className="flex items-center gap-2.5">
-                                <span className="text-xl leading-none">📚</span>
-                                <h1 className="text-[22px] font-bold text-[#0b2c60] leading-none tracking-tight">Ledger</h1>
-                            </div>
-                            <p className="text-[13px] font-medium text-slate-500 mt-1.5 leading-none">Track all your transactions and manage records seamlessly.</p>
-                        </div>
-                        
-                        <div className="flex items-center gap-3">
-                            <button className="h-8 w-8 rounded-lg bg-[#f8fafc] border border-[#e2e8f0] flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors shadow-sm">
-                                <Sun size={16} />
-                            </button>
-                            <button className="rounded-xl px-3 h-8 bg-[#f8fafc] border border-[#e2e8f0] flex items-center gap-2 text-slate-600 hover:bg-slate-100 transition-colors shadow-sm">
-                                <Bell size={14} />
-                                <span className="text-sm font-semibold">Notifications</span>
-                                <span className="bg-[#f97316] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md min-w-[20px] text-center shadow-sm">2</span>
-                            </button>
-                            <button className="rounded-xl p-1 pr-3 h-8 bg-[#f8fafc] border border-[#e2e8f0] flex items-center gap-2 hover:bg-slate-100 transition-colors shadow-sm">
-                                <div className="w-6 h-6 rounded-[8px] bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center text-white text-[10px] font-bold">SA</div>
-                                <span className="text-sm font-bold text-slate-700">SAHU</span>
-                                <ChevronDown size={14} className="text-slate-400 ml-0.5" />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Body Content Area */}
-                <div className="flex-1 flex flex-row overflow-hidden relative">
-                    
-                    {/* Middle scrollable area */}
-                    <div className="flex-1 overflow-y-auto px-6 py-5 bg-slate-50/50 flex flex-col gap-4 custom-scrollbar">
-                        
-                        {/* Row 1: Cards */}
-                        <div className="grid grid-cols-4 gap-4">
-                            {/* Card 1 */}
-                            <div className="bg-gradient-to-br from-[#0b2c60] to-[#1e3a8a] rounded-2xl p-5 relative overflow-hidden shadow-md shadow-blue-900/10">
-                                <div className="absolute -right-4 -top-4 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
-                                <div className="flex justify-between items-start mb-2.5 relative z-10">
-                                    <div className="text-white/70 text-sm font-medium tracking-wide">Current Balance</div>
-                                    <button className="bg-white/10 rounded-lg p-1.5 hover:bg-white/20 text-white/90 backdrop-blur-sm transition-colors">
-                                        <Eye size={14} />
-                                    </button>
-                                </div>
-                                <div className="text-[28px] font-black text-white mb-4 relative z-10 tracking-tight">₹0.00</div>
-                                <div className="flex items-center gap-1.5 text-white/50 text-xs relative z-10 font-medium">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]"></div>
-                                    Last updated: Just now
-                                </div>
-                            </div>
-
-                            {/* Card 2 */}
-                            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
-                                <div className="flex justify-between items-start mb-2.5">
-                                    <div className="text-slate-500 text-sm font-semibold">Total Credits</div>
-                                    <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-2 text-emerald-600">
-                                        <ArrowUpRight size={16} strokeWidth={2.5} />
-                                    </div>
-                                </div>
-                                <div className="text-[28px] font-black text-emerald-600 mb-4 tracking-tight">₹0.00</div>
-                                <div className="flex items-center gap-1.5 text-slate-400 text-xs font-medium">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-orange-400"></div>
-                                    This month
-                                </div>
-                            </div>
-
-                            {/* Card 3 */}
-                            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
-                                <div className="flex justify-between items-start mb-2.5">
-                                    <div className="text-slate-500 text-sm font-semibold">Total Debits</div>
-                                    <div className="bg-red-50 border border-red-100 rounded-xl p-2 text-red-500">
-                                        <ArrowDownLeft size={16} strokeWidth={2.5} />
-                                    </div>
-                                </div>
-                                <div className="text-[28px] font-black text-red-500 mb-4 tracking-tight">₹0.00</div>
-                                <div className="flex items-center gap-1.5 text-slate-400 text-xs font-medium">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-orange-400"></div>
-                                    This month
-                                </div>
-                            </div>
-
-                            {/* Card 4 */}
-                            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
-                                <div className="flex justify-between items-start mb-2.5">
-                                    <div className="text-slate-500 text-sm font-semibold">Total Transactions</div>
-                                    <div className="bg-blue-50 border border-blue-100 rounded-xl p-2 text-blue-600">
-                                        <FileText size={16} strokeWidth={2.5} />
-                                    </div>
-                                </div>
-                                <div className="text-[28px] font-black text-blue-600 mb-4 tracking-tight">0</div>
-                                <div className="flex items-center gap-1.5 text-slate-400 text-xs font-medium">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-orange-400"></div>
-                                    This month
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Row 2: Quick Add */}
-                        <div className="bg-white border border-slate-200 rounded-2xl p-2.5 flex gap-2 items-center w-full shadow-sm">
-                            <div className="flex items-center gap-2 border border-slate-200 rounded-xl px-3 h-10 w-36 text-sm bg-slate-50 focus-within:bg-white focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-50 transition-all">
-                                <Calendar size={16} className="text-slate-400" />
-                                <input type="text" defaultValue="09/07/2026" className="w-full outline-none text-slate-700 bg-transparent font-semibold" />
-                            </div>
-                            <input type="text" placeholder="Customer name" className="flex-1 min-w-[120px] border border-slate-200 rounded-xl px-3 h-10 text-sm outline-none text-slate-700 placeholder-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-50 transition-all font-medium" />
-                            <div className="relative flex-1 min-w-[120px]">
-                                <select className="w-full border border-slate-200 rounded-xl px-3 pr-8 h-10 text-sm outline-none text-slate-700 bg-transparent appearance-none focus:border-blue-400 focus:ring-4 focus:ring-blue-50 transition-all cursor-pointer font-medium">
-                                    <option value="" disabled selected hidden>Service type</option>
-                                    <option>Aadhar Withdrawal</option>
-                                    <option>Pan Card Service</option>
-                                    <option>Electricity Bill</option>
-                                </select>
-                                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                            </div>
-                            <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-xl border border-slate-200">
-                                <button className="bg-emerald-500 text-white rounded-lg px-3.5 h-8 text-xs font-bold shadow-sm">Cr</button>
-                                <button className="text-slate-500 hover:bg-white hover:text-red-600 hover:shadow-sm rounded-lg px-3.5 h-8 text-xs font-bold transition-all">Dr</button>
-                            </div>
-                            <div className="relative w-32">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
-                                <input type="number" placeholder="Amount" className="w-full border border-slate-200 rounded-xl pl-7 pr-3 h-10 text-sm outline-none text-slate-700 placeholder-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-50 transition-all font-bold" />
-                            </div>
-                            <input type="text" placeholder="Note (optional)" className="flex-1 min-w-[120px] border border-slate-200 rounded-xl px-3 h-10 text-sm outline-none text-slate-700 placeholder-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-50 transition-all font-medium" />
-                            <button className="bg-[#f97316] text-white px-6 h-10 rounded-xl text-sm font-bold hover:bg-[#ea580c] transition-colors whitespace-nowrap shadow-sm hover:shadow flex items-center gap-1.5 active:scale-95">
-                                Apply
-                            </button>
-                        </div>
-
-                        {/* Row 3: Search & Filter */}
-                        <div className="bg-white border border-slate-200 rounded-2xl px-3 py-2.5 flex gap-3 items-center shadow-sm">
-                            <div className="flex items-center gap-2.5 flex-1 px-2 border-r border-slate-100 mr-2">
-                                <Search size={18} className="text-slate-400" />
-                                <input type="text" placeholder="Search transactions..." className="w-full outline-none text-sm text-slate-700 placeholder-slate-400 font-medium bg-transparent" />
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <button className="flex items-center gap-2 border border-slate-200 bg-slate-50 rounded-xl px-3.5 h-9 text-sm text-slate-700 hover:bg-slate-100 font-semibold transition-colors">
-                                    <SlidersHorizontal size={14} /> Filters
-                                </button>
-                                <button className="flex items-center gap-2 border border-slate-200 bg-slate-50 rounded-xl px-3.5 h-9 text-sm text-slate-700 hover:bg-slate-100 font-semibold transition-colors">
-                                    <Download size={14} /> Export <ChevronDown size={14} className="text-slate-400 ml-0.5" />
-                                </button>
-                                <div className="w-px h-6 bg-slate-200 mx-1.5"></div>
-                                <button className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 font-semibold px-2 transition-colors">
-                                    <RotateCcw size={14} /> Clear
-                                </button>
-                                <button className="bg-[#f97316] text-white rounded-xl px-5 h-9 text-sm font-bold hover:bg-[#ea580c] transition-colors shadow-sm ml-1 active:scale-95">
-                                    Apply
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Table Area */}
-                        <div className="flex flex-col shadow-sm rounded-2xl bg-white border border-slate-200">
-                            {/* Row 4 Tabs */}
-                            <div className="flex border-b border-slate-200">
-                                <button className="flex items-center gap-2 border-b-2 border-[#0b2c60] text-[#0b2c60] font-bold px-6 py-3.5 text-sm">
-                                    <FileText size={16} strokeWidth={2.5} /> Transactions
-                                </button>
-                                <button className="flex items-center gap-2 border-b-2 border-transparent text-slate-400 font-semibold px-6 py-3.5 text-sm hover:text-slate-600 transition-colors">
-                                    <Clock size={16} strokeWidth={2.5} /> Receipt History
-                                </button>
-                            </div>
-                            
-                            {/* Row 5 Table Header */}
-                            <div className="bg-slate-50/80 px-4 py-3.5 flex text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200">
-                                <div className="w-[140px] flex items-center gap-1 cursor-pointer hover:text-slate-700">Date & Time <span className="text-[10px]">↕</span></div>
-                                <div className="flex-1">Customer</div>
-                                <div className="w-[130px]">Service</div>
-                                <div className="w-[80px]">Type</div>
-                                <div className="w-[100px] text-right">Amount</div>
-                                <div className="w-[150px] px-4">Note</div>
-                                <div className="w-[80px] text-center">Receipt</div>
-                                <div className="w-[80px] text-right">Action</div>
-                            </div>
-                            
-                            {/* Row 6 Empty State */}
-                            <div className="min-h-[280px] flex flex-col items-center justify-center gap-3 py-16">
-                                <div className="w-16 h-16 rounded-full bg-orange-100 flex items-center justify-center text-[#f97316] mb-2 ring-[6px] ring-orange-50">
-                                    <IndianRupee size={28} strokeWidth={2.5} />
-                                </div>
-                                <div className="text-slate-800 text-lg font-bold">No transactions found</div>
-                                <div className="text-slate-500 text-sm mb-3 font-medium">Add your first entry to get started</div>
-                                <button className="bg-[#f97316] text-white px-6 py-2.5 rounded-xl font-bold hover:bg-[#ea580c] transition-colors shadow-sm active:scale-95">
-                                    + Add New Entry
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Footer */}
-                        <div className="flex flex-col gap-5 mt-1">
-                            <div className="flex items-center justify-between">
-                                <div className="text-slate-500 text-sm font-medium">Showing 0 of 0 transactions</div>
-                                <div className="flex items-center gap-1">
-                                    <button className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-200 transition-all disabled:opacity-50"><ChevronsLeft size={16} /></button>
-                                    <button className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-200 transition-all disabled:opacity-50"><ChevronLeft size={16} /></button>
-                                    <button className="w-8 h-8 rounded-lg flex items-center justify-center bg-[#0b2c60] text-white text-sm font-bold shadow-sm">1</button>
-                                    <button className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-200 transition-all disabled:opacity-50"><ChevronRight size={16} /></button>
-                                    <button className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-200 transition-all disabled:opacity-50"><ChevronsRight size={16} /></button>
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-center gap-1.5 text-slate-400 text-xs font-medium pb-4">
-                                <Lock size={12} /> All your transactions are secure and encrypted
-                            </div>
-                        </div>
-
-                    </div>
-                    
-                    {/* Right Panel */}
-                    <div className="w-64 flex-shrink-0 overflow-y-auto p-4 flex flex-col gap-4 bg-slate-50 border-l border-slate-200 custom-scrollbar z-10 shadow-[-4px_0_15px_rgba(0,0,0,0.02)]">
-                        
-                        {/* Quick Actions */}
-                        <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
-                            <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-3.5 text-sm">
-                                <span className="text-lg leading-none">⚡</span> Quick Actions
-                            </h3>
-                            <div className="flex flex-col gap-1.5">
-                                <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-200 group transition-all">
-                                    <div className="w-10 h-10 rounded-[10px] flex items-center justify-center text-white bg-gradient-to-br from-[#f97316] to-[#ea580c] shadow-sm flex-shrink-0">
-                                        <Plus size={18} strokeWidth={3} />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="text-[13px] font-bold text-slate-800 truncate">Add New Entry</div>
-                                        <div className="text-[11px] text-slate-500 truncate">Record a new transaction</div>
-                                    </div>
-                                    <ChevronRight size={16} className="text-slate-300 group-hover:text-slate-500 transition-colors" />
-                                </div>
-                                <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-200 group transition-all">
-                                    <div className="w-10 h-10 rounded-[10px] flex items-center justify-center text-white bg-gradient-to-br from-purple-500 to-purple-600 shadow-sm flex-shrink-0">
-                                        <FileText size={18} strokeWidth={2.5} />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="text-[13px] font-bold text-slate-800 truncate">Receipt History</div>
-                                        <div className="text-[11px] text-slate-500 truncate">View all receipts</div>
-                                    </div>
-                                    <ChevronRight size={16} className="text-slate-300 group-hover:text-slate-500 transition-colors" />
-                                </div>
-                                <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-200 group transition-all">
-                                    <div className="w-10 h-10 rounded-[10px] flex items-center justify-center text-white bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-sm flex-shrink-0">
-                                        <Download size={18} strokeWidth={2.5} />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="text-[13px] font-bold text-slate-800 truncate">Export Ledger</div>
-                                        <div className="text-[11px] text-slate-500 truncate">Download as Excel / PDF</div>
-                                    </div>
-                                    <ChevronRight size={16} className="text-slate-300 group-hover:text-slate-500 transition-colors" />
-                                </div>
-                                <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-200 group transition-all">
-                                    <div className="w-10 h-10 rounded-[10px] flex items-center justify-center text-white bg-gradient-to-br from-blue-500 to-blue-600 shadow-sm flex-shrink-0">
-                                        <Database size={18} strokeWidth={2.5} />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="text-[13px] font-bold text-slate-800 truncate">Backup Ledger</div>
-                                        <div className="text-[11px] text-slate-500 truncate">Create a ledger backup</div>
-                                    </div>
-                                    <ChevronRight size={16} className="text-slate-300 group-hover:text-slate-500 transition-colors" />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Summary */}
-                        <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm">
-                                    📊 Summary
-                                </h3>
-                                <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-md border border-slate-200">This Month</span>
-                            </div>
-                            
-                            <div className="relative w-[110px] h-[110px] mx-auto my-1">
-                                <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-                                    <circle cx="50" cy="50" r="40" fill="none" stroke="#f1f5f9" strokeWidth="14" />
-                                    <circle cx="50" cy="50" r="40" fill="none" stroke="#0b2c60" strokeWidth="14" strokeDasharray="251.2" strokeDashoffset="251.2" strokeLinecap="round" className="transition-all duration-1000 ease-out" />
-                                </svg>
-                                <div className="absolute inset-0 flex flex-col items-center justify-center text-center mt-1">
-                                    <span className="text-[20px] font-black text-slate-800 leading-none">0</span>
-                                    <span className="text-[10px] text-slate-500 font-bold mt-1 uppercase tracking-wide">Total</span>
-                                </div>
-                            </div>
-
-                            <div className="flex flex-col gap-2 mt-4 px-1">
-                                <div className="flex justify-between items-center text-xs">
-                                    <div className="flex items-center gap-2 text-slate-600 font-semibold"><span className="text-emerald-500 text-[12px] leading-none">●</span> Credits</div>
-                                    <div className="font-bold text-slate-800">₹0.00</div>
-                                </div>
-                                <div className="flex justify-between items-center text-xs">
-                                    <div className="flex items-center gap-2 text-slate-600 font-semibold"><span className="text-red-500 text-[12px] leading-none">●</span> Debits</div>
-                                    <div className="font-bold text-slate-800">₹0.00</div>
-                                </div>
-                                <div className="flex justify-between items-center text-[13px] border-t border-slate-100 pt-2.5 mt-1">
-                                    <div className="flex items-center gap-2 text-[#0b2c60] font-bold"><span className="text-[#0b2c60] text-[12px] leading-none">●</span> Balance</div>
-                                    <div className="font-black text-[#0b2c60]">₹0.00</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Recent Activity */}
-                        <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex-1 flex flex-col min-h-[160px]">
-                            <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-4 text-sm">
-                                🕐 Recent Activity
-                            </h3>
-                            <div className="flex-1 flex flex-col items-center justify-center text-center px-4 gap-2">
-                                <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 mb-1 border border-slate-100">
-                                    <Clock size={20} strokeWidth={2.5} />
-                                </div>
-                                <div className="text-sm font-bold text-slate-600">No recent activity</div>
-                                <div className="text-[11px] font-medium text-slate-400 leading-relaxed px-2">Your recent transactions will appear here</div>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
+            <div className="flex items-center gap-3">
+              <button className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0' }}>
+                <Moon size={15} color="#64748b" />
+              </button>
+              <button className="relative flex items-center gap-2 rounded-xl px-3 h-8 text-sm font-medium" style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', color: '#0b2c60' }}>
+                <Bell size={15} color="#0b2c60" />
+                <span style={{ fontWeight: 500 }}>Notifications</span>
+                <span style={{ background: '#f97316', color: 'white', borderRadius: 999, fontSize: 10, fontWeight: 700, padding: '0 5px', lineHeight: '18px' }}>2</span>
+              </button>
+              <div className="flex items-center gap-2 rounded-xl cursor-pointer" style={{ padding: '4px 10px 4px 4px', background: '#f8fafc', border: '1.5px solid #e2e8f0' }}>
+                <div className="flex items-center justify-center rounded-lg" style={{ width: 28, height: 28, background: 'linear-gradient(135deg,#0b2c60 0%,#1e40af 55%,#f97316 100%)', color: '#fff', fontSize: 10, fontWeight: 900 }}>SA</div>
+                <span style={{ fontSize: 12, fontWeight: 700, background: 'linear-gradient(135deg,#0b2c60,#f97316)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SAHU</span>
+              </div>
             </div>
+          </div>
         </div>
-    );
-}
 
-export default LedgerPage;
+        {/* ── Body ── */}
+        <div className="flex-1 flex flex-row overflow-hidden">
+
+          {/* Scrollable middle */}
+          <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-4" style={{ scrollbarWidth: 'thin' }}>
+
+            {/* Stat cards */}
+            <div className="grid grid-cols-4 gap-4">
+              <div className="rounded-2xl p-5 relative overflow-hidden shadow-md" style={{ background: 'linear-gradient(135deg,#0b2c60,#1e3a8a)' }}>
+                <div style={{ position: 'absolute', right: -16, top: -16, width: 112, height: 112, background: 'rgba(255,255,255,0.10)', borderRadius: '50%', filter: 'blur(20px)' }} />
+                <div className="flex justify-between items-start mb-2.5" style={{ position: 'relative', zIndex: 1 }}>
+                  <span style={{ color: 'rgba(255,255,255,0.70)', fontSize: 13, fontWeight: 500 }}>Current Balance</span>
+                  <button style={{ background: 'rgba(255,255,255,0.10)', borderRadius: 8, padding: 6 }}><Eye size={14} color="rgba(255,255,255,0.90)" /></button>
+                </div>
+                <div style={{ fontSize: 28, fontWeight: 900, color: 'white', marginBottom: 16, position: 'relative', zIndex: 1 }}>₹0.00</div>
+                <div className="flex items-center gap-1.5" style={{ position: 'relative', zIndex: 1 }}>
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#34d399', boxShadow: '0 0 8px rgba(52,211,153,0.8)' }} />
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.50)', fontWeight: 500 }}>Last updated: Just now</span>
+                </div>
+              </div>
+              {[
+                { label: 'Total Credits',      value: '₹0.00', color: '#059669', iconBg: '#d1fae5', border: '#a7f3d0', Icon: ArrowUpRight },
+                { label: 'Total Debits',       value: '₹0.00', color: '#ef4444', iconBg: '#fee2e2', border: '#fca5a5', Icon: ArrowDownLeft },
+                { label: 'Total Transactions', value: '0',     color: '#2563eb', iconBg: '#dbeafe', border: '#93c5fd', Icon: FileText },
+              ].map(({ label, value, color, iconBg, border, Icon }) => (
+                <div key={label} className="rounded-2xl p-5 shadow-sm" style={{ background: 'white', border: '1px solid #e2e8f0' }}>
+                  <div className="flex justify-between items-start mb-2.5">
+                    <span style={{ color: '#64748b', fontSize: 13, fontWeight: 600 }}>{label}</span>
+                    <div style={{ background: iconBg, border: `1px solid ${border}`, borderRadius: 12, padding: 8 }}><Icon size={16} color={color} strokeWidth={2.5} /></div>
+                  </div>
+                  <div style={{ fontSize: 28, fontWeight: 900, color, marginBottom: 16 }}>{value}</div>
+                  <div className="flex items-center gap-1.5">
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#fb923c' }} />
+                    <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>This month</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Quick add */}
+            <div className="flex gap-2 items-center rounded-2xl p-2.5 shadow-sm" style={{ background: 'white', border: '1px solid #e2e8f0' }}>
+              <div className="flex items-center gap-2 rounded-xl px-3 h-10" style={{ width: 144, border: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                <Calendar size={15} color="#94a3b8" />
+                <input defaultValue="09/07/2026" readOnly style={{ width: '100%', outline: 'none', fontSize: 13, fontWeight: 600, color: '#334155', background: 'transparent' }} />
+              </div>
+              <input placeholder="Customer name" style={{ flex: 1, minWidth: 110, border: '1px solid #e2e8f0', borderRadius: 12, padding: '0 12px', height: 40, fontSize: 13, color: '#334155', outline: 'none', fontWeight: 500 }} />
+              <div style={{ position: 'relative', flex: 1, minWidth: 120 }}>
+                <select defaultValue="" style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: 12, padding: '0 32px 0 12px', height: 40, fontSize: 13, color: '#334155', outline: 'none', appearance: 'none', background: 'white', fontWeight: 500 }}>
+                  <option value="" disabled>Service type</option>
+                  <option>Aadhar Withdrawal</option>
+                  <option>Pan Card</option>
+                </select>
+                <ChevronDown size={13} color="#94a3b8" style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+              </div>
+              <div className="flex items-center gap-1 rounded-xl p-1" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                <button style={{ background: '#10b981', color: 'white', borderRadius: 8, padding: '0 14px', height: 32, fontSize: 12, fontWeight: 700 }}>Cr</button>
+                <button style={{ color: '#64748b', borderRadius: 8, padding: '0 14px', height: 32, fontSize: 12, fontWeight: 700 }}>Dr</button>
+              </div>
+              <div style={{ position: 'relative', width: 120 }}>
+                <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontWeight: 700 }}>₹</span>
+                <input type="number" placeholder="Amount" style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: 12, paddingLeft: 28, paddingRight: 12, height: 40, fontSize: 13, color: '#334155', outline: 'none', fontWeight: 700 }} />
+              </div>
+              <input placeholder="Note (optional)" style={{ flex: 1, minWidth: 110, border: '1px solid #e2e8f0', borderRadius: 12, padding: '0 12px', height: 40, fontSize: 13, color: '#334155', outline: 'none', fontWeight: 500 }} />
+              <button style={{ background: '#f97316', color: 'white', borderRadius: 12, padding: '0 24px', height: 40, fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap' }}>Apply</button>
+            </div>
+
+            {/* Search & filter */}
+            <div className="flex gap-3 items-center rounded-2xl px-3 py-2.5 shadow-sm" style={{ background: 'white', border: '1px solid #e2e8f0' }}>
+              <div className="flex items-center gap-2.5 flex-1">
+                <Search size={17} color="#94a3b8" />
+                <input placeholder="Search transactions..." style={{ width: '100%', outline: 'none', fontSize: 13, color: '#334155', fontWeight: 500, background: 'transparent' }} />
+              </div>
+              <div style={{ width: 1, height: 24, background: '#e2e8f0' }} />
+              {[
+                { label: 'Filters', Icon: SlidersHorizontal },
+                { label: 'Export',  Icon: Download },
+              ].map(({ label, Icon }) => (
+                <button key={label} className="flex items-center gap-2 rounded-xl px-3.5 h-9 text-sm font-semibold" style={{ border: '1px solid #e2e8f0', background: '#f8fafc', color: '#334155' }}>
+                  <Icon size={13} />{label}
+                  {label === 'Export' && <ChevronDown size={13} color="#94a3b8" />}
+                </button>
+              ))}
+              <div style={{ width: 1, height: 24, background: '#e2e8f0' }} />
+              <button className="flex items-center gap-1.5 text-sm font-semibold px-2" style={{ color: '#64748b' }}>
+                <RotateCcw size={13} />Clear
+              </button>
+              <button style={{ background: '#f97316', color: 'white', borderRadius: 12, padding: '0 20px', height: 36, fontSize: 13, fontWeight: 700 }}>Apply</button>
+            </div>
+
+            {/* Table */}
+            <div className="flex flex-col rounded-2xl shadow-sm overflow-hidden" style={{ background: 'white', border: '1px solid #e2e8f0' }}>
+              {/* Tabs */}
+              <div className="flex" style={{ borderBottom: '1px solid #e2e8f0' }}>
+                <button className="flex items-center gap-2 px-6 py-3.5 text-sm font-bold" style={{ borderBottom: '2px solid #0b2c60', color: '#0b2c60' }}>
+                  <FileText size={15} strokeWidth={2.5} />Transactions
+                </button>
+                <button className="flex items-center gap-2 px-6 py-3.5 text-sm font-semibold" style={{ borderBottom: '2px solid transparent', color: '#94a3b8' }}>
+                  <Clock size={15} strokeWidth={2.5} />Receipt History
+                </button>
+              </div>
+              {/* Table header */}
+              <div className="flex px-4 py-3.5" style={{ background: 'rgba(248,250,252,0.80)', borderBottom: '1px solid #e2e8f0' }}>
+                {['Date & Time ↕','Customer','Service','Type','Amount','Note','Receipt','Action'].map((h, i) => (
+                  <div key={h} style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em',
+                    width: i === 0 ? 140 : i === 2 ? 130 : i === 3 ? 80 : i === 4 ? 100 : i === 5 ? 150 : i === 6 ? 80 : i === 7 ? 80 : undefined,
+                    flex: i === 1 ? 1 : undefined,
+                    textAlign: (i === 4 || i === 7) ? 'right' : i === 6 ? 'center' : 'left',
+                  }}>{h}</div>
+                ))}
+              </div>
+              {/* Empty state */}
+              <div className="flex flex-col items-center justify-center gap-3 py-16">
+                <div className="flex items-center justify-center rounded-full" style={{ width: 64, height: 64, background: '#ffedd5', outline: '6px solid #fff7ed' }}>
+                  <IndianRupee size={28} color="#f97316" strokeWidth={2.5} />
+                </div>
+                <p style={{ fontSize: 17, fontWeight: 700, color: '#1e293b' }}>No transactions found</p>
+                <p style={{ fontSize: 13, color: '#94a3b8', fontWeight: 500 }}>Add your first entry to get started</p>
+                <button style={{ background: '#f97316', color: 'white', borderRadius: 12, padding: '10px 24px', fontSize: 13, fontWeight: 700, marginTop: 4 }}>+ Add New Entry</button>
+              </div>
+            </div>
+
+            {/* Pagination footer */}
+            <div className="flex items-center justify-between mt-1">
+              <span style={{ fontSize: 13, color: '#64748b', fontWeight: 500 }}>Showing 0 of 0 transactions</span>
+              <div className="flex items-center gap-1">
+                {[ChevronsLeft, ChevronLeft].map((Icon, i) => (
+                  <button key={i} className="flex items-center justify-center rounded-lg" style={{ width: 32, height: 32, color: '#94a3b8', border: '1px solid transparent' }}><Icon size={15} /></button>
+                ))}
+                <button className="flex items-center justify-center rounded-lg text-sm font-bold" style={{ width: 32, height: 32, background: '#0b2c60', color: 'white' }}>1</button>
+                {[ChevronRight, ChevronsRight].map((Icon, i) => (
+                  <button key={i} className="flex items-center justify-center rounded-lg" style={{ width: 32, height: 32, color: '#94a3b8', border: '1px solid transparent' }}><Icon size={15} /></button>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center justify-center gap-1.5 pb-4" style={{ color: '#94a3b8', fontSize: 11, fontWeight: 500 }}>
+              <Lock size={11} />All your transactions are secure and encrypted
+            </div>
+          </div>
+
+          {/* Right panel */}
+          <div className="flex flex-col gap-4 overflow-y-auto p-4" style={{ width: 256, flexShrink: 0, background: '#f8fafc', borderLeft: '1px solid #e2e8f0', scrollbarWidth: 'thin' }}>
+
+            {/* Quick Actions */}
+            <div className="rounded-2xl p-4 shadow-sm" style={{ background: 'white', border: '1px solid #e2e8f0' }}>
+              <h3 className="flex items-center gap-2 mb-3.5" style={{ fontWeight: 700, color: '#1e293b', fontSize: 13 }}>
+                <span style={{ fontSize: 16 }}>⚡</span>Quick Actions
+              </h3>
+              {[
+                { label: 'Add New Entry',   sub: 'Record a new transaction', bg: 'linear-gradient(135deg,#f97316,#ea580c)', Icon: Plus },
+                { label: 'Receipt History', sub: 'View all receipts',        bg: 'linear-gradient(135deg,#a855f7,#9333ea)', Icon: FileText },
+                { label: 'Export Ledger',   sub: 'Download as Excel / PDF',  bg: 'linear-gradient(135deg,#10b981,#059669)', Icon: Download },
+                { label: 'Backup Ledger',   sub: 'Create a ledger backup',   bg: 'linear-gradient(135deg,#3b82f6,#2563eb)', Icon: Database },
+              ].map(({ label, sub, bg, Icon }) => (
+                <div key={label} className="flex items-center gap-3 p-2 rounded-xl cursor-pointer mb-1.5" style={{ border: '1px solid transparent' }}>
+                  <div className="flex items-center justify-center rounded-[10px] flex-shrink-0" style={{ width: 40, height: 40, background: bg }}>
+                    <Icon size={17} color="white" strokeWidth={2.5} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p style={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }} className="truncate">{label}</p>
+                    <p style={{ fontSize: 11, color: '#64748b' }} className="truncate">{sub}</p>
+                  </div>
+                  <ChevronRight size={15} color="#cbd5e1" />
+                </div>
+              ))}
+            </div>
+
+            {/* Summary */}
+            <div className="rounded-2xl p-4 shadow-sm" style={{ background: 'white', border: '1px solid #e2e8f0' }}>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="flex items-center gap-1.5" style={{ fontWeight: 700, color: '#1e293b', fontSize: 13 }}>
+                  <span style={{ fontSize: 14 }}>📊</span>Summary
+                </h3>
+                <span style={{ fontSize: 11, color: '#94a3b8', background: '#f1f5f9', borderRadius: 6, padding: '2px 8px' }}>This Month</span>
+              </div>
+              <div className="flex justify-center mb-4">
+                <svg width="100" height="100" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="38" fill="none" stroke="#e2e8f0" strokeWidth="14" />
+                  <circle cx="50" cy="50" r="38" fill="none" stroke="#0b2c60" strokeWidth="14" strokeDasharray="1 239" strokeLinecap="round" transform="rotate(-90 50 50)" />
+                  <text x="50" y="46" textAnchor="middle" fontSize="10" fontWeight="700" fill="#0b2c60">0</text>
+                  <text x="50" y="58" textAnchor="middle" fontSize="8" fill="#94a3b8">Total</text>
+                </svg>
+              </div>
+              {[
+                { label: 'Credits', color: '#10b981', value: '₹0.00' },
+                { label: 'Debits',  color: '#ef4444', value: '₹0.00' },
+                { label: 'Balance', color: '#3b82f6', value: '₹0.00' },
+              ].map(({ label, color, value }) => (
+                <div key={label} className="flex items-center justify-between py-1">
+                  <div className="flex items-center gap-2">
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: color }} />
+                    <span style={{ fontSize: 12, color: '#64748b' }}>{label}</span>
+                  </div>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#1e293b' }}>{value}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Recent Activity */}
+            <div className="rounded-2xl p-4 shadow-sm" style={{ background: 'white', border: '1px solid #e2e8f0' }}>
+              <h3 className="flex items-center gap-1.5 mb-3" style={{ fontWeight: 700, color: '#1e293b', fontSize: 13 }}>
+                <span style={{ fontSize: 14 }}>🕐</span>Recent Activity
+              </h3>
+              <div className="flex flex-col items-center justify-center gap-2 py-6">
+                <div className="flex items-center justify-center rounded-full" style={{ width: 40, height: 40, background: '#f1f5f9' }}>
+                  <Clock size={18} color="#94a3b8" />
+                </div>
+                <p style={{ fontSize: 13, color: '#334155', fontWeight: 600 }}>No recent Activity</p>
+                <p style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center' }}>Your recent transactions will appear here</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
