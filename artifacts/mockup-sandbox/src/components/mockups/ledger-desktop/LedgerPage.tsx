@@ -34,68 +34,80 @@ export function LedgerPage() {
                 `}
             </style>
             
-            {/* Sidebar */}
-            <div className="w-[256px] bg-[#0b2c60] flex flex-col flex-shrink-0 h-full relative z-20 shadow-2xl border-r border-[#0b2c60]">
-                {/* Header */}
-                <div className="p-4 border-b border-white/10 flex items-center gap-3">
-                    <div className="w-[44px] h-[44px] rounded-full ring-2 ring-white/20 flex items-center justify-center bg-[#0b2c60] flex-shrink-0 shadow-inner">
-                        <LayoutGrid className="text-white" size={20} strokeWidth={2.5} />
+            {/* Sidebar — exact match from layout.tsx */}
+            <div className="flex flex-col h-full bg-[#0b2c60] w-[256px] flex-shrink-0 z-20 shadow-2xl">
+
+                {/* ── Top Header ── */}
+                <div className="px-4 pt-5 pb-4 flex items-center gap-3 border-b border-white/10">
+                    <div className="relative flex-shrink-0">
+                        <div className="w-11 h-11 rounded-full overflow-hidden ring-2 ring-white/20 shadow-md">
+                            <img src="/__mockup/images/sahu-logo.png" alt="SAHU CSC Logo" className="w-full h-full object-cover" />
+                        </div>
                     </div>
-                    <div className="flex flex-col justify-center">
-                        <div className="font-extrabold text-white text-base leading-tight tracking-wide">SAHU CSC</div>
-                        <div className="text-[11px] text-white/50 font-medium mt-0.5">Management Platform</div>
+                    <div className="flex-1 min-w-0">
+                        <h2 className="font-extrabold text-base leading-tight tracking-wide text-white">SAHU CSC</h2>
+                        <p className="text-[11px] text-white/50 font-medium tracking-wide mt-0.5">Management Platform</p>
                     </div>
                 </div>
 
-                {/* Nav Items */}
-                <div className="flex-1 overflow-y-auto py-4 px-3 flex flex-col gap-1 custom-scrollbar">
-                    <NavItem icon={<LayoutDashboard size={18} />} label="Dashboard" />
-                    <NavItem icon={<BookOpen size={18} />} label="Ledger" active />
-                    <NavItem icon={<HandCoins size={18} />} label="Udhari Khata" />
-                    <NavItem icon={<Fingerprint size={18} />} label="AePS Cash" />
-                    <NavItem icon={<Briefcase size={18} />} label="Services" />
-                    <NavItem icon={<BarChart3 size={18} />} label="Reports" />
-                    <NavItem icon={<Bell size={18} />} label="Notifications" badge="2" />
-                    <NavItem icon={<UserCircle size={18} />} label="My Profile" />
-                    <NavItem icon={<WifiOff size={18} />} label="Ann & Offline" />
+                {/* ── Nav Items ── */}
+                <div className="flex-1 overflow-y-auto py-3 px-3 space-y-0.5 custom-scrollbar">
+                    {[
+                        { icon: <LayoutDashboard size={17} />, label: 'Dashboard', active: false },
+                        { icon: <BookOpen size={17} />, label: 'Ledger', active: true },
+                        { icon: <HandCoins size={17} />, label: 'Udhari Khata', active: false },
+                        { icon: <Fingerprint size={17} />, label: 'AePS Cash', active: false },
+                        { icon: <Briefcase size={17} />, label: 'Services', active: false },
+                        { icon: <BarChart3 size={17} />, label: 'Reports', active: false },
+                        { icon: <Bell size={17} />, label: 'Notifications', active: false, badge: 2 },
+                        { icon: <UserCircle size={17} />, label: 'My Profile', active: false },
+                        { icon: <WifiOff size={17} />, label: 'Ann & Offline', active: false },
+                    ].map((item) => (
+                        <div key={item.label} className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-colors duration-100 ${item.active ? 'bg-[#f97316] text-white font-semibold shadow-md shadow-orange-900/30' : 'text-white/65 hover:text-white hover:bg-white/8'}`}>
+                            <div className="flex items-center gap-3">
+                                <span className={item.active ? 'text-white' : 'text-white/45'}>{item.icon}</span>
+                                <span className="text-[14px] leading-none">{item.label}</span>
+                            </div>
+                            {item.badge && item.badge > 0 && (
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none ${item.active ? 'bg-white/25 text-white' : 'bg-[#f97316] text-white'}`}>
+                                    {item.badge}
+                                </span>
+                            )}
+                        </div>
+                    ))}
                 </div>
 
-                {/* Go Premium */}
-                <div className="mx-3 mb-2 p-3 rounded-2xl bg-gradient-to-br from-[#f97316]/20 to-[#0b2c60]/40 border border-[#f97316]/30 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-16 h-16 bg-white/5 rounded-full blur-xl group-hover:bg-white/10 transition-colors pointer-events-none"></div>
-                    <div className="flex items-center gap-2 mb-1.5 relative z-10">
-                        <Crown size={16} className="text-amber-400 drop-shadow-sm" strokeWidth={2.5} />
+                {/* ── Go Premium ── */}
+                <div className="mx-3 mb-2 p-3 rounded-2xl" style={{ background: 'linear-gradient(135deg, rgba(249,115,22,0.15) 0%, rgba(11,44,96,0.3) 100%)', border: '1px solid rgba(249,115,22,0.25)' }}>
+                    <div className="flex items-center gap-2 mb-1">
+                        <Crown size={15} className="text-amber-400" />
                         <span className="font-bold text-white text-sm">Go Premium</span>
                     </div>
-                    <div className="text-white/60 text-[11px] mb-3 leading-tight relative z-10">Unlock advanced reports, backups & more.</div>
-                    <button className="w-full bg-white text-[#0b2c60] font-bold rounded-xl py-2 text-xs hover:bg-slate-100 transition-colors shadow-sm relative z-10">
-                        Upgrade Now
-                    </button>
+                    <p className="text-white/60 text-[11px] mb-2.5 leading-snug">Unlock advanced reports, backups & more.</p>
+                    <button className="w-full bg-white text-[#0b2c60] font-bold rounded-xl py-2 text-xs">Upgrade Now</button>
                 </div>
 
-                {/* User Card */}
-                <div className="mx-3 mb-4 p-2.5 rounded-2xl bg-white/8 border border-white/10 flex items-center gap-2.5 backdrop-blur-md">
-                    <div className="h-10 w-10 rounded-full ring-2 ring-[#f97316]/60 flex items-center justify-center bg-gradient-to-br from-orange-400 to-red-500 text-white font-bold text-sm shadow-inner flex-shrink-0">
+                {/* ── Version ── */}
+                <div className="px-4 py-1.5 flex items-center justify-between">
+                    <span className="text-[9px] text-white/20 font-mono tracking-wide uppercase">SAHU CSC v3.3.0</span>
+                    <span className="text-[9px] text-white/20">© 2026</span>
+                </div>
+
+                {/* ── User Footer ── */}
+                <div className="mx-3 mb-3 mt-0.5 p-2.5 rounded-2xl bg-white/8 border border-white/10 flex items-center gap-2.5">
+                    <div className="h-10 w-10 rounded-full ring-2 ring-[#f97316]/60 shadow-sm flex items-center justify-center bg-[#f97316] text-white text-sm font-black flex-shrink-0">
                         SA
                     </div>
                     <div className="flex-1 min-w-0">
-                        <div className="text-[13px] font-bold text-white truncate leading-tight">SAHU Admin</div>
-                        <div className="bg-[#f97316]/20 text-[#f97316] text-[9px] font-bold px-1.5 py-0.5 rounded pl-1.5 pr-1.5 inline-block border border-[#f97316]/30 mt-1">Admin</div>
+                        <p className="text-[13px] font-bold text-white leading-tight truncate">SAHU Admin</p>
+                        <p className="text-[11px] text-white/45 mt-0.5 capitalize">Admin</p>
                     </div>
-                    <div className="flex flex-col gap-1 flex-shrink-0">
-                        <button className="w-7 h-7 rounded-lg border border-white/15 bg-white/5 flex items-center justify-center text-white/70 hover:bg-white/20 hover:text-white transition-colors">
-                            <Moon size={12} strokeWidth={2.5} />
-                        </button>
-                        <button className="w-7 h-7 rounded-lg border border-white/15 bg-white/5 flex items-center justify-center text-white/70 hover:bg-red-500/20 hover:text-red-400 transition-colors">
-                            <LogOut size={12} strokeWidth={2.5} className="rotate-180" />
-                        </button>
-                    </div>
-                </div>
-
-                {/* Footer */}
-                <div className="px-5 pb-4 flex justify-between items-center text-[9px] text-white/20 font-mono">
-                    <span>SAHU CSC v3.3.0</span>
-                    <span>© 2026</span>
+                    <button className="flex-shrink-0 w-8 h-8 rounded-xl border border-white/15 bg-white/5 flex items-center justify-center text-white/40 hover:text-white transition-colors duration-100 cursor-pointer">
+                        <Moon size={13} />
+                    </button>
+                    <button className="flex-shrink-0 w-8 h-8 rounded-xl border border-white/15 bg-white/5 flex items-center justify-center text-white/40 hover:text-white transition-colors duration-100 cursor-pointer">
+                        <LogOut size={13} className="rotate-180" />
+                    </button>
                 </div>
             </div>
 
