@@ -1,10 +1,10 @@
 {
   "name": "@workspace/api-server",
-  "version": "3.3.0",
+  "version": "3.3.1",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "export NODE_ENV=development && (test -f ./dist/index.mjs || pnpm run build) && fuser -k 8080/tcp 2>/dev/null; sleep 2; pnpm run start",
+    "dev": "echo 'API is managed by the API Server workflow (port 8080). To rebuild: run Build API. To start: run API Server.'",
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "seed": "node ./build.mjs && node --enable-source-maps ./dist/scripts/seed.mjs",

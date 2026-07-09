@@ -7,10 +7,10 @@
 
 ---
 
-## Session: 2026-07-09 — Re-import Setup & Bug Fixes
+## Session: 2026-07-09 — Re-import Setup, Bug Fixes & VAPID Secrets
 
-**Version:** 3.3.0
-**Status:** ✅ Complete — all workflows running, health OK, SMTP live, VAPID persistent
+**Version:** 3.3.1
+**Status:** ✅ Complete — all workflows running, health OK, SMTP live, VAPID persistent, duplicate workflow removed
 
 ### What Was Done
 
@@ -21,27 +21,42 @@
 - Seeded admin and operator accounts from `ADMIN_PASSWORD` + `OPERATOR_PASSWORD` secrets
 - Built API bundle — `artifacts/api-server/dist/index.mjs` generated
 
-#### 2. Secrets Configured
-- `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD` — already set
-- `SMTP_PASS` — added; Gmail email delivery now live
-- `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` — auto-generated and DB-persisted (no manual secret needed)
+#### 2. All Secrets Configured
+
+| Secret / Env Var | Type | Status |
+|------------------|------|--------|
+| `SESSION_SECRET` | Replit Secret | ✅ Already set |
+| `ADMIN_PASSWORD` | Replit Secret | ✅ Already set |
+| `OPERATOR_PASSWORD` | Replit Secret | ✅ Already set |
+| `SMTP_PASS` | Replit Secret | ✅ Added this session |
+| `VAPID_PRIVATE_KEY` | Replit Secret | ✅ Added this session |
+| `VAPID_PUBLIC_KEY` | Shared env var | ✅ Added this session |
+| `SMTP_HOST/PORT/USER/FROM_EMAIL` | Shared env vars | ✅ Already set |
+| `VAPID_EMAIL` | Shared env var | ✅ Already set |
 
 #### 3. Workflow Fixes
 - **API Server** command simplified to `PORT=8080 NODE_ENV=development node --enable-source-maps artifacts/api-server/dist/index.mjs` (removed fragile conditional build wrapper)
 - **Build API**, **Typecheck**, **Build Production**, **Production Preview** workflows restored (were missing after re-import)
+- **`artifacts/api-server: API Server`** duplicate overridden with a no-op stub — stops port 8080 conflict on startup
 - `postMerge.timeoutMs` increased from 20 000 ms → 180 000 ms so `pnpm install + drizzle push` reliably complete on future imports
 
 #### 4. Bug Fixes
 
 | File | Fix |
 |------|-----|
-| `lib/sanitize.ts` | Changed `xss.IFilterXSSOptions` → named import `IFilterXSSOptions` — fixed TS2833 typecheck error |
+| `lib/sanitize.ts` | `xss.IFilterXSSOptions` → named import `IFilterXSSOptions` — fixed TS2833 typecheck error |
 | `sahu-csc/package.json` | `sirv dist` → `sirv dist/public` — production serve now points at Vite's actual output directory |
-| `lib/vapid.ts` | Set `VAPID_KEYS_FROM_ENV=true` when keys loaded from DB (step 2) — fixes false `ephemeral`/`degraded` health status |
-| `lib/vapid.ts` | Detect partial keypair (only one key in DB) → delete both and regenerate atomically — prevents mismatched public/private VAPID pair causing push failures |
-| `lib/vapid.ts` | Batch-insert both VAPID keys in a single `INSERT` statement — reduces race-condition window on concurrent startup |
+| `lib/vapid.ts` | Set `VAPID_KEYS_FROM_ENV=true` when keys loaded from DB — fixes false `ephemeral`/`degraded` health status |
+| `lib/vapid.ts` | Detect partial keypair (only one key in DB) → delete both and regenerate atomically — prevents mismatched VAPID key pair |
+| `lib/vapid.ts` | Batch-insert both VAPID keys in a single `INSERT` statement — reduces race-condition window |
+| `lib/push.ts` | Strip trailing `=` padding and whitespace from VAPID keys in `initPush()` — copy-paste artifact no longer crashes server |
 
-#### 5. Verification
+#### 5. Documentation Updated
+- `DOCS.md` — bumped to v3.3.1; added v3.3.1 version history; updated workflows note, VAPID env section, Architecture Decisions table, common commands, footer version
+- `UPDATES.md` — this entry
+- `CHANGELOG_V3.md` — added v3.3.1 section
+
+#### 6. Verification
 - `GET /api/healthz` → `{"status":"ok","vapid":{"persistent":true},...}`
 - `GET /api/setup-status` → `{"configured":true,"missing":[]}`
 - TypeScript typecheck → 0 errors across all packages
