@@ -77,16 +77,6 @@ export function LedgerPage() {
                     ))}
                 </div>
 
-                {/* ── Go Premium ── */}
-                <div className="mx-3 mb-2 p-3 rounded-2xl" style={{ background: 'linear-gradient(135deg, rgba(249,115,22,0.15) 0%, rgba(11,44,96,0.3) 100%)', border: '1px solid rgba(249,115,22,0.25)' }}>
-                    <div className="flex items-center gap-2 mb-1">
-                        <Crown size={15} className="text-amber-400" />
-                        <span className="font-bold text-white text-sm">Go Premium</span>
-                    </div>
-                    <p className="text-white/60 text-[11px] mb-2.5 leading-snug">Unlock advanced reports, backups & more.</p>
-                    <button className="w-full bg-white text-[#0b2c60] font-bold rounded-xl py-2 text-xs">Upgrade Now</button>
-                </div>
-
                 {/* ── Version ── */}
                 <div className="px-4 py-1.5 flex items-center justify-between">
                     <span className="text-[9px] text-white/20 font-mono tracking-wide uppercase">SAHU CSC v3.3.0</span>
