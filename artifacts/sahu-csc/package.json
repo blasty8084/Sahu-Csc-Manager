@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "fuser -k ${PORT:-5000}/tcp 2>/dev/null; sleep 1; vite --config vite.config.ts --host 0.0.0.0",
     "build": "vite build --config vite.config.ts",
-    "serve": "sirv dist --host --single --port ${PORT:-5000}",
+    "serve": "sirv dist/public --host --single --port ${PORT:-5000}",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {

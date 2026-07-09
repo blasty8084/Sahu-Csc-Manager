@@ -1,6 +1,6 @@
-import xss from "xss";
+import xss, { type IFilterXSSOptions } from "xss";
 
-const options: xss.IFilterXSSOptions = {
+const options: IFilterXSSOptions = {
   whiteList: {},
   stripIgnoreTag: true,
   stripIgnoreTagBody: ["script", "style"],
