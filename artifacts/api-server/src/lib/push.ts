@@ -17,8 +17,13 @@ export function initPush(): void {
   const privKey = process.env.VAPID_PRIVATE_KEY;
   const email = process.env.VAPID_EMAIL || "mailto:sahuuttam690@gmail.com";
 
-  if (pubKey && privKey) {
-    webPush.setVapidDetails(email, pubKey, privKey);
+  // web-push requires unpadded URL-safe base64 — strip any trailing = or whitespace
+  // that may have been introduced when the secret was copy-pasted by the user.
+  const cleanPub  = pubKey?.trim().replace(/=+$/, "");
+  const cleanPriv = privKey?.trim().replace(/=+$/, "");
+
+  if (cleanPub && cleanPriv) {
+    webPush.setVapidDetails(email, cleanPub, cleanPriv);
     pushEnabled = true;
     VAPID_PUBLIC_KEY = pubKey;
     logger.info("Push notifications enabled");
