@@ -8,11 +8,11 @@ router = "path"
 [[services]]
 name = "Component Preview Server"
 paths = [ "/__mockup/" ]
-localPort = 23636
+localPort = 3000
 
 [services.development]
 run = "npm run dev"
 
 [services.env]
-PORT = "23636"
+PORT = "3000"
 BASE_PATH = "/__mockup/"
