@@ -7,6 +7,47 @@
 
 ---
 
+## Session: 2026-07-09 — Re-import Setup & Bug Fixes
+
+**Version:** 3.3.0
+**Status:** ✅ Complete — all workflows running, health OK, SMTP live, VAPID persistent
+
+### What Was Done
+
+#### 1. Re-import Setup
+- Ran `pnpm install` — all workspace dependencies restored
+- Pushed Drizzle schema via `drizzle-kit push --force` — all tables applied
+- Created `session` table (connect-pg-simple; excluded from Drizzle schema push)
+- Seeded admin and operator accounts from `ADMIN_PASSWORD` + `OPERATOR_PASSWORD` secrets
+- Built API bundle — `artifacts/api-server/dist/index.mjs` generated
+
+#### 2. Secrets Configured
+- `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD` — already set
+- `SMTP_PASS` — added; Gmail email delivery now live
+- `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` — auto-generated and DB-persisted (no manual secret needed)
+
+#### 3. Workflow Fixes
+- **API Server** command simplified to `PORT=8080 NODE_ENV=development node --enable-source-maps artifacts/api-server/dist/index.mjs` (removed fragile conditional build wrapper)
+- **Build API**, **Typecheck**, **Build Production**, **Production Preview** workflows restored (were missing after re-import)
+- `postMerge.timeoutMs` increased from 20 000 ms → 180 000 ms so `pnpm install + drizzle push` reliably complete on future imports
+
+#### 4. Bug Fixes
+
+| File | Fix |
+|------|-----|
+| `lib/sanitize.ts` | Changed `xss.IFilterXSSOptions` → named import `IFilterXSSOptions` — fixed TS2833 typecheck error |
+| `sahu-csc/package.json` | `sirv dist` → `sirv dist/public` — production serve now points at Vite's actual output directory |
+| `lib/vapid.ts` | Set `VAPID_KEYS_FROM_ENV=true` when keys loaded from DB (step 2) — fixes false `ephemeral`/`degraded` health status |
+| `lib/vapid.ts` | Detect partial keypair (only one key in DB) → delete both and regenerate atomically — prevents mismatched public/private VAPID pair causing push failures |
+| `lib/vapid.ts` | Batch-insert both VAPID keys in a single `INSERT` statement — reduces race-condition window on concurrent startup |
+
+#### 5. Verification
+- `GET /api/healthz` → `{"status":"ok","vapid":{"persistent":true},...}`
+- `GET /api/setup-status` → `{"configured":true,"missing":[]}`
+- TypeScript typecheck → 0 errors across all packages
+
+---
+
 ## Session: 2026-07-06 — v3.2.5 Security Upgrade & Password Policy Correction
 
 **Version:** 3.2.5

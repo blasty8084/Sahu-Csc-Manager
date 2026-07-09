@@ -30,20 +30,27 @@ export async function ensureVapidKeys(): Promise<void> {
   if (pubRow?.value && privRow?.value) {
     process.env.VAPID_PUBLIC_KEY = pubRow.value;
     process.env.VAPID_PRIVATE_KEY = privRow.value;
+    process.env.VAPID_KEYS_FROM_ENV = "true"; // DB-persisted = persistent across restarts
     logger.info("VAPID keys loaded from settings table");
     return;
   }
 
-  // 3. Generate a fresh pair and persist so they survive restarts
+  // Partial state: one key exists without the other — delete both and regenerate atomically
+  if (pubRow?.value || privRow?.value) {
+    logger.warn("Partial VAPID keypair detected in settings table — regenerating both keys");
+    await db.delete(settingsTable).where(eq(settingsTable.key, KEY_PUBLIC));
+    await db.delete(settingsTable).where(eq(settingsTable.key, KEY_PRIVATE));
+  }
+
+  // 3. Generate a fresh pair and persist both atomically so they survive restarts
   const { publicKey, privateKey } = webPush.generateVAPIDKeys();
 
   await db
     .insert(settingsTable)
-    .values({ key: KEY_PUBLIC, value: publicKey })
-    .onConflictDoNothing({ target: settingsTable.key });
-  await db
-    .insert(settingsTable)
-    .values({ key: KEY_PRIVATE, value: privateKey })
+    .values([
+      { key: KEY_PUBLIC, value: publicKey },
+      { key: KEY_PRIVATE, value: privateKey },
+    ])
     .onConflictDoNothing({ target: settingsTable.key });
 
   // Re-read to handle a concurrent insert from another process
@@ -58,6 +65,7 @@ export async function ensureVapidKeys(): Promise<void> {
 
   process.env.VAPID_PUBLIC_KEY = pub?.value ?? publicKey;
   process.env.VAPID_PRIVATE_KEY = priv?.value ?? privateKey;
+  process.env.VAPID_KEYS_FROM_ENV = "true"; // persisted to DB — survives restarts
 
   logger.info(
     { publicKey: process.env.VAPID_PUBLIC_KEY },
