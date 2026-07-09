@@ -38,6 +38,33 @@ function getUserFilter(req: any) {
   return eq(ledgerTable.createdBy, userId);
 }
 
+// Balances are a running total per user, in creation order (matches how new entries
+// are appended). Editing or deleting an entry can shift every later balance, so we
+// recompute all of a user's balances whenever an entry changes. Must be called with
+// a `tx` that already holds a row lock (see lockUserEntries) on the same user's rows
+// obtained inside the same transaction as the mutation, so concurrent edits/deletes
+// for the same user serialize instead of racing on stale snapshots.
+async function recalculateBalances(tx: any, userId: number): Promise<void> {
+  const entries = await tx
+    .select({ id: ledgerTable.id, credit: ledgerTable.credit, debit: ledgerTable.debit })
+    .from(ledgerTable)
+    .where(eq(ledgerTable.createdBy, userId))
+    .orderBy(ledgerTable.id);
+
+  let running = 0;
+  for (const e of entries) {
+    running += parseFloat(e.credit ?? "0") - parseFloat(e.debit ?? "0");
+    await tx.update(ledgerTable).set({ balance: String(running) }).where(eq(ledgerTable.id, e.id));
+  }
+}
+
+// Locks all of a user's ledger rows (FOR UPDATE) within the caller's transaction so
+// concurrent PATCH/DELETE requests for the same user cannot interleave their reads
+// and balance recomputation.
+async function lockUserEntries(tx: any, userId: number): Promise<void> {
+  await tx.execute(sql`select id from ledger where created_by = ${userId} for update`);
+}
+
 async function generateReceiptNumber(year: number): Promise<string> {
   const [row] = await db
     .insert(receiptCountersTable)
@@ -150,7 +177,7 @@ router.get("/ledger", requireAuth, requirePermission("ledger:view"), async (req,
   ]);
 
   res.json({
-    entries: entries.map((e) => formatEntry(e, e.createdByName)),
+    entries: entries.map((e: any) => formatEntry(e, e.createdByName)),
     total: totalResult[0]?.total ?? 0,
     page,
     limit,
@@ -259,9 +286,15 @@ router.patch("/ledger/:id", requireAuth, requirePermission("ledger:edit"), async
   if (parsed.data.debit !== undefined) updateData.debit = String(parsed.data.debit);
   if (parsed.data.description !== undefined) updateData.description = sanitize(parsed.data.description);
 
-  const [updated] = await db.update(ledgerTable).set(updateData).where(eq(ledgerTable.id, id)).returning();
+  const refreshed = await db.transaction(async (tx: any) => {
+    await lockUserEntries(tx, existing.createdBy);
+    const [updated] = await tx.update(ledgerTable).set(updateData).where(eq(ledgerTable.id, id)).returning();
+    await recalculateBalances(tx, existing.createdBy);
+    const [row] = await tx.select().from(ledgerTable).where(eq(ledgerTable.id, id));
+    return row ?? updated;
+  });
   await auditLog(req.session.userId!, "ledger.update", `Updated ledger entry ${id}`, getClientIp(req));
-  res.json(formatEntry(updated));
+  res.json(formatEntry(refreshed));
 });
 
 router.delete("/ledger/all", requireRole("admin"), async (req, res): Promise<void> => {
@@ -282,7 +315,11 @@ router.delete("/ledger/:id", requireAuth, requirePermission("ledger:edit"), asyn
     res.status(403).json({ error: "Forbidden" }); return;
   }
 
-  await db.delete(ledgerTable).where(eq(ledgerTable.id, id));
+  await db.transaction(async (tx: any) => {
+    await lockUserEntries(tx, existing.createdBy);
+    await tx.delete(ledgerTable).where(eq(ledgerTable.id, id));
+    await recalculateBalances(tx, existing.createdBy);
+  });
   await auditLog(req.session.userId!, "ledger.delete", `Deleted ledger entry ${id}`, getClientIp(req));
   res.sendStatus(204);
 });
