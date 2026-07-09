@@ -6,6 +6,19 @@ import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 import { VitePWA } from "vite-plugin-pwa";
 import { readFileSync } from "fs";
 
+function readMockupSandboxPort(): number | null {
+  try {
+    const raw = readFileSync(
+      path.resolve(import.meta.dirname, "../.mockup-sandbox-port"),
+      "utf-8",
+    ).trim();
+    const n = Number(raw);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  } catch {
+    return null;
+  }
+}
+
 const pkg = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf-8"));
 
 const rawPort = process.env.PORT;
@@ -237,6 +250,15 @@ export default defineConfig({
     fs: { strict: true },
     proxy: {
       "/api": { target: "http://localhost:8080", changeOrigin: true },
+      ...(readMockupSandboxPort()
+        ? {
+            "/__mockup": {
+              target: `http://localhost:${readMockupSandboxPort()}`,
+              changeOrigin: true,
+              ws: true,
+            },
+          }
+        : {}),
     },
   },
   preview: {

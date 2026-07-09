@@ -1,4 +1,5 @@
 import path from 'path';
+import { writeFileSync } from 'fs';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
@@ -26,6 +27,18 @@ if (!basePath) {
   throw new Error(
     'BASE_PATH environment variable is required but was not provided.',
   );
+}
+
+// Publish our actual (dynamically-assigned) port so the main app's dev
+// server can proxy /__mockup/* to us on a stable port (5000) instead of
+// embedding this ever-changing port directly in canvas iframe URLs.
+try {
+  writeFileSync(
+    path.resolve(import.meta.dirname, '../.mockup-sandbox-port'),
+    String(port),
+  );
+} catch {
+  // Non-fatal: proxying from the main app just won't work without this file.
 }
 
 export default defineConfig({
