@@ -128,31 +128,42 @@ A full-stack CSC (Common Service Center) business management platform for tracki
 
 | Workflow | Port | Purpose | Starts with Project |
 |----------|------|---------|---------------------|
+| `API Server` | 8080 | Express API — builds then runs the bundle | ✅ Yes |
 | `SAHU CSC` | 5000 → :80 | Vite frontend dev server | ✅ Yes |
-| `API Server` | 8080 | Express API (auto-builds dist if missing, then runs it) | ✅ Yes |
 | `Seed Database` | — | One-shot DB seeder; requires ADMIN_PASSWORD + OPERATOR_PASSWORD secrets | ❌ Manual only |
+| `Typecheck` | — | `pnpm run typecheck:libs` + per-artifact typecheck | ❌ Manual only |
+| `Build Production` | — | Full typecheck + API build + frontend build, no serve | ❌ Manual only |
+| `Production Preview` | 5000 | Full production build then `vite preview`-style serve (kills port 5000 first) | ❌ Manual only |
 
 > Port 5000 is the main app URL (Replit proxy → :80). The API runs on **port 8080**. The Vite proxy in `vite.config.ts` forwards `/api/*` to `http://localhost:8080`.
-> After any backend code change: `node artifacts/api-server/build.mjs` from workspace root, then restart **API Server**.
+> After any backend code change: restart **API Server** (it rebuilds on every start).
+> Removed the redundant standalone `Build API` workflow (2026-07-09) — it duplicated the build step already run at the start of `API Server`.
+
+### Artifact-managed workflows (do not touch)
+
+Each registered artifact (`artifacts/api-server`, `artifacts/sahu-csc`, `artifacts/mockup-sandbox`) auto-generates its own workflow from its `artifact.toml` (e.g. `artifacts/sahu-csc: web`, `artifacts/mockup-sandbox: Component Preview Server`). These are **not accessible to the agent** — `removeWorkflow` explicitly rejects them ("managed by an artifact and cannot be removed"), and `artifact.toml` cannot be edited directly. They show as duplicates of the main `API Server`/`SAHU CSC` workflows and may appear `failed`/`finished` when unused — this is expected and only the user can rename/remove them via the Replit project UI (artifact tabs).
 
 ### Workflow commands (current)
 
 ```bash
+# API Server — builds then runs the bundle (auto-start)
+PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server run build && PORT=8080 node --enable-source-maps artifacts/api-server/dist/index.mjs
+
 # SAHU CSC — frontend dev server (auto-start)
 PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run dev
 # dev script in package.json: fuser -k ${PORT:-5000}/tcp 2>/dev/null; sleep 1; vite --host 0.0.0.0
 
-# API Server — auto-builds dist if missing, then runs pre-built bundle (auto-start)
-[ -f artifacts/api-server/dist/index.mjs ] || node artifacts/api-server/build.mjs && PORT=8080 NODE_ENV=development node --enable-source-maps artifacts/api-server/dist/index.mjs
-
 # Seed Database — create/reset admin + operator (manual, requires secrets)
 PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server exec tsx src/scripts/seed.ts
 
-# Rebuild API manually (shell, not a workflow)
-node artifacts/api-server/build.mjs
-
-# Typecheck (shell, not a workflow)
+# Typecheck (manual)
 pnpm run typecheck:libs && pnpm -r --filter "./artifacts/**" --if-present run typecheck
+
+# Build Production (manual)
+pnpm run typecheck:libs && pnpm --filter @workspace/api-server run build && PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run build
+
+# Production Preview (manual)
+fuser -k 5000/tcp 2>/dev/null; sleep 1; pnpm run typecheck:libs && pnpm --filter @workspace/api-server run build && PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run build && PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run serve
 ```
 
 ---
