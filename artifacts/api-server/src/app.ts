@@ -8,6 +8,8 @@ import helmet from "helmet";
 import hpp from "hpp";
 import rateLimit from "express-rate-limit";
 import router from "./routes";
+import healthRouter from "./routes/health";
+import setupStatusRouter from "./routes/setup-status";
 import { logger } from "./lib/logger";
 import { pool } from "@workspace/db";
 
@@ -88,6 +90,12 @@ const otpVerifyLimiter = rateLimit({
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
+
+// Health/setup-status checks are hit frequently (uptime monitors, orchestrator
+// probes) and never need a session — mount them before the session middleware
+// so those requests skip the per-request Postgres session-store lookup.
+app.use(healthRouter);
+app.use(setupStatusRouter);
 
 app.use(
   session({

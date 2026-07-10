@@ -1,5 +1,4 @@
 import { Router, type IRouter } from "express";
-import healthRouter from "./health";
 import authRouter from "./auth";
 import ledgerRouter from "./ledger";
 import servicesRouter from "./services";
@@ -22,12 +21,9 @@ import udhariRouter from "./udhari";
 import receiptsRouter from "./receipts";
 import broadcastRouter from "./broadcast";
 import adminReceiptExportRouter from "./admin-receipt-export";
-import setupStatusRouter from "./setup-status";
 
 const router: IRouter = Router();
 
-router.use(setupStatusRouter);
-router.use(healthRouter);
 router.use(authRouter);
 router.use(profileRouter);
 router.use(preferencesRouter);
