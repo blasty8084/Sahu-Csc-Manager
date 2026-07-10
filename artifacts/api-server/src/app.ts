@@ -83,11 +83,7 @@ app.use(
       createTableIfMissing: true,
       pruneSessionInterval: 60 * 60, // prune expired sessions every hour
     }),
-    secret: process.env.SESSION_SECRET ?? (
-      process.env.NODE_ENV === "production"
-        ? (() => { throw new Error("SESSION_SECRET environment variable is required in production"); })()
-        : "dev-only-insecure-secret"
-    ),
+    secret: process.env.SESSION_SECRET ?? (() => { throw new Error("SESSION_SECRET environment variable is required"); })(),
     resave: false,
     saveUninitialized: false,
     cookie: {

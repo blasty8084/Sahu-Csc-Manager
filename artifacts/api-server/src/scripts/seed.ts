@@ -125,4 +125,6 @@ async function seed() {
   console.log("   (passwords are from Replit Secrets — not printed for security)");
 }
 
-seed().catch(console.error).finally(() => process.exit(0));
+seed()
+  .then(() => process.exit(0))
+  .catch((err) => { console.error(err); process.exit(1); });
