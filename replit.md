@@ -1,5 +1,5 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 3.5.0** — last updated 2026-07-10
+**Version 3.5.1** — last updated 2026-07-10
 
 > Re-imported and re-set-up on Replit 2026-07-09: ran `pnpm install`, pushed schema via `drizzle-kit push` (`pnpm exec drizzle-kit push --config=lib/db/drizzle.config.ts` from `lib/db/`), seeded admin/operator via the `Seed Database` workflow, and started `API Server` + `SAHU CSC` workflows. Secrets set: `ADMIN_PASSWORD`, `OPERATOR_PASSWORD` (`SESSION_SECRET` already existed).
 >
@@ -26,6 +26,20 @@
 > Full platform documentation: **[DOCS.md](./DOCS.md)**
 
 A full-stack CSC (Common Service Center) business management platform for tracking services, ledger accounting, AePS cash management, Udhari Khata (customer credit ledger), and reporting. Built for Odisha / India rural service centers. Supports PWA installation, offline operation, Android TWA packaging, and full multilingual UI (English / Hindi / Odia).
+
+---
+
+## What's New in v3.5.1 (July 10, 2026) — Performance & Scale Hardening
+
+| Change | Description |
+|--------|-------------|
+| **N+1 query fixes** | `GET /admin/users-overview` replaced N×2 per-user queries with one grouped aggregate + one `DISTINCT ON` query for latest entries, joined in-memory. |
+| **Batched ledger balance recalc** | `recalculateBalances()` in `ledger.ts` now does a single `UPDATE ... FROM UNNEST(...)` (bound array params, not string-interpolated) instead of one `UPDATE` per row. |
+| **Batched notification writes** | `notificationService.ts` fetches all recipients' prefs in one query and does a single multi-row insert instead of N per-user inserts/selects. Push-send and return-count semantics preserved exactly (push only when `prefs?.pushEnabled`, return count = targeted recipients). |
+| **API bundle externalized further** | `exceljs` added to `build.mjs`'s `external` list alongside the already-external `pdfkit`/`archiver` — bundle dropped from 5.1MB → 3.6MB. All three ship as real `dependencies` so they resolve at runtime. |
+| **pg pool tuned** | `lib/db/src/index.ts`: `max: 20` (env-overridable via `DB_POOL_MAX`), `idleTimeoutMillis: 30s`, `connectionTimeoutMillis: 5s` — caps concurrent connections and fails fast instead of hanging when the pool is saturated. |
+| **Lightweight session/role cache** | New `lib/auth/sessionCache.ts` — 5s in-process TTL cache backing `requireAuth`'s session validation and `requireRole`/`requirePermission`'s role lookups, cutting a DB round-trip off nearly every authenticated request. Explicitly invalidated on: session revoke (self/admin), logout, role/status change, and password change/reset. |
+| **Password reset/change now revokes sessions** | Both reset-password flows revoke *all* sessions for the account; self-service profile password change revokes all *other* sessions (keeps the current one). Previously a stolen session could outlive a password change. |
 
 ---
 
@@ -664,6 +678,10 @@ Full config in `infrastructure/twa/twa-config.json`.
 - **Seed script does not seed ledger entries**: Seeds only users, services, settings, notifications. Ledger starts clean.
 - **i18n string constants inside component**: Arrays/config with translated strings declared after `const { t } = useTranslation()` — never at module scope.
 - **Sub-components with translations need own `useTranslation`**: Cannot share parent's `t` — hooks cannot be passed as props.
+- **Session/role cache is process-local, 5s TTL, not a distributed cache**: `lib/auth/sessionCache.ts`. Fine for a single API instance; if ever scaled horizontally, revocation across instances is only guaranteed within the TTL window unless swapped for a shared cache.
+- **Every session/role mutation must call the matching cache invalidator**: revoke session(s) → `invalidateSessionCache(sessionId)`; role/status/active change or logout → `invalidateUserCache(userId)`. Skipping this reintroduces a stale-auth window.
+- **Password reset/change must revoke sessions, not just update the hash**: reset-password revokes *all* sessions for the account; self-service profile password change revokes all *other* sessions (keeps the current one alive). Otherwise a stolen session survives a password change.
+- **`requirePermission` and `requireRole` must read the same role source**: both use the cached DB role via `userRoleCache`, never `req.session.userRole` (baked in at login, never refreshes) — otherwise role changes apply inconsistently between route guards.
 
 ---
 
