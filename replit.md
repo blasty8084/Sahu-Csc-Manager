@@ -137,7 +137,7 @@ A full-stack CSC (Common Service Center) business management platform for tracki
 
 > Port 5000 is the main app URL (Replit proxy → :80). The API runs on **port 8080**. The Vite proxy in `vite.config.ts` forwards `/api/*` to `http://localhost:8080`.
 > After any backend code change: restart **API Server** (it rebuilds on every start).
-> Removed the redundant standalone `Build API` workflow (2026-07-09) — it duplicated the build step already run at the start of `API Server`.
+> The standalone `Build API` workflow (`cd artifacts/api-server && node build.mjs`) was removed on 2026-07-09 as redundant, then restored on user request. It duplicates the build step already run at the start of `API Server`, but is kept available for on-demand rebuilds without restarting the server.
 
 ### Artifact-managed workflows (do not touch)
 
