@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { db, userSessionsTable, usersTable } from "@workspace/db";
 import { eq, and, gt, inArray } from "drizzle-orm";
 import { requireRole, auditLog, getClientIp } from "../lib/auth";
+import { invalidateSessionCache } from "../lib/auth/sessionCache";
 
 const router: IRouter = Router();
 
@@ -71,6 +72,7 @@ router.delete("/admin/sessions/:id", requireRole("admin"), async (req, res): Pro
   if (!session) { res.status(404).json({ error: "Session not found" }); return; }
 
   await db.update(userSessionsTable).set({ isActive: false }).where(eq(userSessionsTable.id, id));
+  invalidateSessionCache(session.sessionId);
 
   await auditLog(
     req.session.userId!,
@@ -103,7 +105,9 @@ router.delete("/admin/sessions/user/:userId", requireRole("admin"), async (req, 
         eq(userSessionsTable.isActive, true)
       )
     )
-    .returning({ id: userSessionsTable.id });
+    .returning({ id: userSessionsTable.id, sessionId: userSessionsTable.sessionId });
+
+  for (const r of result) invalidateSessionCache(r.sessionId);
 
   await auditLog(
     req.session.userId!,

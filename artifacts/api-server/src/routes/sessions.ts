@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { db, userSessionsTable } from "@workspace/db";
 import { eq, and, gt, not, desc } from "drizzle-orm";
 import { requireAuth, auditLog, getClientIp } from "../lib/auth";
+import { invalidateSessionCache } from "../lib/auth/sessionCache";
 
 const router: IRouter = Router();
 
@@ -46,7 +47,7 @@ router.delete("/sessions/others", requireAuth, async (req, res): Promise<void> =
   const userId = req.session.userId!;
   const currentSessionId = req.session.sessionId ?? req.session.sessionToken ?? "";
 
-  await db
+  const revoked = await db
     .update(userSessionsTable)
     .set({ isActive: false })
     .where(
@@ -55,7 +56,10 @@ router.delete("/sessions/others", requireAuth, async (req, res): Promise<void> =
         eq(userSessionsTable.isActive, true),
         not(eq(userSessionsTable.sessionId, currentSessionId))
       )
-    );
+    )
+    .returning({ sessionId: userSessionsTable.sessionId });
+
+  for (const r of revoked) invalidateSessionCache(r.sessionId);
 
   await auditLog(userId, "session.revoke_others", "Revoked all other sessions", getClientIp(req));
   res.json({ message: "All other sessions revoked" });
@@ -65,10 +69,13 @@ router.delete("/sessions/others", requireAuth, async (req, res): Promise<void> =
 router.delete("/sessions/all", requireAuth, async (req, res): Promise<void> => {
   const userId = req.session.userId!;
 
-  await db
+  const revoked = await db
     .update(userSessionsTable)
     .set({ isActive: false })
-    .where(eq(userSessionsTable.userId, userId));
+    .where(eq(userSessionsTable.userId, userId))
+    .returning({ sessionId: userSessionsTable.sessionId });
+
+  for (const r of revoked) invalidateSessionCache(r.sessionId);
 
   await auditLog(userId, "session.revoke_all", "Revoked all sessions (logged out everywhere)", getClientIp(req));
 
@@ -97,6 +104,7 @@ router.delete("/sessions/:id", requireAuth, async (req, res): Promise<void> => {
   }
 
   await db.update(userSessionsTable).set({ isActive: false }).where(eq(userSessionsTable.id, id));
+  invalidateSessionCache(session.sessionId);
 
   // If revoking current session, destroy the express session too
   if (session.sessionId === req.session.sessionId) {

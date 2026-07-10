@@ -3,6 +3,7 @@ import { db, usersTable, userSessionsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { requireAuth, auditLog, getClientIp } from "../../lib/auth";
 import { fmtUser } from "./helpers";
+import { invalidateSessionCache, invalidateUserCache } from "../../lib/auth/sessionCache";
 
 const router: IRouter = Router();
 
@@ -27,6 +28,9 @@ router.post("/auth/logout", requireAuth, async (req, res): Promise<void> => {
     .update(usersTable)
     .set({ activeSessionToken: null })
     .where(eq(usersTable.id, userId));
+
+  if (sessionId) invalidateSessionCache(sessionId);
+  invalidateUserCache(userId);
 
   await auditLog(userId, "logout", "User logged out", getClientIp(req));
   req.session.destroy(() => {});

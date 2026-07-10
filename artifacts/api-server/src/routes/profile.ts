@@ -1,8 +1,9 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { db, usersTable, userSessionsTable } from "@workspace/db";
+import { eq, and, not } from "drizzle-orm";
 import { z } from "zod/v4";
 import { requireAuth, hashPassword, auditLog, getClientIp } from "../lib/auth";
+import { invalidateSessionCache, invalidateUserCache } from "../lib/auth/sessionCache";
 import { encryptField, decryptField } from "../lib/encryption";
 import { sanitize } from "../lib/sanitize";
 import { passwordPolicySchema } from "../lib/password-policy";
@@ -75,11 +76,33 @@ router.patch("/profile", requireAuth, async (req, res): Promise<void> => {
     await auditLog(userId, "profile.password_change", "User changed password", getClientIp(req));
   }
 
+  const passwordChanged = !!updates.passwordHash;
+
   if (Object.keys(updates).length === 0) {
     res.json(await fmtProfile(user)); return;
   }
 
   const [updated] = await db.update(usersTable).set(updates).where(eq(usersTable.id, userId)).returning();
+
+  if (passwordChanged) {
+    // Revoke every other active session (keep the one making this request
+    // alive) so a stolen session can't outlive a password change, then drop
+    // the cached role entry so this takes effect immediately.
+    const currentSessionId = req.session.sessionId ?? req.session.sessionToken ?? "";
+    const revoked = await db
+      .update(userSessionsTable)
+      .set({ isActive: false })
+      .where(
+        and(
+          eq(userSessionsTable.userId, userId),
+          not(eq(userSessionsTable.sessionId, currentSessionId))
+        )
+      )
+      .returning({ sessionId: userSessionsTable.sessionId });
+    for (const r of revoked) invalidateSessionCache(r.sessionId);
+    invalidateUserCache(userId);
+  }
+
   await auditLog(userId, "profile.update", "User updated profile", getClientIp(req));
   res.json(await fmtProfile(updated));
 });

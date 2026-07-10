@@ -3,6 +3,7 @@ import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { CreateUserBody, UpdateUserBody } from "@workspace/api-zod";
 import { requireRole, hashPassword, auditLog, getClientIp } from "../lib/auth";
+import { invalidateUserCache } from "../lib/auth/sessionCache";
 import { encryptField, decryptField } from "../lib/encryption";
 import { sanitize } from "../lib/sanitize";
 import { passwordPolicySchema } from "../lib/password-policy";
@@ -105,6 +106,12 @@ router.patch("/users/:id", requireRole("admin"), async (req, res): Promise<void>
   }
 
   const [updated] = await db.update(usersTable).set(updates).where(eq(usersTable.id, id)).returning();
+
+  // Role/active-state changes must take effect immediately, not after the
+  // cache TTL — invalidate this user's cached role/session-token lookup.
+  if (updates.role !== undefined || updates.isActive !== undefined || updates.status !== undefined) {
+    invalidateUserCache(id);
+  }
 
   const changes: string[] = [];
   if (updates.role && updates.role !== existing.role) changes.push(`role: ${existing.role} → ${updates.role}`);

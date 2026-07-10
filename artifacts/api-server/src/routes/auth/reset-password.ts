@@ -1,13 +1,31 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, passwordResetTokensTable, emailOtpsTable } from "@workspace/db";
+import { db, usersTable, passwordResetTokensTable, emailOtpsTable, userSessionsTable } from "@workspace/db";
 import { eq, or, and } from "drizzle-orm";
 import { z } from "zod/v4";
 import { desc } from "drizzle-orm";
 import { hashPassword, getClientIp, auditLog } from "../../lib/auth";
 import { passwordPolicySchema } from "../../lib/password-policy";
 import { hashOtp } from "./helpers";
+import { invalidateSessionCache, invalidateUserCache } from "../../lib/auth/sessionCache";
 
 const router: IRouter = Router();
+
+// A password reset means the account may have been compromised (or the owner
+// simply forgot it and wants a clean slate) — revoke every existing session
+// for the account and clear the legacy activeSessionToken so nothing keeps
+// working with the old credentials, then drop the cached role/session-validity
+// entries so this takes effect immediately rather than after the cache TTL.
+async function revokeAllSessionsForUser(userId: number): Promise<void> {
+  const revoked = await db
+    .update(userSessionsTable)
+    .set({ isActive: false })
+    .where(eq(userSessionsTable.userId, userId))
+    .returning({ sessionId: userSessionsTable.sessionId });
+  for (const r of revoked) invalidateSessionCache(r.sessionId);
+
+  await db.update(usersTable).set({ activeSessionToken: null }).where(eq(usersTable.id, userId));
+  invalidateUserCache(userId);
+}
 
 const ResetPasswordLegacyBody = z.object({
   identifier: z.string().min(1),
@@ -53,6 +71,7 @@ router.post("/auth/reset-password", async (req, res): Promise<void> => {
     await db.update(usersTable).set({ passwordHash }).where(eq(usersTable.id, user.id));
     // Consume the token so it can't be reused
     await db.update(emailOtpsTable).set({ verifiedToken: null }).where(eq(emailOtpsTable.id, record.id));
+    await revokeAllSessionsForUser(user.id);
 
     await auditLog(user.id, "password.reset", `Password reset via email OTP for ${user.username}`, getClientIp(req));
     res.json({ message: "Password reset successfully. You can now log in with your new password." });
@@ -90,6 +109,7 @@ router.post("/auth/reset-password", async (req, res): Promise<void> => {
   const passwordHash = await hashPassword(password);
   await db.update(usersTable).set({ passwordHash }).where(eq(usersTable.id, user.id));
   await db.update(passwordResetTokensTable).set({ usedAt: new Date() }).where(eq(passwordResetTokensTable.id, record.id));
+  await revokeAllSessionsForUser(user.id);
 
   await auditLog(user.id, "password.reset", `Password reset via OTP for ${user.username}`, getClientIp(req));
   res.json({ message: "Password reset successfully. You can now log in with your new password." });
