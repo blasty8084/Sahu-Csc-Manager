@@ -5,13 +5,12 @@ import path from "path";
 import multer from "multer";
 import { db, settingsTable, backupsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { UpdateSettingsBody } from "@workspace/api-zod";
-import { requireAuth, requireRole, auditLog, getClientIp } from "../lib/auth";
-import { createNotification } from "../lib/notify";
-import { applySchedule, type BackupScheduleConfig } from "../lib/backup-scheduler";
-import { logger } from "../lib/logger";
+import { requireRole, auditLog, getClientIp } from "../../lib/auth";
+import { createNotification } from "../../lib/notify";
+import { applySchedule, type BackupScheduleConfig } from "../../lib/backup-scheduler";
+import { logger } from "../../lib/logger";
 
-const BACKUP_DIR = path.resolve(process.cwd(), "backups");
+export const BACKUP_DIR = path.resolve(process.cwd(), "backups");
 
 mkdirSync(BACKUP_DIR, { recursive: true });
 
@@ -27,82 +26,39 @@ const upload = multer({
   },
 });
 
-const router: IRouter = Router();
-
-const DEFAULT_SETTINGS: Record<string, string> = {
-  businessName: "SAHU CSC Center",
-  businessAddress: "Village Road, District",
-  businessMobile: "9999999999",
-  businessEmail: "",
-  businessWebsite: "",
-  language: "en",
-  theme: "light",
-  currency: "INR",
-  autoBackup: "false",
-  backupFrequencyDays: "7",
-};
-
-async function getAllSettings(): Promise<Record<string, string>> {
-  const rows = await db.select().from(settingsTable);
-  const result: Record<string, string> = { ...DEFAULT_SETTINGS };
-  for (const row of rows) {
-    result[row.key] = row.value;
-  }
-  return result;
+// ── Helper: parse pg_dump SQL into per-table COPY blocks ──────────────────────
+interface TableBlock {
+  table: string;
+  header: string;
+  rows: string[];
 }
 
-function formatSettings(s: Record<string, string>) {
-  return {
-    businessName: s.businessName ?? DEFAULT_SETTINGS.businessName,
-    businessAddress: s.businessAddress ?? DEFAULT_SETTINGS.businessAddress,
-    businessMobile: s.businessMobile ?? DEFAULT_SETTINGS.businessMobile,
-    businessEmail: s.businessEmail || null,
-    businessWebsite: s.businessWebsite || null,
-    language: (s.language ?? "en") as "en" | "hi" | "or",
-    theme: (s.theme ?? "light") as "light" | "dark",
-    currency: s.currency ?? "INR",
-    autoBackup: s.autoBackup === "true",
-    backupFrequencyDays: parseInt(s.backupFrequencyDays ?? "7", 10),
-  };
-}
+function parseSqlBlocks(sql: string): TableBlock[] {
+  const blocks: TableBlock[] = [];
+  const lines = sql.split("\n");
+  let current: TableBlock | null = null;
 
-// Public — no auth required — returns only the contact fields safe to expose pre-login
-router.get("/settings/contact", async (_req, res): Promise<void> => {
-  const settings = await getAllSettings();
-  res.json({
-    name: settings.businessName ?? DEFAULT_SETTINGS.businessName,
-    phone: settings.businessMobile || null,
-    email: settings.businessEmail || null,
-  });
-});
-
-router.get("/settings", requireAuth, async (_req, res): Promise<void> => {
-  const settings = await getAllSettings();
-  res.json(formatSettings(settings));
-});
-
-router.patch("/settings", requireRole("admin"), async (req, res): Promise<void> => {
-  const parsed = UpdateSettingsBody.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
-
-  const data = parsed.data as Record<string, any>;
-  for (const [key, value] of Object.entries(data)) {
-    if (value === undefined || value === null) continue;
-    const strVal = String(value);
-    const existing = await db.select().from(settingsTable).where(eq(settingsTable.key, key));
-    if (existing.length > 0) {
-      await db.update(settingsTable).set({ value: strVal }).where(eq(settingsTable.key, key));
-    } else {
-      await db.insert(settingsTable).values({ key, value: strVal });
+  for (const line of lines) {
+    const copyMatch = line.match(/^COPY (?:public\.)?(\w+)\s*\(/i);
+    if (copyMatch) {
+      current = { table: copyMatch[1], header: line, rows: [] };
+      continue;
+    }
+    if (current) {
+      if (line.trimEnd() === "\\.") {
+        blocks.push(current);
+        current = null;
+      } else {
+        current.rows.push(line);
+      }
     }
   }
+  return blocks;
+}
 
-  await auditLog(req.session.userId!, "settings.update", "Updated system settings", getClientIp(req));
-  const updated = await getAllSettings();
-  res.json(formatSettings(updated));
-});
+const router: IRouter = Router();
 
-// Backups
+// ── GET /backups — list all backups ───────────────────────────────────────────
 router.get("/backups", requireRole("admin"), async (_req, res): Promise<void> => {
   // Auto-sync: register any .sql files on disk that aren't in the DB yet
   try {
@@ -132,6 +88,7 @@ router.get("/backups", requireRole("admin"), async (_req, res): Promise<void> =>
   })));
 });
 
+// ── POST /backups — create a new pg_dump backup ───────────────────────────────
 router.post("/backups", requireRole("admin"), async (req, res): Promise<void> => {
   const dbUrl = process.env["DATABASE_URL"];
   if (!dbUrl) { res.status(500).json({ error: "DATABASE_URL not configured" }); return; }
@@ -159,51 +116,7 @@ router.post("/backups", requireRole("admin"), async (req, res): Promise<void> =>
   }
 });
 
-// GET /backups/:id/download — stream the .sql file to the browser
-router.get("/backups/:id/download", requireRole("admin"), async (req, res): Promise<void> => {
-  const id = parseInt(req.params.id as string, 10);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
-
-  const [backup] = await db.select().from(backupsTable).where(eq(backupsTable.id, id));
-  if (!backup) { res.status(404).json({ error: "Backup not found" }); return; }
-
-  const filepath = path.join(BACKUP_DIR, backup.filename);
-  if (!existsSync(filepath)) {
-    res.status(404).json({ error: "Backup file not found on disk" });
-    return;
-  }
-
-  await auditLog(req.session.userId!, "backup.download", `Downloaded backup: ${backup.filename}`, getClientIp(req));
-
-  res.setHeader("Content-Disposition", `attachment; filename="${backup.filename}"`);
-  res.setHeader("Content-Type", "application/octet-stream");
-  res.setHeader("Content-Length", String(statSync(filepath).size));
-
-  const { createReadStream } = await import("fs");
-  createReadStream(filepath).pipe(res);
-});
-
-// DELETE /api/backups/:id — remove from DB and delete file from disk (admin only)
-router.delete("/backups/:id", requireRole("admin"), async (req, res): Promise<void> => {
-  const id = parseInt(req.params.id as string, 10);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
-
-  const [backup] = await db.select().from(backupsTable).where(eq(backupsTable.id, id));
-  if (!backup) { res.status(404).json({ error: "Backup not found" }); return; }
-
-  const filepath = path.join(BACKUP_DIR, backup.filename);
-  try { unlinkSync(filepath); } catch {}
-
-  await db.delete(backupsTable).where(eq(backupsTable.id, id));
-  await auditLog(req.session.userId!, "backup.delete", `Deleted backup: ${backup.filename}`, getClientIp(req));
-
-  res.json({ message: "Backup deleted." });
-});
-
-// ── Backup Schedule endpoints ─────────────────────────────────────────────
-
-const SCHEDULE_KEYS = ["backupEnabled", "backupFrequency", "backupTime", "backupDays", "backupRetention"];
-
+// ── GET /backups/schedule — get current schedule config ───────────────────────
 router.get("/backups/schedule", requireRole("admin"), async (_req, res): Promise<void> => {
   const rows = await db.select().from(settingsTable);
   const s: Record<string, string> = {};
@@ -217,6 +130,7 @@ router.get("/backups/schedule", requireRole("admin"), async (_req, res): Promise
   });
 });
 
+// ── POST /backups/schedule — save + apply schedule ────────────────────────────
 router.post("/backups/schedule", requireRole("admin"), async (req, res): Promise<void> => {
   const { enabled, frequency, time, days, retention } = req.body as {
     enabled: boolean; frequency: string; time: string; days: number[]; retention: number;
@@ -265,37 +179,7 @@ router.post("/backups/schedule", requireRole("admin"), async (req, res): Promise
   res.json({ message: "Schedule saved and applied.", ...cfg });
 });
 
-// ── Helper: parse pg_dump SQL into per-table COPY blocks ──────────────────
-interface TableBlock {
-  table: string;
-  header: string;
-  rows: string[];
-}
-
-function parseSqlBlocks(sql: string): TableBlock[] {
-  const blocks: TableBlock[] = [];
-  const lines = sql.split("\n");
-  let current: TableBlock | null = null;
-
-  for (const line of lines) {
-    const copyMatch = line.match(/^COPY (?:public\.)?(\w+)\s*\(/i);
-    if (copyMatch) {
-      current = { table: copyMatch[1], header: line, rows: [] };
-      continue;
-    }
-    if (current) {
-      if (line.trimEnd() === "\\.") {
-        blocks.push(current);
-        current = null;
-      } else {
-        current.rows.push(line);
-      }
-    }
-  }
-  return blocks;
-}
-
-// POST /backups/analyze — upload .sql, return table list + row counts (no DB write)
+// ── POST /backups/analyze — upload .sql, return table list + row counts ───────
 router.post("/backups/analyze", requireRole("admin"), upload.single("file"), async (req, res): Promise<void> => {
   if (!req.file) { res.status(400).json({ error: "No .sql file uploaded" }); return; }
   const tmpPath = req.file.path;
@@ -336,7 +220,7 @@ router.post("/backups/analyze", requireRole("admin"), upload.single("file"), asy
   }
 });
 
-// POST /backups/selective-import — import only selected tables from a previously analyzed file
+// ── POST /backups/selective-import — import only selected tables ──────────────
 router.post("/backups/selective-import", requireRole("admin"), async (req, res): Promise<void> => {
   const { tmpPath, selectedTables, originalName } = req.body as {
     tmpPath: string;
@@ -370,7 +254,6 @@ router.post("/backups/selective-import", requireRole("admin"), async (req, res):
       return;
     }
 
-    // Build a minimal SQL that only replays the chosen COPY blocks
     const lines: string[] = [
       "SET session_replication_role = replica;", // skip FK checks during restore
     ];
@@ -419,6 +302,7 @@ router.post("/backups/selective-import", requireRole("admin"), async (req, res):
   }
 });
 
+// ── POST /backups/import — full SQL import ────────────────────────────────────
 router.post("/backups/import", requireRole("admin"), upload.single("file"), async (req, res): Promise<void> => {
   const dbUrl = process.env["DATABASE_URL"];
   if (!dbUrl) { res.status(500).json({ error: "DATABASE_URL not configured" }); return; }
@@ -454,6 +338,48 @@ router.post("/backups/import", requireRole("admin"), upload.single("file"), asyn
   }
 });
 
+// ── GET /backups/:id/download — stream .sql file ──────────────────────────────
+router.get("/backups/:id/download", requireRole("admin"), async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id as string, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+
+  const [backup] = await db.select().from(backupsTable).where(eq(backupsTable.id, id));
+  if (!backup) { res.status(404).json({ error: "Backup not found" }); return; }
+
+  const filepath = path.join(BACKUP_DIR, backup.filename);
+  if (!existsSync(filepath)) {
+    res.status(404).json({ error: "Backup file not found on disk" });
+    return;
+  }
+
+  await auditLog(req.session.userId!, "backup.download", `Downloaded backup: ${backup.filename}`, getClientIp(req));
+
+  res.setHeader("Content-Disposition", `attachment; filename="${backup.filename}"`);
+  res.setHeader("Content-Type", "application/octet-stream");
+  res.setHeader("Content-Length", String(statSync(filepath).size));
+
+  const { createReadStream } = await import("fs");
+  createReadStream(filepath).pipe(res);
+});
+
+// ── DELETE /backups/:id — remove from DB + disk ───────────────────────────────
+router.delete("/backups/:id", requireRole("admin"), async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id as string, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+
+  const [backup] = await db.select().from(backupsTable).where(eq(backupsTable.id, id));
+  if (!backup) { res.status(404).json({ error: "Backup not found" }); return; }
+
+  const filepath = path.join(BACKUP_DIR, backup.filename);
+  try { unlinkSync(filepath); } catch {}
+
+  await db.delete(backupsTable).where(eq(backupsTable.id, id));
+  await auditLog(req.session.userId!, "backup.delete", `Deleted backup: ${backup.filename}`, getClientIp(req));
+
+  res.json({ message: "Backup deleted." });
+});
+
+// ── POST /backups/:id/restore — restore from a saved backup ──────────────────
 router.post("/backups/:id/restore", requireRole("admin"), async (req, res): Promise<void> => {
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(rawId, 10);
