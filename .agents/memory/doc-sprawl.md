@@ -16,6 +16,6 @@ description: This project maintains many parallel versioned markdown docs that m
 
 **Why:** the project has accumulated ad-hoc duplicate documentation files over several major versions instead of consolidating; there is no single source of truth, so a "bump the version" request touches ~9 files.
 
-**How to apply:** when asked to update docs/version, update all of the above together. Do not touch the superseded v2 files — `ARCHITECTURE.md`, `architectureV2.md`, `ReplitV2.md`, `changelogV2.md` are explicitly marked "(superseded)" and intentionally frozen at v2.7.1.
+**How to apply:** when asked to update docs/version, update all of the above together. Superseded v2 files were moved to `docs/archive/` (`ARCHITECTURE.md`, `architectureV2.md`, `ReplitV2.md`, `changelogV2.md`) and are frozen at v2.7.1 — do not edit them, only their new path.
 
-This sprawl has been flagged to the user more than once as worth consolidating/trimming; if asked again, suggest merging into fewer files rather than continuing to add more.
+This sprawl was flagged to the user repeatedly. As of 2026-07-10 the 4 superseded v2 docs were archived to `docs/archive/` to shrink root clutter; the ~9 active files above still need consolidation if raised again — prefer merging rather than adding more.

@@ -2,7 +2,7 @@
 **Current version: 3.5.2 — July 10, 2026**
 
 > Detailed record of every feature, change, and upgrade from v3.0.0 onward.  
-> For v2.x history, see `changelogV2.md`.  
+> For v2.x history, see `docs/archive/changelogV2.md`.  
 > For pre-v2 history, see `CHANGELOG.md`.  
 > For full architecture reference, see `architectureV3.md`.  
 > For session-by-session changes, see `UPDATES.md`.
@@ -547,7 +547,7 @@ All project documentation updated to reflect the current V3 state of the platfor
 | `architectureV3.md` | ✅ New file | Authoritative V3 architecture reference |
 | `ReplitV3.md` | ✅ New file | V3 quick-reference for agents and developers |
 | `CHANGELOG_V3.md` | ✅ New file | This file — V3 change history |
-| `changelogV2.md` | ✅ V3 header added | Cross-reference to CHANGELOG_V3.md |
+| `docs/archive/changelogV2.md` | ✅ V3 header added | Cross-reference to CHANGELOG_V3.md |
 | `CHANGELOG.md` | ✅ V3 entry added | Top-level version history entry |
 | `docs/DESKTOP_FORMS_V2.md` | ✅ Version note added | No functional changes to the spec |
 | `infrastructure/pwa/manifest.json` | ✅ No changes needed | Already current |

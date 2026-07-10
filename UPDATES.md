@@ -3,7 +3,7 @@
 
 > This file records every meaningful change made to the codebase, session by session.
 > Most recent changes are at the top. One section per work session.
-> For full feature history see `CHANGELOG_V3.md` (v3.x) and `changelogV2.md` (v2.x).
+> For full feature history see `CHANGELOG_V3.md` (v3.x) and `docs/archive/changelogV2.md` (v2.x).
 
 ---
 

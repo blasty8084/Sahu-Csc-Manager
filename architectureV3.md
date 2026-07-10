@@ -2,8 +2,8 @@
 **Version 3.5.2 — July 10, 2026**
 
 > This is the single authoritative reference for the SAHU CSC platform architecture.  
-> It supersedes `architectureV2.md` and `ARCHITECTURE.md`.  
-> For per-feature change history: `CHANGELOG_V3.md` (v3) · `changelogV2.md` (v2) · `CHANGELOG.md` (v1)
+> It supersedes `docs/archive/architectureV2.md` and `docs/archive/ARCHITECTURE.md`.  
+> For per-feature change history: `CHANGELOG_V3.md` (v3) · `docs/archive/changelogV2.md` (v2) · `CHANGELOG.md` (v1)
 
 ---
 

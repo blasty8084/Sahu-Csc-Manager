@@ -140,10 +140,10 @@ workspace/
 │
 ├── BUILD.md                     # This file — project overview
 ├── CHANGELOG.md                 # Full feature changelog (pre-v3)
-├── changelogV2.md               # v2.x detailed changelog
+├── docs/archive/changelogV2.md  # v2.x detailed changelog (archived)
 ├── CHANGELOG_V3.md              # v3.x detailed changelog
-├── ARCHITECTURE.md              # Full architecture reference (legacy, see architectureV3.md)
-├── architectureV2.md            # v2 architecture reference
+├── docs/archive/ARCHITECTURE.md    # Full architecture reference (legacy, see architectureV3.md)
+├── docs/archive/architectureV2.md  # v2 architecture reference (archived)
 ├── architectureV3.md            # v3 authoritative architecture (current)
 ├── WORKFLOWS.md                 # Workflow guide (port map, quick-start, troubleshooting)
 ├── ReplitV3.md                  # Quick-reference for agents and developers

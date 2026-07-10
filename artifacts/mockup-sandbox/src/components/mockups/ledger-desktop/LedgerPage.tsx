@@ -12,7 +12,7 @@ import {
 // ─── Types ───────────────────────────────────────────────────────────────────
 type NavItem = {
   label: string;
-  icon: React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>;
+  icon: React.ComponentType<{ size?: number; className?: string; strokeWidth?: number; style?: React.CSSProperties }>;
   active?: boolean;
   badge?: number;
 };
