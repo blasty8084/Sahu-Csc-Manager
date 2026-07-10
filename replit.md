@@ -1,5 +1,5 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 3.5.2** — last updated 2026-07-10
+**Version 3.5.3** — last updated 2026-07-10
 
 > Re-imported and re-set-up on Replit 2026-07-10: ran `pnpm install`, pushed schema via `drizzle-kit push` (`pnpm exec drizzle-kit push --config=drizzle.config.ts` from `lib/db/`), seeded admin/operator via the `Seed Database` workflow, and started `API Server` + `SAHU CSC` workflows. `ADMIN_PASSWORD` and `OPERATOR_PASSWORD` are stored as Replit Secrets (never in `.replit`/config); `SESSION_SECRET` already existed. Verified login works via curl.
 >

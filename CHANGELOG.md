@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log & Feature Documentation
-**Current version: 3.5.2** — last updated 2026-07-10
+**Current version: 3.5.3** — last updated 2026-07-10
 
 > Full record of every feature, change, and upgrade applied to the SAHU CSC platform.
 > Use this file as a reference for future development, onboarding, and audits.
@@ -10,6 +10,20 @@
 > See `CHANGELOG_V3.md` for the full V3 detailed changelog. See `docs/archive/changelogV2.md` for v2.x history.
 >
 > **v2.1.0 adds:** Udhari Khata (customer credit ledger) · Receipt system (CSC-YYYY-NNNN + QR + WhatsApp PDF sharing) · V2 multi-device sessions · RBAC `requirePermission` middleware · OTP password reset · Admin oversight pages · PWA Status page · Idle timeout (30 min) · Notification isolation fixes · UI Design System v2 (mobile header, gradient card language) · Canvas mockup exploration for Ledger / AePS / Add Entry / Udhari form redesigns
+
+---
+
+## v3.5.3 — Optimization Round 2: Query Caching, Load Testing & Safe Rate-Limiter Bypass (July 10, 2026)
+
+| Change | Description |
+|--------|-------------|
+| **Query-level caching** | 5s TTL cache in front of `/api/dashboard`, `/api/admin/users-overview`, `/api/reports/daily`, `/api/reports/monthly`, invalidated on every ledger write. |
+| **Lightweight APM surrogate** | Requests over 500ms now log at `warn` with a `slowRequest` flag. |
+| **Measured load test** | New `pnpm run loadtest` script (autocannon). Real numbers: dashboard p50 47ms/p95 272ms, admin overview p50 46ms/p95 251ms, healthz p50 16ms — 0 errors at 20 concurrent connections. |
+| **Rate-limiter bypass hardened** | Loopback skip for load testing only applies outside production, so it can't be triggered by a spoofed `X-Forwarded-For` header in production. |
+| **CDN / read replicas** | Not done — flagged as follow-ups, not claimed as complete. |
+
+See `CHANGELOG_V3.md` for the full detailed changelog.
 
 ---
 

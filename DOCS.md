@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Platform Documentation
-**Version 3.5.2** — last updated 2026-07-10
+**Version 3.5.3** — last updated 2026-07-10
 
 > Common Service Center (CSC) Business Management Platform for Odisha / India rural service centers.
 > Full-stack · PWA · Offline-capable · Multilingual (English / Hindi / Odia)
@@ -55,6 +55,10 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 ---
 
 ## 2. Version History
+
+### v3.5.3 — Optimization Round 2: Query Caching, Load Testing & Safe Rate-Limiter Bypass (2026-07-10)
+
+Process-local 5s TTL query cache (`lib/query-cache.ts`) added in front of the heaviest read aggregates — `GET /api/dashboard`, `GET /api/admin/users-overview`, `GET /api/reports/daily`, `GET /api/reports/monthly` — invalidated immediately on any ledger create/update/delete. Added a lightweight APM surrogate: requests over `SLOW_REQUEST_MS` (default 500ms) now log at `warn` with a `slowRequest` flag. Added a real load-testing script (`pnpm --filter @workspace/api-server run loadtest`, autocannon-based) against `/api/dashboard`, `/api/admin/users-overview`, `/healthz`; measured 20 concurrent connections for 8s with 0 errors: dashboard p50 47ms/p95 272ms, admin overview p50 46ms/p95 251ms, healthz p50 16ms/p95 32ms. The general rate limiter now skips loopback IPs so the load test can run, but only when `NODE_ENV !== "production"` — the bypass code path does not exist at all in production, since `req.ip` under `trust proxy` is otherwise attacker-controllable. CDN and read-replica work were explicitly **not** done — they're infrastructure additions outside app code and are tracked as follow-ups rather than claimed as complete.
 
 ### v3.5.0 — Backend File Split & Modularisation (2026-07-10)
 

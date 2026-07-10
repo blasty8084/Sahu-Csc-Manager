@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v3
-**Current version: 3.5.2 — July 10, 2026**
+**Current version: 3.5.3 — July 10, 2026**
 
 > Detailed record of every feature, change, and upgrade from v3.0.0 onward.  
 > For v2.x history, see `docs/archive/changelogV2.md`.  
@@ -11,6 +11,7 @@
 
 ## Table of Contents
 
+0. [v3.5.3 — Optimization Round 2: Query Caching, Load Testing & Safe Rate-Limiter Bypass (July 10, 2026)](#0-v353--optimization-round-2-query-caching-load-testing--safe-rate-limiter-bypass-july-10-2026)
 0. [v3.5.2 — Asset & Delivery Hardening (July 10, 2026)](#0-v352--asset--delivery-hardening-july-10-2026)
 0. [v3.5.1 — Performance & Scale Hardening (July 10, 2026)](#0-v351--performance--scale-hardening-july-10-2026)
 0. [v3.5.0 — Backend File Split & Modularisation (July 10, 2026)](#0-v350--backend-file-split--modularisation-july-10-2026)
@@ -21,6 +22,20 @@
 3. [v3.1.1 — Replit Environment Migration & TypeScript Clean (July 3, 2026)](#3-v311--replit-environment-migration--typescript-clean-july-3-2026)
 4. [v3.1.0 — Backup & Restore Redesign + Download + Scheduler (June 30, 2026)](#4-v310--backup--restore-redesign--download--scheduler-june-30-2026)
 5. [v3.0.0 — Setup Wizard, SMTP Integration & Auto-Import (June 30, 2026)](#5-v300--setup-wizard-smtp-integration--auto-import-june-30-2026)
+
+---
+
+## 0. v3.5.3 — Optimization Round 2: Query Caching, Load Testing & Safe Rate-Limiter Bypass (July 10, 2026)
+
+**Goal:** Push past the v3.5.1 performance baseline with query-level caching, a lightweight APM surrogate, and actual measured load-test numbers instead of estimates.
+
+| Change | Description |
+|--------|-------------|
+| **Process-local TTL query cache** | New `lib/query-cache.ts` — plain `Map`-based 5s TTL cache (not Redis; single-process app) in front of `GET /api/dashboard`, `GET /api/admin/users-overview`, `GET /api/reports/daily`, `GET /api/reports/monthly`. Keys are user+date scoped for the per-user endpoints, global for the admin-only overview. Invalidated synchronously via `invalidateLedgerCaches()` on every ledger create/update/delete — never relies on TTL alone for correctness after a write. |
+| **Lightweight APM surrogate** | `app.ts`'s `pinoHttp` now computes `customLogLevel` so requests over `SLOW_REQUEST_MS` (default 500ms, env-overridable) log at `warn` with a `slowRequest: true` prop, without adding a full tracing agent. |
+| **Real load testing** | New `pnpm --filter @workspace/api-server run loadtest` script (`autocannon`) exercises `/api/dashboard`, `/api/admin/users-overview`, `/healthz`. Measured on this container, 20 concurrent connections for 8s, 0 errors: dashboard p50 47ms / p95 272ms / p99 362ms at ~278 req/s; admin overview p50 46ms / p95 251ms / p99 298ms at ~284 req/s; healthz p50 16ms / p95 32ms at ~1133 req/s. |
+| **Rate-limiter loopback skip, safely scoped** | The general `express-rate-limit` (500/15min) now skips loopback IPs (127.0.0.1/::1) so the load-test tool can generate real concurrent traffic without tripping it — but only when `NODE_ENV !== "production"`. Since `trust proxy` is on, `req.ip` is derived from `X-Forwarded-For`, which is attacker-spoofable; gating the whole skip branch on non-production removes the bypass code path entirely once deployed, rather than trusting the IP check alone. |
+| **CDN / read replicas — explicitly not done** | Both flagged as follow-ups rather than claimed complete. Static assets already have correct cache headers (see v3.5.2) but no edge/CDN layer sits in front of them; adding one is an infra choice, not an app-code change. Read replicas would require an external Postgres provider — Replit's built-in Postgres doesn't expose one. |
 
 ---
 
