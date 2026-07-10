@@ -31,7 +31,21 @@ app.use(
   }),
 );
 
-app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
+// This server only ever returns JSON (no HTML/static assets), so CSP mainly
+// guards against it ever being coerced into rendering attacker content
+// (e.g. an error page, a misconfigured route). "default-src 'none'" with no
+// script/style/frame exceptions is safe here and costs nothing functionally.
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'none'"],
+        frameAncestors: ["'none'"],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+  }),
+);
 app.use(hpp());
 app.use(compression());
 
