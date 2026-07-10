@@ -1,19 +1,21 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { customFetch } from "@workspace/api-client-react";
+import { Layout } from "@/components/layout";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Download, FileText, FileSpreadsheet, Search, Filter,
   Calendar, Eye, Printer, CheckSquare, Square, ChevronDown,
   Receipt, IndianRupee, X, Check,
   ArrowDownToLine, Share2, QrCode, Clock, Mail,
   FileArchive, Loader2, TrendingUp,
-  AlertCircle, ChevronRight, ArrowLeft, User,
+  AlertCircle, ChevronRight, User,
   SlidersHorizontal, Hash,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ReceiptModal } from "@/components/receipt-modal";
 
+// ── Brand tokens ──────────────────────────────────────────────────────────────
 const NAVY    = "#0b2c60";
 const SAFFRON = "#f97316";
 
@@ -24,6 +26,7 @@ const MONTH_OPTIONS = [
   { v: 10, l: "October" },  { v: 11, l: "November" },  { v: 12, l: "December" },
 ];
 
+// ── Types ─────────────────────────────────────────────────────────────────────
 interface PreviewEntry {
   receiptNumber: string;
   date: string;
@@ -62,12 +65,26 @@ interface BusinessInfo {
 }
 
 type ModalAction = "print" | "download" | "share" | "whatsapp" | null;
+type MobileTab   = "receipts" | "byDate" | "summary" | "export";
 
+interface UserOverview {
+  userId: number;
+  username: string;
+  fullName: string | null;
+  role: string;
+  isActive: boolean;
+  balance: number;
+  totalCredits: number;
+  totalDebits: number;
+  totalTransactions: number;
+}
+
+// ── Small helpers ─────────────────────────────────────────────────────────────
 function Checkbox({ checked, onChange, size = 16 }: { checked: boolean; onChange: () => void; size?: number }) {
   return (
     <button onClick={onChange} className="shrink-0">
       {checked
-        ? <CheckSquare size={size} className="text-[#0b2c60]" />
+        ? <CheckSquare size={size} color={NAVY} />
         : <Square     size={size} className="text-slate-300" />}
     </button>
   );
@@ -80,52 +97,59 @@ function fmtDateShort(d: string) {
   return new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-type MobileTab = "receipts" | "byDate" | "summary" | "export";
-
+// ── Page component ────────────────────────────────────────────────────────────
 export default function ReceiptExport() {
   const now          = new Date();
   const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
   const today        = now.toISOString().split("T")[0];
 
-  const [, setLocation]    = useLocation();
-  const { toast }          = useToast();
+  const { toast }   = useToast();
+  const isMobile    = useIsMobile();
 
-  /* ── Shared filter state ── */
-  const [startDate,    setStartDate]    = useState(firstOfMonth);
-  const [endDate,      setEndDate]      = useState(today);
-  const [userId,       setUserId]       = useState("all");
-  const [searchQ,      setSearchQ]      = useState("");
-  const [showFilters,  setShowFilters]  = useState(false);
-  const [dateRange,    setDateRange]    = useState("month");
+  // ── Shared filter state ──
+  const [startDate,   setStartDate]   = useState(firstOfMonth);
+  const [endDate,     setEndDate]     = useState(today);
+  const [userId,      setUserId]      = useState("all");
+  const [searchQ,     setSearchQ]     = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+  const [dateRange,   setDateRange]   = useState("month");
 
-  /* ── Results state ── */
+  // ── Results state ──
   const [preview,       setPreview]       = useState<CountResult | null>(null);
   const [previewing,    setPreviewing]    = useState(false);
   const [downloading,   setDownloading]   = useState(false);
   const [selected,      setSelected]      = useState<Set<string>>(new Set());
   const [expandedEntry, setExpandedEntry] = useState<string | null>(null);
 
-  /* ── Mobile-specific state ── */
-  const [mobileTab,    setMobileTab]    = useState<MobileTab>("receipts");
-  const [showPreview,  setShowPreview]  = useState(false);
-  const [activeEntry,  setActiveEntry]  = useState<PreviewEntry | null>(null);
+  // ── Mobile-specific state ──
+  const [mobileTab,   setMobileTab]   = useState<MobileTab>("receipts");
+  const [showPreview, setShowPreview] = useState(false);
+  const [activeEntry, setActiveEntry] = useState<PreviewEntry | null>(null);
   const [exportFormat, setExportFormat] = useState<"pdf" | "excel">("pdf");
-  const [exported,     setExported]     = useState(false);
+  const [exported,    setExported]    = useState(false);
 
-  /* ── Monthly export state ── */
+  // ── Monthly export state ──
   const [trigMonth,        setTrigMonth]        = useState(now.getMonth() === 0 ? 12 : now.getMonth());
   const [trigYear,         setTrigYear]         = useState(now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear());
   const [emailing,         setEmailing]         = useState(false);
   const [monthDownloading, setMonthDownloading] = useState(false);
 
-  /* ── Single-receipt action modal (Print / PDF / Share / WhatsApp) ── */
-  const [modalOpen,   setModalOpen]   = useState(false);
-  const [modalEntry,  setModalEntry]  = useState<FullReceiptEntry | null>(null);
-  const [modalAction, setModalAction] = useState<ModalAction>(null);
+  // ── Single-receipt action modal ──
+  const [modalOpen,       setModalOpen]       = useState(false);
+  const [modalEntry,      setModalEntry]      = useState<FullReceiptEntry | null>(null);
+  const [modalAction,     setModalAction]     = useState<ModalAction>(null);
   const [modalLoadingFor, setModalLoadingFor] = useState<string | null>(null);
   const [business, setBusiness] = useState<BusinessInfo>({
     businessName: "SAHU CSC Center", businessAddress: "", businessMobile: "", businessWebsite: "",
   });
+
+  // ── Data: users list for operator filter ──
+  const { data: usersOverview = [] } = useQuery<UserOverview[]>({
+    queryKey: ["admin", "users-overview"],
+    queryFn:  () => customFetch<UserOverview[]>("/api/admin/users-overview"),
+  });
+
+  // ── Handlers ─────────────────────────────────────────────────────────────────
 
   const openReceiptAction = async (receiptNumber: string, action: ModalAction = null) => {
     setModalLoadingFor(receiptNumber);
@@ -144,12 +168,6 @@ export default function ReceiptExport() {
     }
   };
 
-  const { data: usersOverview = [] } = useQuery<any[]>({
-    queryKey: ["admin", "users-overview"],
-    queryFn:  () => customFetch<any[]>("/api/admin/users-overview"),
-  });
-
-  /* ── Quick presets ── */
   const setQuickRange = (preset: "today" | "week" | "month" | "lastMonth" | "year") => {
     const n = new Date();
     let start: Date;
@@ -176,7 +194,6 @@ export default function ReceiptExport() {
     return p.toString();
   };
 
-  /* ── Preview ── */
   const handlePreview = async () => {
     if (!startDate || !endDate) { toast({ title: "Select both dates", variant: "destructive" }); return; }
     if (startDate > endDate)    { toast({ title: "Start date must be before end date", variant: "destructive" }); return; }
@@ -190,14 +207,12 @@ export default function ReceiptExport() {
     } finally { setPreviewing(false); }
   };
 
-  /* ── Bulk download (PDF ZIP or Excel, based on selected format) ── */
   const handleDownload = async () => {
     if (!preview || preview.count === 0) { toast({ title: "No receipts to download", variant: "destructive" }); return; }
     if (selected.size === 0) { toast({ title: "Nothing selected", description: "Select at least one receipt to download.", variant: "destructive" }); return; }
     setDownloading(true);
     try {
       const params = new URLSearchParams(buildParams());
-      // Pass the exact selected receipt numbers so the backend downloads only those
       params.set("receiptNumbers", Array.from(selected).join(","));
       const isExcel  = exportFormat === "excel";
       const endpoint = isExcel ? "/api/admin/receipts/bulk-export/excel" : "/api/admin/receipts/bulk-export/download";
@@ -211,8 +226,8 @@ export default function ReceiptExport() {
       toast({
         title: "Download started",
         description: isExcel
-          ? `${preview.count} receipt${preview.count !== 1 ? "s" : ""} in Excel sheet`
-          : `${preview.count} PDF receipt${preview.count !== 1 ? "s" : ""} in ZIP`,
+          ? `${selected.size} receipt${selected.size !== 1 ? "s" : ""} in Excel sheet`
+          : `${selected.size} PDF receipt${selected.size !== 1 ? "s" : ""} in ZIP`,
       });
       setExported(true); setTimeout(() => setExported(false), 2000);
     } catch (err: unknown) {
@@ -220,7 +235,6 @@ export default function ReceiptExport() {
     } finally { setDownloading(false); }
   };
 
-  /* ── Monthly download ── */
   const handleMonthDownload = async () => {
     setMonthDownloading(true);
     try {
@@ -236,7 +250,6 @@ export default function ReceiptExport() {
     finally  { setMonthDownloading(false); }
   };
 
-  /* ── Monthly email ── */
   const handleMonthEmail = async () => {
     setEmailing(true);
     try {
@@ -247,24 +260,24 @@ export default function ReceiptExport() {
       });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? "Failed to send");
       toast({ title: "Email sent!", description: `Monthly export for ${MONTH_OPTIONS.find(m => m.v === trigMonth)?.l} ${trigYear} emailed.` });
-    } catch (err: any) {
-      toast({ title: "Failed to send", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Failed to send", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
     } finally { setEmailing(false); }
   };
 
+  // ── Derived values ────────────────────────────────────────────────────────────
   const displayedEntries  = preview?.entries ?? [];
   const filteredEntries   = displayedEntries.filter(e =>
-    e.customerName.toLowerCase().includes(searchQ.toLowerCase())   ||
-    e.receiptNumber.toLowerCase().includes(searchQ.toLowerCase())  ||
+    e.customerName.toLowerCase().includes(searchQ.toLowerCase())  ||
+    e.receiptNumber.toLowerCase().includes(searchQ.toLowerCase()) ||
     e.serviceType.toLowerCase().includes(searchQ.toLowerCase())
   );
   const selTotal    = filteredEntries.filter(e => selected.has(e.receiptNumber)).reduce((s, e) => s + e.amount, 0);
   const totalAmount = displayedEntries.reduce((s, e) => s + e.amount, 0);
-
   const allFilteredSelected = filteredEntries.length > 0 && filteredEntries.every(e => selected.has(e.receiptNumber));
-  const toggleAll   = () => {
+
+  const toggleAll = () => {
     if (allFilteredSelected) {
-      // Deselect only the filtered ones (keep any outside the filter selected)
       const next = new Set(selected);
       filteredEntries.forEach(e => next.delete(e.receiptNumber));
       setSelected(next);
@@ -280,12 +293,11 @@ export default function ReceiptExport() {
 
   const nextExport = new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 5, 0)
     .toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
-
   const years = [now.getFullYear(), now.getFullYear() - 1, now.getFullYear() - 2];
 
-  /* ═══════════════════════════════════════════════════════
-     MONTHLY PANEL (reused by both layouts)
-  ═══════════════════════════════════════════════════════ */
+  // ══════════════════════════════════════════════════════════
+  //  MONTHLY PANEL — shared between both layouts
+  // ══════════════════════════════════════════════════════════
   const MonthlyPanel = (
     <div className="bg-white rounded-xl border border-orange-100 shadow-sm overflow-hidden">
       <div className="px-4 py-3 flex items-center gap-2.5" style={{ background: `linear-gradient(135deg, ${SAFFRON}, #ea580c)` }}>
@@ -348,57 +360,40 @@ export default function ReceiptExport() {
     </div>
   );
 
-  /* ═══════════════════════════════════════════════════════
-     ██████████  DESKTOP LAYOUT  ██████████
-  ═══════════════════════════════════════════════════════ */
-  const DesktopLayout = (
-    <div className="hidden sm:block min-h-screen bg-slate-50">
+  // ══════════════════════════════════════════════════════════
+  //  DESKTOP LAYOUT  (≥768px — within <Layout>)
+  // ══════════════════════════════════════════════════════════
+  const DesktopContent = (
+    <div className="space-y-5">
 
-      {/* ── Top Header ── */}
-      <div className="bg-[#0b2c60] text-white px-6 py-4 sticky top-0 z-20">
-        <div className="h-0.5 absolute top-0 left-0 right-0" style={{ background: `linear-gradient(90deg, ${SAFFRON}, #fbbf24, ${SAFFRON})` }} />
-        <div className="max-w-[1200px] mx-auto flex items-center gap-3">
-          <button
-            onClick={() => window.history.length > 1 ? window.history.back() : setLocation("/")}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors">
-            <ArrowLeft size={17} />
-          </button>
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-lg shrink-0" style={{ background: `linear-gradient(135deg, ${SAFFRON}, #ea580c)` }}>
-            <Receipt size={16} className="text-white" />
-          </div>
-          <div className="flex-1">
-            <h1 className="text-base font-bold tracking-tight">Receipt Export</h1>
-            <p className="text-xs text-white/60">Download & share transaction receipts</p>
-          </div>
-          <span className="text-[10px] text-white/50 bg-white/10 border border-white/10 rounded-full px-3 py-1">Admin Only</span>
-        </div>
-      </div>
-
-      {/* ── Stat Cards ── */}
-      <div className="bg-[#0b2c60]/95 px-6 pb-5 pt-2">
-        <div className="max-w-[1200px] mx-auto grid grid-cols-4 gap-3">
-          {[
-            { label: "Total Receipts", value: preview ? String(preview.count)                : "—", icon: Receipt,         color: "bg-[#0b2c60] border border-white/10", iconBg: "bg-white/15" },
-            { label: "Total Amount",   value: preview ? `₹${totalAmount.toLocaleString("en-IN")}` : "—", icon: IndianRupee, color: "bg-emerald-600",                          iconBg: "bg-white/15" },
-            { label: "Credit Entries", value: preview ? String(displayedEntries.filter(e => e.type === "credit").length) : "—", icon: TrendingUp, color: "bg-[#f97316]", iconBg: "bg-white/15" },
-            { label: "Selected",       value: String(selected.size),                          icon: ArrowDownToLine,  color: "bg-violet-600",                          iconBg: "bg-white/15" },
-          ].map((s) => (
-            <div key={s.label} className={`${s.color} rounded-xl p-3.5 text-white flex items-center gap-3`}>
-              <div className={`${s.iconBg} w-9 h-9 rounded-lg flex items-center justify-center shrink-0`}>
-                <s.icon size={18} />
-              </div>
-              <div>
-                <p className="text-xl font-bold leading-none">{s.value}</p>
-                <p className="text-[11px] text-white/70 mt-0.5">{s.label}</p>
-              </div>
+      {/* ── Stat bar ── */}
+      <div className="grid grid-cols-4 gap-3">
+        {[
+          { label: "Total Receipts",  value: preview ? String(preview.count) : "—",
+            icon: Receipt,         bg: NAVY,         iconBg: "bg-white/15" },
+          { label: "Total Amount",    value: preview ? `₹${totalAmount.toLocaleString("en-IN")}` : "—",
+            icon: IndianRupee,     bg: "#059669",    iconBg: "bg-white/15" },
+          { label: "Credit Entries",  value: preview ? String(displayedEntries.filter(e => e.type === "credit").length) : "—",
+            icon: TrendingUp,      bg: SAFFRON,      iconBg: "bg-white/15" },
+          { label: "Selected",        value: String(selected.size),
+            icon: ArrowDownToLine, bg: "#7c3aed",    iconBg: "bg-white/15" },
+        ].map(s => (
+          <div key={s.label} className="rounded-xl p-3.5 text-white flex items-center gap-3" style={{ background: s.bg }}>
+            <div className={`${s.iconBg} w-9 h-9 rounded-lg flex items-center justify-center shrink-0`}>
+              <s.icon size={18} />
             </div>
-          ))}
-        </div>
+            <div>
+              <p className="text-xl font-bold leading-none">{s.value}</p>
+              <p className="text-[11px] text-white/70 mt-0.5">{s.label}</p>
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div className="max-w-[1200px] mx-auto px-6 py-5 flex gap-5">
+      {/* ── Two-column body ── */}
+      <div className="flex gap-5 items-start">
 
-        {/* ── Left: Filter + Table ── */}
+        {/* ── Left: Filter bar + bulk bar + table ── */}
         <div className="flex-1 min-w-0 space-y-4">
 
           {/* Filter bar */}
@@ -429,7 +424,7 @@ export default function ReceiptExport() {
               <select value={userId} onChange={e => { setUserId(e.target.value); setPreview(null); }}
                 className="bg-transparent text-xs text-slate-600 focus:outline-none cursor-pointer">
                 <option value="all">All Operators</option>
-                {usersOverview.map((u: any) => (
+                {usersOverview.map((u) => (
                   <option key={u.userId} value={String(u.userId)}>
                     {u.fullName ? `${u.fullName} (@${u.username})` : `@${u.username}`}
                   </option>
@@ -457,7 +452,8 @@ export default function ReceiptExport() {
                 <X size={12} /> Clear
               </button>
               <button onClick={handleDownload} disabled={downloading}
-                className="bg-[#f97316] hover:bg-[#ea580c] text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors disabled:opacity-50">
+                className="text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                style={{ background: SAFFRON }}>
                 {downloading
                   ? <><Loader2 size={12} className="animate-spin" /> Generating…</>
                   : <><Download size={12} /> Download {selected.size} ZIP</>}
@@ -472,9 +468,9 @@ export default function ReceiptExport() {
                 <FileArchive size={40} className="opacity-25" />
                 <p className="text-sm font-semibold text-slate-500">How it works</p>
                 <ol className="text-xs text-slate-400 space-y-2 text-left list-none max-w-xs">
-                  <li className="flex gap-2"><span className="font-bold text-[#0b2c60]">1.</span> Choose a date range and optional operator filter above</li>
-                  <li className="flex gap-2"><span className="font-bold text-[#0b2c60]">2.</span> Click Preview Receipts to see how many will be exported</li>
-                  <li className="flex gap-2"><span className="font-bold text-[#0b2c60]">3.</span> Download as ZIP — each receipt is a separately named PDF</li>
+                  <li className="flex gap-2"><span className="font-bold" style={{ color: NAVY }}>1.</span> Choose a date range and optional operator filter above</li>
+                  <li className="flex gap-2"><span className="font-bold" style={{ color: NAVY }}>2.</span> Click Preview Receipts to see how many will be exported</li>
+                  <li className="flex gap-2"><span className="font-bold" style={{ color: NAVY }}>3.</span> Download as ZIP — each receipt is a separately named PDF</li>
                 </ol>
               </div>
             </div>
@@ -542,11 +538,11 @@ export default function ReceiptExport() {
                       </td>
                       <td className="px-3 py-3 text-right" onClick={ev => ev.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1">
-                          {[
-                            { Icon: Eye, action: null as ModalAction },
+                          {([
+                            { Icon: Eye,     action: null as ModalAction },
                             { Icon: Printer, action: "print" as ModalAction },
-                            { Icon: Share2, action: "share" as ModalAction },
-                          ].map(({ Icon, action }, i) => (
+                            { Icon: Share2,  action: "share" as ModalAction },
+                          ] as const).map(({ Icon, action }, i) => (
                             <button key={i}
                               onClick={() => openReceiptAction(e.receiptNumber, action)}
                               disabled={modalLoadingFor === e.receiptNumber}
@@ -568,12 +564,12 @@ export default function ReceiptExport() {
           )}
         </div>
 
-        {/* ── Right: Export Options + Preview + Monthly ── */}
+        {/* ── Right: Export Options + Receipt Preview + Monthly ── */}
         <div className="w-[280px] shrink-0 space-y-4">
 
           {/* Export Options Card */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="bg-[#0b2c60] px-4 py-3 flex items-center gap-2">
+            <div className="px-4 py-3 flex items-center gap-2" style={{ background: NAVY }}>
               <ArrowDownToLine size={14} className="text-white/80" />
               <span className="text-sm font-semibold text-white">Export Options</span>
             </div>
@@ -600,9 +596,9 @@ export default function ReceiptExport() {
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2">Scope</p>
                 <div className="space-y-1.5">
                   {[
-                    { label: "All Receipts",   sub: preview ? `${preview.count} receipts` : "Preview first" },
-                    { label: "Selected Only",  sub: `${selected.size} selected` },
-                    { label: "Date Range",     sub: startDate && endDate ? `${fmtDate(startDate)} → ${fmtDate(endDate)}` : "Set dates above" },
+                    { label: "All Receipts",  sub: preview ? `${preview.count} receipts` : "Preview first" },
+                    { label: "Selected Only", sub: `${selected.size} selected` },
+                    { label: "Date Range",    sub: startDate && endDate ? `${fmtDate(startDate)} → ${fmtDate(endDate)}` : "Set dates above" },
                   ].map((opt, i) => (
                     <label key={opt.label} className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-slate-50 cursor-pointer">
                       <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 ${i === (selected.size > 0 ? 1 : 0) ? "border-[#0b2c60]" : "border-slate-300"}`}>
@@ -632,8 +628,10 @@ export default function ReceiptExport() {
                 </div>
               </div>
 
+              {/* Primary export CTA */}
               <button onClick={handleDownload} disabled={downloading || !preview || preview.count === 0}
-                className="w-full py-2.5 bg-[#f97316] hover:bg-[#ea580c] text-white text-sm font-semibold rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50">
+                className="w-full py-2.5 text-white text-sm font-semibold rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                style={{ background: SAFFRON }}>
                 {downloading
                   ? <><Loader2 size={14} className="animate-spin" /> Generating…</>
                   : exported
@@ -646,7 +644,7 @@ export default function ReceiptExport() {
             </div>
           </div>
 
-          {/* Receipt Preview */}
+          {/* Receipt preview mini-card (shown when a row is expanded) */}
           {expandedEntry && (() => {
             const e = filteredEntries.find(x => x.receiptNumber === expandedEntry);
             if (!e) return null;
@@ -658,10 +656,10 @@ export default function ReceiptExport() {
                 </div>
                 <div className="p-4">
                   <div className="border border-dashed border-slate-200 rounded-lg p-3 bg-slate-50/50 text-center">
-                    <div className="w-8 h-8 bg-[#0b2c60] rounded-full flex items-center justify-center mx-auto mb-1.5">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-1.5" style={{ background: NAVY }}>
                       <Receipt size={14} className="text-white" />
                     </div>
-                    <p className="text-[10px] font-bold text-[#0b2c60] uppercase tracking-wider">SAHU CSC</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: NAVY }}>SAHU CSC</p>
                     <p className="text-[9px] text-slate-400 mb-2">Common Service Center, Odisha</p>
                     <div className="border-t border-dashed border-slate-200 pt-2 text-left space-y-1">
                       {[["Receipt #", e.receiptNumber], ["Date", fmtDate(e.date)], ["Customer", e.customerName], ["Service", e.serviceType]].map(([k, v]) => (
@@ -690,11 +688,11 @@ export default function ReceiptExport() {
                     </div>
                   </div>
                   <div className="mt-3 grid grid-cols-3 gap-1.5">
-                    {[
-                      { icon: Printer, label: "Print", action: "print" as ModalAction },
-                      { icon: Download, label: "PDF", action: "download" as ModalAction },
-                      { icon: Share2, label: "Share", action: "share" as ModalAction },
-                    ].map(({ icon: Icon, label, action }) => (
+                    {([
+                      { icon: Printer,  label: "Print",  action: "print"    as ModalAction },
+                      { icon: Download, label: "PDF",    action: "download" as ModalAction },
+                      { icon: Share2,   label: "Share",  action: "share"    as ModalAction },
+                    ] as const).map(({ icon: Icon, label, action }) => (
                       <button key={label}
                         onClick={() => openReceiptAction(e.receiptNumber, action)}
                         disabled={modalLoadingFor === e.receiptNumber}
@@ -716,181 +714,179 @@ export default function ReceiptExport() {
     </div>
   );
 
-  /* ═══════════════════════════════════════════════════════
-     ██████████  MOBILE LAYOUT  ██████████
-  ═══════════════════════════════════════════════════════ */
-  const MobileLayout = (
-    <div className="sm:hidden flex flex-col bg-slate-100" style={{ height: "100dvh", overflow: "hidden" }}>
+  // ══════════════════════════════════════════════════════════
+  //  MOBILE LAYOUT  (<768px — within <Layout>)
+  // ══════════════════════════════════════════════════════════
 
-      {/* ── Top Header ── */}
-      <div
-        className="bg-[#0b2c60] px-4 pb-3 shrink-0"
-        style={{ paddingTop: "calc(0.75rem + env(safe-area-inset-top))" }}
-      >
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => showPreview ? setShowPreview(false) : (window.history.length > 1 ? window.history.back() : setLocation("/"))}
-            className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center shrink-0">
-            <ArrowLeft size={16} className="text-white" />
-          </button>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-[15px] font-bold text-white leading-tight truncate">
-              {showPreview && activeEntry ? activeEntry.receiptNumber : "Receipt Export"}
-            </h1>
-            <p className="text-[11px] text-white/55 leading-none mt-0.5">
-              {showPreview && activeEntry
-                ? fmtDate(activeEntry.date)
-                : `${preview?.count ?? 0} receipts`}
-            </p>
+  // Mobile: single-receipt preview overlay
+  const MobileReceiptPreview = activeEntry ? (
+    <div>
+      <button
+        onClick={() => setShowPreview(false)}
+        className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-slate-500">
+        ← Back to list
+      </button>
+      <div className="bg-white rounded-3xl shadow-lg overflow-hidden border border-slate-100">
+        <div className="px-5 py-5 text-center" style={{ background: NAVY }}>
+          <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-2">
+            <Receipt size={22} className="text-white" />
           </div>
-          {!showPreview && (
-            <button
-              onClick={() => setMobileTab("export")}
-              className="flex items-center gap-1.5 bg-[#f97316] text-white text-[13px] font-semibold px-4 py-2 rounded-full shrink-0">
-              <ArrowDownToLine size={14} />
-              Export
-            </button>
-          )}
+          <p className="text-white font-bold text-lg tracking-tight">SAHU CSC</p>
+          <p className="text-white/60 text-xs mt-0.5">Common Service Center, Odisha</p>
         </div>
-
-        {/* KPI strip — always shown in header (not when preview) */}
-        {!showPreview && (
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            {[
-              { label: "Total",    value: preview ? String(preview.count) : "—",                         icon: Receipt },
-              { label: "Amount",   value: preview ? `₹${totalAmount.toLocaleString("en-IN")}` : "—",     icon: IndianRupee },
-              { label: "Selected", value: String(selected.size),                                          icon: CheckSquare },
-            ].map(s => (
-              <div key={s.label} className="bg-[#0d3272] rounded-xl px-3 py-2.5 flex items-center gap-2">
-                <s.icon size={14} className="text-[#f97316] shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-sm font-bold text-white leading-none truncate">{s.value}</p>
-                  <p className="text-[10px] text-white/50 mt-0.5">{s.label}</p>
-                </div>
-              </div>
-            ))}
+        <div className="flex items-center">
+          <div className="w-4 h-4 rounded-full bg-slate-100 -ml-2 shrink-0" />
+          <div className="flex-1 border-t-2 border-dashed border-slate-200" />
+          <div className="w-4 h-4 rounded-full bg-slate-100 -mr-2 shrink-0" />
+        </div>
+        <div className="px-5 pb-5 space-y-3">
+          {[
+            { label: "Receipt No.", value: activeEntry.receiptNumber, mono: true },
+            { label: "Date",        value: fmtDate(activeEntry.date) },
+            { label: "Customer",    value: activeEntry.customerName },
+            { label: "Service",     value: activeEntry.serviceType },
+          ].map(row => (
+            <div key={row.label} className="flex items-start justify-between gap-3">
+              <span className="text-xs text-slate-500 shrink-0 mt-0.5">{row.label}</span>
+              <span className={`text-sm font-medium text-slate-800 text-right ${row.mono ? "font-mono text-xs bg-slate-100 px-2 py-0.5 rounded-lg" : ""}`}>
+                {row.value}
+              </span>
+            </div>
+          ))}
+          <div className="flex items-center">
+            <div className="w-4 h-4 rounded-full bg-slate-100 -ml-9 shrink-0" />
+            <div className="flex-1 border-t-2 border-dashed border-slate-200 mx-2" />
+            <div className="w-4 h-4 rounded-full bg-slate-100 -mr-9 shrink-0" />
           </div>
-        )}
+          <div className="flex items-center justify-between py-1">
+            <span className="text-base font-bold text-slate-800">Total Paid</span>
+            <span className={`text-2xl font-bold ${activeEntry.type === "credit" ? "text-emerald-600" : "text-rose-500"}`}>
+              {activeEntry.type === "credit" ? "+" : "-"}₹{activeEntry.amount.toLocaleString("en-IN")}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${activeEntry.type === "credit" ? "bg-emerald-400" : "bg-rose-400"}`} />
+            <span className={`text-xs font-semibold ${activeEntry.type === "credit" ? "text-emerald-600" : "text-rose-500"}`}>
+              {activeEntry.type === "credit" ? "Payment Confirmed" : "Debit Entry"}
+            </span>
+          </div>
+          <div className="flex flex-col items-center py-3">
+            <div className="w-24 h-24 bg-slate-100 border-2 border-dashed border-slate-200 rounded-2xl flex items-center justify-center">
+              <QrCode size={44} className="text-slate-400" />
+            </div>
+            <p className="text-[10px] text-slate-400 mt-2">Scan to verify online</p>
+          </div>
+          <p className="text-center text-xs text-slate-400">Thank you for using SAHU CSC</p>
+        </div>
       </div>
 
-      {/* ══ PREVIEW OVERLAY ══ */}
-      {showPreview && activeEntry && (
-        <div className="flex-1 overflow-y-auto bg-slate-100 px-4 py-4">
-          <div className="bg-white rounded-3xl shadow-lg overflow-hidden border border-slate-100">
-            <div className="bg-[#0b2c60] px-5 py-5 text-center">
-              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-2">
-                <Receipt size={22} className="text-white" />
-              </div>
-              <p className="text-white font-bold text-lg tracking-tight">SAHU CSC</p>
-              <p className="text-white/60 text-xs mt-0.5">Common Service Center, Odisha</p>
-            </div>
-            <div className="flex items-center">
-              <div className="w-4 h-4 rounded-full bg-slate-100 -ml-2 shrink-0" />
-              <div className="flex-1 border-t-2 border-dashed border-slate-200" />
-              <div className="w-4 h-4 rounded-full bg-slate-100 -mr-2 shrink-0" />
-            </div>
-            <div className="px-5 pb-5 space-y-3">
-              {[
-                { label: "Receipt No.", value: activeEntry.receiptNumber, mono: true },
-                { label: "Date",        value: fmtDate(activeEntry.date) },
-                { label: "Customer",    value: activeEntry.customerName },
-                { label: "Service",     value: activeEntry.serviceType },
-              ].map(row => (
-                <div key={row.label} className="flex items-start justify-between gap-3">
-                  <span className="text-xs text-slate-500 shrink-0 mt-0.5">{row.label}</span>
-                  <span className={`text-sm font-medium text-slate-800 text-right ${row.mono ? "font-mono text-xs bg-slate-100 px-2 py-0.5 rounded-lg" : ""}`}>
-                    {row.value}
-                  </span>
-                </div>
-              ))}
-              <div className="flex items-center">
-                <div className="w-4 h-4 rounded-full bg-slate-100 -ml-9 shrink-0" />
-                <div className="flex-1 border-t-2 border-dashed border-slate-200 mx-2" />
-                <div className="w-4 h-4 rounded-full bg-slate-100 -mr-9 shrink-0" />
-              </div>
-              <div className="flex items-center justify-between py-1">
-                <span className="text-base font-bold text-slate-800">Total Paid</span>
-                <span className={`text-2xl font-bold ${activeEntry.type === "credit" ? "text-emerald-600" : "text-rose-500"}`}>
-                  {activeEntry.type === "credit" ? "+" : "-"}₹{activeEntry.amount.toLocaleString("en-IN")}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${activeEntry.type === "credit" ? "bg-emerald-400" : "bg-rose-400"}`} />
-                <span className={`text-xs font-semibold ${activeEntry.type === "credit" ? "text-emerald-600" : "text-rose-500"}`}>
-                  {activeEntry.type === "credit" ? "Payment Confirmed" : "Debit Entry"}
-                </span>
-              </div>
-              <div className="flex flex-col items-center py-3">
-                <div className="w-24 h-24 bg-slate-100 border-2 border-dashed border-slate-200 rounded-2xl flex items-center justify-center">
-                  <QrCode size={44} className="text-slate-400" />
-                </div>
-                <p className="text-[10px] text-slate-400 mt-2">Scan to verify online</p>
-              </div>
-              <div className="flex items-center">
-                <div className="w-4 h-4 rounded-full bg-slate-100 -ml-9 shrink-0" />
-                <div className="flex-1 border-t-2 border-dashed border-slate-200 mx-2" />
-                <div className="w-4 h-4 rounded-full bg-slate-100 -mr-9 shrink-0" />
-              </div>
-              <p className="text-center text-xs text-slate-400">Thank you for using SAHU CSC</p>
-            </div>
-          </div>
-          <div className="mt-4 grid grid-cols-3 gap-3">
-            {[
-              { icon: Printer,  label: "Print", color: "bg-[#0b2c60] text-white", action: "print" as ModalAction },
-              { icon: Download, label: "PDF",   color: "bg-[#f97316] text-white", action: "download" as ModalAction },
-              { icon: Share2,   label: "Share", color: "bg-white text-slate-700 border border-slate-200", action: "share" as ModalAction },
-            ].map(({ icon: Icon, label, color, action }) => (
-              <button key={label}
-                onClick={() => openReceiptAction(activeEntry.receiptNumber, action)}
-                disabled={modalLoadingFor === activeEntry.receiptNumber}
-                className={`${color} rounded-2xl py-4 flex flex-col items-center gap-2 shadow-sm font-medium text-sm disabled:opacity-50`}>
-                {modalLoadingFor === activeEntry.receiptNumber ? <Loader2 size={20} className="animate-spin" /> : <Icon size={20} />}{label}
-              </button>
-            ))}
-          </div>
-          <button
-            onClick={() => openReceiptAction(activeEntry.receiptNumber, "whatsapp")}
+      {/* Action buttons */}
+      <div className="mt-4 grid grid-cols-3 gap-3">
+        {([
+          { icon: Printer,  label: "Print",  color: "bg-[#0b2c60] text-white", action: "print"    as ModalAction },
+          { icon: Download, label: "PDF",    color: "bg-[#f97316] text-white", action: "download" as ModalAction },
+          { icon: Share2,   label: "Share",  color: "bg-white text-slate-700 border border-slate-200", action: "share" as ModalAction },
+        ] as const).map(({ icon: Icon, label, color, action }) => (
+          <button key={label}
+            onClick={() => openReceiptAction(activeEntry.receiptNumber, action)}
             disabled={modalLoadingFor === activeEntry.receiptNumber}
-            className="mt-3 w-full bg-[#25D366] text-white rounded-2xl py-4 flex items-center justify-center gap-2 font-semibold shadow-sm disabled:opacity-50">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
-            </svg>
-            Send via WhatsApp
+            className={`${color} rounded-2xl py-4 flex flex-col items-center gap-2 shadow-sm font-medium text-sm disabled:opacity-50`}>
+            {modalLoadingFor === activeEntry.receiptNumber ? <Loader2 size={20} className="animate-spin" /> : <Icon size={20} />}
+            {label}
           </button>
-          <div className="h-4" />
+        ))}
+      </div>
+      <button
+        onClick={() => openReceiptAction(activeEntry.receiptNumber, "whatsapp")}
+        disabled={modalLoadingFor === activeEntry.receiptNumber}
+        className="mt-3 w-full bg-[#25D366] text-white rounded-2xl py-4 flex items-center justify-center gap-2 font-semibold shadow-sm disabled:opacity-50">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+        </svg>
+        Send via WhatsApp
+      </button>
+    </div>
+  ) : null;
+
+  // Mobile tab definitions
+  const mobileTabs = [
+    { tab: "receipts" as MobileTab, icon: Receipt,         label: "Receipts" },
+    { tab: "byDate"   as MobileTab, icon: Calendar,        label: "By Date"  },
+    { tab: "summary"  as MobileTab, icon: TrendingUp,      label: "Summary"  },
+    { tab: "export"   as MobileTab, icon: ArrowDownToLine, label: "Export"   },
+  ] as const;
+
+  const MobileContent = (
+    <div className="space-y-3">
+
+      {/* ── KPI strip ── */}
+      <div className="grid grid-cols-3 gap-2">
+        {[
+          { label: "Total",    value: preview ? String(preview.count) : "—",                     icon: Receipt      },
+          { label: "Amount",   value: preview ? `₹${totalAmount.toLocaleString("en-IN")}` : "—", icon: IndianRupee  },
+          { label: "Selected", value: String(selected.size),                                      icon: CheckSquare  },
+        ].map(s => (
+          <div key={s.label} className="rounded-xl px-3 py-2.5 flex items-center gap-2" style={{ background: NAVY }}>
+            <s.icon size={14} color={SAFFRON} className="shrink-0" />
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-white leading-none truncate">{s.value}</p>
+              <p className="text-[10px] text-white/50 mt-0.5">{s.label}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Page-specific tab pills ── */}
+      {!showPreview && (
+        <div className="flex gap-1.5 bg-slate-100 rounded-xl p-1">
+          {mobileTabs.map(({ tab, icon: Icon, label }) => {
+            const active = mobileTab === tab;
+            return (
+              <button key={tab} onClick={() => setMobileTab(tab)}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${active ? "bg-white text-[#0b2c60] shadow-sm" : "text-slate-400"}`}>
+                <Icon size={13} />
+                <span className="hidden xs:inline">{label}</span>
+              </button>
+            );
+          })}
         </div>
       )}
 
+      {/* ── Preview overlay ── */}
+      {showPreview && MobileReceiptPreview}
+
       {/* ══ RECEIPTS TAB ══ */}
       {!showPreview && mobileTab === "receipts" && (
-        <div className="flex-1 overflow-y-auto flex flex-col">
-          {/* Search + filter row */}
-          <div className="bg-white border-b border-slate-100 px-3 py-2.5 flex gap-2 shrink-0">
+        <div className="space-y-2">
+          {/* Search + filter toggle */}
+          <div className="flex gap-2">
             <div className="relative flex-1">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 value={searchQ}
                 onChange={e => setSearchQ(e.target.value)}
                 placeholder="Search receipts..."
-                className="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0b2c60]/20 text-slate-700 placeholder:text-slate-400"
+                className="w-full pl-9 pr-3 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0b2c60]/20 text-slate-700 placeholder:text-slate-400"
               />
             </div>
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 transition-colors ${showFilters ? "bg-[#0b2c60] border-[#0b2c60] text-white" : "bg-white border-slate-200 text-slate-500"}`}>
+              className={`w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 transition-colors ${showFilters ? "text-white border-[#0b2c60]" : "bg-white border-slate-200 text-slate-500"}`}
+              style={showFilters ? { background: NAVY } : undefined}>
               <SlidersHorizontal size={16} />
             </button>
           </div>
 
-          {/* Filter panel */}
+          {/* Expandable filter panel */}
           {showFilters && (
-            <div className="bg-white border-b border-slate-100 px-4 py-3 space-y-3 shrink-0">
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 space-y-3">
               <div className="flex gap-1.5 flex-wrap">
                 {(["today","week","month","lastMonth"] as const).map(v => {
                   const l = v === "today" ? "Today" : v === "week" ? "Week" : v === "month" ? "This Month" : "Last Month";
                   return (
                     <button key={v} onClick={() => { setQuickRange(v); setDateRange(v); }}
-                      className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${dateRange === v ? "bg-[#0b2c60] text-white" : "bg-slate-100 text-slate-600"}`}>
+                      className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${dateRange === v ? "text-white" : "bg-slate-100 text-slate-600"}`}
+                      style={dateRange === v ? { background: NAVY } : undefined}>
                       {l}
                     </button>
                   );
@@ -909,15 +905,14 @@ export default function ReceiptExport() {
                 <select value={userId} onChange={e => { setUserId(e.target.value); setPreview(null); }}
                   className="flex-1 bg-transparent text-xs text-slate-600 focus:outline-none">
                   <option value="all">All Operators</option>
-                  {usersOverview.map((u: any) => (
+                  {usersOverview.map((u) => (
                     <option key={u.userId} value={String(u.userId)}>
                       {u.fullName ? `${u.fullName} (@${u.username})` : `@${u.username}`}
                     </option>
                   ))}
                 </select>
-                <ChevronDown size={11} className="text-slate-400" />
               </div>
-              <button onClick={handlePreview} disabled={previewing || !startDate || !endDate}
+              <button onClick={() => { handlePreview(); setShowFilters(false); }} disabled={previewing || !startDate || !endDate}
                 className="w-full py-2.5 text-white text-sm font-bold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50"
                 style={{ background: `linear-gradient(135deg, ${NAVY}, #1a4a9e)` }}>
                 {previewing ? <><Loader2 size={14} className="animate-spin" /> Searching…</> : <><Search size={14} /> Preview Receipts</>}
@@ -925,42 +920,31 @@ export default function ReceiptExport() {
             </div>
           )}
 
-          {/* Bulk action bar */}
-          {selected.size > 0 && preview && !showFilters && (
-            <div className="mx-3 mt-2 bg-[#0b2c60]/5 border border-[#0b2c60]/20 rounded-2xl px-4 py-2.5 flex items-center gap-2 shrink-0">
+          {/* Bulk bar */}
+          {selected.size > 0 && preview && (
+            <div className="bg-[#0b2c60]/5 border border-[#0b2c60]/20 rounded-2xl px-4 py-2.5 flex items-center gap-2">
               <span className="flex-1 text-xs font-semibold text-[#0b2c60]">{selected.size} selected · ₹{selTotal.toLocaleString("en-IN")}</span>
               <button onClick={() => setSelected(new Set())} className="p-1 text-slate-400"><X size={14} /></button>
               <button onClick={() => setMobileTab("export")}
-                className="bg-[#f97316] text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1">
+                className="text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1"
+                style={{ background: SAFFRON }}>
                 <Download size={12} /> Export
               </button>
             </div>
           )}
 
-          {/* Empty / No-preview state */}
+          {/* Empty state */}
           {!preview ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-center px-8 py-6">
-              <div className="mb-4">
-                <FileArchive size={52} className="text-slate-300 mx-auto" />
-              </div>
+            <div className="flex flex-col items-center justify-center text-center px-8 py-12">
+              <FileArchive size={52} className="text-slate-300 mx-auto mb-3" />
               <h3 className="text-base font-bold text-slate-700 mb-3">How it works</h3>
               <ol className="text-sm text-left space-y-3 mb-6 w-full max-w-xs">
-                <li className="flex gap-3">
-                  <span className="font-bold text-[#f97316] shrink-0">1.</span>
-                  <span className="text-slate-500">Tap the filter icon to set a date range</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="font-bold text-[#f97316] shrink-0">2.</span>
-                  <span className="text-slate-500">Preview to see how many receipts will be exported</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="font-bold text-[#f97316] shrink-0">3.</span>
-                  <span className="text-slate-500">Download as ZIP — each receipt is a separate named PDF</span>
-                </li>
+                <li className="flex gap-3"><span className="font-bold shrink-0" style={{ color: SAFFRON }}>1.</span><span className="text-slate-500">Tap the filter icon to set a date range</span></li>
+                <li className="flex gap-3"><span className="font-bold shrink-0" style={{ color: SAFFRON }}>2.</span><span className="text-slate-500">Preview to see matching receipts</span></li>
+                <li className="flex gap-3"><span className="font-bold shrink-0" style={{ color: SAFFRON }}>3.</span><span className="text-slate-500">Download as ZIP — each receipt is a PDF</span></li>
               </ol>
               {!showFilters && (
-                <button
-                  onClick={() => setShowFilters(true)}
+                <button onClick={() => setShowFilters(true)}
                   className="px-8 py-3 text-sm font-semibold text-white rounded-2xl"
                   style={{ background: NAVY }}>
                   Open Filters
@@ -968,17 +952,17 @@ export default function ReceiptExport() {
               )}
             </div>
           ) : preview.count === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
+            <div className="flex flex-col items-center justify-center px-6 text-center py-10">
               <AlertCircle size={36} className="text-amber-400 mb-2" />
               <p className="text-sm font-semibold text-amber-700">No receipts found</p>
               <p className="text-xs text-amber-600 mt-1">Adjust dates and try again.</p>
             </div>
           ) : (
-            <div className="px-3 py-3 space-y-2 pb-4">
+            <div className="space-y-2 pb-2">
               {filteredEntries.map((e) => (
                 <div key={e.receiptNumber}
                   onClick={() => { setActiveEntry(e); setShowPreview(true); }}
-                  className={`bg-white rounded-2xl border shadow-sm active:scale-[0.98] transition-transform ${selected.has(e.receiptNumber) ? "border-[#0b2c60]/30" : "border-slate-200"}`}>
+                  className={`bg-white rounded-2xl border shadow-sm active:scale-[0.98] transition-transform cursor-pointer ${selected.has(e.receiptNumber) ? "border-[#0b2c60]/30" : "border-slate-200"}`}>
                   <div className="p-4 flex items-center gap-3">
                     <div onClick={ev => { ev.stopPropagation(); toggleEntry(e.receiptNumber); }} className="p-1">
                       <Checkbox checked={selected.has(e.receiptNumber)} onChange={() => toggleEntry(e.receiptNumber)} size={18} />
@@ -1011,7 +995,7 @@ export default function ReceiptExport() {
 
       {/* ══ BY DATE TAB ══ */}
       {!showPreview && mobileTab === "byDate" && (
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+        <div className="space-y-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3">
             <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Quick Range</p>
             <div className="flex gap-2 flex-wrap">
@@ -1019,7 +1003,8 @@ export default function ReceiptExport() {
                 const l = v === "today" ? "Today" : v === "week" ? "This Week" : v === "month" ? "This Month" : v === "lastMonth" ? "Last Month" : "This Year";
                 return (
                   <button key={v} onClick={() => { setQuickRange(v); setDateRange(v); }}
-                    className={`px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${dateRange === v ? "bg-[#0b2c60] text-white" : "bg-slate-100 text-slate-600"}`}>
+                    className={`px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${dateRange === v ? "text-white" : "bg-slate-100 text-slate-600"}`}
+                    style={dateRange === v ? { background: NAVY } : undefined}>
                     {l}
                   </button>
                 );
@@ -1044,7 +1029,7 @@ export default function ReceiptExport() {
               <select value={userId} onChange={e => { setUserId(e.target.value); setPreview(null); }}
                 className="flex-1 bg-transparent text-sm text-slate-600 focus:outline-none">
                 <option value="all">All Operators</option>
-                {usersOverview.map((u: any) => (
+                {usersOverview.map((u) => (
                   <option key={u.userId} value={String(u.userId)}>
                     {u.fullName ? `${u.fullName} (@${u.username})` : `@${u.username}`}
                   </option>
@@ -1062,45 +1047,44 @@ export default function ReceiptExport() {
 
       {/* ══ SUMMARY TAB ══ */}
       {!showPreview && mobileTab === "summary" && (
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+        <div className="space-y-3">
           {!preview ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-center py-16">
+            <div className="flex flex-col items-center justify-center text-center py-16">
               <TrendingUp size={40} className="text-slate-300 mb-3" />
               <p className="text-sm font-semibold text-slate-500">No data yet</p>
               <p className="text-xs text-slate-400 mt-1">Preview receipts first to see summary</p>
             </div>
           ) : (
-            <>
-              {[
-                { label: "Total Receipts", value: String(preview.count), icon: Receipt, color: "bg-[#0b2c60]" },
-                { label: "Total Amount",   value: `₹${totalAmount.toLocaleString("en-IN")}`, icon: IndianRupee, color: "bg-emerald-600" },
-                { label: "Credit Entries", value: String(displayedEntries.filter(e => e.type === "credit").length), icon: TrendingUp, color: "bg-[#f97316]" },
-                { label: "Debit Entries",  value: String(displayedEntries.filter(e => e.type === "debit").length), icon: ArrowDownToLine, color: "bg-violet-600" },
-              ].map(s => (
-                <div key={s.label} className={`${s.color} rounded-2xl p-4 flex items-center gap-4`}>
-                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
-                    <s.icon size={20} className="text-white" />
-                  </div>
-                  <div>
-                    <p className="text-xl font-bold text-white">{s.value}</p>
-                    <p className="text-xs text-white/70">{s.label}</p>
-                  </div>
+            [
+              { label: "Total Receipts", value: String(preview.count),                                                  icon: Receipt,         bg: NAVY         },
+              { label: "Total Amount",   value: `₹${totalAmount.toLocaleString("en-IN")}`,                             icon: IndianRupee,     bg: "#059669"    },
+              { label: "Credit Entries", value: String(displayedEntries.filter(e => e.type === "credit").length),       icon: TrendingUp,      bg: SAFFRON      },
+              { label: "Debit Entries",  value: String(displayedEntries.filter(e => e.type === "debit").length),        icon: ArrowDownToLine, bg: "#7c3aed"    },
+            ].map(s => (
+              <div key={s.label} className="rounded-2xl p-4 flex items-center gap-4" style={{ background: s.bg }}>
+                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
+                  <s.icon size={20} className="text-white" />
                 </div>
-              ))}
-            </>
+                <div>
+                  <p className="text-xl font-bold text-white">{s.value}</p>
+                  <p className="text-xs text-white/70">{s.label}</p>
+                </div>
+              </div>
+            ))
           )}
         </div>
       )}
 
       {/* ══ EXPORT TAB ══ */}
       {!showPreview && mobileTab === "export" && (
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-          <div className="bg-[#0b2c60]/5 border border-[#0b2c60]/15 rounded-2xl px-4 py-3.5 flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#0b2c60] rounded-xl flex items-center justify-center shrink-0">
+        <div className="space-y-4 pb-4">
+          {/* Scope summary */}
+          <div className="border rounded-2xl px-4 py-3.5 flex items-center gap-3" style={{ background: "#0b2c6010", borderColor: "#0b2c6026" }}>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: NAVY }}>
               <ArrowDownToLine size={18} className="text-white" />
             </div>
             <div>
-              <p className="text-sm font-bold text-[#0b2c60]">
+              <p className="text-sm font-bold" style={{ color: NAVY }}>
                 {selected.size > 0 ? `${selected.size} receipts selected` : preview ? `Export all ${preview.count} receipts` : "No receipts previewed"}
               </p>
               <p className="text-xs text-slate-500 mt-0.5">
@@ -1109,6 +1093,7 @@ export default function ReceiptExport() {
             </div>
           </div>
 
+          {/* Format */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
             <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Format</p>
             <div className="grid grid-cols-2 gap-3">
@@ -1127,7 +1112,7 @@ export default function ReceiptExport() {
             </div>
           </div>
 
-          {/* Scope */}
+          {/* Scope radios */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
             <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Scope</p>
             <div className="space-y-2">
@@ -1151,9 +1136,10 @@ export default function ReceiptExport() {
           {/* Monthly section */}
           {MonthlyPanel}
 
-          {/* Download button */}
+          {/* Primary download CTA */}
           <button onClick={handleDownload} disabled={downloading || !preview || preview.count === 0}
-            className="w-full py-4 bg-[#f97316] hover:bg-[#ea580c] text-white text-base font-bold rounded-2xl flex items-center justify-center gap-2 transition-colors shadow-lg shadow-[#f97316]/30 disabled:opacity-50">
+            className="w-full py-4 text-white text-base font-bold rounded-2xl flex items-center justify-center gap-2 transition-colors shadow-lg disabled:opacity-50"
+            style={{ background: SAFFRON, boxShadow: "0 4px 24px rgba(249,115,22,0.3)" }}>
             {downloading
               ? <><Loader2 size={18} className="animate-spin" /> Generating ZIP…</>
               : exported
@@ -1164,45 +1150,19 @@ export default function ReceiptExport() {
           {!preview && (
             <p className="text-center text-xs text-slate-400">Go to Receipts tab and set a date range first</p>
           )}
-
-          <div className="h-4" />
         </div>
       )}
-
-      {/* ── Bottom Nav (always visible, not shown during preview) ── */}
-      {!showPreview && (
-        <div className="shrink-0 bg-white border-t border-slate-100 px-2 pt-2 pb-3 flex items-center justify-around">
-          {([
-            { icon: Receipt,         label: "Receipts", tab: "receipts"  as MobileTab },
-            { icon: Calendar,        label: "By Date",  tab: "byDate"    as MobileTab },
-            { icon: IndianRupee,     label: "Summary",  tab: "summary"   as MobileTab },
-            { icon: ArrowDownToLine, label: "Export",   tab: "export"    as MobileTab },
-          ] as const).map(({ icon: Icon, label, tab }) => {
-            const active = mobileTab === tab;
-            return (
-              <button key={tab} onClick={() => setMobileTab(tab)}
-                className="flex flex-col items-center gap-1 flex-1 py-1">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${active ? "bg-[#0b2c60]" : ""}`}>
-                  <Icon size={18} className={active ? "text-white" : "text-slate-400"} />
-                </div>
-                <span className={`text-[10px] font-semibold transition-colors ${active ? "text-[#0b2c60]" : "text-slate-400"}`}>{label}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {/* ── Home indicator ── */}
-      <div className="shrink-0 bg-white flex justify-center pb-2">
-        <div className="w-28 h-1 bg-slate-200 rounded-full" />
-      </div>
     </div>
   );
 
+  // ══════════════════════════════════════════════════════════
+  //  RENDER — everything inside the shared <Layout>
+  // ══════════════════════════════════════════════════════════
   return (
-    <>
-      {DesktopLayout}
-      {MobileLayout}
+    <Layout>
+      {isMobile ? MobileContent : DesktopContent}
+
+      {/* Shared receipt modal — handles print / PDF / share / WhatsApp */}
       <ReceiptModal
         entry={modalEntry}
         open={modalOpen}
@@ -1214,6 +1174,6 @@ export default function ReceiptExport() {
         autoAction={modalAction}
         onAutoActionComplete={() => setModalAction(null)}
       />
-    </>
+    </Layout>
   );
 }
