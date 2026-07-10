@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, settingsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import webPush from "web-push";
 import { requireRole, auditLog, getClientIp } from "../../lib/auth";
 
@@ -53,15 +53,17 @@ router.post("/settings/vapid/rotate", requireRole("admin"), async (req, res): Pr
 
   const { publicKey, privateKey } = webPush.generateVAPIDKeys();
 
-  // Upsert both keys atomically
-  for (const [key, value] of [[KEY_PUBLIC, publicKey], [KEY_PRIVATE, privateKey]] as const) {
-    const existing = await db.select().from(settingsTable).where(eq(settingsTable.key, key));
-    if (existing.length > 0) {
-      await db.update(settingsTable).set({ value }).where(eq(settingsTable.key, key));
-    } else {
-      await db.insert(settingsTable).values({ key, value });
-    }
-  }
+  // Single multi-row upsert (was: one SELECT + one INSERT/UPDATE per key in a loop).
+  await db
+    .insert(settingsTable)
+    .values([
+      { key: KEY_PUBLIC, value: publicKey },
+      { key: KEY_PRIVATE, value: privateKey },
+    ])
+    .onConflictDoUpdate({
+      target: settingsTable.key,
+      set: { value: sql`excluded.value` },
+    });
 
   // Sync into process.env so push works immediately without restart
   process.env.VAPID_PUBLIC_KEY = publicKey;

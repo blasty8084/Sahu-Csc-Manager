@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, settingsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 import { requireRole, auditLog, getClientIp } from "../../lib/auth";
 import { createTransporter, isSmtpConfigured } from "../../lib/mailer/transport";
@@ -50,14 +50,17 @@ router.patch("/settings/smtp", requireRole("admin"), async (req, res): Promise<v
   if (pass) toSave["smtpPass"] = pass;
   if (fromEmail) toSave["smtpFromEmail"] = fromEmail;
 
+  // Single multi-row upsert (was: one SELECT + one INSERT/UPDATE per key in a loop).
+  await db
+    .insert(settingsTable)
+    .values(Object.entries(toSave).map(([key, value]) => ({ key, value })))
+    .onConflictDoUpdate({
+      target: settingsTable.key,
+      set: { value: sql`excluded.value` },
+    });
+
+  // Sync into process.env so the running server picks it up without restart
   for (const [key, value] of Object.entries(toSave)) {
-    const existing = await db.select().from(settingsTable).where(eq(settingsTable.key, key));
-    if (existing.length > 0) {
-      await db.update(settingsTable).set({ value }).where(eq(settingsTable.key, key));
-    } else {
-      await db.insert(settingsTable).values({ key, value });
-    }
-    // Sync into process.env so the running server picks it up without restart
     const envKey = key === "smtpHost" ? "SMTP_HOST"
       : key === "smtpPort" ? "SMTP_PORT"
       : key === "smtpUser" ? "SMTP_USER"

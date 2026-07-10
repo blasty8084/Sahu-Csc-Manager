@@ -4,7 +4,7 @@ import { statSync, mkdirSync, existsSync, unlinkSync, readFileSync, writeFileSyn
 import path from "path";
 import multer from "multer";
 import { db, settingsTable, backupsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { requireRole, auditLog, getClientIp } from "../../lib/auth";
 import { createNotification } from "../../lib/notify";
 import { applySchedule, type BackupScheduleConfig } from "../../lib/backup-scheduler";
@@ -154,14 +154,14 @@ router.post("/backups/schedule", requireRole("admin"), async (req, res): Promise
     backupRetention: String(Math.max(1, Math.min(90, retention))),
   };
 
-  for (const [key, value] of Object.entries(toSave)) {
-    const existing = await db.select().from(settingsTable).where(eq(settingsTable.key, key));
-    if (existing.length > 0) {
-      await db.update(settingsTable).set({ value }).where(eq(settingsTable.key, key));
-    } else {
-      await db.insert(settingsTable).values({ key, value });
-    }
-  }
+  // Single multi-row upsert (was: one SELECT + one INSERT/UPDATE per key in a loop).
+  await db
+    .insert(settingsTable)
+    .values(Object.entries(toSave).map(([key, value]) => ({ key, value })))
+    .onConflictDoUpdate({
+      target: settingsTable.key,
+      set: { value: sql`excluded.value` },
+    });
 
   const cfg: BackupScheduleConfig = {
     enabled: Boolean(enabled),
