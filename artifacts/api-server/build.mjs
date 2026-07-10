@@ -69,6 +69,7 @@ async function buildAll() {
       "nodemailer",
       "pdfkit",
       "archiver",
+      "exceljs",
       "handlebars",
       "knex",
       "typeorm",
