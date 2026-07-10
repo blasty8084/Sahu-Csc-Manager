@@ -51,11 +51,30 @@ async function recalculateBalances(tx: any, userId: number): Promise<void> {
     .where(eq(ledgerTable.createdBy, userId))
     .orderBy(ledgerTable.id);
 
+  if (entries.length === 0) return;
+
   let running = 0;
+  const ids: number[] = [];
+  const balances: string[] = [];
   for (const e of entries) {
     running += parseFloat(e.credit ?? "0") - parseFloat(e.debit ?? "0");
-    await tx.update(ledgerTable).set({ balance: String(running) }).where(eq(ledgerTable.id, e.id));
+    ids.push(e.id);
+    balances.push(String(running));
   }
+
+  // Single batched UPDATE (was: one UPDATE per row in a loop) using UNNEST,
+  // instead of N round-trips to the database. Arrays are built as fully bound
+  // parameters (not string-interpolated literals) to avoid any SQL injection risk.
+  const idsArray = sql.join(ids.map((id) => sql`${id}`), sql`,`);
+  const balancesArray = sql.join(balances.map((b) => sql`${b}`), sql`,`);
+  await tx.execute(sql`
+    UPDATE ledger AS l
+    SET balance = v.balance
+    FROM (
+      SELECT * FROM UNNEST(ARRAY[${idsArray}]::int[], ARRAY[${balancesArray}]::numeric[]) AS v(id, balance)
+    ) AS v
+    WHERE l.id = v.id
+  `);
 }
 
 // Locks all of a user's ledger rows (FOR UPDATE) within the caller's transaction so
