@@ -14,10 +14,22 @@ const APP_VERSION = __APP_VERSION__;
 // ── Changelog ────────────────────────────────────────────────────────────────
 const CHANGELOG = [
   {
+    version: "v3.4.0",
+    title: "Receipt Export Layout Refactor",
+    date: "2026-07-10",
+    accent: "#f97316",
+    changes: [
+      "Receipt Export page migrated to shared <Layout> — no more duplicate custom header, sidebar, or bottom nav",
+      "Desktop: 4-column KPI stat bar → filter row → two-column body (receipt table left, export panel + preview right)",
+      "Mobile: top pill tab row (Receipts / By Date / Summary / Export) replaces old fixed bottom nav conflict",
+      "TypeScript: added UserOverview interface; removed all unsafe any in users query and map callbacks",
+    ],
+  },
+  {
     version: "v3.3.0",
     title: "Email & Security Hardening",
     date: "2026-07-08",
-    accent: "#f97316",
+    accent: "#0b2c60",
     changes: [
       "V2 dark premium email templates — all 7 types with dark gradient card, per-type accent colours, HTML-safe esc() on every dynamic field",
       "OTP email: digit boxes + copy strip; easy tap-to-copy on any email client",
@@ -260,7 +272,7 @@ export default function About() {
             </div>
             <div className="hidden sm:block text-right flex-shrink-0">
               <p className="text-white/40 text-[10px]">Last updated</p>
-              <p className="text-white/60 text-xs font-semibold">July 2026</p>
+              <p className="text-white/60 text-xs font-semibold">10 July 2026</p>
             </div>
           </div>
         </div>
@@ -513,7 +525,7 @@ export default function About() {
         {/* ── Footer ──────────────────────────────────────────────────────── */}
         <div className="text-center py-3 space-y-1 border-t">
           <p className="text-xs text-muted-foreground font-medium">SAHU CSC Management Platform v{APP_VERSION}</p>
-          <p className="text-[10px] text-muted-foreground/50">Built for Odisha Common Service Centers · © 2026</p>
+          <p className="text-[10px] text-muted-foreground/50">Built for Odisha Common Service Centers · © 2026 · Updated 10 July 2026</p>
         </div>
 
       </div>

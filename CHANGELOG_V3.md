@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v3
-**Current version: 3.3.1 — July 9, 2026**
+**Current version: 3.4.0 — July 10, 2026**
 
 > Detailed record of every feature, change, and upgrade from v3.0.0 onward.  
 > For v2.x history, see `changelogV2.md`.  
@@ -11,7 +11,8 @@
 
 ## Table of Contents
 
-0. [v3.3.1 — Re-import Setup & Bug Fixes (July 9, 2026)](#0-v331--re-import-setup--bug-fixes-july-9-2026)
+0. [v3.4.0 — Receipt Export Layout Refactor & TypeScript Hardening (July 10, 2026)](#0-v340--receipt-export-layout-refactor--typescript-hardening-july-10-2026)
+1. [v3.3.1 — Re-import Setup & Bug Fixes (July 9, 2026)](#1-v331--re-import-setup--bug-fixes-july-9-2026)
 1. [v3.3.0 — Email & Security Hardening (July 8, 2026)](#1-v330--email--security-hardening-july-8-2026)
 2. [v3.2.4 – v3.2.5 — Security Upgrade & Password Policy Correction (July 6, 2026)](#2-v324--v325--security-upgrade--password-policy-correction-july-6-2026)
 3. [v3.1.1 — Replit Environment Migration & TypeScript Clean (July 3, 2026)](#3-v311--replit-environment-migration--typescript-clean-july-3-2026)
@@ -20,7 +21,34 @@
 
 ---
 
-## 0. v3.3.1 — Re-import Setup & Bug Fixes (July 9, 2026)
+## 0. v3.4.0 — Receipt Export Layout Refactor & TypeScript Hardening (July 10, 2026)
+
+### Receipt Export Page — Full Layout Refactor (`receipt-export.tsx`)
+
+The page previously built its own duplicate navy header, desktop stat-strip header, and mobile bottom nav bar — reproducing the app's shared layout chrome from scratch inside the page file.
+
+**What changed:**
+- Removed all custom header/nav markup (desktop navy header + stat band, mobile navy top bar, mobile 4-tab fixed bottom nav at `/receipt-export`)
+- Added `import { Layout }` from `@/components/layout` — now uses the same sidebar, top header, and mobile bottom nav as every other page
+- Added `import { useIsMobile }` from `@/hooks/use-mobile` — branches rendering at 768px breakpoint
+- Removed `import { useLocation }` from `wouter` (was only used for back-button navigation in the now-removed custom headers)
+
+**Desktop layout (≥768px):**
+4-column KPI stat bar → filter row (date presets + operator dropdown) → two-column body: receipt table with checkboxes on the left, export panel + receipt preview card + monthly auto-export on the right.
+
+**Mobile layout (<768px):**
+KPI mini-strip → horizontal pill tab row (Receipts / By Date / Summary / Export) positioned at top of content area — no conflict with the global fixed bottom nav. Expandable filter sheet on the Receipts tab, full single-receipt preview overlay, sticky export CTA on the Export tab.
+
+**No functional changes:** All state, handlers, data fetching, `ReceiptModal`, and export logic are unchanged.
+
+### TypeScript Hardening
+
+- Added `UserOverview` interface typed from the `GET /api/admin/users-overview` response shape (`userId`, `username`, `fullName`, `role`, `isActive`, `balance`, `totalCredits`, `totalDebits`, `totalTransactions`)
+- Replaced `useQuery<any[]>` + `.map((u: any) => ...)` with fully-typed `useQuery<UserOverview[]>` and inferred map callbacks
+
+---
+
+## 1. v3.3.1 — Re-import Setup & Bug Fixes (July 9, 2026)
 
 ### Bug Fixes
 

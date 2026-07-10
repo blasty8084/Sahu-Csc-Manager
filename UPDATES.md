@@ -7,6 +7,45 @@
 
 ---
 
+## Session: 2026-07-10 — v3.4.0 Receipt Export Layout Refactor & TypeScript Hardening
+
+**Version:** 3.4.0
+**Status:** ✅ Complete — receipt-export page uses shared Layout, TypeScript clean, all docs updated
+
+### What Was Done
+
+#### 1. Receipt Export Page — Layout Refactor (`artifacts/sahu-csc/src/pages/receipt-export.tsx`)
+- Removed all duplicate custom header/nav markup: desktop navy header + stat band, mobile navy top bar, mobile 4-tab fixed bottom nav
+- Added `import { Layout }` from `@/components/layout` and `import { useIsMobile }` from `@/hooks/use-mobile`
+- Removed `import { useLocation }` from `wouter` (was only used for back-button in the now-removed custom headers)
+- Entire `return` now wraps in `<Layout>` — consistent with all other pages
+- **Desktop (≥768px):** 4-column KPI stat bar → filter row (date presets + operator dropdown) → two-column body (receipt table left, export panel + preview + monthly auto-export right)
+- **Mobile (<768px):** KPI mini-strip → horizontal pill tabs at top (Receipts / By Date / Summary / Export) — no conflict with global bottom nav; expandable filter sheet, full-screen preview overlay, sticky export CTA
+
+#### 2. TypeScript Hardening
+- Added `UserOverview` interface matching `GET /api/admin/users-overview` response shape
+- Replaced `useQuery<any[]>` with `useQuery<UserOverview[]>`
+- Replaced all three `.map((u: any) =>` callbacks with inferred typed callbacks
+- Verified: `tsc --noEmit` shows zero errors specific to `receipt-export.tsx`
+
+#### 3. Version Bumps
+- `artifacts/sahu-csc/package.json`: 3.3.0 → 3.4.0
+- `artifacts/api-server/package.json`: 3.3.1 → 3.4.0
+- `infrastructure/twa/twa-config.json`: appVersionName 3.3.1 → 3.4.0, appVersionCode 4
+
+#### 4. Documentation Updated
+- `replit.md` — version header + What's New v3.4.0 section
+- `DOCS.md` — version header + v3.4.0 version history + receipt-export page description
+- `CHANGELOG_V3.md` — v3.4.0 section added at top; TOC updated
+- `CHANGELOG.md` — v3.4.0 entry added at top
+- `BUILD.md` — version header
+- `architectureV3.md` — version header; receipt-export page description
+- `ReplitV3.md` — version header; receipt-export description; footer
+- `UPDATES.md` — this entry
+- `about.tsx` — v3.4.0 changelog entry added at top of CHANGELOG array; header "Last updated" updated
+
+---
+
 ## Session: 2026-07-09 — Re-import Setup, Bug Fixes & VAPID Secrets
 
 **Version:** 3.3.1

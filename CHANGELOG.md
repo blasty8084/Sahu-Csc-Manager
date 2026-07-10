@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log & Feature Documentation
-**Current version: 3.2.5** — last updated 2026-07-06
+**Current version: 3.4.0** — last updated 2026-07-10
 
 > Full record of every feature, change, and upgrade applied to the SAHU CSC platform.
 > Use this file as a reference for future development, onboarding, and audits.
@@ -10,6 +10,19 @@
 > See `CHANGELOG_V3.md` for the full V3 detailed changelog. See `changelogV2.md` for v2.x history.
 >
 > **v2.1.0 adds:** Udhari Khata (customer credit ledger) · Receipt system (CSC-YYYY-NNNN + QR + WhatsApp PDF sharing) · V2 multi-device sessions · RBAC `requirePermission` middleware · OTP password reset · Admin oversight pages · PWA Status page · Idle timeout (30 min) · Notification isolation fixes · UI Design System v2 (mobile header, gradient card language) · Canvas mockup exploration for Ledger / AePS / Add Entry / Udhari form redesigns
+
+---
+
+## v3.4.0 — Receipt Export Layout Refactor & TypeScript Hardening (July 10, 2026)
+
+| Change | Description |
+|--------|-------------|
+| **Receipt Export page refactored** | `receipt-export.tsx` now uses the shared `<Layout>` component — all duplicate custom header, desktop stat-strip, and mobile bottom nav removed. Page is consistent with every other page in the app. |
+| **Desktop layout** | KPI stat bar → filter row → two-column body (receipt table left, export panel + preview + monthly right). |
+| **Mobile top-tab nav** | Fixed bottom 4-tab nav replaced with a horizontal pill switcher at the top of the content area, avoiding conflict with the global bottom nav. |
+| **TypeScript: `UserOverview` type** | `useQuery<any[]>` and `(u: any)` callbacks replaced with a proper `UserOverview` interface — no more unsafe `any` in the page. |
+
+See `CHANGELOG_V3.md` for the full detailed changelog.
 
 ---
 

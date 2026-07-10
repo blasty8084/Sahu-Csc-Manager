@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Platform Documentation
-**Version 3.3.1** — last updated 2026-07-09
+**Version 3.4.0** — last updated 2026-07-10
 
 > Common Service Center (CSC) Business Management Platform for Odisha / India rural service centers.
 > Full-stack · PWA · Offline-capable · Multilingual (English / Hindi / Odia)
@@ -55,6 +55,17 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 ---
 
 ## 2. Version History
+
+### v3.4.0 — Receipt Export Layout Refactor & TypeScript Hardening (2026-07-10)
+
+| Change | Description |
+|--------|-------------|
+| **Receipt Export page refactored to use `<Layout>`** | Removed all duplicate header/sidebar/nav markup from `receipt-export.tsx`. The page now wraps in the shared `<Layout>` component — consistent with every other page. |
+| **Desktop two-column layout** | KPI stat bar → filter row → left column (receipt table with checkboxes) + right column (export panel, receipt preview, monthly auto-export). |
+| **Mobile top-pill tab navigation** | Replaced fixed bottom 4-tab nav with a top pill switcher (Receipts / By Date / Summary / Export) so it no longer conflicts with the global Layout bottom nav. |
+| **`UserOverview` interface added** | Replaced `useQuery<any[]>` and `(u: any)` map callbacks with a fully-typed `UserOverview` interface matching the `GET /api/admin/users-overview` response shape. |
+
+---
 
 ### v3.3.1 — Re-import Setup, VAPID Fix & Duplicate Workflow Removal (2026-07-09)
 
@@ -519,7 +530,7 @@ All pages are fully translated in English / Hindi / Odia.
 | `/audit-logs` | `audit-logs.tsx` | Admin | Full audit trail |
 | `/backups` | `backups.tsx` | Admin | Backup & Restore v3.1: 2-col grid, schedule, selective import |
 | `/broadcast` | `broadcast.tsx` | Admin | Push + email broadcast center |
-| `/receipt-export` | `receipt-export.tsx` | Admin | Export all receipts |
+| `/receipt-export` | `receipt-export.tsx` | Admin | Bulk receipt export — desktop two-column layout (filter+table left, export panel right); mobile pill-tab layout using shared `<Layout>` |
 | `/about` | `about.tsx` | All | Docs, system requirements, changelog |
 | `/settings` | `settings.tsx` | — | Redirects to `/profile` (deprecated) |
 

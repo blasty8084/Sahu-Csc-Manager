@@ -1,5 +1,5 @@
 # SAHU CSC — Project Quick Reference v3
-**Version 3.2.5 — July 6, 2026**
+**Version 3.4.0 — July 10, 2026**
 
 > Authoritative quick-reference for the SAHU CSC platform.  
 > For deep architecture: `architectureV3.md` · Change history: `CHANGELOG_V3.md` (v3), `changelogV2.md` (v2) · Workflows: `WORKFLOWS.md`
@@ -38,7 +38,7 @@
 | Frontend | React 19 + Vite (port 5000 → :80) |
 | API | Express 5 (port 8080) |
 | Database | PostgreSQL — 15 tables |
-| Version | 3.1.1 |
+| Version | 3.4.0 |
 
 ### Core capabilities
 
@@ -478,4 +478,4 @@ curl http://localhost:8080/api/setup-status
 
 ---
 
-*Last updated: July 3, 2026 | Version 3.1.1*
+*Last updated: July 10, 2026 | Version 3.4.0*

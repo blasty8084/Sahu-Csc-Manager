@@ -1,5 +1,5 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 3.3.0** — last updated 2026-07-08
+**Version 3.4.0** — last updated 2026-07-10
 
 > Re-imported and re-set-up on Replit 2026-07-09: ran `pnpm install`, pushed schema via `drizzle-kit push` (`pnpm exec drizzle-kit push --config=lib/db/drizzle.config.ts` from `lib/db/`), seeded admin/operator via the `Seed Database` workflow, and started `API Server` + `SAHU CSC` workflows. Secrets set: `ADMIN_PASSWORD`, `OPERATOR_PASSWORD` (`SESSION_SECRET` already existed).
 >
@@ -26,6 +26,17 @@
 > Full platform documentation: **[DOCS.md](./DOCS.md)**
 
 A full-stack CSC (Common Service Center) business management platform for tracking services, ledger accounting, AePS cash management, Udhari Khata (customer credit ledger), and reporting. Built for Odisha / India rural service centers. Supports PWA installation, offline operation, Android TWA packaging, and full multilingual UI (English / Hindi / Odia).
+
+---
+
+## What's New in v3.4.0 (July 10, 2026) — Receipt Export Layout Refactor
+
+| Change | Description |
+|--------|-------------|
+| **`<Layout>` adoption** | `receipt-export.tsx` now wraps in the shared `<Layout>` component. All duplicate custom navy headers, desktop stat-strip header, and mobile 4-tab fixed bottom nav removed from the page. |
+| **Desktop layout** | KPI 4-column stat bar → filter row (date presets + operator dropdown) → two-column body: receipt table + checkboxes left, export panel + receipt preview + monthly auto-export right. |
+| **Mobile pill tabs** | Fixed bottom 4-tab nav replaced with a horizontal pill tab row (Receipts / By Date / Summary / Export) at the top of the content area — no conflict with the global Layout bottom nav. |
+| **TypeScript: `UserOverview`** | `useQuery<any[]>` and `(u: any)` map callbacks replaced with a typed `UserOverview` interface from `GET /api/admin/users-overview` response shape. |
 
 ---
 

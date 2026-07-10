@@ -1,5 +1,5 @@
 # SAHU CSC Manager — BUILD.md
-**Version 3.2.5 — July 6, 2026**
+**Version 3.4.0 — July 10, 2026**
 
 > Single source of truth for any developer, AI agent, or new contributor.  
 > Read this file first — no other file analysis needed to understand the project.
@@ -16,7 +16,7 @@
 | **Languages supported** | English · Hindi · Odia |
 | **GitHub** | https://github.com/blasty8084/Sahu-Csc-Manager |
 | **Hosting** | Replit (dev + production deploy) |
-| **Version** | 3.2.5 |
+| **Version** | 3.4.0 |
 
 ### Core business domain
 
