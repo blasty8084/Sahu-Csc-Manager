@@ -1,6 +1,6 @@
 import webPush from "web-push";
 import { db, pushSubscriptionsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { logger } from "./logger";
 
 // Mutable exports — set by initPush() after ensureVapidKeys() completes.

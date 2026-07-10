@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, notificationsTable, userNotificationPreferencesTable, usersTable } from "@workspace/db";
-import { eq, or, isNull, and, desc, ilike, count } from "drizzle-orm";
+import { eq, or, isNull, and, desc, ilike, count, inArray } from "drizzle-orm";
 import { requireAuth, requireRole, getClientIp } from "../lib/auth";
 import { createSystemNotification } from "../services/notificationService";
 import { z } from "zod/v4";
@@ -140,13 +140,14 @@ router.delete("/notifications/bulk", requireAuth, async (req, res): Promise<void
 
   let deleted = 0;
   if (body.data.ids && body.data.ids.length > 0) {
-    for (const id of body.data.ids) {
-      const [n] = await db.select({ userId: notificationsTable.userId }).from(notificationsTable).where(eq(notificationsTable.id, id));
-      if (n && (n.userId === null || n.userId === userId)) {
-        await db.delete(notificationsTable).where(eq(notificationsTable.id, id));
-        deleted++;
-      }
-    }
+    // Single scoped DELETE instead of one SELECT + one DELETE per id. The
+    // ownership check (broadcast rows with userId=null, or rows owned by this
+    // user) is folded directly into the WHERE clause via userScope().
+    const result = await db
+      .delete(notificationsTable)
+      .where(and(inArray(notificationsTable.id, body.data.ids), userScope(userId)))
+      .returning({ id: notificationsTable.id });
+    deleted = result.length;
   } else if (body.data.filter === "read") {
     const result = await db.delete(notificationsTable)
       .where(and(userScope(userId), eq(notificationsTable.isRead, true)))
