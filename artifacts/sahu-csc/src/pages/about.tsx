@@ -14,6 +14,30 @@ const APP_VERSION = __APP_VERSION__;
 // ── Changelog ────────────────────────────────────────────────────────────────
 const CHANGELOG = [
   {
+    version: "v3.5.2",
+    title: "Asset & Delivery Hardening",
+    date: "2026-07-10",
+    accent: "#f97316",
+    changes: [
+      "CSP enabled on the API server (default-src 'none') — was previously fully disabled",
+      "Health/setup-status checks now skip the session-store DB lookup entirely",
+      "Image optimization pipeline added — static assets ~31% smaller (logo glow: 1.6MB → 144KB)",
+      "Production static server rewritten — hashed assets cached 1 year, app shell never cached, fixing a stale-deploy risk",
+    ],
+  },
+  {
+    version: "v3.5.1",
+    title: "Performance & Scale Hardening",
+    date: "2026-07-10",
+    accent: "#0b2c60",
+    changes: [
+      "Fixed N+1 queries on the admin overview page — one batched query instead of per-user queries",
+      "Batched bulk writes: ledger balance recalculation, notification inserts, and settings upserts",
+      "Database connection pool tuned with explicit max/timeout limits",
+      "Session validation cached in-memory (5s TTL), cutting a DB round-trip off most authenticated requests",
+    ],
+  },
+  {
     version: "v3.4.0",
     title: "Receipt Export Layout Refactor",
     date: "2026-07-10",

@@ -1,5 +1,5 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 3.5.1** — last updated 2026-07-10
+**Version 3.5.2** — last updated 2026-07-10
 
 > Re-imported and re-set-up on Replit 2026-07-10: ran `pnpm install`, pushed schema via `drizzle-kit push` (`pnpm exec drizzle-kit push --config=drizzle.config.ts` from `lib/db/`), seeded admin/operator via the `Seed Database` workflow, and started `API Server` + `SAHU CSC` workflows. `ADMIN_PASSWORD` and `OPERATOR_PASSWORD` are stored as Replit Secrets (never in `.replit`/config); `SESSION_SECRET` already existed. Verified login works via curl.
 >
@@ -26,6 +26,18 @@
 > Full platform documentation: **[DOCS.md](./DOCS.md)**
 
 A full-stack CSC (Common Service Center) business management platform for tracking services, ledger accounting, AePS cash management, Udhari Khata (customer credit ledger), and reporting. Built for Odisha / India rural service centers. Supports PWA installation, offline operation, Android TWA packaging, and full multilingual UI (English / Hindi / Odia).
+
+---
+
+## What's New in v3.5.2 (July 10, 2026) — Asset & Delivery Hardening
+
+| Change | Description |
+|--------|-------------|
+| **CSP enabled** | API server's `helmet` config now sets a real Content-Security-Policy (`default-src 'none'`, `frame-ancestors 'none'`) instead of `contentSecurityPolicy: false`. The API is JSON-only (no HTML/static serving), so this is a zero-risk hardening with no functional impact. |
+| **Health checks skip session store** | `healthRouter` + `setupStatusRouter` now mount in `app.ts` *before* `express-session`, so uptime monitors and setup-status polling no longer trigger a `connect-pg-simple` Postgres round-trip per request. CORS/security headers still apply — only the session middleware is skipped. |
+| **Image optimization pipeline** | `vite-plugin-image-optimizer` (sharp + svgo) added to `sahu-csc`'s Vite build — every build now compresses `public/` static assets and imported images (PNG/JPEG/WebP quality 80, SVG multipass). One-off pass shrank `sahu-logo-glow.png` from 1.6MB → ~144KB; ~31% total savings across all static images. |
+| **Correct static asset cache headers** | Production `serve` script replaced: `sirv-cli` (which applies one cache policy to every file, including `index.html`) swapped for a custom `scripts/serve.mjs` using the `sirv` package programmatically. Content-hashed assets (`assets/*-[hash].js/css`) get `max-age=31536000, immutable`; the SPA shell (`/`, deep-linked client routes, `sw.js`) gets `no-store` so deploys are picked up immediately; unhashed static files get a short `max-age=300`. |
+| **Package versions synced** | `sahu-csc` and `api-server` package versions aligned to `3.5.2` (previously drifted at `3.4.0` / `3.5.0`). |
 
 ---
 

@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log & Feature Documentation
-**Current version: 3.4.0** — last updated 2026-07-10
+**Current version: 3.5.2** — last updated 2026-07-10
 
 > Full record of every feature, change, and upgrade applied to the SAHU CSC platform.
 > Use this file as a reference for future development, onboarding, and audits.
@@ -10,6 +10,19 @@
 > See `CHANGELOG_V3.md` for the full V3 detailed changelog. See `changelogV2.md` for v2.x history.
 >
 > **v2.1.0 adds:** Udhari Khata (customer credit ledger) · Receipt system (CSC-YYYY-NNNN + QR + WhatsApp PDF sharing) · V2 multi-device sessions · RBAC `requirePermission` middleware · OTP password reset · Admin oversight pages · PWA Status page · Idle timeout (30 min) · Notification isolation fixes · UI Design System v2 (mobile header, gradient card language) · Canvas mockup exploration for Ledger / AePS / Add Entry / Udhari form redesigns
+
+---
+
+## v3.5.2 — Asset & Delivery Hardening (July 10, 2026)
+
+| Change | Description |
+|--------|-------------|
+| **CSP enabled on API server** | `default-src 'none'`, `frame-ancestors 'none'` — was previously fully disabled. |
+| **Health checks bypass session store** | `/healthz` and `/setup-status` mounted before `express-session` — no more per-request Postgres round-trip for uptime probes. |
+| **Image optimization pipeline** | `vite-plugin-image-optimizer` added to the frontend build; static assets compressed ~31% (e.g. `sahu-logo-glow.png` 1.6MB → 144KB). |
+| **Correct SPA cache headers in production** | Custom `scripts/serve.mjs` replaces `sirv-cli`: hashed assets cached for a year (immutable), SPA shell/deep links/`sw.js` never cached, unhashed static files cached briefly. |
+
+See `CHANGELOG_V3.md` for the full detailed changelog.
 
 ---
 

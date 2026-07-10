@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v3
-**Current version: 3.5.0 — July 10, 2026**
+**Current version: 3.5.2 — July 10, 2026**
 
 > Detailed record of every feature, change, and upgrade from v3.0.0 onward.  
 > For v2.x history, see `changelogV2.md`.  
@@ -11,6 +11,8 @@
 
 ## Table of Contents
 
+0. [v3.5.2 — Asset & Delivery Hardening (July 10, 2026)](#0-v352--asset--delivery-hardening-july-10-2026)
+0. [v3.5.1 — Performance & Scale Hardening (July 10, 2026)](#0-v351--performance--scale-hardening-july-10-2026)
 0. [v3.5.0 — Backend File Split & Modularisation (July 10, 2026)](#0-v350--backend-file-split--modularisation-july-10-2026)
 0. [v3.4.0 — Receipt Export Layout Refactor & TypeScript Hardening (July 10, 2026)](#1-v340--receipt-export-layout-refactor--typescript-hardening-july-10-2026)
 1. [v3.3.1 — Re-import Setup & Bug Fixes (July 9, 2026)](#1-v331--re-import-setup--bug-fixes-july-9-2026)
@@ -19,6 +21,38 @@
 3. [v3.1.1 — Replit Environment Migration & TypeScript Clean (July 3, 2026)](#3-v311--replit-environment-migration--typescript-clean-july-3-2026)
 4. [v3.1.0 — Backup & Restore Redesign + Download + Scheduler (June 30, 2026)](#4-v310--backup--restore-redesign--download--scheduler-june-30-2026)
 5. [v3.0.0 — Setup Wizard, SMTP Integration & Auto-Import (June 30, 2026)](#5-v300--setup-wizard-smtp-integration--auto-import-june-30-2026)
+
+---
+
+## 0. v3.5.2 — Asset & Delivery Hardening (July 10, 2026)
+
+**Goal:** Close out the remaining items from a performance/security review — CSP, session overhead on health checks, image weight, and production cache correctness.
+
+| Change | Description |
+|--------|-------------|
+| **CSP enabled** | `app.ts`'s `helmet()` call now sets `contentSecurityPolicy: { directives: { defaultSrc: ["'none'"], frameAncestors: ["'none'"] } }` instead of `false`. The API only ever returns JSON, so this has no functional impact and closes an otherwise-open header. |
+| **Health checks skip session store** | `healthRouter` and `setupStatusRouter` moved out of `routes/index.ts` and mounted directly in `app.ts`, *before* `express-session`. They still run after `cors`/`helmet`/rate-limiting, but no longer pay the `connect-pg-simple` Postgres round-trip on every uptime-monitor or setup-status poll. |
+| **`vite-plugin-image-optimizer` added** | New devDependency (with `sharp` + `svgo`) in `sahu-csc`'s `vite.config.ts`, quality 80 for png/jpeg/jpg/webp, `multipass` for svg. Runs on every production build against both bundled and `public/`-folder assets. |
+| **One-off static image compression** | `public/sahu-logo-glow.png` 1.6MB → 144KB, `public/og-image.png`, `public/opengraph.jpg`, `public/logo.jpg.jpg` also shrunk via a one-time `sharp` pass before the plugin was wired in. |
+| **`scripts/serve.mjs` replaces `sirv-cli`** | `sirv-cli`'s `--maxage`/`--immutable` flags apply uniformly to every served file, including `index.html` via SPA fallback — meaning a browser/CDN could cache the HTML shell for a year and miss new deploys. The new script uses the `sirv` package directly with a `setHeaders` callback that classifies responses by the *request* pathname (since sirv always passes that, not the fallback file, to `setHeaders`): extensionless paths (client routes), `/`, `.html`, and `sw.js`/`sw.mjs` get `no-store`; hashed build assets get `max-age=31536000, immutable`; everything else gets a short `max-age=300`. `sirv-cli` removed from dependencies. |
+| **Package versions synced** | `sahu-csc` (was `3.4.0`) and `api-server` (was `3.5.0`) both bumped to `3.5.2` to match the platform-wide version going forward. |
+
+---
+
+## 0. v3.5.1 — Performance & Scale Hardening (July 10, 2026)
+
+**Goal:** Fix N+1 query patterns, batch bulk writes, tune the DB pool, and cut a DB round-trip off the hot auth path.
+
+| Change | Description |
+|--------|-------------|
+| **N+1 query fixes** | `GET /admin/users-overview` replaced N×2 per-user queries with one grouped aggregate query (credits/debits/transaction counts via `sum`/`count` + `groupBy`) and one `DISTINCT ON` query for each user's latest entry, joined in-memory via `Map`. |
+| **Batched ledger balance recalc** | `recalculateBalances()` in `ledger.ts` uses a single `UPDATE ... FROM UNNEST(...)` with bound array parameters instead of one `UPDATE` per row. |
+| **Batched notification writes** | `notificationService.ts` fetches all recipients' preferences in one query and performs a single multi-row insert instead of N per-user inserts/selects. |
+| **Settings routes batched** | `backups.ts`, `smtp.ts`, `vapid.ts` each replaced a per-key `SELECT` + `INSERT`/`UPDATE` loop against the `settings` table with a single multi-row `INSERT ... ON CONFLICT DO UPDATE` upsert. |
+| **API bundle externalized further** | `exceljs` added to `build.mjs`'s `external` list alongside `pdfkit`/`archiver` — bundle dropped from 5.1MB → 3.6MB. All three remain real `dependencies` so they resolve at runtime. |
+| **pg pool tuned** | `lib/db/src/index.ts`: `max: 20` (env-overridable via `DB_POOL_MAX`), `idleTimeoutMillis: 30s`, `connectionTimeoutMillis: 5s`. |
+| **Lightweight session/role cache** | New `lib/auth/sessionCache.ts` — 5s in-process TTL cache backing `requireAuth`'s session validation and `requireRole`/`requirePermission`'s role lookups. Explicitly invalidated on session revoke, logout, role/status change, and password change/reset. |
+| **Password reset/change now revokes sessions** | Both reset-password flows revoke all sessions for the account; self-service profile password change revokes all other sessions. |
 
 ---
 
