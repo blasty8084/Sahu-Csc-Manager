@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v3
-**Current version: 3.4.0 — July 10, 2026**
+**Current version: 3.5.0 — July 10, 2026**
 
 > Detailed record of every feature, change, and upgrade from v3.0.0 onward.  
 > For v2.x history, see `changelogV2.md`.  
@@ -11,7 +11,8 @@
 
 ## Table of Contents
 
-0. [v3.4.0 — Receipt Export Layout Refactor & TypeScript Hardening (July 10, 2026)](#0-v340--receipt-export-layout-refactor--typescript-hardening-july-10-2026)
+0. [v3.5.0 — Backend File Split & Modularisation (July 10, 2026)](#0-v350--backend-file-split--modularisation-july-10-2026)
+0. [v3.4.0 — Receipt Export Layout Refactor & TypeScript Hardening (July 10, 2026)](#1-v340--receipt-export-layout-refactor--typescript-hardening-july-10-2026)
 1. [v3.3.1 — Re-import Setup & Bug Fixes (July 9, 2026)](#1-v331--re-import-setup--bug-fixes-july-9-2026)
 1. [v3.3.0 — Email & Security Hardening (July 8, 2026)](#1-v330--email--security-hardening-july-8-2026)
 2. [v3.2.4 – v3.2.5 — Security Upgrade & Password Policy Correction (July 6, 2026)](#2-v324--v325--security-upgrade--password-policy-correction-july-6-2026)
@@ -21,7 +22,64 @@
 
 ---
 
-## 0. v3.4.0 — Receipt Export Layout Refactor & TypeScript Hardening (July 10, 2026)
+## 0. v3.5.0 — Backend File Split & Modularisation (July 10, 2026)
+
+**Goal:** All backend source files over ~300 lines split into focused sub-modules, using the barrel pattern so zero import sites were changed.
+
+### Splits performed
+
+#### `routes/password-reset.ts` (424 lines) → `routes/auth/`
+| New file | Responsibility |
+|----------|---------------|
+| `auth/otp.ts` | `POST /auth/send-otp`, `POST /auth/verify-otp` (email OTP + legacy admin OTP mode) |
+| `auth/forgot-password.ts` | `POST /auth/forgot-password` (legacy admin-generated OTP flow) |
+| `auth/reset-password.ts` | `POST /auth/reset-password` (new token mode + legacy identifier+OTP mode) |
+
+`routes/auth/index.ts` updated to mount all three. `routes/password-reset.ts` replaced with an empty stub router (backward-compat import guard).
+
+#### `routes/aeps.ts` (403 lines) → `routes/aeps/`
+| New file | Responsibility |
+|----------|---------------|
+| `aeps/sessions.ts` | `GET/POST /aeps/session`, `GET /admin/aeps-overview` |
+| `aeps/transactions.ts` | `GET/POST/PATCH/DELETE /aeps/transaction(s)`, `GET /receipts/verify/aeps/:token` |
+
+`routes/aeps.ts` overwritten as barrel re-export → `routes/aeps/index.ts`.
+
+#### `routes/udhari.ts` (400 lines) → `routes/udhari/`
+| New file | Responsibility |
+|----------|---------------|
+| `udhari/customers.ts` | Customer CRUD + `GET /udhari/summary` + `recalcBalance` helper |
+| `udhari/entries.ts` | Entry CRUD per customer (gave/got) |
+
+`routes/udhari.ts` overwritten as barrel re-export → `routes/udhari/index.ts`.
+
+#### `lib/monthly-export.ts` (395 lines) → `lib/monthly-export/`
+| New file | Responsibility |
+|----------|---------------|
+| `monthly-export/pdf.ts` | `generateReceiptPdf()` — PDFKit A4 receipt renderer |
+| `monthly-export/zip.ts` | `buildMonthlyZip()` — queries DB, generates PDFs, bundles ZIP |
+| `monthly-export/email.ts` | `sendMonthlyExportEmail()` — sends ZIP to admin emails |
+| `monthly-export/scheduler.ts` | `scheduleMonthlyExport()` — node-cron job (1st of month, 00:05) |
+
+`lib/monthly-export.ts` overwritten as barrel re-export.
+
+#### `routes/reports.ts` (327 lines) → dashboard extracted
+- `/dashboard` handler moved to new `routes/dashboard.ts`
+- `getServiceBreakdownData` and `getAepsData` now exported from `reports.ts` so `dashboard.ts` can import them
+- `dashboard.ts` registered in `routes/index.ts`
+
+#### `routes/admin-registration.ts` (321 lines) → appeals extracted
+- Appeals routes (`GET /admin/users/appeals`, `PATCH re-approve`, `PATCH dismiss-appeal`, `POST dismiss-all`) moved to new `routes/admin-appeals.ts`
+- `admin-registration.ts` now only handles registration settings + pending user approve/reject
+- `admin-appeals.ts` registered in `routes/index.ts`
+
+### Convention enforced
+- **Barrel pattern** — original filename overwritten as re-export so all external import sites remain unchanged
+- **No circular imports** — sub-modules import from `../../lib/auth` etc., never from each other's parents
+
+---
+
+## 1. v3.4.0 — Receipt Export Layout Refactor & TypeScript Hardening (July 10, 2026)
 
 ### Receipt Export Page — Full Layout Refactor (`receipt-export.tsx`)
 

@@ -12,7 +12,7 @@ function getUserFilter(req: any) {
   return eq(ledgerTable.createdBy, userId);
 }
 
-async function getServiceBreakdownData(startDate: string, endDate: string, userFilter?: any) {
+export async function getServiceBreakdownData(startDate: string, endDate: string, userFilter?: any) {
   const dateFilter = and(gte(ledgerTable.date, startDate), lte(ledgerTable.date, endDate));
   const whereClause = userFilter ? and(userFilter, dateFilter) : dateFilter;
 
@@ -34,7 +34,7 @@ async function getServiceBreakdownData(startDate: string, endDate: string, userF
   }));
 }
 
-async function getAepsData(startDate: string, endDate: string) {
+export async function getAepsData(startDate: string, endDate: string) {
   const sessions = await db
     .select({ id: aepsDailyTable.id, date: aepsDailyTable.date, openingBalance: aepsDailyTable.openingBalance })
     .from(aepsDailyTable)
@@ -263,65 +263,6 @@ router.get("/reports/export", requireAuth, requirePermission("reports:export"), 
   res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
   res.setHeader("Content-Disposition", `attachment; filename="report_${startDate}_${endDate}.xlsx"`);
   res.send(Buffer.from(buffer));
-});
-
-router.get("/dashboard", requireAuth, requirePermission("reports:view"), async (req, res): Promise<void> => {
-  const today = new Date().toISOString().split("T")[0];
-  const now = new Date();
-  const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-
-  const userFilter = getUserFilter(req);
-
-  const todayFilter = eq(ledgerTable.date, today);
-  const monthFilter = and(gte(ledgerTable.date, monthStart), lte(ledgerTable.date, today));
-
-  const balanceWhere = userFilter ?? undefined;
-  const todayWhere = userFilter ? and(userFilter, todayFilter) : todayFilter;
-  const monthWhere = userFilter ? and(userFilter, monthFilter) : monthFilter;
-
-  const [balanceResult, todayResult, monthResult, recentEntries, topServices] = await Promise.all([
-    db.select({ totalCredits: sum(ledgerTable.credit), totalDebits: sum(ledgerTable.debit) })
-      .from(ledgerTable).where(balanceWhere),
-    db.select({ credits: sum(ledgerTable.credit), debits: sum(ledgerTable.debit), transactions: count() })
-      .from(ledgerTable).where(todayWhere),
-    db.select({ credits: sum(ledgerTable.credit), debits: sum(ledgerTable.debit), transactions: count() })
-      .from(ledgerTable).where(monthWhere),
-    db.select({
-      id: ledgerTable.id, date: ledgerTable.date, customerName: ledgerTable.customerName,
-      serviceType: ledgerTable.serviceType, credit: ledgerTable.credit, debit: ledgerTable.debit,
-      description: ledgerTable.description, balance: ledgerTable.balance,
-      createdBy: ledgerTable.createdBy, createdAt: ledgerTable.createdAt,
-      createdByName: usersTable.fullName,
-    }).from(ledgerTable)
-      .leftJoin(usersTable, eq(ledgerTable.createdBy, usersTable.id))
-      .where(balanceWhere).orderBy(desc(ledgerTable.createdAt)).limit(5),
-    getServiceBreakdownData(monthStart, today, userFilter),
-  ]);
-
-  const totalCredits = parseFloat(balanceResult[0]?.totalCredits ?? "0");
-  const totalDebits = parseFloat(balanceResult[0]?.totalDebits ?? "0");
-  const monthCredits = parseFloat(monthResult[0]?.credits ?? "0");
-  const monthDebits = parseFloat(monthResult[0]?.debits ?? "0");
-
-  res.json({
-    currentBalance: totalCredits - totalDebits,
-    todayCredits: parseFloat(todayResult[0]?.credits ?? "0"),
-    todayDebits: parseFloat(todayResult[0]?.debits ?? "0"),
-    todayTransactions: todayResult[0]?.transactions ?? 0,
-    monthCredits,
-    monthDebits,
-    monthTransactions: monthResult[0]?.transactions ?? 0,
-    netProfitMonth: monthCredits - monthDebits,
-    recentEntries: recentEntries.map((e) => ({
-      id: e.id, date: e.date, customerName: e.customerName,
-      serviceType: e.serviceType, credit: parseFloat(e.credit ?? "0"),
-      debit: parseFloat(e.debit ?? "0"), description: e.description,
-      balance: parseFloat(e.balance ?? "0"), createdBy: e.createdBy,
-      createdByName: e.createdByName ?? null,
-      createdAt: e.createdAt instanceof Date ? e.createdAt.toISOString() : e.createdAt,
-    })),
-    topServicesMonth: topServices.slice(0, 5),
-  });
 });
 
 export default router;

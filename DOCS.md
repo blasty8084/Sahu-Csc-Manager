@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Platform Documentation
-**Version 3.4.0** — last updated 2026-07-10
+**Version 3.5.0** — last updated 2026-07-10
 
 > Common Service Center (CSC) Business Management Platform for Odisha / India rural service centers.
 > Full-stack · PWA · Offline-capable · Multilingual (English / Hindi / Odia)
@@ -55,6 +55,10 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 ---
 
 ## 2. Version History
+
+### v3.5.0 — Backend File Split & Modularisation (2026-07-10)
+
+All backend source files over ~300 lines split into focused sub-modules using the barrel pattern: `routes/auth/` (otp + forgot-password + reset-password), `routes/aeps/` (sessions + transactions), `routes/udhari/` (customers + entries), `lib/monthly-export/` (pdf + zip + email + scheduler). `/dashboard` handler extracted from `reports.ts` → `routes/dashboard.ts`. Appeals routes extracted from `admin-registration.ts` → `routes/admin-appeals.ts`. Zero import-site changes — barrel re-exports preserve all existing call sites.
 
 ### v3.4.0 — Receipt Export Layout Refactor & TypeScript Hardening (2026-07-10)
 

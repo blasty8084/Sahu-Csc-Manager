@@ -1,5 +1,5 @@
 # SAHU CSC — Project Quick Reference v3
-**Version 3.4.0 — July 10, 2026**
+**Version 3.5.0 — July 10, 2026**
 
 > Authoritative quick-reference for the SAHU CSC platform.  
 > For deep architecture: `architectureV3.md` · Change history: `CHANGELOG_V3.md` (v3), `changelogV2.md` (v2) · Workflows: `WORKFLOWS.md`

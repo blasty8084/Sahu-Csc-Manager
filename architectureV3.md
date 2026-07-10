@@ -1,5 +1,5 @@
 # SAHU CSC — Architecture Reference v3
-**Version 3.4.0 — July 10, 2026**
+**Version 3.5.0 — July 10, 2026**
 
 > This is the single authoritative reference for the SAHU CSC platform architecture.  
 > It supersedes `architectureV2.md` and `ARCHITECTURE.md`.  
@@ -71,35 +71,56 @@ workspace/
 │   │   │   │   ├── index.ts                # Router composition
 │   │   │   │   ├── setup-status.ts         # GET /api/setup-status (public, registered first)
 │   │   │   │   ├── health.ts               # GET /api/healthz
-│   │   │   │   ├── auth.ts                 # Login/logout/me/register + audit logging
-│   │   │   │   ├── password-reset.ts       # OTP-based forgot/reset (4-step)
+│   │   │   │   ├── auth/                   # Auth sub-module (barrel: auth.ts → auth/index.ts)
+│   │   │   │   │   ├── index.ts            # Mounts register/login/session/appeal/otp/forgot/reset
+│   │   │   │   │   ├── otp.ts              # POST /auth/send-otp, POST /auth/verify-otp
+│   │   │   │   │   ├── forgot-password.ts  # POST /auth/forgot-password (legacy admin OTP)
+│   │   │   │   │   └── reset-password.ts   # POST /auth/reset-password (token + legacy OTP)
+│   │   │   │   ├── password-reset.ts       # STUB — routes moved to auth/; empty router
+│   │   │   │   ├── dashboard.ts            # GET /dashboard (extracted from reports.ts)
 │   │   │   │   ├── sessions.ts             # V2 session list + revoke
 │   │   │   │   ├── ledger.ts               # Ledger CRUD + balance/summary
-│   │   │   │   ├── aeps.ts                 # AePS daily sessions + transactions
+│   │   │   │   ├── aeps.ts                 # BARREL → aeps/ sub-module
+│   │   │   │   ├── aeps/                   # AePS sub-module
+│   │   │   │   │   ├── sessions.ts         # GET/POST /aeps/session, GET /admin/aeps-overview
+│   │   │   │   │   └── transactions.ts     # Transaction CRUD + public receipt verify
 │   │   │   │   ├── services.ts             # Service catalog CRUD
 │   │   │   │   ├── users.ts                # User management (admin)
 │   │   │   │   ├── admin.ts                # Cross-user oversight endpoints
 │   │   │   │   ├── admin-sessions.ts       # Admin session revocation
-│   │   │   │   ├── admin-registration.ts   # Pending user approve/reject
+│   │   │   │   ├── admin-registration.ts   # Pending user approve/reject + registration settings
+│   │   │   │   ├── admin-appeals.ts        # Appeals: GET/re-approve/dismiss-appeal/dismiss-all
 │   │   │   │   ├── admin-receipt-export.ts # Bulk receipt export
 │   │   │   │   ├── profile.ts              # Own profile + avatar
 │   │   │   │   ├── preferences.ts          # Per-user UI preferences
 │   │   │   │   ├── notifications.ts        # Notification inbox
-│   │   │   │   ├── reports.ts              # Reports + dashboard + Excel export
+│   │   │   │   ├── reports.ts              # Reports + Excel export (exports getServiceBreakdownData/getAepsData)
 │   │   │   │   ├── audit.ts                # Audit log viewer (admin)
 │   │   │   │   ├── settings.ts             # Global settings + backups
 │   │   │   │   ├── push.ts                 # VAPID push subscription CRUD
-│   │   │   │   ├── udhari.ts               # Udhari Khata customers + entries
+│   │   │   │   ├── udhari.ts               # BARREL → udhari/ sub-module
+│   │   │   │   ├── udhari/                 # Udhari Khata sub-module
+│   │   │   │   │   ├── customers.ts        # Customer CRUD + summary + recalcBalance
+│   │   │   │   │   └── entries.ts          # Entry CRUD (gave/got) per customer
 │   │   │   │   ├── receipts.ts             # Public receipt verify (no auth)
 │   │   │   │   └── broadcast.ts            # Admin push + email broadcast
 │   │   │   └── lib/
-│   │   │       ├── auth.ts         # requireAuth / requireRole / requirePermission / parseDevice / auditLog
-│   │   │       ├── notify.ts       # createNotification helper
-│   │   │       ├── logger.ts       # Pino structured logger
-│   │   │       ├── mailer.ts       # Nodemailer: sendOtpEmail · sendApprovalEmail · sendBroadcastEmail · isSmtpConfigured
-│   │   │       ├── push.ts         # web-push: sendPushToUser · sendPushToAll
-│   │   │       ├── vapid.ts        # VAPID key auto-generation + env detection
-│   │   │       └── otp-cleanup.ts  # Hourly job: prunes expired OTP rows
+│   │   │       ├── auth/                   # Auth lib sub-module (barrel: auth.ts)
+│   │   │       │   ├── utils.ts            # hashPassword · getClientIp · parseDevice · auditLog
+│   │   │       │   └── middleware.ts       # requireAuth · requireRole · requirePermission · ROLE_PERMISSIONS
+│   │   │       ├── auth.ts                 # BARREL → auth/
+│   │   │       ├── monthly-export/         # Monthly export sub-module (barrel: monthly-export.ts)
+│   │   │       │   ├── pdf.ts              # generateReceiptPdf (PDFKit A4 renderer)
+│   │   │       │   ├── zip.ts              # buildMonthlyZip (DB → PDFs → ZIP)
+│   │   │       │   ├── email.ts            # sendMonthlyExportEmail (ZIP → admin emails)
+│   │   │       │   └── scheduler.ts        # scheduleMonthlyExport (node-cron 1st of month)
+│   │   │       ├── monthly-export.ts       # BARREL → monthly-export/
+│   │   │       ├── notify.ts               # createNotification helper
+│   │   │       ├── logger.ts               # Pino structured logger
+│   │   │       ├── mailer.ts               # Nodemailer: sendOtpEmail · sendApprovalEmail · sendBroadcastEmail · isSmtpConfigured
+│   │   │       ├── push.ts                 # web-push: sendPushToUser · sendPushToAll
+│   │   │       ├── vapid.ts                # VAPID key auto-generation + env detection
+│   │   │       └── otp-cleanup.ts          # Hourly job: prunes expired OTP rows
 │   │   ├── build.mjs              # esbuild bundler (connect-pg-simple MUST be in external)
 │   │   └── scripts/
 │   │       ├── seed.ts            # DB seeder (users, services, settings, notifications)

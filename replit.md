@@ -1,5 +1,5 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 3.4.0** — last updated 2026-07-10
+**Version 3.5.0** — last updated 2026-07-10
 
 > Re-imported and re-set-up on Replit 2026-07-09: ran `pnpm install`, pushed schema via `drizzle-kit push` (`pnpm exec drizzle-kit push --config=lib/db/drizzle.config.ts` from `lib/db/`), seeded admin/operator via the `Seed Database` workflow, and started `API Server` + `SAHU CSC` workflows. Secrets set: `ADMIN_PASSWORD`, `OPERATOR_PASSWORD` (`SESSION_SECRET` already existed).
 >
@@ -26,6 +26,20 @@
 > Full platform documentation: **[DOCS.md](./DOCS.md)**
 
 A full-stack CSC (Common Service Center) business management platform for tracking services, ledger accounting, AePS cash management, Udhari Khata (customer credit ledger), and reporting. Built for Odisha / India rural service centers. Supports PWA installation, offline operation, Android TWA packaging, and full multilingual UI (English / Hindi / Odia).
+
+---
+
+## What's New in v3.5.0 (July 10, 2026) — Backend File Split & Modularisation
+
+| Change | Description |
+|--------|-------------|
+| **`routes/auth/` split** | `password-reset.ts` (424 lines) → `auth/otp.ts` (send-otp + verify-otp), `auth/forgot-password.ts` (legacy admin OTP), `auth/reset-password.ts` (token + legacy reset). `auth/index.ts` updated. `password-reset.ts` replaced with empty stub. |
+| **`routes/aeps/` split** | `routes/aeps.ts` (403 lines) → `aeps/sessions.ts` (day session CRUD + admin overview) + `aeps/transactions.ts` (CRUD + public receipt verify). `routes/aeps.ts` overwritten as barrel. |
+| **`routes/udhari/` split** | `routes/udhari.ts` (400 lines) → `udhari/customers.ts` (customer CRUD + summary + `recalcBalance`) + `udhari/entries.ts` (entry CRUD). `routes/udhari.ts` overwritten as barrel. |
+| **`lib/monthly-export/` split** | `lib/monthly-export.ts` (395 lines) → `pdf.ts` (PDFKit renderer) + `zip.ts` (ZIP builder) + `email.ts` (send to admins) + `scheduler.ts` (node-cron). `lib/monthly-export.ts` overwritten as barrel. |
+| **`routes/dashboard.ts` extracted** | `/dashboard` handler extracted from `reports.ts` (327 lines) into new standalone file. `getServiceBreakdownData` and `getAepsData` exported from `reports.ts`. |
+| **`routes/admin-appeals.ts` extracted** | Appeals routes (`GET /admin/users/appeals`, `PATCH re-approve`, `PATCH dismiss-appeal`, `POST dismiss-all`) extracted from `admin-registration.ts` (321 lines). Both files now under 200 lines. |
+| **Barrel pattern** | Every split uses the original filename as a barrel re-export — zero changes to any import site outside the split modules. |
 
 ---
 
