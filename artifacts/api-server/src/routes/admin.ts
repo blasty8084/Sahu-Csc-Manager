@@ -5,68 +5,75 @@ import { requireRole, getClientIp, auditLog } from "../lib/auth";
 import crypto from "node:crypto";
 import { randomUUID } from "node:crypto";
 import { sendAdminResetLinkEmail, isSmtpConfigured } from "../lib/mailer";
+import { cached } from "../lib/query-cache";
 
 const router: IRouter = Router();
 
 router.get("/admin/users-overview", requireRole("admin"), async (_req, res): Promise<void> => {
-  // Single grouped aggregate query for all users' credit/debit/transaction totals
-  // (was: 1 query per user). Left-joined so users with zero ledger entries still appear.
-  const balanceRows = await db
-    .select({
-      userId: ledgerTable.createdBy,
-      totalCredits: sum(ledgerTable.credit),
-      totalDebits: sum(ledgerTable.debit),
-      totalTransactions: count(),
-    })
-    .from(ledgerTable)
-    .groupBy(ledgerTable.createdBy);
+  // This scans the full ledger table twice (grouped balances + DISTINCT ON
+  // recent entry) plus a full users scan. It's the heaviest admin page and
+  // gets hit on every dashboard refresh, so cache it for a few seconds —
+  // invalidated immediately on any ledger write (see query-cache.ts).
+  const summaries = await cached("admin:users-overview", 5_000, async () => {
+    // Single grouped aggregate query for all users' credit/debit/transaction totals
+    // (was: 1 query per user). Left-joined so users with zero ledger entries still appear.
+    const balanceRows = await db
+      .select({
+        userId: ledgerTable.createdBy,
+        totalCredits: sum(ledgerTable.credit),
+        totalDebits: sum(ledgerTable.debit),
+        totalTransactions: count(),
+      })
+      .from(ledgerTable)
+      .groupBy(ledgerTable.createdBy);
 
-  const balanceByUser = new Map(balanceRows.map((b) => [b.userId, b]));
+    const balanceByUser = new Map(balanceRows.map((b) => [b.userId, b]));
 
-  // One query for every user's most recent entry via DISTINCT ON, instead of a
-  // separate "ORDER BY ... LIMIT 1" query per user.
-  const recentRows = await pool.query<{
-    created_by: number;
-    date: string;
-    customer_name: string;
-    service_type: string;
-    credit: string;
-    debit: string;
-  }>(`
-    SELECT DISTINCT ON (created_by) created_by, date, customer_name, service_type, credit, debit
-    FROM ledger
-    ORDER BY created_by, created_at DESC
-  `);
-  const recentByUser = new Map(recentRows.rows.map((r) => [r.created_by, r]));
+    // One query for every user's most recent entry via DISTINCT ON, instead of a
+    // separate "ORDER BY ... LIMIT 1" query per user.
+    const recentRows = await pool.query<{
+      created_by: number;
+      date: string;
+      customer_name: string;
+      service_type: string;
+      credit: string;
+      debit: string;
+    }>(`
+      SELECT DISTINCT ON (created_by) created_by, date, customer_name, service_type, credit, debit
+      FROM ledger
+      ORDER BY created_by, created_at DESC
+    `);
+    const recentByUser = new Map(recentRows.rows.map((r) => [r.created_by, r]));
 
-  const users = await db.select({ id: usersTable.id, username: usersTable.username, fullName: usersTable.fullName, role: usersTable.role, isActive: usersTable.isActive }).from(usersTable);
+    const users = await db.select({ id: usersTable.id, username: usersTable.username, fullName: usersTable.fullName, role: usersTable.role, isActive: usersTable.isActive }).from(usersTable);
 
-  const summaries = users.map((user) => {
-    const balance = balanceByUser.get(user.id);
-    const totalCredits = parseFloat(balance?.totalCredits ?? "0");
-    const totalDebits = parseFloat(balance?.totalDebits ?? "0");
-    const recent = recentByUser.get(user.id);
+    return users.map((user) => {
+      const balance = balanceByUser.get(user.id);
+      const totalCredits = parseFloat(balance?.totalCredits ?? "0");
+      const totalDebits = parseFloat(balance?.totalDebits ?? "0");
+      const recent = recentByUser.get(user.id);
 
-    return {
-      userId: user.id,
-      username: user.username,
-      fullName: user.fullName,
-      role: user.role,
-      isActive: user.isActive,
-      balance: totalCredits - totalDebits,
-      totalCredits,
-      totalDebits,
-      totalTransactions: balance?.totalTransactions ?? 0,
-      lastEntry: recent
-        ? {
-            date: recent.date,
-            customerName: recent.customer_name,
-            serviceType: recent.service_type,
-            credit: parseFloat(recent.credit ?? "0"),
-            debit: parseFloat(recent.debit ?? "0"),
-          }
-        : null,
-    };
+      return {
+        userId: user.id,
+        username: user.username,
+        fullName: user.fullName,
+        role: user.role,
+        isActive: user.isActive,
+        balance: totalCredits - totalDebits,
+        totalCredits,
+        totalDebits,
+        totalTransactions: balance?.totalTransactions ?? 0,
+        lastEntry: recent
+          ? {
+              date: recent.date,
+              customerName: recent.customer_name,
+              serviceType: recent.service_type,
+              credit: parseFloat(recent.credit ?? "0"),
+              debit: parseFloat(recent.debit ?? "0"),
+            }
+          : null,
+      };
+    });
   });
 
   res.json(summaries);

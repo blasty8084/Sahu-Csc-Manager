@@ -3,6 +3,7 @@ import { db, ledgerTable, usersTable } from "@workspace/db";
 import { and, gte, lte, eq, sql, sum, count, desc } from "drizzle-orm";
 import { requireAuth, requirePermission } from "../lib/auth";
 import { getServiceBreakdownData } from "./reports";
+import { cached } from "../lib/query-cache";
 
 const router: IRouter = Router();
 
@@ -20,19 +21,28 @@ router.get("/dashboard", requireAuth, requirePermission("reports:view"), async (
   const todayWhere = and(userFilter, todayFilter);
   const monthWhere = and(userFilter, monthFilter);
 
-  const [balanceResult, todayResult, monthResult, recentEntries, topServices] = await Promise.all([
-    db.select({ totalCredits: sum(ledgerTable.credit), totalDebits: sum(ledgerTable.debit) }).from(ledgerTable).where(balanceWhere),
-    db.select({ credits: sum(ledgerTable.credit), debits: sum(ledgerTable.debit), transactions: count() }).from(ledgerTable).where(todayWhere),
-    db.select({ credits: sum(ledgerTable.credit), debits: sum(ledgerTable.debit), transactions: count() }).from(ledgerTable).where(monthWhere),
-    db.select({
-      id: ledgerTable.id, date: ledgerTable.date, customerName: ledgerTable.customerName,
-      serviceType: ledgerTable.serviceType, credit: ledgerTable.credit, debit: ledgerTable.debit,
-      description: ledgerTable.description, balance: ledgerTable.balance,
-      createdBy: ledgerTable.createdBy, createdAt: ledgerTable.createdAt,
-      createdByName: usersTable.fullName,
-    }).from(ledgerTable).leftJoin(usersTable, eq(ledgerTable.createdBy, usersTable.id)).where(balanceWhere).orderBy(desc(ledgerTable.createdAt)).limit(5),
-    getServiceBreakdownData(monthStart, today, userFilter),
-  ]);
+  // Short TTL cache: this endpoint runs 5 grouped aggregate scans over the full
+  // ledger table on every hit. A 5s window absorbs repeat dashboard loads
+  // (widget refreshes, tab switches) without ever serving more than 5s-stale
+  // data, and is invalidated immediately on any ledger write for this user.
+  const [balanceResult, todayResult, monthResult, recentEntries, topServices] = await cached(
+    `dashboard:${userId}:${today}`,
+    5_000,
+    () =>
+      Promise.all([
+        db.select({ totalCredits: sum(ledgerTable.credit), totalDebits: sum(ledgerTable.debit) }).from(ledgerTable).where(balanceWhere),
+        db.select({ credits: sum(ledgerTable.credit), debits: sum(ledgerTable.debit), transactions: count() }).from(ledgerTable).where(todayWhere),
+        db.select({ credits: sum(ledgerTable.credit), debits: sum(ledgerTable.debit), transactions: count() }).from(ledgerTable).where(monthWhere),
+        db.select({
+          id: ledgerTable.id, date: ledgerTable.date, customerName: ledgerTable.customerName,
+          serviceType: ledgerTable.serviceType, credit: ledgerTable.credit, debit: ledgerTable.debit,
+          description: ledgerTable.description, balance: ledgerTable.balance,
+          createdBy: ledgerTable.createdBy, createdAt: ledgerTable.createdAt,
+          createdByName: usersTable.fullName,
+        }).from(ledgerTable).leftJoin(usersTable, eq(ledgerTable.createdBy, usersTable.id)).where(balanceWhere).orderBy(desc(ledgerTable.createdAt)).limit(5),
+        getServiceBreakdownData(monthStart, today, userFilter),
+      ]),
+  );
 
   const totalCredits = parseFloat(balanceResult[0]?.totalCredits ?? "0");
   const totalDebits = parseFloat(balanceResult[0]?.totalDebits ?? "0");

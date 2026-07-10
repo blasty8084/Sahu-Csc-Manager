@@ -23,3 +23,4 @@
 - [Auto-generated secrets pattern](field-encryption-scope.md) — persist generated crypto keys in the settings table (like VAPID keys) instead of requesting a secret from the user, when the key is purely internal
 - [Doc sprawl in this project](doc-sprawl.md) — many parallel versioned .md files (replit.md, DOCS.md, CHANGELOG.md, CHANGELOG_V3.md, BUILD.md, WORKFLOWS.md, ReplitV3.md, architectureV3.md) must all be updated together on version bumps; v2 files are superseded and skipped
 - [Auto-generated secrets pattern](auto-generated-secrets.md) — encryption key + VAPID both eager-init at startup via ensureEncryptionKey/ensureVapidKeys; initPush after; settings table persists
+- [Query cache & load testing](query-cache-and-loadtest.md) — TTL cache scoping per-user vs global; rate-limiter loopback skip must be gated non-production since trust proxy makes req.ip spoofable

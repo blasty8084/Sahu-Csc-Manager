@@ -3,6 +3,7 @@ import { db, ledgerTable, aepsDailyTable, aepsTransactionsTable, usersTable } fr
 import { and, gte, lte, eq, sql, sum, count, desc } from "drizzle-orm";
 import { GetDailyReportQueryParams, GetMonthlyReportQueryParams, GetServiceBreakdownQueryParams, ExportReportQueryParams } from "@workspace/api-zod";
 import { requireAuth, requirePermission } from "../lib/auth";
+import { cached } from "../lib/query-cache";
 import ExcelJS from "exceljs";
 
 const router: IRouter = Router();
@@ -100,17 +101,23 @@ router.get("/reports/daily", requireAuth, requirePermission("reports:view"), asy
   const dateFilter = eq(ledgerTable.date, date);
   const whereClause = userFilter ? and(userFilter, dateFilter) : dateFilter;
 
-  const [result, aeps] = await Promise.all([
-    db
-      .select({ totalCredits: sum(ledgerTable.credit), totalDebits: sum(ledgerTable.debit), totalTransactions: count() })
-      .from(ledgerTable)
-      .where(whereClause),
-    getAepsData(date, date),
-  ]);
+  const userId = req.session.userId!;
+  const [result, aeps, topServices] = await cached(
+    `reports:daily:${userId}:${date}`,
+    5_000,
+    () =>
+      Promise.all([
+        db
+          .select({ totalCredits: sum(ledgerTable.credit), totalDebits: sum(ledgerTable.debit), totalTransactions: count() })
+          .from(ledgerTable)
+          .where(whereClause),
+        getAepsData(date, date),
+        getServiceBreakdownData(date, date, userFilter),
+      ]),
+  );
 
   const totalCredits = parseFloat(result[0]?.totalCredits ?? "0");
   const totalDebits = parseFloat(result[0]?.totalDebits ?? "0");
-  const topServices = await getServiceBreakdownData(date, date, userFilter);
 
   res.json({
     date,
@@ -142,20 +149,26 @@ router.get("/reports/monthly", requireAuth, requirePermission("reports:view"), a
   const dateFilter = and(gte(ledgerTable.date, startDate), lte(ledgerTable.date, endDate));
   const whereClause = userFilter ? and(userFilter, dateFilter) : dateFilter;
 
-  const [result, dailyRows, topServices, aeps] = await Promise.all([
-    db
-      .select({ totalCredits: sum(ledgerTable.credit), totalDebits: sum(ledgerTable.debit), totalTransactions: count() })
-      .from(ledgerTable)
-      .where(whereClause),
-    db
-      .select({ date: ledgerTable.date, credits: sum(ledgerTable.credit), debits: sum(ledgerTable.debit), transactions: count() })
-      .from(ledgerTable)
-      .where(whereClause)
-      .groupBy(ledgerTable.date)
-      .orderBy(ledgerTable.date),
-    getServiceBreakdownData(startDate, endDate, userFilter),
-    getAepsData(startDate, endDate),
-  ]);
+  const monthlyUserId = req.session.userId!;
+  const [result, dailyRows, topServices, aeps] = await cached(
+    `reports:monthly:${monthlyUserId}:${startDate}:${endDate}`,
+    5_000,
+    () =>
+      Promise.all([
+        db
+          .select({ totalCredits: sum(ledgerTable.credit), totalDebits: sum(ledgerTable.debit), totalTransactions: count() })
+          .from(ledgerTable)
+          .where(whereClause),
+        db
+          .select({ date: ledgerTable.date, credits: sum(ledgerTable.credit), debits: sum(ledgerTable.debit), transactions: count() })
+          .from(ledgerTable)
+          .where(whereClause)
+          .groupBy(ledgerTable.date)
+          .orderBy(ledgerTable.date),
+        getServiceBreakdownData(startDate, endDate, userFilter),
+        getAepsData(startDate, endDate),
+      ]),
+  );
 
   const totalCredits = parseFloat(result[0]?.totalCredits ?? "0");
   const totalDebits = parseFloat(result[0]?.totalDebits ?? "0");

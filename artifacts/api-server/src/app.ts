@@ -19,9 +19,29 @@ const app: Express = express();
 
 app.set("trust proxy", 1);
 
+// Minimal APM surrogate: no external tracing service is wired up (that would
+// need an integration — see replit.md follow-ups), but every request's
+// duration is logged, and anything crossing SLOW_REQUEST_MS is logged at
+// "warn" with a dedicated `slowRequest: true` flag so it can be grepped/
+// alerted on without needing a full APM agent.
+const SLOW_REQUEST_MS = Number(process.env.SLOW_REQUEST_MS ?? 500);
+
 app.use(
   pinoHttp({
     logger,
+    customLogLevel: (_req, res, err) => {
+      if (err || res.statusCode >= 500) return "error";
+      if (res.statusCode >= 400) return "warn";
+      const responseTime = (res as any).responseTime as number | undefined;
+      if (responseTime !== undefined && responseTime > SLOW_REQUEST_MS) return "warn";
+      return "info";
+    },
+    customProps: (_req, res) => {
+      const responseTime = (res as any).responseTime as number | undefined;
+      return responseTime !== undefined && responseTime > SLOW_REQUEST_MS
+        ? { slowRequest: true }
+        : {};
+    },
     serializers: {
       req(req) {
         return { id: req.id, method: req.method, url: req.url?.split("?")[0] };
@@ -56,6 +76,16 @@ const limiter = rateLimit({
   max: 500,
   standardHeaders: true,
   legacyHeaders: false,
+  // Loopback-only bypass so `pnpm run loadtest` (run from inside this same
+  // container, hitting 127.0.0.1 directly) can generate realistic concurrent
+  // traffic without tripping the per-IP limiter meant for external abuse.
+  // Gated on NODE_ENV !== "production" so this bypass path does not exist at
+  // all in production — `req.ip` is derived from X-Forwarded-For (trust
+  // proxy is on), which is attacker-controllable, so it must never be
+  // trusted for a security-relevant bypass once real traffic is in play.
+  skip: (req) =>
+    process.env.NODE_ENV !== "production" &&
+    (req.ip === "127.0.0.1" || req.ip === "::1" || req.ip === "::ffff:127.0.0.1"),
 });
 app.use(limiter);
 
