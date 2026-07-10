@@ -4,6 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 import { VitePWA } from "vite-plugin-pwa";
+import { ViteImageOptimizer } from "vite-plugin-image-optimizer";
 import { readFileSync } from "fs";
 
 function readMockupSandboxPort(): number | null {
@@ -35,6 +36,17 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    // Compresses raster/SVG assets at build time (lossless-ish defaults) so
+    // shipped bundles don't carry unnecessarily large images.
+    ViteImageOptimizer({
+      png: { quality: 80 },
+      jpeg: { quality: 80 },
+      jpg: { quality: 80 },
+      webp: { quality: 80 },
+      svg: {
+        multipass: true,
+      },
+    }),
     ...(process.env.NODE_ENV !== "production" && process.env.REPL_ID !== undefined
       ? [runtimeErrorOverlay()]
       : []),
