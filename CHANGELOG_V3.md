@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v3
-**Current version: 3.5.4 — July 11, 2026**
+**Current version: 3.5.6 — July 11, 2026**
 
 > Detailed record of every feature, change, and upgrade from v3.0.0 onward.  
 > For v2.x history, see `docs/archive/changelogV2.md`.  
@@ -7,10 +7,15 @@
 > For full architecture reference, see `architectureV3.md`.  
 > For session-by-session changes, see `UPDATES.md`.
 
+> **⚠️ On every version bump, update this file — and only this file — for the feature/version entry.**
+> This is the single canonical changelog for v3.x. Do not create a new parallel changelog file (`CHANGELOG_V4.md`, etc.) or duplicate the entry into `BUILD.md`/`WORKFLOWS.md`/`ReplitV3.md` — those are pointer stubs now. If architecture or setup also changed, update `architectureV3.md` / `replit.md` directly instead of restating the change here.
+
 ---
 
 ## Table of Contents
 
+0. [v3.5.6 — Documentation Consolidation, i18n Completion & CDN Setup Guide (July 11, 2026)](#0-v356--documentation-consolidation-i18n-completion--cdn-setup-guide-july-11-2026)
+0. [v3.5.5 — Tests, Error Tracking & Bundle Audit (July 11, 2026)](#0-v355--tests-error-tracking--bundle-audit-july-11-2026)
 0. [v3.5.4 — Ledger Page Modularization (July 11, 2026)](#0-v354--ledger-page-modularization-july-11-2026)
 0. [v3.5.3 — Optimization Round 2: Query Caching, Load Testing & Safe Rate-Limiter Bypass (July 10, 2026)](#0-v353--optimization-round-2-query-caching-load-testing--safe-rate-limiter-bypass-july-10-2026)
 0. [v3.5.2 — Asset & Delivery Hardening (July 10, 2026)](#0-v352--asset--delivery-hardening-july-10-2026)
@@ -23,6 +28,31 @@
 3. [v3.1.1 — Replit Environment Migration & TypeScript Clean (July 3, 2026)](#3-v311--replit-environment-migration--typescript-clean-july-3-2026)
 4. [v3.1.0 — Backup & Restore Redesign + Download + Scheduler (June 30, 2026)](#4-v310--backup--restore-redesign--download--scheduler-june-30-2026)
 5. [v3.0.0 — Setup Wizard, SMTP Integration & Auto-Import (June 30, 2026)](#5-v300--setup-wizard-smtp-integration--auto-import-june-30-2026)
+
+---
+
+## 0. v3.5.6 — Documentation Consolidation, i18n Completion & CDN Setup Guide (July 11, 2026)
+
+Docs-only + one missing translation key — no route, API, or visual behavior changed.
+
+| Change | Description |
+|--------|-------------|
+| **Doc consolidation** | 9 parallel `.md` files reduced to 4 canonical + pointers: `CHANGELOG_V3.md` (this file, v3.x changelog), `architectureV3.md` (architecture/build), `replit.md` (Replit setup/workflows), `DOCS.md` (API/module reference). `BUILD.md`, `WORKFLOWS.md`, `ReplitV3.md` are now short pointer stubs. `CHANGELOG.md` trimmed to its unique content — the pre-v3 (v1.x/v2.x) feature archive — with the duplicate v3.x summary removed. |
+| **Found & fixed the exact drift this task was meant to prevent** | The About page's changelog already had a `v3.5.5` entry ("Tests, Error Tracking & Bundle Audit" — Vitest suite, Sentry, ErrorBoundary) that was never added to this file. Backfilled it below as v3.5.5 so the two stay in sync going forward. |
+| **Stale credentials fixed** | Literal `admin123`/`operator123` in `architectureV3.md`, `CHANGELOG.md`, `CHANGELOG_V3.md`, `ReplitV3.md` replaced with the correct "value of `ADMIN_PASSWORD`/`OPERATOR_PASSWORD` secret" — actual passwords have come from Replit Secrets since the v3.1.1 Replit migration, but several docs still showed the old literal defaults. |
+| **i18n: 1 missing key filled** | `nav.admin` (used in `layout.tsx`) existed in `en/translation.json` but was missing from both `hi/translation.json` and `or/translation.json` — added ("एडमिन" / "ଆଡମିନ"). Full audit confirmed this was the *only* gap across all 793 keys in all three locales; no other pages/keys needed translation. |
+| **CDN setup documented** | New `CDN_SETUP.md` — Cloudflare reverse-proxy setup guide for the existing single-origin VM deployment. Documentation only, not provisioned (requires external DNS/account access outside the codebase); confirms existing `serve.mjs` cache headers should be passed through, not overridden. |
+
+---
+
+## 0. v3.5.5 — Tests, Error Tracking & Bundle Audit (July 11, 2026)
+
+| Change | Description |
+|--------|-------------|
+| **42 automated Vitest tests** | `artifacts/api-server/src/__tests__/`: `auth-session.test.ts` (25 tests — `requireAuth`/`requirePermission`/`requireRole`, lockout, session duration), `ledger-balance.test.ts` (9 tests — running-balance math), `receipt-numbering.test.ts` (8 tests — `CSC-YYYY-NNNN` generation). Run via `vitest.config.ts`. |
+| **Sentry APM (opt-in, no-op by default)** | `@sentry/node` wired server-side (`app.ts`), `@sentry/react` wired client-side (`main.tsx`) — both no-op when `SENTRY_DSN` / `VITE_SENTRY_DSN` env vars are absent, so nothing changes for deployments that don't set them. No PII is sent. |
+| **React ErrorBoundary** | `components/error-boundary.tsx` wraps the whole app in `App.tsx` — an unexpected render crash now shows a branded recovery screen instead of a blank white page. |
+| **Bundle audit** | Confirmed `recharts` (420 KB), `jsPDF` (386 KB), `html2canvas` (201 KB) are already separate lazy-loaded chunks (not in the main bundle); main JS chunk is 438 KB, under Vite's 500 KB warning threshold. |
 
 ---
 
@@ -608,7 +638,7 @@ All project documentation updated to reflect the current V3 state of the platfor
 | SMTP | ✅ Fully configured |
 | VAPID push | ✅ Auto-generated (set secrets for production persistence) |
 | Setup status | ✅ `{ "configured": true, "missing": [] }` |
-| Default accounts | ✅ Seeded (admin/admin123, operator/operator123) |
+| Default accounts | ✅ Seeded (admin / operator, passwords from `ADMIN_PASSWORD` / `OPERATOR_PASSWORD` secrets) |
 | i18n | ✅ EN / HI / OR — all 25 pages translated |
 | PWA | ✅ Service worker active, offline-capable |
 | Android TWA | 🔄 Requires: deploy → generate keystore → update assetlinks.json → Play Console |

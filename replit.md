@@ -1,5 +1,5 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 3.5.4** — last updated 2026-07-11
+**Version 3.5.6** — last updated 2026-07-11
 
 > Re-imported and re-set-up on Replit 2026-07-11: ran `pnpm install`, pushed schema via `drizzle-kit push` (`pnpm exec drizzle-kit push --config=drizzle.config.ts` from `lib/db/`), seeded admin/operator via the `Seed Database` workflow, and started `API Server` + `SAHU CSC` workflows. `ADMIN_PASSWORD` and `OPERATOR_PASSWORD` were re-requested as Replit Secrets (a fresh import means a fresh, empty database, so these seed-account passwords must be re-provided each time); `SESSION_SECRET` already existed. Verified login works via curl.
 >
@@ -8,6 +8,22 @@
 > **Fixed a workflow bug**: the `API Server` workflow ran `PORT=8080 ... pnpm run build && node index.mjs` — in bash, a `VAR=val` prefix only applies to the command immediately before `&&`, so `node index.mjs` was inheriting the reserved `PORT=5000` (set in `.replit` `[userenv.shared]`) instead of 8080, colliding with the frontend's port. Fixed by prefixing `node` with its own `PORT=8080` too.
 >
 > **Fixed a fresh-`node_modules` build failure (2026-07-11)**: after a clean `pnpm install`, the API Server build failed at runtime with `ERR_MODULE_NOT_FOUND` for `@opentelemetry/instrumentation`, then `@opentelemetry/core`, then `@opentelemetry/sdk-trace-base` in turn. `build.mjs` externalizes `@opentelemetry/*` (to dodge the drizzle-orm dual-peer conflict — see Sentry note below), so esbuild doesn't bundle it, but pnpm only hoists *direct* dependencies into `artifacts/api-server/node_modules`; these three are transitive deps of `@sentry/node`/`@sentry/opentelemetry`/`@sentry/node-core` that were never hoisted. Fixed by adding all three as explicit `dependencies` in `artifacts/api-server/package.json` (alongside the existing `@opentelemetry/api`) so pnpm hoists them. If a future Sentry upgrade throws the same `ERR_MODULE_NOT_FOUND` for a new `@opentelemetry/*` subpackage, add it the same way.
+
+## What's New in v3.5.6 (July 11, 2026) — Documentation Consolidation, i18n Completion & CDN Setup Guide
+
+Docs-only + one missing translation key — no route, API, or visual behavior changed. See `CHANGELOG_V3.md` for full details.
+
+- **9 parallel `.md` files → 4 canonical + pointers**: `CHANGELOG_V3.md` (changelog), `architectureV3.md` (architecture/build), `replit.md` (this file — setup/workflows), `DOCS.md` (API/module reference). `BUILD.md`/`WORKFLOWS.md`/`ReplitV3.md` are now short pointer stubs; `CHANGELOG.md` trimmed to the pre-v3 archive.
+- **Backfilled the missing v3.5.5 entry** into `CHANGELOG_V3.md` — the About page's changelog already listed it (Vitest tests, Sentry, ErrorBoundary) but this file never got updated, which is exactly the kind of doc drift this consolidation was meant to catch and prevent going forward.
+- **i18n**: filled the one missing key (`nav.admin`) in Hindi and Odia — all 793 keys now present in all three locales.
+- **CDN**: setup guide written at `CDN_SETUP.md` (Cloudflare reverse-proxy in front of the existing single-origin VM deployment, respecting already-correct origin cache headers). Documentation only — not provisioned, since it needs external DNS/account access.
+
+## What's New in v3.5.5 (July 11, 2026) — Tests, Error Tracking & Bundle Audit
+
+- **42 automated Vitest tests**: ledger balance math, receipt-number generation (`CSC-YYYY-NNNN`), and all auth/session middleware (`requireAuth`, `requirePermission`, `requireRole`, lockout, session durations).
+- **Sentry APM** wired server-side (`@sentry/node`) and client-side (`@sentry/react`) — no-ops when `SENTRY_DSN`/`VITE_SENTRY_DSN` are unset; no PII sent.
+- **React ErrorBoundary** wraps the app — unexpected render crashes show a branded recovery screen instead of a blank page.
+- **Bundle audit confirmed**: `recharts`/`jsPDF`/`html2canvas` are separate lazy chunks; main bundle is 438 KB (under the 500 KB warning threshold).
 
 ## What's New in v3.5.4 (July 11, 2026) — Ledger Page Modularization
 
@@ -22,7 +38,7 @@ Continuing from the 8.5/10 baseline (N+1 fixes, batched writes, pooled connectio
 - **Query-level caching**: new `lib/query-cache.ts` — a process-local 5s TTL cache in front of the heaviest read aggregates (`GET /api/dashboard`, `GET /api/admin/users-overview`, `GET /api/reports/daily`, `GET /api/reports/monthly`), invalidated immediately on any ledger create/update/delete via `invalidateLedgerCaches()`. Not Redis — this is a single-process app, so a shared cache adds infra with no benefit today; if the API ever scales to multiple instances, this must move to Redis.
 - **Lightweight APM surrogate**: `app.ts` now logs every request's status-based level (error/warn/info) and flags any request over `SLOW_REQUEST_MS` (default 500ms) with `slowRequest: true` in the pino log line, so regressions are grep/alertable without a full tracing agent.
 - **Load testing**: `pnpm --filter @workspace/api-server run loadtest` (autocannon) hits `/api/dashboard`, `/api/admin/users-overview`, `/healthz`. The general rate limiter now skips loopback requests (127.0.0.1) so the tool can generate real concurrent load without tripping the same per-IP limiter that protects the app from external abuse — production behavior is unchanged. **Measured on this container** (20 concurrent connections, 8s, single Node process, dev build): dashboard p50 47ms / p95 272ms / p99 362ms at ~278 req/s; admin users-overview p50 46ms / p95 251ms / p99 298ms at ~284 req/s; healthz p50 16ms / p95 32ms at ~1133 req/s. All 0 errors.
-- **CDN**: not added. Static assets already get correct cache headers (immutable hashed assets, no-store on the SPA shell — see `scripts/serve.mjs`), but there is no edge/CDN layer in front of them; the Vite `dist` output is served directly from this container. A real CDN (Cloudflare, or Replit's own deployment edge) is an infrastructure choice outside app code — flagged as a follow-up, not silently claimed as done.
+- **CDN**: not added. Static assets already get correct cache headers (immutable hashed assets, no-store on the SPA shell — see `scripts/serve.mjs`), but there is no edge/CDN layer in front of them; the Vite `dist` output is served directly from this container. A real CDN (Cloudflare, or Replit's own deployment edge) is an infrastructure choice outside app code — flagged as a follow-up, not silently claimed as done. **Setup steps documented in [`CDN_SETUP.md`](./CDN_SETUP.md)** (2026-07-11) for whoever provisions it — no code changes needed since the app is a single-origin deployment with already-correct origin cache headers; the CDN just needs to sit in front and pass those headers through.
 - **Read replicas**: not added. The app connects to a single managed Postgres instance; Replit's built-in Postgres does not expose a read-replica option, so this would require an external Postgres provider. Flagged as a follow-up rather than faked.
 
 **Honest ceiling**: this is now measured, not guessed — the numbers above are real, but they're single-process/single-container numbers, not a production-scale concurrent-user benchmark. Getting believably closer to 10/10 still needs a CDN, either read replicas or a managed cache tier (Redis) for multi-instance scaling, and a real APM/tracing service (e.g. via a Sentry or OpenTelemetry integration) instead of log-based flags.

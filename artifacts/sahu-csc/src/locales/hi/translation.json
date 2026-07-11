@@ -99,7 +99,8 @@
     "good_afternoon": "नमस्ते",
     "good_evening": "शुभ संध्या",
     "switch_light": "लाइट मोड में जाएं",
-    "switch_dark": "डार्क मोड में जाएं"
+    "switch_dark": "डार्क मोड में जाएं",
+    "admin": "एडमिन"
   },
 
   "auth": {

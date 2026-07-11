@@ -14,6 +14,17 @@ const APP_VERSION = __APP_VERSION__;
 // ── Changelog ────────────────────────────────────────────────────────────────
 const CHANGELOG = [
   {
+    version: "v3.5.6",
+    title: "Documentation Consolidation, i18n Completion & CDN Setup Guide",
+    date: "2026-07-11",
+    accent: "#0b2c60",
+    changes: [
+      "9 parallel documentation files consolidated into 4 canonical files plus short pointers — prevents future changelog drift",
+      "Filled the one missing Hindi/Odia translation key (nav.admin) — all 793 keys now complete in all 3 languages",
+      "Wrote a Cloudflare CDN setup guide (CDN_SETUP.md) for the existing single-origin deployment — documentation only, not yet provisioned",
+    ],
+  },
+  {
     version: "v3.5.5",
     title: "Tests, Error Tracking & Bundle Audit",
     date: "2026-07-11",

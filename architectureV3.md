@@ -53,8 +53,10 @@
 
 | Username | Password | Role |
 |----------|----------|------|
-| `admin` | `admin123` | admin |
-| `operator` | `operator123` | operator |
+| `admin` | value of `ADMIN_PASSWORD` secret | admin |
+| `operator` | value of `OPERATOR_PASSWORD` secret | operator |
+
+Credentials are never hardcoded — the seed script (`artifacts/api-server/src/scripts/seed.ts`) reads them from the `ADMIN_PASSWORD` / `OPERATOR_PASSWORD` Replit Secrets and fails loudly if either is missing.
 
 ---
 
@@ -902,3 +904,4 @@ pnpm --filter @workspace/db run push
 | OTP resend cooldown = 120 seconds | Set in both `forgot-password.tsx` and `register.tsx` as `RESEND_COOLDOWN = 120` |
 | VAPID auto-generation | Dev-friendly; no manual key generation needed; production should use persistent secrets |
 | `post-merge.sh` is idempotent | Safe to run multiple times; `--frozen-lockfile` never modifies lockfile |
+| CDN sits in front of the single origin, doesn't split it | Single-VM deployment already sends correct per-asset-type cache headers (`serve.mjs`); a transparent reverse-proxy CDN (see `CDN_SETUP.md`) avoids CORS/asset-path-rewrite risk that a separate CDN-prefixed domain would add |
