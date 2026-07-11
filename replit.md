@@ -1,7 +1,9 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 3.5.3** — last updated 2026-07-10
+**Version 3.5.3** — last updated 2026-07-11
 
-> Re-imported and re-set-up on Replit 2026-07-10: ran `pnpm install`, pushed schema via `drizzle-kit push` (`pnpm exec drizzle-kit push --config=drizzle.config.ts` from `lib/db/`), seeded admin/operator via the `Seed Database` workflow, and started `API Server` + `SAHU CSC` workflows. `ADMIN_PASSWORD` and `OPERATOR_PASSWORD` are stored as Replit Secrets (never in `.replit`/config); `SESSION_SECRET` already existed. Verified login works via curl.
+> Re-imported and re-set-up on Replit 2026-07-11: ran `pnpm install`, pushed schema via `drizzle-kit push` (`pnpm exec drizzle-kit push --config=drizzle.config.ts` from `lib/db/`), seeded admin/operator via the `Seed Database` workflow, and started `API Server` + `SAHU CSC` workflows. `ADMIN_PASSWORD` and `OPERATOR_PASSWORD` were re-requested as Replit Secrets (a fresh import means a fresh, empty database, so these seed-account passwords must be re-provided each time); `SESSION_SECRET` already existed. Verified login works via curl.
+>
+> Note: re-importing this project always resets the database to empty. After every import, re-run in order: `pnpm install` → `drizzle-kit push` (from `lib/db/`) → `Seed Database` workflow → start `API Server` + `SAHU CSC` workflows.
 >
 > **Fixed a workflow bug**: the `API Server` workflow ran `PORT=8080 ... pnpm run build && node index.mjs` — in bash, a `VAR=val` prefix only applies to the command immediately before `&&`, so `node index.mjs` was inheriting the reserved `PORT=5000` (set in `.replit` `[userenv.shared]`) instead of 8080, colliding with the frontend's port. Fixed by prefixing `node` with its own `PORT=8080` too.
 
