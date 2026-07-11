@@ -12,6 +12,11 @@ import healthRouter from "./routes/health";
 import setupStatusRouter from "./routes/setup-status";
 import { logger } from "./lib/logger";
 import { pool } from "@workspace/db";
+import { initSentry, setupSentryErrorHandler } from "./lib/sentry";
+
+// Initialise Sentry before any middleware so it can instrument the full
+// request lifecycle.  No-ops when SENTRY_DSN is not set.
+initSentry();
 
 const PgSession = ConnectPgSimple(session);
 
@@ -155,5 +160,25 @@ app.use("/api/auth/forgot-password", authWriteLimiter);
 app.use("/api/auth/verify-otp", otpVerifyLimiter);
 app.use("/api/auth/reset-password", otpVerifyLimiter);
 app.use("/api", router);
+
+// Sentry error handler must come after all routes but before any custom
+// error-handler middleware.  No-ops when SENTRY_DSN is not set.
+setupSentryErrorHandler(app);
+
+// Generic fallback error handler — keeps the API from leaking stack traces.
+app.use(
+  (
+    err: Error,
+    _req: express.Request,
+    res: express.Response,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _next: express.NextFunction,
+  ) => {
+    logger.error({ err }, "Unhandled error");
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  },
+);
 
 export default app;

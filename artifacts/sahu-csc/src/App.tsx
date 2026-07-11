@@ -20,6 +20,7 @@ import { updateAppBadge } from "@/lib/pwa-badge";
 import { useUnreadCount } from "@/hooks/use-notifications";
 import { SyncBadge } from "@/components/sync-badge";
 import { Redirect } from "wouter";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 declare const __APP_VERSION__: string;
 
@@ -475,6 +476,7 @@ function App() {
   }, []);
 
   return (
+    <ErrorBoundary>
     <PerformanceProvider>
       <SplashScreen visible={showSplash} onDone={handleSplashDone} />
       <PersistQueryClientProvider
@@ -507,6 +509,7 @@ function App() {
         </TooltipProvider>
       </PersistQueryClientProvider>
     </PerformanceProvider>
+    </ErrorBoundary>
   );
 }
 

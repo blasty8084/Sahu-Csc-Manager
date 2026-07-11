@@ -1,4 +1,8 @@
 import "./lib/i18n";
+import { initSentry } from "./lib/sentry";
+// Initialise Sentry before React renders so uncaught errors in the first
+// render are captured.  No-ops when VITE_SENTRY_DSN is not set.
+initSentry();
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";

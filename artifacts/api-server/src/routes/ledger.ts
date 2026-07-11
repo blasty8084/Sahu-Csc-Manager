@@ -13,6 +13,7 @@ import { signReceiptToken } from "../lib/jwt";
 import { sanitize } from "../lib/sanitize";
 import { invalidateLedgerCaches } from "../lib/query-cache";
 import crypto from "crypto";
+import { computeRunningBalances, formatReceiptNumber } from "../lib/ledger-utils";
 
 const router: IRouter = Router();
 
@@ -46,22 +47,16 @@ function getUserFilter(req: any) {
 // obtained inside the same transaction as the mutation, so concurrent edits/deletes
 // for the same user serialize instead of racing on stale snapshots.
 async function recalculateBalances(tx: any, userId: number): Promise<void> {
-  const entries = await tx
+  const entries = (await tx
     .select({ id: ledgerTable.id, credit: ledgerTable.credit, debit: ledgerTable.debit })
     .from(ledgerTable)
     .where(eq(ledgerTable.createdBy, userId))
-    .orderBy(ledgerTable.id);
+    .orderBy(ledgerTable.id)) as { id: number; credit: string | null; debit: string | null }[];
 
   if (entries.length === 0) return;
 
-  let running = 0;
-  const ids: number[] = [];
-  const balances: string[] = [];
-  for (const e of entries) {
-    running += parseFloat(e.credit ?? "0") - parseFloat(e.debit ?? "0");
-    ids.push(e.id);
-    balances.push(String(running));
-  }
+  const ids = entries.map((e) => e.id);
+  const balances = computeRunningBalances(entries).map(String);
 
   // Single batched UPDATE (was: one UPDATE per row in a loop) using UNNEST,
   // instead of N round-trips to the database. Arrays are built as fully bound
@@ -94,7 +89,7 @@ async function generateReceiptNumber(year: number): Promise<string> {
       set: { lastCount: sql`${receiptCountersTable.lastCount} + 1` },
     })
     .returning({ lastCount: receiptCountersTable.lastCount });
-  return `CSC-${year}-${String(row.lastCount).padStart(4, "0")}`;
+  return formatReceiptNumber(year, row.lastCount);
 }
 
 router.get("/ledger/balance", requireAuth, requirePermission("ledger:view"), async (req, res): Promise<void> => {

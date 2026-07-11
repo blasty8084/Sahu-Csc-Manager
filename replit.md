@@ -549,6 +549,8 @@ This is configured in `.replit` under `[postMerge]` with a 20-second timeout. Th
 | `SESSION_SECRET` | Replit Secrets tab (🔒 in left sidebar) |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM_EMAIL` | Replit Secrets tab |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_EMAIL` | Replit Secrets tab (optional) |
+| `SENTRY_DSN` | Replit Secrets tab — server-side error tracking (optional; Sentry no-ops if absent) |
+| `VITE_SENTRY_DSN` | Replit Env Vars (shared) — client-side error tracking (optional; no-ops if absent) |
 
 ---
 
