@@ -365,22 +365,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
               className="flex items-center justify-between px-4"
               style={{ height: 60, position: "relative", zIndex: 2 }}
             >
-              {/* ── Left: gradient logo badge + brand ── */}
+              {/* ── Left: logo + brand ── */}
               <div className="flex items-center gap-2.5">
-                <div
-                  className="flex items-center justify-center rounded-2xl flex-shrink-0"
-                  style={{
-                    width: 40, height: 40,
-                    background: "linear-gradient(135deg, #0b2c60 0%, #1e40af 55%, #f97316 100%)",
-                    boxShadow: "0 3px 12px rgba(11,44,96,0.28), 0 0 0 1px rgba(11,44,96,0.1), inset 0 1px 0 rgba(255,255,255,0.18)",
-                  }}
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                    <rect x="3" y="3" width="8" height="8" rx="2" fill="white" />
-                    <rect x="13" y="3" width="8" height="8" rx="2" fill="rgba(255,255,255,0.75)" />
-                    <rect x="3" y="13" width="8" height="8" rx="2" fill="rgba(255,255,255,0.6)" />
-                    <rect x="13" y="13" width="8" height="8" rx="2" fill="rgba(255,255,255,0.35)" />
-                  </svg>
+                <div style={{ borderRadius: "50%", boxShadow: "0 3px 12px rgba(11,44,96,0.22), 0 0 0 1.5px rgba(11,44,96,0.10)", flexShrink: 0 }}>
+                  <AppLogo size="sm" className="w-10 h-10" />
                 </div>
                 <div>
                   {/* Gradient text */}
