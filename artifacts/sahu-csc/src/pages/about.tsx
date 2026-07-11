@@ -14,6 +14,18 @@ const APP_VERSION = __APP_VERSION__;
 // ── Changelog ────────────────────────────────────────────────────────────────
 const CHANGELOG = [
   {
+    version: "v3.5.5",
+    title: "Tests, Error Tracking & Bundle Audit",
+    date: "2026-07-11",
+    accent: "#f97316",
+    changes: [
+      "42 automated Vitest tests cover ledger balance math, receipt-number generation (CSC-YYYY-NNNN), and all auth/session middleware (requireAuth, requirePermission, requireRole, lockout, session durations)",
+      "Sentry APM integrated server-side (@sentry/node) and client-side (@sentry/react) — no-ops when SENTRY_DSN / VITE_SENTRY_DSN env vars are absent; no PII reaches Sentry",
+      "React ErrorBoundary wraps the entire app — unexpected render crashes now show a branded recovery screen instead of a blank page",
+      "Build audit confirmed recharts (420 KB), jsPDF (386 KB), and html2canvas (201 KB) are separate lazy chunks; main bundle is 438 KB (under 500 KB threshold)",
+    ],
+  },
+  {
     version: "v3.5.4",
     title: "Ledger Page Modularization",
     date: "2026-07-11",

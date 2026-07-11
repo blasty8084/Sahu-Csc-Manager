@@ -2,11 +2,11 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
-  Sparkles, Zap, Ghost, Layers3, RefreshCw, ArrowUpRight,
+  Sparkles, ShieldCheck, AlertTriangle, PackageCheck, TestTube2, Zap,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const VERSION = "3.2.0";
+const VERSION = "3.5.5";
 const STORAGE_KEY = `sahu-whats-new-v${VERSION}`;
 
 interface Feature {
@@ -21,54 +21,54 @@ interface Feature {
 
 const FEATURES: Feature[] = [
   {
-    icon: <Zap size={15} />,
+    icon: <TestTube2 size={15} />,
+    color: "#0891b2",
+    bg: "rgba(8,145,178,0.10)",
+    title: "Automated Test Suite",
+    description:
+      "42 automated tests now guard ledger balance calculations, receipt number generation, and all auth/session middleware. Every future update is checked against these before release.",
+    tag: "Quality",
+    tagColor: "#0891b2",
+  },
+  {
+    icon: <AlertTriangle size={15} />,
+    color: "#7c3aed",
+    bg: "rgba(124,58,237,0.10)",
+    title: "Crash Recovery Screen",
+    description:
+      "If any part of the app crashes unexpectedly, you now see a clean recovery screen instead of a blank white page — with a Reload button to get back in instantly.",
+    tag: "Reliability",
+    tagColor: "#7c3aed",
+  },
+  {
+    icon: <ShieldCheck size={15} />,
+    color: "#15803d",
+    bg: "rgba(21,128,61,0.10)",
+    title: "Error Tracking (Sentry)",
+    description:
+      "Server and client errors are now captured automatically with full context. Bugs get found and fixed faster — no more waiting for users to report issues manually.",
+    tag: "Monitoring",
+    tagColor: "#15803d",
+  },
+  {
+    icon: <PackageCheck size={15} />,
     color: "#f97316",
     bg: "rgba(249,115,22,0.12)",
-    title: "Instant Page Loading",
+    title: "Verified Bundle Splits",
     description:
-      "All pages now load instantly on repeat visits. Your data is cached after first login — navigating between Dashboard, Ledger, AePS, and Reports feels like a native app.",
+      "recharts (420 KB), jsPDF (386 KB), and html2canvas (201 KB) are confirmed to load only when needed — Reports and Export pages, not on first open. Login and Dashboard stay fast.",
     tag: "Performance",
     tagColor: "#d97706",
   },
   {
-    icon: <Layers3 size={15} />,
+    icon: <Zap size={15} />,
     color: "#0b2c60",
     bg: "rgba(11,44,96,0.10)",
-    title: "Skeleton Screens",
+    title: "Main Bundle Under 500 KB",
     description:
-      "Spinning loaders are gone. Every section now shows a content-shaped shimmer placeholder while data loads — no more blank white boxes or slow spinners.",
-    tag: "UX",
-    tagColor: "#0b2c60",
-  },
-  {
-    icon: <ArrowUpRight size={15} />,
-    color: "#7c3aed",
-    bg: "rgba(124,58,237,0.10)",
-    title: "Smooth Page Transitions",
-    description:
-      "Switching between pages now glides with a subtle slide-up animation. The header, sidebar, and bottom nav stay perfectly still — only the content moves.",
-    tag: "Design",
-    tagColor: "#7c3aed",
-  },
-  {
-    icon: <RefreshCw size={15} />,
-    color: "#0891b2",
-    bg: "rgba(8,145,178,0.10)",
-    title: "Pre-loaded on Login",
-    description:
-      "After you log in, 7 key pages (Dashboard, Ledger, AePS, Reports, Services, Notifications, Udhari) are pre-fetched in the background so they open in milliseconds.",
+      "The core app bundle is 438 KB — under Vite's 500 KB threshold. All heavy libraries are split into separate files that only download when you actually open those pages.",
     tag: "Speed",
-    tagColor: "#0891b2",
-  },
-  {
-    icon: <Ghost size={15} />,
-    color: "#15803d",
-    bg: "rgba(21,128,61,0.10)",
-    title: "Silent Background Sync",
-    description:
-      "Data refreshes quietly in the background without any loading state. A tiny dot appears when syncing — you keep working, the app keeps updating.",
-    tag: "Reliability",
-    tagColor: "#15803d",
+    tagColor: "#0b2c60",
   },
 ];
 
@@ -121,7 +121,7 @@ export function WhatsNewModal() {
             </DialogHeader>
           </div>
           <p className="text-[11px] leading-snug relative z-10" style={{ color: "rgba(255,255,255,0.65)" }}>
-            Faster, smoother, and smarter — here's what's new for everyone.
+            Stronger, safer, and faster — here's what's new for everyone.
           </p>
 
           {/* step dots */}
