@@ -1,5 +1,5 @@
 # SAHU CSC Manager — BUILD.md
-**Version 3.5.0 — July 10, 2026**
+**Version 3.5.4 — July 11, 2026**
 
 > Single source of truth for any developer, AI agent, or new contributor.  
 > Read this file first — no other file analysis needed to understand the project.

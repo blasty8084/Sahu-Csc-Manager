@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log & Feature Documentation
-**Current version: 3.5.3** — last updated 2026-07-10
+**Current version: 3.5.4** — last updated 2026-07-11
 
 > Full record of every feature, change, and upgrade applied to the SAHU CSC platform.
 > Use this file as a reference for future development, onboarding, and audits.
@@ -10,6 +10,18 @@
 > See `CHANGELOG_V3.md` for the full V3 detailed changelog. See `docs/archive/changelogV2.md` for v2.x history.
 >
 > **v2.1.0 adds:** Udhari Khata (customer credit ledger) · Receipt system (CSC-YYYY-NNNN + QR + WhatsApp PDF sharing) · V2 multi-device sessions · RBAC `requirePermission` middleware · OTP password reset · Admin oversight pages · PWA Status page · Idle timeout (30 min) · Notification isolation fixes · UI Design System v2 (mobile header, gradient card language) · Canvas mockup exploration for Ledger / AePS / Add Entry / Udhari form redesigns
+
+---
+
+## v3.5.4 — Ledger Page Modularization (July 11, 2026)
+
+| Change | Description |
+|--------|-------------|
+| **`pages/ledger.tsx` split** | 1652 lines → thin orchestrator (~600 lines) + `hooks/useLedger.ts` + `components/ledger/{LedgerFilters,LedgerEntryForm,LedgerTable}.tsx`. |
+| **Zero behavior change** | No routes, API calls, `data-testid`s, or visual output changed — pure code-organization refactor. |
+| **Verified** | `tsc --noEmit` clean on all workspace projects; authenticated curl smoke test (create/read/balance/delete) confirms no regressions. |
+
+See `CHANGELOG_V3.md` for the full detailed changelog.
 
 ---
 

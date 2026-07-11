@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v3
-**Current version: 3.5.3 — July 10, 2026**
+**Current version: 3.5.4 — July 11, 2026**
 
 > Detailed record of every feature, change, and upgrade from v3.0.0 onward.  
 > For v2.x history, see `docs/archive/changelogV2.md`.  
@@ -11,6 +11,7 @@
 
 ## Table of Contents
 
+0. [v3.5.4 — Ledger Page Modularization (July 11, 2026)](#0-v354--ledger-page-modularization-july-11-2026)
 0. [v3.5.3 — Optimization Round 2: Query Caching, Load Testing & Safe Rate-Limiter Bypass (July 10, 2026)](#0-v353--optimization-round-2-query-caching-load-testing--safe-rate-limiter-bypass-july-10-2026)
 0. [v3.5.2 — Asset & Delivery Hardening (July 10, 2026)](#0-v352--asset--delivery-hardening-july-10-2026)
 0. [v3.5.1 — Performance & Scale Hardening (July 10, 2026)](#0-v351--performance--scale-hardening-july-10-2026)
@@ -22,6 +23,21 @@
 3. [v3.1.1 — Replit Environment Migration & TypeScript Clean (July 3, 2026)](#3-v311--replit-environment-migration--typescript-clean-july-3-2026)
 4. [v3.1.0 — Backup & Restore Redesign + Download + Scheduler (June 30, 2026)](#4-v310--backup--restore-redesign--download--scheduler-june-30-2026)
 5. [v3.0.0 — Setup Wizard, SMTP Integration & Auto-Import (June 30, 2026)](#5-v300--setup-wizard-smtp-integration--auto-import-june-30-2026)
+
+---
+
+## 0. v3.5.4 — Ledger Page Modularization (July 11, 2026)
+
+**Goal:** Split the oversized `pages/ledger.tsx` (1652 lines) into focused modules without changing any behavior, following the project's page-split pattern.
+
+| Change | Description |
+|--------|-------------|
+| **`hooks/useLedger.ts` extracted** | All React Query data hooks/mutations (`useListLedgerEntries`, `useCreateLedgerEntry`, `useUpdateLedgerEntry`, `useDeleteLedgerEntry`, `useGetBalance`, `useListServices`, `useGetSettings`), the `EntryForm` type, `SERVICE_COLOR_MAP`/`getServiceColor`, `groupByDate`/`fmtDateGroup`, and derived data (customer suggestions, frequent customers, filtered receipt entries). |
+| **`components/ledger/LedgerFilters.tsx` extracted** | `MobileSearchBar`, `MobileFrequentCustomers`, `DesktopSearchFilterBar`, `DesktopFilterPanel`, `MobileFilterPanel`. |
+| **`components/ledger/LedgerEntryForm.tsx` extracted** | `MobileEntryFormDialog` and `DesktopEntryFormPanel`, sharing a common props interface. The balance-preview calculation ("Balance after this entry") is preserved exactly — it's a client-side estimate only; actual balances are always computed server-side and returned per-entry. |
+| **`components/ledger/LedgerTable.tsx` extracted** | `TableTabsHeader`, `PendingSyncBanners`, `DesktopReceiptsPanel`, `DesktopTransactionsTable` (including inline-edit row logic), `TableFooterPagination`, `MobileReceiptsList`, `MobileTransactionsList`, `MobilePagination`. |
+| **`pages/ledger.tsx` reduced to a thin orchestrator** | ~600 lines (from 1652). Holds page-level state, handlers (`openCreate`, `openEdit`, `saveInlineEdit`, `saveQuickAdd`, `onSubmit`, `confirmDelete`, `clearFilters`), and layout wiring only. Default export and import path unchanged. |
+| **Zero behavior change** | No routes, API calls, `data-testid`s, or visual output changed. Verified with `tsc --noEmit` (clean on all three workspace projects) and an authenticated curl smoke test: login → create ledger entry → balance/list reflect it → delete removes it and resets balance. |
 
 ---
 

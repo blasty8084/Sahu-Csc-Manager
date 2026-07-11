@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Platform Documentation
-**Version 3.5.3** — last updated 2026-07-10
+**Version 3.5.4** — last updated 2026-07-11
 
 > Common Service Center (CSC) Business Management Platform for Odisha / India rural service centers.
 > Full-stack · PWA · Offline-capable · Multilingual (English / Hindi / Odia)
@@ -55,6 +55,10 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 ---
 
 ## 2. Version History
+
+### v3.5.4 — Ledger Page Modularization (2026-07-11)
+
+`pages/ledger.tsx` split from 1652 lines into a thin orchestrator (~600 lines) plus `hooks/useLedger.ts` (React Query data hooks/mutations, service-color map, date grouping, derived customer/receipt lists) and three new components — `components/ledger/LedgerFilters.tsx`, `components/ledger/LedgerEntryForm.tsx`, `components/ledger/LedgerTable.tsx`. No routes, API calls, `data-testid`s, or visual output changed — pure code-organization refactor. Verified via `tsc --noEmit` (clean on all three workspace projects) and an authenticated curl smoke test covering create/read/balance/delete.
 
 ### v3.5.3 — Optimization Round 2: Query Caching, Load Testing & Safe Rate-Limiter Bypass (2026-07-10)
 

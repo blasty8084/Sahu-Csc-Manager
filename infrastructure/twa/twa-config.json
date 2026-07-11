@@ -75,8 +75,8 @@
     "path": "./android.keystore",
     "alias": "sahucsc"
   },
-  "appVersionName": "3.4.0",
-  "appVersionCode": 4,
+  "appVersionName": "3.5.4",
+  "appVersionCode": 5,
   "features": {
     "locationDelegation": {
       "enabled": false

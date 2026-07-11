@@ -7,6 +7,45 @@
 
 ---
 
+## Session: 2026-07-11 — v3.5.4 Ledger Page Modularization
+
+**Version:** 3.5.4
+**Status:** ✅ Complete — `ledger.tsx` split, typecheck clean, curl smoke test passed, all docs updated
+
+### What Was Done
+
+#### 1. Ledger Page Split (`artifacts/sahu-csc/src/pages/ledger.tsx`)
+- Original file was 1652 lines — split per the project's page-split pattern into a thin orchestrator plus four new files:
+  - `hooks/useLedger.ts` — all React Query data hooks/mutations, `EntryForm` type, `SERVICE_COLOR_MAP`/`getServiceColor`, `groupByDate`/`fmtDateGroup`, derived customer/receipt data
+  - `components/ledger/LedgerFilters.tsx` — `MobileSearchBar`, `MobileFrequentCustomers`, `DesktopSearchFilterBar`, `DesktopFilterPanel`, `MobileFilterPanel`
+  - `components/ledger/LedgerEntryForm.tsx` — `MobileEntryFormDialog`, `DesktopEntryFormPanel`
+  - `components/ledger/LedgerTable.tsx` — `TableTabsHeader`, `PendingSyncBanners`, `DesktopReceiptsPanel`, `DesktopTransactionsTable`, `TableFooterPagination`, `MobileReceiptsList`, `MobileTransactionsList`, `MobilePagination`
+- `pages/ledger.tsx` reduced to ~600 lines: page-level state, handlers, and layout wiring only
+- No routes, API calls, `data-testid`s, or visual output changed
+- The client-side "Balance after this entry" preview calculation in the Add/Edit form was preserved exactly and documented as a comment — actual balances are always computed server-side
+
+#### 2. Verification
+- `tsc --noEmit` clean on all three workspace projects (api-server, mockup-sandbox, sahu-csc)
+- Authenticated curl smoke test: login → create ledger entry → balance/list reflect it → delete removes it and resets balance to ₹0.00
+
+#### 3. Version Bumps
+- `artifacts/sahu-csc/package.json`: 3.5.3 → 3.5.4
+- `artifacts/api-server/package.json`: 3.5.3 → 3.5.4
+- `infrastructure/twa/twa-config.json`: appVersionName 3.4.0 → 3.5.4, appVersionCode 5
+
+#### 4. Documentation Updated
+- `replit.md` — version header + What's New v3.5.4 section
+- `DOCS.md` — version header + v3.5.4 version history entry
+- `CHANGELOG_V3.md` — v3.5.4 section added at top; TOC updated
+- `CHANGELOG.md` — v3.5.4 entry added at top
+- `BUILD.md` — version header
+- `architectureV3.md` — version header
+- `ReplitV3.md` — version header + footer
+- `UPDATES.md` — this entry
+- `about.tsx` — v3.5.4 changelog entry added at top of CHANGELOG array (plus the previously-missing v3.5.3 entry); header "Last updated" updated
+
+---
+
 ## Session: 2026-07-10 — v3.4.0 Receipt Export Layout Refactor & TypeScript Hardening
 
 **Version:** 3.4.0

@@ -14,6 +14,28 @@ const APP_VERSION = __APP_VERSION__;
 // ── Changelog ────────────────────────────────────────────────────────────────
 const CHANGELOG = [
   {
+    version: "v3.5.4",
+    title: "Ledger Page Modularization",
+    date: "2026-07-11",
+    accent: "#0b2c60",
+    changes: [
+      "Split the 1652-line ledger.tsx into a thin orchestrator plus hooks/useLedger.ts and 3 focused components",
+      "No behavior change — routes, API calls, data-testids, and visual output are all unchanged",
+      "Verified with a clean typecheck across all workspace projects and an authenticated end-to-end curl smoke test",
+    ],
+  },
+  {
+    version: "v3.5.3",
+    title: "Query Caching & Load Testing",
+    date: "2026-07-10",
+    accent: "#0b2c60",
+    changes: [
+      "5s TTL query cache in front of dashboard, admin overview, and daily/monthly reports — invalidated on every ledger write",
+      "Lightweight APM surrogate: requests over 500ms now log at warn with a slowRequest flag",
+      "Real load-test numbers (autocannon): dashboard p50 47ms/p95 272ms, admin overview p50 46ms/p95 251ms, 0 errors at 20 concurrent connections",
+    ],
+  },
+  {
     version: "v3.5.2",
     title: "Asset & Delivery Hardening",
     date: "2026-07-10",
@@ -296,7 +318,7 @@ export default function About() {
             </div>
             <div className="hidden sm:block text-right flex-shrink-0">
               <p className="text-white/40 text-[10px]">Last updated</p>
-              <p className="text-white/60 text-xs font-semibold">10 July 2026</p>
+              <p className="text-white/60 text-xs font-semibold">11 July 2026</p>
             </div>
           </div>
         </div>

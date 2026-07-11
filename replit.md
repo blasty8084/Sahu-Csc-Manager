@@ -1,11 +1,17 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 3.5.3** — last updated 2026-07-11
+**Version 3.5.4** — last updated 2026-07-11
 
 > Re-imported and re-set-up on Replit 2026-07-11: ran `pnpm install`, pushed schema via `drizzle-kit push` (`pnpm exec drizzle-kit push --config=drizzle.config.ts` from `lib/db/`), seeded admin/operator via the `Seed Database` workflow, and started `API Server` + `SAHU CSC` workflows. `ADMIN_PASSWORD` and `OPERATOR_PASSWORD` were re-requested as Replit Secrets (a fresh import means a fresh, empty database, so these seed-account passwords must be re-provided each time); `SESSION_SECRET` already existed. Verified login works via curl.
 >
 > Note: re-importing this project always resets the database to empty. After every import, re-run in order: `pnpm install` → `drizzle-kit push` (from `lib/db/`) → `Seed Database` workflow → start `API Server` + `SAHU CSC` workflows.
 >
 > **Fixed a workflow bug**: the `API Server` workflow ran `PORT=8080 ... pnpm run build && node index.mjs` — in bash, a `VAR=val` prefix only applies to the command immediately before `&&`, so `node index.mjs` was inheriting the reserved `PORT=5000` (set in `.replit` `[userenv.shared]`) instead of 8080, colliding with the frontend's port. Fixed by prefixing `node` with its own `PORT=8080` too.
+
+## What's New in v3.5.4 (July 11, 2026) — Ledger Page Modularization
+
+- **`pages/ledger.tsx` split** (1652 → ~600 lines): extracted into `hooks/useLedger.ts` (all React Query data hooks/mutations, service-color map, date grouping, derived customer/receipt lists) and three component files — `components/ledger/LedgerFilters.tsx` (search bar, frequent customers, filter panels), `components/ledger/LedgerEntryForm.tsx` (mobile dialog + desktop panel add/edit forms), `components/ledger/LedgerTable.tsx` (tabs header, sync banners, receipts panel, transactions table with inline-edit, pagination, mobile lists).
+- **No behavior change**: routes, API calls, `data-testid`s, and visual output are unchanged — this is a pure code-organization refactor following the project's page-split pattern.
+- **Verified**: `tsc --noEmit` clean on all three workspace projects; authenticated curl smoke test (login → create ledger entry → balance/list → delete) confirms create/read/balance/delete all work end-to-end after the split.
 
 ## Performance — Optimization Round 2 (2026-07-10)
 
