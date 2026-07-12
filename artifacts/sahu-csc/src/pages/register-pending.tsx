@@ -4,8 +4,16 @@ import { Clock, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LoginLogo } from "@/components/app-logo";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useTranslation } from "react-i18next";
 
 function PendingCard() {
+  const { t } = useTranslation();
+  const steps = [
+    t("auth.register.pending_step1"),
+    t("auth.register.pending_step2"),
+    t("auth.register.pending_step3"),
+  ];
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -23,19 +31,15 @@ function PendingCard() {
       </div>
 
       <div>
-        <h2 className="text-xl font-bold text-gray-900">Registration Submitted!</h2>
+        <h2 className="text-xl font-bold text-gray-900">{t("auth.register.pending_submitted")}</h2>
         <p className="text-gray-500 text-sm mt-2 max-w-xs leading-relaxed">
-          Your account request has been received. An admin will review and approve it soon.
+          {t("auth.register.pending_desc")}
         </p>
       </div>
 
       <div className="w-full bg-amber-50 border border-amber-200 rounded-2xl p-4 text-left space-y-1.5">
-        <p className="text-xs font-bold text-amber-800">What happens next?</p>
-        {[
-          "Admin reviews your registration request",
-          "You'll be notified once approved",
-          "Login with your credentials after approval",
-        ].map((step, i) => (
+        <p className="text-xs font-bold text-amber-800">{t("auth.register.pending_next")}</p>
+        {steps.map((step, i) => (
           <div key={i} className="flex items-start gap-2">
             <span className="flex-shrink-0 w-4 h-4 rounded-full bg-amber-200 text-amber-700 text-[9px] font-bold flex items-center justify-center mt-0.5">
               {i + 1}
@@ -48,7 +52,7 @@ function PendingCard() {
       <Link href="/login">
         <Button className="w-full h-11 font-semibold" style={{ background: "linear-gradient(135deg, #1a2560, #0f1a4a)" }}>
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Login
+          {t("auth.register.back_to_login")}
         </Button>
       </Link>
     </motion.div>
@@ -56,6 +60,7 @@ function PendingCard() {
 }
 
 export default function RegisterPending() {
+  const { t } = useTranslation();
   const isMobile = useIsMobile();
 
   if (isMobile) {
@@ -68,7 +73,7 @@ export default function RegisterPending() {
               <span className="text-white">SAHU </span>
               <span style={{ color: "#F97316" }}>CSC</span>
             </h1>
-            <p className="text-white/50 text-xs">Management Platform</p>
+            <p className="text-white/50 text-xs">{t("common.platform")}</p>
           </div>
         </div>
         <motion.div
@@ -93,16 +98,14 @@ export default function RegisterPending() {
           <div>
             <span className="text-white font-black text-lg">SAHU </span>
             <span className="font-black text-lg" style={{ color: "#F97316" }}>CSC</span>
-            <p className="text-white/40 text-xs -mt-0.5">Management Platform</p>
+            <p className="text-white/40 text-xs -mt-0.5">{t("common.platform")}</p>
           </div>
         </div>
         <h1 className="text-4xl font-black leading-tight">
-          <span className="text-white">Request</span>
-          <br />
-          <span style={{ color: "#F97316" }}>Submitted!</span>
+          <span className="text-white">{t("auth.register.pending_submitted")}</span>
         </h1>
         <p className="text-white/45 mt-4 max-w-sm leading-relaxed">
-          Your registration is pending admin approval. You'll be able to login once approved.
+          {t("auth.register.pending_subtitle")}
         </p>
       </div>
       <div className="w-[55%] flex items-center justify-center px-10 py-12">

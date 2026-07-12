@@ -4,8 +4,10 @@ import { ShieldX, Phone, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LoginLogo } from "@/components/app-logo";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useTranslation } from "react-i18next";
 
 function ClosedCard() {
+  const { t } = useTranslation();
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -18,9 +20,9 @@ function ClosedCard() {
       </div>
 
       <div>
-        <h2 className="text-xl font-bold text-gray-900">Registration Closed</h2>
+        <h2 className="text-xl font-bold text-gray-900">{t("auth.register.closed_title")}</h2>
         <p className="text-gray-500 text-sm mt-2 max-w-xs leading-relaxed">
-          New registrations are currently closed. To get access, contact your distributor or administrator.
+          {t("auth.register.closed_desc")}
         </p>
       </div>
 
@@ -29,15 +31,15 @@ function ClosedCard() {
           <Phone className="w-5 h-5" style={{ color: "#0b2c60" }} />
         </div>
         <div className="text-left">
-          <p className="text-xs font-bold text-gray-800">Contact Distributor</p>
-          <p className="text-xs text-gray-500 mt-0.5">Ask your CSC distributor to enable registration or create your account.</p>
+          <p className="text-xs font-bold text-gray-800">{t("auth.register.contact_distributor")}</p>
+          <p className="text-xs text-gray-500 mt-0.5">{t("auth.register.contact_distributor_desc")}</p>
         </div>
       </div>
 
       <Link href="/login">
         <Button className="w-full h-11 font-semibold" style={{ background: "linear-gradient(135deg, #1a2560, #0f1a4a)" }}>
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Login
+          {t("auth.register.back_to_login")}
         </Button>
       </Link>
     </motion.div>
@@ -45,6 +47,7 @@ function ClosedCard() {
 }
 
 export default function RegistrationClosed() {
+  const { t } = useTranslation();
   const isMobile = useIsMobile();
 
   if (isMobile) {
@@ -62,7 +65,7 @@ export default function RegistrationClosed() {
               <span className="text-white">SAHU </span>
               <span style={{ color: "#F97316" }}>CSC</span>
             </h1>
-            <p className="text-white/50 text-xs">Management Platform</p>
+            <p className="text-white/50 text-xs">{t("common.platform")}</p>
           </div>
         </div>
         <motion.div
@@ -87,16 +90,14 @@ export default function RegistrationClosed() {
           <div>
             <span className="text-white font-black text-lg">SAHU </span>
             <span className="font-black text-lg" style={{ color: "#F97316" }}>CSC</span>
-            <p className="text-white/40 text-xs -mt-0.5">Management Platform</p>
+            <p className="text-white/40 text-xs -mt-0.5">{t("common.platform")}</p>
           </div>
         </div>
         <h1 className="text-4xl font-black leading-tight">
-          <span className="text-white">Registration</span>
-          <br />
-          <span style={{ color: "#F97316" }}>Currently Closed.</span>
+          <span className="text-white">{t("auth.register.closed_title")}</span>
         </h1>
         <p className="text-white/45 mt-4 max-w-sm leading-relaxed">
-          New sign-ups are temporarily disabled. Contact your CSC distributor to get access.
+          {t("auth.register.closed_desc")}
         </p>
       </div>
       <div className="w-[55%] flex items-center justify-center px-10 py-12">

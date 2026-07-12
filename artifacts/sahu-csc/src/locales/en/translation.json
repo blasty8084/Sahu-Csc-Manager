@@ -164,7 +164,17 @@
         "need_uppercase": "Must contain an uppercase letter",
         "need_number": "Must contain a number",
         "email_taken": "Email is already registered"
-      }
+      },
+      "closed_desc": "New registrations are currently closed. To get access, contact your distributor or administrator.",
+      "contact_distributor": "Contact Distributor",
+      "contact_distributor_desc": "Ask your CSC distributor to enable registration or create your account.",
+      "pending_submitted": "Registration Submitted!",
+      "pending_desc": "Your account request has been received. An admin will review and approve it soon.",
+      "pending_next": "What happens next?",
+      "pending_step1": "Admin reviews your registration request",
+      "pending_step2": "You'll be notified once approved",
+      "pending_step3": "Login with your credentials after approval",
+      "pending_subtitle": "Your registration is pending admin approval. You'll be able to login once approved."
     },
     "forgot_password": {
       "title": "Password Recovery",
@@ -868,5 +878,19 @@
     "latest": "Latest",
     "online_full": "Online (Full)",
     "slow_2g": "Slow / 2G"
+  },
+
+  "offline_page": {
+    "title": "You're offline",
+    "description": "No internet connection. Previously loaded pages are available from cache. New ledger entries will sync automatically when you reconnect.",
+    "safe": "SAHU CSC works fully offline — your data is safe.",
+    "try_again": "Try again",
+    "dashboard": "Dashboard",
+    "ledger": "Ledger"
+  },
+
+  "not_found": {
+    "title": "Page Not Found",
+    "description": "The page you're looking for doesn't exist."
   }
 }
