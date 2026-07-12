@@ -208,6 +208,24 @@ function SidebarNav({
   );
 }
 
+/**
+ * Isolated clock component — has its own state so ticking every second
+ * only re-renders this tiny span, not the entire Layout tree.
+ */
+const LiveClock = React.memo(function LiveClock({ style }: { style?: React.CSSProperties }) {
+  const [time, setTime] = useState(() => {
+    const n = new Date();
+    return n.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+  });
+  useEffect(() => {
+    const id = setInterval(() => {
+      setTime(new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true }));
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
+  return <span style={style}>{time}</span>;
+});
+
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, logout } = useAuth();
@@ -301,18 +319,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Live clock — ticks every second
-  const [clockTime, setClockTime] = useState(() => {
-    const n = new Date();
-    return n.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
-  });
-  useEffect(() => {
-    const id = setInterval(() => {
-      const n = new Date();
-      setClockTime(n.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true }));
-    }, 1000);
-    return () => clearInterval(id);
-  }, []);
+  // Live clock is now handled by the isolated <LiveClock /> component above.
 
   const greeting = greetingData.text;
   const greetingEmoji = greetingData.emoji;
@@ -482,12 +489,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <span style={{ fontSize: 14, lineHeight: 1 }}>{greetingEmoji}</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              {/* Live clock */}
-              <span style={{
+              {/* Live clock — isolated component, never re-renders Layout */}
+              <LiveClock style={{
                 fontSize: 12, color: "white", fontWeight: 700, fontFamily: "monospace",
                 background: "rgba(255,255,255,0.12)", borderRadius: 6, padding: "2px 8px",
                 letterSpacing: "0.05em",
-              }}>{clockTime}</span>
+              }} />
               <span
                 style={{
                   fontSize: 10, color: "rgba(255,255,255,0.42)", fontWeight: 500,
@@ -537,11 +544,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <span style={{ fontSize: 12, color: "#94a3b8" }}>·</span>
                 <span style={{ fontSize: 12, color: "#94a3b8", fontWeight: 400 }}>{shortDate}</span>
                 <span style={{ fontSize: 12, color: "#94a3b8" }}>·</span>
-                <span style={{
+                <LiveClock style={{
                   fontSize: 11, fontWeight: 700, fontFamily: "monospace", letterSpacing: "0.05em",
                   background: "linear-gradient(135deg, #0b2c60, #f97316)",
                   WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
-                }}>{clockTime}</span>
+                }} />
               </div>
             </div>
 
@@ -607,14 +614,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
         {/* Page Content — transition lives here so transform never touches position:fixed nav */}
         <main className="flex-1 overflow-hidden">
-          <AnimatePresence mode="wait" initial={false}>
+          {/* mode="sync" (default) lets enter+exit animate simultaneously — no blocking wait.
+              Opacity-only transition avoids layout recalculation on every frame. */}
+          <AnimatePresence initial={false}>
             <motion.div
               key={location}
               className="p-4 md:p-8 pb-24 md:pb-8 max-w-7xl mx-auto w-full"
-              initial={{ opacity: 0, y: richAnimations ? 14 : 0 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: scaleDuration(220) / 1000, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: scaleDuration(150) / 1000, ease: "easeOut" }}
             >
               {children}
             </motion.div>
