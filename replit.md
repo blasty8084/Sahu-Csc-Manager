@@ -1,5 +1,5 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 3.5.10** — last updated 2026-07-12
+**Version 4.0.0** — last updated 2026-07-12
 
 > Re-imported and re-set-up on Replit 2026-07-11: ran `pnpm install`, pushed schema via `drizzle-kit push` (`pnpm exec drizzle-kit push --config=drizzle.config.ts` from `lib/db/`), seeded admin/operator via the `Seed Database` workflow, and started `API Server` + `SAHU CSC` workflows. `ADMIN_PASSWORD` and `OPERATOR_PASSWORD` were re-requested as Replit Secrets (a fresh import means a fresh, empty database, so these seed-account passwords must be re-provided each time); `SESSION_SECRET` already existed. Verified login works via curl.
 >
@@ -8,6 +8,17 @@
 > **Fixed a workflow bug**: the `API Server` workflow ran `PORT=8080 ... pnpm run build && node index.mjs` — in bash, a `VAR=val` prefix only applies to the command immediately before `&&`, so `node index.mjs` was inheriting the reserved `PORT=5000` (set in `.replit` `[userenv.shared]`) instead of 8080, colliding with the frontend's port. Fixed by prefixing `node` with its own `PORT=8080` too.
 >
 > **Fixed a fresh-`node_modules` build failure (2026-07-11)**: after a clean `pnpm install`, the API Server build failed at runtime with `ERR_MODULE_NOT_FOUND` for `@opentelemetry/instrumentation`, then `@opentelemetry/core`, then `@opentelemetry/sdk-trace-base` in turn. `build.mjs` externalizes `@opentelemetry/*` (to dodge the drizzle-orm dual-peer conflict — see Sentry note below), so esbuild doesn't bundle it, but pnpm only hoists *direct* dependencies into `artifacts/api-server/node_modules`; these three are transitive deps of `@sentry/node`/`@sentry/opentelemetry`/`@sentry/node-core` that were never hoisted. Fixed by adding all three as explicit `dependencies` in `artifacts/api-server/package.json` (alongside the existing `@opentelemetry/api`) so pnpm hoists them. If a future Sentry upgrade throws the same `ERR_MODULE_NOT_FOUND` for a new `@opentelemetry/*` subpackage, add it the same way.
+
+## What's New in v4.0.0 (July 12, 2026) — Full-Stack Performance Audit
+
+| Change | Description |
+|--------|-------------|
+| **6 DB indexes** | `users.role`, `users.status`, `aeps_transactions.dailyId/type/createdAt`, `push_subscriptions.userId`, `password_reset_tokens.userId` — pushed live via `drizzle-kit push`. Fixes blind full-table scans on admin, AePS, push, and reset-token lookups. |
+| **API caching expanded** | 8 new cached endpoints (5 s TTL, immediate write-invalidation): `GET /aeps/session`, `/aeps/transactions`, `/admin/aeps-overview`, `/udhari/summary`, `/udhari/customers`, `/udhari/customers/:id`, `/udhari/customers/:id/entries`, `/users`. Three new helpers: `invalidateAepsCaches`, `invalidateUdhariCaches`, `invalidateUserListCache`. |
+| **Async IndexedDB persister** | Switched from `createSyncStoragePersister` (blocking sessionStorage) to `createAsyncStoragePersister` + `idb-keyval` (IndexedDB). Eliminates main-thread block after every React Query mutation. |
+| **EagerPreloader deferred 3 s** | Chunk preloading fires 3 s post-login instead of immediately — first API calls no longer compete with preload requests. |
+| **Query limits** | `.limit(500)` on `/udhari/customers` and `/udhari/customers/:id/entries`. |
+| **Lazy images** | `loading="lazy"` on About page logo and Download App icon. |
 
 ## What's New in v3.5.10 (July 12, 2026) — Navigation Performance — Instant Page Switching
 

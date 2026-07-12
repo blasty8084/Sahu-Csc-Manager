@@ -7,6 +7,52 @@
 
 ---
 
+## Session: 2026-07-12 — v4.0.0 Full-Stack Performance Audit
+
+**Version:** 4.0.0
+**Status:** ✅ Complete — all indexes pushed, API caching live, async persister active, docs updated
+
+### What Was Done
+
+#### 1. Database Indexes (`lib/db/src/schema/`)
+Six new Drizzle indexes added and pushed live via `drizzle-kit push`:
+- `users.ts`: `users_role_idx` (role), `users_status_idx` (status)
+- `aeps.ts`: `aeps_tx_daily_id_idx` (dailyId), `aeps_tx_type_idx` (type), `aeps_tx_created_at_idx` (createdAt)
+- `push_subscriptions.ts`: `push_subscriptions_user_id_idx` (userId)
+- `password_reset_tokens.ts`: `password_reset_tokens_user_id_idx` (userId)
+
+#### 2. API Caching (`artifacts/api-server/src/lib/query-cache.ts` + 4 route files)
+Three new invalidation helpers added to `query-cache.ts`: `invalidateAepsCaches(userId?)`, `invalidateUdhariCaches(userId)`, `invalidateUserListCache()`.
+
+Eight routes now use `cached(key, 5_000, loader)`:
+- `aeps/sessions.ts`: GET /aeps/session, GET /admin/aeps-overview; POST invalidates
+- `aeps/transactions.ts`: GET /aeps/transactions; POST/PATCH/DELETE invalidate
+- `udhari/customers.ts`: GET /udhari/summary, GET /udhari/customers, GET /udhari/customers/:id; POST/PATCH/DELETE invalidate
+- `udhari/entries.ts`: GET /udhari/customers/:id/entries; POST/PATCH/DELETE invalidate
+- `users.ts`: GET /users; POST/PATCH/DELETE invalidate
+
+#### 3. Async IndexedDB Persister (`artifacts/sahu-csc/src/App.tsx`)
+- Removed: `createSyncStoragePersister` + `sessionStorage`
+- Added: `createAsyncStoragePersister` + `idb-keyval` (IndexedDB `get/set/del`)
+- Packages installed: `@tanstack/query-async-storage-persister`, `idb-keyval`
+
+#### 4. EagerPreloader Deferred (`artifacts/sahu-csc/src/App.tsx`)
+Wrapped all `import("@/pages/…")` calls in a `setTimeout(…, 3000)` with `clearTimeout` cleanup.
+
+#### 5. Query Limits
+- `GET /udhari/customers`: `.limit(500)` added
+- `GET /udhari/customers/:id/entries`: `.limit(500)` added
+
+#### 6. Lazy Image Loading
+- `about.tsx` logo: `loading="lazy"`
+- `download-app.tsx` icon: `loading="lazy"`
+
+#### 7. Version Bump
+- `sahu-csc/package.json`: 3.5.10 → 4.0.0
+- `api-server/package.json`: 3.5.10 → 4.0.0
+
+---
+
 ## Session: 2026-07-12 — v3.5.8 Reports & Receipt Export Page Modularization
 
 **Version:** 3.5.8

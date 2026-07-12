@@ -14,6 +14,20 @@ const APP_VERSION = __APP_VERSION__;
 // ── Changelog ────────────────────────────────────────────────────────────────
 const CHANGELOG = [
   {
+    version: "v4.0.0",
+    title: "Full-Stack Performance Audit",
+    date: "2026-07-12",
+    accent: "#f97316",
+    changes: [
+      "8 new API endpoints now cache-backed with 5s TTL + immediate write-invalidation: GET /aeps/session, /aeps/transactions, /admin/aeps-overview, /udhari/summary, /udhari/customers, /udhari/customers/:id, /udhari/customers/:id/entries, /users — previously all hit the database on every request",
+      "6 new database indexes pushed: users.role, users.status, aeps_transactions.dailyId / type / createdAt, push_subscriptions.userId, password_reset_tokens.userId — fixes full-table scans on admin, AePS, push, and password-reset queries",
+      "React Query cache persister switched from synchronous sessionStorage (createSyncStoragePersister) to async IndexedDB via idb-keyval (createAsyncStoragePersister) — eliminates the main-thread block that occurred after every mutation",
+      "EagerPreloader deferred 3 seconds post-login — chunk preloading no longer races with the first real API calls (dashboard stats, session auth)",
+      "Unbounded list queries capped: .limit(500) on Udhari customers and entries routes",
+      "loading=\"lazy\" added to off-screen images on About and Download App pages",
+    ],
+  },
+  {
     version: "v3.5.10",
     title: "Navigation Performance — Instant Page Switching",
     date: "2026-07-12",
@@ -257,7 +271,7 @@ const FEATURES = [
 // ── Architecture ─────────────────────────────────────────────────────────────
 const ARCH = [
   { layer: "Frontend",       tech: "React 18 + Vite 7",      detail: "TypeScript, Tailwind CSS v4, shadcn/ui, Framer Motion" },
-  { layer: "State & Data",   tech: "TanStack Query v5",      detail: "Server state, caching, optimistic updates, offline sync" },
+  { layer: "State & Data",   tech: "TanStack Query v5",      detail: "Server state, caching, optimistic updates, offline sync; cache persisted to IndexedDB via idb-keyval (async, non-blocking)" },
   { layer: "Offline Storage",tech: "IndexedDB",              detail: "5 stores: pending ledger, cache, user session, reports, notifications" },
   { layer: "PWA",            tech: "Workbox + SW",           detail: "Offline caching, background sync, push notifications, install prompt" },
   { layer: "API",            tech: "Express 5 (Node 20)",    detail: "TypeScript, typed route handlers, rate limiting, audit logging" },
@@ -387,7 +401,7 @@ export default function About() {
             </div>
             <div className="hidden sm:block text-right flex-shrink-0">
               <p className="text-white/40 text-[10px]">Last updated</p>
-              <p className="text-white/60 text-xs font-semibold">12 July 2026</p>
+              <p className="text-white/60 text-xs font-semibold">12 July 2026 · v4</p>
             </div>
           </div>
         </div>

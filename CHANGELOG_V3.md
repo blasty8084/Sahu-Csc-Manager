@@ -1,5 +1,5 @@
-# SAHU CSC — Change Log v3
-**Current version: 3.5.10 — July 12, 2026**
+# SAHU CSC — Change Log v3 / v4
+**Current version: 4.0.0 — July 12, 2026**
 
 > Detailed record of every feature, change, and upgrade from v3.0.0 onward.  
 > For v2.x history, see `docs/archive/changelogV2.md`.  
@@ -8,15 +8,31 @@
 > For session-by-session changes, see `UPDATES.md`.
 
 > **⚠️ On every version bump, update this file — and only this file — for the feature/version entry.**
-> This is the single canonical changelog for v3.x. Do not create a new parallel changelog file (`CHANGELOG_V4.md`, etc.) or duplicate the entry into `BUILD.md`/`WORKFLOWS.md`/`ReplitV3.md` — those are pointer stubs now. If architecture or setup also changed, update `architectureV3.md` / `replit.md` directly instead of restating the change here.
+> This is the single canonical changelog for v3.x / v4.x. Do not create a new parallel changelog file (`CHANGELOG_V4.md`, etc.) or duplicate the entry into `BUILD.md`/`WORKFLOWS.md`/`ReplitV3.md` — those are pointer stubs now. If architecture or setup also changed, update `architectureV3.md` / `replit.md` directly instead of restating the change here.
 
 ---
 
 ## Table of Contents
 
+0. [v4.0.0 — Full-Stack Performance Audit (July 12, 2026)](#0-v400--full-stack-performance-audit-july-12-2026)
 0. [v3.5.10 — Navigation Performance — Instant Page Switching (July 12, 2026)](#0-v3510--navigation-performance--instant-page-switching-july-12-2026)
 0. [v3.5.9 — Redis Cache Live, i18n Fixes & Build Hardening (July 12, 2026)](#0-v359--redis-cache-live-i18n-fixes--build-hardening-july-12-2026)
 0. [v3.5.8 — Reports & Receipt Export Page Modularization (July 12, 2026)](#0-v358--reports--receipt-export-page-modularization-july-12-2026)
+
+---
+
+## 0. v4.0.0 — Full-Stack Performance Audit (July 12, 2026)
+
+Performance audit pass across the entire stack — database, API, frontend data layer, and image delivery. No routes, UI, or data behavior changed.
+
+| Change | Description |
+|--------|-------------|
+| **6 new DB indexes** | `users_role_idx` + `users_status_idx` (admin user-list no longer full-scans); `aeps_tx_daily_id_idx` / `aeps_tx_type_idx` / `aeps_tx_created_at_idx` (AePS transaction queries gain index support); `push_subscriptions_user_id_idx` + `password_reset_tokens_user_id_idx` (notification broadcast and token lookup). All pushed live via `drizzle-kit push`. |
+| **API caching expanded — 8 new endpoints** | Three new invalidation helpers added to `lib/query-cache.ts` (`invalidateAepsCaches`, `invalidateUdhariCaches`, `invalidateUserListCache`). Wrapped in `cached(key, 5_000, loader)` with immediate invalidation on every write: `GET /aeps/session` (key `aeps:session:{userId}:{date}`), `GET /aeps/transactions` (key `aeps:transactions:{userId}:{all-filters}`), `GET /admin/aeps-overview` (`admin:aeps-overview`), `GET /udhari/summary` (`udhari:summary:{userId}`), `GET /udhari/customers` (`udhari:customers:{userId}:{q}:{sort}`), `GET /udhari/customers/:id` (`udhari:customer:{id}`), `GET /udhari/customers/:id/entries` (`udhari:customer:{id}:entries`), `GET /users` (`admin:users`). Previously all hit the DB on every request. |
+| **Async IndexedDB persister** | `createSyncStoragePersister` (blocking synchronous `sessionStorage` write on every React Query mutation) replaced with `createAsyncStoragePersister` backed by `idb-keyval` (IndexedDB). Main thread is no longer blocked after any mutation; `@tanstack/query-async-storage-persister` + `idb-keyval` added to `sahu-csc` dependencies. |
+| **EagerPreloader deferred 3 s** | The post-login chunk preloader (`import("@/pages/dashboard")` etc.) now fires 3 seconds after login instead of immediately, so the first critical API calls (auth/me, dashboard stats) are not competing for bandwidth with preload requests. |
+| **Unbounded query limits** | `GET /udhari/customers` and `GET /udhari/customers/:id/entries` both capped at `.limit(500)`. (`GET /users` was already `.limit(1000)`.) |
+| **Lazy image loading** | `loading="lazy"` added to the logo on the About page and the icon on the Download App page. The splash-screen logo and the nav avatar remain eager (first-paint-critical). |
 
 ---
 
