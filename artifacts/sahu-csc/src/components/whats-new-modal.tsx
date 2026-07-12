@@ -2,11 +2,11 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
-  Sparkles, ShieldCheck, AlertTriangle, PackageCheck, TestTube2, Zap,
+  Sparkles, Layers, FileCode2, Puzzle, Wrench, CheckCircle2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const VERSION = "3.5.5";
+const VERSION = "3.5.8";
 const STORAGE_KEY = `sahu-whats-new-v${VERSION}`;
 
 interface Feature {
@@ -21,54 +21,54 @@ interface Feature {
 
 const FEATURES: Feature[] = [
   {
-    icon: <TestTube2 size={15} />,
-    color: "#0891b2",
-    bg: "rgba(8,145,178,0.10)",
-    title: "Automated Test Suite",
+    icon: <Layers size={15} />,
+    color: "#0b2c60",
+    bg: "rgba(11,44,96,0.10)",
+    title: "Reports Page Modularized",
     description:
-      "42 automated tests now guard ledger balance calculations, receipt number generation, and all auth/session middleware. Every future update is checked against these before release.",
-    tag: "Quality",
-    tagColor: "#0891b2",
+      "The 1301-line reports page has been split into a focused hook (useReports) and three component files — summary cards, chart, and filters. The page itself is now a thin orchestrator. Nothing you see or do has changed.",
+    tag: "Code Quality",
+    tagColor: "#0b2c60",
   },
   {
-    icon: <AlertTriangle size={15} />,
+    icon: <FileCode2 size={15} />,
     color: "#7c3aed",
     bg: "rgba(124,58,237,0.10)",
-    title: "Crash Recovery Screen",
+    title: "Receipt Export Modularized",
     description:
-      "If any part of the app crashes unexpectedly, you now see a clean recovery screen instead of a blank white page — with a Reload button to get back in instantly.",
-    tag: "Reliability",
+      "The 1219-line receipt export page is now split into useReceiptExport (all state and the 3 bulk-export API calls share one buildParams() function), shared types, ExportFilters, and ReceiptPreviewList.",
+    tag: "Code Quality",
     tagColor: "#7c3aed",
   },
   {
-    icon: <ShieldCheck size={15} />,
-    color: "#15803d",
-    bg: "rgba(21,128,61,0.10)",
-    title: "Error Tracking (Sentry)",
+    icon: <Puzzle size={15} />,
+    color: "#0891b2",
+    bg: "rgba(8,145,178,0.10)",
+    title: "Single Source for Export Params",
     description:
-      "Server and client errors are now captured automatically with full context. Bugs get found and fixed faster — no more waiting for users to report issues manually.",
-    tag: "Monitoring",
-    tagColor: "#15803d",
+      "The PDF ZIP download, Excel export, and count-preview endpoints all now share a single buildParams() function in useReceiptExport — so a filter change automatically applies to all three, with no risk of them drifting apart.",
+    tag: "Reliability",
+    tagColor: "#0891b2",
   },
   {
-    icon: <PackageCheck size={15} />,
+    icon: <Wrench size={15} />,
     color: "#f97316",
     bg: "rgba(249,115,22,0.12)",
-    title: "Verified Bundle Splits",
+    title: "Checkbox Properly Isolated",
     description:
-      "recharts (420 KB), jsPDF (386 KB), and html2canvas (201 KB) are confirmed to load only when needed — Reports and Export pages, not on first open. Login and Dashboard stay fast.",
-    tag: "Performance",
+      "The Checkbox toggle component lives inside ReceiptPreviewList — the only place it's used — rather than a shared types file. types.ts stays a plain TypeScript file with no JSX, keeping the module boundaries clean.",
+    tag: "Architecture",
     tagColor: "#d97706",
   },
   {
-    icon: <Zap size={15} />,
-    color: "#0b2c60",
-    bg: "rgba(11,44,96,0.10)",
-    title: "Main Bundle Under 500 KB",
+    icon: <CheckCircle2 size={15} />,
+    color: "#15803d",
+    bg: "rgba(21,128,61,0.10)",
+    title: "Zero Behavior Change",
     description:
-      "The core app bundle is 438 KB — under Vite's 500 KB threshold. All heavy libraries are split into separate files that only download when you actually open those pages.",
-    tag: "Speed",
-    tagColor: "#0b2c60",
+      "All routes, API calls, data-testids, and visual output are identical to before. TypeScript passed clean across all three workspace projects and the app renders without any new console errors.",
+    tag: "Verified",
+    tagColor: "#15803d",
   },
 ];
 
@@ -121,7 +121,7 @@ export function WhatsNewModal() {
             </DialogHeader>
           </div>
           <p className="text-[11px] leading-snug relative z-10" style={{ color: "rgba(255,255,255,0.65)" }}>
-            Stronger, safer, and faster — here's what's new for everyone.
+            Cleaner code, same app — Reports & Receipt Export pages modularized.
           </p>
 
           {/* step dots */}

@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v3
-**Current version: 3.5.7 — July 12, 2026**
+**Current version: 3.5.8 — July 12, 2026**
 
 > Detailed record of every feature, change, and upgrade from v3.0.0 onward.  
 > For v2.x history, see `docs/archive/changelogV2.md`.  
@@ -14,6 +14,7 @@
 
 ## Table of Contents
 
+0. [v3.5.8 — Reports & Receipt Export Page Modularization (July 12, 2026)](#0-v358--reports--receipt-export-page-modularization-july-12-2026)
 0. [v3.5.7 — Pluggable Cache Backend, Read-Replica Guidance & Load-Test Baseline (July 12, 2026)](#0-v357--pluggable-cache-backend-read-replica-guidance--load-test-baseline-july-12-2026)
 0. [v3.5.6 — Documentation Consolidation, i18n Completion & CDN Setup Guide (July 11, 2026)](#0-v356--documentation-consolidation-i18n-completion--cdn-setup-guide-july-11-2026)
 0. [v3.5.5 — Tests, Error Tracking & Bundle Audit (July 11, 2026)](#0-v355--tests-error-tracking--bundle-audit-july-11-2026)
@@ -29,6 +30,20 @@
 3. [v3.1.1 — Replit Environment Migration & TypeScript Clean (July 3, 2026)](#3-v311--replit-environment-migration--typescript-clean-july-3-2026)
 4. [v3.1.0 — Backup & Restore Redesign + Download + Scheduler (June 30, 2026)](#4-v310--backup--restore-redesign--download--scheduler-june-30-2026)
 5. [v3.0.0 — Setup Wizard, SMTP Integration & Auto-Import (June 30, 2026)](#5-v300--setup-wizard-smtp-integration--auto-import-june-30-2026)
+
+---
+
+## 0. v3.5.8 — Reports & Receipt Export Page Modularization (July 12, 2026)
+
+**Goal:** Split the two remaining large frontend pages (`reports.tsx` at 1301 lines and `receipt-export.tsx` at 1219 lines) into focused modules following the project's established page-split pattern. No behavior, route, API call, `data-testid`, or visual output changed.
+
+| Change | Description |
+|--------|-------------|
+| **`pages/reports.tsx` split** | Reduced from 1301 lines to a thin orchestrator. Extracted: `hooks/useReports.ts` — filter constants (`DATE_PRESETS`, `SERVICE_OPTIONS`), formatters (`fmtCurrency`, `fmtMonth`), `useFilterState` (all date/service/tab filter state + URL-sync), `useReportsData` (all React Query calls for daily/monthly/service-wise data + derived `summaryCards`, `chartData`, `serviceRows`). `components/reports/ReportSummaryCards.tsx` — `MobileStatCard`, `DesktopStatCard`, `Sparkline`, `KpiChip`, `SectionLabel`, `EmptyState`. `components/reports/ReportChart.tsx` — `ChartTooltip`. `components/reports/ReportFilters.tsx` — `MobileReportFilters`, `DesktopReportFilters`. |
+| **`pages/receipt-export.tsx` split** | Reduced from 1219 lines to a thin orchestrator. Extracted: `components/receipt-export/types.ts` — shared interfaces (`PreviewEntry`, `CountResult`, `FullReceiptEntry`, `BusinessInfo`, `ModalAction`, `MobileTab`, `UserOverview`), constants (`NAVY`, `SAFFRON`, `MONTH_OPTIONS`), pure formatters (`fmtDate`, `fmtDateShort`). `hooks/useReceiptExport.ts` — all state (selections, filters, modal, preview list, tabs), `buildParams()` (single source of query param construction shared by all three bulk-export endpoints), all handlers including `/bulk-export/count` (count preview), `/bulk-export/download` (PDF ZIP), `/bulk-export/excel` (XLSX), and the two monthly export calls. `components/receipt-export/ExportFilters.tsx` — `DesktopExportFilters`, `MobileExportFilterToggle`, `MobileExportFilterPanel`, `MobileByDatePanel`. `components/receipt-export/ReceiptPreviewList.tsx` — `DesktopReceiptTable`, `DesktopReceiptExpandedPreview`, `MobileReceiptList`, local `Checkbox` helper. |
+| **`Checkbox` placement** | `Checkbox` (CheckSquare/Square icon toggle) lives in `ReceiptPreviewList.tsx` — the only file that uses it — not in `types.ts`, keeping `types.ts` a plain `.ts` file with no JSX. |
+| **Zero behavior change** | No routes, API calls, `data-testid`s, or visual output changed. All three bulk-export endpoint calls (`/count`, `/download`, `/excel`) use the same `buildParams()` helper in `useReceiptExport.ts` — verified query param construction is byte-for-byte identical to the original. |
+| **Verified** | `tsc --noEmit` clean on all three workspace projects; app renders correctly with no browser console errors post-split. |
 
 ---
 

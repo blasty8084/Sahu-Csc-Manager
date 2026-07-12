@@ -14,6 +14,17 @@ const APP_VERSION = __APP_VERSION__;
 // ── Changelog ────────────────────────────────────────────────────────────────
 const CHANGELOG = [
   {
+    version: "v3.5.8",
+    title: "Reports & Receipt Export Page Modularization",
+    date: "2026-07-12",
+    accent: "#f97316",
+    changes: [
+      "reports.tsx (1301 lines) split into hooks/useReports.ts (filter state, data hooks, derived values) and 3 components — ReportSummaryCards, ReportChart, ReportFilters — with the page kept as a thin orchestrator",
+      "receipt-export.tsx (1219 lines) split into hooks/useReceiptExport.ts (all state + buildParams() shared by all 3 bulk-export endpoints), types.ts (interfaces + constants), ExportFilters.tsx, and ReceiptPreviewList.tsx",
+      "No behavior change — routes, API calls, data-testids, and visual output are all identical; verified with tsc --noEmit across all workspace projects and a clean browser render",
+    ],
+  },
+  {
     version: "v3.5.7",
     title: "Pluggable Cache Backend & Load-Test Baseline",
     date: "2026-07-12",
@@ -352,7 +363,7 @@ export default function About() {
             </div>
             <div className="hidden sm:block text-right flex-shrink-0">
               <p className="text-white/40 text-[10px]">Last updated</p>
-              <p className="text-white/60 text-xs font-semibold">11 July 2026</p>
+              <p className="text-white/60 text-xs font-semibold">12 July 2026</p>
             </div>
           </div>
         </div>

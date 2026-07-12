@@ -7,6 +7,58 @@
 
 ---
 
+## Session: 2026-07-12 — v3.5.8 Reports & Receipt Export Page Modularization
+
+**Version:** 3.5.8
+**Status:** ✅ Complete — both pages split, typecheck clean, app renders without errors, all docs updated
+
+### What Was Done
+
+#### 1. Reports Page Split (`artifacts/sahu-csc/src/pages/reports.tsx`)
+
+Original file was 1301 lines — split into a thin orchestrator plus four new files:
+
+- `hooks/useReports.ts` — filter constants (`DATE_PRESETS`, `SERVICE_OPTIONS`), formatters (`fmtCurrency`, `fmtMonth`), `useFilterState` (all date/service/tab state with URL-sync), `useReportsData` (all React Query calls for daily/monthly/service-wise data + derived `summaryCards`, `chartData`, `serviceRows`)
+- `components/reports/ReportSummaryCards.tsx` — `MobileStatCard`, `DesktopStatCard`, `Sparkline`, `KpiChip`, `SectionLabel`, `EmptyState`
+- `components/reports/ReportChart.tsx` — `ChartTooltip`
+- `components/reports/ReportFilters.tsx` — `MobileReportFilters`, `DesktopReportFilters`
+- `pages/reports.tsx` reduced to a thin orchestrator — layout wiring only; default export and import path unchanged
+
+#### 2. Receipt Export Page Split (`artifacts/sahu-csc/src/pages/receipt-export.tsx`)
+
+Original file was 1219 lines — split into a thin orchestrator plus five new files:
+
+- `components/receipt-export/types.ts` — shared interfaces (`PreviewEntry`, `CountResult`, `FullReceiptEntry`, `BusinessInfo`, `ModalAction`, `MobileTab`, `UserOverview`), constants (`NAVY`, `SAFFRON`, `MONTH_OPTIONS`), pure formatters (`fmtDate`, `fmtDateShort`). Plain `.ts` file — no JSX.
+- `hooks/useReceiptExport.ts` — all state (selections, filters, modal, preview list, tabs), `buildParams()` (single source of query-param construction consumed by all 3 bulk-export endpoints), all handlers including `/bulk-export/count`, `/bulk-export/download` (PDF ZIP), `/bulk-export/excel` (XLSX), and monthly export trigger + download
+- `components/receipt-export/ExportFilters.tsx` — `DesktopExportFilters`, `MobileExportFilterToggle`, `MobileExportFilterPanel`, `MobileByDatePanel`
+- `components/receipt-export/ReceiptPreviewList.tsx` — `DesktopReceiptTable`, `DesktopReceiptExpandedPreview`, `MobileReceiptList`, local `Checkbox` helper (CheckSquare/Square — lives here, not in types.ts)
+- `pages/receipt-export.tsx` reduced to a thin orchestrator — `MonthlyPanel`, `MobileReceiptPreview`, `ReceiptModal`, layout composition; default export unchanged
+
+#### 3. Key Architecture Decision: `Checkbox` Placement
+
+`Checkbox` was initially placed in `types.ts` (creating a JSX-in-.ts problem). Corrected to live in `ReceiptPreviewList.tsx` — the only file that uses it — keeping `types.ts` a pure TypeScript file.
+
+#### 4. Verification
+
+- `tsc --noEmit` clean on all three workspace projects (api-server, mockup-sandbox, sahu-csc)
+- App preview renders correctly; browser console shows no new errors
+- All 3 bulk-export endpoints (`/count`, `/download`, `/excel`) confirmed to use the same `buildParams()` — query param construction identical to the original
+
+#### 5. Version Bumps
+
+- `artifacts/sahu-csc/package.json`: 3.5.7 → 3.5.8
+- `artifacts/api-server/package.json`: 3.5.7 → 3.5.8
+
+#### 6. Documentation Updated
+
+- `replit.md` — version header + What's New v3.5.8 section
+- `CHANGELOG_V3.md` — v3.5.8 section added at top; TOC updated; version header bumped
+- `UPDATES.md` — this entry
+- `about.tsx` — v3.5.8 changelog entry added at top of CHANGELOG array; "Last updated" updated to 12 July 2026
+- `whats-new-modal.tsx` — VERSION bumped to 3.5.8; 5 new feature slides describing the modularization
+
+---
+
 ## Session: 2026-07-11 — v3.5.4 Ledger Page Modularization
 
 **Version:** 3.5.4
