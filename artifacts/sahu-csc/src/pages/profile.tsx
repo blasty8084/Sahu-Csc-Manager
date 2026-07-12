@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -12,12 +12,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ProfileToggleSkeleton, ProfilePageSkeleton, SessionsListSkeleton } from "@/components/skeletons";
+import { ProfilePageSkeleton, SessionsListSkeleton } from "@/components/skeletons";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
@@ -27,180 +25,22 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/components/theme-provider";
 import { useForm } from "react-hook-form";
-import { useRegistrationStatus } from "@/hooks/use-registration-status";
 import { setLanguage } from "@/lib/i18n";
 import {
   Camera, Trash2, User, Lock, Palette, Globe, LayoutDashboard,
-  FolderOpen, AlertCircle, Building2, Settings2, UserPlus,
-  ChevronRight, Monitor, Smartphone, Tablet, MapPin, Clock,
+  Building2, Settings2,
+  ChevronRight, Clock,
   LogOut, ShieldCheck, ShieldAlert, Loader2, RefreshCw, Wifi,
 } from "lucide-react";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-interface SessionEntry {
-  id: number; sessionId: string; deviceInfo: string; browser: string;
-  os: string; ipAddress: string; rememberMe: boolean; isCurrent: boolean;
-  lastActivity: string; expiresAt: string; createdAt: string;
-}
-
-// ─── Session helpers ─────────────────────────────────────────────────────────
-function deviceIcon(os: string) {
-  if (/android.*mobile|iphone|ipod|windows phone/i.test(os)) return Smartphone;
-  if (/ipad|tablet|android(?!.*mobile)/i.test(os)) return Tablet;
-  return Monitor;
-}
-function timeAgo(iso: string) {
-  const d = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (d < 60) return "just now";
-  if (d < 3600) return `${Math.floor(d / 60)}m ago`;
-  if (d < 86400) return `${Math.floor(d / 3600)}h ago`;
-  return `${Math.floor(d / 86400)}d ago`;
-}
-function formatExpiry(iso: string) {
-  const diff = new Date(iso).getTime() - Date.now();
-  if (diff <= 0) return "Expired";
-  const days = Math.floor(diff / 86400000);
-  const hours = Math.floor((diff % 86400000) / 3600000);
-  if (days > 0) return `Expires in ${days}d ${hours}h`;
-  const mins = Math.floor((diff % 3600000) / 60000);
-  return hours > 0 ? `Expires in ${hours}h ${mins}m` : `Expires in ${mins}m`;
-}
-async function apiFetch(path: string, options?: RequestInit) {
-  const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
-  const res = await fetch(`${base}/api${path}`, {
-    credentials: "include", headers: { "Content-Type": "application/json" }, ...options,
-  });
-  if (!res.ok) { const b = await res.json().catch(() => ({})); throw new Error(b.error ?? "Request failed"); }
-  return res.json().catch(() => ({}));
-}
-
-// ─── Media picker dialog ─────────────────────────────────────────────────────
-function MediaPickerDialog({ open, onClose, onFileSelected }: {
-  open: boolean; onClose: () => void; onFileSelected: (f: File) => void;
-}) {
-  const { toast } = useToast();
-  const camRef = useRef<HTMLInputElement>(null);
-  const galRef = useRef<HTMLInputElement>(null);
-  const ACCEPTED = "image/jpeg,image/png,image/webp,image/heic,image/heif";
-
-  const validate = (file: File) => {
-    const ok = ["image/jpeg","image/png","image/webp","image/heic","image/heif"];
-    if (!ok.includes(file.type) && !file.name.match(/\.(jpg|jpeg|png|webp|heic|heif)$/i)) {
-      toast({ title: "Unsupported format", description: "JPG, PNG, WEBP or HEIC only.", variant: "destructive" }); return false;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: "File too large", description: "Max 5 MB.", variant: "destructive" }); return false;
-    }
-    return true;
-  };
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]; e.target.value = "";
-    if (!file || !validate(file)) return;
-    onFileSelected(file); onClose();
-  };
-  return (
-    <>
-      <input ref={camRef} type="file" accept={ACCEPTED} capture="user" className="hidden" onChange={handleChange} />
-      <input ref={galRef} type="file" accept={ACCEPTED} className="hidden" onChange={handleChange} />
-      <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-        <DialogContent className="sm:max-w-xs">
-          <DialogHeader><DialogTitle>Update Profile Picture</DialogTitle></DialogHeader>
-          <div className="flex flex-col gap-3 pt-1">
-            <button type="button" onClick={() => { onClose(); setTimeout(() => camRef.current?.click(), 80); }}
-              className="flex items-center gap-4 p-4 rounded-xl border hover:bg-accent hover:border-primary/40 transition-colors text-left group">
-              <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-                <Camera size={20} className="text-primary" />
-              </div>
-              <div><p className="font-medium text-sm">Take a Photo</p><p className="text-xs text-muted-foreground">Open camera</p></div>
-            </button>
-            <button type="button" onClick={() => { onClose(); setTimeout(() => galRef.current?.click(), 80); }}
-              className="flex items-center gap-4 p-4 rounded-xl border hover:bg-accent hover:border-primary/40 transition-colors text-left group">
-              <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-                <FolderOpen size={20} className="text-primary" />
-              </div>
-              <div><p className="font-medium text-sm">Choose from Gallery</p><p className="text-xs text-muted-foreground">Browse photos on this device</p></div>
-            </button>
-          </div>
-          <div className="flex items-start gap-2 mt-1 p-3 rounded-lg bg-muted/50">
-            <AlertCircle size={13} className="text-muted-foreground mt-0.5 shrink-0" />
-            <p className="text-[11px] text-muted-foreground leading-relaxed">JPG, PNG, WEBP or HEIC · max 5 MB</p>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
-  );
-}
-
-// ─── Registration control ─────────────────────────────────────────────────────
-function RegistrationControlSection() {
-  const { toast } = useToast();
-  const qc = useQueryClient();
-  const { data: regStatus, isLoading: regLoading } = useRegistrationStatus();
-  const [toggling, setToggling] = useState(false);
-  const isOpen = regStatus?.open ?? false;
-
-  const toggle = async (open: boolean) => {
-    setToggling(true);
-    try {
-      const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
-      const res = await fetch(`${base}/api/admin/settings/registration`, {
-        method: "PATCH", headers: { "Content-Type": "application/json" },
-        credentials: "include", body: JSON.stringify({ open }),
-      });
-      if (!res.ok) throw new Error();
-      qc.invalidateQueries({ queryKey: ["registration-status"] });
-      toast({ title: open ? "Registration Opened" : "Registration Closed" });
-    } catch { toast({ title: "Failed to update registration", variant: "destructive" }); }
-    finally { setToggling(false); }
-  };
-
-  if (regLoading) return <ProfileToggleSkeleton />;
-  return (
-    <div className={`flex items-center justify-between p-4 rounded-xl border-2 transition-colors ${isOpen ? "border-green-200 bg-green-50/50 dark:border-green-900/40 dark:bg-green-950/20" : "border-red-200 bg-red-50/50 dark:border-red-900/40 dark:bg-red-950/20"}`}>
-      <div className="flex items-center gap-3 flex-1 min-w-0">
-        <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${isOpen ? "bg-green-100 dark:bg-green-900/30" : "bg-red-100 dark:bg-red-900/30"}`}>
-          {isOpen ? <UserPlus size={16} className="text-green-600 dark:text-green-400" /> : <Lock size={16} className="text-red-500 dark:text-red-400" />}
-        </div>
-        <div>
-          <p className="text-sm font-semibold">{isOpen ? "Registrations Open" : "Registrations Closed"}</p>
-          <p className="text-xs text-muted-foreground">{isOpen ? "New users can submit registration requests." : "Registration page shows a closed message."}</p>
-        </div>
-      </div>
-      <Switch checked={isOpen} onCheckedChange={toggle} disabled={toggling} className="shrink-0 ml-4" />
-    </div>
-  );
-}
-
-// ─── V5 Command Center card (desktop) ────────────────────────────────────────
-function CmdCard({ title, icon, adminOnly, action, children }: {
-  title: string; icon: React.ReactNode; adminOnly?: boolean; action?: React.ReactNode; children: React.ReactNode;
-}) {
-  return (
-    <div className={`rounded-xl border bg-card shadow-sm overflow-hidden ${adminOnly ? "border-orange-200 dark:border-orange-900/40" : ""}`}>
-      <div className={`flex items-center justify-between px-5 py-3.5 border-b ${adminOnly ? "bg-orange-50/60 dark:bg-orange-950/20" : "bg-muted/30"}`}>
-        <div className="flex items-center gap-2">
-          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${adminOnly ? "bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400" : "bg-primary/10 text-primary"}`}>
-            {icon}
-          </div>
-          <h2 className="text-sm font-bold">{title}</h2>
-          {adminOnly && <span className="ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400">Admin</span>}
-        </div>
-        {action}
-      </div>
-      <div className="px-5 py-4">{children}</div>
-    </div>
-  );
-}
-
-
-function FormField({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="space-y-1.5">
-      <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</Label>
-      {children}
-    </div>
-  );
-}
+import type { SessionEntry } from "@/components/profile/types";
+import { apiFetch, LANG_META } from "@/components/profile/utils";
+import { MediaPickerDialog } from "@/components/profile/MediaPickerDialog";
+import { CmdCard, FormField } from "@/components/profile/ProfileCards";
+import { SessionCard } from "@/components/profile/SessionCard";
+import { RegistrationControlSection } from "@/components/profile/RegistrationControlSection";
+import { ProfileInfoForm } from "@/components/profile/ProfileInfoForm";
+import { PasswordChangeForm } from "@/components/profile/PasswordChangeForm";
 
 // ─── Nav sections config ──────────────────────────────────────────────────────
 
@@ -271,11 +111,6 @@ export default function Profile() {
   const profileForm = useForm({ defaultValues: { fullName: "", email: "", mobile: "", bio: "", address: "" } });
   const passwordForm = useForm({ defaultValues: { currentPassword: "", password: "", confirmPassword: "" } });
   const prefsForm = useForm({ defaultValues: { theme: "light" as "light"|"dark", language: "en" as "en"|"hi"|"or", dashboardLayout: "default" } });
-  const LANG_META: Record<string, { flag: string; name: string; script: string }> = {
-    en: { flag: "🇬🇧", name: "English",  script: "English"  },
-    hi: { flag: "🇮🇳", name: "हिंदी",    script: "Hindi"    },
-    or: { flag: "🇮🇳", name: "ଓଡ଼ିଆ",   script: "Odia"     },
-  };
   const currentLang = LANG_META[prefsForm.watch("language")] ?? LANG_META["en"];
   const settingsForm = useForm({
     defaultValues: {
@@ -456,15 +291,13 @@ export default function Profile() {
         </div>
         <div className="rounded-xl border bg-card p-4">
           <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">Personal Information</p>
-          <form onSubmit={onSaveProfile} className="space-y-3">
-            <FormField label="Full Name"><Input {...profileForm.register("fullName")} /></FormField>
-            <FormField label="Username"><Input value={profile?.username ?? ""} disabled className="bg-muted/50" /></FormField>
-            <FormField label="Email"><Input type="email" {...profileForm.register("email")} /></FormField>
-            <FormField label="Mobile"><Input {...profileForm.register("mobile")} /></FormField>
-            <FormField label="Address"><Input {...profileForm.register("address")} /></FormField>
-            <FormField label="Bio"><Textarea {...profileForm.register("bio")} className="resize-none" rows={2} /></FormField>
-            <Button type="submit" className="w-full" disabled={updateMut.isPending}>{updateMut.isPending ? "Saving…" : "Save Changes"}</Button>
-          </form>
+          <ProfileInfoForm
+            form={profileForm}
+            username={profile?.username}
+            isPending={updateMut.isPending}
+            onSubmit={onSaveProfile}
+            layout="mobile"
+          />
         </div>
       </div>
     ),
@@ -472,12 +305,12 @@ export default function Profile() {
       <div className="space-y-4">
         <div className="rounded-xl border bg-card p-4">
           <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">Change Password</p>
-          <form onSubmit={onChangePassword} className="space-y-3">
-            <FormField label="Current Password"><Input type="password" {...passwordForm.register("currentPassword")} /></FormField>
-            <FormField label="New Password"><Input type="password" {...passwordForm.register("password")} /></FormField>
-            <FormField label="Confirm Password"><Input type="password" {...passwordForm.register("confirmPassword")} /></FormField>
-            <Button type="submit" className="w-full" disabled={updateMut.isPending}>{updateMut.isPending ? "Changing…" : "Change Password"}</Button>
-          </form>
+          <PasswordChangeForm
+            form={passwordForm}
+            isPending={updateMut.isPending}
+            onSubmit={onChangePassword}
+            layout="mobile"
+          />
         </div>
         <div className="rounded-xl border bg-card p-4">
           <div className="flex items-center justify-between mb-3">
@@ -697,28 +530,22 @@ export default function Profile() {
           {/* ── Left column: Personal Info + Security + Sessions ── */}
           <div className="space-y-5">
             <CmdCard title="Personal Information" icon={<User size={15} />}>
-              <form onSubmit={onSaveProfile} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField label="Full Name"><Input {...profileForm.register("fullName")} placeholder="Your full name" /></FormField>
-                  <FormField label="Username"><Input value={profile?.username ?? ""} disabled className="bg-muted/50" /></FormField>
-                  <FormField label="Email"><Input type="email" {...profileForm.register("email")} /></FormField>
-                  <FormField label="Mobile"><Input {...profileForm.register("mobile")} placeholder="+91 XXXXX XXXXX" /></FormField>
-                </div>
-                <FormField label="Address"><Input {...profileForm.register("address")} /></FormField>
-                <FormField label="Bio"><Textarea {...profileForm.register("bio")} className="resize-none" rows={2} placeholder="Tell us about yourself..." /></FormField>
-                <div className="flex justify-end"><Button type="submit" disabled={updateMut.isPending}>{updateMut.isPending ? "Saving…" : "Save Changes"}</Button></div>
-              </form>
+              <ProfileInfoForm
+                form={profileForm}
+                username={profile?.username}
+                isPending={updateMut.isPending}
+                onSubmit={onSaveProfile}
+                layout="desktop"
+              />
             </CmdCard>
 
             <CmdCard title="Security" icon={<Lock size={15} />}>
-              <form onSubmit={onChangePassword} className="space-y-4">
-                <FormField label="Current Password"><Input type="password" {...passwordForm.register("currentPassword")} placeholder="Enter current password" /></FormField>
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField label="New Password"><Input type="password" {...passwordForm.register("password")} /></FormField>
-                  <FormField label="Confirm Password"><Input type="password" {...passwordForm.register("confirmPassword")} /></FormField>
-                </div>
-                <div className="flex justify-end"><Button type="submit" disabled={updateMut.isPending}>{updateMut.isPending ? "Changing…" : "Change Password"}</Button></div>
-              </form>
+              <PasswordChangeForm
+                form={passwordForm}
+                isPending={updateMut.isPending}
+                onSubmit={onChangePassword}
+                layout="desktop"
+              />
             </CmdCard>
 
             <CmdCard title="Active Sessions" icon={<Wifi size={15} />}
@@ -866,30 +693,3 @@ export default function Profile() {
   );
 }
 
-// ─── SessionCard ─────────────────────────────────────────────────────────────
-function SessionCard({ session, compact = false }: { session: SessionEntry; compact?: boolean }) {
-  const DevIcon = deviceIcon(session.os);
-  return (
-    <div className="flex items-start gap-3">
-      <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
-        <DevIcon size={15} className="text-muted-foreground" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="font-semibold text-sm">{session.browser}</span>
-          <span className="text-muted-foreground text-xs">on</span>
-          <span className="text-sm">{session.os}</span>
-          {session.isCurrent && <Badge variant="default" className="text-[9px] px-1.5 py-0">This Device</Badge>}
-          {session.rememberMe && <Badge variant="outline" className="text-[9px] px-1.5 py-0">Remember Me</Badge>}
-        </div>
-        {!compact && (
-          <div className="flex items-center gap-3 mt-1 flex-wrap">
-            <span className="flex items-center gap-1 text-xs text-muted-foreground"><MapPin size={10} />{session.ipAddress}</span>
-            <span className="flex items-center gap-1 text-xs text-muted-foreground"><Clock size={10} />{timeAgo(session.lastActivity)}</span>
-          </div>
-        )}
-        <p className="text-[10px] text-muted-foreground/60 mt-0.5">{formatExpiry(session.expiresAt)}</p>
-      </div>
-    </div>
-  );
-}
