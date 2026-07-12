@@ -43,6 +43,14 @@ onlyBuiltDependencies:
   - unrs-resolver
 
 overrides:
+  # Force a single @opentelemetry/api version across the entire workspace.
+  # @sentry/node depends on this package, and drizzle-orm lists it as an
+  # optional peer. Without the override, pnpm creates two drizzle-orm
+  # resolution variants (one with otel, one without) that produce TS type
+  # conflicts ("separate declarations of a private property 'shouldInlineParams'").
+  # When upgrading @sentry/node to a version that requires a newer otel major,
+  # bump this override in lockstep — one edit here fixes the whole workspace.
+  '@opentelemetry/api': ^1.9.1
   '@esbuild-kit/esm-loader': npm:tsx@^4.21.0
   linkify-it: '>=5.0.1'
   markdown-it: '>=14.1.2'

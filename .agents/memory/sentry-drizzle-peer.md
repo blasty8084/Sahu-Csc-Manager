@@ -16,15 +16,22 @@ Error pattern: `Types have separate declarations of a private property 'shouldIn
 
 **Why:** pnpm creates separate resolution trees for each unique peer-dep combination.
 
-## The fix
+## The fix (durable — applied 2026-07-12)
 
-Add `@opentelemetry/api@^1.9.1` to BOTH packages:
+Two layers of protection are now in place:
 
-```bash
-pnpm --filter @workspace/api-server add @opentelemetry/api@^1.9.1
-pnpm --filter @workspace/db add @opentelemetry/api@^1.9.1
+### 1. Workspace override in `pnpm-workspace.yaml`
+```yaml
+overrides:
+  '@opentelemetry/api': ^1.9.1
 ```
+This forces every package in the workspace to resolve `@opentelemetry/api` to the same version, preventing pnpm from ever creating a second drizzle-orm peer variant. When `@sentry/node` bumps its otel major, update **only this one line** then run `pnpm install`.
 
-This forces both packages to resolve drizzle-orm through the same peer variant (with opentelemetry), eliminating the type mismatch.
+### 2. Pre-build guard in `artifacts/api-server/build.mjs`
+`checkDrizzlePeerSingleton()` runs at the start of every build. It reads `pnpm-lock.yaml`, scans only the `snapshots:` section for `drizzle-orm@` entries, and calls `process.exit(1)` with a clear remediation message if more than one variant exists. The guard deliberately skips the `packages:` section, which always has a bare version entry and is NOT a dual-variant.
 
-**How to apply:** Any time `@sentry/node`, `@opentelemetry/*`, or any package that brings in `@opentelemetry/api` is installed in the api-server, run the fix above to keep drizzle-orm to a single variant.
+**How to apply:** If the guard fires after a `@sentry/node` upgrade:
+1. Check what `@opentelemetry/api` version the new Sentry requires.
+2. Update `overrides['@opentelemetry/api']` in `pnpm-workspace.yaml`.
+3. Run `pnpm install`.
+4. Rebuild.
