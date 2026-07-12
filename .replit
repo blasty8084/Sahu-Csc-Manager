@@ -1,4 +1,4 @@
-modules = ["nodejs-20", "web", "bash", "postgresql-16"]
+modules = ["nodejs-20", "web", "bash"]
 
 [deployment]
 router = "application"
@@ -147,4 +147,4 @@ SMTP_HOST = "smtp.gmail.com"
 SMTP_PORT = "587"
 SMTP_USER = "sahuuttam690@gmail.com"
 VAPID_PUBLIC_KEY = "BAvYzdJK_Y1P8GePiSN3fvDPOQejzUMWfa51hRp5p2wrF8adZ4x54cChfyZLbmBt2LJVOy5ZhbyajkOaiGi86cM"
-CACHE_BACKEND = "redis"
+CACHE_BACKEND = "memory"
