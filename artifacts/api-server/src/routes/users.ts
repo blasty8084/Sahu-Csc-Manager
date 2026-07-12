@@ -28,7 +28,7 @@ async function fmt(u: any) {
 }
 
 router.get("/users", requireRole("admin"), async (_req, res): Promise<void> => {
-  const users = await db.select().from(usersTable).orderBy(usersTable.username);
+  const users = await db.select().from(usersTable).orderBy(usersTable.username).limit(1000);
   res.json(await Promise.all(users.map(fmt)));
 });
 

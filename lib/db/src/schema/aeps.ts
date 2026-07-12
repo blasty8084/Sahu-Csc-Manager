@@ -1,4 +1,4 @@
-import { pgTable, serial, date, numeric, text, integer, timestamp, unique } from "drizzle-orm/pg-core";
+import { pgTable, serial, date, numeric, text, integer, timestamp, unique, index } from "drizzle-orm/pg-core";
 
 export const aepsDailyTable = pgTable("aeps_daily", {
   id: serial("id").primaryKey(),
@@ -21,4 +21,8 @@ export const aepsTransactionsTable = pgTable("aeps_transactions", {
   description: text("description"),
   receiptToken: text("receipt_token"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => [
+  index("aeps_transactions_daily_id_idx").on(t.dailyId),
+  index("aeps_transactions_type_idx").on(t.type),
+  index("aeps_transactions_created_at_idx").on(t.createdAt),
+]);

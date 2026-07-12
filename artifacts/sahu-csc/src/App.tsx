@@ -2,7 +2,8 @@ import React, { useState, useCallback, useEffect, lazy, Suspense } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryCache, MutationCache } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
-import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
+import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
+import { get, set, del } from "idb-keyval";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { Toaster } from "@/components/ui/toaster";
@@ -82,8 +83,12 @@ const queryClient = new QueryClient({
 
 const CACHE_STORAGE_KEY = "sahu-csc-rq-cache";
 
-const persister = createSyncStoragePersister({
-  storage: typeof window !== "undefined" ? window.sessionStorage : undefined,
+const persister = createAsyncStoragePersister({
+  storage: {
+    getItem: (key) => get(key),
+    setItem: (key, value) => set(key, value),
+    removeItem: (key) => del(key),
+  },
   key: CACHE_STORAGE_KEY,
   throttleTime: 1000,
 });
@@ -97,21 +102,25 @@ function BadgeUpdater() {
   return null;
 }
 
-// ─── Eager chunk preloader — fires after login so navigation is instant ───────
+// ─── Eager chunk preloader — deferred 3s after login so it doesn't compete
+// with the first real API calls (dashboard stats, auth/me, etc.)
 function EagerPreloader() {
   const { user } = useAuth();
   useEffect(() => {
     if (!user) return;
-    import("@/pages/dashboard");
-    import("@/pages/ledger");
-    import("@/pages/aeps");
-    import("@/pages/udhari");
-    import("@/pages/reports");
-    import("@/pages/notifications");
-    import("@/pages/profile");
-    import("@/pages/services");
-    import("@/pages/sessions");
-    import("@/pages/udhari-customer");
+    const timer = setTimeout(() => {
+      import("@/pages/dashboard");
+      import("@/pages/ledger");
+      import("@/pages/aeps");
+      import("@/pages/udhari");
+      import("@/pages/reports");
+      import("@/pages/notifications");
+      import("@/pages/profile");
+      import("@/pages/services");
+      import("@/pages/sessions");
+      import("@/pages/udhari-customer");
+    }, 3000);
+    return () => clearTimeout(timer);
   }, [user]);
   return null;
 }

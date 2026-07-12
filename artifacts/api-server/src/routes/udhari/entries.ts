@@ -36,7 +36,7 @@ router.get("/udhari/customers/:customerId/entries", requireAuth, requirePermissi
   const [customer] = await db.select().from(udhariCustomersTable).where(and(eq(udhariCustomersTable.id, customerId), eq(udhariCustomersTable.createdBy, userId)));
   if (!customer) { res.status(404).json({ error: "Customer not found" }); return; }
 
-  const entries = await db.select().from(udhariEntriesTable).where(eq(udhariEntriesTable.customerId, customerId)).orderBy(desc(udhariEntriesTable.date), desc(udhariEntriesTable.createdAt));
+  const entries = await db.select().from(udhariEntriesTable).where(eq(udhariEntriesTable.customerId, customerId)).orderBy(desc(udhariEntriesTable.date), desc(udhariEntriesTable.createdAt)).limit(500);
   res.json(entries.map(fmtEntry));
 });
 

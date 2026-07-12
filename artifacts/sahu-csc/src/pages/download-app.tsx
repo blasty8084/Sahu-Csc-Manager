@@ -58,7 +58,7 @@ export default function DownloadApp() {
         {/* Hero */}
         <div className="bg-sidebar rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-5">
           <div className="flex-shrink-0 w-20 h-20 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center shadow-lg">
-            <img src={`${import.meta.env.BASE_URL}pwa-192x192.png`} alt="SAHU CSC" className="w-14 h-14 rounded-xl" />
+            <img src={`${import.meta.env.BASE_URL}pwa-192x192.png`} alt="SAHU CSC" className="w-14 h-14 rounded-xl" loading="lazy" />
           </div>
           <div className="flex-1 text-center sm:text-left">
             <div className="flex items-center gap-2 justify-center sm:justify-start mb-1">

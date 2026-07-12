@@ -76,7 +76,7 @@ router.get("/udhari/customers", requireAuth, requirePermission("udhari:view"), a
     ));
   }
 
-  const customers = await query.orderBy(desc(udhariCustomersTable.updatedAt));
+  const customers = await query.orderBy(desc(udhariCustomersTable.updatedAt)).limit(500);
   const formatted = await Promise.all(customers.map(fmtCustomer));
 
   if (sort === "balance_desc") formatted.sort((a, b) => Math.abs(b.balance) - Math.abs(a.balance));

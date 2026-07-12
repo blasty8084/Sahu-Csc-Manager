@@ -371,7 +371,7 @@ export default function About() {
               className="flex items-center justify-center rounded-2xl flex-shrink-0"
               style={{ width: 52, height: 52, background: "rgba(255,255,255,0.12)", border: "2px solid rgba(255,255,255,0.18)" }}
             >
-              <img src="/sahu-logo.png" alt="SAHU CSC" className="w-9 h-9 object-contain rounded-xl" />
+              <img src="/sahu-logo.png" alt="SAHU CSC" className="w-9 h-9 object-contain rounded-xl" loading="lazy" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
