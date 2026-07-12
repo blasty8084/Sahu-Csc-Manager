@@ -14,6 +14,18 @@ const APP_VERSION = __APP_VERSION__;
 // ── Changelog ────────────────────────────────────────────────────────────────
 const CHANGELOG = [
   {
+    version: "v3.5.9",
+    title: "Redis Cache Live, i18n Fixes & Build Hardening",
+    date: "2026-07-12",
+    accent: "#f97316",
+    changes: [
+      "Upstash Redis activated as the live cache backend (CACHE_BACKEND=redis) — dashboard stats, session/role lookups, and report queries now survive server restarts and are shared across instances; fails open to a DB re-query if Redis is unavailable",
+      "5 missing i18n keys added to all 3 locales (en/hi/or): common.platform (register pages), udhari.customer.settled, udhari.customer.edit_entry, udhari.customer.desc_gave, udhari.customer.desc_got — all Udhari customer and register page strings now translate correctly in Hindi and Odia",
+      "@opentelemetry/api pinned via pnpm-workspace.yaml overrides — prevents future @sentry/node upgrades from silently creating a dual drizzle-orm resolution; pre-build checkDrizzlePeerSingleton() in build.mjs fails fast with a remediation guide if the problem recurs",
+      "Stale 'Build API' workflow references permanently removed from package.json dev script and replit.md — API Server already builds before starting, the duplicate was confusing",
+    ],
+  },
+  {
     version: "v3.5.8",
     title: "Reports & Receipt Export Page Modularization",
     date: "2026-07-12",

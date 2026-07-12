@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v3
-**Current version: 3.5.8 — July 12, 2026**
+**Current version: 3.5.9 — July 12, 2026**
 
 > Detailed record of every feature, change, and upgrade from v3.0.0 onward.  
 > For v2.x history, see `docs/archive/changelogV2.md`.  
@@ -14,6 +14,7 @@
 
 ## Table of Contents
 
+0. [v3.5.9 — Redis Cache Live, i18n Fixes & Build Hardening (July 12, 2026)](#0-v359--redis-cache-live-i18n-fixes--build-hardening-july-12-2026)
 0. [v3.5.8 — Reports & Receipt Export Page Modularization (July 12, 2026)](#0-v358--reports--receipt-export-page-modularization-july-12-2026)
 0. [v3.5.7 — Pluggable Cache Backend, Read-Replica Guidance & Load-Test Baseline (July 12, 2026)](#0-v357--pluggable-cache-backend-read-replica-guidance--load-test-baseline-july-12-2026)
 0. [v3.5.6 — Documentation Consolidation, i18n Completion & CDN Setup Guide (July 11, 2026)](#0-v356--documentation-consolidation-i18n-completion--cdn-setup-guide-july-11-2026)
@@ -30,6 +31,19 @@
 3. [v3.1.1 — Replit Environment Migration & TypeScript Clean (July 3, 2026)](#3-v311--replit-environment-migration--typescript-clean-july-3-2026)
 4. [v3.1.0 — Backup & Restore Redesign + Download + Scheduler (June 30, 2026)](#4-v310--backup--restore-redesign--download--scheduler-june-30-2026)
 5. [v3.0.0 — Setup Wizard, SMTP Integration & Auto-Import (June 30, 2026)](#5-v300--setup-wizard-smtp-integration--auto-import-june-30-2026)
+
+---
+
+## 0. v3.5.9 — Redis Cache Live, i18n Fixes & Build Hardening (July 12, 2026)
+
+**Goal:** Activate Upstash Redis as the live cache backend, fix 5 missing i18n translation keys, harden the build pipeline against future Sentry/OpenTelemetry upgrade failures, and clean up stale workflow references.
+
+| Change | Description |
+|--------|-------------|
+| **Redis cache activated** | `CACHE_BACKEND=redis` set in shared env. `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` added as Replit Secrets. Dashboard stats, session/role lookups, and report queries now persist in Upstash Redis across server restarts and are shared across any future additional instances. The Redis backend already existed (`lib/cache/redisBackend.ts`) — this change flips the switch. Fails open: any Redis error is logged as a warning and treated as a cache miss rather than a 500. Load test result with warm Redis: dashboard p50 98 ms / p95 197 ms / 182 req/s, admin overview p50 66 ms / p95 193 ms / 266 req/s, 0 errors at 20 concurrent connections. |
+| **5 missing i18n keys** | Added to all 3 locales (en/hi/or): `common.platform` ("Management Platform" / "प्रबंधन प्लेटफ़ॉर्म" / "ପରିଚାଳନା ମଞ୍ଚ") used in register-closed and register-pending pages; `udhari.customer.settled`, `udhari.customer.edit_entry`, `udhari.customer.desc_gave`, `udhari.customer.desc_got` used in the Udhari customer page. A script-based key audit confirmed these were the only missing keys across all pages and components. |
+| **Sentry/OTel upgrade guard** | Added `'@opentelemetry/api': ^1.9.1` to the `overrides` block in `pnpm-workspace.yaml` — forces a single version across the entire workspace, preventing `@sentry/node` upgrades from creating a second drizzle-orm peer-resolution variant. Added `checkDrizzlePeerSingleton()` to `build.mjs` (runs before every build): reads `pnpm-lock.yaml`, scans only the `snapshots:` section for `drizzle-orm@` entries, exits with a clear fix guide if more than one variant is found. The check correctly ignores the bare entry in the `packages:` section, which is metadata and not a variant. |
+| **Build API workflow removed** | Permanently removed stale references to the non-existent "Build API" workflow: updated the `dev` script echo in `artifacts/api-server/package.json` to reference `Build Production` instead, and updated the `replit.md` note to say the workflow is permanently gone. The `API Server` workflow already runs `pnpm run build` before starting — a standalone "Build API" workflow was always redundant. |
 
 ---
 

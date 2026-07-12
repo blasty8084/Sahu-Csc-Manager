@@ -2,11 +2,11 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
-  Sparkles, Layers, FileCode2, Puzzle, Wrench, CheckCircle2,
+  Sparkles, Puzzle, Wrench, CheckCircle2, Zap,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const VERSION = "3.5.8";
+const VERSION = "3.5.9";
 const STORAGE_KEY = `sahu-whats-new-v${VERSION}`;
 
 interface Feature {
@@ -21,53 +21,43 @@ interface Feature {
 
 const FEATURES: Feature[] = [
   {
-    icon: <Layers size={15} />,
-    color: "#0b2c60",
-    bg: "rgba(11,44,96,0.10)",
-    title: "Reports Page Modularized",
+    icon: <Zap size={15} />,
+    color: "#f97316",
+    bg: "rgba(249,115,22,0.10)",
+    title: "Redis Cache Is Live",
     description:
-      "The 1301-line reports page has been split into a focused hook (useReports) and three component files — summary cards, chart, and filters. The page itself is now a thin orchestrator. Nothing you see or do has changed.",
-    tag: "Code Quality",
-    tagColor: "#0b2c60",
-  },
-  {
-    icon: <FileCode2 size={15} />,
-    color: "#7c3aed",
-    bg: "rgba(124,58,237,0.10)",
-    title: "Receipt Export Modularized",
-    description:
-      "The 1219-line receipt export page is now split into useReceiptExport (all state and the 3 bulk-export API calls share one buildParams() function), shared types, ExportFilters, and ReceiptPreviewList.",
-    tag: "Code Quality",
-    tagColor: "#7c3aed",
+      "Upstash Redis is now the active cache backend (CACHE_BACKEND=redis). Dashboard stats, session lookups, and report queries are cached in Redis — survives server restarts and scales across multiple instances. Falls back gracefully if Redis is unavailable.",
+    tag: "Performance",
+    tagColor: "#f97316",
   },
   {
     icon: <Puzzle size={15} />,
     color: "#0891b2",
     bg: "rgba(8,145,178,0.10)",
-    title: "Single Source for Export Params",
+    title: "Translation Fixes — All Pages",
     description:
-      "The PDF ZIP download, Excel export, and count-preview endpoints all now share a single buildParams() function in useReceiptExport — so a filter change automatically applies to all three, with no risk of them drifting apart.",
-    tag: "Reliability",
+      "5 missing i18n keys filled in all three languages (English, Hindi, Odia): register pages now show \"Management Platform\" subtitle, and the Udhari customer page correctly translates the balance badge, edit-entry heading, and entry descriptions.",
+    tag: "i18n",
     tagColor: "#0891b2",
   },
   {
     icon: <Wrench size={15} />,
-    color: "#f97316",
-    bg: "rgba(249,115,22,0.12)",
-    title: "Checkbox Properly Isolated",
+    color: "#7c3aed",
+    bg: "rgba(124,58,237,0.10)",
+    title: "Sentry / OTel Upgrade Guard",
     description:
-      "The Checkbox toggle component lives inside ReceiptPreviewList — the only place it's used — rather than a shared types file. types.ts stays a plain TypeScript file with no JSX, keeping the module boundaries clean.",
-    tag: "Architecture",
-    tagColor: "#d97706",
+      "A workspace-level @opentelemetry/api version override now prevents future @sentry/node upgrades from silently splitting drizzle-orm into two resolution variants. A pre-build check in build.mjs catches the problem immediately with a clear fix guide if it ever recurs.",
+    tag: "Reliability",
+    tagColor: "#7c3aed",
   },
   {
     icon: <CheckCircle2 size={15} />,
     color: "#15803d",
     bg: "rgba(21,128,61,0.10)",
-    title: "Zero Behavior Change",
+    title: "Build API Workflow Removed",
     description:
-      "All routes, API calls, data-testids, and visual output are identical to before. TypeScript passed clean across all three workspace projects and the app renders without any new console errors.",
-    tag: "Verified",
+      "The stale \"Build API\" workflow references have been permanently cleaned up. The API Server workflow already builds before starting — the standalone duplicate was redundant and caused confusion.",
+    tag: "Cleanup",
     tagColor: "#15803d",
   },
 ];
@@ -121,7 +111,7 @@ export function WhatsNewModal() {
             </DialogHeader>
           </div>
           <p className="text-[11px] leading-snug relative z-10" style={{ color: "rgba(255,255,255,0.65)" }}>
-            Cleaner code, same app — Reports & Receipt Export pages modularized.
+            Redis live, i18n fixed, OTel guard, and workflow cleanup.
           </p>
 
           {/* step dots */}
