@@ -1,5 +1,5 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 3.5.9** — last updated 2026-07-12
+**Version 3.5.10** — last updated 2026-07-12
 
 > Re-imported and re-set-up on Replit 2026-07-11: ran `pnpm install`, pushed schema via `drizzle-kit push` (`pnpm exec drizzle-kit push --config=drizzle.config.ts` from `lib/db/`), seeded admin/operator via the `Seed Database` workflow, and started `API Server` + `SAHU CSC` workflows. `ADMIN_PASSWORD` and `OPERATOR_PASSWORD` were re-requested as Replit Secrets (a fresh import means a fresh, empty database, so these seed-account passwords must be re-provided each time); `SESSION_SECRET` already existed. Verified login works via curl.
 >
@@ -8,6 +8,13 @@
 > **Fixed a workflow bug**: the `API Server` workflow ran `PORT=8080 ... pnpm run build && node index.mjs` — in bash, a `VAR=val` prefix only applies to the command immediately before `&&`, so `node index.mjs` was inheriting the reserved `PORT=5000` (set in `.replit` `[userenv.shared]`) instead of 8080, colliding with the frontend's port. Fixed by prefixing `node` with its own `PORT=8080` too.
 >
 > **Fixed a fresh-`node_modules` build failure (2026-07-11)**: after a clean `pnpm install`, the API Server build failed at runtime with `ERR_MODULE_NOT_FOUND` for `@opentelemetry/instrumentation`, then `@opentelemetry/core`, then `@opentelemetry/sdk-trace-base` in turn. `build.mjs` externalizes `@opentelemetry/*` (to dodge the drizzle-orm dual-peer conflict — see Sentry note below), so esbuild doesn't bundle it, but pnpm only hoists *direct* dependencies into `artifacts/api-server/node_modules`; these three are transitive deps of `@sentry/node`/`@sentry/opentelemetry`/`@sentry/node-core` that were never hoisted. Fixed by adding all three as explicit `dependencies` in `artifacts/api-server/package.json` (alongside the existing `@opentelemetry/api`) so pnpm hoists them. If a future Sentry upgrade throws the same `ERR_MODULE_NOT_FOUND` for a new `@opentelemetry/*` subpackage, add it the same way.
+
+## What's New in v3.5.10 (July 12, 2026) — Navigation Performance — Instant Page Switching
+
+- **`AnimatePresence mode="wait"` removed**: the outgoing page was forced to finish its full 220 ms exit before the new page started mounting — a mandatory ~440 ms dead wait on every tab tap. Default `"sync"` mode lets both animate simultaneously; perceived switch delay is now ~150 ms.
+- **`LiveClock` isolated as `React.memo` component**: the 1-second clock `setState` was in the root `Layout` function, re-rendering the entire layout tree every second. Extracted to its own component so only the clock `<span>` updates each tick.
+- **y-translation removed from page transition**: `y: 14 → 0` triggered layout recalculation on every frame; replaced with opacity-only fade (GPU-composited, zero layout cost).
+- **Transition duration 220 ms → 150 ms**: shorter, cleaner `easeOut` fade.
 
 ## What's New in v3.5.9 (July 12, 2026) — Redis Cache Live, i18n Fixes & Build Hardening
 

@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const VERSION = "3.5.9";
+const VERSION = "3.5.10";
 const STORAGE_KEY = `sahu-whats-new-v${VERSION}`;
 
 interface Feature {
@@ -24,21 +24,11 @@ const FEATURES: Feature[] = [
     icon: <Zap size={15} />,
     color: "#f97316",
     bg: "rgba(249,115,22,0.10)",
-    title: "Redis Cache Is Live",
+    title: "Instant Page Navigation",
     description:
-      "Upstash Redis is now the active cache backend (CACHE_BACKEND=redis). Dashboard stats, session lookups, and report queries are cached in Redis — survives server restarts and scales across multiple instances. Falls back gracefully if Redis is unavailable.",
+      "Page/tab switches are now noticeably faster. The blocking \"wait\" transition has been removed — pages now cross-fade simultaneously instead of one finishing before the other starts. The clock no longer re-renders the entire layout every second, and the animation no longer triggers layout recalculation on every frame.",
     tag: "Performance",
     tagColor: "#f97316",
-  },
-  {
-    icon: <Puzzle size={15} />,
-    color: "#0891b2",
-    bg: "rgba(8,145,178,0.10)",
-    title: "Translation Fixes — All Pages",
-    description:
-      "5 missing i18n keys filled in all three languages (English, Hindi, Odia): register pages now show \"Management Platform\" subtitle, and the Udhari customer page correctly translates the balance badge, edit-entry heading, and entry descriptions.",
-    tag: "i18n",
-    tagColor: "#0891b2",
   },
   {
     icon: <Wrench size={15} />,
@@ -51,13 +41,23 @@ const FEATURES: Feature[] = [
     tagColor: "#7c3aed",
   },
   {
+    icon: <Puzzle size={15} />,
+    color: "#0891b2",
+    bg: "rgba(8,145,178,0.10)",
+    title: "Translation Fixes — All Pages",
+    description:
+      "5 missing i18n keys filled in all three languages (English, Hindi, Odia): register pages now show the correct subtitle, and the Udhari customer page correctly translates the balance badge, edit-entry heading, and entry descriptions.",
+    tag: "i18n",
+    tagColor: "#0891b2",
+  },
+  {
     icon: <CheckCircle2 size={15} />,
     color: "#15803d",
     bg: "rgba(21,128,61,0.10)",
-    title: "Build API Workflow Removed",
+    title: "Redis Cache Is Live",
     description:
-      "The stale \"Build API\" workflow references have been permanently cleaned up. The API Server workflow already builds before starting — the standalone duplicate was redundant and caused confusion.",
-    tag: "Cleanup",
+      "Upstash Redis is now the active cache backend (CACHE_BACKEND=redis). Dashboard stats, session lookups, and report queries are cached in Redis — survives server restarts and scales across multiple instances. Falls back gracefully if Redis is unavailable.",
+    tag: "Infrastructure",
     tagColor: "#15803d",
   },
 ];

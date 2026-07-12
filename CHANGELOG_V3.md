@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v3
-**Current version: 3.5.9 — July 12, 2026**
+**Current version: 3.5.10 — July 12, 2026**
 
 > Detailed record of every feature, change, and upgrade from v3.0.0 onward.  
 > For v2.x history, see `docs/archive/changelogV2.md`.  
@@ -14,8 +14,22 @@
 
 ## Table of Contents
 
+0. [v3.5.10 — Navigation Performance — Instant Page Switching (July 12, 2026)](#0-v3510--navigation-performance--instant-page-switching-july-12-2026)
 0. [v3.5.9 — Redis Cache Live, i18n Fixes & Build Hardening (July 12, 2026)](#0-v359--redis-cache-live-i18n-fixes--build-hardening-july-12-2026)
 0. [v3.5.8 — Reports & Receipt Export Page Modularization (July 12, 2026)](#0-v358--reports--receipt-export-page-modularization-july-12-2026)
+
+---
+
+## 0. v3.5.10 — Navigation Performance — Instant Page Switching (July 12, 2026)
+
+Pure frontend performance fix — no API routes, DB schema, or data behavior changed.
+
+- **Removed `AnimatePresence mode="wait"`**: previously the outgoing page had to fully finish its 220 ms exit animation before the incoming page's mount even began, creating a mandatory ~440 ms black hole on every tab tap. With the default `"sync"` mode both animations run simultaneously, so the perceived switch delay drops to a single 150 ms fade.
+- **`LiveClock` extracted as isolated `React.memo` component** (`layout.tsx`): the 1-second interval `setState` was living inside the main `Layout` function, causing the entire layout tree — header, nav, all children — to reconcile every second. The clock now self-contains its own state; only the `<span>` re-renders on each tick.
+- **Removed `y`-translation from page transition**: the `y: 14 → 0` spring triggered a layout recalculation pass on every animation frame across the full page content area. Replaced with an opacity-only fade (`initial={{ opacity: 0 }}` / `animate={{ opacity: 1 }}`), which is GPU-composited and never touches layout.
+- **Transition duration reduced 220 ms → 150 ms** via `scaleDuration(150)`: shorter duration further reduces the gap between tap and the new page being fully opaque; easing simplified to `"easeOut"`.
+
+---
 0. [v3.5.7 — Pluggable Cache Backend, Read-Replica Guidance & Load-Test Baseline (July 12, 2026)](#0-v357--pluggable-cache-backend-read-replica-guidance--load-test-baseline-july-12-2026)
 0. [v3.5.6 — Documentation Consolidation, i18n Completion & CDN Setup Guide (July 11, 2026)](#0-v356--documentation-consolidation-i18n-completion--cdn-setup-guide-july-11-2026)
 0. [v3.5.5 — Tests, Error Tracking & Bundle Audit (July 11, 2026)](#0-v355--tests-error-tracking--bundle-audit-july-11-2026)

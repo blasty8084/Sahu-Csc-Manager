@@ -14,6 +14,18 @@ const APP_VERSION = __APP_VERSION__;
 // ── Changelog ────────────────────────────────────────────────────────────────
 const CHANGELOG = [
   {
+    version: "v3.5.10",
+    title: "Navigation Performance — Instant Page Switching",
+    date: "2026-07-12",
+    accent: "#f97316",
+    changes: [
+      "Removed AnimatePresence mode=\"wait\" — pages now cross-fade simultaneously instead of waiting for the exit animation to complete before the enter animation starts; perceived navigation delay cut from ~440ms to ~150ms",
+      "Extracted LiveClock as an isolated React.memo component — the 1-second clock tick now re-renders only a single <span>, not the entire Layout tree; eliminates up to 60 unnecessary Layout reconciliations per minute",
+      "Removed y-translation from page transition animation — opacity-only fade avoids layout recalculation on every animation frame; transition easing simplified to easeOut",
+      "Animation duration reduced from scaleDuration(220) to scaleDuration(150) — shorter duration further reduces the time between a tap and the new page being fully visible",
+    ],
+  },
+  {
     version: "v3.5.9",
     title: "Redis Cache Live, i18n Fixes & Build Hardening",
     date: "2026-07-12",
