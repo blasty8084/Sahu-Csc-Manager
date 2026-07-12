@@ -1,101 +1,46 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
-import { useGetDailyReport, useGetMonthlyReport, useGetServiceBreakdown } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout";
 import { ReportsSkeleton } from "@/components/skeletons";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, CartesianGrid, Legend,
-  LineChart, Line, AreaChart, Area,
+  PieChart, Pie, Cell, CartesianGrid,
+  AreaChart, Area,
 } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Calendar, Download, TrendingUp, TrendingDown, Activity,
-  Fingerprint, ChevronRight, BarChart2, Layers, Filter,
-  ArrowUpRight, ArrowDownLeft, Printer,
+  Fingerprint, BarChart2, Layers, Filter,
+  ArrowUpRight, ArrowDownLeft,
 } from "lucide-react";
 
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
-const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-const PIE_COLORS = ["#0b2c60","#f97316","#10b981","#8b5cf6","#ef4444","#06b6d4","#f59e0b","#ec4899"];
-
-function formatINR(n: number) {
-  return `₹${n.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
-}
-function fmt(n: number) {
-  return `₹${n.toLocaleString("en-IN")}`;
-}
-
-// ── Shared data hook ─────────────────────────────────────────────────────────
-function useReportsData(dailyDate: string, reportYear: number, reportMonth: number, aepsStart: string, aepsEnd: string) {
-  const daily = useGetDailyReport({ date: dailyDate }) as { data: any; isLoading: boolean };
-  const monthly = useGetMonthlyReport({ year: reportYear, month: reportMonth }) as { data: any; isLoading: boolean };
-  const breakdown = useGetServiceBreakdown({}) as { data: any };
-  const aepsReport = useQuery<any>({
-    queryKey: ["reports", "aeps", aepsStart, aepsEnd],
-    queryFn: async () => {
-      const res = await fetch(`${BASE}/api/reports/aeps?startDate=${aepsStart}&endDate=${aepsEnd}`, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed");
-      return res.json();
-    },
-  });
-  return { daily, monthly, breakdown, aepsReport };
-}
-
-// ── Shared filter state ───────────────────────────────────────────────────────
-function useFilterState() {
-  const today = new Date().toISOString().split("T")[0];
-  const now = new Date();
-  const [dailyDate, setDailyDate] = useState(today);
-  const [reportYear, setReportYear] = useState(now.getFullYear());
-  const [reportMonth, setReportMonth] = useState(now.getMonth() + 1);
-  const [aepsStart, setAepsStart] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`);
-  const [aepsEnd, setAepsEnd] = useState(today);
-  const monthStart = `${reportYear}-${String(reportMonth).padStart(2, "0")}-01`;
-  const lastDay = new Date(reportYear, reportMonth, 0).getDate();
-  const monthEnd = `${reportYear}-${String(reportMonth).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
-  return { dailyDate, setDailyDate, reportYear, setReportYear, reportMonth, setReportMonth, aepsStart, setAepsStart, aepsEnd, setAepsEnd, monthStart, monthEnd };
-}
+import {
+  BASE, MONTHS, PIE_COLORS, fmt, formatINR,
+  useFilterState, useReportsData,
+} from "@/hooks/useReports";
+import { MobileStatCard, EmptyState, SectionLabel } from "@/components/reports/ReportSummaryCards";
+import { ChartTooltip } from "@/components/reports/ReportChart";
+import { MobileReportFilters, DesktopReportFilters } from "@/components/reports/ReportFilters";
 
 // ══════════════════════════════════════════════════════════════════════════════
 // MOBILE REPORTS
 // ══════════════════════════════════════════════════════════════════════════════
 const MOBILE_TABS = [
-  { id: "daily",   label: "Daily",    Icon: Calendar,    accent: "#0b2c60", grad: "linear-gradient(135deg,#0b2c60,#1a4a9e)" },
-  { id: "monthly", label: "Monthly",  Icon: BarChart2,   accent: "#8b5cf6", grad: "linear-gradient(135deg,#8b5cf6,#7c3aed)" },
-  { id: "aeps",    label: "AePS",     Icon: Fingerprint, accent: "#f97316", grad: "linear-gradient(135deg,#f97316,#ea580c)" },
-  { id: "services",label: "Services", Icon: Layers,      accent: "#10b981", grad: "linear-gradient(135deg,#10b981,#059669)" },
+  { id: "daily",    label: "Daily",    Icon: Calendar,    accent: "#0b2c60", grad: "linear-gradient(135deg,#0b2c60,#1a4a9e)" },
+  { id: "monthly",  label: "Monthly",  Icon: BarChart2,   accent: "#8b5cf6", grad: "linear-gradient(135deg,#8b5cf6,#7c3aed)" },
+  { id: "aeps",     label: "AePS",     Icon: Fingerprint, accent: "#f97316", grad: "linear-gradient(135deg,#f97316,#ea580c)" },
+  { id: "services", label: "Services", Icon: Layers,      accent: "#10b981", grad: "linear-gradient(135deg,#10b981,#059669)" },
 ];
-
-function MobileStatCard({ label, value, sub, accentColor, iconGrad, Icon, isLoading }: any) {
-  return (
-    <div className="bg-white rounded-2xl overflow-hidden flex-1 min-w-0" style={{ boxShadow: "0 2px 12px rgba(11,44,96,0.10)" }}>
-      <div style={{ height: 3, background: accentColor }} />
-      <div className="p-3">
-        <div className="flex items-start justify-between mb-2">
-          <p style={{ fontSize: 9, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em", lineHeight: 1.2 }}>{label}</p>
-          <div style={{ width: 26, height: 26, borderRadius: 8, background: iconGrad, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <Icon size={12} color="#fff" />
-          </div>
-        </div>
-        {isLoading
-          ? <div className="h-5 w-20 mb-1 rounded bg-slate-100 animate-pulse" />
-          : <p style={{ fontSize: 15, fontWeight: 900, color: "#0b2c60", lineHeight: 1.1 }}>{value}</p>}
-        {sub && <p style={{ fontSize: 9, fontWeight: 600, color: "#94a3b8", marginTop: 3 }} className="truncate">{sub}</p>}
-      </div>
-    </div>
-  );
-}
 
 function MobileReports() {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("daily");
   const [showFilter, setShowFilter] = useState(false);
   const filters = useFilterState();
-  const { daily, monthly, breakdown, aepsReport } = useReportsData(filters.dailyDate, filters.reportYear, filters.reportMonth, filters.aepsStart, filters.aepsEnd);
+  const { daily, monthly, breakdown, aepsReport } = useReportsData(
+    filters.dailyDate, filters.reportYear, filters.reportMonth, filters.aepsStart, filters.aepsEnd,
+  );
   const tab = MOBILE_TABS.find(tab => tab.id === activeTab)!;
 
   const exportUrl = activeTab === "aeps"
@@ -151,48 +96,7 @@ function MobileReports() {
       </div>
 
       {/* ── Filter panel ── */}
-      {showFilter && (
-        <div className="bg-white rounded-2xl p-4 space-y-3 border border-slate-100" style={{ boxShadow: "0 2px 12px rgba(11,44,96,0.08)" }}>
-          <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em" }}>Filter Options</p>
-          {activeTab === "daily" && (
-            <div>
-              <p className="text-xs font-semibold text-slate-500 mb-1">Date</p>
-              <input type="date" value={filters.dailyDate} onChange={e => filters.setDailyDate(e.target.value)}
-                className="w-full h-9 border border-slate-200 rounded-xl px-3 text-sm text-slate-800" />
-            </div>
-          )}
-          {activeTab === "monthly" && (
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <p className="text-xs font-semibold text-slate-500 mb-1">Month</p>
-                <Select value={String(filters.reportMonth)} onValueChange={v => filters.setReportMonth(Number(v))}>
-                  <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-                  <SelectContent>{MONTHS.map((m, i) => <SelectItem key={i+1} value={String(i+1)}>{m}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-slate-500 mb-1">Year</p>
-                <input type="number" value={filters.reportYear} onChange={e => filters.setReportYear(Number(e.target.value))}
-                  className="w-full h-9 border border-slate-200 rounded-xl px-3 text-sm text-slate-800" />
-              </div>
-            </div>
-          )}
-          {activeTab === "aeps" && (
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <p className="text-xs font-semibold text-slate-500 mb-1">From</p>
-                <input type="date" value={filters.aepsStart} onChange={e => filters.setAepsStart(e.target.value)}
-                  className="w-full h-9 border border-slate-200 rounded-xl px-3 text-sm text-slate-800" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-slate-500 mb-1">To</p>
-                <input type="date" value={filters.aepsEnd} onChange={e => filters.setAepsEnd(e.target.value)}
-                  className="w-full h-9 border border-slate-200 rounded-xl px-3 text-sm text-slate-800" />
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      {showFilter && <MobileReportFilters activeTab={activeTab} filters={filters} />}
 
       {/* ── Daily ── */}
       {activeTab === "daily" && (
@@ -288,8 +192,8 @@ function MobileReports() {
                         <XAxis dataKey="date" tick={{ fontSize: 8, fill: "#94a3b8" }} tickFormatter={v => v.split("-")[2]} />
                         <YAxis tick={{ fontSize: 8, fill: "#94a3b8" }} />
                         <Tooltip formatter={(v: any) => [`₹${v.toLocaleString("en-IN")}`, ""]} labelFormatter={l => `Date: ${l}`} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
-                        <Bar dataKey="credits" fill="#10b981" name="Credits" radius={[2,2,0,0]} />
-                        <Bar dataKey="debits" fill="#f97316" name="Debits" radius={[2,2,0,0]} />
+                        <Bar dataKey="credits" fill="#10b981" name="Credits" radius={[2, 2, 0, 0]} />
+                        <Bar dataKey="debits" fill="#f97316" name="Debits" radius={[2, 2, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -316,8 +220,8 @@ function MobileReports() {
                             <XAxis dataKey="date" tick={{ fontSize: 8, fill: "#94a3b8" }} tickFormatter={v => v.split("-")[2]} />
                             <YAxis tick={{ fontSize: 8, fill: "#94a3b8" }} />
                             <Tooltip formatter={(v: any) => [`₹${v.toLocaleString("en-IN")}`, ""]} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
-                            <Bar dataKey="withdrawals" fill="#ef4444" name="Withdrawals" radius={[2,2,0,0]} />
-                            <Bar dataKey="deposits" fill="#10b981" name="Deposits" radius={[2,2,0,0]} />
+                            <Bar dataKey="withdrawals" fill="#ef4444" name="Withdrawals" radius={[2, 2, 0, 0]} />
+                            <Bar dataKey="deposits" fill="#10b981" name="Deposits" radius={[2, 2, 0, 0]} />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
@@ -357,8 +261,8 @@ function MobileReports() {
                           <XAxis dataKey="date" tick={{ fontSize: 8, fill: "#94a3b8" }} tickFormatter={v => v.split("-")[2]} />
                           <YAxis tick={{ fontSize: 8, fill: "#94a3b8" }} />
                           <Tooltip formatter={(v: any) => [`₹${v.toLocaleString("en-IN")}`, ""]} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
-                          <Bar dataKey="withdrawals" fill="#ef4444" name="Withdrawals" radius={[2,2,0,0]} />
-                          <Bar dataKey="deposits" fill="#10b981" name="Deposits" radius={[2,2,0,0]} />
+                          <Bar dataKey="withdrawals" fill="#ef4444" name="Withdrawals" radius={[2, 2, 0, 0]} />
+                          <Bar dataKey="deposits" fill="#10b981" name="Deposits" radius={[2, 2, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -451,91 +355,19 @@ function MobileReports() {
 // DESKTOP REPORTS — Analytics Pro design
 // ══════════════════════════════════════════════════════════════════════════════
 const DESKTOP_TABS = [
-  { id: "daily",    label: "Daily Report",    Icon: Calendar,    accent: "#0b2c60", light: "rgba(11,44,96,0.08)", grad: "linear-gradient(135deg,#0b2c60,#1a4a9e)" },
+  { id: "daily",    label: "Daily Report",    Icon: Calendar,    accent: "#0b2c60", light: "rgba(11,44,96,0.08)",    grad: "linear-gradient(135deg,#0b2c60,#1a4a9e)" },
   { id: "monthly",  label: "Monthly Report",  Icon: BarChart2,   accent: "#8b5cf6", light: "rgba(139,92,246,0.08)", grad: "linear-gradient(135deg,#8b5cf6,#7c3aed)" },
   { id: "aeps",     label: "AePS Report",     Icon: Fingerprint, accent: "#f97316", light: "rgba(249,115,22,0.08)", grad: "linear-gradient(135deg,#f97316,#ea580c)" },
   { id: "services", label: "Service Analysis",Icon: Layers,      accent: "#10b981", light: "rgba(16,185,129,0.08)", grad: "linear-gradient(135deg,#10b981,#059669)" },
 ];
 
-function Sparkline({ data, color }: { data: { v: number }[]; color: string }) {
-  const trend = data.length >= 2 ? data[data.length - 1].v - data[0].v : 0;
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8 }}>
-      <LineChart width={72} height={28} data={data} margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
-        <Line type="monotone" dataKey="v" stroke={color} strokeWidth={1.8} dot={false} isAnimationActive={false} />
-      </LineChart>
-      <span style={{
-        fontSize: 10, fontWeight: 700,
-        color: trend >= 0 ? "#10b981" : "#ef4444",
-      }}>
-        {trend >= 0 ? "▲" : "▼"} 7d
-      </span>
-    </div>
-  );
-}
-
-function DesktopStatCard({ label, value, sub, accentColor, iconGrad, Icon, isLoading, sparkData, sparkColor }: any) {
-  return (
-    <div className="bg-white rounded-2xl overflow-hidden flex-1" style={{ boxShadow: "0 2px 20px rgba(11,44,96,0.10)", borderTop: `4px solid ${accentColor}` }}>
-      <div className="p-5">
-        <div className="flex items-start justify-between mb-3">
-          <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</p>
-          <div style={{ width: 44, height: 44, borderRadius: 12, background: iconGrad, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: `0 4px 12px ${accentColor}44` }}>
-            <Icon size={18} color="#fff" />
-          </div>
-        </div>
-        {isLoading
-          ? <div className="h-8 w-28 mb-2 rounded-lg bg-slate-100 animate-pulse" />
-          : <p style={{ fontSize: 26, fontWeight: 900, color: "#0b2c60", lineHeight: 1 }}>{value}</p>}
-        {sub && <p style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", marginTop: 6 }}>{sub}</p>}
-        {sparkData?.length >= 2 && <Sparkline data={sparkData} color={sparkColor ?? accentColor} />}
-      </div>
-    </div>
-  );
-}
-
-function SectionLabel({ label, accentGrad }: { label: string; accentGrad: string }) {
-  return (
-    <div className="flex items-center gap-2 mb-4">
-      <div className="w-1 h-5 rounded-full" style={{ background: accentGrad }} />
-      <p style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</p>
-    </div>
-  );
-}
-
-function ChartTooltip({ active, payload, label }: any) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div style={{ background: "white", borderRadius: 10, padding: "10px 14px", boxShadow: "0 4px 20px rgba(0,0,0,0.12)", border: "none" }}>
-      <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 6 }}>{label}</div>
-      {payload.map((p: any) => (
-        <div key={p.dataKey} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-          <div style={{ width: 8, height: 8, borderRadius: 2, background: p.color, flexShrink: 0 }} />
-          <span style={{ fontSize: 12, color: "#334155" }}>{p.name}: <b>₹{Number(p.value).toLocaleString("en-IN")}</b></span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/* ── KPI strip metric chip ─────────────────────────────────────────────────── */
-function KpiChip({ label, value, trend, pos }: { label: string; value: string | number; trend?: string; pos?: boolean }) {
-  return (
-    <div style={{ flex: 1, padding: "0 20px", borderRight: "1px solid rgba(255,255,255,0.10)" }}>
-      <div style={{ fontSize: 9, color: "rgba(255,255,255,0.45)", letterSpacing: "0.1em", marginBottom: 5, textTransform: "uppercase" }}>{label}</div>
-      <div style={{ fontSize: 19, fontWeight: 900, color: "white", marginBottom: 3, letterSpacing: "-0.5px" }}>{value}</div>
-      {trend && (
-        <div style={{ fontSize: 10, fontWeight: 700, color: pos ? "#34d399" : "#fca5a5" }}>{trend}</div>
-      )}
-    </div>
-  );
-}
-
 function DesktopReports() {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("daily");
   const filters = useFilterState();
-  const { daily, monthly, breakdown, aepsReport } = useReportsData(filters.dailyDate, filters.reportYear, filters.reportMonth, filters.aepsStart, filters.aepsEnd);
+  const { daily, monthly, breakdown, aepsReport } = useReportsData(
+    filters.dailyDate, filters.reportYear, filters.reportMonth, filters.aepsStart, filters.aepsEnd,
+  );
 
   const exportUrl = activeTab === "aeps"
     ? `${BASE}/api/reports/export?startDate=${filters.aepsStart}&endDate=${filters.aepsEnd}`
@@ -710,38 +542,38 @@ function DesktopReports() {
     if (activeTab === "daily" && daily.data) {
       const avg = daily.data.transactionCount > 0 ? daily.data.netRevenue / daily.data.transactionCount : 0;
       return [
-        { label: "Total Credits",  value: fmt(daily.data.totalCredits),  trend: undefined },
-        { label: "Total Debits",   value: fmt(daily.data.totalDebits),   trend: undefined },
-        { label: "Net Revenue",    value: fmt(daily.data.netRevenue),    trend: daily.data.netRevenue >= 0 ? "Profitable day" : "Loss day", pos: daily.data.netRevenue >= 0 },
-        { label: "Transactions",   value: daily.data.transactionCount,   trend: undefined },
-        { label: "Avg Ticket",     value: fmt(avg),                      trend: undefined },
+        { label: "Total Credits",  value: fmt(daily.data.totalCredits),  trend: undefined,                                                                      pos: undefined },
+        { label: "Total Debits",   value: fmt(daily.data.totalDebits),   trend: undefined,                                                                      pos: undefined },
+        { label: "Net Revenue",    value: fmt(daily.data.netRevenue),    trend: daily.data.netRevenue >= 0 ? "Profitable day" : "Loss day",   pos: daily.data.netRevenue >= 0 },
+        { label: "Transactions",   value: daily.data.transactionCount,   trend: undefined,                                                                      pos: undefined },
+        { label: "Avg Ticket",     value: fmt(avg),                      trend: undefined,                                                                      pos: undefined },
       ];
     }
     if (activeTab === "monthly" && monthly.data) {
       const avg = monthly.data.totalTransactions > 0 ? monthly.data.netProfit / monthly.data.totalTransactions : 0;
       return [
-        { label: "Total Credits",  value: fmt(monthly.data.totalCredits),  trend: undefined },
-        { label: "Total Debits",   value: fmt(monthly.data.totalDebits),   trend: undefined },
+        { label: "Total Credits",  value: fmt(monthly.data.totalCredits),  trend: undefined,                                                                        pos: undefined },
+        { label: "Total Debits",   value: fmt(monthly.data.totalDebits),   trend: undefined,                                                                        pos: undefined },
         { label: "Net Profit",     value: fmt(monthly.data.netProfit),     trend: monthly.data.netProfit >= 0 ? "Month profit" : "Month loss", pos: monthly.data.netProfit >= 0 },
-        { label: "Transactions",   value: monthly.data.totalTransactions,  trend: undefined },
-        { label: "Avg Ticket",     value: fmt(avg),                        trend: undefined },
+        { label: "Transactions",   value: monthly.data.totalTransactions,  trend: undefined,                                                                        pos: undefined },
+        { label: "Avg Ticket",     value: fmt(avg),                        trend: undefined,                                                                        pos: undefined },
       ];
     }
     if (activeTab === "aeps" && aepsReport.data) {
       return [
-        { label: "AePS Tx",        value: aepsReport.data.totalTransactions, trend: undefined },
-        { label: "Withdrawals",    value: fmt(aepsReport.data.totalWithdrawals), trend: undefined },
-        { label: "Deposits",       value: fmt(aepsReport.data.totalDeposits),    trend: undefined },
-        { label: "Net Flow",       value: fmt(aepsReport.data.netFlow), trend: aepsReport.data.netFlow >= 0 ? "Net positive" : "Net negative", pos: aepsReport.data.netFlow >= 0 },
+        { label: "AePS Tx",     value: aepsReport.data.totalTransactions,          trend: undefined,                                                                                     pos: undefined },
+        { label: "Withdrawals", value: fmt(aepsReport.data.totalWithdrawals),       trend: undefined,                                                                                     pos: undefined },
+        { label: "Deposits",    value: fmt(aepsReport.data.totalDeposits),          trend: undefined,                                                                                     pos: undefined },
+        { label: "Net Flow",    value: fmt(aepsReport.data.netFlow),                trend: aepsReport.data.netFlow >= 0 ? "Net positive" : "Net negative", pos: aepsReport.data.netFlow >= 0 },
       ];
     }
     if (activeTab === "services" && breakdown.data?.length) {
       const totalTx  = breakdown.data.reduce((s: number, r: any) => s + r.count, 0);
       const totalRev = breakdown.data.reduce((s: number, r: any) => s + parseFloat(r.revenue || 0), 0);
       return [
-        { label: "Services",       value: breakdown.data.length,  trend: undefined },
-        { label: "Total Tx",       value: totalTx,                trend: undefined },
-        { label: "Total Revenue",  value: fmt(totalRev),          trend: undefined },
+        { label: "Services",      value: breakdown.data.length, trend: undefined, pos: undefined },
+        { label: "Total Tx",      value: totalTx,               trend: undefined, pos: undefined },
+        { label: "Total Revenue", value: fmt(totalRev),         trend: undefined, pos: undefined },
       ];
     }
     return [];
@@ -774,7 +606,6 @@ function DesktopReports() {
                 onClick={() => setActiveTab(t.id)}
                 style={{
                   display: "flex", alignItems: "center", gap: 7, padding: "0 20px",
-                  borderBottom: active ? `3px solid #0b2c60` : "3px solid transparent",
                   background: "none", border: "none", cursor: "pointer",
                   color: active ? "#0b2c60" : "#94a3b8",
                   fontSize: 13, fontWeight: active ? 700 : 400,
@@ -793,43 +624,12 @@ function DesktopReports() {
         </div>
 
         {/* Right: filter controls + export */}
-        <div style={{ padding: "0 16px", display: "flex", alignItems: "center", gap: 8, borderLeft: "1px solid #e2e8f0" }}>
-          {activeTab === "daily" && (
-            <input type="date" value={filters.dailyDate} onChange={e => filters.setDailyDate(e.target.value)}
-              style={{ height: 32, borderRadius: 8, border: "1px solid #e2e8f0", padding: "0 10px", fontSize: 12, color: "#334155", outline: "none" }} />
-          )}
-          {activeTab === "monthly" && (
-            <>
-              <Select value={String(filters.reportMonth)} onValueChange={v => filters.setReportMonth(Number(v))}>
-                <SelectTrigger className="h-8 text-xs w-28" style={{ border: "1px solid #e2e8f0", borderRadius: 8 }}><SelectValue /></SelectTrigger>
-                <SelectContent>{MONTHS.map((m, i) => <SelectItem key={i+1} value={String(i+1)}>{m}</SelectItem>)}</SelectContent>
-              </Select>
-              <input type="number" value={filters.reportYear} onChange={e => filters.setReportYear(Number(e.target.value))}
-                style={{ height: 32, width: 72, borderRadius: 8, border: "1px solid #e2e8f0", padding: "0 10px", fontSize: 12, color: "#334155", outline: "none" }} />
-            </>
-          )}
-          {activeTab === "aeps" && (
-            <>
-              <input type="date" value={filters.aepsStart} onChange={e => filters.setAepsStart(e.target.value)}
-                style={{ height: 32, borderRadius: 8, border: "1px solid #e2e8f0", padding: "0 10px", fontSize: 12, color: "#334155", outline: "none" }} />
-              <span style={{ fontSize: 11, color: "#94a3b8" }}>→</span>
-              <input type="date" value={filters.aepsEnd} onChange={e => filters.setAepsEnd(e.target.value)}
-                style={{ height: 32, borderRadius: 8, border: "1px solid #e2e8f0", padding: "0 10px", fontSize: 12, color: "#334155", outline: "none" }} />
-            </>
-          )}
-          <button
-            onClick={printReport}
-            style={{ height: 32, borderRadius: 8, background: "white", border: "1px solid #e2e8f0", color: "#0b2c60", fontSize: 12, fontWeight: 700, padding: "0 14px", display: "flex", alignItems: "center", gap: 6, cursor: "pointer", flexShrink: 0 }}
-          >
-            <Printer size={12} /> Print
-          </button>
-          <a
-            href={exportUrl} target="_blank"
-            style={{ height: 32, borderRadius: 8, background: "linear-gradient(135deg,#f97316,#fb923c)", color: "white", fontSize: 12, fontWeight: 700, padding: "0 14px", display: "flex", alignItems: "center", gap: 6, textDecoration: "none", flexShrink: 0 }}
-          >
-            <Download size={12} /> Export
-          </a>
-        </div>
+        <DesktopReportFilters
+          activeTab={activeTab}
+          filters={filters}
+          onPrint={printReport}
+          exportUrl={exportUrl}
+        />
       </div>
 
       {/* ── Navy KPI strip ── */}
@@ -878,10 +678,10 @@ function DesktopReports() {
                         <BarChart data={[{ name: "Today", credits: daily.data.totalCredits, debits: daily.data.totalDebits }]} barSize={48} barGap={8}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#f8fafc" />
                           <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-                          <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={v => `₹${(v/1000).toFixed(0)}k`} />
+                          <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={v => `₹${(v / 1000).toFixed(0)}k`} />
                           <Tooltip content={<ChartTooltip />} />
-                          <Bar dataKey="credits" name="Credits" fill="#3b82f6" radius={[6,6,0,0]} />
-                          <Bar dataKey="debits" name="Debits" fill="#fca5a5" radius={[6,6,0,0]} />
+                          <Bar dataKey="credits" name="Credits" fill="#3b82f6" radius={[6, 6, 0, 0]} />
+                          <Bar dataKey="debits" name="Debits" fill="#fca5a5" radius={[6, 6, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -941,7 +741,7 @@ function DesktopReports() {
                       <table style={{ width: "100%", borderCollapse: "collapse" }}>
                         <thead style={{ background: "#f8fafc" }}>
                           <tr>
-                            {["Rank","Service","Transactions","Revenue"].map(h => (
+                            {["Rank", "Service", "Transactions", "Revenue"].map(h => (
                               <th key={h} style={{ padding: "9px 16px", fontSize: 10, color: "#94a3b8", letterSpacing: "0.07em", fontWeight: 600, textTransform: "uppercase", textAlign: h === "Rank" || h === "Service" ? "left" : "right" }}>{h}</th>
                             ))}
                           </tr>
@@ -1022,8 +822,8 @@ function DesktopReports() {
                           <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={v => v.split("-")[2]} />
                           <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
                           <Tooltip content={<ChartTooltip />} />
-                          <Bar dataKey="credits" name="Credits" fill="#3b82f6" radius={[4,4,0,0]} />
-                          <Bar dataKey="debits" name="Debits" fill="#fca5a5" radius={[4,4,0,0]} />
+                          <Bar dataKey="credits" name="Credits" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="debits" name="Debits" fill="#fca5a5" radius={[4, 4, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -1049,7 +849,7 @@ function DesktopReports() {
                           </defs>
                           <CartesianGrid strokeDasharray="3 3" stroke="#f8fafc" />
                           <XAxis dataKey="date" tick={{ fontSize: 9, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={v => v.split("-")[2]} />
-                          <YAxis tick={{ fontSize: 9, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
+                          <YAxis tick={{ fontSize: 9, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
                           <Tooltip content={<ChartTooltip />} />
                           <Area type="monotone" dataKey="withdrawals" name="Withdrawals" stroke="#ef4444" strokeWidth={2} fill="url(#wdGrad)" dot={false} />
                           <Area type="monotone" dataKey="deposits" name="Deposits" stroke="#10b981" strokeWidth={2} fill="url(#dpGrad)" dot={false} />
@@ -1069,10 +869,10 @@ function DesktopReports() {
                       </div>
                       <div style={{ padding: "16px 20px" }}>
                         {[
-                          { label: "Total Credits",  value: fmt(monthly.data.totalCredits),      color: "#3b82f6" },
-                          { label: "Total Debits",   value: fmt(monthly.data.totalDebits),       color: "#fca5a5" },
-                          { label: "Net Profit",     value: fmt(monthly.data.netProfit),         color: monthly.data.netProfit >= 0 ? "#10b981" : "#ef4444" },
-                          { label: "Transactions",   value: monthly.data.totalTransactions,      color: "#0b2c60" },
+                          { label: "Total Credits",  value: fmt(monthly.data.totalCredits),  color: "#3b82f6" },
+                          { label: "Total Debits",   value: fmt(monthly.data.totalDebits),   color: "#fca5a5" },
+                          { label: "Net Profit",     value: fmt(monthly.data.netProfit),     color: monthly.data.netProfit >= 0 ? "#10b981" : "#ef4444" },
+                          { label: "Transactions",   value: monthly.data.totalTransactions,  color: "#0b2c60" },
                         ].map((row, i, arr) => (
                           <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: i < arr.length - 1 ? "1px solid #f8fafc" : "none" }}>
                             <span style={{ fontSize: 13, color: "#64748b" }}>{row.label}</span>
@@ -1112,7 +912,7 @@ function DesktopReports() {
               <>
                 {aepsReport.data.dailyBreakdown?.length > 0 && (
                   <>
-                    {/* 2-col: bar chart + day-wise table */}
+                    {/* 2-col: bar chart + opening balance area */}
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                       <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "0 2px 16px rgba(11,44,96,0.07)" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
@@ -1135,8 +935,8 @@ function DesktopReports() {
                             <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={v => v.split("-")[2]} />
                             <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
                             <Tooltip content={<ChartTooltip />} />
-                            <Bar dataKey="withdrawals" name="Withdrawals" fill="#ef4444" radius={[4,4,0,0]} />
-                            <Bar dataKey="deposits" name="Deposits" fill="#10b981" radius={[4,4,0,0]} />
+                            <Bar dataKey="withdrawals" name="Withdrawals" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="deposits" name="Deposits" fill="#10b981" radius={[4, 4, 0, 0]} />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
@@ -1157,7 +957,7 @@ function DesktopReports() {
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" stroke="#f8fafc" />
                             <XAxis dataKey="date" tick={{ fontSize: 9, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={v => v.split("-")[2]} />
-                            <YAxis tick={{ fontSize: 9, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
+                            <YAxis tick={{ fontSize: 9, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
                             <Tooltip content={<ChartTooltip />} />
                             <Area type="monotone" dataKey="openingBalance" name="Opening Balance" stroke="#3b82f6" strokeWidth={2} fill="url(#obGrad)" dot={false} />
                           </AreaChart>
@@ -1175,7 +975,7 @@ function DesktopReports() {
                         <table style={{ width: "100%", borderCollapse: "collapse" }}>
                           <thead style={{ background: "#f8fafc" }}>
                             <tr>
-                              {["Date","Opening Balance","Withdrawals","Deposits","Transactions","Net Flow"].map(h => (
+                              {["Date", "Opening Balance", "Withdrawals", "Deposits", "Transactions", "Net Flow"].map(h => (
                                 <th key={h} style={{ padding: "9px 16px", fontSize: 10, color: "#94a3b8", letterSpacing: "0.07em", fontWeight: 600, textTransform: "uppercase", textAlign: h === "Date" ? "left" : "right" }}>{h}</th>
                               ))}
                             </tr>
@@ -1241,7 +1041,7 @@ function DesktopReports() {
                   <table style={{ width: "100%", borderCollapse: "collapse" }}>
                     <thead style={{ background: "#f8fafc" }}>
                       <tr>
-                        {["Rank","Service","Transactions","Revenue"].map(h => (
+                        {["Rank", "Service", "Transactions", "Revenue"].map(h => (
                           <th key={h} style={{ padding: "9px 16px", fontSize: 10, color: "#94a3b8", letterSpacing: "0.07em", fontWeight: 600, textTransform: "uppercase", textAlign: h === "Rank" || h === "Service" ? "left" : "right" }}>{h}</th>
                         ))}
                       </tr>
@@ -1272,18 +1072,6 @@ function DesktopReports() {
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-// ── Empty state ───────────────────────────────────────────────────────────────
-function EmptyState({ label }: { label: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-20 text-center">
-      <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{ background: "rgba(11,44,96,0.07)" }}>
-        <BarChart2 size={28} style={{ color: "#94a3b8" }} />
-      </div>
-      <p className="text-sm font-semibold text-slate-400">{label}</p>
     </div>
   );
 }
