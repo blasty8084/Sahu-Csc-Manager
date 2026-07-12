@@ -29,8 +29,8 @@ router.post("/auth/logout", requireAuth, async (req, res): Promise<void> => {
     .set({ activeSessionToken: null })
     .where(eq(usersTable.id, userId));
 
-  if (sessionId) invalidateSessionCache(sessionId);
-  invalidateUserCache(userId);
+  if (sessionId) await invalidateSessionCache(sessionId);
+  await invalidateUserCache(userId);
 
   await auditLog(userId, "logout", "User logged out", getClientIp(req));
   req.session.destroy(() => {});

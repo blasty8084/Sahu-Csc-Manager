@@ -99,8 +99,8 @@ router.patch("/profile", requireAuth, async (req, res): Promise<void> => {
         )
       )
       .returning({ sessionId: userSessionsTable.sessionId });
-    for (const r of revoked) invalidateSessionCache(r.sessionId);
-    invalidateUserCache(userId);
+    await Promise.all(revoked.map((r) => invalidateSessionCache(r.sessionId)));
+    await invalidateUserCache(userId);
   }
 
   await auditLog(userId, "profile.update", "User updated profile", getClientIp(req));

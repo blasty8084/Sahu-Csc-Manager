@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v3
-**Current version: 3.5.6 — July 11, 2026**
+**Current version: 3.5.7 — July 12, 2026**
 
 > Detailed record of every feature, change, and upgrade from v3.0.0 onward.  
 > For v2.x history, see `docs/archive/changelogV2.md`.  
@@ -14,6 +14,7 @@
 
 ## Table of Contents
 
+0. [v3.5.7 — Pluggable Cache Backend, Read-Replica Guidance & Load-Test Baseline (July 12, 2026)](#0-v357--pluggable-cache-backend-read-replica-guidance--load-test-baseline-july-12-2026)
 0. [v3.5.6 — Documentation Consolidation, i18n Completion & CDN Setup Guide (July 11, 2026)](#0-v356--documentation-consolidation-i18n-completion--cdn-setup-guide-july-11-2026)
 0. [v3.5.5 — Tests, Error Tracking & Bundle Audit (July 11, 2026)](#0-v355--tests-error-tracking--bundle-audit-july-11-2026)
 0. [v3.5.4 — Ledger Page Modularization (July 11, 2026)](#0-v354--ledger-page-modularization-july-11-2026)
@@ -28,6 +29,20 @@
 3. [v3.1.1 — Replit Environment Migration & TypeScript Clean (July 3, 2026)](#3-v311--replit-environment-migration--typescript-clean-july-3-2026)
 4. [v3.1.0 — Backup & Restore Redesign + Download + Scheduler (June 30, 2026)](#4-v310--backup--restore-redesign--download--scheduler-june-30-2026)
 5. [v3.0.0 — Setup Wizard, SMTP Integration & Auto-Import (June 30, 2026)](#5-v300--setup-wizard-smtp-integration--auto-import-june-30-2026)
+
+---
+
+## 0. v3.5.7 — Pluggable Cache Backend, Read-Replica Guidance & Load-Test Baseline (July 12, 2026)
+
+**Goal:** Scale-readiness groundwork (explicitly not urgent at current usage) — a swappable cache backend, corrected read-replica guidance, and a re-measured load test at realistic concurrency. No route, API, or visual behavior changed; default (memory) behavior is unchanged.
+
+| Change | Description |
+|--------|-------------|
+| **Pluggable cache backend** | New `lib/cache/{types,backend,memoryBackend,redisBackend}.ts`. `lib/query-cache.ts` and `lib/auth/sessionCache.ts` now delegate to a `CacheBackend` selected via `CACHE_BACKEND` (`memory` default — same per-namespace `Map` logic as before; `redis` opt-in via `@upstash/redis`, needs `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN`, fails open on Redis errors). Session/role cache methods became `async`; every call site (`middleware.ts` and 6 route files) updated to `await` them — same timing and outputs, only the signatures changed. |
+| **drizzle-orm dual-peer bug, again** | Adding `@upstash/redis` to only `api-server` recreated the same class of bug as the earlier `@opentelemetry/api` case: drizzle-orm 0.45.2 lists `@upstash/redis` as an optional peer, so pnpm resolved a second drizzle-orm variant and TS types conflicted across unrelated files (`notificationService.ts`, `receiptExportService.ts`, etc.). Fixed by adding `@upstash/redis` to `lib/db` too. |
+| **Read-replica guidance corrected & documented** | The originating scale-readiness prompt assumed Neon/read-replica support already existed; corrected — this app runs on Replit's built-in Postgres, which has no read-replica option today (unchanged from v3.5.3's note). Documented, for if/when that changes, which queries are safe to route to a replica (dashboard, reports, admin overview, receipt verification) vs. which must stay on the primary (ledger writes, auth/session, user role/status changes) — see `architectureV3.md` §5.6 and `replit.md`. |
+| **Load test re-run at higher concurrency** | 50/100/200 connections, read-heavy and write-heavy mixes, disposable seeded data (not production data). Findings recorded in `LOADTEST_FINDINGS.md`. No architecture changes made based on the results in this pass — that's future work if/when it's needed. |
+| **Zero behavior change** | Default `CACHE_BACKEND=memory` is byte-for-byte the same cache logic as before. Verified with `tsc --build` (clean across all three workspace projects) and the existing 42-test Vitest suite (all passing, including the auth-session middleware tests whose mocks continued to work unmodified since `await` on a synchronous mock return value resolves immediately). |
 
 ---
 

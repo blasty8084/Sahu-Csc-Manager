@@ -59,7 +59,7 @@ router.delete("/sessions/others", requireAuth, async (req, res): Promise<void> =
     )
     .returning({ sessionId: userSessionsTable.sessionId });
 
-  for (const r of revoked) invalidateSessionCache(r.sessionId);
+  await Promise.all(revoked.map((r) => invalidateSessionCache(r.sessionId)));
 
   await auditLog(userId, "session.revoke_others", "Revoked all other sessions", getClientIp(req));
   res.json({ message: "All other sessions revoked" });
@@ -75,7 +75,7 @@ router.delete("/sessions/all", requireAuth, async (req, res): Promise<void> => {
     .where(eq(userSessionsTable.userId, userId))
     .returning({ sessionId: userSessionsTable.sessionId });
 
-  for (const r of revoked) invalidateSessionCache(r.sessionId);
+  await Promise.all(revoked.map((r) => invalidateSessionCache(r.sessionId)));
 
   await auditLog(userId, "session.revoke_all", "Revoked all sessions (logged out everywhere)", getClientIp(req));
 
@@ -104,7 +104,7 @@ router.delete("/sessions/:id", requireAuth, async (req, res): Promise<void> => {
   }
 
   await db.update(userSessionsTable).set({ isActive: false }).where(eq(userSessionsTable.id, id));
-  invalidateSessionCache(session.sessionId);
+  await invalidateSessionCache(session.sessionId);
 
   // If revoking current session, destroy the express session too
   if (session.sessionId === req.session.sessionId) {

@@ -21,10 +21,10 @@ async function revokeAllSessionsForUser(userId: number): Promise<void> {
     .set({ isActive: false })
     .where(eq(userSessionsTable.userId, userId))
     .returning({ sessionId: userSessionsTable.sessionId });
-  for (const r of revoked) invalidateSessionCache(r.sessionId);
+  await Promise.all(revoked.map((r) => invalidateSessionCache(r.sessionId)));
 
   await db.update(usersTable).set({ activeSessionToken: null }).where(eq(usersTable.id, userId));
-  invalidateUserCache(userId);
+  await invalidateUserCache(userId);
 }
 
 const ResetPasswordLegacyBody = z.object({

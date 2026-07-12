@@ -72,7 +72,7 @@ router.delete("/admin/sessions/:id", requireRole("admin"), async (req, res): Pro
   if (!session) { res.status(404).json({ error: "Session not found" }); return; }
 
   await db.update(userSessionsTable).set({ isActive: false }).where(eq(userSessionsTable.id, id));
-  invalidateSessionCache(session.sessionId);
+  await invalidateSessionCache(session.sessionId);
 
   await auditLog(
     req.session.userId!,
@@ -107,7 +107,7 @@ router.delete("/admin/sessions/user/:userId", requireRole("admin"), async (req, 
     )
     .returning({ id: userSessionsTable.id, sessionId: userSessionsTable.sessionId });
 
-  for (const r of result) invalidateSessionCache(r.sessionId);
+  await Promise.all(result.map((r) => invalidateSessionCache(r.sessionId)));
 
   await auditLog(
     req.session.userId!,

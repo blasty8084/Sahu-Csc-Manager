@@ -243,7 +243,7 @@ router.post("/ledger", requireAuth, requirePermission("ledger:create"), async (r
     .where(eq(ledgerTable.id, entry.id));
   entry.receiptToken = receiptJwt;
 
-  invalidateLedgerCaches();
+  await invalidateLedgerCaches();
   await auditLog(userId, "ledger.create", `Created ledger entry for ${customerName} (${receiptNumber})`, getClientIp(req));
 
   const amount = (credit ?? 0) + (debit ?? 0);
@@ -309,14 +309,14 @@ router.patch("/ledger/:id", requireAuth, requirePermission("ledger:edit"), async
     const [row] = await tx.select().from(ledgerTable).where(eq(ledgerTable.id, id));
     return row ?? updated;
   });
-  invalidateLedgerCaches();
+  await invalidateLedgerCaches();
   await auditLog(req.session.userId!, "ledger.update", `Updated ledger entry ${id}`, getClientIp(req));
   res.json(formatEntry(refreshed));
 });
 
 router.delete("/ledger/all", requireRole("admin"), async (req, res): Promise<void> => {
   await db.delete(ledgerTable);
-  invalidateLedgerCaches();
+  await invalidateLedgerCaches();
   await auditLog(req.session.userId!, "ledger.clear", "Deleted ALL ledger transactions", getClientIp(req));
   res.sendStatus(204);
 });
@@ -338,7 +338,7 @@ router.delete("/ledger/:id", requireAuth, requirePermission("ledger:edit"), asyn
     await tx.delete(ledgerTable).where(eq(ledgerTable.id, id));
     await recalculateBalances(tx, existing.createdBy);
   });
-  invalidateLedgerCaches();
+  await invalidateLedgerCaches();
   await auditLog(req.session.userId!, "ledger.delete", `Deleted ledger entry ${id}`, getClientIp(req));
   res.sendStatus(204);
 });

@@ -1,33 +1,28 @@
-// Lightweight in-process TTL cache for hot, read-heavy aggregate queries
-// (dashboard summary, admin users-overview, report breakdowns). These endpoints
-// scan/group the entire ledger table on every request; a short TTL absorbs
-// bursts of repeat reads (e.g. a user tabbing between dashboard widgets, or an
-// admin refreshing the overview) without ever serving data more than a few
-// seconds stale.
+// TTL cache for hot, read-heavy aggregate queries (dashboard summary, admin
+// users-overview, report breakdowns). These endpoints scan/group the entire
+// ledger table on every request; a short TTL absorbs bursts of repeat reads
+// (e.g. a user tabbing between dashboard widgets, or an admin refreshing the
+// overview) without ever serving data more than a few seconds stale.
 //
-// This is intentionally NOT Redis: the app runs as a single Node process, so a
-// process-local Map is simpler, has zero extra infra, and is invalidated
-// synchronously on writes (see invalidate*() below) rather than relying on TTL
-// alone. If this app ever runs as multiple instances, this cache must be
-// replaced with a shared store (Redis) — see replit.md follow-ups.
+// Storage backend is pluggable (see lib/cache/backend.ts): process-local Map
+// by default (correct for the current single-instance VM deployment), or
+// Upstash Redis via CACHE_BACKEND=redis if this ever runs as multiple
+// instances. TTL (5s) and invalidation triggers are unchanged either way —
+// only the storage location changes. See replit.md's "Scaling to multiple
+// instances" note and CDN_SETUP.md-adjacent docs for the full tradeoff.
+import { getCacheBackend } from "./cache/backend";
 
-interface CacheEntry<T> {
-  value: T;
-  expiresAt: number;
-}
-
-const store = new Map<string, CacheEntry<unknown>>();
+const backend = getCacheBackend("querycache");
 
 const DEFAULT_TTL_MS = 5_000;
 
 export async function cached<T>(key: string, ttlMs: number, load: () => Promise<T>): Promise<T> {
-  const now = Date.now();
-  const hit = store.get(key);
-  if (hit && hit.expiresAt > now) {
-    return hit.value as T;
+  const hit = await backend.get<T>(key);
+  if (hit !== undefined) {
+    return hit;
   }
   const value = await load();
-  store.set(key, { value, expiresAt: now + ttlMs });
+  await backend.set(key, value, ttlMs);
   return value;
 }
 
@@ -36,26 +31,19 @@ export function cachedFor(ttlMs: number = DEFAULT_TTL_MS) {
 }
 
 /** Invalidate every cache entry whose key starts with the given prefix. */
-export function invalidatePrefix(prefix: string): void {
-  for (const key of store.keys()) {
-    if (key.startsWith(prefix)) store.delete(key);
-  }
+export async function invalidatePrefix(prefix: string): Promise<void> {
+  await backend.deleteByPrefix(prefix);
 }
 
 /** Invalidate all caches derived from the ledger table (dashboard, reports, admin overview). */
-export function invalidateLedgerCaches(): void {
-  invalidatePrefix("dashboard:");
-  invalidatePrefix("reports:");
-  invalidatePrefix("admin:users-overview");
+export async function invalidateLedgerCaches(): Promise<void> {
+  await Promise.all([
+    invalidatePrefix("dashboard:"),
+    invalidatePrefix("reports:"),
+    invalidatePrefix("admin:users-overview"),
+  ]);
 }
 
-export function cacheStats() {
-  const now = Date.now();
-  let live = 0;
-  let expired = 0;
-  for (const entry of store.values()) {
-    if (entry.expiresAt > now) live++;
-    else expired++;
-  }
-  return { entries: store.size, live, expired };
+export async function cacheStats() {
+  return backend.stats();
 }

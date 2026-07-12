@@ -40,7 +40,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     // V2: validate against user_sessions table. Cached for a few seconds since
     // this runs on nearly every request — see sessionCache.ts for the trade-off.
     const sessionId = req.session.sessionId;
-    let valid = sessionValidityCache.get(sessionId);
+    let valid = await sessionValidityCache.get(sessionId);
     let session: { id: number; lastActivity: Date | string } | undefined;
 
     if (valid === undefined) {
@@ -55,7 +55,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
           )
         );
       valid = !!session;
-      sessionValidityCache.set(sessionId, valid);
+      await sessionValidityCache.set(sessionId, valid);
     }
 
     if (!valid) {
@@ -101,7 +101,7 @@ export function requireRole(...roles: string[]) {
       return;
     }
     const userId = req.session.userId;
-    let cached = userRoleCache.get(String(userId));
+    let cached = await userRoleCache.get(String(userId));
     if (!cached) {
       const [user] = await db
         .select({ role: usersTable.role, activeSessionToken: usersTable.activeSessionToken })
@@ -112,7 +112,7 @@ export function requireRole(...roles: string[]) {
         return;
       }
       cached = user;
-      userRoleCache.set(String(userId), cached);
+      await userRoleCache.set(String(userId), cached);
     }
     if (!roles.includes(cached.role)) {
       res.status(403).json({ error: "Forbidden" });
@@ -133,7 +133,7 @@ export function requirePermission(permission: string) {
     // session-cookie-baked req.session.userRole, which never refreshes after
     // login) so a role change takes effect consistently across both guards.
     const userId = req.session.userId;
-    let cached = userRoleCache.get(String(userId));
+    let cached = await userRoleCache.get(String(userId));
     if (!cached) {
       const [user] = await db
         .select({ role: usersTable.role, activeSessionToken: usersTable.activeSessionToken })
@@ -144,7 +144,7 @@ export function requirePermission(permission: string) {
         return;
       }
       cached = user;
-      userRoleCache.set(String(userId), cached);
+      await userRoleCache.set(String(userId), cached);
     }
     const perms = ROLE_PERMISSIONS[cached.role] ?? [];
     if (perms.includes("*") || perms.includes(permission)) {

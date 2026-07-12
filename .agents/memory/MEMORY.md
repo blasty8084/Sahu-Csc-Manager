@@ -26,3 +26,4 @@
 - [Query cache & load testing](query-cache-and-loadtest.md) — TTL cache scoping per-user vs global; rate-limiter loopback skip must be gated non-production since trust proxy makes req.ip spoofable
 - [Large page file split pattern](page-split-pattern.md) — recipe for splitting huge pages/*.tsx into components/<page>/ + hooks/use<Page>.ts without behavior changes; verify via authenticated curl, not Screenshot
 - [Sentry + drizzle-orm dual-peer fix](sentry-drizzle-peer.md) — @sentry/node adds @opentelemetry/api → second drizzle-orm peer variant → TS type conflicts; fix: add @opentelemetry/api to both api-server AND lib/db
+- [Pluggable cache backend](pluggable-cache-backend.md) — CACHE_BACKEND env picks memory (default) vs Redis; same drizzle-orm dual-peer bug recurs with any new optional-peer dep; user delete leaves orphaned rows in tables with no FK

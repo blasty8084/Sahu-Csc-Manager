@@ -1,62 +1,55 @@
-// ─── Lightweight in-memory TTL cache for auth hot paths ────────────────────────
+// ─── TTL cache for auth hot paths ───────────────────────────────────────────
 //
 // requireAuth/requireRole/requirePermission run on nearly every request and
-// previously issued a fresh DB query each time to re-validate a session or
-// look up a user's role. Under real traffic that turns into one extra
-// round-trip per request just to answer "is this session still valid" /
-// "what role does this user have" — questions that rarely change between
-// two requests from the same session a few seconds apart.
+// would otherwise issue a fresh DB query each time to re-validate a session
+// or look up a user's role. Under real traffic that's one extra round-trip
+// per request just to answer "is this session still valid" / "what role does
+// this user have" — questions that rarely change between two requests from
+// the same session a few seconds apart.
 //
-// This is a small process-local cache, not a distributed cache (e.g. Redis):
-// fine for a single API instance, and simple enough to reason about. If the
-// service is ever scaled to multiple instances, session revocation still
-// takes effect everywhere within TTL_MS, and instances that haven't seen the
-// revocation yet will only serve stale reads for a few seconds — an
-// acceptable trade-off for the reduced DB load. If tighter revocation
-// guarantees are needed across instances, swap this for a shared cache.
+// Storage backend is pluggable (see ../cache/backend.ts): process-local Map
+// by default (fine for a single API instance, and simple to reason about),
+// or Upstash Redis via CACHE_BACKEND=redis if the service is ever scaled to
+// multiple instances — session revocation then takes effect everywhere
+// within TTL_MS instead of only on the instance that saw the revocation.
+// TTL (5s) is unchanged either way; only the storage location changes.
+import { getCacheBackend } from "../cache/backend";
+import type { CacheBackend } from "../cache/types";
+
 const TTL_MS = 5_000;
 
-interface CacheEntry<T> {
-  value: T;
-  expiresAt: number;
-}
-
 class TtlCache<T> {
-  private store = new Map<string, CacheEntry<T>>();
+  constructor(private backend: CacheBackend) {}
 
-  get(key: string): T | undefined {
-    const entry = this.store.get(key);
-    if (!entry) return undefined;
-    if (entry.expiresAt < Date.now()) {
-      this.store.delete(key);
-      return undefined;
-    }
-    return entry.value;
+  async get(key: string): Promise<T | undefined> {
+    return this.backend.get<T>(key);
   }
 
-  set(key: string, value: T): void {
-    this.store.set(key, { value, expiresAt: Date.now() + TTL_MS });
+  async set(key: string, value: T): Promise<void> {
+    await this.backend.set(key, value, TTL_MS);
   }
 
-  delete(key: string): void {
-    this.store.delete(key);
+  async delete(key: string): Promise<void> {
+    await this.backend.delete(key);
   }
 
-  clear(): void {
-    this.store.clear();
+  async clear(): Promise<void> {
+    await this.backend.clear();
   }
 }
 
 /** sessionId -> whether the V2 user_sessions row is currently active & unexpired. */
-export const sessionValidityCache = new TtlCache<boolean>();
+export const sessionValidityCache = new TtlCache<boolean>(getCacheBackend("session-validity"));
 
 /** userId -> role, for requireRole/requirePermission's role lookups. */
-export const userRoleCache = new TtlCache<{ role: string; activeSessionToken: string | null }>();
+export const userRoleCache = new TtlCache<{ role: string; activeSessionToken: string | null }>(
+  getCacheBackend("user-role")
+);
 
-export function invalidateSessionCache(sessionId: string): void {
-  sessionValidityCache.delete(sessionId);
+export async function invalidateSessionCache(sessionId: string): Promise<void> {
+  await sessionValidityCache.delete(sessionId);
 }
 
-export function invalidateUserCache(userId: number): void {
-  userRoleCache.delete(String(userId));
+export async function invalidateUserCache(userId: number): Promise<void> {
+  await userRoleCache.delete(String(userId));
 }

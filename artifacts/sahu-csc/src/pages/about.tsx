@@ -14,6 +14,17 @@ const APP_VERSION = __APP_VERSION__;
 // ── Changelog ────────────────────────────────────────────────────────────────
 const CHANGELOG = [
   {
+    version: "v3.5.7",
+    title: "Pluggable Cache Backend & Load-Test Baseline",
+    date: "2026-07-12",
+    accent: "#f97316",
+    changes: [
+      "Query cache and session/role cache now sit behind a swappable backend (process-local memory by default, optional Upstash Redis via CACHE_BACKEND=redis) — groundwork for running more than one API instance; default behavior and 5s TTLs are unchanged",
+      "Documented read-replica routing guidance, correcting an earlier assumption — this app runs on Replit's built-in Postgres, which has no read-replica option today, so this is forward-looking guidance rather than an active feature",
+      "Re-ran the concurrent-user load test at higher connection counts (50/100/200) against disposable data with read-heavy and write-heavy mixes — findings recorded in LOADTEST_FINDINGS.md, no architecture changes made based on results in this pass",
+    ],
+  },
+  {
     version: "v3.5.6",
     title: "Documentation Consolidation, i18n Completion & CDN Setup Guide",
     date: "2026-07-11",

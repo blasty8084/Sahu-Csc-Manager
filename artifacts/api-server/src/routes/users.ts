@@ -110,7 +110,7 @@ router.patch("/users/:id", requireRole("admin"), async (req, res): Promise<void>
   // Role/active-state changes must take effect immediately, not after the
   // cache TTL — invalidate this user's cached role/session-token lookup.
   if (updates.role !== undefined || updates.isActive !== undefined || updates.status !== undefined) {
-    invalidateUserCache(id);
+    await invalidateUserCache(id);
   }
 
   const changes: string[] = [];

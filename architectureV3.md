@@ -1,5 +1,5 @@
 # SAHU CSC — Architecture Reference v3
-**Version 3.5.4 — July 11, 2026**
+**Version 3.5.7 — July 12, 2026**
 
 > This is the single authoritative reference for the SAHU CSC platform architecture.  
 > It supersedes `docs/archive/architectureV2.md` and `docs/archive/ARCHITECTURE.md`.  
@@ -485,7 +485,20 @@ Permissions by role:
 - `sendPushToUser(userId, payload)` — sends to all subscriptions for that user
 - `sendPushToAll(payload)` — sends to all subscribed devices
 
-### 5.6 Route Registration Order
+### 5.6 Caching Architecture
+
+Two independent TTL caches sit in front of hot read paths, both backed by a swappable `CacheBackend` interface (`lib/cache/backend.ts`, `lib/cache/memoryBackend.ts`, `lib/cache/redisBackend.ts`):
+
+- **Query cache** (`lib/query-cache.ts`, 5s TTL) — `GET /api/dashboard`, `GET /api/admin/users-overview`, `GET /api/reports/daily`, `GET /api/reports/monthly`. Invalidated via `invalidateLedgerCaches()` on every ledger create/update/delete.
+- **Session/role cache** (`lib/auth/sessionCache.ts`, 5s TTL) — backs `requireAuth`/`requireRole`/`requirePermission`'s per-request session-validity and role lookups. Invalidated via `invalidateSessionCache()` / `invalidateUserCache()` on logout, password reset, session revocation, and role/status changes.
+
+Backend selection is via `CACHE_BACKEND` env var:
+- `memory` (default) — process-local `Map` per namespace. Correct for the current single-instance VM deployment (see Section 1).
+- `redis` — Upstash Redis (REST API) via `@upstash/redis`, namespaced keys (`cache:<namespace>:<key>`), needed only if the API ever runs as more than one instance (a memory cache would otherwise let one instance serve stale data another instance already invalidated). Requires `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`; fails open (cache miss) on Redis errors rather than 500ing.
+
+**Read replicas — guidance, not implemented.** This app runs on Replit's built-in Postgres, which has no read-replica option today (see Section 15 / `replit.md`). If it ever migrates to a provider that supports replicas, these reads are safe to route to one: `GET /api/dashboard`, `GET /api/reports/*`, `GET /api/admin/users-overview`, `GET /api/receipts/verify/:token`. These must stay on the primary because they read-after-write in the same request: `routes/ledger.ts` (balance recalculation immediately follows every write), `routes/auth/*` and `routes/sessions.ts` (session validation right after login/logout), `routes/users.ts` (role/status changes must take effect immediately, not after replica lag).
+
+### 5.7 Route Registration Order
 
 ```typescript
 // routes/index.ts
@@ -885,6 +898,8 @@ pnpm --filter @workspace/db run push
 |----------|-----------|
 | Session-based auth, no JWT | Simpler for single-center CSC; server-controlled revocation |
 | connect-pg-simple in esbuild `external` | Bundling breaks its internal `table.sql` path lookup → silent session failures |
+| Cache backend pluggable but defaults to in-memory | Correct and simplest for today's single-instance deployment; Redis is opt-in groundwork for if/when the API scales to multiple instances, not a forced migration |
+| `@upstash/redis` added to `lib/db` even though only `api-server` uses it | drizzle-orm 0.45.2 lists `@upstash/redis` as an optional peer — adding it to only one package creates a second drizzle-orm peer-resolution variant and cross-file TS conflicts (same class of bug as the `@opentelemetry/api` case). Both packages must share the same peer set. |
 | `requireAuth` uses `\|\|` not `&&` for loading guard | `&&` causes auto-logout on refresh (offline check completes before live fetch) |
 | Login sets auth via `setQueryData` | Avoids race condition: no separate `/api/auth/me` refetch through Replit proxy |
 | `parseDevice` called once before all branches | Avoids duplicate-const esbuild error if called inside conditional branches |
