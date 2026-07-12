@@ -70,7 +70,8 @@
     "cannot_be_undone": "This action cannot be undone.",
     "generating": "Generating…",
     "preparing": "Preparing…",
-    "currency": "₹"
+    "currency": "₹",
+    "platform": "Management Platform"
   },
 
   "nav": {
@@ -360,6 +361,10 @@
       "view_receipt": "View Receipt",
       "no_entries": "No entries yet",
       "use_buttons": "Use \"You Gave\" or \"You Got\" to add the first entry",
+      "settled": "Settled",
+      "edit_entry": "Edit Entry",
+      "desc_gave": "Record the amount you gave to this customer.",
+      "desc_got": "Record the amount you received from this customer.",
       "not_found": "Customer not found",
       "delete_entry_title": "Delete entry?",
       "delete_entry_desc": "This entry will be permanently deleted and balance recalculated.",
