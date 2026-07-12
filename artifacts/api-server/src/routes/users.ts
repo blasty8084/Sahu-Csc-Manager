@@ -7,6 +7,7 @@ import { invalidateUserCache } from "../lib/auth/sessionCache";
 import { encryptField, decryptField } from "../lib/encryption";
 import { sanitize } from "../lib/sanitize";
 import { passwordPolicySchema } from "../lib/password-policy";
+import { cached, invalidateUserListCache } from "../lib/query-cache";
 
 const router: IRouter = Router();
 
@@ -28,8 +29,11 @@ async function fmt(u: any) {
 }
 
 router.get("/users", requireRole("admin"), async (_req, res): Promise<void> => {
-  const users = await db.select().from(usersTable).orderBy(usersTable.username).limit(1000);
-  res.json(await Promise.all(users.map(fmt)));
+  const users = await cached("admin:users", 5_000, async () => {
+    const rows = await db.select().from(usersTable).orderBy(usersTable.username).limit(1000);
+    return Promise.all(rows.map(fmt));
+  });
+  res.json(users);
 });
 
 router.post("/users", requireRole("admin"), async (req, res): Promise<void> => {
@@ -55,6 +59,7 @@ router.post("/users", requireRole("admin"), async (req, res): Promise<void> => {
     failedLoginAttempts: 0,
   }).returning();
 
+  await invalidateUserListCache();
   await auditLog(req.session.userId!, "user.create", `Created user: ${u.username}`, getClientIp(req));
   res.status(201).json(await fmt(u));
 });
@@ -121,6 +126,7 @@ router.patch("/users/:id", requireRole("admin"), async (req, res): Promise<void>
 
   const detail = changes.length > 0 ? `Updated user ${existing.username} (${changes.join(", ")})` : `Updated user ${existing.username}`;
   const action = updates.role && updates.role !== existing.role ? "user.role_change" : "user.update";
+  await invalidateUserListCache();
   await auditLog(req.session.userId!, action, detail, getClientIp(req));
 
   res.json(await fmt(updated));
@@ -135,6 +141,7 @@ router.delete("/users/:id", requireRole("admin"), async (req, res): Promise<void
   if (!existing) { res.status(404).json({ error: "Not found" }); return; }
 
   await db.delete(usersTable).where(eq(usersTable.id, id));
+  await invalidateUserListCache();
   await auditLog(req.session.userId!, "user.delete", `Deleted user ${id}`, getClientIp(req));
   res.sendStatus(204);
 });

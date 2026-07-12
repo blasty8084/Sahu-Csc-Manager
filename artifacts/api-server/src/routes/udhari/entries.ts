@@ -6,6 +6,7 @@ import { sanitize } from "../../lib/sanitize";
 import { z } from "zod/v4";
 import { randomUUID } from "crypto";
 import { fmtCustomer, recalcBalance } from "./customers";
+import { cached, invalidateUdhariCaches } from "../../lib/query-cache";
 
 export const router: IRouter = Router();
 
@@ -36,8 +37,11 @@ router.get("/udhari/customers/:customerId/entries", requireAuth, requirePermissi
   const [customer] = await db.select().from(udhariCustomersTable).where(and(eq(udhariCustomersTable.id, customerId), eq(udhariCustomersTable.createdBy, userId)));
   if (!customer) { res.status(404).json({ error: "Customer not found" }); return; }
 
-  const entries = await db.select().from(udhariEntriesTable).where(eq(udhariEntriesTable.customerId, customerId)).orderBy(desc(udhariEntriesTable.date), desc(udhariEntriesTable.createdAt)).limit(500);
-  res.json(entries.map(fmtEntry));
+  const entries = await cached(`udhari:customer:${customerId}:entries`, 5_000, async () => {
+    const rows = await db.select().from(udhariEntriesTable).where(eq(udhariEntriesTable.customerId, customerId)).orderBy(desc(udhariEntriesTable.date), desc(udhariEntriesTable.createdAt)).limit(500);
+    return rows.map(fmtEntry);
+  });
+  res.json(entries);
 });
 
 // ── POST /udhari/customers/:customerId/entries ────────────────────────────────
@@ -56,6 +60,7 @@ router.post("/udhari/customers/:customerId/entries", requireAuth, requirePermiss
   const [entry] = await db.insert(udhariEntriesTable).values({ customerId, date, type, amount: String(amount), note: sanitize(note ?? ""), receiptToken: randomUUID(), createdBy: userId }).returning();
 
   await recalcBalance(customerId);
+  await invalidateUdhariCaches(userId);
   const [updated] = await db.select().from(udhariCustomersTable).where(eq(udhariCustomersTable.id, customerId));
   await auditLog(userId, "udhari.entry.create", `${type === "gave" ? "Gave" : "Got"} ₹${amount} for customer: ${customer.name}`, getClientIp(req));
   res.status(201).json({ entry: fmtEntry(entry), customer: await fmtCustomer(updated) });
@@ -83,6 +88,7 @@ router.patch("/udhari/customers/:customerId/entries/:entryId", requireAuth, requ
 
   const [updated] = await db.update(udhariEntriesTable).set(updateData).where(eq(udhariEntriesTable.id, entryId)).returning();
   await recalcBalance(customerId);
+  await invalidateUdhariCaches(userId);
   const [updatedCustomer] = await db.select().from(udhariCustomersTable).where(eq(udhariCustomersTable.id, customerId));
 
   res.json({ entry: fmtEntry(updated), customer: await fmtCustomer(updatedCustomer) });
@@ -103,6 +109,7 @@ router.delete("/udhari/customers/:customerId/entries/:entryId", requireAuth, req
 
   await db.delete(udhariEntriesTable).where(eq(udhariEntriesTable.id, entryId));
   await recalcBalance(customerId);
+  await invalidateUdhariCaches(userId);
   const [updatedCustomer] = await db.select().from(udhariCustomersTable).where(eq(udhariCustomersTable.id, customerId));
   res.json({ message: "Entry deleted", customer: await fmtCustomer(updatedCustomer) });
 });

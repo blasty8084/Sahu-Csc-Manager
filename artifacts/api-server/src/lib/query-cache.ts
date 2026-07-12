@@ -44,6 +44,30 @@ export async function invalidateLedgerCaches(): Promise<void> {
   ]);
 }
 
+/** Invalidate AePS session + transaction list caches for a specific user (or all users). */
+export async function invalidateAepsCaches(userId?: number): Promise<void> {
+  await Promise.all([
+    userId !== undefined
+      ? invalidatePrefix(`aeps:session:${userId}:`)
+      : invalidatePrefix("aeps:session:"),
+    invalidatePrefix("aeps:transactions:"),
+    invalidatePrefix("admin:aeps-overview"),
+  ]);
+}
+
+/** Invalidate Udhari customer list + individual customer caches for a user. */
+export async function invalidateUdhariCaches(userId: number): Promise<void> {
+  await Promise.all([
+    invalidatePrefix(`udhari:customers:${userId}:`),
+    invalidatePrefix("udhari:customer:"),
+  ]);
+}
+
+/** Invalidate the admin user list cache. */
+export async function invalidateUserListCache(): Promise<void> {
+  await invalidatePrefix("admin:users");
+}
+
 export async function cacheStats() {
   return backend.stats();
 }

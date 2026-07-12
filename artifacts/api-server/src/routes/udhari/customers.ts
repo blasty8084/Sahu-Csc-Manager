@@ -5,6 +5,7 @@ import { requireAuth, requirePermission, auditLog, getClientIp } from "../../lib
 import { encryptField, decryptField } from "../../lib/encryption";
 import { sanitize } from "../../lib/sanitize";
 import { z } from "zod/v4";
+import { cached, invalidateUdhariCaches } from "../../lib/query-cache";
 
 export const router: IRouter = Router();
 
@@ -51,16 +52,17 @@ const CustomerUpdate = z.object({
 // ── GET /udhari/summary ───────────────────────────────────────────────────────
 router.get("/udhari/summary", requireAuth, requirePermission("udhari:view"), async (req, res): Promise<void> => {
   const userId = req.session.userId!;
-  const customers = await db.select({ balance: udhariCustomersTable.balance }).from(udhariCustomersTable).where(eq(udhariCustomersTable.createdBy, userId));
-
-  let toCollect = 0;
-  let toPay = 0;
-  for (const c of customers) {
-    const b = parseFloat(c.balance ?? "0");
-    if (b > 0) toCollect += b; else if (b < 0) toPay += Math.abs(b);
-  }
-
-  res.json({ toCollect, toPay, totalCustomers: customers.length });
+  const result = await cached(`udhari:summary:${userId}`, 5_000, async () => {
+    const customers = await db.select({ balance: udhariCustomersTable.balance }).from(udhariCustomersTable).where(eq(udhariCustomersTable.createdBy, userId));
+    let toCollect = 0;
+    let toPay = 0;
+    for (const c of customers) {
+      const b = parseFloat(c.balance ?? "0");
+      if (b > 0) toCollect += b; else if (b < 0) toPay += Math.abs(b);
+    }
+    return { toCollect, toPay, totalCustomers: customers.length };
+  });
+  res.json(result);
 });
 
 // ── GET /udhari/customers ─────────────────────────────────────────────────────
@@ -68,19 +70,20 @@ router.get("/udhari/customers", requireAuth, requirePermission("udhari:view"), a
   const userId = req.session.userId!;
   const { q, sort } = req.query as { q?: string; sort?: string };
 
-  let query = db.select().from(udhariCustomersTable).where(eq(udhariCustomersTable.createdBy, userId)).$dynamic();
-  if (q) {
-    query = query.where(and(
-      eq(udhariCustomersTable.createdBy, userId),
-      or(ilike(udhariCustomersTable.name, `%${q}%`), ilike(udhariCustomersTable.mobile, `%${q}%`))
-    ));
-  }
-
-  const customers = await query.orderBy(desc(udhariCustomersTable.updatedAt)).limit(500);
-  const formatted = await Promise.all(customers.map(fmtCustomer));
-
-  if (sort === "balance_desc") formatted.sort((a, b) => Math.abs(b.balance) - Math.abs(a.balance));
-  else if (sort === "alpha") formatted.sort((a, b) => a.name.localeCompare(b.name));
+  const formatted = await cached(`udhari:customers:${userId}:${q || ""}:${sort || ""}`, 5_000, async () => {
+    let query = db.select().from(udhariCustomersTable).where(eq(udhariCustomersTable.createdBy, userId)).$dynamic();
+    if (q) {
+      query = query.where(and(
+        eq(udhariCustomersTable.createdBy, userId),
+        or(ilike(udhariCustomersTable.name, `%${q}%`), ilike(udhariCustomersTable.mobile, `%${q}%`))
+      ));
+    }
+    const customers = await query.orderBy(desc(udhariCustomersTable.updatedAt)).limit(500);
+    const result = await Promise.all(customers.map(fmtCustomer));
+    if (sort === "balance_desc") result.sort((a, b) => Math.abs(b.balance) - Math.abs(a.balance));
+    else if (sort === "alpha") result.sort((a, b) => a.name.localeCompare(b.name));
+    return result;
+  });
 
   res.json(formatted);
 });
@@ -101,6 +104,7 @@ router.post("/udhari/customers", requireAuth, requirePermission("udhari:manage")
     createdBy: userId,
   }).returning();
 
+  await invalidateUdhariCaches(userId);
   await auditLog(userId, "udhari.customer.create", `Created customer: ${name}`, getClientIp(req));
   res.status(201).json(await fmtCustomer(customer));
 });
@@ -111,9 +115,12 @@ router.get("/udhari/customers/:customerId", requireAuth, requirePermission("udha
   const id = parseInt(req.params.customerId as string);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
 
-  const [customer] = await db.select().from(udhariCustomersTable).where(and(eq(udhariCustomersTable.id, id), eq(udhariCustomersTable.createdBy, userId)));
+  const customer = await cached(`udhari:customer:${id}`, 5_000, async () => {
+    const [row] = await db.select().from(udhariCustomersTable).where(and(eq(udhariCustomersTable.id, id), eq(udhariCustomersTable.createdBy, userId)));
+    return row ? fmtCustomer(row) : null;
+  });
   if (!customer) { res.status(404).json({ error: "Customer not found" }); return; }
-  res.json(await fmtCustomer(customer));
+  res.json(customer);
 });
 
 // ── PATCH /udhari/customers/:customerId ──────────────────────────────────────
@@ -135,6 +142,7 @@ router.patch("/udhari/customers/:customerId", requireAuth, requirePermission("ud
   if (parsed.data.notes !== undefined) updateData.notes = await encryptField(sanitize(parsed.data.notes));
 
   const [updated] = await db.update(udhariCustomersTable).set(updateData).where(eq(udhariCustomersTable.id, id)).returning();
+  await invalidateUdhariCaches(userId);
   await auditLog(userId, "udhari.customer.update", `Updated customer: ${existing.name}`, getClientIp(req));
   res.json(await fmtCustomer(updated));
 });
@@ -149,6 +157,7 @@ router.delete("/udhari/customers/:customerId", requireAuth, requirePermission("u
   if (!existing) { res.status(404).json({ error: "Customer not found" }); return; }
 
   await db.delete(udhariCustomersTable).where(eq(udhariCustomersTable.id, id));
+  await invalidateUdhariCaches(userId);
   await auditLog(userId, "udhari.customer.delete", `Deleted customer: ${existing.name}`, getClientIp(req));
   res.json({ message: "Customer deleted" });
 });

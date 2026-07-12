@@ -6,6 +6,7 @@ import { sanitize } from "../../lib/sanitize";
 import { z } from "zod";
 import { randomUUID } from "crypto";
 import { fmt } from "./sessions";
+import { cached, invalidateAepsCaches } from "../../lib/query-cache";
 
 export const router: IRouter = Router();
 
@@ -35,44 +36,50 @@ router.get("/aeps/transactions", requireAuth, requirePermission("aeps:view"), as
   const typeFilter = req.query.type as string | undefined;
   const customerName = req.query.customerName as string | undefined;
 
-  const sessionWhere: any[] = [eq(aepsDailyTable.createdBy, userId)];
-  if (startDate) sessionWhere.push(gte(aepsDailyTable.date, startDate));
-  if (endDate) sessionWhere.push(lte(aepsDailyTable.date, endDate));
+  const cacheKey = `aeps:transactions:${userId}:${page}:${limit}:${startDate || ""}:${endDate || ""}:${typeFilter || ""}:${customerName || ""}`;
 
-  const sessions = await db
-    .select({ id: aepsDailyTable.id, date: aepsDailyTable.date, openingBalance: aepsDailyTable.openingBalance })
-    .from(aepsDailyTable)
-    .where(and(...sessionWhere));
+  const result = await cached(cacheKey, 5_000, async () => {
+    const sessionWhere: any[] = [eq(aepsDailyTable.createdBy, userId)];
+    if (startDate) sessionWhere.push(gte(aepsDailyTable.date, startDate));
+    if (endDate) sessionWhere.push(lte(aepsDailyTable.date, endDate));
 
-  if (sessions.length === 0) { res.json({ transactions: [], total: 0, page, limit }); return; }
+    const sessions = await db
+      .select({ id: aepsDailyTable.id, date: aepsDailyTable.date, openingBalance: aepsDailyTable.openingBalance })
+      .from(aepsDailyTable)
+      .where(and(...sessionWhere));
 
-  const sessionMap = new Map(sessions.map((s) => [s.id, s]));
-  const sessionIds = sessions.map((s) => s.id);
+    if (sessions.length === 0) return { transactions: [], total: 0, page, limit };
 
-  const idFilter = sessionIds.length === 1
-    ? eq(aepsTransactionsTable.dailyId, sessionIds[0])
-    : sql`${aepsTransactionsTable.dailyId} = ANY(ARRAY[${sql.raw(sessionIds.join(","))}])`;
-  const txWhere: any[] = [idFilter];
-  if (typeFilter === "withdrawal" || typeFilter === "deposit") txWhere.push(eq(aepsTransactionsTable.type, typeFilter));
-  if (customerName) txWhere.push(ilike(aepsTransactionsTable.customerName, `%${customerName}%`));
+    const sessionMap = new Map(sessions.map((s) => [s.id, s]));
+    const sessionIds = sessions.map((s) => s.id);
 
-  const allTx = await db.select().from(aepsTransactionsTable).where(and(...txWhere)).orderBy(desc(aepsTransactionsTable.createdAt));
-  const filtered = allTx.filter((tx) => sessionMap.has(tx.dailyId));
-  const total = filtered.length;
-  const paginated = filtered.slice(offset, offset + limit);
+    const idFilter = sessionIds.length === 1
+      ? eq(aepsTransactionsTable.dailyId, sessionIds[0])
+      : sql`${aepsTransactionsTable.dailyId} = ANY(ARRAY[${sql.raw(sessionIds.join(","))}])`;
+    const txWhere: any[] = [idFilter];
+    if (typeFilter === "withdrawal" || typeFilter === "deposit") txWhere.push(eq(aepsTransactionsTable.type, typeFilter));
+    if (customerName) txWhere.push(ilike(aepsTransactionsTable.customerName, `%${customerName}%`));
 
-  res.json({
-    transactions: paginated.map((tx) => {
-      const session = sessionMap.get(tx.dailyId)!;
-      return {
-        id: tx.id, date: session.date, type: tx.type, amount: fmt(tx.amount),
-        customerName: tx.customerName, description: tx.description,
-        receiptToken: tx.receiptToken ?? null,
-        createdAt: tx.createdAt instanceof Date ? tx.createdAt.toISOString() : tx.createdAt,
-      };
-    }),
-    total, page, limit,
+    const allTx = await db.select().from(aepsTransactionsTable).where(and(...txWhere)).orderBy(desc(aepsTransactionsTable.createdAt));
+    const filtered = allTx.filter((tx) => sessionMap.has(tx.dailyId));
+    const total = filtered.length;
+    const paginated = filtered.slice(offset, offset + limit);
+
+    return {
+      transactions: paginated.map((tx) => {
+        const session = sessionMap.get(tx.dailyId)!;
+        return {
+          id: tx.id, date: session.date, type: tx.type, amount: fmt(tx.amount),
+          customerName: tx.customerName, description: tx.description,
+          receiptToken: tx.receiptToken ?? null,
+          createdAt: tx.createdAt instanceof Date ? tx.createdAt.toISOString() : tx.createdAt,
+        };
+      }),
+      total, page, limit,
+    };
   });
+
+  res.json(result);
 });
 
 // ── POST /aeps/transaction ────────────────────────────────────────────────────
@@ -97,6 +104,7 @@ router.post("/aeps/transaction", requireAuth, requirePermission("aeps:manage"), 
     .values({ dailyId: session.id, type, amount: String(amount), customerName, description, receiptToken })
     .returning();
 
+  await invalidateAepsCaches(userId);
   await auditLog(userId, "aeps.transaction", `AePS ${type} ₹${amount} for ${customerName}`, getClientIp(req));
   res.status(201).json({
     id: tx.id, type: tx.type, amount: fmt(tx.amount),
@@ -129,6 +137,7 @@ router.patch("/aeps/transaction/:id", requireAuth, requirePermission("aeps:manag
   if (parsed.data.description !== undefined) updates.description = sanitize(parsed.data.description);
 
   const [updated] = await db.update(aepsTransactionsTable).set(updates).where(eq(aepsTransactionsTable.id, id)).returning();
+  await invalidateAepsCaches(req.session.userId!);
   await auditLog(req.session.userId!, "aeps.edit", `Edited AePS transaction ${id}`, getClientIp(req));
 
   res.json({
@@ -153,6 +162,7 @@ router.delete("/aeps/transaction/:id", requireAuth, requirePermission("aeps:mana
   }
 
   await db.delete(aepsTransactionsTable).where(eq(aepsTransactionsTable.id, id));
+  await invalidateAepsCaches(req.session.userId!);
   await auditLog(req.session.userId!, "aeps.delete", `Deleted AePS transaction ${id}`, getClientIp(req));
   res.sendStatus(204);
 });
