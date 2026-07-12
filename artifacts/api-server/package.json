@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "echo 'API is managed by the API Server workflow (port 8080). To rebuild: run Build API. To start: run API Server.'",
+    "dev": "echo 'API is managed by the API Server workflow (port 8080). To rebuild: run Build Production. To start: run API Server.'",
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "seed": "node ./build.mjs && node --enable-source-maps ./dist/scripts/seed.mjs",
