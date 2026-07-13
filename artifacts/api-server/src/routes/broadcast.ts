@@ -2,8 +2,8 @@ import { Router, type IRouter } from "express";
 import { db, pushSubscriptionsTable, usersTable, broadcastLogsTable } from "@workspace/db";
 import { eq, isNotNull, count, desc } from "drizzle-orm";
 import { requireRole } from "../lib/auth";
-import { enqueueNotification } from "../lib/queue-client";
-import { sendBroadcastEmail, isSmtpConfigured } from "../lib/mailer";
+import { enqueueNotification, enqueueEmail } from "../lib/queue-client";
+import { isSmtpConfigured } from "../lib/mailer";
 import { createSystemNotification } from "../services/notificationService";
 import { z } from "zod/v4";
 import { logger } from "../lib/logger";
@@ -205,7 +205,27 @@ router.post("/admin/broadcast/email", requireRole("admin"), async (req: any, res
       return;
     }
 
-    const results = await sendBroadcastEmail({ subject, body, recipients: withEmail as any });
+    const fromEmail =
+      process.env.SMTP_FROM_EMAIL ?? process.env.SMTP_USER ?? "noreply@sahucsc.in";
+
+    const bodyText = `SAHU CSC — Management Platform\n\n${subject}\n\n${body}\n\nThis message was sent to all platform users by an administrator.`;
+    const bodyHtml = `<p style="font-family:sans-serif;font-size:15px;line-height:1.7;">${body.replace(/\n/g, "<br/>")}</p><p style="font-family:sans-serif;font-size:12px;color:#888;">Sent by your administrator to all active platform users.</p>`;
+
+    // Enqueue one job per recipient so the HTTP response returns immediately
+    // and SMTP round-trips happen asynchronously in the worker.
+    await Promise.all(
+      withEmail.map((u) =>
+        enqueueEmail({
+          to: u.email!,
+          from: fromEmail,
+          subject,
+          html: bodyHtml,
+          text: bodyText,
+        }),
+      ),
+    );
+
+    const sent = withEmail.length;
 
     if (createInAppNotification) {
       await createSystemNotification(
@@ -220,16 +240,16 @@ router.post("/admin/broadcast/email", requireRole("admin"), async (req: any, res
       subject,
       body,
       recipientFilter,
-      recipientCount: results.sent,
-      failedCount: results.failed,
+      recipientCount: sent,
+      failedCount: 0,
     });
 
-    logger.info({ adminId, subject, sent: results.sent, failed: results.failed }, "admin broadcast email sent");
+    logger.info({ adminId, subject, sent }, "admin broadcast email enqueued");
     res.json({
       success: true,
-      sent: results.sent,
-      failed: results.failed,
-      message: `Email sent to ${results.sent} recipient(s)${results.failed > 0 ? `, ${results.failed} failed` : ""}`,
+      sent,
+      failed: 0,
+      message: `Email queued for ${sent} recipient(s)`,
     });
   } catch (err: any) {
     logger.error({ err }, "broadcast email failed");

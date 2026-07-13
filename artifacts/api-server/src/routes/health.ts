@@ -6,6 +6,11 @@ import { getBootHealth } from "../lib/boot-tracker";
 
 const router: IRouter = Router();
 
+// Alias /health → /healthz for load-balancers, PM2, and Replit port probes
+router.get("/health", (_req, res) => {
+  res.json({ status: "ok", version: "4.1.1", uptime: process.uptime() });
+});
+
 router.get("/healthz", async (_req, res) => {
   const startTime = Date.now();
 

@@ -237,19 +237,39 @@ export default defineConfig({
     cssCodeSplit: true,
     rollupOptions: {
       output: {
-        manualChunks: {
-          "vendor-react":   ["react", "react-dom"],
-          "vendor-query":   ["@tanstack/react-query"],
-          "vendor-motion":  ["framer-motion"],
-          "vendor-router":  ["wouter"],
-          "vendor-charts":  ["recharts"],
-          "vendor-ui":      ["lucide-react"],
-          "vendor-radix":   ["@radix-ui/react-dialog", "@radix-ui/react-dropdown-menu", "@radix-ui/react-popover", "@radix-ui/react-select", "@radix-ui/react-tabs", "@radix-ui/react-tooltip", "@radix-ui/react-toast", "@radix-ui/react-accordion", "@radix-ui/react-alert-dialog", "@radix-ui/react-avatar", "@radix-ui/react-checkbox", "@radix-ui/react-collapsible", "@radix-ui/react-context-menu", "@radix-ui/react-hover-card", "@radix-ui/react-label", "@radix-ui/react-menubar", "@radix-ui/react-navigation-menu", "@radix-ui/react-progress", "@radix-ui/react-radio-group", "@radix-ui/react-scroll-area", "@radix-ui/react-separator", "@radix-ui/react-slider", "@radix-ui/react-slot", "@radix-ui/react-switch", "@radix-ui/react-toggle", "@radix-ui/react-toggle-group"],
-          "vendor-i18n":    ["i18next", "react-i18next"],
-          "vendor-forms":   ["react-hook-form", "@hookform/resolvers", "zod"],
-          "vendor-date":    ["date-fns", "react-day-picker"],
-          "vendor-icons":   ["react-icons"],
-          "vendor-misc":    ["sonner", "cmdk", "vaul", "embla-carousel-react", "input-otp", "react-resizable-panels", "next-themes"],
+        manualChunks(id) {
+          if (id.includes("/node_modules/react/") || id.includes("/node_modules/react-dom/"))
+            return "vendor-react";
+          if (id.includes("/node_modules/@tanstack/react-query"))
+            return "vendor-query";
+          if (id.includes("/node_modules/framer-motion"))
+            return "vendor-motion";
+          if (id.includes("/node_modules/wouter"))
+            return "vendor-router";
+          if (id.includes("/node_modules/recharts"))
+            return "vendor-charts";
+          if (id.includes("/node_modules/lucide-react"))
+            return "vendor-ui";
+          if (id.includes("/node_modules/@radix-ui/"))
+            return "vendor-radix";
+          if (id.includes("/node_modules/i18next") || id.includes("/node_modules/react-i18next"))
+            return "vendor-i18n";
+          if (id.includes("/node_modules/react-hook-form") || id.includes("/node_modules/@hookform/") || id.includes("/node_modules/zod"))
+            return "vendor-forms";
+          if (id.includes("/node_modules/date-fns") || id.includes("/node_modules/react-day-picker"))
+            return "vendor-date";
+          if (id.includes("/node_modules/react-icons"))
+            return "vendor-icons";
+          if (
+            id.includes("/node_modules/sonner") ||
+            id.includes("/node_modules/cmdk") ||
+            id.includes("/node_modules/vaul") ||
+            id.includes("/node_modules/embla-carousel") ||
+            id.includes("/node_modules/input-otp") ||
+            id.includes("/node_modules/react-resizable-panels") ||
+            id.includes("/node_modules/next-themes")
+          )
+            return "vendor-misc";
         },
       },
     },
