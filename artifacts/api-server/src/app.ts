@@ -7,6 +7,8 @@ import ConnectPgSimple from "connect-pg-simple";
 import helmet from "helmet";
 import hpp from "hpp";
 import rateLimit from "express-rate-limit";
+import { RedisStore } from "rate-limit-redis";
+import { Redis } from "@upstash/redis";
 import router from "./routes";
 import healthRouter from "./routes/health";
 import setupStatusRouter from "./routes/setup-status";
@@ -19,6 +21,35 @@ import { initSentry, setupSentryErrorHandler } from "./lib/sentry";
 initSentry();
 
 const PgSession = ConnectPgSimple(session);
+
+// ── Redis client for shared rate-limit counters ───────────────────────────────
+// Only created when CACHE_BACKEND=redis and both Upstash env vars are set.
+// Falls back to the default per-process MemoryStore when Redis is absent —
+// safe for single-instance dev, but counters are not shared across instances.
+const _rlRedis =
+  process.env.CACHE_BACKEND === "redis" &&
+  process.env.UPSTASH_REDIS_REST_URL &&
+  process.env.UPSTASH_REDIS_REST_TOKEN
+    ? new Redis({
+        url: process.env.UPSTASH_REDIS_REST_URL,
+        token: process.env.UPSTASH_REDIS_REST_TOKEN,
+      })
+    : null;
+
+if (_rlRedis) {
+  logger.info("Rate limiter: using shared Redis store (cross-instance counters)");
+} else {
+  logger.info("Rate limiter: using in-process MemoryStore (single-instance only)");
+}
+
+// Returns a RedisStore for the given key prefix, or undefined (→ MemoryStore).
+const makeRlStore = (prefix: string) =>
+  _rlRedis
+    ? new RedisStore({
+        sendCommand: (...args: string[]) => _rlRedis.sendCommand(args),
+        prefix: `rl:${prefix}:`,
+      })
+    : undefined;
 
 const app: Express = express();
 
@@ -81,6 +112,7 @@ const limiter = rateLimit({
   max: 500,
   standardHeaders: true,
   legacyHeaders: false,
+  store: makeRlStore("general"),
   // Loopback-only bypass so `pnpm run loadtest` (run from inside this same
   // container, hitting 127.0.0.1 directly) can generate realistic concurrent
   // traffic without tripping the per-IP limiter meant for external abuse.
@@ -99,6 +131,7 @@ const loginLimiter = rateLimit({
   max: 8,
   standardHeaders: true,
   legacyHeaders: false,
+  store: makeRlStore("login"),
   message: { error: "Too many login attempts, please try again later" },
 });
 
@@ -109,6 +142,7 @@ const authWriteLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  store: makeRlStore("auth-write"),
   message: { error: "Too many requests, please try again later" },
 });
 
@@ -119,6 +153,7 @@ const otpVerifyLimiter = rateLimit({
   max: 8,
   standardHeaders: true,
   legacyHeaders: false,
+  store: makeRlStore("otp-verify"),
   message: { error: "Too many attempts, please try again later" },
 });
 
