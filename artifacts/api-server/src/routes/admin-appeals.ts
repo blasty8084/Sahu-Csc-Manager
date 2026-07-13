@@ -21,7 +21,7 @@ function fmtUser(u: any) {
 
 // ── GET /admin/users/appeals ──────────────────────────────────────────────────
 router.get("/admin/users/appeals", requireRole("admin"), async (_req, res): Promise<void> => {
-  const rows = await db.select().from(usersTable).where(isNotNull(usersTable.appealSubmittedAt)).orderBy(usersTable.appealSubmittedAt);
+  const rows = await db.select().from(usersTable).where(isNotNull(usersTable.appealSubmittedAt)).orderBy(usersTable.appealSubmittedAt).limit(500);
   res.json(rows.map((u) => ({
     ...fmtUser(u),
     appealSubmittedAt: u.appealSubmittedAt instanceof Date ? u.appealSubmittedAt.toISOString() : u.appealSubmittedAt,

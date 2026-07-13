@@ -426,7 +426,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       }}
                     >
                       {avatarSrc ? (
-                        <img src={avatarSrc} alt={displayName} className="object-cover rounded-lg" style={{ width: 30, height: 30 }} />
+                        <img src={avatarSrc} alt={displayName} className="object-cover rounded-lg" style={{ width: 30, height: 30 }} loading="lazy" />
                       ) : (
                         <div
                           className="flex items-center justify-center rounded-lg"
@@ -583,7 +583,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   style={{ padding: "4px 10px 4px 4px", background: "#f8fafc", border: "1.5px solid #e2e8f0" }}
                 >
                   {avatarSrc ? (
-                    <img src={avatarSrc} alt="Profile" className="object-cover rounded-lg" style={{ width: 28, height: 28 }} />
+                    <img src={avatarSrc} alt="Profile" className="object-cover rounded-lg" style={{ width: 28, height: 28 }} loading="lazy" />
                   ) : (
                     <div
                       className="flex items-center justify-center rounded-lg"

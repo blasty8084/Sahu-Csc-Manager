@@ -19,6 +19,7 @@ export function AppLogo({ size = "sm", className = "" }: AppLogoProps) {
         alt="SAHU CSC Logo"
         className={`${dim} flex-shrink-0 object-cover ${className}`}
         onError={() => setImgError(true)}
+        loading="lazy"
       />
     );
   }
