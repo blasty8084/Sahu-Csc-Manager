@@ -14,6 +14,19 @@ const APP_VERSION = __APP_VERSION__;
 // ── Changelog ────────────────────────────────────────────────────────────────
 const CHANGELOG = [
   {
+    version: "v4.1.1",
+    title: "Worker Server — Async Background Processing",
+    date: "2026-07-13",
+    accent: "#10b981",
+    changes: [
+      "New @workspace/worker-server (port 8081) — push notifications, email sending, PDF generation, and SMS now run as isolated BullMQ background jobs instead of blocking the main API",
+      "API responses return instantly — the main server no longer waits on SMTP delivery or web-push round-trips before sending a response to the client",
+      "Graceful fallback: when REDIS_URL is not configured, all jobs execute directly in-process so nothing breaks in development or simple deployments",
+      "3 retries with exponential backoff on both email and notification workers — transient SMTP failures or push delivery hiccups auto-recover without manual intervention",
+      "pm2.config.js added to root — api-server runs in cluster mode (all CPUs), worker-server in fork mode (1 instance handles concurrency internally via BullMQ)",
+    ],
+  },
+  {
     version: "v4.0.2",
     title: "Image & Loader Polish",
     date: "2026-07-13",
@@ -678,7 +691,7 @@ export default function About() {
         {/* ── Footer ──────────────────────────────────────────────────────── */}
         <div className="text-center py-3 space-y-1 border-t">
           <p className="text-xs text-muted-foreground font-medium">SAHU CSC Management Platform v{APP_VERSION}</p>
-          <p className="text-[10px] text-muted-foreground/50">Built for Odisha Common Service Centers · © 2026 · Updated 10 July 2026</p>
+          <p className="text-[10px] text-muted-foreground/50">Built for Odisha Common Service Centers · © 2026 · Updated 13 July 2026</p>
         </div>
 
       </div>

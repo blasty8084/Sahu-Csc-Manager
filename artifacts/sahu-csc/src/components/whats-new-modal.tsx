@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const VERSION = "3.5.10";
+const VERSION = "4.1.1";
 const STORAGE_KEY = `sahu-whats-new-v${VERSION}`;
 
 interface Feature {
@@ -22,42 +22,42 @@ interface Feature {
 const FEATURES: Feature[] = [
   {
     icon: <Zap size={15} />,
-    color: "#f97316",
-    bg: "rgba(249,115,22,0.10)",
-    title: "Instant Page Navigation",
+    color: "#10b981",
+    bg: "rgba(16,185,129,0.10)",
+    title: "Worker Server — Async Job Processing",
     description:
-      "Page/tab switches are now noticeably faster. The blocking \"wait\" transition has been removed — pages now cross-fade simultaneously instead of one finishing before the other starts. The clock no longer re-renders the entire layout every second, and the animation no longer triggers layout recalculation on every frame.",
+      "Push notifications and emails are now handled by a dedicated background worker process (port 8081) using BullMQ. The main API returns instantly without waiting on SMTP or web-push delivery. Activates automatically when REDIS_URL is configured; falls back to in-process execution otherwise.",
     tag: "Performance",
-    tagColor: "#f97316",
+    tagColor: "#10b981",
   },
   {
-    icon: <Wrench size={15} />,
+    icon: <CheckCircle2 size={15} />,
     color: "#7c3aed",
     bg: "rgba(124,58,237,0.10)",
-    title: "Sentry / OTel Upgrade Guard",
+    title: "Auto-Retry on Delivery Failures",
     description:
-      "A workspace-level @opentelemetry/api version override now prevents future @sentry/node upgrades from silently splitting drizzle-orm into two resolution variants. A pre-build check in build.mjs catches the problem immediately with a clear fix guide if it ever recurs.",
+      "Email and push workers retry failed jobs up to 3 times with exponential backoff. Transient SMTP outages or push endpoint hiccups resolve automatically without manual intervention or lost notifications.",
     tag: "Reliability",
     tagColor: "#7c3aed",
   },
   {
-    icon: <Puzzle size={15} />,
+    icon: <Wrench size={15} />,
     color: "#0891b2",
     bg: "rgba(8,145,178,0.10)",
-    title: "Translation Fixes — All Pages",
+    title: "PM2 Cluster Config",
     description:
-      "5 missing i18n keys filled in all three languages (English, Hindi, Odia): register pages now show the correct subtitle, and the Udhari customer page correctly translates the balance badge, edit-entry heading, and entry descriptions.",
-    tag: "i18n",
+      "pm2.config.js added to the project root — api-server runs in cluster mode across all available CPUs; worker-server runs in fork mode (single instance, BullMQ handles internal concurrency). Ready for production multi-process deployment.",
+    tag: "Infrastructure",
     tagColor: "#0891b2",
   },
   {
-    icon: <CheckCircle2 size={15} />,
-    color: "#15803d",
-    bg: "rgba(21,128,61,0.10)",
-    title: "Redis Cache Is Live",
+    icon: <Puzzle size={15} />,
+    color: "#f97316",
+    bg: "rgba(249,115,22,0.10)",
+    title: "Graceful Fallback Mode",
     description:
-      "Upstash Redis is now the active cache backend (CACHE_BACKEND=redis). Dashboard stats, session lookups, and report queries are cached in Redis — survives server restarts and scales across multiple instances. Falls back gracefully if Redis is unavailable.",
-    tag: "Infrastructure",
+      "No Redis? No problem. When REDIS_URL is not set the api-server handles all push and email work directly in-process — exactly as before. The worker architecture is additive; nothing breaks in simple or development deployments.",
+    tag: "Compatibility",
     tagColor: "#15803d",
   },
 ];

@@ -713,7 +713,7 @@ bubblewrap build
 - **Package ID:** `com.sahucsc.app`
 - **Min SDK:** 21 (Android 5.0)
 - **Target SDK:** 34
-- **App version:** 3.1.1 (code: 3)
+- **App version:** 4.1.1 (code: 4)
 - **Config file:** `infrastructure/twa/twa-config.json`
 
 ---

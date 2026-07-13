@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v3 / v4
-**Current version: 4.0.2 — July 13, 2026**
+**Current version: 4.1.1 — July 13, 2026**
 
 > Detailed record of every feature, change, and upgrade from v3.0.0 onward.  
 > For v2.x history, see `docs/archive/changelogV2.md`.  
@@ -14,12 +14,35 @@
 
 ## Table of Contents
 
+0. [v4.1.1 — Worker Server — BullMQ Async Processing (July 13, 2026)](#0-v411--worker-server--bullmq-async-processing-july-13-2026)
 0. [v4.0.2 — Image & Loader Polish (July 13, 2026)](#0-v402--image--loader-polish-july-13-2026)
 0. [v4.0.1 — Redis Rate Limiting & Multi-Instance Readiness (July 13, 2026)](#0-v401--redis-rate-limiting--multi-instance-readiness-july-13-2026)
 0. [v4.0.0 — Full-Stack Performance Audit (July 12, 2026)](#0-v400--full-stack-performance-audit-july-12-2026)
 0. [v3.5.10 — Navigation Performance — Instant Page Switching (July 12, 2026)](#0-v3510--navigation-performance--instant-page-switching-july-12-2026)
 0. [v3.5.9 — Redis Cache Live, i18n Fixes & Build Hardening (July 12, 2026)](#0-v359--redis-cache-live-i18n-fixes--build-hardening-july-12-2026)
 0. [v3.5.8 — Reports & Receipt Export Page Modularization (July 12, 2026)](#0-v358--reports--receipt-export-page-modularization-july-12-2026)
+
+---
+
+## 0. v4.1.1 — Worker Server — BullMQ Async Processing (July 13, 2026)
+
+Isolates heavy background work (push notifications, email, PDF, SMS) into a dedicated `@workspace/worker-server` process so the main API can return responses immediately without waiting on SMTP or web-push delivery.
+
+| Change | Description |
+|--------|-------------|
+| **`artifacts/worker-server/`** | New package — BullMQ worker process on port 8081. Four queues: `notifications`, `emails`, `pdf-generation` (stub), `sms` (stub). |
+| **`notification.worker.ts`** | Consumes `notifications` queue; sends web-push to individual users or all subscribers using VAPID keys loaded from the settings table at startup. |
+| **`email.worker.ts`** | Consumes `emails` queue; calls `nodemailer.sendMail()` with pre-rendered HTML/text. 3 retries, exponential backoff. |
+| **`pdf.worker.ts`** | Stub — placeholder for future async PDF receipt generation via PDFKit. |
+| **`sms.worker.ts`** | Stub — logs and completes; ready for MSG91/Twilio integration. |
+| **`queue-client.ts`** | New `artifacts/api-server/src/lib/queue-client.ts` — produces BullMQ jobs when `REDIS_URL` is set; falls back to direct in-process execution when not. Zero API contract changes. |
+| **Template builders** | `approval.ts`, `rejection.ts`, `otp.ts` — added `build*MailOptions()` (sync, pure HTML render) so api-server pre-renders emails before queuing. |
+| **Routes updated** | `admin-appeals.ts`, `admin-registration.ts`, `broadcast.ts`, `auth/otp.ts` — push/email calls now go through `enqueueNotification()` / `enqueueEmail()`. |
+| **`pm2.config.js`** | Root PM2 ecosystem config: `api-server` in cluster mode (max CPUs), `worker-server` in fork mode (1 instance). |
+| **`Worker Server` workflow** | New Replit workflow (console, port 8081). Requires `REDIS_URL` secret (Upstash direct TCP URL — `rediss://...` — NOT the REST URL). |
+
+### Activation
+Set `REDIS_URL` secret → start **Worker Server** workflow → api-server logs `Queue client initialised (Redis-backed)`. Without `REDIS_URL` the api-server handles everything in-process as before.
 
 ---
 
