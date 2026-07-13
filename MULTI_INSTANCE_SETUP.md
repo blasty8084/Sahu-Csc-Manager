@@ -94,34 +94,18 @@ PM2 automatically spawns one worker per CPU core, load-balances between them, an
 npm install -g pm2
 ```
 
-#### Create `pm2.config.cjs` in the project root
+#### Use the existing `pm2.config.js` in the project root
 
-```js
-module.exports = {
-  apps: [
-    {
-      name: "sahu-api",
-      script: "./artifacts/api-server/dist/index.mjs",
-      instances: "max",        // one per CPU core
-      exec_mode: "cluster",
-      env: {
-        NODE_ENV: "production",
-        PORT: 8080,
-        CACHE_BACKEND: "redis",
-      },
-      max_memory_restart: "512M",  // restart a worker if it leaks memory
-      wait_ready: true,
-      listen_timeout: 10000,
-    },
-  ],
-};
-```
+A `pm2.config.js` file is already included in the repository root. It
+configures both the API server (cluster mode, one worker per CPU core) and
+the worker server. Review and adjust the `env` block for your deployment, then:
 
 #### Build then start
 
 ```bash
 node artifacts/api-server/build.mjs
-pm2 start pm2.config.cjs
+node artifacts/worker-server/build.mjs
+pm2 start pm2.config.js
 pm2 save      # persist across reboots
 pm2 startup   # generate the startup hook command, then run it
 ```

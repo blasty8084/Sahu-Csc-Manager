@@ -46,6 +46,10 @@ self.addEventListener("fetch", (event: FetchEvent) => {
         if (preloadResponse) return preloadResponse;
         return await fetch(event.request);
       } catch {
+        // Prefer a dedicated offline page so the user gets a clear "you're
+        // offline" message instead of a blank SPA shell that fails to hydrate.
+        const offlinePage = await matchPrecache("/offline.html");
+        if (offlinePage) return offlinePage;
         const cachedShell =
           (await matchPrecache("index.html")) || (await matchPrecache("/"));
         return cachedShell ?? Response.error();

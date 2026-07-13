@@ -3,11 +3,6 @@ import { useTranslation } from "react-i18next";
 import { Layout } from "@/components/layout";
 import { ReportsSkeleton } from "@/components/skeletons";
 import { useIsMobile } from "@/hooks/use-mobile";
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, CartesianGrid,
-  AreaChart, Area,
-} from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Calendar, Download, TrendingUp, TrendingDown, Activity,
@@ -19,9 +14,35 @@ import {
   BASE, MONTHS, PIE_COLORS, fmt, formatINR,
   useFilterState, useReportsData,
 } from "@/hooks/useReports";
-import { MobileStatCard, EmptyState, SectionLabel } from "@/components/reports/ReportSummaryCards";
-import { ChartTooltip } from "@/components/reports/ReportChart";
-import { MobileReportFilters, DesktopReportFilters } from "@/components/reports/ReportFilters";
+
+// Summary cards & empty state
+import { MobileStatCard, EmptyState } from "@/components/reports/ReportsSummaryCards";
+
+// Filter panels
+import { MobileReportFilters, DesktopReportFilters } from "@/components/reports/ReportsFilters";
+
+// Chart components
+import {
+  MobileDailyRevenueChart,
+  MobileAepsDailyChart,
+  MobileServicesPieChart,
+  DailyCashflowChart,
+  ServiceMixPieChart,
+  MonthlyRevenueChart,
+  AepsFloatAreaChart,
+  AepsBarChart,
+  OpeningBalanceAreaChart,
+  ServicesRevenuePieChart,
+} from "@/components/reports/ReportsChart";
+
+// Table components
+import {
+  ServicesUsedTable,
+  MonthlySummaryCard,
+  AepsNavySummary,
+  AepsDayWiseTable,
+  ServicesDetailTable,
+} from "@/components/reports/ReportsTable";
 
 // ══════════════════════════════════════════════════════════════════════════════
 // MOBILE REPORTS
@@ -183,21 +204,7 @@ function MobileReports() {
               </div>
 
               {monthly.data.dailyBreakdown?.length > 0 && (
-                <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px rgba(11,44,96,0.08)" }}>
-                  <div style={{ height: 3, background: "linear-gradient(90deg,#8b5cf6,#7c3aed)" }} />
-                  <div className="p-4">
-                    <p className="text-xs font-bold text-slate-600 mb-3">Daily Revenue</p>
-                    <ResponsiveContainer width="100%" height={160}>
-                      <BarChart data={monthly.data.dailyBreakdown} margin={{ top: 0, right: 4, left: -28, bottom: 0 }}>
-                        <XAxis dataKey="date" tick={{ fontSize: 8, fill: "#94a3b8" }} tickFormatter={v => v.split("-")[2]} />
-                        <YAxis tick={{ fontSize: 8, fill: "#94a3b8" }} />
-                        <Tooltip formatter={(v: any) => [`₹${v.toLocaleString("en-IN")}`, ""]} labelFormatter={l => `Date: ${l}`} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
-                        <Bar dataKey="credits" fill="#10b981" name="Credits" radius={[2, 2, 0, 0]} />
-                        <Bar dataKey="debits" fill="#f97316" name="Debits" radius={[2, 2, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
+                <MobileDailyRevenueChart data={monthly.data.dailyBreakdown} />
               )}
 
               {monthly.data.aeps && (
@@ -211,21 +218,7 @@ function MobileReports() {
                     <MobileStatCard label="Net Flow" value={fmt(monthly.data.aeps.netFlow)} accentColor={monthly.data.aeps.netFlow >= 0 ? "#10b981" : "#ef4444"} iconGrad={monthly.data.aeps.netFlow >= 0 ? "linear-gradient(135deg,#10b981,#059669)" : "linear-gradient(135deg,#ef4444,#dc2626)"} Icon={monthly.data.aeps.netFlow >= 0 ? TrendingUp : TrendingDown} />
                   </div>
                   {monthly.data.aeps.dailyBreakdown?.length > 0 && (
-                    <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px rgba(11,44,96,0.08)" }}>
-                      <div style={{ height: 3, background: "linear-gradient(90deg,#f97316,#ea580c)" }} />
-                      <div className="p-4">
-                        <p className="text-xs font-bold text-slate-600 mb-3">AePS Daily Breakdown</p>
-                        <ResponsiveContainer width="100%" height={140}>
-                          <BarChart data={monthly.data.aeps.dailyBreakdown} margin={{ top: 0, right: 4, left: -28, bottom: 0 }}>
-                            <XAxis dataKey="date" tick={{ fontSize: 8, fill: "#94a3b8" }} tickFormatter={v => v.split("-")[2]} />
-                            <YAxis tick={{ fontSize: 8, fill: "#94a3b8" }} />
-                            <Tooltip formatter={(v: any) => [`₹${v.toLocaleString("en-IN")}`, ""]} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
-                            <Bar dataKey="withdrawals" fill="#ef4444" name="Withdrawals" radius={[2, 2, 0, 0]} />
-                            <Bar dataKey="deposits" fill="#10b981" name="Deposits" radius={[2, 2, 0, 0]} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
+                    <MobileAepsDailyChart data={monthly.data.aeps.dailyBreakdown} height={140} />
                   )}
                 </>
               )}
@@ -252,21 +245,7 @@ function MobileReports() {
 
               {aepsReport.data.dailyBreakdown?.length > 0 && (
                 <>
-                  <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px rgba(11,44,96,0.08)" }}>
-                    <div style={{ height: 3, background: "linear-gradient(90deg,#f97316,#ea580c)" }} />
-                    <div className="p-4">
-                      <p className="text-xs font-bold text-slate-600 mb-3">Withdrawals vs Deposits</p>
-                      <ResponsiveContainer width="100%" height={150}>
-                        <BarChart data={aepsReport.data.dailyBreakdown} margin={{ top: 0, right: 4, left: -28, bottom: 0 }}>
-                          <XAxis dataKey="date" tick={{ fontSize: 8, fill: "#94a3b8" }} tickFormatter={v => v.split("-")[2]} />
-                          <YAxis tick={{ fontSize: 8, fill: "#94a3b8" }} />
-                          <Tooltip formatter={(v: any) => [`₹${v.toLocaleString("en-IN")}`, ""]} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
-                          <Bar dataKey="withdrawals" fill="#ef4444" name="Withdrawals" radius={[2, 2, 0, 0]} />
-                          <Bar dataKey="deposits" fill="#10b981" name="Deposits" radius={[2, 2, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
+                  <MobileAepsDailyChart data={aepsReport.data.dailyBreakdown} height={150} />
 
                   <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px rgba(11,44,96,0.08)" }}>
                     <div style={{ height: 3, background: "linear-gradient(90deg,#f97316,#ea580c)" }} />
@@ -314,20 +293,7 @@ function MobileReports() {
             <EmptyState label="No service data yet" />
           ) : (
             <>
-              <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px rgba(11,44,96,0.08)" }}>
-                <div style={{ height: 3, background: "linear-gradient(90deg,#10b981,#059669)" }} />
-                <div className="p-4">
-                  <p className="text-xs font-bold text-slate-600 mb-3">Revenue by Service</p>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <PieChart>
-                      <Pie data={breakdown.data} dataKey="revenue" nameKey="serviceType" cx="50%" cy="50%" outerRadius={80} innerRadius={40}>
-                        {breakdown.data?.map((_: any, i: number) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-                      </Pie>
-                      <Tooltip formatter={(v: any) => [`₹${v.toLocaleString("en-IN")}`, "Revenue"]} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
+              <MobileServicesPieChart data={breakdown.data} />
 
               <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px rgba(11,44,96,0.08)" }}>
                 <div style={{ height: 3, background: "linear-gradient(90deg,#10b981,#059669)" }} />
@@ -658,57 +624,15 @@ function DesktopReports() {
                 {/* 2-col chart grid */}
                 {(daily.data.totalCredits > 0 || daily.data.totalDebits > 0) && (
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                    {/* Cashflow bar */}
-                    <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "0 2px 16px rgba(11,44,96,0.07)" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                        <div>
-                          <p style={{ fontSize: 14, fontWeight: 700, color: "#0b2c60" }}>Today's Cashflow</p>
-                          <p style={{ fontSize: 11, color: "#94a3b8" }}>Credits vs Debits · {filters.dailyDate}</p>
-                        </div>
-                        <div style={{ display: "flex", gap: 12 }}>
-                          {[{ l: "Credits", c: "#3b82f6" }, { l: "Debits", c: "#fca5a5" }].map(x => (
-                            <div key={x.l} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                              <div style={{ width: 8, height: 8, borderRadius: 2, background: x.c }} />
-                              <span style={{ fontSize: 10, color: "#94a3b8" }}>{x.l}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      <ResponsiveContainer width="100%" height={200}>
-                        <BarChart data={[{ name: "Today", credits: daily.data.totalCredits, debits: daily.data.totalDebits }]} barSize={48} barGap={8}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#f8fafc" />
-                          <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-                          <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={v => `₹${(v / 1000).toFixed(0)}k`} />
-                          <Tooltip content={<ChartTooltip />} />
-                          <Bar dataKey="credits" name="Credits" fill="#3b82f6" radius={[6, 6, 0, 0]} />
-                          <Bar dataKey="debits" name="Debits" fill="#fca5a5" radius={[6, 6, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
+                    <DailyCashflowChart
+                      totalCredits={daily.data.totalCredits}
+                      totalDebits={daily.data.totalDebits}
+                      dailyDate={filters.dailyDate}
+                    />
 
                     {/* Service mix pie */}
                     {daily.data.topServices?.length > 0 ? (
-                      <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "0 2px 16px rgba(11,44,96,0.07)" }}>
-                        <p style={{ fontSize: 14, fontWeight: 700, color: "#0b2c60", marginBottom: 4 }}>Service Mix</p>
-                        <p style={{ fontSize: 11, color: "#94a3b8", marginBottom: 10 }}>By revenue share</p>
-                        <ResponsiveContainer width="100%" height={160}>
-                          <PieChart>
-                            <Pie data={daily.data.topServices} dataKey="revenue" nameKey="serviceType" cx="50%" cy="50%" innerRadius={44} outerRadius={68} paddingAngle={3}>
-                              {daily.data.topServices.map((_: any, i: number) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-                            </Pie>
-                            <Tooltip formatter={(v: any) => [`₹${Number(v).toLocaleString("en-IN")}`, "Revenue"]} contentStyle={{ fontSize: 11, borderRadius: 8, border: "none", boxShadow: "0 4px 20px rgba(0,0,0,0.12)" }} />
-                          </PieChart>
-                        </ResponsiveContainer>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 6 }}>
-                          {daily.data.topServices.slice(0, 5).map((s: any, i: number) => (
-                            <div key={s.serviceType} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              <div style={{ width: 8, height: 8, borderRadius: 2, background: PIE_COLORS[i % PIE_COLORS.length], flexShrink: 0 }} />
-                              <span style={{ fontSize: 11, color: "#334155", flex: 1 }}>{s.serviceType}</span>
-                              <span style={{ fontSize: 11, fontWeight: 700, color: PIE_COLORS[i % PIE_COLORS.length] }}>{s.count} tx</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+                      <ServiceMixPieChart services={daily.data.topServices} />
                     ) : (
                       daily.data.aeps && (
                         <div style={{ background: "linear-gradient(135deg,#0b2c60,#0f3872)", borderRadius: 16, padding: "20px 22px" }}>
@@ -733,56 +657,16 @@ function DesktopReports() {
                 {/* Services table + AePS summary side-by-side */}
                 {daily.data.topServices?.length > 0 && (
                   <div style={{ display: "grid", gridTemplateColumns: daily.data.aeps ? "1fr 300px" : "1fr", gap: 16 }}>
-                    <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 16px rgba(11,44,96,0.07)" }}>
-                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #f1f5f9" }}>
-                        <p style={{ fontSize: 14, fontWeight: 700, color: "#0b2c60" }}>Services Used Today</p>
-                        <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>Transaction breakdown by service</p>
-                      </div>
-                      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                        <thead style={{ background: "#f8fafc" }}>
-                          <tr>
-                            {["Rank", "Service", "Transactions", "Revenue"].map(h => (
-                              <th key={h} style={{ padding: "9px 16px", fontSize: 10, color: "#94a3b8", letterSpacing: "0.07em", fontWeight: 600, textTransform: "uppercase", textAlign: h === "Rank" || h === "Service" ? "left" : "right" }}>{h}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {daily.data.topServices.map((s: any, i: number) => (
-                            <tr key={s.serviceType} style={{ borderTop: "1px solid #f8fafc" }}>
-                              <td style={{ padding: "11px 16px" }}>
-                                <div style={{ width: 24, height: 24, borderRadius: 7, background: PIE_COLORS[i % PIE_COLORS.length], display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 900, color: "white" }}>{i + 1}</div>
-                              </td>
-                              <td style={{ padding: "11px 16px" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                  <div style={{ width: 6, height: 6, borderRadius: 2, background: PIE_COLORS[i % PIE_COLORS.length], flexShrink: 0 }} />
-                                  <span style={{ fontSize: 13, fontWeight: 500, color: "#334155" }}>{s.serviceType}</span>
-                                </div>
-                              </td>
-                              <td style={{ padding: "11px 16px", textAlign: "right" }}>
-                                <span style={{ background: "#eff6ff", color: "#1d4ed8", borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>{s.count}</span>
-                              </td>
-                              <td style={{ padding: "11px 16px", textAlign: "right", fontSize: 13, fontWeight: 700, color: "#10b981" }}>{fmt(s.revenue)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                    <ServicesUsedTable services={daily.data.topServices} />
 
                     {daily.data.aeps && (
-                      <div style={{ background: "linear-gradient(135deg,#0b2c60,#0f3872)", borderRadius: 16, padding: "20px 22px" }}>
-                        <p style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", marginBottom: 12 }}>AePS TODAY</p>
-                        {[
-                          { label: "Total Transactions", value: daily.data.aeps.totalTransactions },
-                          { label: "Total Withdrawn", value: fmt(daily.data.aeps.totalWithdrawals) },
-                          { label: "Total Deposited", value: fmt(daily.data.aeps.totalDeposits) },
-                          { label: "Net Flow", value: fmt(daily.data.aeps.netFlow) },
-                        ].map((row, i, arr) => (
-                          <div key={row.label} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
-                            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.55)" }}>{row.label}</span>
-                            <span style={{ fontSize: 13, fontWeight: 700, color: i === 2 ? "#34d399" : i === 1 ? "#fca5a5" : "white" }}>{row.value}</span>
-                          </div>
-                        ))}
-                      </div>
+                      <AepsNavySummary
+                        label="AePS TODAY"
+                        totalTransactions={daily.data.aeps.totalTransactions}
+                        totalWithdrawals={daily.data.aeps.totalWithdrawals}
+                        totalDeposits={daily.data.aeps.totalDeposits}
+                        netFlow={daily.data.aeps.netFlow}
+                      />
                     )}
                   </div>
                 )}
@@ -801,101 +685,39 @@ function DesktopReports() {
                 {/* 2-col: daily revenue bar + AePS area */}
                 <div style={{ display: "grid", gridTemplateColumns: monthly.data.aeps?.dailyBreakdown?.length ? "1fr 1fr" : "1fr", gap: 16 }}>
                   {monthly.data.dailyBreakdown?.length > 0 && (
-                    <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "0 2px 16px rgba(11,44,96,0.07)" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                        <div>
-                          <p style={{ fontSize: 14, fontWeight: 700, color: "#0b2c60" }}>Daily Revenue Trend</p>
-                          <p style={{ fontSize: 11, color: "#94a3b8" }}>Credits vs Debits · {MONTHS[filters.reportMonth - 1]} {filters.reportYear}</p>
-                        </div>
-                        <div style={{ display: "flex", gap: 12 }}>
-                          {[{ l: "Credits", c: "#3b82f6" }, { l: "Debits", c: "#fca5a5" }].map(x => (
-                            <div key={x.l} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                              <div style={{ width: 8, height: 8, borderRadius: 2, background: x.c }} />
-                              <span style={{ fontSize: 10, color: "#94a3b8" }}>{x.l}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      <ResponsiveContainer width="100%" height={200}>
-                        <BarChart data={monthly.data.dailyBreakdown} margin={{ top: 4, right: 4, left: -20, bottom: 0 }} barGap={3}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#f8fafc" />
-                          <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={v => v.split("-")[2]} />
-                          <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-                          <Tooltip content={<ChartTooltip />} />
-                          <Bar dataKey="credits" name="Credits" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                          <Bar dataKey="debits" name="Debits" fill="#fca5a5" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
+                    <MonthlyRevenueChart
+                      data={monthly.data.dailyBreakdown}
+                      reportMonth={filters.reportMonth}
+                      reportYear={filters.reportYear}
+                      months={MONTHS}
+                    />
                   )}
 
                   {monthly.data.aeps?.dailyBreakdown?.length > 0 && (
-                    <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "0 2px 16px rgba(11,44,96,0.07)" }}>
-                      <div style={{ marginBottom: 16 }}>
-                        <p style={{ fontSize: 14, fontWeight: 700, color: "#0b2c60" }}>AePS Float — This Month</p>
-                        <p style={{ fontSize: 11, color: "#94a3b8" }}>Withdrawals vs Deposits daily</p>
-                      </div>
-                      <ResponsiveContainer width="100%" height={200}>
-                        <AreaChart data={monthly.data.aeps.dailyBreakdown}>
-                          <defs>
-                            <linearGradient id="wdGrad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#ef4444" stopOpacity={0.15} />
-                              <stop offset="100%" stopColor="#ef4444" stopOpacity={0} />
-                            </linearGradient>
-                            <linearGradient id="dpGrad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#10b981" stopOpacity={0.15} />
-                              <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#f8fafc" />
-                          <XAxis dataKey="date" tick={{ fontSize: 9, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={v => v.split("-")[2]} />
-                          <YAxis tick={{ fontSize: 9, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
-                          <Tooltip content={<ChartTooltip />} />
-                          <Area type="monotone" dataKey="withdrawals" name="Withdrawals" stroke="#ef4444" strokeWidth={2} fill="url(#wdGrad)" dot={false} />
-                          <Area type="monotone" dataKey="deposits" name="Deposits" stroke="#10b981" strokeWidth={2} fill="url(#dpGrad)" dot={false} />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    </div>
+                    <AepsFloatAreaChart data={monthly.data.aeps.dailyBreakdown} />
                   )}
                 </div>
 
                 {/* Services table + AePS navy summary */}
                 {monthly.data.aeps && (
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 16 }}>
-                    <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 16px rgba(11,44,96,0.07)" }}>
-                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #f1f5f9" }}>
-                        <p style={{ fontSize: 14, fontWeight: 700, color: "#0b2c60" }}>Monthly Summary</p>
-                        <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{MONTHS[filters.reportMonth - 1]} {filters.reportYear}</p>
-                      </div>
-                      <div style={{ padding: "16px 20px" }}>
-                        {[
-                          { label: "Total Credits",  value: fmt(monthly.data.totalCredits),  color: "#3b82f6" },
-                          { label: "Total Debits",   value: fmt(monthly.data.totalDebits),   color: "#fca5a5" },
-                          { label: "Net Profit",     value: fmt(monthly.data.netProfit),     color: monthly.data.netProfit >= 0 ? "#10b981" : "#ef4444" },
-                          { label: "Transactions",   value: monthly.data.totalTransactions,  color: "#0b2c60" },
-                        ].map((row, i, arr) => (
-                          <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: i < arr.length - 1 ? "1px solid #f8fafc" : "none" }}>
-                            <span style={{ fontSize: 13, color: "#64748b" }}>{row.label}</span>
-                            <span style={{ fontSize: 15, fontWeight: 800, color: row.color }}>{row.value}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                    <MonthlySummaryCard
+                      totalCredits={monthly.data.totalCredits}
+                      totalDebits={monthly.data.totalDebits}
+                      netProfit={monthly.data.netProfit}
+                      totalTransactions={monthly.data.totalTransactions}
+                      reportMonth={filters.reportMonth}
+                      reportYear={filters.reportYear}
+                      months={MONTHS}
+                    />
 
-                    <div style={{ background: "linear-gradient(135deg,#0b2c60,#0f3872)", borderRadius: 16, padding: "20px 22px" }}>
-                      <p style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", marginBottom: 12 }}>AePS THIS MONTH</p>
-                      {[
-                        { label: "Total Transactions", value: monthly.data.aeps.totalTransactions },
-                        { label: "Total Withdrawn",    value: fmt(monthly.data.aeps.totalWithdrawals) },
-                        { label: "Total Deposited",    value: fmt(monthly.data.aeps.totalDeposits) },
-                        { label: "Net Flow",           value: fmt(monthly.data.aeps.netFlow) },
-                      ].map((row, i, arr) => (
-                        <div key={row.label} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
-                          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.55)" }}>{row.label}</span>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: i === 2 ? "#34d399" : i === 1 ? "#fca5a5" : "white" }}>{row.value}</span>
-                        </div>
-                      ))}
-                    </div>
+                    <AepsNavySummary
+                      label="AePS THIS MONTH"
+                      totalTransactions={monthly.data.aeps.totalTransactions}
+                      totalWithdrawals={monthly.data.aeps.totalWithdrawals}
+                      totalDeposits={monthly.data.aeps.totalDeposits}
+                      netFlow={monthly.data.aeps.netFlow}
+                    />
                   </div>
                 )}
               </>
@@ -914,89 +736,16 @@ function DesktopReports() {
                   <>
                     {/* 2-col: bar chart + opening balance area */}
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                      <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "0 2px 16px rgba(11,44,96,0.07)" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                          <div>
-                            <p style={{ fontSize: 14, fontWeight: 700, color: "#0b2c60" }}>Withdrawals vs Deposits</p>
-                            <p style={{ fontSize: 11, color: "#94a3b8" }}>Day-by-day AePS cashflow</p>
-                          </div>
-                          <div style={{ display: "flex", gap: 12 }}>
-                            {[{ l: "Withdrawals", c: "#ef4444" }, { l: "Deposits", c: "#10b981" }].map(x => (
-                              <div key={x.l} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                                <div style={{ width: 8, height: 8, borderRadius: 2, background: x.c }} />
-                                <span style={{ fontSize: 10, color: "#94a3b8" }}>{x.l}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        <ResponsiveContainer width="100%" height={200}>
-                          <BarChart data={aepsReport.data.dailyBreakdown} margin={{ top: 4, right: 4, left: -20, bottom: 0 }} barGap={3}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#f8fafc" />
-                            <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={v => v.split("-")[2]} />
-                            <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-                            <Tooltip content={<ChartTooltip />} />
-                            <Bar dataKey="withdrawals" name="Withdrawals" fill="#ef4444" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="deposits" name="Deposits" fill="#10b981" radius={[4, 4, 0, 0]} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-
-                      {/* AePS area chart — opening float */}
-                      <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "0 2px 16px rgba(11,44,96,0.07)" }}>
-                        <div style={{ marginBottom: 16 }}>
-                          <p style={{ fontSize: 14, fontWeight: 700, color: "#0b2c60" }}>Opening Balance Trend</p>
-                          <p style={{ fontSize: 11, color: "#94a3b8" }}>Daily opening float over period</p>
-                        </div>
-                        <ResponsiveContainer width="100%" height={200}>
-                          <AreaChart data={aepsReport.data.dailyBreakdown}>
-                            <defs>
-                              <linearGradient id="obGrad" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.15} />
-                                <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
-                              </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#f8fafc" />
-                            <XAxis dataKey="date" tick={{ fontSize: 9, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={v => v.split("-")[2]} />
-                            <YAxis tick={{ fontSize: 9, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
-                            <Tooltip content={<ChartTooltip />} />
-                            <Area type="monotone" dataKey="openingBalance" name="Opening Balance" stroke="#3b82f6" strokeWidth={2} fill="url(#obGrad)" dot={false} />
-                          </AreaChart>
-                        </ResponsiveContainer>
-                      </div>
+                      <AepsBarChart data={aepsReport.data.dailyBreakdown} />
+                      <OpeningBalanceAreaChart data={aepsReport.data.dailyBreakdown} />
                     </div>
 
                     {/* Full-width day-wise table */}
-                    <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 16px rgba(11,44,96,0.07)" }}>
-                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #f1f5f9" }}>
-                        <p style={{ fontSize: 14, fontWeight: 700, color: "#0b2c60" }}>Day-wise Detail</p>
-                        <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{filters.aepsStart} → {filters.aepsEnd}</p>
-                      </div>
-                      <div style={{ overflowX: "auto" }}>
-                        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                          <thead style={{ background: "#f8fafc" }}>
-                            <tr>
-                              {["Date", "Opening Balance", "Withdrawals", "Deposits", "Transactions", "Net Flow"].map(h => (
-                                <th key={h} style={{ padding: "9px 16px", fontSize: 10, color: "#94a3b8", letterSpacing: "0.07em", fontWeight: 600, textTransform: "uppercase", textAlign: h === "Date" ? "left" : "right" }}>{h}</th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {aepsReport.data.dailyBreakdown.map((row: any) => (
-                              <tr key={row.date} style={{ borderTop: "1px solid #f8fafc" }}>
-                                <td style={{ padding: "11px 16px", fontSize: 12, fontWeight: 800, color: "#0b2c60" }}>{row.date}</td>
-                                <td style={{ padding: "11px 16px", textAlign: "right", fontSize: 12, color: "#64748b" }}>{formatINR(row.openingBalance)}</td>
-                                <td style={{ padding: "11px 16px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#ef4444" }}>{formatINR(row.withdrawals)}</td>
-                                <td style={{ padding: "11px 16px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#10b981" }}>{formatINR(row.deposits)}</td>
-                                <td style={{ padding: "11px 16px", textAlign: "right" }}>
-                                  <span style={{ background: "#fff7ed", color: "#f97316", borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>{row.transactions}</span>
-                                </td>
-                                <td style={{ padding: "11px 16px", textAlign: "right", fontSize: 12, fontWeight: 800, color: row.netFlow >= 0 ? "#10b981" : "#ef4444" }}>{formatINR(row.netFlow)}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
+                    <AepsDayWiseTable
+                      data={aepsReport.data.dailyBreakdown}
+                      aepsStart={filters.aepsStart}
+                      aepsEnd={filters.aepsEnd}
+                    />
                   </>
                 )}
               </>
@@ -1011,62 +760,8 @@ function DesktopReports() {
               <EmptyState label="No service data yet" />
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "0 2px 16px rgba(11,44,96,0.07)" }}>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: "#0b2c60", marginBottom: 4 }}>Revenue by Service</p>
-                  <p style={{ fontSize: 11, color: "#94a3b8", marginBottom: 12 }}>All-time share</p>
-                  <ResponsiveContainer width="100%" height={260}>
-                    <PieChart>
-                      <Pie data={breakdown.data} dataKey="revenue" nameKey="serviceType" cx="50%" cy="50%" outerRadius={100} innerRadius={50} paddingAngle={3}>
-                        {breakdown.data?.map((_: any, i: number) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-                      </Pie>
-                      <Tooltip formatter={(v: any) => [`₹${Number(v).toLocaleString("en-IN")}`, "Revenue"]} contentStyle={{ fontSize: 11, borderRadius: 10, border: "none", boxShadow: "0 4px 20px rgba(0,0,0,0.12)" }} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 8 }}>
-                    {breakdown.data?.slice(0, 5).map((s: any, i: number) => (
-                      <div key={s.serviceType} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <div style={{ width: 8, height: 8, borderRadius: 2, background: PIE_COLORS[i % PIE_COLORS.length], flexShrink: 0 }} />
-                        <span style={{ fontSize: 11, color: "#334155", flex: 1 }}>{s.serviceType}</span>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: PIE_COLORS[i % PIE_COLORS.length] }}>{s.count} tx</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 16px rgba(11,44,96,0.07)" }}>
-                  <div style={{ padding: "16px 20px", borderBottom: "1px solid #f1f5f9" }}>
-                    <p style={{ fontSize: 14, fontWeight: 700, color: "#0b2c60" }}>Service Details</p>
-                    <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>All-time breakdown</p>
-                  </div>
-                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                    <thead style={{ background: "#f8fafc" }}>
-                      <tr>
-                        {["Rank", "Service", "Transactions", "Revenue"].map(h => (
-                          <th key={h} style={{ padding: "9px 16px", fontSize: 10, color: "#94a3b8", letterSpacing: "0.07em", fontWeight: 600, textTransform: "uppercase", textAlign: h === "Rank" || h === "Service" ? "left" : "right" }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {breakdown.data?.map((s: any, i: number) => (
-                        <tr key={s.serviceType} style={{ borderTop: "1px solid #f8fafc" }}>
-                          <td style={{ padding: "11px 16px" }}>
-                            <div style={{ width: 24, height: 24, borderRadius: 7, background: PIE_COLORS[i % PIE_COLORS.length], display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 900, color: "white" }}>{i + 1}</div>
-                          </td>
-                          <td style={{ padding: "11px 16px" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              <div style={{ width: 6, height: 6, borderRadius: 2, background: PIE_COLORS[i % PIE_COLORS.length], flexShrink: 0 }} />
-                              <span style={{ fontSize: 13, fontWeight: 500, color: "#334155" }}>{s.serviceType}</span>
-                            </div>
-                          </td>
-                          <td style={{ padding: "11px 16px", textAlign: "right" }}>
-                            <span style={{ background: "#eff6ff", color: "#1d4ed8", borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>{s.count}</span>
-                          </td>
-                          <td style={{ padding: "11px 16px", textAlign: "right", fontSize: 13, fontWeight: 800, color: "#10b981" }}>{fmt(s.revenue)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <ServicesRevenuePieChart data={breakdown.data} />
+                <ServicesDetailTable data={breakdown.data} />
               </div>
             )}
           </div>

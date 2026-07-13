@@ -14,8 +14,8 @@ const UpsertSessionBody = z.object({
   notes: z.string().optional(),
 });
 
-export function fmt(n: any) {
-  return parseFloat(n ?? "0");
+export function fmt(n: string | number | null | undefined): number {
+  return parseFloat((n ?? "0") as string);
 }
 
 // ── GET /aeps/session?date=YYYY-MM-DD ─────────────────────────────────────────

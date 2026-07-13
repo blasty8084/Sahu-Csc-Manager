@@ -62,6 +62,7 @@ export default defineConfig({
         "pwa-144x144.png",
         "pwa-192x192.png",
         "pwa-512x512.png",
+        "offline.html",
       ],
 
       manifest: {
