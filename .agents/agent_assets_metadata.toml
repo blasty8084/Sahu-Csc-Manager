@@ -30,3 +30,9 @@ id = "Hkz5jBAwXtxRYvvZ9wW-J"
 uri = "file://artifacts/sahu-csc/src/locales/or/translation.json"
 type = "unspecified"
 title = "Odia (ଓଡ଼ିଆ) — or/translation.json"
+
+[[outputs]]
+id = "6fkf20ZehDX-hQ4smv7bf"
+uri = "file://MULTI_INSTANCE_SETUP.md"
+type = "text"
+title = "Multi-Instance API Server Setup Guide"
