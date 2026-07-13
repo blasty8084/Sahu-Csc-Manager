@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, ledgerTable, usersTable } from "@workspace/db";
-import { eq, and, gte, lte, isNotNull, inArray, asc } from "drizzle-orm";
+import { eq, and, gte, lte, isNotNull, inArray, asc, count } from "drizzle-orm";
 import { requireRole } from "../lib/auth";
 import { buildMonthlyZip, sendMonthlyExportEmail } from "../lib/monthly-export";
 import { generateReceiptPdf, getBusinessSettings } from "../services/receiptExportService";
@@ -13,6 +13,9 @@ const { ZipArchive } = _require("archiver") as typeof import("archiver");
 const router: IRouter = Router();
 
 // ── Count endpoint (preview before download) ─────────────────────────────────
+// Returns a count + a capped preview (first 200 rows) to avoid loading the
+// full dataset into memory just for the confirmation dialog.
+const PREVIEW_LIMIT = 200;
 router.get(
   "/admin/receipts/bulk-export/count",
   requireRole("admin"),
@@ -34,9 +37,19 @@ router.get(
       if (!isNaN(uid)) conditions.push(eq(ledgerTable.createdBy, uid));
     }
 
+    const where = and(...conditions);
+
+    // Use a real COUNT query instead of fetching all rows
+    const [countRow] = await db
+      .select({ total: count() })
+      .from(ledgerTable)
+      .where(where);
+
+    const total = Number(countRow?.total ?? 0);
+
+    // Fetch only the first PREVIEW_LIMIT rows for the confirmation preview
     const entries = await db
       .select({
-        id: ledgerTable.id,
         receiptNumber: ledgerTable.receiptNumber,
         date: ledgerTable.date,
         customerName: ledgerTable.customerName,
@@ -47,12 +60,13 @@ router.get(
       })
       .from(ledgerTable)
       .leftJoin(usersTable, eq(ledgerTable.createdBy, usersTable.id))
-      .where(and(...conditions))
-      .orderBy(asc(ledgerTable.date), asc(ledgerTable.id));
+      .where(where)
+      .orderBy(asc(ledgerTable.date), asc(ledgerTable.id))
+      .limit(PREVIEW_LIMIT);
 
     res.json({
-      count: entries.length,
-      entries: entries.map((e: any) => ({
+      count: total,
+      entries: entries.map((e) => ({
         receiptNumber: e.receiptNumber,
         date: e.date,
         customerName: e.customerName,
@@ -95,26 +109,13 @@ router.get(
       conditions.push(inArray(ledgerTable.receiptNumber, selectedNumbers));
     }
 
-    const entries = await db
-      .select({
-        id: ledgerTable.id,
-        receiptNumber: ledgerTable.receiptNumber,
-        date: ledgerTable.date,
-        customerName: ledgerTable.customerName,
-        serviceType: ledgerTable.serviceType,
-        credit: ledgerTable.credit,
-        debit: ledgerTable.debit,
-        description: ledgerTable.description,
-        receiptToken: ledgerTable.receiptToken,
-        createdAt: ledgerTable.createdAt,
-        createdByName: usersTable.username,
-      })
+    // Check there is at least one matching receipt before opening the stream
+    const [countRow] = await db
+      .select({ total: count() })
       .from(ledgerTable)
-      .leftJoin(usersTable, eq(ledgerTable.createdBy, usersTable.id))
-      .where(and(...conditions))
-      .orderBy(asc(ledgerTable.date), asc(ledgerTable.id));
+      .where(and(...conditions));
 
-    if (entries.length === 0) {
+    if (Number(countRow?.total ?? 0) === 0) {
       res.status(404).json({ error: "No receipts found for the selected range" });
       return;
     }
@@ -131,25 +132,55 @@ router.get(
     });
     archive.pipe(res);
 
-    for (const entry of entries) {
-      const pdf = await generateReceiptPdf(
-        {
-          receiptNumber: entry.receiptNumber!,
-          date: entry.date,
-          customerName: entry.customerName,
-          serviceType: entry.serviceType,
-          credit: parseFloat(entry.credit ?? "0"),
-          debit: parseFloat(entry.debit ?? "0"),
-          description: entry.description ?? null,
-          createdByName: entry.createdByName ?? null,
-          createdAt:
-            entry.createdAt instanceof Date
-              ? entry.createdAt.toISOString()
-              : (entry.createdAt ?? new Date().toISOString()),
-        },
-        biz
-      );
-      archive.append(pdf, { name: `${entry.receiptNumber}.pdf` });
+    // Fetch and process entries in pages of 200 to avoid loading the full
+    // dataset into memory at once — critical for months with 2 000+ receipts.
+    const PAGE_SIZE = 200;
+    let offset = 0;
+    while (true) {
+      const page = await db
+        .select({
+          id: ledgerTable.id,
+          receiptNumber: ledgerTable.receiptNumber,
+          date: ledgerTable.date,
+          customerName: ledgerTable.customerName,
+          serviceType: ledgerTable.serviceType,
+          credit: ledgerTable.credit,
+          debit: ledgerTable.debit,
+          description: ledgerTable.description,
+          receiptToken: ledgerTable.receiptToken,
+          createdAt: ledgerTable.createdAt,
+          createdByName: usersTable.username,
+        })
+        .from(ledgerTable)
+        .leftJoin(usersTable, eq(ledgerTable.createdBy, usersTable.id))
+        .where(and(...conditions))
+        .orderBy(asc(ledgerTable.date), asc(ledgerTable.id))
+        .limit(PAGE_SIZE)
+        .offset(offset);
+
+      for (const entry of page) {
+        const pdf = await generateReceiptPdf(
+          {
+            receiptNumber: entry.receiptNumber!,
+            date: entry.date,
+            customerName: entry.customerName,
+            serviceType: entry.serviceType,
+            credit: parseFloat(entry.credit ?? "0"),
+            debit: parseFloat(entry.debit ?? "0"),
+            description: entry.description ?? null,
+            createdByName: entry.createdByName ?? null,
+            createdAt:
+              entry.createdAt instanceof Date
+                ? entry.createdAt.toISOString()
+                : (entry.createdAt ?? new Date().toISOString()),
+          },
+          biz
+        );
+        archive.append(pdf, { name: `${entry.receiptNumber}.pdf` });
+      }
+
+      if (page.length < PAGE_SIZE) break;
+      offset += PAGE_SIZE;
     }
 
     await archive.finalize();

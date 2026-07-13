@@ -20,6 +20,8 @@ export const notificationsTable = pgTable("notifications", {
   index("idx_notifications_is_read").on(t.isRead),
   index("idx_notifications_user_read").on(t.userId, t.isRead),
   index("idx_notifications_created_at").on(t.createdAt),
+  // Covers the primary list query: WHERE user_id = ? ORDER BY created_at DESC LIMIT n
+  index("idx_notifications_user_created").on(t.userId, t.createdAt),
 ]);
 
 export const insertNotificationSchema = createInsertSchema(notificationsTable).omit({ id: true, createdAt: true });
