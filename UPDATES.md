@@ -7,6 +7,45 @@
 
 ---
 
+## Session: 2026-07-13 — v4.0.1 Redis Rate Limiting & Multi-Instance Readiness
+
+**Version:** 4.0.1
+**Status:** ✅ Complete — rate-limit-redis installed, all 4 limiters updated, API rebuilt and running, docs updated
+
+### What Was Done
+
+#### 1. `rate-limit-redis` installed
+```bash
+pnpm --filter @workspace/api-server add rate-limit-redis
+```
+
+#### 2. `app.ts` updated — Redis client + `makeRlStore` helper
+- Added imports: `RedisStore` from `rate-limit-redis`, `Redis` from `@upstash/redis`
+- Added `_rlRedis` singleton: created only when `CACHE_BACKEND=redis` + both Upstash env vars are set; `null` otherwise
+- Added `makeRlStore(prefix)` helper: returns `new RedisStore(...)` or `undefined` (→ default `MemoryStore`)
+- Startup log: `"Rate limiter: using shared Redis store"` or `"…MemoryStore"`
+
+#### 3. All 4 rate limiters updated
+| Limiter | `store` prefix | Window / Max |
+|---|---|---|
+| General API | `rl:general:` | 15 min / 500 |
+| Login | `rl:login:` | 15 min / 8 |
+| Auth writes | `rl:auth-write:` | 15 min / 10 |
+| OTP verify | `rl:otp-verify:` | 15 min / 8 |
+
+#### 4. API rebuilt and restarted
+- `node artifacts/api-server/build.mjs` — clean build (4.7 MB)
+- API Server workflow restarted — confirmed `"Rate limiter: using in-process MemoryStore"` in logs (expected: no Redis secrets in this environment)
+
+#### 5. `MULTI_INSTANCE_SETUP.md` created
+New guide at project root covering all 3 multi-instance approaches, the full readiness checklist (sessions ✅, VAPID ✅, encryption key ✅, Redis cache ⚠️, rate limiter now ✅), PM2 config, and DB pool tuning.
+
+#### 6. Version bump
+- `sahu-csc/package.json`: 4.0.0 → 4.0.1
+- `api-server/package.json`: 4.0.0 → 4.0.1
+
+---
+
 ## Session: 2026-07-12 — v4.0.0 Full-Stack Performance Audit
 
 **Version:** 4.0.0

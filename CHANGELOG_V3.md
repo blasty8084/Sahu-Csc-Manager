@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v3 / v4
-**Current version: 4.0.0 — July 12, 2026**
+**Current version: 4.0.1 — July 13, 2026**
 
 > Detailed record of every feature, change, and upgrade from v3.0.0 onward.  
 > For v2.x history, see `docs/archive/changelogV2.md`.  
@@ -14,10 +14,25 @@
 
 ## Table of Contents
 
+0. [v4.0.1 — Redis Rate Limiting & Multi-Instance Readiness (July 13, 2026)](#0-v401--redis-rate-limiting--multi-instance-readiness-july-13-2026)
 0. [v4.0.0 — Full-Stack Performance Audit (July 12, 2026)](#0-v400--full-stack-performance-audit-july-12-2026)
 0. [v3.5.10 — Navigation Performance — Instant Page Switching (July 12, 2026)](#0-v3510--navigation-performance--instant-page-switching-july-12-2026)
 0. [v3.5.9 — Redis Cache Live, i18n Fixes & Build Hardening (July 12, 2026)](#0-v359--redis-cache-live-i18n-fixes--build-hardening-july-12-2026)
 0. [v3.5.8 — Reports & Receipt Export Page Modularization (July 12, 2026)](#0-v358--reports--receipt-export-page-modularization-july-12-2026)
+
+---
+
+## 0. v4.0.1 — Redis Rate Limiting & Multi-Instance Readiness (July 13, 2026)
+
+Completes multi-instance readiness: rate-limit counters are now shared across processes via Redis, so a client can no longer bypass per-IP limits by hitting different workers. No routes, UI, or data behavior changed.
+
+| Change | Description |
+|--------|-------------|
+| **`rate-limit-redis` installed** | Added as a direct dependency of `@workspace/api-server`. |
+| **4 rate limiters upgraded** | `general` (500/15 min), `login` (8/15 min), `auth-write` (10/15 min), `otp-verify` (8/15 min) — all now accept a `RedisStore` when `CACHE_BACKEND=redis` + Upstash secrets are present. Falls back to the default in-process `MemoryStore` when Redis is not configured, so local dev and single-instance deployments are unaffected. |
+| **Redis key prefixes** | `rl:general:`, `rl:login:`, `rl:auth-write:`, `rl:otp-verify:` — namespaced so rate-limit counters never collide with query-cache or session-cache keys in the same Redis database. |
+| **Startup log** | Server logs `"Rate limiter: using shared Redis store"` or `"…MemoryStore"` at boot so the active mode is immediately visible. |
+| **`MULTI_INSTANCE_SETUP.md` added** | New guide documenting all 3 multi-instance options (PM2 cluster, Node cluster module, Replit Deployments scaling), readiness checklist, connection-pool tuning advice, and architecture diagram. |
 
 ---
 

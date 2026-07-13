@@ -14,6 +14,18 @@ const APP_VERSION = __APP_VERSION__;
 // ── Changelog ────────────────────────────────────────────────────────────────
 const CHANGELOG = [
   {
+    version: "v4.0.1",
+    title: "Redis Rate Limiting & Multi-Instance Readiness",
+    date: "2026-07-13",
+    accent: "#f97316",
+    changes: [
+      "Installed rate-limit-redis — all 4 rate limiters (general, login, auth-write, otp-verify) now use a shared Upstash Redis store when CACHE_BACKEND=redis, so per-IP counters are enforced across all worker processes; falls back to in-process MemoryStore for single-instance/dev deployments",
+      "Redis key prefixes namespaced (rl:general:, rl:login:, rl:auth-write:, rl:otp-verify:) — rate-limit keys never collide with query-cache or session-cache keys in the same Redis database",
+      "Server logs 'Rate limiter: using shared Redis store' or '…MemoryStore' at boot — active mode is immediately visible in the logs",
+      "Added MULTI_INSTANCE_SETUP.md — full guide covering PM2 cluster mode, Node.js cluster module, Replit Deployments scaling, readiness checklist, and connection-pool tuning",
+    ],
+  },
+  {
     version: "v4.0.0",
     title: "Full-Stack Performance Audit",
     date: "2026-07-12",
