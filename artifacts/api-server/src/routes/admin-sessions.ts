@@ -3,6 +3,7 @@ import { db, userSessionsTable, usersTable } from "@workspace/db";
 import { eq, and, gt, inArray } from "drizzle-orm";
 import { requireRole, auditLog, getClientIp } from "../lib/auth";
 import { invalidateSessionCache } from "../lib/auth/sessionCache";
+import { asyncHandler } from "../lib/async-handler";
 
 const router: IRouter = Router();
 
@@ -26,7 +27,7 @@ function fmtAdminSession(s: any) {
 }
 
 // GET /api/admin/sessions — all active sessions across all users
-router.get("/admin/sessions", requireRole("admin"), async (_req, res): Promise<void> => {
+router.get("/admin/sessions", requireRole("admin"), asyncHandler(async (_req, res) => {
   const now = new Date();
 
   const rows = await db
@@ -57,10 +58,10 @@ router.get("/admin/sessions", requireRole("admin"), async (_req, res): Promise<v
     .orderBy(userSessionsTable.lastActivity);
 
   res.json(rows.map(fmtAdminSession));
-});
+}));
 
 // DELETE /api/admin/sessions/:id — revoke a specific session
-router.delete("/admin/sessions/:id", requireRole("admin"), async (req, res): Promise<void> => {
+router.delete("/admin/sessions/:id", requireRole("admin"), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id as string, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid session ID" }); return; }
 
@@ -82,10 +83,10 @@ router.delete("/admin/sessions/:id", requireRole("admin"), async (req, res): Pro
   );
 
   res.json({ success: true, message: "Session revoked" });
-});
+}));
 
 // DELETE /api/admin/sessions/user/:userId — revoke all sessions for a specific user
-router.delete("/admin/sessions/user/:userId", requireRole("admin"), async (req, res): Promise<void> => {
+router.delete("/admin/sessions/user/:userId", requireRole("admin"), asyncHandler(async (req, res) => {
   const userId = parseInt(req.params.userId as string, 10);
   if (isNaN(userId)) { res.status(400).json({ error: "Invalid user ID" }); return; }
 
@@ -117,6 +118,6 @@ router.delete("/admin/sessions/user/:userId", requireRole("admin"), async (req, 
   );
 
   res.json({ success: true, count: result.length, message: `Revoked ${result.length} session(s)` });
-});
+}));
 
 export default router;

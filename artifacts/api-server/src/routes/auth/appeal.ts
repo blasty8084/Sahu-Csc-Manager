@@ -3,6 +3,7 @@ import { db, usersTable } from "@workspace/db";
 import { eq, or } from "drizzle-orm";
 import { auditLog, getClientIp } from "../../lib/auth";
 import { notifyNewRegistration } from "../../services/notificationTemplates";
+import { asyncHandler } from "../../lib/async-handler";
 
 const router: IRouter = Router();
 
@@ -12,7 +13,7 @@ const appealRateMap = new Map<string, { count: number; resetAt: number }>();
 // ─── POST /auth/appeal ────────────────────────────────────────────────────────
 // Public — no auth required. Records that a declined user clicked the appeal
 // contact button. Creates notifications for all admins + an audit log entry.
-router.post("/auth/appeal", async (req, res): Promise<void> => {
+router.post("/auth/appeal", asyncHandler(async (req, res) => {
   const clientIp = getClientIp(req);
 
   const now = Date.now();
@@ -83,6 +84,6 @@ router.post("/auth/appeal", async (req, res): Promise<void> => {
   );
 
   res.json({ ok: true });
-});
+}));
 
 export default router;

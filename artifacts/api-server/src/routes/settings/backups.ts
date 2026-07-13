@@ -9,6 +9,7 @@ import { requireRole, auditLog, getClientIp } from "../../lib/auth";
 import { createNotification } from "../../lib/notify";
 import { applySchedule, type BackupScheduleConfig } from "../../lib/backup-scheduler";
 import { logger } from "../../lib/logger";
+import { asyncHandler } from "../../lib/async-handler";
 
 export const BACKUP_DIR = path.resolve(process.cwd(), "backups");
 
@@ -59,7 +60,7 @@ function parseSqlBlocks(sql: string): TableBlock[] {
 const router: IRouter = Router();
 
 // ── GET /backups — list all backups ───────────────────────────────────────────
-router.get("/backups", requireRole("admin"), async (_req, res): Promise<void> => {
+router.get("/backups", requireRole("admin"), asyncHandler(async (_req, res) => {
   // Auto-sync: register any .sql files on disk that aren't in the DB yet
   try {
     mkdirSync(BACKUP_DIR, { recursive: true });
@@ -86,10 +87,10 @@ router.get("/backups", requireRole("admin"), async (_req, res): Promise<void> =>
     size: b.size,
     createdAt: b.createdAt instanceof Date ? b.createdAt.toISOString() : b.createdAt,
   })));
-});
+}));
 
 // ── POST /backups — create a new pg_dump backup ───────────────────────────────
-router.post("/backups", requireRole("admin"), async (req, res): Promise<void> => {
+router.post("/backups", requireRole("admin"), asyncHandler(async (req, res) => {
   const dbUrl = process.env["DATABASE_URL"];
   if (!dbUrl) { res.status(500).json({ error: "DATABASE_URL not configured" }); return; }
 
@@ -114,10 +115,10 @@ router.post("/backups", requireRole("admin"), async (req, res): Promise<void> =>
   } catch (err: any) {
     res.status(500).json({ error: `Backup failed: ${err.message}` });
   }
-});
+}));
 
 // ── GET /backups/schedule — get current schedule config ───────────────────────
-router.get("/backups/schedule", requireRole("admin"), async (_req, res): Promise<void> => {
+router.get("/backups/schedule", requireRole("admin"), asyncHandler(async (_req, res) => {
   const rows = await db.select().from(settingsTable);
   const s: Record<string, string> = {};
   for (const r of rows) s[r.key] = r.value;
@@ -128,10 +129,10 @@ router.get("/backups/schedule", requireRole("admin"), async (_req, res): Promise
     days: s["backupDays"] ? s["backupDays"].split(",").map(Number) : [1],
     retention: parseInt(s["backupRetention"] ?? "7", 10),
   });
-});
+}));
 
 // ── POST /backups/schedule — save + apply schedule ────────────────────────────
-router.post("/backups/schedule", requireRole("admin"), async (req, res): Promise<void> => {
+router.post("/backups/schedule", requireRole("admin"), asyncHandler(async (req, res) => {
   const { enabled, frequency, time, days, retention } = req.body as {
     enabled: boolean; frequency: string; time: string; days: number[]; retention: number;
   };
@@ -177,10 +178,10 @@ router.post("/backups/schedule", requireRole("admin"), async (req, res): Promise
     getClientIp(req));
 
   res.json({ message: "Schedule saved and applied.", ...cfg });
-});
+}));
 
 // ── POST /backups/analyze — upload .sql, return table list + row counts ───────
-router.post("/backups/analyze", requireRole("admin"), upload.single("file"), async (req, res): Promise<void> => {
+router.post("/backups/analyze", requireRole("admin"), upload.single("file"), asyncHandler(async (req, res) => {
   if (!req.file) { res.status(400).json({ error: "No .sql file uploaded" }); return; }
   const tmpPath = req.file.path;
 
@@ -218,10 +219,10 @@ router.post("/backups/analyze", requireRole("admin"), upload.single("file"), asy
     try { unlinkSync(tmpPath); } catch {}
     res.status(500).json({ error: `Analysis failed: ${err.message}` });
   }
-});
+}));
 
 // ── POST /backups/selective-import — import only selected tables ──────────────
-router.post("/backups/selective-import", requireRole("admin"), async (req, res): Promise<void> => {
+router.post("/backups/selective-import", requireRole("admin"), asyncHandler(async (req, res) => {
   const { tmpPath, selectedTables, originalName } = req.body as {
     tmpPath: string;
     selectedTables: string[];
@@ -300,10 +301,10 @@ router.post("/backups/selective-import", requireRole("admin"), async (req, res):
     try { unlinkSync(selectiveFile); } catch {}
     res.status(500).json({ error: `Selective import failed: ${err.message}` });
   }
-});
+}));
 
 // ── POST /backups/import — full SQL import ────────────────────────────────────
-router.post("/backups/import", requireRole("admin"), upload.single("file"), async (req, res): Promise<void> => {
+router.post("/backups/import", requireRole("admin"), upload.single("file"), asyncHandler(async (req, res) => {
   const dbUrl = process.env["DATABASE_URL"];
   if (!dbUrl) { res.status(500).json({ error: "DATABASE_URL not configured" }); return; }
   if (!req.file) { res.status(400).json({ error: "No .sql file uploaded" }); return; }
@@ -336,10 +337,10 @@ router.post("/backups/import", requireRole("admin"), upload.single("file"), asyn
     try { unlinkSync(tmpPath); } catch {}
     res.status(500).json({ error: `Import failed: ${err.message}` });
   }
-});
+}));
 
 // ── GET /backups/:id/download — stream .sql file ──────────────────────────────
-router.get("/backups/:id/download", requireRole("admin"), async (req, res): Promise<void> => {
+router.get("/backups/:id/download", requireRole("admin"), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id as string, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
 
@@ -360,10 +361,10 @@ router.get("/backups/:id/download", requireRole("admin"), async (req, res): Prom
 
   const { createReadStream } = await import("fs");
   createReadStream(filepath).pipe(res);
-});
+}));
 
 // ── DELETE /backups/:id — remove from DB + disk ───────────────────────────────
-router.delete("/backups/:id", requireRole("admin"), async (req, res): Promise<void> => {
+router.delete("/backups/:id", requireRole("admin"), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id as string, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
 
@@ -377,10 +378,10 @@ router.delete("/backups/:id", requireRole("admin"), async (req, res): Promise<vo
   await auditLog(req.session.userId!, "backup.delete", `Deleted backup: ${backup.filename}`, getClientIp(req));
 
   res.json({ message: "Backup deleted." });
-});
+}));
 
 // ── POST /backups/:id/restore — restore from a saved backup ──────────────────
-router.post("/backups/:id/restore", requireRole("admin"), async (req, res): Promise<void> => {
+router.post("/backups/:id/restore", requireRole("admin"), asyncHandler(async (req, res) => {
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(rawId, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
@@ -405,6 +406,6 @@ router.post("/backups/:id/restore", requireRole("admin"), async (req, res): Prom
   } catch (err: any) {
     res.status(500).json({ error: `Restore failed: ${err.message}` });
   }
-});
+}));
 
 export default router;

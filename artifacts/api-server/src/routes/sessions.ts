@@ -3,6 +3,7 @@ import { db, userSessionsTable } from "@workspace/db";
 import { eq, and, gt, not, desc } from "drizzle-orm";
 import { requireAuth, auditLog, getClientIp } from "../lib/auth";
 import { invalidateSessionCache } from "../lib/auth/sessionCache";
+import { asyncHandler } from "../lib/async-handler";
 
 const router: IRouter = Router();
 
@@ -23,7 +24,7 @@ function fmtSession(s: any, currentSessionId?: string) {
 }
 
 // GET /api/sessions — list this user's active sessions
-router.get("/sessions", requireAuth, async (req, res): Promise<void> => {
+router.get("/sessions", requireAuth, asyncHandler(async (req, res) => {
   const userId = req.session.userId!;
   const currentSessionId = req.session.sessionId;
 
@@ -40,10 +41,10 @@ router.get("/sessions", requireAuth, async (req, res): Promise<void> => {
     .orderBy(desc(userSessionsTable.lastActivity));
 
   res.json(sessions.map((s) => fmtSession(s, currentSessionId)));
-});
+}));
 
 // DELETE /api/sessions/others — revoke all sessions except the current one
-router.delete("/sessions/others", requireAuth, async (req, res): Promise<void> => {
+router.delete("/sessions/others", requireAuth, asyncHandler(async (req, res) => {
   const userId = req.session.userId!;
   const currentSessionId = req.session.sessionId ?? req.session.sessionToken ?? "";
 
@@ -63,10 +64,10 @@ router.delete("/sessions/others", requireAuth, async (req, res): Promise<void> =
 
   await auditLog(userId, "session.revoke_others", "Revoked all other sessions", getClientIp(req));
   res.json({ message: "All other sessions revoked" });
-});
+}));
 
 // DELETE /api/sessions/all — revoke ALL sessions (including current) and logout
-router.delete("/sessions/all", requireAuth, async (req, res): Promise<void> => {
+router.delete("/sessions/all", requireAuth, asyncHandler(async (req, res) => {
   const userId = req.session.userId!;
 
   const revoked = await db
@@ -81,10 +82,10 @@ router.delete("/sessions/all", requireAuth, async (req, res): Promise<void> => {
 
   req.session.destroy(() => {});
   res.json({ message: "All sessions revoked", redirect: true });
-});
+}));
 
 // DELETE /api/sessions/:id — revoke a specific session by DB row id
-router.delete("/sessions/:id", requireAuth, async (req, res): Promise<void> => {
+router.delete("/sessions/:id", requireAuth, asyncHandler(async (req, res) => {
   const userId = req.session.userId!;
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(rawId, 10);
@@ -116,6 +117,6 @@ router.delete("/sessions/:id", requireAuth, async (req, res): Promise<void> => {
 
   await auditLog(userId, "session.revoke", `Revoked session ${id}`, getClientIp(req));
   res.json({ message: "Session revoked" });
-});
+}));
 
 export default router;

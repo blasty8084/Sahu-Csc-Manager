@@ -3,6 +3,7 @@ import { db, servicesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { CreateServiceBody, UpdateServiceBody, UpdateServiceParams, DeleteServiceParams } from "@workspace/api-zod";
 import { requireAuth, requireRole, auditLog, getClientIp } from "../lib/auth";
+import { asyncHandler } from "../lib/async-handler";
 
 const router: IRouter = Router();
 
@@ -18,12 +19,12 @@ function fmt(s: any) {
   };
 }
 
-router.get("/services", requireAuth, async (_req, res): Promise<void> => {
+router.get("/services", requireAuth, asyncHandler(async (_req, res) => {
   const services = await db.select().from(servicesTable).orderBy(servicesTable.category, servicesTable.name);
   res.json(services.map(fmt));
-});
+}));
 
-router.post("/services", requireRole("admin"), async (req, res): Promise<void> => {
+router.post("/services", requireRole("admin"), asyncHandler(async (req, res) => {
   const parsed = CreateServiceBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
   const [s] = await db.insert(servicesTable).values({
@@ -35,9 +36,9 @@ router.post("/services", requireRole("admin"), async (req, res): Promise<void> =
   }).returning();
   await auditLog(req.session.userId!, "service.create", `Created service: ${s.name}`, getClientIp(req));
   res.status(201).json(fmt(s));
-});
+}));
 
-router.patch("/services/:id", requireRole("admin"), async (req, res): Promise<void> => {
+router.patch("/services/:id", requireRole("admin"), asyncHandler(async (req, res) => {
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(rawId, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
@@ -58,9 +59,9 @@ router.patch("/services/:id", requireRole("admin"), async (req, res): Promise<vo
   const [updated] = await db.update(servicesTable).set(updates).where(eq(servicesTable.id, id)).returning();
   await auditLog(req.session.userId!, "service.update", `Updated service ${id}`, getClientIp(req));
   res.json(fmt(updated));
-});
+}));
 
-router.delete("/services/:id", requireRole("admin"), async (req, res): Promise<void> => {
+router.delete("/services/:id", requireRole("admin"), asyncHandler(async (req, res) => {
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(rawId, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
@@ -71,6 +72,6 @@ router.delete("/services/:id", requireRole("admin"), async (req, res): Promise<v
   await db.delete(servicesTable).where(eq(servicesTable.id, id));
   await auditLog(req.session.userId!, "service.delete", `Deleted service ${id}`, getClientIp(req));
   res.sendStatus(204);
-});
+}));
 
 export default router;

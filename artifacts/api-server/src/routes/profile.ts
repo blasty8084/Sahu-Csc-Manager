@@ -7,6 +7,7 @@ import { invalidateSessionCache, invalidateUserCache } from "../lib/auth/session
 import { encryptField, decryptField } from "../lib/encryption";
 import { sanitize } from "../lib/sanitize";
 import { passwordPolicySchema } from "../lib/password-policy";
+import { asyncHandler } from "../lib/async-handler";
 
 const router: IRouter = Router();
 
@@ -39,13 +40,13 @@ async function fmtProfile(user: any) {
   };
 }
 
-router.get("/profile", requireAuth, async (req, res): Promise<void> => {
+router.get("/profile", requireAuth, asyncHandler(async (req, res) => {
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!));
   if (!user) { res.status(404).json({ error: "User not found" }); return; }
   res.json(await fmtProfile(user));
-});
+}));
 
-router.patch("/profile", requireAuth, async (req, res): Promise<void> => {
+router.patch("/profile", requireAuth, asyncHandler(async (req, res) => {
   const parsed = UpdateProfileBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
@@ -105,9 +106,9 @@ router.patch("/profile", requireAuth, async (req, res): Promise<void> => {
 
   await auditLog(userId, "profile.update", "User updated profile", getClientIp(req));
   res.json(await fmtProfile(updated));
-});
+}));
 
-router.post("/profile/avatar", requireAuth, async (req, res): Promise<void> => {
+router.post("/profile/avatar", requireAuth, asyncHandler(async (req, res) => {
   const parsed = UpdateAvatarBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
@@ -132,13 +133,13 @@ router.post("/profile/avatar", requireAuth, async (req, res): Promise<void> => {
 
   await auditLog(userId, "profile.avatar_update", "User updated profile picture", getClientIp(req));
   res.json({ profilePicture: updated.profilePicture });
-});
+}));
 
-router.delete("/profile/avatar", requireAuth, async (req, res): Promise<void> => {
+router.delete("/profile/avatar", requireAuth, asyncHandler(async (req, res) => {
   const userId = req.session.userId!;
   await db.update(usersTable).set({ profilePicture: null }).where(eq(usersTable.id, userId));
   await auditLog(userId, "profile.avatar_delete", "User removed profile picture", getClientIp(req));
   res.json({ message: "Profile picture removed" });
-});
+}));
 
 export default router;

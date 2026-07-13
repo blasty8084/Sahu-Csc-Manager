@@ -3,6 +3,7 @@ import { db, settingsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { UpdateSettingsBody } from "@workspace/api-zod";
 import { requireAuth, requireRole, auditLog, getClientIp } from "../../lib/auth";
+import { asyncHandler } from "../../lib/async-handler";
 
 export const DEFAULT_SETTINGS: Record<string, string> = {
   businessName: "SAHU CSC Center",
@@ -44,21 +45,21 @@ export function formatSettings(s: Record<string, string>) {
 const router: IRouter = Router();
 
 // Public — no auth required — returns only contact fields safe to expose pre-login
-router.get("/settings/contact", async (_req, res): Promise<void> => {
+router.get("/settings/contact", asyncHandler(async (_req, res) => {
   const settings = await getAllSettings();
   res.json({
     name: settings.businessName ?? DEFAULT_SETTINGS.businessName,
     phone: settings.businessMobile || null,
     email: settings.businessEmail || null,
   });
-});
+}));
 
-router.get("/settings", requireAuth, async (_req, res): Promise<void> => {
+router.get("/settings", requireAuth, asyncHandler(async (_req, res) => {
   const settings = await getAllSettings();
   res.json(formatSettings(settings));
-});
+}));
 
-router.patch("/settings", requireRole("admin"), async (req, res): Promise<void> => {
+router.patch("/settings", requireRole("admin"), asyncHandler(async (req, res) => {
   const parsed = UpdateSettingsBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
@@ -77,6 +78,6 @@ router.patch("/settings", requireRole("admin"), async (req, res): Promise<void> 
   await auditLog(req.session.userId!, "settings.update", "Updated system settings", getClientIp(req));
   const updated = await getAllSettings();
   res.json(formatSettings(updated));
-});
+}));
 
 export default router;

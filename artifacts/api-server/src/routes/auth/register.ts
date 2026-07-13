@@ -9,6 +9,7 @@ import { sendNewRegistrationAdminEmail, isSmtpConfigured } from "../../lib/maile
 import { logger } from "../../lib/logger";
 import { passwordPolicySchema } from "../../lib/password-policy";
 import { hashOtp } from "./helpers";
+import { asyncHandler } from "../../lib/async-handler";
 
 const router: IRouter = Router();
 
@@ -29,7 +30,7 @@ const RegisterBody = z.object({
 });
 
 // ─── POST /auth/register ──────────────────────────────────────────────────────
-router.post("/auth/register", async (req, res): Promise<void> => {
+router.post("/auth/register", asyncHandler(async (req, res) => {
   // Check registration toggle server-side
   const cached = cacheGet("registration_open");
   let isOpen = cached === "true";
@@ -150,6 +151,6 @@ router.post("/auth/register", async (req, res): Promise<void> => {
   }
 
   res.status(201).json({ pending: true, message: "Registration submitted. Awaiting admin approval." });
-});
+}));
 
 export default router;

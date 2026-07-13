@@ -10,6 +10,7 @@ import {
 } from "../../services/notificationTemplates";
 import { randomUUID } from "crypto";
 import { fmtUser } from "./helpers";
+import { asyncHandler } from "../../lib/async-handler";
 
 const router: IRouter = Router();
 
@@ -17,7 +18,7 @@ const MAX_ATTEMPTS = 3;
 const LOCK_MINUTES = 5;
 
 // ─── POST /auth/login ─────────────────────────────────────────────────────────
-router.post("/auth/login", async (req, res): Promise<void> => {
+router.post("/auth/login", asyncHandler(async (req, res) => {
   const parsed = LoginBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.issues?.[0]?.message ?? "Validation failed" });
@@ -149,6 +150,6 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   await notifyLoginSuccess(user.id, clientIp, deviceInfo);
 
   res.json(fmtUser(user));
-});
+}));
 
 export default router;

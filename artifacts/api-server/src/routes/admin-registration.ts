@@ -8,6 +8,7 @@ import { createNotification } from "../lib/notify";
 import { isSmtpConfigured } from "../lib/mailer";
 import { enqueueNotification, enqueueEmail, buildApprovalMailOptions, buildRejectionMailOptions } from "../lib/queue-client";
 import { logger } from "../lib/logger";
+import { asyncHandler } from "../lib/async-handler";
 
 const router: IRouter = Router();
 
@@ -57,13 +58,13 @@ function fmtUser(u: any) {
 }
 
 // ─── GET /api/settings/registration-status (public) ─────────────────────────
-router.get("/settings/registration-status", async (_req, res): Promise<void> => {
+router.get("/settings/registration-status", asyncHandler(async (_req, res) => {
   const open = await getRegistrationOpen();
   res.json({ open });
-});
+}));
 
 // ─── PATCH /api/admin/settings/registration (admin only) ────────────────────
-router.patch("/admin/settings/registration", requireRole("admin"), async (req, res): Promise<void> => {
+router.patch("/admin/settings/registration", requireRole("admin"), asyncHandler(async (req, res) => {
   const parsed = z.object({ open: z.boolean() }).safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Body must be { open: boolean }" });
@@ -91,16 +92,16 @@ router.patch("/admin/settings/registration", requireRole("admin"), async (req, r
   );
 
   res.json({ success: true, open });
-});
+}));
 
 // ─── GET /api/admin/users/pending-count ─────────────────────────────────────
-router.get("/admin/users/pending-count", requireRole("admin"), async (_req, res): Promise<void> => {
+router.get("/admin/users/pending-count", requireRole("admin"), asyncHandler(async (_req, res) => {
   const count = await getPendingCount();
   res.json({ count });
-});
+}));
 
 // ─── GET /api/admin/users/pending ───────────────────────────────────────────
-router.get("/admin/users/pending", requireRole("admin"), async (req, res): Promise<void> => {
+router.get("/admin/users/pending", requireRole("admin"), asyncHandler(async (req, res) => {
   const page = Math.max(1, parseInt(String(req.query.page ?? "1"), 10));
   const limit = Math.min(100, Math.max(1, parseInt(String(req.query.limit ?? "50"), 10)));
   const offset = (page - 1) * limit;
@@ -114,10 +115,10 @@ router.get("/admin/users/pending", requireRole("admin"), async (req, res): Promi
     .offset(offset);
 
   res.json(rows.map(fmtUser));
-});
+}));
 
 // ─── PATCH /api/admin/users/:id/approve ─────────────────────────────────────
-router.patch("/admin/users/:id/approve", requireRole("admin"), async (req, res): Promise<void> => {
+router.patch("/admin/users/:id/approve", requireRole("admin"), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id as string, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
 
@@ -144,10 +145,10 @@ router.patch("/admin/users/:id/approve", requireRole("admin"), async (req, res):
   }
 
   res.json({ success: true, message: "User approved", user: fmtUser(updated) });
-});
+}));
 
 // ─── PATCH /api/admin/users/:id/reject ──────────────────────────────────────
-router.patch("/admin/users/:id/reject", requireRole("admin"), async (req, res): Promise<void> => {
+router.patch("/admin/users/:id/reject", requireRole("admin"), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id as string, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
 
@@ -180,7 +181,7 @@ router.patch("/admin/users/:id/reject", requireRole("admin"), async (req, res): 
   }
 
   res.json({ success: true, message: "User rejected", user: fmtUser(updated) });
-});
+}));
 
 export { getRegistrationOpen, getPendingCount, invalidatePendingCache };
 export default router;

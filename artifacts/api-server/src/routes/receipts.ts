@@ -3,13 +3,14 @@ import { db, ledgerTable, usersTable, settingsTable, udhariEntriesTable, udhariC
 import { eq, inArray } from "drizzle-orm";
 import { decryptField } from "../lib/encryption";
 import { verifyReceiptToken, isJwt } from "../lib/jwt";
+import { asyncHandler } from "../lib/async-handler";
 
 const router: IRouter = Router();
 
 // ── Udhari Khata receipt verify ───────────────────────────────────────────────
 // IMPORTANT: must be registered BEFORE /receipts/verify/:token so Express does
 // not swallow "udhari" as the :token value.
-router.get("/receipts/verify/udhari/:token", async (req, res): Promise<void> => {
+router.get("/receipts/verify/udhari/:token", asyncHandler(async (req, res) => {
   const { token } = req.params;
   if (!token || typeof token !== "string" || token.length < 16) {
     res.status(400).json({ error: "Invalid token" });
@@ -93,10 +94,10 @@ router.get("/receipts/verify/udhari/:token", async (req, res): Promise<void> => 
     businessWebsite: getSetting("businessWebsite", ""),
     verified: isJwt(token),
   });
-});
+}));
 
 // ── Ledger receipt verify ────────────────────────────────────────────────────
-router.get("/receipts/verify/:token", async (req, res): Promise<void> => {
+router.get("/receipts/verify/:token", asyncHandler(async (req, res) => {
   const { token } = req.params;
   if (!token || typeof token !== "string" || token.length < 16) {
     res.status(400).json({ error: "Invalid token" });
@@ -169,6 +170,6 @@ router.get("/receipts/verify/:token", async (req, res): Promise<void> => {
     businessWebsite: getSetting("businessWebsite", ""),
     verified: isJwt(token),
   });
-});
+}));
 
 export default router;

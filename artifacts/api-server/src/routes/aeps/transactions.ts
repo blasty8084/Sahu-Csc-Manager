@@ -7,6 +7,7 @@ import { z } from "zod";
 import { randomUUID } from "crypto";
 import { fmt } from "./sessions";
 import { cached, invalidateAepsCaches } from "../../lib/query-cache";
+import { asyncHandler } from "../../lib/async-handler";
 
 export const router: IRouter = Router();
 
@@ -26,7 +27,7 @@ const EditTransactionBody = z.object({
 });
 
 // ── GET /aeps/transactions ────────────────────────────────────────────────────
-router.get("/aeps/transactions", requireAuth, requirePermission("aeps:view"), async (req, res): Promise<void> => {
+router.get("/aeps/transactions", requireAuth, requirePermission("aeps:view"), asyncHandler(async (req, res) => {
   const userId = req.session.userId!;
   const page = Math.max(1, parseInt((req.query.page as string) || "1", 10));
   const limit = Math.min(50, Math.max(1, parseInt((req.query.limit as string) || "20", 10)));
@@ -39,7 +40,7 @@ router.get("/aeps/transactions", requireAuth, requirePermission("aeps:view"), as
   const cacheKey = `aeps:transactions:${userId}:${page}:${limit}:${startDate || ""}:${endDate || ""}:${typeFilter || ""}:${customerName || ""}`;
 
   const result = await cached(cacheKey, 5_000, async () => {
-    const sessionWhere: any[] = [eq(aepsDailyTable.createdBy, userId)];
+    const sessionWhere = [eq(aepsDailyTable.createdBy, userId)];
     if (startDate) sessionWhere.push(gte(aepsDailyTable.date, startDate));
     if (endDate) sessionWhere.push(lte(aepsDailyTable.date, endDate));
 
@@ -56,7 +57,7 @@ router.get("/aeps/transactions", requireAuth, requirePermission("aeps:view"), as
     const idFilter = sessionIds.length === 1
       ? eq(aepsTransactionsTable.dailyId, sessionIds[0])
       : sql`${aepsTransactionsTable.dailyId} = ANY(ARRAY[${sql.raw(sessionIds.join(","))}])`;
-    const txWhere: any[] = [idFilter];
+    const txWhere = [idFilter];
     if (typeFilter === "withdrawal" || typeFilter === "deposit") txWhere.push(eq(aepsTransactionsTable.type, typeFilter));
     if (customerName) txWhere.push(ilike(aepsTransactionsTable.customerName, `%${customerName}%`));
 
@@ -80,10 +81,10 @@ router.get("/aeps/transactions", requireAuth, requirePermission("aeps:view"), as
   });
 
   res.json(result);
-});
+}));
 
 // ── POST /aeps/transaction ────────────────────────────────────────────────────
-router.post("/aeps/transaction", requireAuth, requirePermission("aeps:manage"), async (req, res): Promise<void> => {
+router.post("/aeps/transaction", requireAuth, requirePermission("aeps:manage"), asyncHandler(async (req, res) => {
   const parsed = AddTransactionBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
@@ -112,10 +113,10 @@ router.post("/aeps/transaction", requireAuth, requirePermission("aeps:manage"), 
     receiptToken: tx.receiptToken ?? null,
     createdAt: tx.createdAt instanceof Date ? tx.createdAt.toISOString() : tx.createdAt,
   });
-});
+}));
 
 // ── PATCH /aeps/transaction/:id ───────────────────────────────────────────────
-router.patch("/aeps/transaction/:id", requireAuth, requirePermission("aeps:manage"), async (req, res): Promise<void> => {
+router.patch("/aeps/transaction/:id", requireAuth, requirePermission("aeps:manage"), asyncHandler(async (req, res) => {
   const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
 
@@ -146,10 +147,10 @@ router.patch("/aeps/transaction/:id", requireAuth, requirePermission("aeps:manag
     receiptToken: updated.receiptToken ?? null,
     createdAt: updated.createdAt instanceof Date ? updated.createdAt.toISOString() : updated.createdAt,
   });
-});
+}));
 
 // ── DELETE /aeps/transaction/:id ──────────────────────────────────────────────
-router.delete("/aeps/transaction/:id", requireAuth, requirePermission("aeps:manage"), async (req, res): Promise<void> => {
+router.delete("/aeps/transaction/:id", requireAuth, requirePermission("aeps:manage"), asyncHandler(async (req, res) => {
   const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
 
@@ -165,10 +166,10 @@ router.delete("/aeps/transaction/:id", requireAuth, requirePermission("aeps:mana
   await invalidateAepsCaches(req.session.userId!);
   await auditLog(req.session.userId!, "aeps.delete", `Deleted AePS transaction ${id}`, getClientIp(req));
   res.sendStatus(204);
-});
+}));
 
 // ── GET /receipts/verify/aeps/:token (public) ─────────────────────────────────
-router.get("/receipts/verify/aeps/:token", async (req, res): Promise<void> => {
+router.get("/receipts/verify/aeps/:token", asyncHandler(async (req, res) => {
   const { token } = req.params;
   if (!token || typeof token !== "string" || token.length < 16) {
     res.status(400).json({ error: "Invalid token" }); return;
@@ -210,6 +211,6 @@ router.get("/receipts/verify/aeps/:token", async (req, res): Promise<void> => {
     businessMobile: getSetting("businessMobile"),
     businessWebsite: getSetting("businessWebsite"),
   });
-});
+}));
 
 export default router;

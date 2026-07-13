@@ -3,6 +3,7 @@ import { db, settingsTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import webPush from "web-push";
 import { requireRole, auditLog, getClientIp } from "../../lib/auth";
+import { asyncHandler } from "../../lib/async-handler";
 
 const router: IRouter = Router();
 
@@ -10,7 +11,7 @@ const KEY_PUBLIC = "vapidPublicKey";
 const KEY_PRIVATE = "vapidPrivateKey";
 
 // ── GET /settings/vapid — return VAPID public key + source ────────────────────
-router.get("/settings/vapid", requireRole("admin"), async (_req, res): Promise<void> => {
+router.get("/settings/vapid", requireRole("admin"), asyncHandler(async (_req, res) => {
   const publicKey = process.env.VAPID_PUBLIC_KEY ?? null;
   const fromEnv = Boolean(
     process.env.VAPID_PUBLIC_KEY &&
@@ -31,11 +32,11 @@ router.get("/settings/vapid", requireRole("admin"), async (_req, res): Promise<v
     fromEnv: Boolean(process.env.VAPID_PUBLIC_KEY && !pubRow?.value),
     dbPersisted: Boolean(pubRow?.value),
   });
-});
+}));
 
 // ── POST /settings/vapid/rotate — regenerate VAPID keypair ────────────────────
 // Only allowed when keys are DB-persisted (not supplied via Replit Secrets).
-router.post("/settings/vapid/rotate", requireRole("admin"), async (req, res): Promise<void> => {
+router.post("/settings/vapid/rotate", requireRole("admin"), asyncHandler(async (req, res) => {
   // Refuse if the running keys came from env secrets — rotating would break
   // existing push subscriptions and we cannot update the secret automatically.
   const [pubRow] = await db
@@ -79,6 +80,6 @@ router.post("/settings/vapid/rotate", requireRole("admin"), async (req, res): Pr
     message: "VAPID keys rotated. Existing push subscriptions are now invalid — users will need to re-subscribe.",
     publicKey,
   });
-});
+}));
 
 export default router;

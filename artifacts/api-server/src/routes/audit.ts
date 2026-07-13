@@ -3,10 +3,11 @@ import { db, auditLogsTable, usersTable } from "@workspace/db";
 import { eq, and, gte, lte, desc, count } from "drizzle-orm";
 import { ListAuditLogsQueryParams } from "@workspace/api-zod";
 import { requireRole } from "../lib/auth";
+import { asyncHandler } from "../lib/async-handler";
 
 const router: IRouter = Router();
 
-router.get("/audit-logs", requireRole("admin"), async (req, res): Promise<void> => {
+router.get("/audit-logs", requireRole("admin"), asyncHandler(async (req, res) => {
   const params = ListAuditLogsQueryParams.safeParse(req.query);
   const page = params.success && params.data.page ? params.data.page : 1;
   const limit = params.success && params.data.limit ? params.data.limit : 20;
@@ -60,6 +61,6 @@ router.get("/audit-logs", requireRole("admin"), async (req, res): Promise<void> 
     page,
     limit,
   });
-});
+}));
 
 export default router;

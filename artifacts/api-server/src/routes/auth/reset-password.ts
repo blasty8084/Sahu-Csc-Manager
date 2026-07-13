@@ -7,6 +7,7 @@ import { hashPassword, getClientIp, auditLog } from "../../lib/auth";
 import { passwordPolicySchema } from "../../lib/password-policy";
 import { hashOtp } from "./helpers";
 import { invalidateSessionCache, invalidateUserCache } from "../../lib/auth/sessionCache";
+import { asyncHandler } from "../../lib/async-handler";
 
 const router: IRouter = Router();
 
@@ -41,7 +42,7 @@ const ResetPasswordTokenBody = z.object({
 // ─── POST /auth/reset-password ────────────────────────────────────────────────
 // Mode 1 (new): { resetToken, password }  ← from email OTP verify-otp flow
 // Mode 2 (legacy): { identifier, otp, password }
-router.post("/auth/reset-password", async (req, res): Promise<void> => {
+router.post("/auth/reset-password", asyncHandler(async (req, res) => {
   // ── New token-based flow ────────────────────────────────────────────────────
   if (req.body?.resetToken) {
     const parsed = ResetPasswordTokenBody.safeParse(req.body);
@@ -113,6 +114,6 @@ router.post("/auth/reset-password", async (req, res): Promise<void> => {
 
   await auditLog(user.id, "password.reset", `Password reset via OTP for ${user.username}`, getClientIp(req));
   res.json({ message: "Password reset successfully. You can now log in with your new password." });
-});
+}));
 
 export default router;

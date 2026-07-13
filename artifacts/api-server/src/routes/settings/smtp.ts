@@ -4,6 +4,7 @@ import { eq, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 import { requireRole, auditLog, getClientIp } from "../../lib/auth";
 import { createTransporter, isSmtpConfigured } from "../../lib/mailer/transport";
+import { asyncHandler } from "../../lib/async-handler";
 
 const router: IRouter = Router();
 
@@ -16,7 +17,7 @@ const SmtpSettingsBody = z.object({
 });
 
 // ── GET /settings/smtp — return current SMTP config (password masked) ──────────
-router.get("/settings/smtp", requireRole("admin"), async (_req, res): Promise<void> => {
+router.get("/settings/smtp", requireRole("admin"), asyncHandler(async (_req, res) => {
   const rows = await db.select().from(settingsTable);
   const s: Record<string, string> = {};
   for (const r of rows) s[r.key] = r.value;
@@ -30,10 +31,10 @@ router.get("/settings/smtp", requireRole("admin"), async (_req, res): Promise<vo
     // password is never returned
     passwordSaved: Boolean(s["smtpPass"] || process.env.SMTP_PASS),
   });
-});
+}));
 
 // ── PATCH /settings/smtp — save SMTP config to the settings table ─────────────
-router.patch("/settings/smtp", requireRole("admin"), async (req, res): Promise<void> => {
+router.patch("/settings/smtp", requireRole("admin"), asyncHandler(async (req, res) => {
   const parsed = SmtpSettingsBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.issues?.[0]?.message ?? "Validation failed" });
@@ -72,10 +73,10 @@ router.patch("/settings/smtp", requireRole("admin"), async (req, res): Promise<v
 
   await auditLog(req.session.userId!, "settings.smtp.update", `SMTP settings updated (host: ${host}, user: ${user})`, getClientIp(req));
   res.json({ message: "SMTP settings saved.", configured: isSmtpConfigured() });
-});
+}));
 
 // ── POST /settings/smtp/test — send a test email ──────────────────────────────
-router.post("/settings/smtp/test", requireRole("admin"), async (req, res): Promise<void> => {
+router.post("/settings/smtp/test", requireRole("admin"), asyncHandler(async (req, res) => {
   if (!isSmtpConfigured()) {
     res.status(400).json({ error: "SMTP is not configured. Save SMTP settings first." });
     return;
@@ -101,6 +102,6 @@ router.post("/settings/smtp/test", requireRole("admin"), async (req, res): Promi
   } catch (err: any) {
     res.status(500).json({ error: `Failed to send test email: ${err.message}` });
   }
-});
+}));
 
 export default router;

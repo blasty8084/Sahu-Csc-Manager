@@ -3,6 +3,7 @@ import { db, userPreferencesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { z } from "zod/v4";
 import { requireAuth, auditLog, getClientIp } from "../lib/auth";
+import { asyncHandler } from "../lib/async-handler";
 
 const router: IRouter = Router();
 
@@ -34,12 +35,12 @@ function fmtPrefs(p: any) {
   };
 }
 
-router.get("/preferences", requireAuth, async (req, res): Promise<void> => {
+router.get("/preferences", requireAuth, asyncHandler(async (req, res) => {
   const prefs = await getOrCreatePrefs(req.session.userId!);
   res.json(fmtPrefs(prefs));
-});
+}));
 
-router.patch("/preferences", requireAuth, async (req, res): Promise<void> => {
+router.patch("/preferences", requireAuth, asyncHandler(async (req, res) => {
   const parsed = UpdatePreferencesBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
@@ -59,6 +60,6 @@ router.patch("/preferences", requireAuth, async (req, res): Promise<void> => {
 
   await auditLog(userId, "preferences.update", "User updated preferences", getClientIp(req));
   res.json(fmtPrefs(updated));
-});
+}));
 
 export default router;

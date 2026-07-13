@@ -6,6 +6,7 @@ import { createNotification } from "../lib/notify";
 import { isSmtpConfigured } from "../lib/mailer";
 import { enqueueNotification, enqueueEmail, buildApprovalMailOptions } from "../lib/queue-client";
 import { logger } from "../lib/logger";
+import { asyncHandler } from "../lib/async-handler";
 
 const router: IRouter = Router();
 
@@ -20,16 +21,16 @@ function fmtUser(u: any) {
 }
 
 // ── GET /admin/users/appeals ──────────────────────────────────────────────────
-router.get("/admin/users/appeals", requireRole("admin"), async (_req, res): Promise<void> => {
+router.get("/admin/users/appeals", requireRole("admin"), asyncHandler(async (_req, res) => {
   const rows = await db.select().from(usersTable).where(isNotNull(usersTable.appealSubmittedAt)).orderBy(usersTable.appealSubmittedAt).limit(500);
   res.json(rows.map((u) => ({
     ...fmtUser(u),
     appealSubmittedAt: u.appealSubmittedAt instanceof Date ? u.appealSubmittedAt.toISOString() : u.appealSubmittedAt,
   })));
-});
+}));
 
 // ── PATCH /admin/users/:id/re-approve ────────────────────────────────────────
-router.patch("/admin/users/:id/re-approve", requireRole("admin"), async (req, res): Promise<void> => {
+router.patch("/admin/users/:id/re-approve", requireRole("admin"), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id as string, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
 
@@ -56,10 +57,10 @@ router.patch("/admin/users/:id/re-approve", requireRole("admin"), async (req, re
   }
 
   res.json({ success: true, message: "Appeal approved", user: { ...fmtUser(updated), appealSubmittedAt: null } });
-});
+}));
 
 // ── PATCH /admin/users/:id/dismiss-appeal ─────────────────────────────────────
-router.patch("/admin/users/:id/dismiss-appeal", requireRole("admin"), async (req, res): Promise<void> => {
+router.patch("/admin/users/:id/dismiss-appeal", requireRole("admin"), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id as string, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
 
@@ -73,10 +74,10 @@ router.patch("/admin/users/:id/dismiss-appeal", requireRole("admin"), async (req
     .catch((err) => logger.warn({ err, userId: id }, "Failed to enqueue appeal dismissed push"));
 
   res.json({ success: true, message: "Appeal dismissed" });
-});
+}));
 
 // ── POST /admin/users/appeals/dismiss-all ─────────────────────────────────────
-router.post("/admin/users/appeals/dismiss-all", requireRole("admin"), async (req, res): Promise<void> => {
+router.post("/admin/users/appeals/dismiss-all", requireRole("admin"), asyncHandler(async (req, res) => {
   const pending = await db
     .select({ id: usersTable.id, username: usersTable.username })
     .from(usersTable)
@@ -95,6 +96,6 @@ router.post("/admin/users/appeals/dismiss-all", requireRole("admin"), async (req
   }));
 
   res.json({ success: true, dismissed: pending.length });
-});
+}));
 
 export default router;

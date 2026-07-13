@@ -7,6 +7,7 @@ import { z } from "zod/v4";
 import { randomUUID } from "crypto";
 import { fmtCustomer, recalcBalance } from "./customers";
 import { cached, invalidateUdhariCaches } from "../../lib/query-cache";
+import { asyncHandler } from "../../lib/async-handler";
 
 export const router: IRouter = Router();
 
@@ -29,7 +30,7 @@ const EntryUpdate = z.object({
 });
 
 // ── GET /udhari/customers/:customerId/entries ─────────────────────────────────
-router.get("/udhari/customers/:customerId/entries", requireAuth, requirePermission("udhari:view"), async (req, res): Promise<void> => {
+router.get("/udhari/customers/:customerId/entries", requireAuth, requirePermission("udhari:view"), asyncHandler(async (req, res) => {
   const userId = req.session.userId!;
   const customerId = parseInt(req.params.customerId as string);
   if (isNaN(customerId)) { res.status(400).json({ error: "Invalid id" }); return; }
@@ -42,10 +43,10 @@ router.get("/udhari/customers/:customerId/entries", requireAuth, requirePermissi
     return rows.map(fmtEntry);
   });
   res.json(entries);
-});
+}));
 
 // ── POST /udhari/customers/:customerId/entries ────────────────────────────────
-router.post("/udhari/customers/:customerId/entries", requireAuth, requirePermission("udhari:manage"), async (req, res): Promise<void> => {
+router.post("/udhari/customers/:customerId/entries", requireAuth, requirePermission("udhari:manage"), asyncHandler(async (req, res) => {
   const userId = req.session.userId!;
   const customerId = parseInt(req.params.customerId as string);
   if (isNaN(customerId)) { res.status(400).json({ error: "Invalid id" }); return; }
@@ -64,10 +65,10 @@ router.post("/udhari/customers/:customerId/entries", requireAuth, requirePermiss
   const [updated] = await db.select().from(udhariCustomersTable).where(eq(udhariCustomersTable.id, customerId));
   await auditLog(userId, "udhari.entry.create", `${type === "gave" ? "Gave" : "Got"} ₹${amount} for customer: ${customer.name}`, getClientIp(req));
   res.status(201).json({ entry: fmtEntry(entry), customer: await fmtCustomer(updated) });
-});
+}));
 
 // ── PATCH /udhari/customers/:customerId/entries/:entryId ──────────────────────
-router.patch("/udhari/customers/:customerId/entries/:entryId", requireAuth, requirePermission("udhari:manage"), async (req, res): Promise<void> => {
+router.patch("/udhari/customers/:customerId/entries/:entryId", requireAuth, requirePermission("udhari:manage"), asyncHandler(async (req, res) => {
   const userId = req.session.userId!;
   const customerId = parseInt(req.params.customerId as string);
   const entryId = parseInt(req.params.entryId as string);
@@ -92,10 +93,10 @@ router.patch("/udhari/customers/:customerId/entries/:entryId", requireAuth, requ
   const [updatedCustomer] = await db.select().from(udhariCustomersTable).where(eq(udhariCustomersTable.id, customerId));
 
   res.json({ entry: fmtEntry(updated), customer: await fmtCustomer(updatedCustomer) });
-});
+}));
 
 // ── DELETE /udhari/customers/:customerId/entries/:entryId ─────────────────────
-router.delete("/udhari/customers/:customerId/entries/:entryId", requireAuth, requirePermission("udhari:manage"), async (req, res): Promise<void> => {
+router.delete("/udhari/customers/:customerId/entries/:entryId", requireAuth, requirePermission("udhari:manage"), asyncHandler(async (req, res) => {
   const userId = req.session.userId!;
   const customerId = parseInt(req.params.customerId as string);
   const entryId = parseInt(req.params.entryId as string);
@@ -112,6 +113,6 @@ router.delete("/udhari/customers/:customerId/entries/:entryId", requireAuth, req
   await invalidateUdhariCaches(userId);
   const [updatedCustomer] = await db.select().from(udhariCustomersTable).where(eq(udhariCustomersTable.id, customerId));
   res.json({ message: "Entry deleted", customer: await fmtCustomer(updatedCustomer) });
-});
+}));
 
 export default router;

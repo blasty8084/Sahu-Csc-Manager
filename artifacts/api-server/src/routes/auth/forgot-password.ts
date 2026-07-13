@@ -6,12 +6,13 @@ import { eq, or } from "drizzle-orm";
 import { z } from "zod/v4";
 import { getClientIp, auditLog } from "../../lib/auth";
 import { generateNumericOtp, hashOtp } from "./helpers";
+import { asyncHandler } from "../../lib/async-handler";
 
 const router: IRouter = Router();
 
 const ForgotPasswordBody = z.object({ identifier: z.string().min(1) });
 
-router.post("/auth/forgot-password", async (req, res): Promise<void> => {
+router.post("/auth/forgot-password", asyncHandler(async (req, res) => {
   const parsed = ForgotPasswordBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Please provide a username, email, or mobile number" });
@@ -40,6 +41,6 @@ router.post("/auth/forgot-password", async (req, res): Promise<void> => {
   await auditLog(user.id, "password.reset_request", `OTP password reset requested for ${user.username}`, getClientIp(req));
 
   res.json({ message: "OTP generated successfully.", otp, username: user.username, expiresAt: expiresAt.toISOString() });
-});
+}));
 
 export default router;

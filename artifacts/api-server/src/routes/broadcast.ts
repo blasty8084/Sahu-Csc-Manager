@@ -7,11 +7,12 @@ import { isSmtpConfigured } from "../lib/mailer";
 import { createSystemNotification } from "../services/notificationService";
 import { z } from "zod/v4";
 import { logger } from "../lib/logger";
+import { asyncHandler } from "../lib/async-handler";
 
 const router: IRouter = Router();
 
 // GET /api/admin/broadcast/stats
-router.get("/admin/broadcast/stats", requireRole("admin"), async (_req, res): Promise<void> => {
+router.get("/admin/broadcast/stats", requireRole("admin"), asyncHandler(async (_req, res) => {
   try {
     const [pushRow] = await db.select({ total: count() }).from(pushSubscriptionsTable);
     const [emailRow] = await db.select({ total: count() }).from(usersTable).where(isNotNull(usersTable.email));
@@ -27,10 +28,10 @@ router.get("/admin/broadcast/stats", requireRole("admin"), async (_req, res): Pr
     logger.error({ err }, "broadcast stats failed");
     res.status(500).json({ error: "Failed to fetch stats" });
   }
-});
+}));
 
 // GET /api/admin/broadcast/history
-router.get("/admin/broadcast/history", requireRole("admin"), async (req, res): Promise<void> => {
+router.get("/admin/broadcast/history", requireRole("admin"), asyncHandler(async (req, res) => {
   try {
     const page = Math.max(1, parseInt(String(req.query.page ?? "1"), 10));
     const limit = Math.min(50, Math.max(1, parseInt(String(req.query.limit ?? "20"), 10)));
@@ -70,7 +71,7 @@ router.get("/admin/broadcast/history", requireRole("admin"), async (req, res): P
     logger.error({ err }, "broadcast history failed");
     res.status(500).json({ error: "Failed to fetch history" });
   }
-});
+}));
 
 // POST /api/admin/broadcast/push
 router.post("/admin/broadcast/push", requireRole("admin"), async (req: any, res): Promise<void> => {

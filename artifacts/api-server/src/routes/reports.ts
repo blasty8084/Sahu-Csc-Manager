@@ -5,6 +5,7 @@ import { GetDailyReportQueryParams, GetMonthlyReportQueryParams, GetServiceBreak
 import { requireAuth, requirePermission } from "../lib/auth";
 import { cached } from "../lib/query-cache";
 import ExcelJS from "exceljs";
+import { asyncHandler } from "../lib/async-handler";
 
 const router: IRouter = Router();
 
@@ -93,7 +94,7 @@ export async function getAepsData(startDate: string, endDate: string) {
   return { totalWithdrawals, totalDeposits, totalTransactions, sessions: sessionList };
 }
 
-router.get("/reports/daily", requireAuth, requirePermission("reports:view"), async (req, res): Promise<void> => {
+router.get("/reports/daily", requireAuth, requirePermission("reports:view"), asyncHandler(async (req, res) => {
   const params = GetDailyReportQueryParams.safeParse(req.query);
   const date = params.success && params.data.date ? params.data.date as string : new Date().toISOString().split("T")[0];
 
@@ -133,9 +134,9 @@ router.get("/reports/daily", requireAuth, requirePermission("reports:view"), asy
       netFlow: aeps.totalDeposits - aeps.totalWithdrawals,
     },
   });
-});
+}));
 
-router.get("/reports/monthly", requireAuth, requirePermission("reports:view"), async (req, res): Promise<void> => {
+router.get("/reports/monthly", requireAuth, requirePermission("reports:view"), asyncHandler(async (req, res) => {
   const params = GetMonthlyReportQueryParams.safeParse(req.query);
   const now = new Date();
   const year = params.success && params.data.year ? params.data.year : now.getFullYear();
@@ -195,9 +196,9 @@ router.get("/reports/monthly", requireAuth, requirePermission("reports:view"), a
       dailyBreakdown: aeps.sessions,
     },
   });
-});
+}));
 
-router.get("/reports/aeps", requireAuth, requirePermission("reports:view"), async (req, res): Promise<void> => {
+router.get("/reports/aeps", requireAuth, requirePermission("reports:view"), asyncHandler(async (req, res) => {
   const now = new Date();
   const startDate = (req.query.startDate as string) || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
   const endDate = (req.query.endDate as string) || now.toISOString().split("T")[0];
@@ -212,9 +213,9 @@ router.get("/reports/aeps", requireAuth, requirePermission("reports:view"), asyn
     netFlow: aeps.totalDeposits - aeps.totalWithdrawals,
     dailyBreakdown: aeps.sessions,
   });
-});
+}));
 
-router.get("/reports/service-breakdown", requireAuth, requirePermission("reports:view"), async (req, res): Promise<void> => {
+router.get("/reports/service-breakdown", requireAuth, requirePermission("reports:view"), asyncHandler(async (req, res) => {
   const params = GetServiceBreakdownQueryParams.safeParse(req.query);
   const now = new Date();
   const startDate = params.success && params.data.startDate
@@ -227,9 +228,9 @@ router.get("/reports/service-breakdown", requireAuth, requirePermission("reports
   const userFilter = getUserFilter(req);
   const data = await getServiceBreakdownData(startDate, endDate, userFilter);
   res.json(data);
-});
+}));
 
-router.get("/reports/export", requireAuth, requirePermission("reports:export"), async (req, res): Promise<void> => {
+router.get("/reports/export", requireAuth, requirePermission("reports:export"), asyncHandler(async (req, res) => {
   const params = ExportReportQueryParams.safeParse(req.query);
   const now = new Date();
   const startDate = params.success && params.data.startDate
@@ -276,6 +277,6 @@ router.get("/reports/export", requireAuth, requirePermission("reports:export"), 
   res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
   res.setHeader("Content-Disposition", `attachment; filename="report_${startDate}_${endDate}.xlsx"`);
   res.send(Buffer.from(buffer));
-});
+}));
 
 export default router;

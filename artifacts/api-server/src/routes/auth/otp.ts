@@ -7,6 +7,7 @@ import { isSmtpConfigured } from "../../lib/mailer";
 import { enqueueEmail, buildOtpMailOptions } from "../../lib/queue-client";
 import { logger } from "../../lib/logger";
 import { generateNumericOtp, hashOtp, maskEmail } from "./helpers";
+import { asyncHandler } from "../../lib/async-handler";
 
 const router: IRouter = Router();
 
@@ -17,7 +18,7 @@ const RATE_LIMIT_MAX = 3;
 // ─── POST /auth/send-otp ───────────────────────────────────────────────────────
 // registration : requires { email, purpose }
 // password_reset: accepts { identifier, purpose } OR { email, purpose }
-router.post("/auth/send-otp", async (req, res): Promise<void> => {
+router.post("/auth/send-otp", asyncHandler(async (req, res) => {
   if (!isSmtpConfigured()) {
     res.status(503).json({
       error: "Email service not configured. Please set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS in Secrets.",
@@ -97,13 +98,13 @@ router.post("/auth/send-otp", async (req, res): Promise<void> => {
   }
 
   res.json({ message: "OTP sent. It expires in 10 minutes.", maskedEmail: maskEmail(resolvedEmail) });
-});
+}));
 
 // ─── POST /auth/verify-otp ────────────────────────────────────────────────────
 // Modes:
 //  1/2. { identifier|email, otp, purpose }  — email-OTP flow (registration / password_reset)
 //  3.   { identifier, otp }                 — legacy admin-OTP via passwordResetTokens table
-router.post("/auth/verify-otp", async (req, res): Promise<void> => {
+router.post("/auth/verify-otp", asyncHandler(async (req, res) => {
   const { email: rawEmail, otp, purpose, identifier } = req.body as {
     email?: string; otp?: string; purpose?: string; identifier?: string;
   };
@@ -187,6 +188,6 @@ router.post("/auth/verify-otp", async (req, res): Promise<void> => {
   if (record.token !== otpHash) { res.json({ valid: false, reason: "invalid" }); return; }
 
   res.json({ valid: true, username: user.username, expiresAt: record.expiresAt.toISOString() });
-});
+}));
 
 export default router;

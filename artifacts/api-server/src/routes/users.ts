@@ -8,6 +8,7 @@ import { encryptField, decryptField } from "../lib/encryption";
 import { sanitize } from "../lib/sanitize";
 import { passwordPolicySchema } from "../lib/password-policy";
 import { cached, invalidateUserListCache } from "../lib/query-cache";
+import { asyncHandler } from "../lib/async-handler";
 
 const router: IRouter = Router();
 
@@ -28,15 +29,15 @@ async function fmt(u: any) {
   };
 }
 
-router.get("/users", requireRole("admin"), async (_req, res): Promise<void> => {
+router.get("/users", requireRole("admin"), asyncHandler(async (_req, res) => {
   const users = await cached("admin:users", 5_000, async () => {
     const rows = await db.select().from(usersTable).orderBy(usersTable.username).limit(1000);
     return Promise.all(rows.map(fmt));
   });
   res.json(users);
-});
+}));
 
-router.post("/users", requireRole("admin"), async (req, res): Promise<void> => {
+router.post("/users", requireRole("admin"), asyncHandler(async (req, res) => {
   const parsed = CreateUserBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
@@ -62,9 +63,9 @@ router.post("/users", requireRole("admin"), async (req, res): Promise<void> => {
   await invalidateUserListCache();
   await auditLog(req.session.userId!, "user.create", `Created user: ${u.username}`, getClientIp(req));
   res.status(201).json(await fmt(u));
-});
+}));
 
-router.patch("/users/:id", requireRole("admin"), async (req, res): Promise<void> => {
+router.patch("/users/:id", requireRole("admin"), asyncHandler(async (req, res) => {
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(rawId, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
@@ -130,9 +131,9 @@ router.patch("/users/:id", requireRole("admin"), async (req, res): Promise<void>
   await auditLog(req.session.userId!, action, detail, getClientIp(req));
 
   res.json(await fmt(updated));
-});
+}));
 
-router.delete("/users/:id", requireRole("admin"), async (req, res): Promise<void> => {
+router.delete("/users/:id", requireRole("admin"), asyncHandler(async (req, res) => {
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(rawId, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
@@ -144,6 +145,6 @@ router.delete("/users/:id", requireRole("admin"), async (req, res): Promise<void
   await invalidateUserListCache();
   await auditLog(req.session.userId!, "user.delete", `Deleted user ${id}`, getClientIp(req));
   res.sendStatus(204);
-});
+}));
 
 export default router;

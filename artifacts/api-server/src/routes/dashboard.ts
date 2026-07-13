@@ -4,10 +4,11 @@ import { and, gte, lte, eq, sql, sum, count, desc } from "drizzle-orm";
 import { requireAuth, requirePermission } from "../lib/auth";
 import { getServiceBreakdownData } from "./reports";
 import { cached } from "../lib/query-cache";
+import { asyncHandler } from "../lib/async-handler";
 
 const router: IRouter = Router();
 
-router.get("/dashboard", requireAuth, requirePermission("reports:view"), async (req, res): Promise<void> => {
+router.get("/dashboard", requireAuth, requirePermission("reports:view"), asyncHandler(async (req, res) => {
   const today = new Date().toISOString().split("T")[0];
   const now = new Date();
   const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
@@ -67,6 +68,6 @@ router.get("/dashboard", requireAuth, requirePermission("reports:view"), async (
     })),
     topServicesMonth: topServices.slice(0, 5),
   });
-});
+}));
 
 export default router;

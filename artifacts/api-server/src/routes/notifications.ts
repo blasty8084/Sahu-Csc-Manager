@@ -4,6 +4,7 @@ import { eq, or, isNull, and, desc, ilike, count, inArray } from "drizzle-orm";
 import { requireAuth, requireRole, getClientIp } from "../lib/auth";
 import { createSystemNotification } from "../services/notificationService";
 import { z } from "zod/v4";
+import { asyncHandler } from "../lib/async-handler";
 
 const router: IRouter = Router();
 
@@ -29,7 +30,7 @@ function userScope(userId: number) {
 }
 
 // GET /notifications — paginated, filterable
-router.get("/notifications", requireAuth, async (req, res): Promise<void> => {
+router.get("/notifications", requireAuth, asyncHandler(async (req, res) => {
   const userId = req.session.userId!;
 
   const page = Math.max(1, parseInt(String(req.query.page ?? "1"), 10));
@@ -71,20 +72,20 @@ router.get("/notifications", requireAuth, async (req, res): Promise<void> => {
     limit,
     unreadCount: 0,
   });
-});
+}));
 
 // GET /notifications/unread-count
-router.get("/notifications/unread-count", requireAuth, async (req, res): Promise<void> => {
+router.get("/notifications/unread-count", requireAuth, asyncHandler(async (req, res) => {
   const userId = req.session.userId!;
   const [row] = await db
     .select({ total: count() })
     .from(notificationsTable)
     .where(and(userScope(userId), eq(notificationsTable.isRead, false)));
   res.json({ count: Number(row?.total ?? 0) });
-});
+}));
 
 // POST /notifications/read-all
-router.post("/notifications/read-all", requireAuth, async (req, res): Promise<void> => {
+router.post("/notifications/read-all", requireAuth, asyncHandler(async (req, res) => {
   const userId = req.session.userId!;
   const result = await db
     .update(notificationsTable)
@@ -92,10 +93,10 @@ router.post("/notifications/read-all", requireAuth, async (req, res): Promise<vo
     .where(and(userScope(userId), eq(notificationsTable.isRead, false)))
     .returning({ id: notificationsTable.id });
   res.json({ success: true, updated: result.length });
-});
+}));
 
 // PATCH /notifications/:id/read
-router.patch("/notifications/:id/read", requireAuth, async (req, res): Promise<void> => {
+router.patch("/notifications/:id/read", requireAuth, asyncHandler(async (req, res) => {
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(rawId, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
@@ -111,10 +112,10 @@ router.patch("/notifications/:id/read", requireAuth, async (req, res): Promise<v
     .where(eq(notificationsTable.id, id))
     .returning();
   res.json(fmt(updated));
-});
+}));
 
 // DELETE /notifications/:id
-router.delete("/notifications/:id", requireAuth, async (req, res): Promise<void> => {
+router.delete("/notifications/:id", requireAuth, asyncHandler(async (req, res) => {
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(rawId, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
@@ -126,10 +127,10 @@ router.delete("/notifications/:id", requireAuth, async (req, res): Promise<void>
 
   await db.delete(notificationsTable).where(eq(notificationsTable.id, id));
   res.sendStatus(204);
-});
+}));
 
 // DELETE /notifications/bulk
-router.delete("/notifications/bulk", requireAuth, async (req, res): Promise<void> => {
+router.delete("/notifications/bulk", requireAuth, asyncHandler(async (req, res) => {
   const userId = req.session.userId!;
   const body = z.object({
     filter: z.enum(["read", "all"]).optional(),
@@ -161,10 +162,10 @@ router.delete("/notifications/bulk", requireAuth, async (req, res): Promise<void
   }
 
   res.json({ success: true, deleted });
-});
+}));
 
 // GET /notifications/preferences
-router.get("/notifications/preferences", requireAuth, async (req, res): Promise<void> => {
+router.get("/notifications/preferences", requireAuth, asyncHandler(async (req, res) => {
   const userId = req.session.userId!;
   let [prefs] = await db.select().from(userNotificationPreferencesTable).where(eq(userNotificationPreferencesTable.userId, userId));
   if (!prefs) {
@@ -172,10 +173,10 @@ router.get("/notifications/preferences", requireAuth, async (req, res): Promise<
     prefs = created;
   }
   res.json(prefs);
-});
+}));
 
 // PATCH /notifications/preferences
-router.patch("/notifications/preferences", requireAuth, async (req, res): Promise<void> => {
+router.patch("/notifications/preferences", requireAuth, asyncHandler(async (req, res) => {
   const userId = req.session.userId!;
   const allowed = z.object({
     enabled: z.boolean().optional(),
@@ -197,10 +198,10 @@ router.patch("/notifications/preferences", requireAuth, async (req, res): Promis
     const [created] = await db.insert(userNotificationPreferencesTable).values({ userId, ...allowed.data }).returning();
     res.json(created);
   }
-});
+}));
 
 // POST /admin/notifications/broadcast
-router.post("/admin/notifications/broadcast", requireRole("admin"), async (req, res): Promise<void> => {
+router.post("/admin/notifications/broadcast", requireRole("admin"), asyncHandler(async (req, res) => {
   const body = z.object({
     title: z.string().min(1).max(150),
     message: z.string().min(1),
@@ -220,6 +221,6 @@ router.post("/admin/notifications/broadcast", requireRole("admin"), async (req, 
     userIds,
   });
   res.json({ success: true, sent });
-});
+}));
 
 export default router;

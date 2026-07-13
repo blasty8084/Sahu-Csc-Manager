@@ -5,6 +5,7 @@ import { requireAuth, requireRole, requirePermission, auditLog, getClientIp } fr
 import { sanitize } from "../../lib/sanitize";
 import { z } from "zod";
 import { cached, invalidateAepsCaches } from "../../lib/query-cache";
+import { asyncHandler } from "../../lib/async-handler";
 
 export const router: IRouter = Router();
 
@@ -19,7 +20,7 @@ export function fmt(n: string | number | null): number {
 }
 
 // ── GET /aeps/session?date=YYYY-MM-DD ─────────────────────────────────────────
-router.get("/aeps/session", requireAuth, requirePermission("aeps:view"), async (req, res): Promise<void> => {
+router.get("/aeps/session", requireAuth, requirePermission("aeps:view"), asyncHandler(async (req, res) => {
   const userId = req.session.userId!;
   const date = (req.query.date as string) || new Date().toISOString().split("T")[0];
 
@@ -62,10 +63,10 @@ router.get("/aeps/session", requireAuth, requirePermission("aeps:view"), async (
   });
 
   res.json(result);
-});
+}));
 
 // ── POST /aeps/session ────────────────────────────────────────────────────────
-router.post("/aeps/session", requireAuth, requirePermission("aeps:manage"), async (req, res): Promise<void> => {
+router.post("/aeps/session", requireAuth, requirePermission("aeps:manage"), asyncHandler(async (req, res) => {
   const parsed = UpsertSessionBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
@@ -95,10 +96,10 @@ router.post("/aeps/session", requireAuth, requirePermission("aeps:manage"), asyn
   await invalidateAepsCaches(userId);
   await auditLog(userId, "aeps.session", `AePS day opened for ${date} with ₹${openingBalance}`, getClientIp(req));
   res.json({ id: session.id, date: session.date, openingBalance: fmt(session.openingBalance), notes: session.notes });
-});
+}));
 
 // ── GET /admin/aeps-overview ──────────────────────────────────────────────────
-router.get("/admin/aeps-overview", requireRole("admin"), async (_req, res): Promise<void> => {
+router.get("/admin/aeps-overview", requireRole("admin"), asyncHandler(async (_req, res) => {
   const result = await cached("admin:aeps-overview", 5_000, async () => {
     const sessions = await db
       .select({ id: aepsDailyTable.id, date: aepsDailyTable.date, createdBy: aepsDailyTable.createdBy, openingBalance: aepsDailyTable.openingBalance })
@@ -134,6 +135,6 @@ router.get("/admin/aeps-overview", requireRole("admin"), async (_req, res): Prom
   });
 
   res.json(result);
-});
+}));
 
 export default router;

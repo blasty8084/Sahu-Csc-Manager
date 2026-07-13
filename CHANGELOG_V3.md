@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v3 / v4
-**Current version: 4.1.1 — July 13, 2026**
+**Current version: 4.1.2 — July 13, 2026**
 
 > Detailed record of every feature, change, and upgrade from v3.0.0 onward.  
 > For v2.x history, see `docs/archive/changelogV2.md`.  
@@ -14,6 +14,7 @@
 
 ## Table of Contents
 
+0. [v4.1.2 — Security & Type-Safety Hardening (July 13, 2026)](#0-v412--security--type-safety-hardening-july-13-2026)
 0. [v4.1.1 — Worker Server — BullMQ Async Processing (July 13, 2026)](#0-v411--worker-server--bullmq-async-processing-july-13-2026)
 0. [v4.0.2 — Image & Loader Polish (July 13, 2026)](#0-v402--image--loader-polish-july-13-2026)
 0. [v4.0.1 — Redis Rate Limiting & Multi-Instance Readiness (July 13, 2026)](#0-v401--redis-rate-limiting--multi-instance-readiness-july-13-2026)
@@ -21,6 +22,37 @@
 0. [v3.5.10 — Navigation Performance — Instant Page Switching (July 12, 2026)](#0-v3510--navigation-performance--instant-page-switching-july-12-2026)
 0. [v3.5.9 — Redis Cache Live, i18n Fixes & Build Hardening (July 12, 2026)](#0-v359--redis-cache-live-i18n-fixes--build-hardening-july-12-2026)
 0. [v3.5.8 — Reports & Receipt Export Page Modularization (July 12, 2026)](#0-v358--reports--receipt-export-page-modularization-july-12-2026)
+
+---
+
+## 0. v4.1.2 — Security & Type-Safety Hardening (July 13, 2026)
+
+Closes the remaining open and partially-fixed issues from the v4.1.1 audit (C-2, H-2, M-5, M-9, M-10). No routes, UI, or data behavior changed.
+
+| Change | Description |
+|--------|-------------|
+| **`asyncHandler` utility** | New `src/lib/async-handler.ts` — wraps an async Express callback so any rejected promise is forwarded to the Express error handler via `next(err)` instead of becoming an unhandled rejection that hangs the client or crashes the process. |
+| **116 route handlers wrapped (C-2)** | All 32 route files (admin, auth, aeps, ledger, reports, notifications, settings, udhari, …) had their `async (req, res) =>` callbacks wrapped with `asyncHandler(...)`. Closes the critical gap where a DB error in an unwrapped handler sent no response and left the client hanging. |
+| **Global `staleTime` default (H-2 / M-9)** | `QueryClient` in `App.tsx` already had `staleTime: 5 * 60_000` + `refetchOnWindowFocus: false` in `defaultOptions.queries` — confirmed applied to all 64 hooks, including `dashboard.tsx` and `layout.tsx`. All per-query staleTime settings are additive overrides only. |
+| **`req.session as any` removed (M-10)** | `admin.ts` lines 168 & 225 cast `req.session as any` to access `userId`. Since `SessionData` is augmented in `middleware.ts`, both casts replaced with `req.session.userId` directly. |
+| **`any[]` typed in `transactions.ts` (M-5)** | `sessionWhere: any[]` and `txWhere: any[]` in `aeps/transactions.ts` had their explicit `: any[]` annotations removed; TypeScript now infers the correct Drizzle SQL condition types from the initialiser, eliminating two of the remaining `any` cast sites. |
+
+### asyncHandler pattern
+
+```ts
+// src/lib/async-handler.ts
+export function asyncHandler(fn): RequestHandler {
+  return (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+}
+
+// Usage in every route file:
+router.get("/path", requireAuth, asyncHandler(async (req, res) => {
+  const data = await db.select()...;
+  res.json(data);
+}));
+```
+
+Any thrown error or rejected promise is now caught and passed to Express's global error middleware, which logs it and returns a structured `500` response instead of hanging the connection.
 
 ---
 

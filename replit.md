@@ -1,5 +1,5 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 4.1.1** — last updated 2026-07-13
+**Version 4.1.2** — last updated 2026-07-13
 
 > Re-imported and re-set-up on Replit 2026-07-11: ran `pnpm install`, pushed schema via `drizzle-kit push` (`pnpm exec drizzle-kit push --config=drizzle.config.ts` from `lib/db/`), seeded admin/operator via the `Seed Database` workflow, and started `API Server` + `SAHU CSC` workflows. `ADMIN_PASSWORD` and `OPERATOR_PASSWORD` were re-requested as Replit Secrets (a fresh import means a fresh, empty database, so these seed-account passwords must be re-provided each time); `SESSION_SECRET` already existed. Verified login works via curl.
 >
@@ -8,6 +8,15 @@
 > **Fixed a workflow bug**: the `API Server` workflow ran `PORT=8080 ... pnpm run build && node index.mjs` — in bash, a `VAR=val` prefix only applies to the command immediately before `&&`, so `node index.mjs` was inheriting the reserved `PORT=5000` (set in `.replit` `[userenv.shared]`) instead of 8080, colliding with the frontend's port. Fixed by prefixing `node` with its own `PORT=8080` too.
 >
 > **Fixed a fresh-`node_modules` build failure (2026-07-11)**: after a clean `pnpm install`, the API Server build failed at runtime with `ERR_MODULE_NOT_FOUND` for `@opentelemetry/instrumentation`, then `@opentelemetry/core`, then `@opentelemetry/sdk-trace-base` in turn. `build.mjs` externalizes `@opentelemetry/*` (to dodge the drizzle-orm dual-peer conflict — see Sentry note below), so esbuild doesn't bundle it, but pnpm only hoists *direct* dependencies into `artifacts/api-server/node_modules`; these three are transitive deps of `@sentry/node`/`@sentry/opentelemetry`/`@sentry/node-core` that were never hoisted. Fixed by adding all three as explicit `dependencies` in `artifacts/api-server/package.json` (alongside the existing `@opentelemetry/api`) so pnpm hoists them. If a future Sentry upgrade throws the same `ERR_MODULE_NOT_FOUND` for a new `@opentelemetry/*` subpackage, add it the same way.
+
+## What's New in v4.1.2 (July 13, 2026) — Security & Type-Safety Hardening
+
+| Change | Description |
+|--------|-------------|
+| **`asyncHandler` (C-2)** | New `src/lib/async-handler.ts` utility. All 32 route files — 116 async handlers — wrapped so unhandled promise rejections reach Express's error handler instead of hanging responses. |
+| **`req.session as any` removed (M-10)** | Two casts in `admin.ts` replaced with `req.session.userId` (typed via the existing `SessionData` augmentation in `middleware.ts`). |
+| **`any[]` typed in `transactions.ts` (M-5)** | `sessionWhere` and `txWhere` type annotations removed; TypeScript infers the correct Drizzle SQL condition types. |
+| **`staleTime` global default confirmed (H-2/M-9)** | `App.tsx` `QueryClient` already sets `staleTime: 5 * 60_000` + `refetchOnWindowFocus: false` globally — all 64 query hooks benefit without per-hook changes. |
 
 ## What's New in v4.1.1 (July 13, 2026) — Worker Server (BullMQ async offloading)
 

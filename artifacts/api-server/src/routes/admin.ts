@@ -6,10 +6,11 @@ import crypto from "node:crypto";
 import { randomUUID } from "node:crypto";
 import { sendAdminResetLinkEmail, isSmtpConfigured } from "../lib/mailer";
 import { cached } from "../lib/query-cache";
+import { asyncHandler } from "../lib/async-handler";
 
 const router: IRouter = Router();
 
-router.get("/admin/users-overview", requireRole("admin"), async (_req, res): Promise<void> => {
+router.get("/admin/users-overview", requireRole("admin"), asyncHandler(async (_req, res) => {
   // This scans the full ledger table twice (grouped balances + DISTINCT ON
   // recent entry) plus a full users scan. It's the heaviest admin page and
   // gets hit on every dashboard refresh, so cache it for a few seconds —
@@ -77,9 +78,9 @@ router.get("/admin/users-overview", requireRole("admin"), async (_req, res): Pro
   });
 
   res.json(summaries);
-});
+}));
 
-router.get("/admin/users-overview/:userId/ledger", requireRole("admin"), async (req, res): Promise<void> => {
+router.get("/admin/users-overview/:userId/ledger", requireRole("admin"), asyncHandler(async (req, res) => {
   const rawId = Array.isArray(req.params.userId) ? req.params.userId[0] : req.params.userId;
   const userId = parseInt(rawId, 10);
   if (isNaN(userId)) { res.status(400).json({ error: "Invalid user ID" }); return; }
@@ -121,12 +122,12 @@ router.get("/admin/users-overview/:userId/ledger", requireRole("admin"), async (
     page,
     limit,
   });
-});
+}));
 
 // ─── POST /admin/users/:id/generate-reset-link ────────────────────────────────
 // Admin-only: creates a pre-verified password reset token without sending email.
 // Returns { resetToken, expiresAt, username } — frontend builds the full URL.
-router.post("/admin/users/:id/generate-reset-link", requireRole("admin"), async (req, res): Promise<void> => {
+router.post("/admin/users/:id/generate-reset-link", requireRole("admin"), asyncHandler(async (req, res) => {
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const userId = parseInt(rawId, 10);
   if (isNaN(userId)) { res.status(400).json({ error: "Invalid user ID" }); return; }
@@ -165,7 +166,7 @@ router.post("/admin/users/:id/generate-reset-link", requireRole("admin"), async 
   // Attach the pre-verified token — this is what the reset-password endpoint validates
   await db.update(emailOtpsTable).set({ verifiedToken }).where(eq(emailOtpsTable.id, inserted.id));
 
-  const adminId = (req.session as any)?.userId ?? null;
+  const adminId = req.session.userId ?? null;
   await auditLog(
     adminId,
     "password.admin_reset_link",
@@ -174,12 +175,12 @@ router.post("/admin/users/:id/generate-reset-link", requireRole("admin"), async 
   );
 
   res.json({ resetToken: verifiedToken, expiresAt: expiresAt.toISOString(), username: user.username });
-});
+}));
 
 // ─── POST /admin/users/:id/email-reset-link ───────────────────────────────────
 // Admin-only: sends the already-generated reset link to the user's email address.
 // Body: { resetToken: string, expiresAt: string (ISO), resetUrl: string }
-router.post("/admin/users/:id/email-reset-link", requireRole("admin"), async (req, res): Promise<void> => {
+router.post("/admin/users/:id/email-reset-link", requireRole("admin"), asyncHandler(async (req, res) => {
   if (!isSmtpConfigured()) {
     res.status(503).json({ error: "Email is not configured on this server. Copy the link and share it manually." });
     return;
@@ -222,7 +223,7 @@ router.post("/admin/users/:id/email-reset-link", requireRole("admin"), async (re
     expiresAt,
   });
 
-  const adminId = (req.session as any)?.userId ?? null;
+  const adminId = req.session.userId ?? null;
   await auditLog(
     adminId,
     "password.admin_reset_link_emailed",
@@ -231,9 +232,9 @@ router.post("/admin/users/:id/email-reset-link", requireRole("admin"), async (re
   );
 
   res.json({ ok: true, sentTo: user.email });
-});
+}));
 
-router.get("/admin/audit-recent", requireRole("admin"), async (req, res): Promise<void> => {
+router.get("/admin/audit-recent", requireRole("admin"), asyncHandler(async (req, res) => {
   const limit = Math.min(parseInt(String(req.query.limit ?? "25"), 10), 100);
 
   const logs = await db
@@ -263,9 +264,9 @@ router.get("/admin/audit-recent", requireRole("admin"), async (req, res): Promis
     })),
     queriedAt: new Date().toISOString(),
   });
-});
+}));
 
-router.get("/admin/db-stats", requireRole("admin"), async (_req, res): Promise<void> => {
+router.get("/admin/db-stats", requireRole("admin"), asyncHandler(async (_req, res) => {
   const tableNames = [
     "users", "ledger", "aeps_daily", "aeps_transactions",
     "udhari_customers", "udhari_entries", "notifications",
@@ -307,6 +308,6 @@ router.get("/admin/db-stats", requireRole("admin"), async (_req, res): Promise<v
   );
 
   res.json({ tables: rows, queriedAt: new Date().toISOString() });
-});
+}));
 
 export default router;

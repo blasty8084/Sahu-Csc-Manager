@@ -14,6 +14,7 @@ import { sanitize } from "../lib/sanitize";
 import { invalidateLedgerCaches } from "../lib/query-cache";
 import crypto from "crypto";
 import { computeRunningBalances, formatReceiptNumber } from "../lib/ledger-utils";
+import { asyncHandler } from "../lib/async-handler";
 
 const router: IRouter = Router();
 
@@ -92,7 +93,7 @@ async function generateReceiptNumber(userId: number, year: number): Promise<stri
   return formatReceiptNumber(year, row.lastCount);
 }
 
-router.get("/ledger/balance", requireAuth, requirePermission("ledger:view"), async (req, res): Promise<void> => {
+router.get("/ledger/balance", requireAuth, requirePermission("ledger:view"), asyncHandler(async (req, res) => {
   const userFilter = getUserFilter(req);
   const result = await db
     .select({ totalCredits: sum(ledgerTable.credit), totalDebits: sum(ledgerTable.debit) })
@@ -106,9 +107,9 @@ router.get("/ledger/balance", requireAuth, requirePermission("ledger:view"), asy
     totalCredits,
     totalDebits,
   });
-});
+}));
 
-router.get("/ledger/summary", requireAuth, requirePermission("ledger:view"), async (req, res): Promise<void> => {
+router.get("/ledger/summary", requireAuth, requirePermission("ledger:view"), asyncHandler(async (req, res) => {
   const params = GetLedgerSummaryQueryParams.safeParse(req.query);
   const period = params.success ? params.data.period ?? "today" : "today";
 
@@ -154,9 +155,9 @@ router.get("/ledger/summary", requireAuth, requirePermission("ledger:view"), asy
     netChange: totalCredits - totalDebits,
     period,
   });
-});
+}));
 
-router.get("/ledger", requireAuth, requirePermission("ledger:view"), async (req, res): Promise<void> => {
+router.get("/ledger", requireAuth, requirePermission("ledger:view"), asyncHandler(async (req, res) => {
   const params = ListLedgerEntriesQueryParams.safeParse(req.query);
   const page = params.success && params.data.page ? params.data.page : 1;
   const limit = params.success && params.data.limit ? params.data.limit : 20;
@@ -197,9 +198,9 @@ router.get("/ledger", requireAuth, requirePermission("ledger:view"), async (req,
     page,
     limit,
   });
-});
+}));
 
-router.post("/ledger", requireAuth, requirePermission("ledger:create"), async (req, res): Promise<void> => {
+router.post("/ledger", requireAuth, requirePermission("ledger:create"), asyncHandler(async (req, res) => {
   const parsed = CreateLedgerEntryBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
@@ -252,9 +253,9 @@ router.post("/ledger", requireAuth, requirePermission("ledger:create"), async (r
   }
 
   res.status(201).json(formatEntry(entry));
-});
+}));
 
-router.get("/ledger/:id", requireAuth, requirePermission("ledger:view"), async (req, res): Promise<void> => {
+router.get("/ledger/:id", requireAuth, requirePermission("ledger:view"), asyncHandler(async (req, res) => {
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(rawId, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
@@ -277,9 +278,9 @@ router.get("/ledger/:id", requireAuth, requirePermission("ledger:view"), async (
   }
 
   res.json(formatEntry(entry, entry.createdByName));
-});
+}));
 
-router.patch("/ledger/:id", requireAuth, requirePermission("ledger:edit"), async (req, res): Promise<void> => {
+router.patch("/ledger/:id", requireAuth, requirePermission("ledger:edit"), asyncHandler(async (req, res) => {
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(rawId, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
@@ -312,16 +313,16 @@ router.patch("/ledger/:id", requireAuth, requirePermission("ledger:edit"), async
   await invalidateLedgerCaches();
   await auditLog(req.session.userId!, "ledger.update", `Updated ledger entry ${id}`, getClientIp(req));
   res.json(formatEntry(refreshed));
-});
+}));
 
-router.delete("/ledger/all", requireRole("admin"), async (req, res): Promise<void> => {
+router.delete("/ledger/all", requireRole("admin"), asyncHandler(async (req, res) => {
   await db.delete(ledgerTable);
   await invalidateLedgerCaches();
   await auditLog(req.session.userId!, "ledger.clear", "Deleted ALL ledger transactions", getClientIp(req));
   res.sendStatus(204);
-});
+}));
 
-router.delete("/ledger/:id", requireAuth, requirePermission("ledger:edit"), async (req, res): Promise<void> => {
+router.delete("/ledger/:id", requireAuth, requirePermission("ledger:edit"), asyncHandler(async (req, res) => {
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(rawId, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
@@ -341,6 +342,6 @@ router.delete("/ledger/:id", requireAuth, requirePermission("ledger:edit"), asyn
   await invalidateLedgerCaches();
   await auditLog(req.session.userId!, "ledger.delete", `Deleted ledger entry ${id}`, getClientIp(req));
   res.sendStatus(204);
-});
+}));
 
 export default router;
