@@ -102,13 +102,15 @@ function BadgeUpdater() {
   return null;
 }
 
-// ─── Eager chunk preloader — deferred 3s after login so it doesn't compete
-// with the first real API calls (dashboard stats, auth/me, etc.)
+// ─── Eager chunk preloader — fires when the browser is idle after login so it
+// never competes with first-paint API calls. Uses requestIdleCallback when
+// available (Chrome/Edge/Firefox); falls back to setTimeout(3000) on browsers
+// that don't support it (older Safari, iOS < 16).
 function EagerPreloader() {
   const { user } = useAuth();
   useEffect(() => {
     if (!user) return;
-    const timer = setTimeout(() => {
+    const preload = () => {
       import("@/pages/dashboard");
       import("@/pages/ledger");
       import("@/pages/aeps");
@@ -119,8 +121,14 @@ function EagerPreloader() {
       import("@/pages/services");
       import("@/pages/sessions");
       import("@/pages/udhari-customer");
-    }, 3000);
-    return () => clearTimeout(timer);
+    };
+    if (typeof requestIdleCallback !== "undefined") {
+      const id = requestIdleCallback(preload, { timeout: 5000 });
+      return () => cancelIdleCallback(id);
+    } else {
+      const id = setTimeout(preload, 3000);
+      return () => clearTimeout(id);
+    }
   }, [user]);
   return null;
 }
