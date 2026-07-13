@@ -80,12 +80,12 @@ async function lockUserEntries(tx: any, userId: number): Promise<void> {
   await tx.execute(sql`select id from ledger where created_by = ${userId} for update`);
 }
 
-async function generateReceiptNumber(year: number): Promise<string> {
+async function generateReceiptNumber(userId: number, year: number): Promise<string> {
   const [row] = await db
     .insert(receiptCountersTable)
-    .values({ year, lastCount: 1 })
+    .values({ userId, year, lastCount: 1 })
     .onConflictDoUpdate({
-      target: receiptCountersTable.year,
+      target: [receiptCountersTable.userId, receiptCountersTable.year],
       set: { lastCount: sql`${receiptCountersTable.lastCount} + 1` },
     })
     .returning({ lastCount: receiptCountersTable.lastCount });
@@ -218,7 +218,7 @@ router.post("/ledger", requireAuth, requirePermission("ledger:create"), async (r
   const newBalance = prevCredits - prevDebits + (credit ?? 0) - (debit ?? 0);
 
   const txYear = new Date(date).getFullYear();
-  const receiptNumber = await generateReceiptNumber(txYear);
+  const receiptNumber = await generateReceiptNumber(userId, txYear);
   const uuid = crypto.randomUUID();
 
   const [entry] = await db

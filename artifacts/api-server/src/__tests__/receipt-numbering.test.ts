@@ -58,7 +58,7 @@ vi.mock("@workspace/db", () => ({
       })),
     })),
   },
-  receiptCountersTable: { year: "year", lastCount: "lastCount" },
+  receiptCountersTable: { userId: "userId", year: "year", lastCount: "lastCount" },
   ledgerTable: {},
   usersTable: {},
   userSessionsTable: {},

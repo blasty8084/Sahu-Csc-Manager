@@ -88,7 +88,7 @@ async function seed() {
   // ── Settings (skip each key if it already exists) ─────────────────────────
   const defaults: Record<string, string> = {
     businessName: "SAHU CSC Center",
-    businessAddress: "Main Road, Block Headquarters, District Name, Odisha - 700001",
+    businessAddress: "Main Road, Bargarh Block, Bargarh, Odisha - 768028",
     businessMobile: "9876543210",
     businessEmail: "sahuuttam690@gmail.com",
     language: "en",

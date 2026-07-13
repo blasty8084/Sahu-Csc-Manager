@@ -213,6 +213,6 @@ DB_POOL_MAX=5   # for 4 workers → max 20 DB connections total
 2. ✅ Set `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` secrets
 3. ✅ Set `CACHE_BACKEND=redis`
 4. ✅ Install `rate-limit-redis`, update limiters in `app.ts`
-5. ✅ Install PM2 globally, create `pm2.config.cjs`
+5. ✅ Install PM2 globally
 6. ✅ Build API: `node artifacts/api-server/build.mjs`
-7. ✅ Launch: `pm2 start pm2.config.cjs && pm2 save`
+7. ✅ Launch: `pm2 start pm2.config.js && pm2 save`
