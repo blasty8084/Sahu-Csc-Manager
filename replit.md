@@ -101,7 +101,7 @@ Scale-readiness groundwork (explicitly not urgent at current usage) — no route
 
 Docs-only + one missing translation key — no route, API, or visual behavior changed. See `CHANGELOG_V3.md` for full details.
 
-- **9 parallel `.md` files → 4 canonical + pointers**: `CHANGELOG_V3.md` (changelog), `architectureV3.md` (architecture/build), `replit.md` (this file — setup/workflows), `DOCS.md` (API/module reference). `BUILD.md`/`WORKFLOWS.md`/`ReplitV3.md` are now short pointer stubs; `CHANGELOG.md` trimmed to the pre-v3 archive.
+- **Doc consolidation**: `CHANGELOG_V3.md` (changelog), `architectureV3.md` (architecture/build), `replit.md` (this file — setup/workflows), `DOCS.md` (API/module reference), `PROJECT.md` (getting-started guide), `CHANGELOG.md` (pre-v3 archive). Stale/redundant files (`BUILD.md`, `WORKFLOWS.md`, `ReplitV3.md`, `OPTIMIZATION.md`, `UPDATES.md`, `docs/DESKTOP_FORMS_V2.md`) removed.
 - **Backfilled the missing v3.5.5 entry** into `CHANGELOG_V3.md` — the About page's changelog already listed it (Vitest tests, Sentry, ErrorBoundary) but this file never got updated, which is exactly the kind of doc drift this consolidation was meant to catch and prevent going forward.
 - **i18n**: filled the one missing key (`nav.admin`) in Hindi and Odia — all 793 keys now present in all three locales.
 - **CDN**: setup guide written at `CDN_SETUP.md` (Cloudflare reverse-proxy in front of the existing single-origin VM deployment, respecting already-correct origin cache headers). Documentation only — not provisioned, since it needs external DNS/account access.

@@ -11,8 +11,8 @@
 | Session store (Postgres) | ✅ Ready | Nothing — `connect-pg-simple` is already shared |
 | VAPID push keys | ✅ Ready | Nothing — stored in `settings` DB table |
 | AES-256-GCM encryption key | ✅ Ready | Nothing — stored in `settings` DB table |
-| Query cache | ⚠️ Needs flip | Switch `CACHE_BACKEND=memory` → `redis` |
-| Rate limiter | ⚠️ Needs work | Add Redis-backed store to `express-rate-limit` |
+| Query cache | ⚠️ Needs flip | Switch `CACHE_BACKEND=memory` → `redis` (backend already wired) |
+| Rate limiter | ✅ Ready | Done — `rate-limit-redis` installed; all 4 limiters use shared Redis when `CACHE_BACKEND=redis` (v4.0.1) |
 
 ---
 
@@ -43,42 +43,11 @@ The app **fails open** — if Redis is unreachable, it falls back to a fresh DB 
 
 ---
 
-## Step 2 — Add a Redis-Backed Rate Limiter
+## Step 2 — Add a Redis-Backed Rate Limiter ✅ Done (v4.0.1)
 
-The current `express-rate-limit` uses an in-memory counter per process. With 4 instances, each instance counts separately — a client can make 4× the allowed requests. Fix this by sharing counters in Redis.
+> **Already implemented.** `rate-limit-redis` is installed and all 4 rate limiters (`rl:general:`, `rl:login:`, `rl:auth-write:`, `rl:otp-verify:`) use `RedisStore` when `CACHE_BACKEND=redis`, falling back to `MemoryStore` when Redis is absent. No changes needed.
 
-### Install the Redis store package
-
-```bash
-pnpm --filter @workspace/api-server add rate-limit-redis
-```
-
-### Update `artifacts/api-server/src/app.ts`
-
-```ts
-import { RedisStore } from "rate-limit-redis";
-import { redis } from "./lib/cache/redisBackend.js"; // existing Upstash client
-
-// Replace the existing rate limiter config:
-const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 500,
-  store: new RedisStore({
-    sendCommand: (...args: string[]) => redis.sendCommand(args),
-  }),
-});
-
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 8,
-  store: new RedisStore({
-    sendCommand: (...args: string[]) => redis.sendCommand(args),
-    prefix: "rl:login:",
-  }),
-});
-```
-
-> **Note:** Only add the Redis store when `CACHE_BACKEND=redis` — keep a `|| new MemoryStore()` fallback for local dev without Upstash credentials.
+For reference, the implementation is in `artifacts/api-server/src/app.ts` — the `makeRlStore` helper selects `RedisStore` or `MemoryStore` based on whether the Upstash Redis client is available.
 
 ---
 

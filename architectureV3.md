@@ -1,5 +1,5 @@
 # SAHU CSC — Architecture Reference v3
-**Version 3.5.7 — July 12, 2026**
+**Version 4.1.2 — July 13, 2026**
 
 > This is the single authoritative reference for the SAHU CSC platform architecture.  
 > It supersedes `docs/archive/architectureV2.md` and `docs/archive/ARCHITECTURE.md`.  
@@ -65,7 +65,7 @@ Credentials are never hardcoded — the seed script (`artifacts/api-server/src/s
 ```
 workspace/
 ├── artifacts/
-│   ├── api-server/              # @workspace/api-server v3.0.0 — Express 5 (port 8080)
+│   ├── api-server/              # @workspace/api-server v4.1.2 — Express 5 (port 8080)
 │   │   ├── src/
 │   │   │   ├── app.ts           # Express app, middleware, connect-pg-simple session
 │   │   │   ├── index.ts         # HTTP server entry point
@@ -122,14 +122,27 @@ workspace/
 │   │   │       ├── mailer.ts               # Nodemailer: sendOtpEmail · sendApprovalEmail · sendBroadcastEmail · isSmtpConfigured
 │   │   │       ├── push.ts                 # web-push: sendPushToUser · sendPushToAll
 │   │   │       ├── vapid.ts                # VAPID key auto-generation + env detection
-│   │   │       └── otp-cleanup.ts          # Hourly job: prunes expired OTP rows
+│   │   │       ├── otp-cleanup.ts          # Hourly job: prunes expired OTP rows
+│   │   │       ├── async-handler.ts        # asyncHandler(fn) — wraps async route handlers to forward rejections to next()
+│   │   │       └── queue-client.ts         # enqueueNotification/enqueueEmail — BullMQ when REDIS_URL set, direct fallback otherwise
 │   │   ├── build.mjs              # esbuild bundler (connect-pg-simple MUST be in external)
 │   │   └── scripts/
 │   │       ├── seed.ts            # DB seeder (users, services, settings, notifications)
 │   │       ├── backup.ts          # pg_dump to /backups/
 │   │       └── restore.ts         # psql restore from backup file
 │   │
-│   ├── sahu-csc/                # @workspace/sahu-csc v3.0.0 — React + Vite (port 5000)
+│   ├── worker-server/           # @workspace/worker-server v4.1.1 — BullMQ background processor (port 8081)
+│   │   ├── src/
+│   │   │   ├── index.ts         # HTTP server entry; starts all workers
+│   │   │   ├── connection.ts    # Shared ioredis ConnectionOptions
+│   │   │   └── workers/
+│   │   │       ├── notification.worker.ts  # web-push jobs
+│   │   │       ├── email.worker.ts         # nodemailer jobs
+│   │   │       ├── pdf.worker.ts           # PDF generation (stub)
+│   │   │       └── sms.worker.ts           # SMS (stub)
+│   │   └── build.mjs
+│   │
+│   ├── sahu-csc/                # @workspace/sahu-csc v4.1.2 — React + Vite (port 5000)
 │   │   ├── index.html
 │   │   ├── vite.config.ts       # port from PORT env · VitePWA + Workbox · proxy /api → 8080
 │   │   ├── public/
@@ -219,7 +232,7 @@ workspace/
 │   └── post-merge.sh            # Auto-runs pnpm install + drizzle-kit push on import
 │
 └── docs/
-    └── DESKTOP_FORMS_V2.md      # Full-screen split form design spec
+    └── archive/                 # Pre-v3 historical changelogs and architecture docs
 ```
 
 ---
@@ -576,7 +589,7 @@ QueryClientProvider
 **Colors:** Navy `#0b2c60` · Saffron `#f97316`  
 **Components:** shadcn/ui (import from `@/components/ui/`)  
 **Toast:** Custom Framer Motion renderer in `toaster.tsx` — 4 variants (default/navy, success, destructive, warning); shorthands `toast.success()`, `toast.error()`; mobile top-center, desktop bottom-right  
-**Desktop forms:** Full-screen split layout (380px dark left panel + `flex: 1` right panel) — see `docs/DESKTOP_FORMS_V2.md`
+**Desktop forms:** Full-screen split layout (380px dark left panel + `flex: 1` right panel) — ledger, udhari, udhari-customer, aeps all use `position: fixed; inset: 0` with a dark info panel left and a scrollable form panel right
 
 ### 6.4 Auth Loading Guard
 

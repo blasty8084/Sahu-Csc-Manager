@@ -4,11 +4,10 @@
 > Detailed record of every feature, change, and upgrade from v3.0.0 onward.  
 > For v2.x history, see `docs/archive/changelogV2.md`.  
 > For pre-v2 history, see `CHANGELOG.md`.  
-> For full architecture reference, see `architectureV3.md`.  
-> For session-by-session changes, see `UPDATES.md`.
+> For full architecture reference, see `architectureV3.md`.
 
 > **⚠️ On every version bump, update this file — and only this file — for the feature/version entry.**
-> This is the single canonical changelog for v3.x / v4.x. Do not create a new parallel changelog file (`CHANGELOG_V4.md`, etc.) or duplicate the entry into `BUILD.md`/`WORKFLOWS.md`/`ReplitV3.md` — those are pointer stubs now. If architecture or setup also changed, update `architectureV3.md` / `replit.md` directly instead of restating the change here.
+> This is the single canonical changelog for v3.x / v4.x. Do not create parallel changelog files. If architecture or setup also changed, update `architectureV3.md` / `replit.md` directly instead of restating the change here.
 
 ---
 
