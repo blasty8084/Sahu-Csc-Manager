@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, usersTable, emailOtpsTable, passwordResetTokensTable } from "@workspace/db";
-import { eq, or, and, gt, count, desc, isNull } from "drizzle-orm";
+import { eq, or, and, gt, count, desc, isNull, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { getClientIp } from "../../lib/auth";
 import { isSmtpConfigured } from "../../lib/mailer";
@@ -124,16 +124,33 @@ router.post("/auth/verify-otp", async (req, res): Promise<void> => {
     }
     if (!email) { res.json({ valid: false, reason: "missing" }); return; }
 
-    const otpHash = hashOtp(otp);
+    // Find the most recent unused, unexpired OTP for this email+purpose
     const [record] = await db
       .select()
       .from(emailOtpsTable)
-      .where(and(eq(emailOtpsTable.email, email), eq(emailOtpsTable.purpose, purpose), eq(emailOtpsTable.otpHash, otpHash), isNull(emailOtpsTable.usedAt)))
+      .where(and(eq(emailOtpsTable.email, email), eq(emailOtpsTable.purpose, purpose), isNull(emailOtpsTable.usedAt)))
       .orderBy(desc(emailOtpsTable.createdAt))
       .limit(1);
 
     if (!record) { res.json({ valid: false, reason: "invalid" }); return; }
     if (new Date() > record.expiresAt) { res.json({ valid: false, reason: "expired" }); return; }
+
+    const MAX_FAILED_ATTEMPTS = 5;
+    if (record.failedAttempts >= MAX_FAILED_ATTEMPTS) {
+      res.status(429).json({ valid: false, reason: "locked", error: "Too many incorrect attempts. Please request a new OTP." });
+      return;
+    }
+
+    const otpHash = hashOtp(otp);
+    if (record.otpHash !== otpHash) {
+      await db
+        .update(emailOtpsTable)
+        .set({ failedAttempts: sql`${emailOtpsTable.failedAttempts} + 1` })
+        .where(eq(emailOtpsTable.id, record.id));
+      const attemptsLeft = MAX_FAILED_ATTEMPTS - record.failedAttempts - 1;
+      res.json({ valid: false, reason: "invalid", attemptsLeft: Math.max(0, attemptsLeft) });
+      return;
+    }
 
     if (purpose === "password_reset") {
       const verifiedToken = randomUUID();
