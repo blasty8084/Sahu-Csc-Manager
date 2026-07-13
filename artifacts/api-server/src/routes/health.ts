@@ -8,7 +8,8 @@ const router: IRouter = Router();
 
 // Alias /health → /healthz for load-balancers, PM2, and Replit port probes
 router.get("/health", (_req, res) => {
-  res.json({ status: "ok", version: "4.1.1", uptime: process.uptime() });
+  res.set("Cache-Control", "no-store");
+  res.json({ status: "ok", version: "4.1.2", uptime: process.uptime() });
 });
 
 router.get("/healthz", async (_req, res) => {
@@ -92,6 +93,8 @@ router.get("/healthz", async (_req, res) => {
 
   const totalResponseTimeMs = Date.now() - startTime;
 
+  // Health data is live (DB latency, memory, boot state) — never cache.
+  res.set("Cache-Control", "no-store");
   res.json({
     status: overallStatus,
     timestamp: new Date().toISOString(),

@@ -208,15 +208,14 @@ router.post("/ledger", requireAuth, requirePermission("ledger:create"), asyncHan
   const customerName = sanitize(parsed.data.customerName);
   const description = parsed.data.description !== undefined ? sanitize(parsed.data.description) : parsed.data.description;
   const userId = req.session.userId!;
+  const delta = (credit ?? 0) - (debit ?? 0);
 
-  const balanceResult = await db
-    .select({ totalCredits: sum(ledgerTable.credit), totalDebits: sum(ledgerTable.debit) })
-    .from(ledgerTable)
-    .where(eq(ledgerTable.createdBy, userId));
-
-  const prevCredits = parseFloat(balanceResult[0]?.totalCredits ?? "0");
-  const prevDebits = parseFloat(balanceResult[0]?.totalDebits ?? "0");
-  const newBalance = prevCredits - prevDebits + (credit ?? 0) - (debit ?? 0);
+  // Atomically add delta to the maintained users.ledger_balance and return the
+  // new total in a single round-trip — O(1) instead of an O(n) SUM scan.
+  const balanceRows = await db.execute<{ ledger_balance: string }>(
+    sql`UPDATE users SET ledger_balance = ledger_balance + ${delta} WHERE id = ${userId} RETURNING ledger_balance`
+  );
+  const newBalance = parseFloat(balanceRows.rows[0]?.ledger_balance ?? "0");
 
   const txYear = new Date(date).getFullYear();
   const receiptNumber = await generateReceiptNumber(userId, txYear);
@@ -303,10 +302,20 @@ router.patch("/ledger/:id", requireAuth, requirePermission("ledger:edit"), async
   if (parsed.data.debit !== undefined) updateData.debit = String(parsed.data.debit);
   if (parsed.data.description !== undefined) updateData.description = sanitize(parsed.data.description);
 
+  // Compute the delta to users.ledger_balance before entering the transaction
+  const oldCredit = parseFloat(existing.credit ?? "0");
+  const oldDebit = parseFloat(existing.debit ?? "0");
+  const newCredit = parsed.data.credit !== undefined ? parsed.data.credit : oldCredit;
+  const newDebit = parsed.data.debit !== undefined ? parsed.data.debit : oldDebit;
+  const balanceDelta = (newCredit - newDebit) - (oldCredit - oldDebit);
+
   const refreshed = await db.transaction(async (tx: any) => {
     await lockUserEntries(tx, existing.createdBy);
     const [updated] = await tx.update(ledgerTable).set(updateData).where(eq(ledgerTable.id, id)).returning();
     await recalculateBalances(tx, existing.createdBy);
+    if (balanceDelta !== 0) {
+      await tx.execute(sql`UPDATE users SET ledger_balance = ledger_balance + ${balanceDelta} WHERE id = ${existing.createdBy}`);
+    }
     const [row] = await tx.select().from(ledgerTable).where(eq(ledgerTable.id, id));
     return row ?? updated;
   });
@@ -317,6 +326,7 @@ router.patch("/ledger/:id", requireAuth, requirePermission("ledger:edit"), async
 
 router.delete("/ledger/all", requireRole("admin"), asyncHandler(async (req, res) => {
   await db.delete(ledgerTable);
+  await db.execute(sql`UPDATE users SET ledger_balance = 0`);
   await invalidateLedgerCaches();
   await auditLog(req.session.userId!, "ledger.clear", "Deleted ALL ledger transactions", getClientIp(req));
   res.sendStatus(204);
@@ -334,10 +344,13 @@ router.delete("/ledger/:id", requireAuth, requirePermission("ledger:edit"), asyn
     res.status(403).json({ error: "Forbidden" }); return;
   }
 
+  const deletedNet = parseFloat(existing.credit ?? "0") - parseFloat(existing.debit ?? "0");
+
   await db.transaction(async (tx: any) => {
     await lockUserEntries(tx, existing.createdBy);
     await tx.delete(ledgerTable).where(eq(ledgerTable.id, id));
     await recalculateBalances(tx, existing.createdBy);
+    await tx.execute(sql`UPDATE users SET ledger_balance = ledger_balance - ${deletedNet} WHERE id = ${existing.createdBy}`);
   });
   await invalidateLedgerCaches();
   await auditLog(req.session.userId!, "ledger.delete", `Deleted ledger entry ${id}`, getClientIp(req));

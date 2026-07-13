@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, boolean, integer, index } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, boolean, integer, index, numeric } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -23,6 +23,9 @@ export const usersTable = pgTable("users", {
   activeSessionToken: text("active_session_token"),
   appealSubmittedAt: timestamp("appeal_submitted_at", { withTimezone: true }),
   appealDismissedAt: timestamp("appeal_dismissed_at", { withTimezone: true }),
+  // Maintained running total of ledger credits minus debits. Updated atomically
+  // on every ledger create/update/delete — avoids a full SUM() scan on writes.
+  ledgerBalance: numeric("ledger_balance", { precision: 15, scale: 2 }).notNull().default("0"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 }, (t) => [

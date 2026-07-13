@@ -77,6 +77,7 @@ router.get("/receipts/verify/udhari/:token", asyncHandler(async (req, res) => {
   const year = new Date(entry.date + "T00:00:00").getFullYear();
   const receiptNumber = `UDH-${year}-${String(entry.id).padStart(4, "0")}`;
 
+  res.set("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
   res.json({
     receiptNumber,
     date: entry.date,
@@ -154,6 +155,7 @@ router.get("/receipts/verify/:token", asyncHandler(async (req, res) => {
   const getSetting = (key: string, fallback = "") =>
     settingsRows.find((r) => r.key === key)?.value ?? fallback;
 
+  res.set("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
   res.json({
     receiptNumber: entry.receiptNumber,
     date: entry.date,

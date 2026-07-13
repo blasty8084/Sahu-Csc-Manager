@@ -55,6 +55,9 @@ router.get("/setup-status", (_req, res) => {
     });
   }
 
+  // Setup status reflects process.env at request time — cache briefly so rapid
+  // polling (e.g. setup wizard banner) doesn't hammer the server.
+  res.set("Cache-Control", "no-store");
   res.json({
     configured: missing.length === 0,
     missing,
