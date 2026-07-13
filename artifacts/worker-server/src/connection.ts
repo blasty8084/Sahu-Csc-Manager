@@ -1,4 +1,5 @@
 import IORedis from "ioredis";
+import type { ConnectionOptions } from "bullmq";
 
 const redisUrl = process.env.REDIS_URL;
 
@@ -15,14 +16,17 @@ if (!redisUrl) {
 /**
  * Single ioredis connection shared across all BullMQ workers and queues in this
  * process.  BullMQ requires maxRetriesPerRequest: null.
+ *
+ * Cast to ConnectionOptions is needed due to a protected-member type mismatch
+ * between ioredis@5 and BullMQ's ConnectionOptions union across pnpm's
+ * deduplicated resolution. Runtime behaviour is unaffected.
  */
 export const connection = new IORedis(redisUrl, {
   maxRetriesPerRequest: null,
   enableReadyCheck: false,
-  // TLS is implied by the rediss:// scheme; ioredis handles it automatically.
   tls: redisUrl.startsWith("rediss://") ? { rejectUnauthorized: false } : undefined,
-});
+}) as unknown as ConnectionOptions;
 
-connection.on("error", (err) => {
+(connection as unknown as IORedis).on("error", (err) => {
   console.error("[worker-server] Redis error:", err.message);
 });

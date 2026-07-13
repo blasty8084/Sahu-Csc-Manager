@@ -46,7 +46,7 @@ if (_rlRedis) {
 const makeRlStore = (prefix: string) =>
   _rlRedis
     ? new RedisStore({
-        sendCommand: (...args: string[]) => _rlRedis.sendCommand(args),
+        sendCommand: (...args: string[]) => (_rlRedis as any).sendCommand(args),
         prefix: `rl:${prefix}:`,
       })
     : undefined;

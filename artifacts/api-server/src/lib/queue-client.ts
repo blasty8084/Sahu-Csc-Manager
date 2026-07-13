@@ -72,7 +72,7 @@ function getQueues(): { notifQ: Queue<NotificationJobData> | null; emailQ: Queue
     });
     _conn.on("error", (err) => logger.warn({ err: err.message }, "Queue client Redis error"));
 
-    const qOpts = { connection: _conn, defaultJobOptions: { attempts: 3, backoff: { type: "exponential" as const, delay: 2000 } } };
+    const qOpts = { connection: _conn as never, defaultJobOptions: { attempts: 3, backoff: { type: "exponential" as const, delay: 2000 } } };
     _notifQ = new Queue<NotificationJobData>("notifications", qOpts);
     _emailQ = new Queue<EmailJobData>("emails", qOpts);
 

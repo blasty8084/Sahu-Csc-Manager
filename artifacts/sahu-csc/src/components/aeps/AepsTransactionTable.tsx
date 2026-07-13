@@ -5,8 +5,10 @@ import {
 } from "lucide-react";
 import { fmt, fmtDate, type AepsSession, type AepsTx } from "@/pages/aeps/aeps.constants";
 
+type NonNullAepsSession = NonNullable<AepsSession>;
+
 export interface AepsTransactionTableProps {
-  session: AepsSession;
+  session: NonNullAepsSession;
   showExportMenu: boolean;
   exportLoading: "pdf" | "wa" | null;
   onSetShowExportMenu: (v: boolean | ((prev: boolean) => boolean)) => void;
