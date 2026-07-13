@@ -14,6 +14,18 @@ const APP_VERSION = __APP_VERSION__;
 // ── Changelog ────────────────────────────────────────────────────────────────
 const CHANGELOG = [
   {
+    version: "v4.0.2",
+    title: "Image & Loader Polish",
+    date: "2026-07-13",
+    accent: "#f97316",
+    changes: [
+      "loading=\"lazy\" added to remaining non-critical images: layout.tsx nav avatars (×2) and AppLogo in sidebar — splash screen, page-skeleton, and LoginLogo intentionally kept eager (first-paint-critical)",
+      "GET /admin/users/appeals capped at .limit(500) — the last unbounded list query on the performance checklist",
+      "sahu-logo-glow.png deleted from public/ — file had zero references in the codebase; 175 KB removed from the build output",
+      "EagerPreloader upgraded from setTimeout(3000) to requestIdleCallback(preload, { timeout: 5000 }) — chunk preloading now fires when the browser is genuinely idle; on slow connections it naturally waits longer; falls back to setTimeout(3000) on older Safari / iOS < 16",
+    ],
+  },
+  {
     version: "v4.0.1",
     title: "Redis Rate Limiting & Multi-Instance Readiness",
     date: "2026-07-13",

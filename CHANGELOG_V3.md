@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v3 / v4
-**Current version: 4.0.1 — July 13, 2026**
+**Current version: 4.0.2 — July 13, 2026**
 
 > Detailed record of every feature, change, and upgrade from v3.0.0 onward.  
 > For v2.x history, see `docs/archive/changelogV2.md`.  
@@ -14,11 +14,25 @@
 
 ## Table of Contents
 
+0. [v4.0.2 — Image & Loader Polish (July 13, 2026)](#0-v402--image--loader-polish-july-13-2026)
 0. [v4.0.1 — Redis Rate Limiting & Multi-Instance Readiness (July 13, 2026)](#0-v401--redis-rate-limiting--multi-instance-readiness-july-13-2026)
 0. [v4.0.0 — Full-Stack Performance Audit (July 12, 2026)](#0-v400--full-stack-performance-audit-july-12-2026)
 0. [v3.5.10 — Navigation Performance — Instant Page Switching (July 12, 2026)](#0-v3510--navigation-performance--instant-page-switching-july-12-2026)
 0. [v3.5.9 — Redis Cache Live, i18n Fixes & Build Hardening (July 12, 2026)](#0-v359--redis-cache-live-i18n-fixes--build-hardening-july-12-2026)
 0. [v3.5.8 — Reports & Receipt Export Page Modularization (July 12, 2026)](#0-v358--reports--receipt-export-page-modularization-july-12-2026)
+
+---
+
+## 0. v4.0.2 — Image & Loader Polish (July 13, 2026)
+
+Completes all remaining Medium and Low priority items from the performance checklist. No routes, UI, or data behavior changed.
+
+| Change | Description |
+|--------|-------------|
+| **`loading="lazy"` on remaining images** | Added to `layout.tsx` ×2 (desktop sidebar avatar + mobile header avatar) and `AppLogo` in `app-logo.tsx`. Splash screen, page-skeleton, and `LoginLogo` intentionally kept eager — they are first-paint-critical. |
+| **`/admin/appeals` query limit** | `.limit(500)` added to `GET /admin/users/appeals` — the last unbounded list query on the medium-priority checklist. |
+| **`sahu-logo-glow.png` deleted** | File had zero references in the codebase — not loaded on any page despite the issue saying it was. Removed from `public/`; 175 KB dropped from the build output. |
+| **`EagerPreloader` upgraded to `requestIdleCallback`** | Replaced `setTimeout(3000)` with `requestIdleCallback(preload, { timeout: 5000 })` — chunk preloading now fires when the browser is genuinely idle rather than after a fixed 3s delay. On 2G/3G the browser stays busy longer, so `rIC` naturally waits; on a fast device it may fire sooner. Falls back to `setTimeout(3000)` on browsers without `requestIdleCallback` support (older Safari, iOS < 16). |
 
 ---
 

@@ -7,6 +7,43 @@
 
 ---
 
+## Session: 2026-07-13 — v4.0.2 Image & Loader Polish
+
+**Version:** 4.0.2
+**Status:** ✅ Complete — all medium + low priority checklist items resolved, API rebuilt, docs updated
+
+### What Was Done
+
+#### 1. `loading="lazy"` on remaining images
+- `components/layout.tsx` line 432: desktop sidebar avatar → `loading="lazy"`
+- `components/layout.tsx` line 589: mobile header avatar → `loading="lazy"`
+- `components/app-logo.tsx` line 25: `AppLogo` component → `loading="lazy"`
+- Kept eager (intentional): `splash-screen.tsx`, `App.tsx` (splash logo), `page-skeleton.tsx`, `LoginLogo` in `app-logo.tsx`
+
+#### 2. `/admin/appeals` query limit
+- `routes/admin-appeals.ts` line 27: added `.limit(500)` to `GET /admin/users/appeals`
+- API rebuilt and restarted
+
+#### 3. `sahu-logo-glow.png` deleted
+- Had zero `<img>` or `url()` references anywhere in `src/` — completely orphaned
+- Removed from `artifacts/sahu-csc/public/`; 175 KB dropped from build
+
+#### 4. EagerPreloader → `requestIdleCallback`
+- `App.tsx`: replaced `setTimeout(preload, 3000)` with `requestIdleCallback(preload, { timeout: 5000 })`
+- `{ timeout: 5000 }` ensures preloading happens within 5s even if the browser reports busy
+- `cancelIdleCallback` used in cleanup (vs `clearTimeout` in the fallback branch)
+- Fallback: `setTimeout(preload, 3000)` for browsers without `requestIdleCallback` (older Safari)
+
+#### 5. Confirmed already done (no action needed)
+- Udhari customer list caching: `cached('udhari:customers:${userId}:...', 5_000, ...)` in `customers.ts` — shipped in v4.0.0
+- Async React Query persister: `createAsyncStoragePersister` + `idb-keyval` — shipped in v4.0.0
+
+#### 6. Version bump
+- `sahu-csc/package.json`: 4.0.1 → 4.0.2
+- `api-server/package.json`: 4.0.1 → 4.0.2
+
+---
+
 ## Session: 2026-07-13 — v4.0.1 Redis Rate Limiting & Multi-Instance Readiness
 
 **Version:** 4.0.1
