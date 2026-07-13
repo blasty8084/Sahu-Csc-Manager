@@ -2,10 +2,11 @@ import { createTransporter, esc, getFromEmail, buildV2Html } from "../transport"
 
 // ── Registration declined ─────────────────────────────────────────────────────
 
-export async function sendRejectionEmail(to: string, name: string, reason: string | null): Promise<void> {
-  const transporter = createTransporter();
+/** Build mail options without sending — used by the queue-client for async dispatch. */
+export function buildRejectionMailOptions(to: string, name: string, reason: string | null): {
+  to: string; from: string; subject: string; html: string; text: string;
+} {
   const fromEmail = getFromEmail();
-
   const displayName = name || to.split("@")[0];
   const safeDisplayName = esc(displayName);
 
@@ -33,7 +34,7 @@ export async function sendRejectionEmail(to: string, name: string, reason: strin
       If you believe this was an error, please contact your SAHU CSC administrator directly.
     </p>`;
 
-  await transporter.sendMail({
+  return {
     from: `"SAHU CSC" <${fromEmail}>`,
     to,
     subject: "SAHU CSC — Registration request update",
@@ -63,5 +64,11 @@ export async function sendRejectionEmail(to: string, name: string, reason: strin
       "SAHU CSC · Common Service Center · Odisha, India",
       "This is an automated message. Please do not reply.",
     ].join("\n"),
-  });
+  };
+}
+
+export async function sendRejectionEmail(to: string, name: string, reason: string | null): Promise<void> {
+  const opts = buildRejectionMailOptions(to, name, reason);
+  const transporter = createTransporter();
+  await transporter.sendMail(opts);
 }

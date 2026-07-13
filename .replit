@@ -26,6 +26,10 @@ args = "API Server"
 task = "workflow.run"
 args = "SAHU CSC"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Worker Server"
+
 [[workflows.workflow]]
 name = "API Server"
 author = "agent"
@@ -119,6 +123,18 @@ outputType = "console"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "echo 'Use the SAHU CSC workflow to run the frontend on port 5000. This stub prevents the platform-generated duplicate from conflicting.'"
+
+[[workflows.workflow]]
+name = "Worker Server"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "PORT=8081 pnpm --filter @workspace/worker-server run build && PORT=8081 node --enable-source-maps artifacts/worker-server/dist/index.mjs"
+waitForPort = 8081
+
+[workflows.workflow.metadata]
+outputType = "console"
 
 [agent]
 stack = "BEST_EFFORT_FALLBACK"

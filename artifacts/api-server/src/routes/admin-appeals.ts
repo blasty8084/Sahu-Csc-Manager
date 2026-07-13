@@ -3,8 +3,8 @@ import { db, usersTable } from "@workspace/db";
 import { eq, isNotNull } from "drizzle-orm";
 import { requireRole, auditLog, getClientIp } from "../lib/auth";
 import { createNotification } from "../lib/notify";
-import { sendApprovalEmail, isSmtpConfigured } from "../lib/mailer";
-import { sendPushToUser } from "../lib/push";
+import { isSmtpConfigured } from "../lib/mailer";
+import { enqueueNotification, enqueueEmail, buildApprovalMailOptions } from "../lib/queue-client";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
@@ -47,13 +47,12 @@ router.patch("/admin/users/:id/re-approve", requireRole("admin"), async (req, re
 
   await auditLog(req.session.userId!, "user.appeal_approved", `Appeal approved for user: ${user.username}`, getClientIp(req));
   await createNotification("Appeal Approved", "Your appeal has been reviewed and your account has been approved. You can now log in.", "success", id);
-  sendPushToUser(id, { title: "Appeal Approved ✅", body: "Your account has been approved! You can now log in to SAHU CSC.", url: "/", tag: "appeal-approved", requireInteraction: true })
-    .catch((err) => logger.warn({ err, userId: id }, "Failed to send appeal approval push"));
+  enqueueNotification({ kind: "send-to-user", userId: id, payload: { title: "Appeal Approved ✅", body: "Your account has been approved! You can now log in to SAHU CSC.", url: "/", tag: "appeal-approved", requireInteraction: true } })
+    .catch((err) => logger.warn({ err, userId: id }, "Failed to enqueue appeal approval push"));
 
-  if (isSmtpConfigured()) {
-    sendApprovalEmail(user.email, user.fullName ?? user.username).catch((err) =>
-      logger.warn({ err, userId: id }, "Failed to send appeal approval email")
-    );
+  if (user.email && isSmtpConfigured()) {
+    enqueueEmail(buildApprovalMailOptions(user.email, user.fullName ?? user.username))
+      .catch((err) => logger.warn({ err, userId: id }, "Failed to enqueue appeal approval email"));
   }
 
   res.json({ success: true, message: "Appeal approved", user: { ...fmtUser(updated), appealSubmittedAt: null } });
@@ -70,8 +69,8 @@ router.patch("/admin/users/:id/dismiss-appeal", requireRole("admin"), async (req
   await db.update(usersTable).set({ appealSubmittedAt: null, appealDismissedAt: new Date() }).where(eq(usersTable.id, id));
   await auditLog(req.session.userId!, "user.appeal_dismissed", `Appeal dismissed for user: ${user.username}`, getClientIp(req));
   await createNotification("Appeal Not Approved", "Your appeal has been reviewed but could not be approved at this time. Please contact the administrator directly for further assistance.", "warning", id);
-  sendPushToUser(id, { title: "Appeal Update", body: "Your appeal has been reviewed. Please contact the administrator directly for further assistance.", url: "/", tag: "appeal-dismissed", requireInteraction: true })
-    .catch((err) => logger.warn({ err, userId: id }, "Failed to send appeal dismissed push"));
+  enqueueNotification({ kind: "send-to-user", userId: id, payload: { title: "Appeal Update", body: "Your appeal has been reviewed. Please contact the administrator directly for further assistance.", url: "/", tag: "appeal-dismissed", requireInteraction: true } })
+    .catch((err) => logger.warn({ err, userId: id }, "Failed to enqueue appeal dismissed push"));
 
   res.json({ success: true, message: "Appeal dismissed" });
 });
@@ -91,8 +90,8 @@ router.post("/admin/users/appeals/dismiss-all", requireRole("admin"), async (req
 
   Promise.allSettled(pending.map(async (u) => {
     await createNotification("Appeal Not Approved", "Your appeal has been reviewed but could not be approved at this time. Please contact the administrator directly for further assistance.", "warning", u.id);
-    sendPushToUser(u.id, { title: "Appeal Update", body: "Your appeal has been reviewed. Please contact the administrator directly for further assistance.", url: "/", tag: "appeal-dismissed", requireInteraction: true })
-      .catch((err) => logger.warn({ err, userId: u.id }, "Failed to send bulk appeal push"));
+    enqueueNotification({ kind: "send-to-user", userId: u.id, payload: { title: "Appeal Update", body: "Your appeal has been reviewed. Please contact the administrator directly for further assistance.", url: "/", tag: "appeal-dismissed", requireInteraction: true } })
+      .catch((err) => logger.warn({ err, userId: u.id }, "Failed to enqueue bulk appeal push"));
   }));
 
   res.json({ success: true, dismissed: pending.length });

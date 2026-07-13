@@ -2,10 +2,11 @@ import { createTransporter, esc, getFromEmail, buildV2Html } from "../transport"
 
 // ── Account approved ──────────────────────────────────────────────────────────
 
-export async function sendApprovalEmail(to: string, name: string): Promise<void> {
-  const transporter = createTransporter();
+/** Build mail options without sending — used by the queue-client for async dispatch. */
+export function buildApprovalMailOptions(to: string, name: string): {
+  to: string; from: string; subject: string; html: string; text: string;
+} {
   const fromEmail = getFromEmail();
-
   const displayName = name || to.split("@")[0];
   const safeDisplayName = esc(displayName);
 
@@ -41,7 +42,7 @@ export async function sendApprovalEmail(to: string, name: string): Promise<void>
       </tr>
     </table>`;
 
-  await transporter.sendMail({
+  return {
     from: `"SAHU CSC" <${fromEmail}>`,
     to,
     subject: "SAHU CSC — Your account has been approved ✅",
@@ -70,5 +71,11 @@ export async function sendApprovalEmail(to: string, name: string): Promise<void>
       "SAHU CSC · Common Service Center · Odisha, India",
       "This is an automated message. Please do not reply.",
     ].join("\n"),
-  });
+  };
+}
+
+export async function sendApprovalEmail(to: string, name: string): Promise<void> {
+  const opts = buildApprovalMailOptions(to, name);
+  const transporter = createTransporter();
+  await transporter.sendMail(opts);
 }

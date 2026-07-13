@@ -9,6 +9,26 @@
 >
 > **Fixed a fresh-`node_modules` build failure (2026-07-11)**: after a clean `pnpm install`, the API Server build failed at runtime with `ERR_MODULE_NOT_FOUND` for `@opentelemetry/instrumentation`, then `@opentelemetry/core`, then `@opentelemetry/sdk-trace-base` in turn. `build.mjs` externalizes `@opentelemetry/*` (to dodge the drizzle-orm dual-peer conflict — see Sentry note below), so esbuild doesn't bundle it, but pnpm only hoists *direct* dependencies into `artifacts/api-server/node_modules`; these three are transitive deps of `@sentry/node`/`@sentry/opentelemetry`/`@sentry/node-core` that were never hoisted. Fixed by adding all three as explicit `dependencies` in `artifacts/api-server/package.json` (alongside the existing `@opentelemetry/api`) so pnpm hoists them. If a future Sentry upgrade throws the same `ERR_MODULE_NOT_FOUND` for a new `@opentelemetry/*` subpackage, add it the same way.
 
+## What's New in v4.0.3 (July 13, 2026) — Worker Server (BullMQ async offloading)
+
+| Change | Description |
+|--------|-------------|
+| **`artifacts/worker-server/`** | New `@workspace/worker-server` package — isolated background processor on port 8081. Runs push notifications, emails, PDF (stub), and SMS (stub) as BullMQ jobs. |
+| **BullMQ queues** | Four queues: `notifications`, `emails`, `pdf-generation`, `sms`. Workers: `notification.worker.ts` (web-push), `email.worker.ts` (nodemailer), `pdf.worker.ts` (stub), `sms.worker.ts` (stub). |
+| **`queue-client.ts`** | New `artifacts/api-server/src/lib/queue-client.ts` — produces jobs to BullMQ when `REDIS_URL` is set; falls back to direct in-process execution when not set. No API contract changes. |
+| **Template builders** | `approval.ts`, `rejection.ts`, `otp.ts` — added `build*MailOptions()` exports (pure, sync HTML render) so the api-server can pre-render emails before queuing them. |
+| **Routes updated** | `admin-appeals.ts`, `admin-registration.ts`, `broadcast.ts`, `auth/otp.ts` — push/email calls now go through `enqueueNotification()` / `enqueueEmail()`. |
+| **`pm2.config.js`** | Root PM2 ecosystem config: `api-server` in cluster mode, `worker-server` in fork mode (1 instance). |
+| **`Worker Server` workflow** | Added workflow (console, port 8081). Needs `REDIS_URL` secret to activate queue mode. Without it, the worker server won't start (exits with a clear message), and the api-server handles everything directly. |
+
+### To enable full async queue mode
+
+1. Add `REDIS_URL` as a Replit Secret — set it to your Upstash Redis **direct TCP URL** (`rediss://...`), found in the Upstash dashboard under "Redis" → your database → "Connect" → "ioredis". This is **different** from `UPSTASH_REDIS_REST_URL` (the HTTP REST endpoint).
+2. Start the **Worker Server** workflow.
+3. The api-server logs `Queue client initialised (Redis-backed)` on startup when connected.
+
+Without `REDIS_URL`, everything continues to work via direct in-process calls (existing behaviour). The worker server is optional.
+
 ## What's New in v4.0.2 (July 13, 2026) — Image & Loader Polish
 
 | Change | Description |

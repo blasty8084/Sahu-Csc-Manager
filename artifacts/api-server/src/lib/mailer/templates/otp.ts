@@ -138,13 +138,15 @@ function buildOtpHtml(
   });
 }
 
-export async function sendOtpEmail(
+// ── Public API ────────────────────────────────────────────────────────────────
+
+/** Build mail options without sending — used by the queue-client for async dispatch. */
+export function buildOtpMailOptions(
   to: string,
   otp: string,
   purpose: "registration" | "password_reset",
-  expiresAt: Date
-): Promise<void> {
-  const transporter = createTransporter();
+  expiresAt: Date,
+): { to: string; from: string; subject: string; html: string; text: string } {
   const fromEmail = getFromEmail();
 
   const subjects: Record<string, string> = {
@@ -152,11 +154,22 @@ export async function sendOtpEmail(
     password_reset: "SAHU CSC — Your Password Reset Code",
   };
 
-  await transporter.sendMail({
+  return {
     from: `"SAHU CSC" <${fromEmail}>`,
     to,
     subject: subjects[purpose] ?? "SAHU CSC — One-Time Password",
     text: buildOtpText(otp, purpose, expiresAt),
     html: buildOtpHtml(otp, purpose, expiresAt),
-  });
+  };
+}
+
+export async function sendOtpEmail(
+  to: string,
+  otp: string,
+  purpose: "registration" | "password_reset",
+  expiresAt: Date
+): Promise<void> {
+  const opts = buildOtpMailOptions(to, otp, purpose, expiresAt);
+  const transporter = createTransporter();
+  await transporter.sendMail(opts);
 }

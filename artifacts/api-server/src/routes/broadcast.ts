@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { db, pushSubscriptionsTable, usersTable, broadcastLogsTable } from "@workspace/db";
 import { eq, isNotNull, count, desc } from "drizzle-orm";
 import { requireRole } from "../lib/auth";
-import { sendPushToAll } from "../lib/push";
+import { enqueueNotification } from "../lib/queue-client";
 import { sendBroadcastEmail, isSmtpConfigured } from "../lib/mailer";
 import { createSystemNotification } from "../services/notificationService";
 import { z } from "zod/v4";
@@ -93,7 +93,7 @@ router.post("/admin/broadcast/push", requireRole("admin"), async (req: any, res)
     const [subRow] = await db.select({ total: count() }).from(pushSubscriptionsTable);
     const subCount = Number(subRow?.total ?? 0);
 
-    await sendPushToAll({ title, body, url: url || "/", tag: "admin-broadcast", requireInteraction: false });
+    await enqueueNotification({ kind: "send-to-all", payload: { title, body, url: url || "/", tag: "admin-broadcast", requireInteraction: false } });
 
     if (createInAppNotification) {
       // skipPush=true because sendPushToAll already delivered the push above
