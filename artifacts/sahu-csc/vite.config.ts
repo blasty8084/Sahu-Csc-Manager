@@ -5,6 +5,7 @@ import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 import { VitePWA } from "vite-plugin-pwa";
 import { ViteImageOptimizer } from "vite-plugin-image-optimizer";
+import viteCompression from "vite-plugin-compression";
 import { readFileSync } from "fs";
 
 function readMockupSandboxPort(): number | null {
@@ -185,6 +186,10 @@ export default defineConfig({
           ),
         ]
       : []),
+    // Pre-compress JS/CSS/HTML chunks at build time so the static file server
+    // can serve .br/.gz directly — no per-request CPU cost.
+    viteCompression({ algorithm: "brotliCompress", ext: ".br", deleteOriginFile: false }),
+    viteCompression({ algorithm: "gzip", ext: ".gz", deleteOriginFile: false }),
     {
       name: "html-no-cache",
       configureServer(server) {
@@ -259,8 +264,6 @@ export default defineConfig({
             return "vendor-forms";
           if (id.includes("/node_modules/date-fns") || id.includes("/node_modules/react-day-picker"))
             return "vendor-date";
-          if (id.includes("/node_modules/react-icons"))
-            return "vendor-icons";
           if (
             id.includes("/node_modules/sonner") ||
             id.includes("/node_modules/cmdk") ||

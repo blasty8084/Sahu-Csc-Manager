@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { LedgerSkeleton } from "@/components/skeletons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -368,6 +369,16 @@ export function TableFooterPagination({
   setPage: React.Dispatch<React.SetStateAction<number>>;
   totalPages: number;
 }) {
+  // Memoised so typing in Quick-Add or any unrelated state change doesn't
+  // re-run two .reduce() passes over the current page entries.
+  const pageSummary = useMemo(() => {
+    const entries: any[] = data?.entries ?? [];
+    if (!entries.length) return null;
+    const pCr = entries.reduce((s: number, e: any) => s + (Number(e.credit) || 0), 0);
+    const pDb = entries.reduce((s: number, e: any) => s + (Number(e.debit) || 0), 0);
+    return { pCr, pDb, net: pCr - pDb };
+  }, [data?.entries]);
+
   return (
     <div style={{ display: activeTab !== "transactions" ? "none" : "flex", flexDirection: "column", gap: 0, borderTop: "1px solid #f1f5f9", flexShrink: 0 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 20px" }}>
@@ -375,20 +386,15 @@ export function TableFooterPagination({
           <p style={{ fontSize: 13, color: "#64748b", fontWeight: 500 }}>
             {data?.total ? `Showing ${(page - 1) * 15 + 1}–${Math.min(page * 15, data.total)} of ${data.total} transactions` : "Showing 0 of 0 transactions"}
           </p>
-          {(data?.entries?.length ?? 0) > 0 && (() => {
-            const pCr = (data?.entries ?? []).reduce((s: number, e: any) => s + (Number(e.credit) || 0), 0);
-            const pDb = (data?.entries ?? []).reduce((s: number, e: any) => s + (Number(e.debit) || 0), 0);
-            const net = pCr - pDb;
-            return (
+          {pageSummary && (
               <span style={{ display: "flex", gap: 10, fontSize: 12, fontWeight: 600 }}>
-                <span style={{ color: "#059669" }}>Cr: ₹{pCr.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                <span style={{ color: "#059669" }}>Cr: ₹{pageSummary.pCr.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
                 <span style={{ color: "#cbd5e1" }}>·</span>
-                <span style={{ color: "#e11d48" }}>Dr: ₹{pDb.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                <span style={{ color: "#e11d48" }}>Dr: ₹{pageSummary.pDb.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
                 <span style={{ color: "#cbd5e1" }}>·</span>
-                <span style={{ color: "#0b2c60", fontWeight: 700 }}>Net: {net >= 0 ? "+" : ""}₹{net.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                <span style={{ color: "#0b2c60", fontWeight: 700 }}>Net: {pageSummary.net >= 0 ? "+" : ""}₹{pageSummary.net.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
               </span>
-            );
-          })()}
+          )}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <button onClick={() => setPage(1)} disabled={page <= 1}

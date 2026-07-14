@@ -5,7 +5,7 @@ import { DashboardStatsSkeleton, DashboardServicesSkeleton, RecentTxSkeleton } f
 import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNetworkStatus } from "@/hooks/use-network-status";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { setCacheItem, getCacheItem } from "@/lib/offline-db";
 import {
   Wallet, TrendingUp, TrendingDown, Activity,
@@ -89,7 +89,7 @@ function MobileDashboard() {
 
   const data = liveData ?? cachedData;
 
-  const statCards = [
+  const statCards = useMemo(() => [
     {
       label: t('dashboard.current_balance'),
       value: isLoading ? null : `₹${(data?.currentBalance ?? 0).toLocaleString("en-IN")}`,
@@ -126,9 +126,9 @@ function MobileDashboard() {
       iconGradient: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
       Icon: Activity,
     },
-  ];
+  ], [t, isLoading, data]);
 
-  const quickActions = [
+  const quickActions = useMemo(() => [
     {
       label: t('dashboard.new_entry'), href: "/ledger", Icon: Plus,
       iconGradient: "linear-gradient(135deg, #0b2c60 0%, #1a4a9e 100%)",
@@ -149,7 +149,7 @@ function MobileDashboard() {
       iconGradient: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
       iconShadow: "rgba(139,92,246,0.35)",
     },
-  ];
+  ], [t]);
 
   return (
     <div className="space-y-5">
@@ -303,7 +303,7 @@ function DesktopDashboard() {
 
   const data = liveData ?? cachedData;
 
-  const statCards = [
+  const statCards = useMemo(() => [
     {
       label: t('dashboard.current_balance'),
       sub: t('dashboard.running_balance'),
@@ -340,21 +340,26 @@ function DesktopDashboard() {
       iconBg: "bg-purple-600",
       Icon: Activity,
     },
-  ];
+  ], [t, isLoading, data]);
 
-  // Build a simple weekly bar structure relative to today's income
-  const todayIncome = data?.todayCredits ?? 0;
-  const todayExpense = data?.todayDebits ?? 0;
-  const peak = Math.max(todayIncome, 1);
-  const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const today = new Date().getDay();
-  const todayIndex = today === 0 ? 6 : today - 1;
-  const weekBars = dayLabels.map((day, i) => {
-    if (i === todayIndex) return { day, income: todayIncome, expense: todayExpense };
-    const factor = [0.6, 0.75, 0.5, 0.85, 0.7, 0.4, 0.3][i] ?? 0.5;
-    return { day, income: Math.round(peak * factor), expense: Math.round(todayExpense * factor * 0.8) };
-  });
-  const maxBar = Math.max(...weekBars.map((b) => b.income), 1);
+  // Build a simple weekly bar structure relative to today's income.
+  // Memoised so re-renders from unrelated state (e.g. Udhari query) don't
+  // rebuild this array.
+  const { weekBars, todayIndex, maxBar } = useMemo(() => {
+    const todayIncome = data?.todayCredits ?? 0;
+    const todayExpense = data?.todayDebits ?? 0;
+    const peak = Math.max(todayIncome, 1);
+    const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const todayDay = new Date().getDay();
+    const todayIndex = todayDay === 0 ? 6 : todayDay - 1;
+    const weekBars = dayLabels.map((day, i) => {
+      if (i === todayIndex) return { day, income: todayIncome, expense: todayExpense };
+      const factor = [0.6, 0.75, 0.5, 0.85, 0.7, 0.4, 0.3][i] ?? 0.5;
+      return { day, income: Math.round(peak * factor), expense: Math.round(todayExpense * factor * 0.8) };
+    });
+    const maxBar = Math.max(...weekBars.map((b) => b.income), 1);
+    return { weekBars, todayIndex, maxBar };
+  }, [data?.todayCredits, data?.todayDebits]);
 
   return (
     <div className="space-y-5">
