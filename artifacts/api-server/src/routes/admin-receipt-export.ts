@@ -7,6 +7,53 @@ import { generateReceiptPdf, getBusinessSettings } from "../services/receiptExpo
 import { createRequire } from "node:module";
 import ExcelJS from "exceljs";
 import { asyncHandler } from "../lib/async-handler";
+import { z } from "zod";
+
+// ── Shared Zod schemas ────────────────────────────────────────────────────────
+// ISO calendar date (YYYY-MM-DD).  Zod's z.string().date() validates the
+// format AND the calendar value (e.g. 2025-02-30 is rejected).
+const isoDate = z.string().date();
+
+const bulkExportQuerySchema = z.object({
+  startDate: isoDate,
+  endDate: isoDate,
+  // Optional positive integer operator filter.
+  userId: z
+    .string()
+    .regex(/^\d+$/, "userId must be a positive integer")
+    .transform(Number)
+    .refine((n) => n > 0, "userId must be a positive integer")
+    .optional(),
+  // Optional comma-separated receipt numbers — no DB-layer meaning beyond an
+  // IN() clause so we only sanity-check that every segment looks like a receipt
+  // code (alphanumeric + hyphens, max 32 chars each).
+  receiptNumbers: z
+    .string()
+    .regex(/^[A-Za-z0-9,\-]+$/, "receiptNumbers contains invalid characters")
+    .optional(),
+}).refine((d) => d.startDate <= d.endDate, {
+  message: "startDate must be on or before endDate",
+  path: ["startDate"],
+});
+
+const monthlyDownloadQuerySchema = z.object({
+  year: z
+    .string()
+    .regex(/^\d{4}$/, "year must be a 4-digit number")
+    .transform(Number)
+    .optional(),
+  month: z
+    .string()
+    .regex(/^\d{1,2}$/, "month must be 1-12")
+    .transform(Number)
+    .refine((n) => n >= 1 && n <= 12, "month must be 1-12")
+    .optional(),
+});
+
+const monthlyTriggerBodySchema = z.object({
+  year: z.number().int().min(2000).max(2100).optional(),
+  month: z.number().int().min(1).max(12).optional(),
+});
 
 const _require = createRequire(import.meta.url);
 const { ZipArchive } = _require("archiver") as typeof import("archiver");
@@ -21,22 +68,19 @@ router.get(
   "/admin/receipts/bulk-export/count",
   requireRole("admin"),
   asyncHandler(async (req, res) => {
-    const { startDate, endDate, userId } = req.query as Record<string, string>;
-
-    if (!startDate || !endDate) {
-      res.status(400).json({ error: "startDate and endDate are required" });
+    const parsed = bulkExportQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid query parameters" });
       return;
     }
+    const { startDate, endDate, userId } = parsed.data;
 
     const conditions = [
       gte(ledgerTable.date, startDate),
       lte(ledgerTable.date, endDate),
       isNotNull(ledgerTable.receiptNumber),
     ];
-    if (userId) {
-      const uid = parseInt(userId, 10);
-      if (!isNaN(uid)) conditions.push(eq(ledgerTable.createdBy, uid));
-    }
+    if (userId !== undefined) conditions.push(eq(ledgerTable.createdBy, userId));
 
     const where = and(...conditions);
 
@@ -85,14 +129,14 @@ router.get(
   "/admin/receipts/bulk-export/download",
   requireRole("admin"),
   asyncHandler(async (req, res) => {
-    const { startDate, endDate, userId, receiptNumbers: receiptNumbersParam } = req.query as Record<string, string>;
-
-    if (!startDate || !endDate) {
-      res.status(400).json({ error: "startDate and endDate are required" });
+    const parsed = bulkExportQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid query parameters" });
       return;
     }
+    const { startDate, endDate, userId, receiptNumbers: receiptNumbersParam } = parsed.data;
 
-    // Parse optional comma-separated receipt numbers list (from user's selection)
+    // Split the already-sanitised receiptNumbers string into individual codes.
     const selectedNumbers = receiptNumbersParam
       ? receiptNumbersParam.split(",").map((s) => s.trim()).filter(Boolean)
       : null;
@@ -102,10 +146,7 @@ router.get(
       lte(ledgerTable.date, endDate),
       isNotNull(ledgerTable.receiptNumber),
     ];
-    if (userId) {
-      const uid = parseInt(userId, 10);
-      if (!isNaN(uid)) conditions.push(eq(ledgerTable.createdBy, uid));
-    }
+    if (userId !== undefined) conditions.push(eq(ledgerTable.createdBy, userId));
     if (selectedNumbers && selectedNumbers.length > 0) {
       conditions.push(inArray(ledgerTable.receiptNumber, selectedNumbers));
     }
@@ -211,12 +252,12 @@ router.get(
   "/admin/receipts/bulk-export/excel",
   requireRole("admin"),
   asyncHandler(async (req, res) => {
-    const { startDate, endDate, userId, receiptNumbers: receiptNumbersParam } = req.query as Record<string, string>;
-
-    if (!startDate || !endDate) {
-      res.status(400).json({ error: "startDate and endDate are required" });
+    const parsed = bulkExportQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid query parameters" });
       return;
     }
+    const { startDate, endDate, userId, receiptNumbers: receiptNumbersParam } = parsed.data;
 
     const selectedNumbers = receiptNumbersParam
       ? receiptNumbersParam.split(",").map((s) => s.trim()).filter(Boolean)
@@ -227,10 +268,7 @@ router.get(
       lte(ledgerTable.date, endDate),
       isNotNull(ledgerTable.receiptNumber),
     ];
-    if (userId) {
-      const uid = parseInt(userId, 10);
-      if (!isNaN(uid)) conditions.push(eq(ledgerTable.createdBy, uid));
-    }
+    if (userId !== undefined) conditions.push(eq(ledgerTable.createdBy, userId));
     if (selectedNumbers && selectedNumbers.length > 0) {
       conditions.push(inArray(ledgerTable.receiptNumber, selectedNumbers));
     }
@@ -367,14 +405,15 @@ router.post(
   "/admin/receipts/monthly-export/trigger",
   requireRole("admin"),
   asyncHandler(async (req, res) => {
+    const parsed = monthlyTriggerBodySchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid request body" });
+      return;
+    }
     const now = new Date();
-    const { year, month } = req.body as { year?: number; month?: number };
+    const { year, month } = parsed.data;
     const targetYear = year ?? (now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear());
     const targetMonth = month ?? (now.getMonth() === 0 ? 12 : now.getMonth());
-
-    if (targetMonth < 1 || targetMonth > 12) {
-      res.status(400).json({ error: "month must be 1-12" }); return;
-    }
 
     await sendMonthlyExportEmail(targetYear, targetMonth);
     res.json({ ok: true, message: `Monthly export for ${targetYear}-${String(targetMonth).padStart(2, "0")} triggered` });
@@ -386,13 +425,14 @@ router.get(
   "/admin/receipts/monthly-export/download",
   requireRole("admin"),
   asyncHandler(async (req, res) => {
-    const now = new Date();
-    const rawYear = req.query.year ? parseInt(req.query.year as string, 10) : (now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear());
-    const rawMonth = req.query.month ? parseInt(req.query.month as string, 10) : (now.getMonth() === 0 ? 12 : now.getMonth());
-
-    if (isNaN(rawYear) || isNaN(rawMonth) || rawMonth < 1 || rawMonth > 12) {
-      res.status(400).json({ error: "Invalid year or month" }); return;
+    const parsed = monthlyDownloadQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid query parameters" });
+      return;
     }
+    const now = new Date();
+    const rawYear = parsed.data.year ?? (now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear());
+    const rawMonth = parsed.data.month ?? (now.getMonth() === 0 ? 12 : now.getMonth());
 
     const zipBuffer = await buildMonthlyZip(rawYear, rawMonth);
     const filename = `receipts-${rawYear}-${String(rawMonth).padStart(2, "0")}.zip`;

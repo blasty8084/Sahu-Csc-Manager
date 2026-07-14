@@ -5,6 +5,18 @@ import { decryptField } from "../lib/encryption";
 import { verifyReceiptToken, isJwt } from "../lib/jwt";
 import { asyncHandler } from "../lib/async-handler";
 
+// Receipt tokens are either:
+//   • A UUID v4  (legacy plain-text tokens stored in the receiptToken column)
+//   • A JWT      (three base64url segments separated by dots)
+// Anything else is rejected before touching the database.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// JWTs: header.payload.signature — each segment is base64url (no padding).
+const JWT_RE  = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
+
+function isValidReceiptToken(t: string): boolean {
+  return UUID_RE.test(t) || JWT_RE.test(t);
+}
+
 const router: IRouter = Router();
 
 // ── Udhari Khata receipt verify ───────────────────────────────────────────────
@@ -12,8 +24,8 @@ const router: IRouter = Router();
 // not swallow "udhari" as the :token value.
 router.get("/receipts/verify/udhari/:token", asyncHandler(async (req, res) => {
   const { token } = req.params;
-  if (!token || typeof token !== "string" || token.length < 16) {
-    res.status(400).json({ error: "Invalid token" });
+  if (!token || typeof token !== "string" || !isValidReceiptToken(token)) {
+    res.status(400).json({ error: "Invalid token format" });
     return;
   }
 
@@ -100,8 +112,8 @@ router.get("/receipts/verify/udhari/:token", asyncHandler(async (req, res) => {
 // ── Ledger receipt verify ────────────────────────────────────────────────────
 router.get("/receipts/verify/:token", asyncHandler(async (req, res) => {
   const { token } = req.params;
-  if (!token || typeof token !== "string" || token.length < 16) {
-    res.status(400).json({ error: "Invalid token" });
+  if (!token || typeof token !== "string" || !isValidReceiptToken(token)) {
+    res.status(400).json({ error: "Invalid token format" });
     return;
   }
 
