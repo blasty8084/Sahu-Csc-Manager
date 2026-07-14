@@ -14,6 +14,17 @@ const APP_VERSION = __APP_VERSION__;
 // ── Changelog ────────────────────────────────────────────────────────────────
 const CHANGELOG = [
   {
+    version: "v4.3.1",
+    title: "Config & Maintenance Fixes",
+    date: "2026-07-14",
+    accent: "#0891b2",
+    changes: [
+      "/health now reports the real app version read from package.json, instead of a hardcoded string that had drifted stale",
+      "Removed a hardcoded personal email fallback for the VAPID push contact — falls back to a generic placeholder; the real address comes from the VAPID_EMAIL setting",
+      "The geoip country/city database now refreshes automatically once a week and hot-reloads without a server restart",
+    ],
+  },
+  {
     version: "v4.3.0",
     title: "Security Hardening, Input Validation & Database Integrity",
     date: "2026-07-14",

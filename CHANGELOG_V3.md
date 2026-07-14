@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v3 / v4
-**Current version: 4.3.0 — July 14, 2026**
+**Current version: 4.3.1 — July 14, 2026**
 
 > Detailed record of every feature, change, and upgrade from v3.0.0 onward.  
 > For v2.x history, see `docs/archive/changelogV2.md`.  
@@ -13,6 +13,7 @@
 
 ## Table of Contents
 
+0. [v4.3.1 — Config & Maintenance Fixes (July 14, 2026)](#0-v431--config--maintenance-fixes-july-14-2026)
 0. [v4.3.0 — Security Hardening, Input Validation & Database Integrity (July 14, 2026)](#0-v430--security-hardening-input-validation--database-integrity-july-14-2026)
 0. [Infra — Redis connected, rate-limiter fix & CORS update (July 14, 2026)](#0-infra--redis-connected-rate-limiter-fix--cors-update-july-14-2026)
 0. [v4.2.0 — Running Balance, CDN Headers & Test Coverage (July 14, 2026)](#0-v420--running-balance-cdn-headers--test-coverage-july-14-2026)
@@ -24,6 +25,18 @@
 0. [v3.5.10 — Navigation Performance — Instant Page Switching (July 12, 2026)](#0-v3510--navigation-performance--instant-page-switching-july-12-2026)
 0. [v3.5.9 — Redis Cache Live, i18n Fixes & Build Hardening (July 12, 2026)](#0-v359--redis-cache-live-i18n-fixes--build-hardening-july-12-2026)
 0. [v3.5.8 — Reports & Receipt Export Page Modularization (July 12, 2026)](#0-v358--reports--receipt-export-page-modularization-july-12-2026)
+
+---
+
+## 0. v4.3.1 — Config & Maintenance Fixes (July 14, 2026)
+
+Small config/maintenance bug-fix patch — three items from a maintenance audit (`BUGS.md`-derived config list). No user-visible features; no API contract changes.
+
+| Change | Description |
+|--------|-------------|
+| **`/health` version hardcoded** | `routes/health.ts` returned a literal `version: "4.1.2"` string that had gone stale (app was already at 4.3.0). New `lib/version.ts` reads the version from `package.json` at runtime, the same way the frontend derives `__APP_VERSION__` from Vite's `define` at build time. |
+| **Hardcoded personal email fallback** | `routes/health.ts` and `lib/push.ts` fell back to a hardcoded personal Gmail address when `VAPID_EMAIL` was unset. Replaced with a generic `mailto:support@example.com` placeholder — the real contact address is supplied via the `VAPID_EMAIL` env var (already set in shared env vars). |
+| **`geoip-lite` database never updates** | `geoip-lite` ships a static MaxMind snapshot at install time with no refresh mechanism — IP→country data drifts stale within weeks, causing both false geo-blocks and false allows. Added `lib/geoip-updater.ts`: a weekly (`node-cron`, Sunday 03:00) job that runs the package's own `updatedb` script and hot-reloads the result via `geoip.reloadDataSync()` (no restart needed). Gated on an optional `MAXMIND_LICENSE_KEY` secret — skips with a warning if absent, so geo-blocking keeps working off the bundled snapshot either way. Added `src/types/geoip-lite.d.ts` (a minimal shim; the package ships no TypeScript types) to keep `tsc` clean. |
 
 ---
 

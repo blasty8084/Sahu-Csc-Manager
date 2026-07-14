@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Platform Documentation
-**Version 4.3.0** — last updated 2026-07-14
+**Version 4.3.1** — last updated 2026-07-14
 
 > Common Service Center (CSC) Business Management Platform for Odisha / India rural service centers.
 > Full-stack · PWA · Offline-capable · Multilingual (English / Hindi / Odia)
@@ -55,6 +55,14 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 ---
 
 ## 2. Version History
+
+### v4.3.1 — Config & Maintenance Fixes (2026-07-14)
+
+Small config/maintenance patch, three items from a maintenance audit. No user-visible features; no API contract changes.
+
+- `/health` version reported dynamically from `package.json` (was hardcoded and stale)
+- Removed hardcoded personal email fallback for VAPID contact; falls back to a generic placeholder, real value comes from `VAPID_EMAIL`
+- `geoip-lite` MaxMind database now refreshed weekly via a scheduled job (gated on optional `MAXMIND_LICENSE_KEY`) and hot-reloaded without a restart
 
 ### v4.3.0 — Security Hardening, Input Validation & Database Integrity (2026-07-14)
 
