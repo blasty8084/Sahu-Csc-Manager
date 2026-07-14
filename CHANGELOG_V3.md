@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v3 / v4
-**Current version: 4.1.2 — July 13, 2026**
+**Current version: 4.2.0 — July 14, 2026**
 
 > Detailed record of every feature, change, and upgrade from v3.0.0 onward.  
 > For v2.x history, see `docs/archive/changelogV2.md`.  
@@ -13,6 +13,7 @@
 
 ## Table of Contents
 
+0. [v4.2.0 — Running Balance, CDN Headers & Test Coverage (July 14, 2026)](#0-v420--running-balance-cdn-headers--test-coverage-july-14-2026)
 0. [v4.1.2 — Security & Type-Safety Hardening (July 13, 2026)](#0-v412--security--type-safety-hardening-july-13-2026)
 0. [v4.1.1 — Worker Server — BullMQ Async Processing (July 13, 2026)](#0-v411--worker-server--bullmq-async-processing-july-13-2026)
 0. [v4.0.2 — Image & Loader Polish (July 13, 2026)](#0-v402--image--loader-polish-july-13-2026)
@@ -21,6 +22,21 @@
 0. [v3.5.10 — Navigation Performance — Instant Page Switching (July 12, 2026)](#0-v3510--navigation-performance--instant-page-switching-july-12-2026)
 0. [v3.5.9 — Redis Cache Live, i18n Fixes & Build Hardening (July 12, 2026)](#0-v359--redis-cache-live-i18n-fixes--build-hardening-july-12-2026)
 0. [v3.5.8 — Reports & Receipt Export Page Modularization (July 12, 2026)](#0-v358--reports--receipt-export-page-modularization-july-12-2026)
+
+---
+
+## 0. v4.2.0 — Running Balance, CDN Headers & Test Coverage (July 14, 2026)
+
+Closes four remaining performance and quality gaps. No routes, UI behaviour, or external API contract changed.
+
+| Change | Description |
+|--------|-------------|
+| **`users.ledger_balance` maintained column** | New `NUMERIC(15,2) NOT NULL DEFAULT 0` column on the `users` table (schema pushed via `drizzle-kit push`). `POST /ledger` now performs a single atomic `UPDATE users SET ledger_balance = ledger_balance + delta WHERE id = $userId RETURNING ledger_balance` (O(1), race-free) instead of the previous full-table `SUM(credit) - SUM(debit)` scan that grew with ledger history. `PATCH /ledger/:id` and `DELETE /ledger/:id` update the column inside the existing transaction alongside `recalculateBalances()`; `DELETE /ledger/all` resets it to 0. A startup backfill in `index.ts` corrects any users whose column is 0 but have existing entries (idempotent, skips already-correct rows). |
+| **Dashboard O(1) balance** | `GET /api/dashboard` previously ran five `Promise.all` queries including an all-time `SUM()` scan for `currentBalance`. That aggregate is replaced by a `SELECT ledger_balance FROM users WHERE id = $userId` primary-key lookup — sub-millisecond on any dataset size. The four remaining queries (today/month totals, recent entries, service breakdown) are unchanged. |
+| **`GET /api/ledger/balance` via JOIN** | Replaces a plain `SELECT SUM() FROM ledger` with a single `LEFT JOIN` against `users` — `balance` now comes from `users.ledger_balance` (authoritative maintained column) while `totalCredits` / `totalDebits` still come from the SUM (displayed in LedgerEntryForm stats). One round-trip, consistent source of truth. |
+| **CDN-ready `Cache-Control` headers** | `/receipts/verify/:token` + `/receipts/verify/udhari/:token` → `public, max-age=60, stale-while-revalidate=300` (financial records; immutable after creation). `/healthz`, `/health`, `/setup-status` → `no-store` (live data that must never be served stale). Express weak ETags remain enabled globally on all other `res.json()` responses. |
+| **28 new Vitest tests — 70 total** | `async-handler.test.ts` (6 cases): error forwarding to `next()`, type preservation, direct `next(err)` pass-through. `query-cache.test.ts` (8 cases): cache miss/hit, TTL expiry, falsy-value caching (`null`, `false`), prefix invalidation boundary checks. All 70 tests pass. |
+| **PM2 multi-instance docs** | Workflow limit at 10/10; `MULTI_INSTANCE_SETUP.md` updated with a ready-to-paste foreground PM2 shell command for Replit (`--no-daemon`, explicit `PORT=8080`). |
 
 ---
 

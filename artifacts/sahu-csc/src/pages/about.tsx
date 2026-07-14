@@ -14,6 +14,31 @@ const APP_VERSION = __APP_VERSION__;
 // ── Changelog ────────────────────────────────────────────────────────────────
 const CHANGELOG = [
   {
+    version: "v4.2.0",
+    title: "Running Balance, CDN Headers & Test Coverage",
+    date: "2026-07-14",
+    accent: "#6366f1",
+    changes: [
+      "users.ledger_balance — new maintained NUMERIC column updated atomically on every ledger write; POST /ledger is now O(1) regardless of history length instead of doing a full SUM() scan",
+      "Dashboard currentBalance now reads from users.ledger_balance (single primary-key lookup) instead of an all-time aggregate over every ledger row — sub-millisecond on any dataset",
+      "GET /api/ledger/balance uses a single LEFT JOIN so balance comes from the authoritative maintained column while totalCredits/totalDebits still come from SUM for the stats display",
+      "Cache-Control headers added: receipt-verify endpoints get public, max-age=60, stale-while-revalidate=300; health and setup-status endpoints get no-store",
+      "Test suite expanded to 70 tests: 6 new asyncHandler tests (error forwarding, type preservation) and 8 new query-cache tests (hit/miss, TTL expiry, falsy values, prefix invalidation)",
+    ],
+  },
+  {
+    version: "v4.1.2",
+    title: "Security & Type-Safety Hardening",
+    date: "2026-07-13",
+    accent: "#10b981",
+    changes: [
+      "asyncHandler utility wraps all 116 async route handlers across 32 files — unhandled promise rejections now reach Express's error handler instead of hanging the client connection",
+      "req.session as any casts removed from admin.ts — replaced with direct req.session.userId using the existing SessionData augmentation",
+      "any[] type annotations removed from aeps/transactions.ts sessionWhere and txWhere — TypeScript now infers correct Drizzle SQL condition types",
+      "QueryClient staleTime: 5 min + refetchOnWindowFocus: false global defaults confirmed applied to all 64 query hooks",
+    ],
+  },
+  {
     version: "v4.1.1",
     title: "Worker Server — Async Background Processing",
     date: "2026-07-13",

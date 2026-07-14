@@ -1,5 +1,5 @@
 # SAHU CSC — Architecture Reference v3
-**Version 4.1.2 — July 13, 2026**
+**Version 4.2.0 — July 14, 2026**
 
 > This is the single authoritative reference for the SAHU CSC platform architecture.  
 > It supersedes `docs/archive/architectureV2.md` and `docs/archive/ARCHITECTURE.md`.  
@@ -278,6 +278,7 @@ workspace/
 | `profile_picture` | text NULL | base64 data URL |
 | `bio` | text NULL | Max 500 chars |
 | `address` | text NULL | Max 500 chars |
+| `ledger_balance` | numeric(15,2) NOT NULL DEFAULT 0 | Maintained running total of ledger credits − debits; updated atomically on every ledger write (O(1) alternative to full `SUM()` scan) |
 | `created_at` / `updated_at` | timestamptz | |
 
 ### `user_sessions`
@@ -502,7 +503,8 @@ Permissions by role:
 
 Two independent TTL caches sit in front of hot read paths, both backed by a swappable `CacheBackend` interface (`lib/cache/backend.ts`, `lib/cache/memoryBackend.ts`, `lib/cache/redisBackend.ts`):
 
-- **Query cache** (`lib/query-cache.ts`, 5s TTL) — `GET /api/dashboard`, `GET /api/admin/users-overview`, `GET /api/reports/daily`, `GET /api/reports/monthly`. Invalidated via `invalidateLedgerCaches()` on every ledger create/update/delete.
+- **Query cache** (`lib/query-cache.ts`, 5s TTL) — `GET /api/dashboard`, `GET /api/admin/users-overview`, `GET /api/reports/daily`, `GET /api/reports/monthly`, `GET /api/aeps/*`, `GET /api/udhari/*`, `GET /api/users`. Invalidated via `invalidateLedgerCaches()` / `invalidateAepsCaches()` / `invalidateUdhariCaches()` / `invalidateUserListCache()` on every relevant write.
+- **Maintained `ledger_balance` column** (`users.ledger_balance`) — `GET /api/dashboard` and `GET /api/ledger/balance` read the running total from this O(1) column instead of issuing a full `SUM()` aggregate scan across the entire ledger history. Updated atomically on every `POST`, `PATCH`, `DELETE /ledger/*` write; reset to 0 on `DELETE /ledger/all`. A startup backfill corrects any existing rows whose balance is 0 but have ledger entries.
 - **Session/role cache** (`lib/auth/sessionCache.ts`, 5s TTL) — backs `requireAuth`/`requireRole`/`requirePermission`'s per-request session-validity and role lookups. Invalidated via `invalidateSessionCache()` / `invalidateUserCache()` on logout, password reset, session revocation, and role/status changes.
 
 Backend selection is via `CACHE_BACKEND` env var:
@@ -726,7 +728,7 @@ bubblewrap build
 - **Package ID:** `com.sahucsc.app`
 - **Min SDK:** 21 (Android 5.0)
 - **Target SDK:** 34
-- **App version:** 4.1.1 (code: 4)
+- **App version:** 4.2.0 (code: 5)
 - **Config file:** `infrastructure/twa/twa-config.json`
 
 ---
