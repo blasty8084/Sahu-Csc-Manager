@@ -1,11 +1,11 @@
 # SAHU CSC — Common Service Center Management Platform
 **Version 4.2.0** — last updated 2026-07-14
 
-> Re-imported and re-set-up on Replit 2026-07-11: ran `pnpm install`, pushed schema via `drizzle-kit push` (`pnpm exec drizzle-kit push --config=drizzle.config.ts` from `lib/db/`), seeded admin/operator via the `Seed Database` workflow, and started `API Server` + `SAHU CSC` workflows. `ADMIN_PASSWORD` and `OPERATOR_PASSWORD` were re-requested as Replit Secrets (a fresh import means a fresh, empty database, so these seed-account passwords must be re-provided each time); `SESSION_SECRET` already existed. Verified login works via curl.
+> **Re-imported and fully set up on Replit 2026-07-14**: ran `pnpm install`, pushed schema via `drizzle-kit push`, seeded admin/operator via the `Seed Database` workflow. All three secrets (`SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`) confirmed. Connected Upstash Redis: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, and `REDIS_URL` added as Replit Secrets; `CACHE_BACKEND` set back to `redis`. Fixed rate-limiter Redis bridge: `app.ts` was passing the Upstash REST client (`@upstash/redis`) to `rate-limit-redis`, which expects an ioredis-compatible `sendCommand` interface — swapped to `ioredis` (already a dependency) using `REDIS_URL`; all four rate limiters now initialize without errors. Worker Server started cleanly with all four BullMQ workers (notifications, emails, PDF, SMS). Updated `CORS_ORIGIN` env var to the current Replit dev domain (`sisko.replit.dev`); verified via OPTIONS preflight that the API returns the correct `Access-Control-Allow-Origin` header.
 >
-> Note: re-importing this project always resets the database to empty. After every import, re-run in order: `pnpm install` → `drizzle-kit push` (from `lib/db/`) → `Seed Database` workflow → start `API Server` + `SAHU CSC` workflows.
+> Note: re-importing this project always resets the database to empty. After every import, re-run in order: `pnpm install` → `drizzle-kit push` (from `lib/db/`) → `Seed Database` workflow → start `API Server` + `SAHU CSC` + `Worker Server` workflows. Also update `CORS_ORIGIN` in shared env vars to the new `$REPLIT_DEV_DOMAIN` value.
 >
-> **Fixed a workflow bug**: the `API Server` workflow ran `PORT=8080 ... pnpm run build && node index.mjs` — in bash, a `VAR=val` prefix only applies to the command immediately before `&&`, so `node index.mjs` was inheriting the reserved `PORT=5000` (set in `.replit` `[userenv.shared]`) instead of 8080, colliding with the frontend's port. Fixed by prefixing `node` with its own `PORT=8080` too.
+> **Fixed a workflow bug (2026-07-11)**: the `API Server` workflow ran `PORT=8080 ... pnpm run build && node index.mjs` — in bash, a `VAR=val` prefix only applies to the command immediately before `&&`, so `node index.mjs` was inheriting the reserved `PORT=5000` (set in `.replit` `[userenv.shared]`) instead of 8080, colliding with the frontend's port. Fixed by prefixing `node` with its own `PORT=8080` too.
 >
 > **Fixed a fresh-`node_modules` build failure (2026-07-11)**: after a clean `pnpm install`, the API Server build failed at runtime with `ERR_MODULE_NOT_FOUND` for `@opentelemetry/instrumentation`, then `@opentelemetry/core`, then `@opentelemetry/sdk-trace-base` in turn. `build.mjs` externalizes `@opentelemetry/*` (to dodge the drizzle-orm dual-peer conflict — see Sentry note below), so esbuild doesn't bundle it, but pnpm only hoists *direct* dependencies into `artifacts/api-server/node_modules`; these three are transitive deps of `@sentry/node`/`@sentry/opentelemetry`/`@sentry/node-core` that were never hoisted. Fixed by adding all three as explicit `dependencies` in `artifacts/api-server/package.json` (alongside the existing `@opentelemetry/api`) so pnpm hoists them. If a future Sentry upgrade throws the same `ERR_MODULE_NOT_FOUND` for a new `@opentelemetry/*` subpackage, add it the same way.
 
@@ -152,7 +152,21 @@ Continuing from the 8.5/10 baseline (N+1 fixes, batched writes, pooled connectio
 1. `pnpm install` from workspace root
 2. Schema is auto-applied by `drizzle-kit push` (runs via `scripts/post-merge.sh`)
 3. Run `Seed Database` workflow to create admin/operator accounts
-4. Secrets required: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`
+4. Start `API Server`, `SAHU CSC`, and `Worker Server` workflows
+
+#### Secrets required
+| Secret | Purpose |
+|--------|---------|
+| `SESSION_SECRET` | Express session signing key |
+| `ADMIN_PASSWORD` | Seed admin account password |
+| `OPERATOR_PASSWORD` | Seed operator account password |
+| `UPSTASH_REDIS_REST_URL` | Upstash Redis REST endpoint — enables shared cache |
+| `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST token |
+| `REDIS_URL` | Upstash direct TCP URL (`rediss://...`) — required for Worker Server / BullMQ |
+
+#### Env vars to check after each re-import
+- `CACHE_BACKEND` — set to `redis` (shared env)
+- `CORS_ORIGIN` — must include the current `$REPLIT_DEV_DOMAIN`; update via `setEnvVars` or the Replit env panel whenever the domain changes (it changes on each import/re-deploy)
 
 ### Login credentials
 - Admin: `admin` / value of `ADMIN_PASSWORD` secret

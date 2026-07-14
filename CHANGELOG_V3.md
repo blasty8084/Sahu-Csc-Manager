@@ -13,6 +13,7 @@
 
 ## Table of Contents
 
+0. [Infra — Redis connected, rate-limiter fix & CORS update (July 14, 2026)](#0-infra--redis-connected-rate-limiter-fix--cors-update-july-14-2026)
 0. [v4.2.0 — Running Balance, CDN Headers & Test Coverage (July 14, 2026)](#0-v420--running-balance-cdn-headers--test-coverage-july-14-2026)
 0. [v4.1.2 — Security & Type-Safety Hardening (July 13, 2026)](#0-v412--security--type-safety-hardening-july-13-2026)
 0. [v4.1.1 — Worker Server — BullMQ Async Processing (July 13, 2026)](#0-v411--worker-server--bullmq-async-processing-july-13-2026)
@@ -22,6 +23,19 @@
 0. [v3.5.10 — Navigation Performance — Instant Page Switching (July 12, 2026)](#0-v3510--navigation-performance--instant-page-switching-july-12-2026)
 0. [v3.5.9 — Redis Cache Live, i18n Fixes & Build Hardening (July 12, 2026)](#0-v359--redis-cache-live-i18n-fixes--build-hardening-july-12-2026)
 0. [v3.5.8 — Reports & Receipt Export Page Modularization (July 12, 2026)](#0-v358--reports--receipt-export-page-modularization-july-12-2026)
+
+---
+
+## 0. Infra — Redis connected, rate-limiter fix & CORS update (July 14, 2026)
+
+Operational setup changes after re-import; no application logic or API contract changed.
+
+| Change | Description |
+|--------|-------------|
+| **Upstash Redis connected** | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, and `REDIS_URL` added as Replit Secrets. `CACHE_BACKEND` env var set back to `redis`. All three servers confirmed healthy: API Server logs "Rate limiter: using shared Redis store", Worker Server logs all four BullMQ workers started. |
+| **Rate-limiter Redis bridge fixed** | `app.ts` was supplying the `@upstash/redis` REST client to `rate-limit-redis`, which expects an ioredis-compatible `sendCommand(args: string[])` interface — the REST client has no such method, causing async init errors on all four rate limiters. Fixed by replacing the REST client with `ioredis` (already a dependency) pointed at `REDIS_URL`. The bridge now uses `client.call(args[0], ...args.slice(1))` which satisfies `rate-limit-redis`'s contract. |
+| **CORS_ORIGIN updated** | Env var updated from the stale `pike.replit.dev` domain to the current `sisko.replit.dev` domain. Verified via `OPTIONS` preflight: API returns correct `Access-Control-Allow-Origin` header matching the preview URL. |
+| **Docs updated** | `replit.md` first-time setup section expanded with full secrets table and a note to update `CORS_ORIGIN` after every re-import. `DOCS.md` env vars section updated with Redis and CORS sections. |
 
 ---
 

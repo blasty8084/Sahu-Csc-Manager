@@ -302,6 +302,22 @@ All secrets are managed in the Replit Secrets tab (🔒 icon in left sidebar). N
 
 > Without SMTP, OTP login, password reset, and admin email broadcast are disabled. Username + password login still works.
 
+### Required for Redis cache & background jobs
+
+| Variable | Purpose |
+|----------|---------|
+| `UPSTASH_REDIS_REST_URL` | Upstash Redis REST endpoint (e.g. `https://xxx.upstash.io`) — used by `@upstash/redis` for the shared cache backend |
+| `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST token |
+| `REDIS_URL` | Upstash direct TCP URL (`rediss://default:PASSWORD@xxx.upstash.io:6379`) — required by the **Worker Server** (BullMQ / ioredis) and the rate-limiter Redis store |
+
+> Without these, `CACHE_BACKEND` falls back to `memory` (per-process, lost on restart) and the Worker Server won't start. Set `CACHE_BACKEND=redis` in shared env vars once all three are added.
+
+### Required for CORS
+
+| Variable | Purpose |
+|----------|---------|
+| `CORS_ORIGIN` | Comma-separated list of allowed origins. Must include `http://localhost:5000` and `https://<current $REPLIT_DEV_DOMAIN>`. **Update this after every re-import** — the Replit dev domain changes with each import. |
+
 ### Optional (recommended for production)
 
 | Variable | Purpose |
