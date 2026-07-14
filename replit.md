@@ -1,5 +1,5 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 4.1.2** — last updated 2026-07-13
+**Version 4.2.0** — last updated 2026-07-14
 
 > Re-imported and re-set-up on Replit 2026-07-11: ran `pnpm install`, pushed schema via `drizzle-kit push` (`pnpm exec drizzle-kit push --config=drizzle.config.ts` from `lib/db/`), seeded admin/operator via the `Seed Database` workflow, and started `API Server` + `SAHU CSC` workflows. `ADMIN_PASSWORD` and `OPERATOR_PASSWORD` were re-requested as Replit Secrets (a fresh import means a fresh, empty database, so these seed-account passwords must be re-provided each time); `SESSION_SECRET` already existed. Verified login works via curl.
 >
@@ -8,6 +8,15 @@
 > **Fixed a workflow bug**: the `API Server` workflow ran `PORT=8080 ... pnpm run build && node index.mjs` — in bash, a `VAR=val` prefix only applies to the command immediately before `&&`, so `node index.mjs` was inheriting the reserved `PORT=5000` (set in `.replit` `[userenv.shared]`) instead of 8080, colliding with the frontend's port. Fixed by prefixing `node` with its own `PORT=8080` too.
 >
 > **Fixed a fresh-`node_modules` build failure (2026-07-11)**: after a clean `pnpm install`, the API Server build failed at runtime with `ERR_MODULE_NOT_FOUND` for `@opentelemetry/instrumentation`, then `@opentelemetry/core`, then `@opentelemetry/sdk-trace-base` in turn. `build.mjs` externalizes `@opentelemetry/*` (to dodge the drizzle-orm dual-peer conflict — see Sentry note below), so esbuild doesn't bundle it, but pnpm only hoists *direct* dependencies into `artifacts/api-server/node_modules`; these three are transitive deps of `@sentry/node`/`@sentry/opentelemetry`/`@sentry/node-core` that were never hoisted. Fixed by adding all three as explicit `dependencies` in `artifacts/api-server/package.json` (alongside the existing `@opentelemetry/api`) so pnpm hoists them. If a future Sentry upgrade throws the same `ERR_MODULE_NOT_FOUND` for a new `@opentelemetry/*` subpackage, add it the same way.
+
+## What's New in v4.2.0 (July 14, 2026) — Running Balance, CDN Headers & Test Coverage
+
+| Change | Description |
+|--------|-------------|
+| **`ledger_balance` maintained column (Gap 3)** | New `NUMERIC(15,2)` column on `users` table. `POST /ledger` now does a single atomic `UPDATE users SET ledger_balance = ledger_balance + delta RETURNING ledger_balance` (O(1)) instead of the previous full-table `SUM()` scan (O(n)). `PATCH` and `DELETE` adjust the column inside the existing transaction alongside `recalculateBalances()`; `DELETE /ledger/all` resets it to 0. A startup backfill in `index.ts` corrects any users whose balance is 0 but have existing entries (safe to re-run; skips users already correct). Schema pushed via `drizzle-kit push`. |
+| **CDN-ready `Cache-Control` headers (Gap 1)** | `GET /receipts/verify/:token` and `GET /receipts/verify/udhari/:token` → `public, max-age=60, stale-while-revalidate=300` (receipts are immutable after creation). `GET /healthz`, `GET /health`, `GET /setup-status` → `no-store` (live dynamic data, must never be served stale). Express weak ETags already enabled by default on all other `res.json()` responses. |
+| **28 new tests — 70 total (Gap 2)** | `async-handler.test.ts` (6 cases): error forwarding, type preservation, `next()` call count. `query-cache.test.ts` (8 cases): cache miss/hit, TTL expiry, falsy-value caching, prefix invalidation. All 70 tests pass. |
+| **PM2 multi-instance docs (Gap 4)** | Workflow slots full (10/10); `MULTI_INSTANCE_SETUP.md` now includes a ready-to-paste Replit shell command for PM2 cluster mode with `--no-daemon` and explicit `PORT=8080`. |
 
 ## What's New in v4.1.2 (July 13, 2026) — Security & Type-Safety Hardening
 

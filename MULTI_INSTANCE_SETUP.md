@@ -79,6 +79,19 @@ pm2 save      # persist across reboots
 pm2 startup   # generate the startup hook command, then run it
 ```
 
+#### Running in Replit (single-command, foreground)
+
+Replit workflows require the process to stay in the foreground. Use `--no-daemon` and pass `PORT` explicitly so PM2 workers don't inherit the shared `PORT=5000` env var:
+
+```bash
+PORT=8080 NODE_ENV=production pnpm --filter @workspace/api-server run build \
+  && pm2 delete sahu-api 2>/dev/null; \
+  PORT=8080 NODE_ENV=production pm2 start artifacts/api-server/dist/index.mjs \
+    --name sahu-api --instances max --exec-mode cluster --no-daemon
+```
+
+> **Note:** The Replit workflow limit (10 max) is currently full. Run the above in the **Shell** tab directly, or free a slot by removing an unused workflow first.
+
 #### Useful PM2 commands
 
 ```bash
