@@ -19,8 +19,8 @@ catalogs:
       specifier: ^4.1.14
       version: 4.3.0
     '@tanstack/react-query':
-      specifier: ^5.90.21
-      version: 5.100.9
+      specifier: ^5.101.2
+      version: 5.101.2
     '@types/node':
       specifier: ^25.3.3
       version: 25.6.2
@@ -650,10 +650,10 @@ importers:
         version: 5.101.2
       '@tanstack/react-query':
         specifier: 'catalog:'
-        version: 5.100.9(react@19.1.0)
+        version: 5.101.2(react@19.1.0)
       '@tanstack/react-query-persist-client':
         specifier: ^5.101.2
-        version: 5.101.2(@tanstack/react-query@5.100.9(react@19.1.0))(react@19.1.0)
+        version: 5.101.2(@tanstack/react-query@5.101.2(react@19.1.0))(react@19.1.0)
       '@workspace/api-client-react':
         specifier: workspace:*
         version: link:../../lib/api-client-react
@@ -877,7 +877,7 @@ importers:
     dependencies:
       '@tanstack/react-query':
         specifier: 'catalog:'
-        version: 5.100.9(react@19.1.0)
+        version: 5.101.2(react@19.1.0)
 
   lib/api-spec:
     devDependencies:
@@ -2797,9 +2797,6 @@ packages:
   '@tanstack/query-async-storage-persister@5.101.2':
     resolution: {integrity: sha512-jf7zvVKZ5q2j/xuhbTIBUpw5xt6cw/ioOFQquxK7fRY0AmMQP8A0JVMOgYoeQLA4PKdeT7RxsuLAF0Lft9oJ8Q==}
 
-  '@tanstack/query-core@5.100.9':
-    resolution: {integrity: sha512-SJSFw1S8+kQ0+knv/XGfrbocWoAlT7vDKsSImtLx3ZPQmEcR46hkDjLSvynSy25N8Ms4tIEini1FuBd5k7IscQ==}
-
   '@tanstack/query-core@5.101.2':
     resolution: {integrity: sha512-hH5MLoJhF7KaIGd7q3xTXGXvslI+GYlM1Z/35aSHHWaCJWB7XvTSHYuV3eM7tw+aE0mT/xMro4M4Q9rCGHT0lw==}
 
@@ -2815,8 +2812,8 @@ packages:
       '@tanstack/react-query': ^5.101.2
       react: ^18 || ^19
 
-  '@tanstack/react-query@5.100.9':
-    resolution: {integrity: sha512-Oa44XkaI3kCNN6ME0KByU3xT3SEUNOMfZpHxL6+wFoTm+OeUFYHKdeYVe0aOXlRDm/f15sgLwEt2HDorIdW8+A==}
+  '@tanstack/react-query@5.101.2':
+    resolution: {integrity: sha512-seDkr6kzGzX1okaaTtZPtgA688CDPlXUz1C6xSg0ESqn04Vuc8tlrYms1s3de+znBqhPVxFRfpAfUf+6XvfPWg==}
     peerDependencies:
       react: ^18 || ^19
 
@@ -8367,8 +8364,6 @@ snapshots:
       '@tanstack/query-core': 5.101.2
       '@tanstack/query-persist-client-core': 5.101.2
 
-  '@tanstack/query-core@5.100.9': {}
-
   '@tanstack/query-core@5.101.2': {}
 
   '@tanstack/query-persist-client-core@5.101.2':
@@ -8380,15 +8375,15 @@ snapshots:
       '@tanstack/query-core': 5.101.2
       '@tanstack/query-persist-client-core': 5.101.2
 
-  '@tanstack/react-query-persist-client@5.101.2(@tanstack/react-query@5.100.9(react@19.1.0))(react@19.1.0)':
+  '@tanstack/react-query-persist-client@5.101.2(@tanstack/react-query@5.101.2(react@19.1.0))(react@19.1.0)':
     dependencies:
       '@tanstack/query-persist-client-core': 5.101.2
-      '@tanstack/react-query': 5.100.9(react@19.1.0)
+      '@tanstack/react-query': 5.101.2(react@19.1.0)
       react: 19.1.0
 
-  '@tanstack/react-query@5.100.9(react@19.1.0)':
+  '@tanstack/react-query@5.101.2(react@19.1.0)':
     dependencies:
-      '@tanstack/query-core': 5.100.9
+      '@tanstack/query-core': 5.101.2
       react: 19.1.0
 
   '@trickfilm400/rollup-plugin-off-main-thread@3.0.0-pre1':

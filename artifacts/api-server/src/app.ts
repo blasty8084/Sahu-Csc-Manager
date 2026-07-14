@@ -7,7 +7,7 @@ import ConnectPgSimple from "connect-pg-simple";
 import helmet from "helmet";
 import hpp from "hpp";
 import rateLimit from "express-rate-limit";
-import { RedisStore } from "rate-limit-redis";
+import { RedisStore, type RedisReply } from "rate-limit-redis";
 import IORedis from "ioredis";
 import router from "./routes";
 import healthRouter from "./routes/health";
@@ -49,7 +49,7 @@ const makeRlStore = (prefix: string) =>
   _rlRedis
     ? new RedisStore({
         sendCommand: (...args: string[]) =>
-          (_rlRedis as any).call(args[0], ...args.slice(1)) as Promise<unknown>,
+          (_rlRedis as any).call(args[0], ...args.slice(1)) as Promise<RedisReply>,
         prefix: `rl:${prefix}:`,
       })
     : undefined;

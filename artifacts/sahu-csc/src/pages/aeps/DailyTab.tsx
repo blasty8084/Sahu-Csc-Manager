@@ -172,10 +172,10 @@ export function DailyTab() {
       });
       await syncEngine.markPendingAdded();
       await refreshPendingActions();
-      qc.setQueryData<AepsSession>(sessionKey, {
+      qc.setQueryData<AepsSession>(sessionKey, () => ({
         id: -1, date: selectedDate, openingBalance: bal, notes: v.notes || null,
         transactions: [], totalWithdrawals: 0, totalDeposits: 0, currentBalance: bal,
-      });
+      }));
       setShowOpenDialog(false);
       openForm.reset();
       toast({ title: "Saved offline — will open when reconnected" });
