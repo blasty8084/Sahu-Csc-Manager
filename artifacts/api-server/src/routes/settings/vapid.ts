@@ -66,11 +66,13 @@ router.post("/settings/vapid/rotate", requireRole("admin"), asyncHandler(async (
       set: { value: sql`excluded.value` },
     });
 
-  // Sync into process.env so push works immediately without restart
-  process.env.VAPID_PUBLIC_KEY = publicKey;
-  process.env.VAPID_PRIVATE_KEY = privateKey;
-
-  // Re-initialise web-push with the new keys
+  // Re-initialise web-push with the new keys so push works in this process
+  // immediately without a restart.
+  // NOTE: do NOT write to process.env here — in multi-instance deployments
+  // each process has its own memory and the write would only take effect in
+  // the instance that handled this request.  webPush.setVapidDetails() is
+  // the correct in-process update; other instances will pick up the new keys
+  // from the DB on their next restart (or when they next read the settings table).
   const subject = process.env.VAPID_SUBJECT ?? `mailto:${process.env.SMTP_FROM_EMAIL ?? "admin@sahucsc.in"}`;
   webPush.setVapidDetails(subject, publicKey, privateKey);
 

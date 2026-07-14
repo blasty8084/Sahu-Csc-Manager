@@ -125,12 +125,16 @@ const limiter = rateLimit({
   // container, hitting 127.0.0.1 directly) can generate realistic concurrent
   // traffic without tripping the per-IP limiter meant for external abuse.
   // Gated on NODE_ENV !== "production" so this bypass path does not exist at
-  // all in production — `req.ip` is derived from X-Forwarded-For (trust
-  // proxy is on), which is attacker-controllable, so it must never be
-  // trusted for a security-relevant bypass once real traffic is in play.
-  skip: (req) =>
-    process.env.NODE_ENV !== "production" &&
-    (req.ip === "127.0.0.1" || req.ip === "::1" || req.ip === "::ffff:127.0.0.1"),
+  // all in production.
+  //
+  // IMPORTANT: uses req.socket.remoteAddress (the real TCP peer) instead of
+  // req.ip — with trust proxy enabled, req.ip is derived from X-Forwarded-For
+  // which an attacker can spoof.  The socket address cannot be forged.
+  skip: (req) => {
+    if (process.env.NODE_ENV === "production") return false;
+    const sock = req.socket?.remoteAddress ?? "";
+    return sock === "127.0.0.1" || sock === "::1" || sock === "::ffff:127.0.0.1";
+  },
 });
 app.use(limiter);
 
@@ -165,11 +169,31 @@ const otpVerifyLimiter = rateLimit({
   message: { error: "Too many attempts, please try again later" },
 });
 
+// /api/geo is public and unauthenticated — cap it tightly so it cannot be
+// used as a free IP-geolocation oracle.
+const geoLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: makeRlStore("geo"),
+  message: { error: "Too many geo requests, please try again later" },
+});
+
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN
-      ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim())
-      : ["http://localhost:5000"],
+    origin: (() => {
+      if (process.env.CORS_ORIGIN) {
+        return process.env.CORS_ORIGIN.split(",").map((o) => o.trim());
+      }
+      // In production, CORS_ORIGIN must be set explicitly — falling back to
+      // localhost would silently allow cross-origin requests from any browser
+      // running on the server host if the env var is ever missing.
+      if (process.env.NODE_ENV === "production") {
+        throw new Error("CORS_ORIGIN must be set in production");
+      }
+      return ["http://localhost:5000"];
+    })(),
     credentials: true,
   }),
 );
@@ -179,6 +203,8 @@ app.use(express.urlencoded({ extended: true }));
 // Health/setup-status checks are hit frequently (uptime monitors, orchestrator
 // probes) and never need a session — mount them before the session middleware
 // so those requests skip the per-request Postgres session-store lookup.
+// /api/geo is public and unauthenticated, so give it its own tight limiter.
+app.use("/api/geo", geoLimiter);
 app.use(healthRouter);
 app.use(setupStatusRouter);
 
