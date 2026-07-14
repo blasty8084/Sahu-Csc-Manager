@@ -14,6 +14,18 @@ const APP_VERSION = __APP_VERSION__;
 // ── Changelog ────────────────────────────────────────────────────────────────
 const CHANGELOG = [
   {
+    version: "Infra",
+    title: "Redis Connected, Rate-Limiter Fix & CORS Update",
+    date: "2026-07-14",
+    accent: "#0b2c60",
+    changes: [
+      "Upstash Redis fully connected — UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN / REDIS_URL added as secrets; CACHE_BACKEND switched back to redis; all three servers confirmed healthy",
+      "Rate-limiter Redis bridge fixed — app.ts was supplying the @upstash/redis REST client to rate-limit-redis, which expects an ioredis-compatible sendCommand interface; swapped to ioredis (REDIS_URL) so all four rate limiters initialise cleanly",
+      "Worker Server connected — all four BullMQ workers (notifications, emails, PDF, SMS) running on Upstash Redis via ioredis",
+      "CORS_ORIGIN updated to current Replit dev domain (sisko.replit.dev); verified via OPTIONS preflight — API returns correct Access-Control-Allow-Origin header",
+    ],
+  },
+  {
     version: "v4.2.0",
     title: "Running Balance, CDN Headers & Test Coverage",
     date: "2026-07-14",
@@ -332,7 +344,7 @@ const FEATURES = [
 
 // ── Architecture ─────────────────────────────────────────────────────────────
 const ARCH = [
-  { layer: "Frontend",       tech: "React 18 + Vite 7",      detail: "TypeScript, Tailwind CSS v4, shadcn/ui, Framer Motion" },
+  { layer: "Frontend",       tech: "React 19 + Vite 7",      detail: "TypeScript, Tailwind CSS v4, shadcn/ui, Framer Motion" },
   { layer: "State & Data",   tech: "TanStack Query v5",      detail: "Server state, caching, optimistic updates, offline sync; cache persisted to IndexedDB via idb-keyval (async, non-blocking)" },
   { layer: "Offline Storage",tech: "IndexedDB",              detail: "5 stores: pending ledger, cache, user session, reports, notifications" },
   { layer: "PWA",            tech: "Workbox + SW",           detail: "Offline caching, background sync, push notifications, install prompt" },
@@ -463,7 +475,7 @@ export default function About() {
             </div>
             <div className="hidden sm:block text-right flex-shrink-0">
               <p className="text-white/40 text-[10px]">Last updated</p>
-              <p className="text-white/60 text-xs font-semibold">12 July 2026 · v4</p>
+              <p className="text-white/60 text-xs font-semibold">14 July 2026 · v4</p>
             </div>
           </div>
         </div>
