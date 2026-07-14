@@ -22,16 +22,20 @@ router.get("/dashboard", requireAuth, requirePermission("reports:view"), asyncHa
   const todayWhere = and(userFilter, todayFilter);
   const monthWhere = and(userFilter, monthFilter);
 
-  // Short TTL cache: this endpoint runs 5 grouped aggregate scans over the full
-  // ledger table on every hit. A 5s window absorbs repeat dashboard loads
-  // (widget refreshes, tab switches) without ever serving more than 5s-stale
-  // data, and is invalidated immediately on any ledger write for this user.
-  const [balanceResult, todayResult, monthResult, recentEntries, topServices] = await cached(
+  // Short TTL cache: this endpoint runs several aggregate scans over the ledger
+  // table on every hit. A 5s window absorbs repeat dashboard loads (widget
+  // refreshes, tab switches) without ever serving more than 5s-stale data, and
+  // is invalidated immediately on any ledger write for this user.
+  //
+  // currentBalance now comes from users.ledger_balance (a maintained NUMERIC
+  // column updated atomically on every write — O(1) primary-key lookup) instead
+  // of an all-time SUM() scan over the full ledger history.
+  const [userRow, todayResult, monthResult, recentEntries, topServices] = await cached(
     `dashboard:${userId}:${today}`,
     5_000,
     () =>
       Promise.all([
-        db.select({ totalCredits: sum(ledgerTable.credit), totalDebits: sum(ledgerTable.debit) }).from(ledgerTable).where(balanceWhere),
+        db.select({ ledgerBalance: usersTable.ledgerBalance }).from(usersTable).where(eq(usersTable.id, userId)),
         db.select({ credits: sum(ledgerTable.credit), debits: sum(ledgerTable.debit), transactions: count() }).from(ledgerTable).where(todayWhere),
         db.select({ credits: sum(ledgerTable.credit), debits: sum(ledgerTable.debit), transactions: count() }).from(ledgerTable).where(monthWhere),
         db.select({
@@ -45,13 +49,12 @@ router.get("/dashboard", requireAuth, requirePermission("reports:view"), asyncHa
       ]),
   );
 
-  const totalCredits = parseFloat(balanceResult[0]?.totalCredits ?? "0");
-  const totalDebits = parseFloat(balanceResult[0]?.totalDebits ?? "0");
+  const currentBalance = parseFloat(userRow[0]?.ledgerBalance ?? "0");
   const monthCredits = parseFloat(monthResult[0]?.credits ?? "0");
   const monthDebits = parseFloat(monthResult[0]?.debits ?? "0");
 
   res.json({
-    currentBalance: totalCredits - totalDebits,
+    currentBalance,
     todayCredits: parseFloat(todayResult[0]?.credits ?? "0"),
     todayDebits: parseFloat(todayResult[0]?.debits ?? "0"),
     todayTransactions: todayResult[0]?.transactions ?? 0,

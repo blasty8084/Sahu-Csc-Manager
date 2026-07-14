@@ -94,19 +94,25 @@ async function generateReceiptNumber(userId: number, year: number): Promise<stri
 }
 
 router.get("/ledger/balance", requireAuth, requirePermission("ledger:view"), asyncHandler(async (req, res) => {
-  const userFilter = getUserFilter(req);
+  const userId = req.session.userId!;
+  // Single LEFT JOIN: users.ledger_balance gives the O(1) maintained running
+  // total (no full-table scan), while SUM gives the credit/debit breakdown that
+  // LedgerEntryForm displays as separate stats.
   const result = await db
-    .select({ totalCredits: sum(ledgerTable.credit), totalDebits: sum(ledgerTable.debit) })
-    .from(ledgerTable)
-    .where(userFilter);
+    .select({
+      ledgerBalance: usersTable.ledgerBalance,
+      totalCredits: sum(ledgerTable.credit),
+      totalDebits: sum(ledgerTable.debit),
+    })
+    .from(usersTable)
+    .leftJoin(ledgerTable, eq(ledgerTable.createdBy, usersTable.id))
+    .where(eq(usersTable.id, userId))
+    .groupBy(usersTable.id);
 
+  const balance = parseFloat(result[0]?.ledgerBalance ?? "0");
   const totalCredits = parseFloat(result[0]?.totalCredits ?? "0");
   const totalDebits = parseFloat(result[0]?.totalDebits ?? "0");
-  res.json({
-    balance: totalCredits - totalDebits,
-    totalCredits,
-    totalDebits,
-  });
+  res.json({ balance, totalCredits, totalDebits });
 }));
 
 router.get("/ledger/summary", requireAuth, requirePermission("ledger:view"), asyncHandler(async (req, res) => {
