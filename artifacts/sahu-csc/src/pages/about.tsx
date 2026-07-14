@@ -15,6 +15,16 @@ const APP_VERSION = __APP_VERSION__;
 const CHANGELOG = [
   {
     version: "v4.3.1",
+    title: "Performance Pass: Bundle Size & Avatar Compression",
+    date: "2026-07-14",
+    accent: "#16a34a",
+    changes: [
+      "Backend server bundle cut by 60% (6.5MB → 2.6MB) by trimming duplicated dependency code out of the build",
+      "Profile photos are now automatically resized and compressed on upload — faster to load everywhere they appear, no visible quality loss at avatar size",
+    ],
+  },
+  {
+    version: "v4.3.1",
     title: "Config & Maintenance Fixes",
     date: "2026-07-14",
     accent: "#0891b2",

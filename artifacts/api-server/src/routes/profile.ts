@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { db, usersTable, userSessionsTable } from "@workspace/db";
 import { eq, and, not } from "drizzle-orm";
 import { z } from "zod/v4";
+import sharp from "sharp";
 import { requireAuth, hashPassword, auditLog, getClientIp } from "../lib/auth";
 import { invalidateSessionCache, invalidateUserCache } from "../lib/auth/sessionCache";
 import { encryptField, decryptField } from "../lib/encryption";
@@ -108,6 +109,13 @@ router.patch("/profile", requireAuth, asyncHandler(async (req, res) => {
   res.json(await fmtProfile(updated));
 }));
 
+// Avatars are resized down to a small square and re-encoded as WebP before
+// storage — uploads from a phone camera can be several MB; nothing here is
+// ever displayed larger than a ~128px thumbnail, so storing the original
+// bloats the DB row and slows every profile fetch/render for no benefit.
+const AVATAR_MAX_DIMENSION = 512;
+const AVATAR_WEBP_QUALITY = 80;
+
 router.post("/profile/avatar", requireAuth, asyncHandler(async (req, res) => {
   const parsed = UpdateAvatarBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
@@ -125,9 +133,24 @@ router.post("/profile/avatar", requireAuth, asyncHandler(async (req, res) => {
     res.status(400).json({ error: "Image too large. Maximum size is 5MB." }); return;
   }
 
+  const base64Payload = dataUrl.slice(dataUrl.indexOf(",") + 1);
+  const inputBuffer = Buffer.from(base64Payload, "base64");
+
+  let compressedDataUrl: string;
+  try {
+    const outputBuffer = await sharp(inputBuffer)
+      .rotate() // honor EXIF orientation before stripping it below
+      .resize(AVATAR_MAX_DIMENSION, AVATAR_MAX_DIMENSION, { fit: "cover", withoutEnlargement: true })
+      .webp({ quality: AVATAR_WEBP_QUALITY })
+      .toBuffer();
+    compressedDataUrl = `data:image/webp;base64,${outputBuffer.toString("base64")}`;
+  } catch {
+    res.status(400).json({ error: "Could not process image. Please upload a valid image file." }); return;
+  }
+
   const [updated] = await db
     .update(usersTable)
-    .set({ profilePicture: dataUrl })
+    .set({ profilePicture: compressedDataUrl })
     .where(eq(usersTable.id, userId))
     .returning();
 

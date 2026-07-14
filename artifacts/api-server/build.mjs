@@ -113,6 +113,27 @@ async function buildAll() {
     external: [
       "*.node",
       "connect-pg-simple",
+      // Pure-JS deps with no native bindings — externalizing keeps them out of
+      // the single-file esbuild bundle (was 6.5MB) since pnpm already hoists
+      // them into artifacts/api-server/node_modules as direct dependencies.
+      // NOT externalized: drizzle-orm (risk of the dual-peer-variant problem,
+      // see checkDrizzlePeerSingleton above) and @sentry/node (its transitive
+      // deps aren't all hoisted yet — see the ERR_MODULE_NOT_FOUND note in
+      // replit.md; would need the same explicit-dependency treatment first).
+      "express",
+      "express-rate-limit",
+      "express-session",
+      "cors",
+      "helmet",
+      "hpp",
+      "cookie-parser",
+      "compression",
+      "zod",
+      "web-push",
+      "bcryptjs",
+      "ioredis",
+      "bullmq",
+      "rate-limit-redis",
       "sharp",
       "better-sqlite3",
       "sqlite3",

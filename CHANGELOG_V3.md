@@ -13,6 +13,7 @@
 
 ## Table of Contents
 
+0. [v4.3.1 — Performance Pass: Bundle Size & Avatar Compression (July 14, 2026)](#0-v431--performance-pass-bundle-size--avatar-compression-july-14-2026)
 0. [v4.3.1 — Config & Maintenance Fixes (July 14, 2026)](#0-v431--config--maintenance-fixes-july-14-2026)
 0. [v4.3.0 — Security Hardening, Input Validation & Database Integrity (July 14, 2026)](#0-v430--security-hardening-input-validation--database-integrity-july-14-2026)
 0. [Infra — Redis connected, rate-limiter fix & CORS update (July 14, 2026)](#0-infra--redis-connected-rate-limiter-fix--cors-update-july-14-2026)
@@ -25,6 +26,17 @@
 0. [v3.5.10 — Navigation Performance — Instant Page Switching (July 12, 2026)](#0-v3510--navigation-performance--instant-page-switching-july-12-2026)
 0. [v3.5.9 — Redis Cache Live, i18n Fixes & Build Hardening (July 12, 2026)](#0-v359--redis-cache-live-i18n-fixes--build-hardening-july-12-2026)
 0. [v3.5.8 — Reports & Receipt Export Page Modularization (July 12, 2026)](#0-v358--reports--receipt-export-page-modularization-july-12-2026)
+
+---
+
+## 0. v4.3.1 — Performance Pass: Bundle Size & Avatar Compression (July 14, 2026)
+
+Follow-up optimization pass after a codebase performance review. No API contract changes.
+
+| Change | Description |
+|--------|-------------|
+| **Backend bundle size** | `dist/index.mjs` was 6.5MB — a single esbuild-bundled file that duplicated code already available as hoisted `node_modules` packages. Added `express`, `express-rate-limit`, `express-session`, `cors`, `helmet`, `hpp`, `cookie-parser`, `compression`, `zod`, `web-push`, `bcryptjs`, `ioredis`, `bullmq`, `rate-limit-redis` to `build.mjs`'s `external` array (pure-JS, no native bindings, already direct `package.json` dependencies so pnpm hoists them). Result: 6.5MB → 2.6MB (60% smaller). Deliberately left `drizzle-orm` and `@sentry/node` bundled — externalizing either would reopen known risk (drizzle-orm dual-peer TS-conflict bug, Sentry's un-hoisted transitive `@opentelemetry/*` deps) for a pass focused on quick wins. |
+| **Avatar storage size** | `POST /profile/avatar` stored the uploaded image as a raw base64 data URL as-is (up to ~5MB), even though avatars only ever render as small thumbnails. Now resizes to 512×512 (`fit: cover`) and re-encodes as WebP (quality 80) via `sharp` before storing — shrinks typical phone-camera uploads dramatically and speeds up every profile fetch/render that includes the avatar. EXIF orientation is honored (`.rotate()`) before the metadata is stripped. Verified with a synthetic upload end-to-end (login → upload → confirm `image/webp` mime + reduced size → cleanup). |
 
 ---
 

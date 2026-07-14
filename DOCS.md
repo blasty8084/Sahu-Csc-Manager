@@ -56,6 +56,13 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 
 ## 2. Version History
 
+### v4.3.1 — Performance Pass: Bundle Size & Avatar Compression (2026-07-14)
+
+Follow-up optimization pass after a codebase performance review. No API contract changes.
+
+- Backend bundle (`dist/index.mjs`) cut from 6.5MB to 2.6MB by externalizing 14 pure-JS dependencies instead of bundling them
+- Profile avatars now resized to 512×512 and re-encoded as WebP server-side via `sharp` before storage, instead of storing the raw upload as-is
+
 ### v4.3.1 — Config & Maintenance Fixes (2026-07-14)
 
 Small config/maintenance patch, three items from a maintenance audit. No user-visible features; no API contract changes.
