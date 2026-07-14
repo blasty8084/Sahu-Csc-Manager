@@ -14,6 +14,17 @@ const APP_VERSION = __APP_VERSION__;
 // ── Changelog ────────────────────────────────────────────────────────────────
 const CHANGELOG = [
   {
+    version: "v4.3.2",
+    title: "Optimization Audit & Measurements",
+    date: "2026-07-14",
+    accent: "#7c3aed",
+    changes: [
+      "Measured real response times under load instead of estimating — dashboard and admin pages respond in ~150ms at 50 concurrent users",
+      "Added two missing database indexes so login and service lookups stay fast as data grows",
+      "Confirmed no other upload path has the same image-size issue the profile photo fix addressed",
+    ],
+  },
+  {
     version: "v4.3.1",
     title: "Performance Pass: Bundle Size & Avatar Compression",
     date: "2026-07-14",

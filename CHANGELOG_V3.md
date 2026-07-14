@@ -13,6 +13,7 @@
 
 ## Table of Contents
 
+0. [v4.3.2 — Optimization Audit & Measurements (July 14, 2026)](#0-v432--optimization-audit--measurements-july-14-2026)
 0. [v4.3.1 — Performance Pass: Bundle Size & Avatar Compression (July 14, 2026)](#0-v431--performance-pass-bundle-size--avatar-compression-july-14-2026)
 0. [v4.3.1 — Config & Maintenance Fixes (July 14, 2026)](#0-v431--config--maintenance-fixes-july-14-2026)
 0. [v4.3.0 — Security Hardening, Input Validation & Database Integrity (July 14, 2026)](#0-v430--security-hardening-input-validation--database-integrity-july-14-2026)
@@ -26,6 +27,20 @@
 0. [v3.5.10 — Navigation Performance — Instant Page Switching (July 12, 2026)](#0-v3510--navigation-performance--instant-page-switching-july-12-2026)
 0. [v3.5.9 — Redis Cache Live, i18n Fixes & Build Hardening (July 12, 2026)](#0-v359--redis-cache-live-i18n-fixes--build-hardening-july-12-2026)
 0. [v3.5.8 — Reports & Receipt Export Page Modularization (July 12, 2026)](#0-v358--reports--receipt-export-page-modularization-july-12-2026)
+
+---
+
+## 0. v4.3.2 — Optimization Audit & Measurements (July 14, 2026)
+
+Follow-up to the v4.3.1 performance pass — turns earlier estimates into measured numbers and closes out the remaining audit items. No API contract changes.
+
+| Change | Description |
+|--------|-------------|
+| **Load test (real numbers)** | Ran `loadtest.ts` at 50 connections / 20s against a logged-in session (previous script only ever ran at 20 connections and was never actually executed at scale). Results: `/api/dashboard` p50=143ms p95=345ms p99=476ms (302 req/s), `/api/admin/users-overview` p50=150ms p95=351ms (296 req/s), `/healthz` p50=45ms (1052 req/s) — 0 errors across all three at 50 concurrent connections. |
+| **Missing DB indexes** | Schema audit found `users.mobile` and `services.category` were used in direct query filters/sorts with no index. Added `users_mobile_idx` and `services_category_idx` via `CREATE INDEX IF NOT EXISTS` (raw SQL, not `drizzle-kit push`, to avoid the known push-triggered data-loss risk in this project). All other flagged columns (`email_otps.email`, `settings.key`) already had adequate indexes from existing composite indexes / unique constraints — audit initially over-flagged these before the schema was checked directly. |
+| **Other upload paths** | Audited every file/image upload route in the API server for the same raw-base64 issue the avatar fix addressed in v4.3.1. None found — profile pictures are the only user-uploaded images in the app; other binary paths (SQL backup import, generated PDF receipts) aren't images and don't need compression. |
+| **Static asset caching / CDN** | Confirmed `artifacts/sahu-csc/scripts/serve.mjs` already sets `Cache-Control: public, max-age=31536000, immutable` on Vite's content-hashed JS/CSS/assets and `no-store` on the HTML shell/service worker — this is the caching behavior a CDN would rely on. A true CDN in front of the domain (e.g. Cloudflare) is a DNS/infrastructure decision, not a code change, so it was documented rather than implemented. |
+| **Postgres read replica** | Investigated, not implemented. The DB layer connects via a single `pg` `Pool` with no read/write split logic, and setting up a replica requires provisioning a second database endpoint — an infrastructure decision outside what the codebase can self-provision. |
 
 ---
 

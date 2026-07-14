@@ -31,6 +31,10 @@ export const usersTable = pgTable("users", {
 }, (t) => [
   index("users_role_idx").on(t.role),
   index("users_status_idx").on(t.status),
+  // mobile is queried directly (eq()) on every login/OTP/reset-password lookup
+  // alongside username/email — those are already indexed via their unique
+  // constraints, mobile was the missing one.
+  index("users_mobile_idx").on(t.mobile),
 ]);
 
 export const insertUserSchema = createInsertSchema(usersTable).omit({ id: true, createdAt: true, updatedAt: true });

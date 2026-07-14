@@ -56,6 +56,16 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 
 ## 2. Version History
 
+### v4.3.2 — Optimization Audit & Measurements (2026-07-14)
+
+Follow-up to the v4.3.1 performance pass — measured numbers instead of estimates, plus closes out the remaining audit items.
+
+- Load test at 50 connections/20s: `/api/dashboard` p50=143ms, `/api/admin/users-overview` p50=150ms, `/healthz` p50=45ms — 0 errors
+- Added missing DB indexes on `users.mobile` and `services.category` (direct query filters with no index before)
+- Audited all other upload paths — no other raw/uncompressed image storage found beyond the avatar path already fixed
+- Confirmed static asset caching is already CDN-ready (immutable long-cache on hashed assets, no-store on the HTML shell)
+- Investigated a Postgres read replica — not implemented, requires provisioning a second DB endpoint (infra decision, not a code change)
+
 ### v4.3.1 — Performance Pass: Bundle Size & Avatar Compression (2026-07-14)
 
 Follow-up optimization pass after a codebase performance review. No API contract changes.
