@@ -3,6 +3,7 @@ import { db, usersTable } from "@workspace/db";
 import { eq, isNotNull } from "drizzle-orm";
 import { requireRole, auditLog, getClientIp } from "../lib/auth";
 import { createNotification } from "../lib/notify";
+import { createSystemNotification } from "../services/notificationService";
 import { isSmtpConfigured } from "../lib/mailer";
 import { enqueueNotification, enqueueEmail, buildApprovalMailOptions } from "../lib/queue-client";
 import { logger } from "../lib/logger";
@@ -89,11 +90,25 @@ router.post("/admin/users/appeals/dismiss-all", requireRole("admin"), asyncHandl
 
   await auditLog(req.session.userId!, "user.appeals_bulk_dismissed", `Bulk dismissed ${pending.length} appeal(s) by admin`, getClientIp(req));
 
-  Promise.allSettled(pending.map(async (u) => {
-    await createNotification("Appeal Not Approved", "Your appeal has been reviewed but could not be approved at this time. Please contact the administrator directly for further assistance.", "warning", u.id);
+  // Bulk-insert one notification row per recipient in a single query instead
+  // of N individual createNotification() calls in a loop (was an N+1 DB
+  // write pattern). Push delivery still goes through the existing
+  // enqueueNotification queue per-user (cheap, not a DB call) so the
+  // deep-link/tag/requireInteraction UX stays identical to before.
+  createSystemNotification(
+    {
+      title: "Appeal Not Approved",
+      message: "Your appeal has been reviewed but could not be approved at this time. Please contact the administrator directly for further assistance.",
+      type: "warning",
+      userIds: pending.map((u) => u.id),
+    },
+    { skipPush: true },
+  ).catch((err) => logger.warn({ err }, "Failed to bulk-create appeal-dismissed notifications"));
+
+  for (const u of pending) {
     enqueueNotification({ kind: "send-to-user", userId: u.id, payload: { title: "Appeal Update", body: "Your appeal has been reviewed. Please contact the administrator directly for further assistance.", url: "/", tag: "appeal-dismissed", requireInteraction: true } })
       .catch((err) => logger.warn({ err, userId: u.id }, "Failed to enqueue bulk appeal push"));
-  }));
+  }
 
   res.json({ success: true, dismissed: pending.length });
 }));
