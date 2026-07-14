@@ -8,7 +8,7 @@ import helmet from "helmet";
 import hpp from "hpp";
 import rateLimit from "express-rate-limit";
 import { RedisStore } from "rate-limit-redis";
-import { Redis } from "@upstash/redis";
+import IORedis from "ioredis";
 import router from "./routes";
 import healthRouter from "./routes/health";
 import setupStatusRouter from "./routes/setup-status";
@@ -23,18 +23,17 @@ initSentry();
 const PgSession = ConnectPgSimple(session);
 
 // ── Redis client for shared rate-limit counters ───────────────────────────────
-// Only created when CACHE_BACKEND=redis and both Upstash env vars are set.
-// Falls back to the default per-process MemoryStore when Redis is absent —
+// Uses ioredis (direct TCP via REDIS_URL) when available — rate-limit-redis
+// requires an ioredis-compatible sendCommand interface, not the Upstash REST
+// client. Falls back to the default per-process MemoryStore when absent —
 // safe for single-instance dev, but counters are not shared across instances.
-const _rlRedis =
-  process.env.CACHE_BACKEND === "redis" &&
-  process.env.UPSTASH_REDIS_REST_URL &&
-  process.env.UPSTASH_REDIS_REST_TOKEN
-    ? new Redis({
-        url: process.env.UPSTASH_REDIS_REST_URL,
-        token: process.env.UPSTASH_REDIS_REST_TOKEN,
-      })
-    : null;
+const _rlRedis = process.env.REDIS_URL
+  ? new IORedis(process.env.REDIS_URL, {
+      maxRetriesPerRequest: null,
+      enableReadyCheck: false,
+      lazyConnect: true,
+    })
+  : null;
 
 if (_rlRedis) {
   logger.info("Rate limiter: using shared Redis store (cross-instance counters)");
@@ -43,10 +42,13 @@ if (_rlRedis) {
 }
 
 // Returns a RedisStore for the given key prefix, or undefined (→ MemoryStore).
+// ioredis exposes `call(command, ...args)` which satisfies rate-limit-redis's
+// sendCommand contract.
 const makeRlStore = (prefix: string) =>
   _rlRedis
     ? new RedisStore({
-        sendCommand: (...args: string[]) => (_rlRedis as any).sendCommand(args),
+        sendCommand: (...args: string[]) =>
+          (_rlRedis as any).call(args[0], ...args.slice(1)) as Promise<unknown>,
         prefix: `rl:${prefix}:`,
       })
     : undefined;
