@@ -141,7 +141,7 @@ function ShareTargetHandler() {
     const params = new URLSearchParams(window.location.search);
     const text = params.get("text") || params.get("title") || "";
     setLocation(text ? `/ledger?description=${encodeURIComponent(text)}` : "/ledger");
-  }, []);
+  }, [setLocation]);
   return null;
 }
 

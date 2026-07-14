@@ -172,6 +172,8 @@ export default function Ledger() {
         await addPendingEntry(pending);
         await syncEngine.markPendingAdded();
         await refreshPending();
+        // Reset so stale values don't persist the next time the dialog opens.
+        form.reset({ date: new Date().toISOString().split("T")[0], customerName: "", serviceType: "", credit: 0, debit: 0, description: "" });
         setShowForm(false);
         toast({
           title: "Saved offline",
@@ -180,6 +182,8 @@ export default function Ledger() {
       } else {
         await createMut.mutateAsync({ data: values });
         toast.success("Entry created");
+        // Reset so stale values don't persist the next time the dialog opens.
+        form.reset({ date: new Date().toISOString().split("T")[0], customerName: "", serviceType: "", credit: 0, debit: 0, description: "" });
         setShowForm(false);
         invalidate();
       }

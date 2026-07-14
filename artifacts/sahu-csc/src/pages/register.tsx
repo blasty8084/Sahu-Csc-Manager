@@ -284,6 +284,11 @@ function RegisterForm() {
       }
 
       if (data.pending) { setLocation("/register/pending"); return; }
+      // Clear sensitive field values from React state before navigating away
+      // so they are not visible if the user presses back.
+      form.reset();
+      setFormValues(null);
+      setOtpDigits(["", "", "", "", "", ""]);
       setLocation("/login");
     } catch {
       toast({ variant: "destructive", title: "Network error", description: "Could not connect. Please try again." });

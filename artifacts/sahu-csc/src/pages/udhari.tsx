@@ -66,6 +66,12 @@ function AddCustomerDialog({ open, onClose }: { open: boolean; onClose: () => vo
   const [form, setForm] = useState({ name: "", mobile: "", address: "", notes: "" });
   const create = useCreateUdhariCustomer();
 
+  // Reset form whenever the dialog closes — covers both the success path and
+  // the cancel/backdrop-dismiss path so stale values never re-appear.
+  useEffect(() => {
+    if (!open) setForm({ name: "", mobile: "", address: "", notes: "" });
+  }, [open]);
+
   const handleSubmit = async () => {
     if (!form.name.trim()) { toast({ title: t("udhari.toast_name_required"), variant: "destructive" }); return; }
     try {
