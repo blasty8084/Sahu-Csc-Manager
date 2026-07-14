@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { pool } from "@workspace/db";
 import os from "os";
 import v8 from "v8";
+import geoip from "geoip-lite";
 import { getBootHealth } from "../lib/boot-tracker";
 
 const router: IRouter = Router();
@@ -140,6 +141,25 @@ router.get("/healthz", async (_req, res) => {
 
     environment: process.env.NODE_ENV ?? "development",
   });
+});
+
+// Public geo-check endpoint — always exempt from geo-blocking so the frontend
+// can detect its own blocked state and show a proper page instead of failing.
+router.get("/api/geo", (req, res) => {
+  res.set("Cache-Control", "no-store");
+  const ip = req.ip ?? "";
+  const isLoopback =
+    ip === "127.0.0.1" || ip === "::1" || ip === "::ffff:127.0.0.1" ||
+    ip.replace(/^::ffff:/, "").startsWith("10.") ||
+    ip.replace(/^::ffff:/, "").startsWith("192.168.");
+  if (isLoopback || process.env.ALLOW_NON_INDIA === "true") {
+    res.json({ allowed: true, country: "IN", ip });
+    return;
+  }
+  const geo = geoip.lookup(ip);
+  const country = geo?.country ?? null;
+  const allowed = !country || country === "IN";
+  res.json({ allowed, country, ip });
 });
 
 export default router;

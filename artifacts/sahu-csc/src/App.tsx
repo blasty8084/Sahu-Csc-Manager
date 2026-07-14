@@ -29,6 +29,7 @@ declare const __APP_VERSION__: string;
 import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
 import Offline from "@/pages/offline";
+import RegionBlocked from "@/pages/region-blocked";
 
 // ─── Lazy-loaded pages (each becomes its own JS chunk) ───────────────────────
 const Register           = lazy(() => import("@/pages/register"));
@@ -478,6 +479,23 @@ function Router() {
   );
 }
 
+// ─── Geo-gate — checks /api/geo once on mount; shows blocked screen if not IN ─
+function GeoGate({ children }: { children: React.ReactNode }) {
+  const [geoState, setGeoState] = useState<"loading" | "allowed" | "blocked">("loading");
+
+  useEffect(() => {
+    fetch("/api/geo", { credentials: "omit" })
+      .then((r) => r.json())
+      .then((data) => setGeoState(data.allowed ? "allowed" : "blocked"))
+      .catch(() => setGeoState("allowed")); // fail open — don't block on network error
+  }, []);
+
+  if (geoState === "blocked") return <RegionBlocked />;
+  // Show nothing (splash handles the visual) while the geo check is in-flight
+  if (geoState === "loading") return null;
+  return <>{children}</>;
+}
+
 // ─── App root ─────────────────────────────────────────────────────────────────
 function App() {
   const [showSplash, setShowSplash] = useState(() => {
@@ -493,6 +511,7 @@ function App() {
   }, []);
 
   return (
+    <GeoGate>
     <ErrorBoundary>
     <PerformanceProvider>
       <SplashScreen visible={showSplash} onDone={handleSplashDone} />
@@ -527,6 +546,7 @@ function App() {
       </PersistQueryClientProvider>
     </PerformanceProvider>
     </ErrorBoundary>
+    </GeoGate>
   );
 }
 

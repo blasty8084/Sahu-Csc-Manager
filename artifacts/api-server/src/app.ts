@@ -15,6 +15,7 @@ import setupStatusRouter from "./routes/setup-status";
 import { logger } from "./lib/logger";
 import { pool } from "@workspace/db";
 import { initSentry, setupSentryErrorHandler } from "./lib/sentry";
+import { geoBlock } from "./lib/geo-block";
 
 // Initialise Sentry before any middleware so it can instrument the full
 // request lifecycle.  No-ops when SENTRY_DSN is not set.
@@ -56,6 +57,11 @@ const makeRlStore = (prefix: string) =>
 const app: Express = express();
 
 app.set("trust proxy", 1);
+
+// Geo-restriction: India-only. Must come after trust proxy (so req.ip is the
+// real client IP from X-Forwarded-For) but before every other middleware so
+// blocked requests never touch the session store or business logic.
+app.use(geoBlock);
 
 // Minimal APM surrogate: no external tracing service is wired up (that would
 // need an integration — see replit.md follow-ups), but every request's

@@ -142,6 +142,7 @@ async function buildAll() {
       "typeorm",
       "protobufjs",
       "onnxruntime-node",
+      "geoip-lite",
       "@tensorflow/*",
       "@prisma/client",
       "@mikro-orm/*",
