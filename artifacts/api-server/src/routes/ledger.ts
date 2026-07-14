@@ -81,8 +81,8 @@ async function lockUserEntries(tx: any, userId: number): Promise<void> {
   await tx.execute(sql`select id from ledger where created_by = ${userId} for update`);
 }
 
-async function generateReceiptNumber(userId: number, year: number): Promise<string> {
-  const [row] = await db
+async function generateReceiptNumber(tx: typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0], userId: number, year: number): Promise<string> {
+  const [row] = await tx
     .insert(receiptCountersTable)
     .values({ userId, year, lastCount: 1 })
     .onConflictDoUpdate({
@@ -215,42 +215,49 @@ router.post("/ledger", requireAuth, requirePermission("ledger:create"), asyncHan
   const description = parsed.data.description !== undefined ? sanitize(parsed.data.description) : parsed.data.description;
   const userId = req.session.userId!;
   const delta = (credit ?? 0) - (debit ?? 0);
-
-  // Atomically add delta to the maintained users.ledger_balance and return the
-  // new total in a single round-trip — O(1) instead of an O(n) SUM scan.
-  const balanceRows = await db.execute<{ ledger_balance: string }>(
-    sql`UPDATE users SET ledger_balance = ledger_balance + ${delta} WHERE id = ${userId} RETURNING ledger_balance`
-  );
-  const newBalance = parseFloat(balanceRows.rows[0]?.ledger_balance ?? "0");
-
   const txYear = new Date(date).getFullYear();
-  const receiptNumber = await generateReceiptNumber(userId, txYear);
-  const uuid = crypto.randomUUID();
 
-  const [entry] = await db
-    .insert(ledgerTable)
-    .values({
-      date, customerName, serviceType,
-      credit: String(credit ?? 0),
-      debit: String(debit ?? 0),
-      description,
-      balance: String(newBalance),
-      createdBy: userId,
-      receiptNumber,
-      receiptToken: uuid,
-    })
-    .returning();
+  // All four mutations run inside a single transaction so a mid-flight crash
+  // cannot leave ledger_balance, receipt_counters, and ledger out of sync.
+  const [entry, receiptJwt] = await db.transaction(async (tx) => {
+    // 1. Atomically update the running balance and capture the new total.
+    const balanceRows = await tx.execute<{ ledger_balance: string }>(
+      sql`UPDATE users SET ledger_balance = ledger_balance + ${delta} WHERE id = ${userId} RETURNING ledger_balance`
+    );
+    const newBalance = parseFloat(balanceRows.rows[0]?.ledger_balance ?? "0");
 
-  // Sign a tamper-proof JWT receipt token; store it back so future lookups use it.
-  const receiptJwt = await signReceiptToken(uuid, entry.id, receiptNumber, "ledger");
-  await db
-    .update(ledgerTable)
-    .set({ receiptToken: receiptJwt })
-    .where(eq(ledgerTable.id, entry.id));
-  entry.receiptToken = receiptJwt;
+    // 2. Atomically claim the next receipt sequence number.
+    const receiptNumber = await generateReceiptNumber(tx, userId, txYear);
+    const uuid = crypto.randomUUID();
+
+    // 3. Insert the ledger row.
+    const [entry] = await tx
+      .insert(ledgerTable)
+      .values({
+        date, customerName, serviceType,
+        credit: String(credit ?? 0),
+        debit: String(debit ?? 0),
+        description,
+        balance: String(newBalance),
+        createdBy: userId,
+        receiptNumber,
+        receiptToken: uuid,
+      })
+      .returning();
+
+    // 4. Sign the tamper-proof JWT and write it back within the same transaction.
+    const receiptJwt = await signReceiptToken(uuid, entry.id, receiptNumber, "ledger");
+    await tx
+      .update(ledgerTable)
+      .set({ receiptToken: receiptJwt })
+      .where(eq(ledgerTable.id, entry.id));
+    entry.receiptToken = receiptJwt;
+
+    return [entry, receiptJwt] as const;
+  });
 
   await invalidateLedgerCaches();
-  await auditLog(userId, "ledger.create", `Created ledger entry for ${customerName} (${receiptNumber})`, getClientIp(req));
+  await auditLog(userId, "ledger.create", `Created ledger entry for ${customerName} (${entry.receiptNumber})`, getClientIp(req));
 
   const amount = (credit ?? 0) + (debit ?? 0);
   if (amount >= 10000) {

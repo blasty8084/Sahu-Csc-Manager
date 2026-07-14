@@ -6,20 +6,21 @@ import type { PdfJobData } from "../queues/types";
 /**
  * PDF generation worker.
  *
- * Placeholder — individual receipt PDFs are currently generated inline by the
- * api-server via PDFKit and served directly.  This worker is here for future
- * use when async PDF generation (e.g. bulk exports, scheduled reports) is
- * needed.  Any job queued here is logged and completed without error so the
- * api-server is never blocked.
+ * Async PDF generation (bulk exports, scheduled reports) is not yet
+ * implemented.  Jobs are failed immediately so they surface in the BullMQ
+ * dashboard and retry log rather than silently completing as a no-op.
+ * Implement the job body here when async PDF generation is needed;
+ * individual receipt PDFs are currently generated inline by the api-server
+ * via PDFKit and served directly.
  */
 export const pdfWorker = new Worker<PdfJobData>(
   "pdf-generation",
   async (job) => {
-    logger.info(
+    logger.warn(
       { jobId: job.id, receiptId: job.data.receiptId, userId: job.data.userId },
-      "PDF job received — async PDF generation not yet implemented; completing as no-op",
+      "PDF async generation not implemented — failing job so it appears in the dead-letter queue",
     );
-    // TODO: Generate PDF using PDFKit, save to storage, update DB record.
+    throw new Error("PDF async generation not yet implemented");
   },
   { connection, concurrency: 2 },
 );

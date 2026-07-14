@@ -127,7 +127,10 @@ router.patch("/aeps/transaction/:id", requireAuth, requirePermission("aeps:manag
   if (!existing) { res.status(404).json({ error: "Not found" }); return; }
 
   const [session] = await db.select().from(aepsDailyTable).where(eq(aepsDailyTable.id, existing.dailyId));
-  if (session && session.createdBy !== req.session.userId && req.session.userRole !== "admin") {
+  // A missing session (orphaned transaction) or a session owned by another user
+  // must both be rejected — the original `if (session && ...)` let null sessions
+  // bypass the ownership check entirely.
+  if (!session || (session.createdBy !== req.session.userId && req.session.userRole !== "admin")) {
     res.status(403).json({ error: "Forbidden" }); return;
   }
 
@@ -158,7 +161,9 @@ router.delete("/aeps/transaction/:id", requireAuth, requirePermission("aeps:mana
   if (!tx) { res.status(404).json({ error: "Not found" }); return; }
 
   const [session] = await db.select().from(aepsDailyTable).where(eq(aepsDailyTable.id, tx.dailyId));
-  if (session && session.createdBy !== req.session.userId && req.session.userRole !== "admin") {
+  // Same null-session guard as PATCH: a missing or foreign-owned session must both
+  // return 403, not fall through.
+  if (!session || (session.createdBy !== req.session.userId && req.session.userRole !== "admin")) {
     res.status(403).json({ error: "Forbidden" }); return;
   }
 

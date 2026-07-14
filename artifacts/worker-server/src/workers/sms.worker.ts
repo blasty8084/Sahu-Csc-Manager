@@ -4,21 +4,21 @@ import { logger } from "../logger";
 import type { SmsJobData } from "../queues/types";
 
 /**
- * SMS worker — stub.
+ * SMS worker.
  *
  * No SMS provider (Twilio, MSG91, etc.) is configured in this project.
- * Jobs are logged and completed without error.  Wire up a provider here when
- * SMS sending is required.
+ * Jobs are failed immediately so they surface in the BullMQ dead-letter queue
+ * rather than silently completing as a no-op.  Wire up a provider here and
+ * remove the throw when SMS sending is required.
  */
 export const smsWorker = new Worker<SmsJobData>(
   "sms",
   async (job) => {
     logger.warn(
       { jobId: job.id, mobile: job.data.mobile },
-      "SMS job received but no provider configured — dropping message",
+      "SMS not sent: no provider configured — failing job so it appears in the dead-letter queue",
     );
-    // TODO: Integrate SMS provider (e.g. MSG91, Twilio) and send job.data.message
-    // to job.data.mobile.
+    throw new Error("No SMS provider configured — integrate MSG91, Twilio, or similar before enabling SMS");
   },
   { connection, concurrency: 5 },
 );
