@@ -1,9 +1,12 @@
 import { pgTable, serial, date, numeric, text, integer, timestamp, unique, index } from "drizzle-orm/pg-core";
+import { usersTable } from "./users";
 
 export const aepsDailyTable = pgTable("aeps_daily", {
   id: serial("id").primaryKey(),
   date: date("date").notNull(),
-  createdBy: integer("created_by").notNull(),
+  // RESTRICT: AEPS daily sessions are financial records — prevent deleting a
+  // user who still owns session data.  Deactivate the user instead.
+  createdBy: integer("created_by").notNull().references(() => usersTable.id, { onDelete: "restrict" }),
   openingBalance: numeric("opening_balance", { precision: 12, scale: 2 }).notNull().default("0"),
   notes: text("notes"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

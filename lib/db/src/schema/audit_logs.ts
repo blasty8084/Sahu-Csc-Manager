@@ -1,10 +1,13 @@
 import { pgTable, text, serial, timestamp, integer, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { usersTable } from "./users";
 
 export const auditLogsTable = pgTable("audit_logs", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  // CASCADE: audit logs are secondary records about the user; they can be
+  // removed together with the user account.
+  userId: integer("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
   action: text("action").notNull(),
   details: text("details"),
   ipAddress: text("ip_address").notNull().default(""),

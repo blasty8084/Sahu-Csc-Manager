@@ -1,6 +1,7 @@
 import { pgTable, text, serial, timestamp, integer, numeric, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { usersTable } from "./users";
 
 export const ledgerTable = pgTable("ledger", {
   id: serial("id").primaryKey(),
@@ -11,7 +12,9 @@ export const ledgerTable = pgTable("ledger", {
   debit: numeric("debit", { precision: 12, scale: 2 }).notNull().default("0"),
   description: text("description").notNull().default(""),
   balance: numeric("balance", { precision: 12, scale: 2 }).notNull().default("0"),
-  createdBy: integer("created_by").notNull(),
+  // RESTRICT: ledger rows are financial records — prevent deleting a user who
+  // still has transaction history.  Deactivate the user instead.
+  createdBy: integer("created_by").notNull().references(() => usersTable.id, { onDelete: "restrict" }),
   receiptNumber: text("receipt_number").unique(),
   receiptToken: text("receipt_token").unique(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

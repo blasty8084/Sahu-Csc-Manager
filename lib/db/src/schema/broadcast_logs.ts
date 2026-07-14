@@ -1,8 +1,11 @@
 import { pgTable, text, serial, timestamp, integer, index } from "drizzle-orm/pg-core";
+import { usersTable } from "./users";
 
 export const broadcastLogsTable = pgTable("broadcast_logs", {
   id: serial("id").primaryKey(),
-  sentBy: integer("sent_by").notNull(),
+  // RESTRICT: broadcast logs record admin actions — keep them even if the admin
+  // account is deactivated, for accountability purposes.
+  sentBy: integer("sent_by").notNull().references(() => usersTable.id, { onDelete: "restrict" }),
   channel: text("channel").notNull(),
   subject: text("subject").notNull(),
   body: text("body").notNull(),
