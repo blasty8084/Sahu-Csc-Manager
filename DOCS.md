@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Platform Documentation
-**Version 4.2.0** — last updated 2026-07-14
+**Version 4.3.0** — last updated 2026-07-14
 
 > Common Service Center (CSC) Business Management Platform for Odisha / India rural service centers.
 > Full-stack · PWA · Offline-capable · Multilingual (English / Hindi / Odia)
@@ -55,6 +55,18 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 ---
 
 ## 2. Version History
+
+### v4.3.0 — Security Hardening, Input Validation & Database Integrity (2026-07-14)
+
+Systematic bug-fix release across six audited areas. No new user-visible features; no API contract changes.
+
+- **Data integrity**: `POST /ledger` fully transactional; AEPS ownership null-check fixed; worker jobs throw on failure
+- **Security**: `/api/geo` rate-limited (30 req/min); CORS startup guard; loopback bypass uses TCP socket address; VAPID rotation no longer writes to `process.env`
+- **Logic**: Ledger summary periods use IST calendar dates; large-transaction threshold from settings table (configurable); session maxAge aligned to 8 h
+- **Streaming**: Receipt export ZIP handles mid-stream errors and client disconnects correctly
+- **Input validation**: Zod schemas on all admin receipt-export routes; receipt tokens validated as UUID or JWT before DB query
+- **Frontend**: Ledger/Udhari/Register forms reset correctly; `ShareTargetHandler` dep array fixed
+- **Schema**: 5 missing foreign keys added (ledger, audit_logs, aeps_daily, broadcast_logs, password_reset_tokens → users)
 
 ### v3.5.4 — Ledger Page Modularization (2026-07-11)
 

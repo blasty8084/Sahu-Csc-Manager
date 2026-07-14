@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v3 / v4
-**Current version: 4.2.0 — July 14, 2026**
+**Current version: 4.3.0 — July 14, 2026**
 
 > Detailed record of every feature, change, and upgrade from v3.0.0 onward.  
 > For v2.x history, see `docs/archive/changelogV2.md`.  
@@ -13,6 +13,7 @@
 
 ## Table of Contents
 
+0. [v4.3.0 — Security Hardening, Input Validation & Database Integrity (July 14, 2026)](#0-v430--security-hardening-input-validation--database-integrity-july-14-2026)
 0. [Infra — Redis connected, rate-limiter fix & CORS update (July 14, 2026)](#0-infra--redis-connected-rate-limiter-fix--cors-update-july-14-2026)
 0. [v4.2.0 — Running Balance, CDN Headers & Test Coverage (July 14, 2026)](#0-v420--running-balance-cdn-headers--test-coverage-july-14-2026)
 0. [v4.1.2 — Security & Type-Safety Hardening (July 13, 2026)](#0-v412--security--type-safety-hardening-july-13-2026)
@@ -23,6 +24,71 @@
 0. [v3.5.10 — Navigation Performance — Instant Page Switching (July 12, 2026)](#0-v3510--navigation-performance--instant-page-switching-july-12-2026)
 0. [v3.5.9 — Redis Cache Live, i18n Fixes & Build Hardening (July 12, 2026)](#0-v359--redis-cache-live-i18n-fixes--build-hardening-july-12-2026)
 0. [v3.5.8 — Reports & Receipt Export Page Modularization (July 12, 2026)](#0-v358--reports--receipt-export-page-modularization-july-12-2026)
+
+---
+
+## 0. v4.3.0 — Security Hardening, Input Validation & Database Integrity (July 14, 2026)
+
+Systematic bug-fix release covering six audited areas: data integrity, security, logic correctness, streaming robustness, input validation, and database schema. No new user-visible features; no API contract changes.
+
+### Data Integrity
+
+| Change | Description |
+|--------|-------------|
+| **Ledger POST transaction** | `POST /ledger` now runs balance update + receipt-counter increment + ledger insert + receipt-token write-back inside a single `db.transaction()`. Previously any mid-write failure (e.g. DB timeout) could leave a partial ledger row with a receipt number but no token, or update the balance without inserting the entry. `generateReceiptNumber()` accepts a `tx` parameter so it participates in the same transaction. |
+| **AEPS ownership null-check** | `PATCH` and `DELETE` on `/api/aeps/transactions/:id` checked `if (session && session.createdBy !== userId)` — a null/missing `session` would silently pass the guard and allow any user to modify any transaction. Fixed to `if (!session \|\| session.createdBy !== userId)`. |
+| **Worker job error propagation** | `pdf.worker.ts` and `sms.worker.ts` previously completed jobs silently on error (no-op). Changed to `throw new Error(...)` so failed jobs appear in the BullMQ dead-letter queue and can be retried or inspected. |
+
+### Security
+
+| Change | Description |
+|--------|-------------|
+| **`/api/geo` rate limit** | New `geoLimiter` (30 req/min) applied to `GET /api/geo` in `app.ts`. The endpoint was previously unlimited — unlike auth and ledger routes it had no rate-limiter at all. |
+| **CORS startup guard** | `app.ts` now throws at startup if `CORS_ORIGIN` is unset in production. Previously it fell back silently to `http://localhost:5000`, which would pass every cross-origin request in production. |
+| **Loopback bypass hardened** | Dev-mode rate-limiter skip compared `req.ip` (derived from X-Forwarded-For, spoofable behind a proxy with `trust proxy` set). Changed to `req.socket?.remoteAddress` (real TCP peer address, not forgeable). |
+| **VAPID rotation env-write removed** | The VAPID rotation endpoint was writing `process.env.VAPID_PUBLIC_KEY = ...` / `process.env.VAPID_PRIVATE_KEY = ...` after rotation. These writes are per-process only and wrong in multi-instance deployments. Removed; `webPush.setVapidDetails()` is the correct and sufficient call. |
+
+### Logic Fixes
+
+| Change | Description |
+|--------|-------------|
+| **IST timezone for ledger summary** | `GET /ledger/summary` period boundaries (today, yesterday, week, month) were computed with `new Date().toISOString()` (UTC). UTC is up to 5h30m behind IST, so "today" on the backend could be yesterday in India for evening transactions. Added `IST_OFFSET_MS`, `nowInIST()`, and `istDateStr()` module-level helpers; all period calculations now use IST calendar dates. |
+| **Configurable large-transaction threshold** | `POST /ledger` hardcoded `if (amount >= 10_000)` for the large-transaction notification trigger. Replaced with a `cached()` lookup from `settingsTable` key `largeTransactionThreshold` (30 s TTL, falls back to `10_000`). Operators can now configure the threshold from the admin settings panel without a deploy. |
+| **Silent notification catch removed** | `notifyLargeTransaction(...).catch(() => {})` swallowed all failures invisibly. Replaced with `.catch((err) => logger.warn({ err, userId, amount, entryId }, "Large-transaction notification failed"))` so failures are grep-able in logs. |
+| **Session maxAge aligned** | `express-session` default `maxAge` was 24 h in `app.ts` but `login.ts` sets 8 h for non-remember-me sessions via `req.session.cookie.maxAge`. Changed `app.ts` to 8 h with an inline comment linking both sites, so they stay in sync. |
+| **Receipt export error / disconnect** | `archive.on("error")` in the bulk ZIP download now branches on `res.headersSent`: returns JSON 500 before streaming starts; calls `req.socket?.destroy(err)` after (prevents a silently-corrupt ZIP reaching the browser). A `clientDisconnected` flag set by `req.on("close")` aborts the PDF generation loop immediately when the client cancels the download. |
+
+### Input Validation
+
+| Change | Description |
+|--------|-------------|
+| **Zod schemas for receipt-export routes** | `routes/admin-receipt-export.ts` added three Zod schemas: `bulkExportQuerySchema` (count, ZIP, Excel endpoints) — `startDate`/`endDate` via `z.string().date()` (validates format **and** calendar value), `userId` coerced to positive int, `receiptNumbers` charset-validated, cross-field `startDate ≤ endDate` refine; `monthlyTriggerBodySchema` (POST trigger) — year `int().min(2000).max(2100)`, month `int().min(1).max(12)`; `monthlyDownloadQuerySchema` (GET download) — same year/month rules on query strings. All handlers do `safeParse` first and return 400 with the Zod error message on failure. |
+| **Receipt token format validation** | `routes/receipts.ts` — both `/receipts/verify/:token` and `/receipts/verify/udhari/:token` previously guarded with `token.length < 16`. Any arbitrary string ≥ 16 chars would hit the database. Replaced with `isValidReceiptToken()` which requires either a UUID v4 pattern (`/^[0-9a-f]{8}-...-[0-9a-f]{12}$/i`) or a three-segment base64url JWT (`/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/`). Non-matching strings get a 400 immediately. |
+
+### Frontend
+
+| Change | Description |
+|--------|-------------|
+| **Ledger form reset on success** | `onSubmit` in `pages/ledger.tsx` now calls `form.reset({ date: today, customerName: "", ... })` after both the online-create and offline-save success paths. Previously stale field values persisted when the dialog was reopened for a new entry. |
+| **Udhari AddCustomer reset on close** | `AddCustomerDialog` in `pages/udhari.tsx` adds `useEffect(() => { if (!open) setForm({...blank...}); }, [open])`. Covers the cancel/backdrop-dismiss path that had no reset — only the success path (which already called `setForm` inline) was previously cleaned up. |
+| **Register form cleared before navigation** | `submitWithOtp` in `pages/register.tsx` calls `form.reset()`, clears `formValues` (which holds the raw password), and blanks `otpDigits` before `setLocation("/login")`. If the user navigates back, the form is empty. |
+| **ShareTargetHandler stale closure** | `useEffect(fn, [])` in `App.tsx` referenced `setLocation` but excluded it from the dependency array. Added `setLocation` to the array — correct per exhaustive-deps; harmless with wouter's stable reference, but protects against a future wouter version returning a new reference per render. |
+
+### Database Schema
+
+| Change | Description |
+|--------|-------------|
+| **5 missing foreign keys** | Added via `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY ... REFERENCES users(id)` (idempotent `DO $ IF NOT EXISTS $` block). All orphaned rows cleaned first (zero found on the seeded DB). |
+
+| Table | Column | Strategy | Rationale |
+|-------|--------|----------|-----------|
+| `ledger` | `created_by` | `RESTRICT` | Financial records — cannot delete a user who has transaction history; deactivate instead |
+| `audit_logs` | `user_id` | `CASCADE` | Secondary log — goes away with the user |
+| `aeps_daily` | `created_by` | `RESTRICT` | Financial sessions — same rationale as ledger |
+| `broadcast_logs` | `sent_by` | `RESTRICT` | Admin accountability record — kept even after account removal |
+| `password_reset_tokens` | `user_id` | `CASCADE` | Ephemeral credential — meaningless without the user |
+
+Tables already correct before this release (all with `onDelete: "cascade"`): `push_subscriptions`, `user_sessions`, `receipt_counters`, `user_notification_preferences`, `udhari_customers`, `udhari_entries`. `notifications.userId` is intentionally nullable (broadcasts to all users) — no FK.
 
 ---
 

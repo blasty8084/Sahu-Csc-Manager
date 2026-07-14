@@ -1,5 +1,5 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 4.2.0** — last updated 2026-07-14
+**Version 4.3.0** — last updated 2026-07-14
 
 > **Re-imported and fully set up on Replit 2026-07-14**: ran `pnpm install`, pushed schema via `drizzle-kit push`, seeded admin/operator via the `Seed Database` workflow. All three secrets (`SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`) confirmed. Connected Upstash Redis: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, and `REDIS_URL` added as Replit Secrets; `CACHE_BACKEND` set back to `redis`. Fixed rate-limiter Redis bridge: `app.ts` was passing the Upstash REST client (`@upstash/redis`) to `rate-limit-redis`, which expects an ioredis-compatible `sendCommand` interface — swapped to `ioredis` (already a dependency) using `REDIS_URL`; all four rate limiters now initialize without errors. Worker Server started cleanly with all four BullMQ workers (notifications, emails, PDF, SMS). Updated `CORS_ORIGIN` env var to the current Replit dev domain (`sisko.replit.dev`); verified via OPTIONS preflight that the API returns the correct `Access-Control-Allow-Origin` header.
 >
@@ -8,6 +8,20 @@
 > **Fixed a workflow bug (2026-07-11)**: the `API Server` workflow ran `PORT=8080 ... pnpm run build && node index.mjs` — in bash, a `VAR=val` prefix only applies to the command immediately before `&&`, so `node index.mjs` was inheriting the reserved `PORT=5000` (set in `.replit` `[userenv.shared]`) instead of 8080, colliding with the frontend's port. Fixed by prefixing `node` with its own `PORT=8080` too.
 >
 > **Fixed a fresh-`node_modules` build failure (2026-07-11)**: after a clean `pnpm install`, the API Server build failed at runtime with `ERR_MODULE_NOT_FOUND` for `@opentelemetry/instrumentation`, then `@opentelemetry/core`, then `@opentelemetry/sdk-trace-base` in turn. `build.mjs` externalizes `@opentelemetry/*` (to dodge the drizzle-orm dual-peer conflict — see Sentry note below), so esbuild doesn't bundle it, but pnpm only hoists *direct* dependencies into `artifacts/api-server/node_modules`; these three are transitive deps of `@sentry/node`/`@sentry/opentelemetry`/`@sentry/node-core` that were never hoisted. Fixed by adding all three as explicit `dependencies` in `artifacts/api-server/package.json` (alongside the existing `@opentelemetry/api`) so pnpm hoists them. If a future Sentry upgrade throws the same `ERR_MODULE_NOT_FOUND` for a new `@opentelemetry/*` subpackage, add it the same way.
+
+## What's New in v4.3.0 (July 14, 2026) — Security Hardening, Input Validation & Database Integrity
+
+Systematic bug-fix release. No new user-visible features; no API contract changes.
+
+| Area | Change |
+|------|--------|
+| **Data integrity** | `POST /ledger` wrapped in a single `db.transaction()` — balance, receipt counter, insert, and token write-back are now atomic. AEPS session ownership null-check fixed (`if (!session \|\| ...)` — null session previously bypassed the guard). PDF/SMS workers now `throw` on failure so jobs reach the BullMQ dead-letter queue. |
+| **Security** | `GET /api/geo` rate-limited (30 req/min — previously unlimited). `CORS_ORIGIN` missing in production now throws at startup instead of falling back to `localhost:5000`. Loopback bypass in rate limiter now compares `req.socket?.remoteAddress` (real TCP peer, not spoofable via X-Forwarded-For). VAPID rotation endpoint no longer writes to `process.env` (wrong in multi-instance deployments). |
+| **Logic** | Ledger summary periods use IST calendar dates — UTC was up to 5h30m off for Indian evening transactions. Large-transaction threshold is now read from `settingsTable` key `largeTransactionThreshold` (cached 30 s, falls back to ₹10,000) — configurable without a deploy. Silent `.catch(() => {})` on the notification call replaced with `logger.warn`. Session default `maxAge` aligned to 8 h (was 24 h, mismatching `login.ts`). |
+| **Streaming** | Receipt export ZIP: `archive.on("error")` branches on `res.headersSent` (JSON 500 before stream, `req.socket?.destroy()` after). `req.on("close")` abort flag stops PDF generation loop immediately on client disconnect. |
+| **Input validation** | Zod schemas on all admin receipt-export routes: `startDate`/`endDate` via `z.string().date()`, `userId` coerced to positive int, `receiptNumbers` charset-validated, `startDate ≤ endDate` cross-field check, month range 1–12. Receipt tokens validated as UUID v4 or JWT before any DB query. |
+| **Frontend** | Ledger form resets after successful create/offline-save. Udhari Add Customer form resets on every close (success and cancel). Register form clears all fields before navigating to /login. `ShareTargetHandler` `useEffect` dep array includes `setLocation`. |
+| **Database** | 5 missing foreign keys added: `ledger.created_by → users RESTRICT`, `audit_logs.user_id → users CASCADE`, `aeps_daily.created_by → users RESTRICT`, `broadcast_logs.sent_by → users RESTRICT`, `password_reset_tokens.user_id → users CASCADE`. |
 
 ## What's New in v4.2.0 (July 14, 2026) — Running Balance, CDN Headers & Test Coverage
 

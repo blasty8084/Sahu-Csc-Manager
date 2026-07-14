@@ -14,6 +14,40 @@ const APP_VERSION = __APP_VERSION__;
 // ── Changelog ────────────────────────────────────────────────────────────────
 const CHANGELOG = [
   {
+    version: "v4.3.0",
+    title: "Security Hardening, Input Validation & Database Integrity",
+    date: "2026-07-14",
+    accent: "#dc2626",
+    changes: [
+      // Data integrity
+      "Ledger POST now runs inside a single DB transaction — balance update, receipt counter increment, ledger insert, and receipt-token write-back are all atomic; no partial ledger rows possible on mid-write failure",
+      "AEPS session ownership check fixed from `if (session && session.createdBy !== userId)` to `if (!session || ...)` — null/orphaned session no longer bypasses the guard",
+      "PDF and SMS workers now throw on failure instead of silently completing — failed jobs reach the BullMQ dead-letter queue and are retryable",
+      // Security
+      "Rate limiter added to GET /api/geo — previously unlimited; now capped at 30 req/min per IP",
+      "CORS_ORIGIN missing in production now throws at startup instead of silently falling back to localhost:5000",
+      "Dev loopback bypass in rate limiter now compares req.socket?.remoteAddress (real TCP peer, not spoofable) instead of req.ip (X-Forwarded-For, forgeable)",
+      "VAPID key rotation endpoint no longer writes to process.env — correct for multi-instance deployments where env writes are per-process only",
+      // Logic fixes
+      "Ledger summary periods (today, yesterday, week, month) now use IST calendar dates — UTC was shifting the window by up to 5h30m for evening transactions",
+      "Large-transaction notification threshold now reads from the settings table key `largeTransactionThreshold` (cached 30 s) instead of a hardcoded ₹10,000 — configurable without a deploy",
+      "Large-transaction notification failures now log at WARN level instead of being silently swallowed by `.catch(() => {})`",
+      "Session default maxAge aligned to 8 h in express-session to match login.ts non-remember-me override — was 24 h, causing inconsistency",
+      "Receipt export ZIP: archive error handler now branches on res.headersSent — sends JSON 500 before streaming starts, destroys socket after (prevents silently-corrupt ZIP files)",
+      "Receipt export ZIP: client-disconnect abort flag (`req.on('close')`) stops the PDF generation loop immediately — no wasted CPU for cancelled downloads",
+      // Input validation
+      "Zod schemas added to all admin receipt-export endpoints: startDate/endDate validated as ISO calendar dates (z.string().date()), userId coerced to positive int, receiptNumbers charset-validated, month range 1-12 enforced, startDate ≤ endDate cross-field check",
+      "Receipt token format validated before any DB query — must be a UUID v4 or a three-segment JWT (base64url); arbitrary strings return 400 immediately",
+      // Frontend
+      "Ledger entry form calls form.reset() after successful create and offline-save — stale values no longer persist when the dialog reopens",
+      "Udhari Add Customer dialog resets form state on every close (success or cancel) via useEffect — previous name/mobile/address no longer reappears",
+      "Registration form clears all fields and OTP digits before navigating to /login — sensitive values (password, mobile) are removed from React state",
+      "ShareTargetHandler useEffect includes setLocation in dependency array — stale closure risk eliminated",
+      // Schema / DB
+      "5 missing foreign keys added to live database: ledger.created_by → users RESTRICT, audit_logs.user_id → users CASCADE, aeps_daily.created_by → users RESTRICT, broadcast_logs.sent_by → users RESTRICT, password_reset_tokens.user_id → users CASCADE",
+    ],
+  },
+  {
     version: "Infra",
     title: "Redis Connected, Rate-Limiter Fix & CORS Update",
     date: "2026-07-14",
