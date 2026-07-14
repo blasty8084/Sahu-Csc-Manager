@@ -4,13 +4,14 @@ import os from "os";
 import v8 from "v8";
 import geoip from "geoip-lite";
 import { getBootHealth } from "../lib/boot-tracker";
+import { getAppVersion } from "../lib/version";
 
 const router: IRouter = Router();
 
 // Alias /health → /healthz for load-balancers, PM2, and Replit port probes
 router.get("/health", (_req, res) => {
   res.set("Cache-Control", "no-store");
-  res.json({ status: "ok", version: "4.1.2", uptime: process.uptime() });
+  res.json({ status: "ok", version: getAppVersion(), uptime: process.uptime() });
 });
 
 router.get("/healthz", async (_req, res) => {
@@ -36,7 +37,7 @@ router.get("/healthz", async (_req, res) => {
   // ── VAPID check ─────────────────────────────────────────────────────────────
   const vapidPublic = process.env.VAPID_PUBLIC_KEY;
   const vapidPrivate = process.env.VAPID_PRIVATE_KEY;
-  const vapidEmail = process.env.VAPID_EMAIL ?? "mailto:sahuuttam690@gmail.com";
+  const vapidEmail = process.env.VAPID_EMAIL ?? "mailto:support@example.com";
 
   // Persistent = keys were set BEFORE server started (from real env secrets)
   // We detect ephemeral keys by checking a flag we set at startup

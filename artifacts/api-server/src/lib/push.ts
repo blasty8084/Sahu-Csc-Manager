@@ -15,7 +15,7 @@ export let VAPID_PUBLIC_KEY: string | undefined;
 export function initPush(): void {
   const pubKey = process.env.VAPID_PUBLIC_KEY;
   const privKey = process.env.VAPID_PRIVATE_KEY;
-  const email = process.env.VAPID_EMAIL || "mailto:sahuuttam690@gmail.com";
+  const email = process.env.VAPID_EMAIL || "mailto:support@example.com";
 
   // web-push requires unpadded URL-safe base64 — strip any trailing = or whitespace
   // that may have been introduced when the secret was copy-pasted by the user.

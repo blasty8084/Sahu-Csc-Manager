@@ -8,6 +8,7 @@ import { ensureVapidKeys } from "./lib/vapid";
 import { initPush } from "./lib/push";
 import { ensureEncryptionKey } from "./lib/encryption";
 import { ensureJwtSecret } from "./lib/jwt";
+import { initGeoipUpdater } from "./lib/geoip-updater";
 import { db } from "@workspace/db";
 import { sql } from "drizzle-orm";
 
@@ -64,5 +65,6 @@ app.listen(port, (err) => {
   startOtpCleanup();
   scheduleMonthlyExport();
   initBackupScheduler();
+  initGeoipUpdater();
   recordBootAndCheckCrashLoop();
 });

@@ -11,6 +11,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "loadtest": "tsx src/scripts/loadtest.ts",
     "loadtest:phase2": "tsx src/scripts/loadtest-phase2.ts",
+    "updategeoip": "node ./node_modules/geoip-lite/scripts/updatedb.js license_key=$MAXMIND_LICENSE_KEY",
     "test": "vitest run"
   },
   "dependencies": {
