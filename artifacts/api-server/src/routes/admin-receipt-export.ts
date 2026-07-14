@@ -129,15 +129,31 @@ router.get(
 
     const archive = new ZipArchive({ zlib: { level: 6 } });
     archive.on("error", (err: Error) => {
-      if (!res.headersSent) res.status(500).json({ error: err.message });
+      if (!res.headersSent) {
+        // Headers not yet flushed — we can still send a clean JSON error.
+        res.status(500).json({ error: err.message });
+      } else {
+        // Headers already sent with Content-Type: application/zip.  We cannot
+        // inject a JSON error into the stream without corrupting the ZIP.
+        // Destroy the socket so the client receives a network-level error and
+        // its browser shows a failed download rather than a silently-corrupt file.
+        req.socket?.destroy(err);
+      }
     });
     archive.pipe(res);
+
+    // Abort the loop immediately if the client closes the connection — prevents
+    // wasting CPU and memory finishing a ZIP nobody will receive.
+    let clientDisconnected = false;
+    req.on("close", () => { clientDisconnected = true; });
 
     // Fetch and process entries in pages of 200 to avoid loading the full
     // dataset into memory at once — critical for months with 2 000+ receipts.
     const PAGE_SIZE = 200;
     let offset = 0;
     while (true) {
+      if (clientDisconnected) break;
+
       const page = await db
         .select({
           id: ledgerTable.id,
@@ -160,6 +176,8 @@ router.get(
         .offset(offset);
 
       for (const entry of page) {
+        if (clientDisconnected) break;
+
         const pdf = await generateReceiptPdf(
           {
             receiptNumber: entry.receiptNumber!,

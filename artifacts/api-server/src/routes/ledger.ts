@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, ledgerTable, usersTable, receiptCountersTable } from "@workspace/db";
+import { db, ledgerTable, usersTable, receiptCountersTable, settingsTable } from "@workspace/db";
 import { eq, and, gte, lte, like, desc, count, sum, sql } from "drizzle-orm";
 import {
   CreateLedgerEntryBody,
@@ -11,10 +11,23 @@ import { requireAuth, requireRole, requirePermission, auditLog, getClientIp } fr
 import { notifyLargeTransaction } from "../services/notificationTemplates";
 import { signReceiptToken } from "../lib/jwt";
 import { sanitize } from "../lib/sanitize";
-import { invalidateLedgerCaches } from "../lib/query-cache";
+import { invalidateLedgerCaches, cached } from "../lib/query-cache";
 import crypto from "crypto";
 import { computeRunningBalances, formatReceiptNumber } from "../lib/ledger-utils";
 import { asyncHandler } from "../lib/async-handler";
+import { logger } from "../lib/logger";
+
+// India Standard Time is UTC+5:30 with no DST — a fixed offset is correct and
+// avoids pulling in a full tz-database dependency.
+const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+/** Returns a Date whose UTC fields (getUTCFullYear, getUTCMonth, …) represent the current IST calendar values. */
+function nowInIST(): Date {
+  return new Date(Date.now() + IST_OFFSET_MS);
+}
+/** Formats a Date (already IST-shifted via nowInIST) as YYYY-MM-DD. */
+function istDateStr(d: Date): string {
+  return d.toISOString().split("T")[0];
+}
 
 const router: IRouter = Router();
 
@@ -121,25 +134,29 @@ router.get("/ledger/summary", requireAuth, requirePermission("ledger:view"), asy
 
   let startDate: string;
   let endDate: string;
-  const now = new Date();
+
+  // Use IST calendar dates throughout — the server runs UTC but users and ledger
+  // dates are in IST.  Using UTC dates here would shift the "today/yesterday/month"
+  // window by up to 5h30m, causing boundary errors for evening transactions.
+  const todayIST = nowInIST();
 
   if (period === "custom" && params.success && params.data.startDate && params.data.endDate) {
     startDate = params.data.startDate as string;
     endDate = params.data.endDate as string;
   } else if (period === "yesterday") {
-    const y = new Date(now);
-    y.setDate(y.getDate() - 1);
-    startDate = endDate = y.toISOString().split("T")[0];
+    const y = new Date(todayIST);
+    y.setUTCDate(y.getUTCDate() - 1);
+    startDate = endDate = istDateStr(y);
   } else if (period === "week") {
-    const start = new Date(now);
-    start.setDate(start.getDate() - 6);
-    startDate = start.toISOString().split("T")[0];
-    endDate = now.toISOString().split("T")[0];
+    const start = new Date(todayIST);
+    start.setUTCDate(start.getUTCDate() - 6);
+    startDate = istDateStr(start);
+    endDate = istDateStr(todayIST);
   } else if (period === "month") {
-    startDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-    endDate = now.toISOString().split("T")[0];
+    startDate = `${todayIST.getUTCFullYear()}-${String(todayIST.getUTCMonth() + 1).padStart(2, "0")}-01`;
+    endDate = istDateStr(todayIST);
   } else {
-    startDate = endDate = now.toISOString().split("T")[0];
+    startDate = endDate = istDateStr(todayIST);
   }
 
   const userFilter = getUserFilter(req);
@@ -260,8 +277,25 @@ router.post("/ledger", requireAuth, requirePermission("ledger:create"), asyncHan
   await auditLog(userId, "ledger.create", `Created ledger entry for ${customerName} (${entry.receiptNumber})`, getClientIp(req));
 
   const amount = (credit ?? 0) + (debit ?? 0);
-  if (amount >= 10000) {
-    notifyLargeTransaction(userId, amount, entry.id).catch(() => {});
+  // Read the threshold from settings so operators can configure it without a
+  // code deploy.  Cached for 30 s to avoid a DB hit on every POST.
+  const threshold = await cached<number>(
+    "settings:largeTransactionThreshold",
+    30_000,
+    async () => {
+      const [row] = await db
+        .select({ value: settingsTable.value })
+        .from(settingsTable)
+        .where(eq(settingsTable.key, "largeTransactionThreshold"))
+        .limit(1);
+      return row ? parseFloat(row.value) : 10_000;
+    },
+  );
+  if (amount >= threshold) {
+    // Fire-and-forget but log failures so they are not silently swallowed.
+    notifyLargeTransaction(userId, amount, entry.id).catch((err) => {
+      logger.warn({ err, userId, amount, entryId: entry.id }, "Large-transaction notification failed");
+    });
   }
 
   res.status(201).json(formatEntry(entry));

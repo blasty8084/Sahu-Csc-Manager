@@ -222,7 +222,11 @@ app.use(
     cookie: {
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      // Default matches the non-remember-me duration set in routes/auth/login.ts.
+      // login.ts always overrides req.session.cookie.maxAge per-session (8 h or
+      // 30 days for "remember me"), so this value only affects sessions created
+      // before login (e.g. pre-auth CSRF state).  Keep them in sync.
+      maxAge: 8 * 60 * 60 * 1000, // 8 hours — matches login.ts non-remember-me
       sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
     },
   }),
