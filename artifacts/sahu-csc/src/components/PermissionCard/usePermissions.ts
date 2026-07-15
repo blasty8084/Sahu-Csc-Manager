@@ -68,22 +68,62 @@ export function usePermissions() {
     }
   }, []);
 
-  // Browsers have no standing "permission" API for generic photo/file
-  // access — the native file/photo picker IS the permission surface (the OS
-  // itself handles photo-library consent on mobile). We treat opening it as
-  // the request and any interaction with it (pick or cancel) as satisfied,
-  // since there's no signal to distinguish "denied" from "user cancelled".
+  // File Manager now behaves like Location/Notifications: picking a file =
+  // "granted", cancelling/dismissing the picker = "denied" — a real
+  // granted/denied outcome instead of always resolving to "granted".
+  //
+  // Chrome/Edge/Opera (desktop + Android) support the File System Access
+  // API (`showOpenFilePicker`), which actually distinguishes the two cases:
+  // it resolves when a file is chosen and rejects with an AbortError when
+  // the user cancels. We use that for a real signal there.
+  //
+  // Safari/Firefox and older browsers have no such API — the classic
+  // `<input type="file">` never fires a reliable "cancelled" event across
+  // all of them, so there we fall back to the old behaviour (open the
+  // picker, treat any settle as granted) since no real signal exists.
   const requestFileManager = useCallback((): Promise<PermStatus> => {
     setFileStatus("requesting");
 
-    return new Promise<PermStatus>((resolve) => {
-      if (typeof document === "undefined") {
-        setFileStatus("skipped");
-        localStorage.setItem("perm_files", "skipped");
-        resolve("skipped");
-        return;
-      }
+    const settleWith = (status: PermStatus) => {
+      setFileStatus(status);
+      localStorage.setItem("perm_files", status);
+      return status;
+    };
 
+    if (typeof window === "undefined" || typeof document === "undefined") {
+      return Promise.resolve(settleWith("skipped"));
+    }
+
+    // Preferred path: File System Access API — real granted/denied signal.
+    if (typeof (window as any).showOpenFilePicker === "function") {
+      const pickerPromise = (async (): Promise<PermStatus> => {
+        try {
+          await (window as any).showOpenFilePicker({
+            multiple: true,
+            excludeAcceptAllOption: false,
+          });
+          return "granted";
+        } catch (err: any) {
+          // AbortError = user dismissed/cancelled the picker → denied.
+          if (err?.name === "AbortError") return "denied";
+          // Anything else (e.g. not user-activated) — fall back to denied
+          // rather than leaving the row stuck.
+          return "denied";
+        }
+      })();
+
+      const fallback = new Promise<PermStatus>((resolve) => {
+        window.setTimeout(() => resolve("denied"), SAFETY_TIMEOUT_MS);
+      });
+
+      return Promise.race([pickerPromise, fallback]).then(settleWith);
+    }
+
+    // Fallback path: classic hidden <input type="file"> for browsers
+    // without the File System Access API (Safari, Firefox, most mobile).
+    // No reliable cancel signal exists here, so any interaction settles
+    // as "granted" — same limitation as before, just isolated to this branch.
+    return new Promise<PermStatus>((resolve) => {
       const input = document.createElement("input");
       input.type = "file";
       input.accept = "image/*,application/pdf,.doc,.docx,.xls,.xlsx,*/*";
@@ -98,10 +138,8 @@ export function usePermissions() {
         if (settled) return;
         settled = true;
         window.clearTimeout(fallbackTimer);
-        setFileStatus(status);
-        localStorage.setItem("perm_files", status);
         input.remove();
-        resolve(status);
+        resolve(settleWith(status));
       };
 
       input.addEventListener("change", () => settle("granted"));

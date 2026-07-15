@@ -19,9 +19,11 @@ import { usePermissions } from "./usePermissions";
 // and leave Continue stuck). Skip / X still marks first_login_completed =
 // true so the card never reappears. iOS Safari has no Notification API, so
 // that step is skipped silently and treated as already satisfied. File
-// Manager has no browser permission API at all — opening the native file
-// picker is itself the permission surface, and any interaction with it
-// (pick or cancel) counts as granted.
+// Manager now behaves like Location/Notifications — picking a file counts
+// as granted, cancelling the picker counts as denied — using the File
+// System Access API where supported (Chrome/Edge/Opera), with a same-as-
+// before "any interaction = granted" fallback on browsers without it
+// (Safari/Firefox), since no real cancel signal exists there.
 
 async function apiPatch(path: string) {
   const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
