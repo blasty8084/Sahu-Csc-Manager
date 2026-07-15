@@ -146,7 +146,7 @@ function ShareTargetHandler() {
   return null;
 }
 
-// ─── First-login onboarding gate — fullscreen, non-skippable, shown once ────
+// ─── First-login onboarding gate — compact popup, non-skippable, shown once ─
 function FirstLoginGate() {
   const { user } = useAuth();
   if (!user || (user as any).firstLoginCompleted) return null;
