@@ -22,7 +22,7 @@ import { useUnreadCount } from "@/hooks/use-notifications";
 import { SyncBadge } from "@/components/sync-badge";
 import { Redirect } from "wouter";
 import { ErrorBoundary } from "@/components/error-boundary";
-import { FirstLoginOverlay } from "@/components/onboarding/FirstLoginOverlay";
+import { PermissionCard } from "@/components/PermissionCard";
 
 declare const __APP_VERSION__: string;
 
@@ -150,7 +150,7 @@ function ShareTargetHandler() {
 function FirstLoginGate() {
   const { user } = useAuth();
   if (!user || (user as any).firstLoginCompleted) return null;
-  return <FirstLoginOverlay />;
+  return <PermissionCard />;
 }
 
 // ─── Idle / session-replaced manager ─────────────────────────────────────────
