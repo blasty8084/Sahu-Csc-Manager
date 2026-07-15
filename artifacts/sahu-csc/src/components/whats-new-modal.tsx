@@ -2,11 +2,11 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
-  Sparkles, Puzzle, Wrench, CheckCircle2, Zap,
+  Sparkles, Puzzle, Wrench, CheckCircle2, Zap, ShieldCheck, FolderOpen, Clock3,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const VERSION = "4.1.1";
+const VERSION = "4.5.0";
 const STORAGE_KEY = `sahu-whats-new-v${VERSION}`;
 
 interface Feature {
@@ -21,44 +21,34 @@ interface Feature {
 
 const FEATURES: Feature[] = [
   {
-    icon: <Zap size={15} />,
-    color: "#10b981",
-    bg: "rgba(16,185,129,0.10)",
-    title: "Worker Server — Async Job Processing",
+    icon: <ShieldCheck size={15} />,
+    color: "#4f46e5",
+    bg: "rgba(79,70,229,0.10)",
+    title: "Permission Card Redesign",
     description:
-      "Push notifications and emails are now handled by a dedicated background worker process (port 8081) using BullMQ. The main API returns instantly without waiting on SMTP or web-push delivery. Activates automatically when REDIS_URL is configured; falls back to in-process execution otherwise.",
-    tag: "Performance",
-    tagColor: "#10b981",
+      "The first-login permissions step is now a clean two-step card. Each permission — Location, Notifications, and File Manager — shows live status (Requesting… → Allowed/Denied) as it's requested, instead of a single opaque prompt.",
+    tag: "Design",
+    tagColor: "#4f46e5",
   },
   {
-    icon: <CheckCircle2 size={15} />,
-    color: "#7c3aed",
-    bg: "rgba(124,58,237,0.10)",
-    title: "Auto-Retry on Delivery Failures",
+    icon: <FolderOpen size={15} />,
+    color: "#d97706",
+    bg: "rgba(217,119,6,0.10)",
+    title: "File Manager Permission",
     description:
-      "Email and push workers retry failed jobs up to 3 times with exponential backoff. Transient SMTP outages or push endpoint hiccups resolve automatically without manual intervention or lost notifications.",
-    tag: "Reliability",
-    tagColor: "#7c3aed",
+      "A new File Manager step opens the native photo/file picker so receipt uploads and file exports get a clear, visible consent step alongside Location and Notifications.",
+    tag: "New",
+    tagColor: "#d97706",
   },
   {
-    icon: <Wrench size={15} />,
-    color: "#0891b2",
-    bg: "rgba(8,145,178,0.10)",
-    title: "PM2 Cluster Config",
+    icon: <Clock3 size={15} />,
+    color: "#16a34a",
+    bg: "rgba(22,163,74,0.10)",
+    title: "Continue Button — Stuck Fix",
     description:
-      "pm2.config.js added to the project root — api-server runs in cluster mode across all available CPUs; worker-server runs in fork mode (single instance, BullMQ handles internal concurrency). Ready for production multi-process deployment.",
-    tag: "Infrastructure",
-    tagColor: "#0891b2",
-  },
-  {
-    icon: <Puzzle size={15} />,
-    color: "#f97316",
-    bg: "rgba(249,115,22,0.10)",
-    title: "Graceful Fallback Mode",
-    description:
-      "No Redis? No problem. When REDIS_URL is not set the api-server handles all push and email work directly in-process — exactly as before. The worker architecture is additive; nothing breaks in simple or development deployments.",
-    tag: "Compatibility",
-    tagColor: "#15803d",
+      "Fixed a bug where the Continue button could stay disabled forever if a permission prompt was blocked or never responded. Every permission request now safely times out after 10 seconds so onboarding always completes.",
+    tag: "Bug Fix",
+    tagColor: "#16a34a",
   },
 ];
 
@@ -111,7 +101,7 @@ export function WhatsNewModal() {
             </DialogHeader>
           </div>
           <p className="text-[11px] leading-snug relative z-10" style={{ color: "rgba(255,255,255,0.65)" }}>
-            Redis live, i18n fixed, OTel guard, and workflow cleanup.
+            Redesigned permission card, File Manager access, and a Continue-button fix.
           </p>
 
           {/* step dots */}

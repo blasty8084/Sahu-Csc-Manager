@@ -56,6 +56,19 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 
 ## 2. Version History
 
+### v4.5.0 — Permission Card Redesign: File Manager Access & Continue Fix (2026-07-15)
+
+Redesigned the first-login permission flow and fixed a real bug in it. No API contract changes.
+
+- Replaced `FirstLoginOverlay.tsx` (Notifications + Files acknowledgement) with a new `PermissionCard` component system (`PermissionCard.tsx`, `PermissionRow.tsx`, `usePermissions.ts`, `index.ts`) — two-step modal flow, per-row live status
+- Added a third permission: File Manager (photo/file access) — no browser Permissions API exists for this, so "Allow" opens a hidden native file input; any interaction (pick or cancel) counts as granted
+- Fixed a bug where the Continue button could stay disabled forever if a permission prompt (most notably `navigator.geolocation.getCurrentPosition`) never invoked either callback — added a 10-second `Promise.race` safety-net timeout to every permission request (location, notifications, file picker)
+- Backend unchanged — still `PATCH /users/first-login-completed`; per-permission results stay client-side in `localStorage` per the design spec
+
+### v4.4.0 — First-Login Permissions, 2FA & Single-Device Enforcement (2026-07-15)
+
+Audited against a written feature spec — first-login permissions, 2FA (TOTP + email OTP), and single-device login enforcement were all already implemented from an earlier session; found and fixed one real gap (`security_logs` table existed but nothing wrote to it).
+
 ### v4.3.2 — Optimization Audit & Measurements (2026-07-14)
 
 Follow-up to the v4.3.1 performance pass — measured numbers instead of estimates, plus closes out the remaining audit items.

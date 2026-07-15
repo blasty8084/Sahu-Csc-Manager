@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v3 / v4
-**Current version: 4.4.0 — July 15, 2026**
+**Current version: 4.5.0 — July 15, 2026**
 
 > Detailed record of every feature, change, and upgrade from v3.0.0 onward.  
 > For v2.x history, see `docs/archive/changelogV2.md`.  
@@ -13,6 +13,7 @@
 
 ## Table of Contents
 
+0. [v4.5.0 — Permission Card Redesign: File Manager Access & Continue Fix (July 15, 2026)](#0-v450--permission-card-redesign-file-manager-access--continue-fix-july-15-2026)
 0. [v4.4.0 — First-Login Permissions, 2FA & Single-Device Enforcement (July 15, 2026)](#0-v440--first-login-permissions-2fa--single-device-enforcement-july-15-2026)
 0. [v4.3.2 — Optimization Audit & Measurements (July 14, 2026)](#0-v432--optimization-audit--measurements-july-14-2026)
 0. [v4.3.1 — Performance Pass: Bundle Size & Avatar Compression (July 14, 2026)](#0-v431--performance-pass-bundle-size--avatar-compression-july-14-2026)
@@ -28,6 +29,21 @@
 0. [v3.5.10 — Navigation Performance — Instant Page Switching (July 12, 2026)](#0-v3510--navigation-performance--instant-page-switching-july-12-2026)
 0. [v3.5.9 — Redis Cache Live, i18n Fixes & Build Hardening (July 12, 2026)](#0-v359--redis-cache-live-i18n-fixes--build-hardening-july-12-2026)
 0. [v3.5.8 — Reports & Receipt Export Page Modularization (July 12, 2026)](#0-v358--reports--receipt-export-page-modularization-july-12-2026)
+
+---
+
+## 0. v4.5.0 — Permission Card Redesign: File Manager Access & Continue Fix (July 15, 2026)
+
+Redesigned the first-login permission overlay per an exact visual/behavior spec, added a third permission, and root-caused/fixed a real Continue-button bug. No API contract changes.
+
+| Change | Description |
+|--------|-------------|
+| **PermissionCard component system** | Replaced `FirstLoginOverlay.tsx` (fullscreen/compact popup, Notifications + Files acknowledgement) with a new modal-with-backdrop `PermissionCard` under `src/components/PermissionCard/` (`PermissionCard.tsx`, `PermissionRow.tsx`, `usePermissions.ts`, `index.ts`). Two-step flow: "Permissions Required" intro (per-row Allow buttons, Skip for now, X close) → "Setting up Permissions" (requests fire one at a time, live status per row). |
+| **File Manager permission (new)** | Added a third permission row — Location, Notifications, **File Manager**. Browsers have no standing Permissions API for generic photo/file access, so "Allow" opens a hidden native `<input type="file">` picker; any interaction with it (pick or cancel) is treated as granted, since there's no signal to distinguish denial from cancellation. |
+| **Continue-button stuck bug (real fix)** | Root cause: permission requests — most notably `navigator.geolocation.getCurrentPosition` — could hang indefinitely in some browser/embed contexts without ever invoking either the success or error callback, leaving `canContinue` permanently `false`. Fixed by racing every permission request (location, notifications, file picker) against a 10-second `setTimeout` fallback in `usePermissions.ts`, guaranteeing each one always resolves. |
+| **iOS Safari handling (unchanged)** | Notifications step is still skipped silently when the `Notification` API is unsupported (`isIOSSafari()` check), counted as satisfied for Continue-gating purposes. |
+| **Backend / API contract** | Unchanged — still `PATCH /users/first-login-completed`. Per-permission grant/deny results are stored client-side in `localStorage` (`perm_location`, `perm_notifications`, `perm_files`), matching the design spec; no new DB columns added. |
+| **In-app docs updated** | `about.tsx` changelog and `whats-new-modal.tsx` both updated to reflect v4.5.0. |
 
 ---
 

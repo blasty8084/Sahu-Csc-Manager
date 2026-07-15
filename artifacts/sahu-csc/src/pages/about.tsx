@@ -14,6 +14,17 @@ const APP_VERSION = __APP_VERSION__;
 // ── Changelog ────────────────────────────────────────────────────────────────
 const CHANGELOG = [
   {
+    version: "v4.5.0",
+    title: "Permission Card Redesign — File Manager Access & Continue Fix",
+    date: "2026-07-15",
+    accent: "#4f46e5",
+    changes: [
+      "The first-login permissions card was redesigned as a clean two-step modal — each permission now shows live status (Requesting… → Allowed/Denied) as it's requested",
+      "Added a new File Manager permission step alongside Location and Notifications — opens the native photo/file picker so receipt uploads and exports have a clear, visible consent step",
+      "Fixed a bug where the Continue button could stay stuck and unclickable if a permission prompt was blocked or never responded — every permission request now safely times out after 10 seconds so onboarding always completes",
+    ],
+  },
+  {
     version: "v4.4.0",
     title: "First-Login Permissions, 2FA & Single-Device Enforcement",
     date: "2026-07-15",
@@ -456,7 +467,7 @@ const SECURITY = [
   "Encryption key persisted in settings table (override via ENCRYPTION_KEY secret)",
   "Optional two-factor authentication — TOTP authenticator app or email OTP, with encrypted secrets and one-time backup codes",
   "New-device login triggers a 2FA/verification challenge; only one device session stays active per account at a time",
-  "One-time first-login permission walkthrough (notifications + file access) for every new user",
+  "One-time first-login permission walkthrough (location, notifications, and file manager access) for every new user",
   "Dedicated security event log (security_logs) records failed logins, lockouts, and 2FA challenges separately from the general audit trail",
 ];
 
@@ -561,7 +572,7 @@ export default function About() {
             </div>
             <div className="hidden sm:block text-right flex-shrink-0">
               <p className="text-white/40 text-[10px]">Last updated</p>
-              <p className="text-white/60 text-xs font-semibold">14 July 2026 · v4</p>
+              <p className="text-white/60 text-xs font-semibold">15 July 2026 · v4</p>
             </div>
           </div>
         </div>
@@ -814,7 +825,7 @@ export default function About() {
         {/* ── Footer ──────────────────────────────────────────────────────── */}
         <div className="text-center py-3 space-y-1 border-t">
           <p className="text-xs text-muted-foreground font-medium">SAHU CSC Management Platform v{APP_VERSION}</p>
-          <p className="text-[10px] text-muted-foreground/50">Built for Odisha Common Service Centers · © 2026 · Updated 13 July 2026</p>
+          <p className="text-[10px] text-muted-foreground/50">Built for Odisha Common Service Centers · © 2026 · Updated 15 July 2026</p>
         </div>
 
       </div>
