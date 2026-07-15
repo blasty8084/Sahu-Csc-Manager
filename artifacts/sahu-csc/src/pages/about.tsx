@@ -14,6 +14,17 @@ const APP_VERSION = __APP_VERSION__;
 // ── Changelog ────────────────────────────────────────────────────────────────
 const CHANGELOG = [
   {
+    version: "v4.5.1",
+    title: "File Manager Permission — Real Granted/Denied Signal",
+    date: "2026-07-15",
+    accent: "#d97706",
+    changes: [
+      "File Manager permission now behaves like Location and Notifications — picking a file counts as Allowed, cancelling the picker counts as Denied, instead of always showing as granted",
+      "Uses the browser's File System Access API on Chrome/Edge/Opera to detect a real cancel; Safari/Firefox fall back to the previous any-interaction-counts-as-granted behavior since those browsers give no cancel signal",
+      "10-second safety timeout still applies so the step can never leave Continue stuck",
+    ],
+  },
+  {
     version: "v4.5.0",
     title: "Permission Card Redesign — File Manager Access & Continue Fix",
     date: "2026-07-15",

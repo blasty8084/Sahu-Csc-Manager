@@ -56,6 +56,14 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 
 ## 2. Version History
 
+### v4.5.1 — File Manager Permission: Real Granted/Denied Signal (2026-07-15)
+
+Follow-up fix — File Manager permission no longer always resolves to "granted". No API contract changes.
+
+- Chrome/Edge/Opera: `requestFileManager()` now uses `showOpenFilePicker()` — a chosen file resolves "granted", a cancelled/dismissed picker throws `AbortError` → mapped to "denied"
+- Safari/Firefox/other browsers without the File System Access API: unchanged hidden `<input type="file">` fallback, any interaction still counts as granted (no reliable cancel event exists there)
+- 10-second safety-net timeout unchanged on both paths
+
 ### v4.5.0 — Permission Card Redesign: File Manager Access & Continue Fix (2026-07-15)
 
 Redesigned the first-login permission flow and fixed a real bug in it. No API contract changes.

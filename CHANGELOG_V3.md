@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v3 / v4
-**Current version: 4.5.0 — July 15, 2026**
+**Current version: 4.5.1 — July 15, 2026**
 
 > Detailed record of every feature, change, and upgrade from v3.0.0 onward.  
 > For v2.x history, see `docs/archive/changelogV2.md`.  
@@ -13,6 +13,7 @@
 
 ## Table of Contents
 
+0. [v4.5.1 — File Manager Permission: Real Granted/Denied Signal (July 15, 2026)](#0-v451--file-manager-permission-real-granteddenied-signal-july-15-2026)
 0. [v4.5.0 — Permission Card Redesign: File Manager Access & Continue Fix (July 15, 2026)](#0-v450--permission-card-redesign-file-manager-access--continue-fix-july-15-2026)
 0. [v4.4.0 — First-Login Permissions, 2FA & Single-Device Enforcement (July 15, 2026)](#0-v440--first-login-permissions-2fa--single-device-enforcement-july-15-2026)
 0. [v4.3.2 — Optimization Audit & Measurements (July 14, 2026)](#0-v432--optimization-audit--measurements-july-14-2026)
@@ -29,6 +30,19 @@
 0. [v3.5.10 — Navigation Performance — Instant Page Switching (July 12, 2026)](#0-v3510--navigation-performance--instant-page-switching-july-12-2026)
 0. [v3.5.9 — Redis Cache Live, i18n Fixes & Build Hardening (July 12, 2026)](#0-v359--redis-cache-live-i18n-fixes--build-hardening-july-12-2026)
 0. [v3.5.8 — Reports & Receipt Export Page Modularization (July 12, 2026)](#0-v358--reports--receipt-export-page-modularization-july-12-2026)
+
+---
+
+## 0. v4.5.1 — File Manager Permission: Real Granted/Denied Signal (July 15, 2026)
+
+Follow-up to v4.5.0 — File Manager permission previously always resolved to "granted" regardless of user action. Now gives a real granted/denied outcome, matching Location and Notifications. No API contract changes.
+
+| Change | Description |
+|--------|-------------|
+| **File System Access API path (real signal)** | On browsers that support it (Chrome/Edge/Opera, desktop + Android), `requestFileManager()` in `usePermissions.ts` now calls `window.showOpenFilePicker()`. Picking a file resolves the promise → "granted". Cancelling/dismissing the picker throws a native `AbortError`, which is caught and mapped to "denied" — a genuine cancel signal the old hidden-input approach could never get. |
+| **Fallback path unchanged (no real signal available)** | Safari, Firefox, and other browsers without the File System Access API keep the previous hidden `<input type="file">` approach — `change` and `cancel` events both settle as "granted", since those browsers don't fire a reliable cancel event that would let us tell a real denial from a dismissed picker. |
+| **Safety-net timeout unchanged** | Both paths still race against the existing 10-second `SAFETY_TIMEOUT_MS` fallback (resolves "denied" on the FSA path, "granted" on the legacy path) so the Continue button can never get stuck regardless of browser behavior. |
+| **In-app docs updated** | `about.tsx` changelog entry added for v4.5.1; `PermissionCard.tsx` header comment updated to describe the new per-browser behavior. |
 
 ---
 
