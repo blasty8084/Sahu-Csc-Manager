@@ -7,17 +7,12 @@ import { db, usersTable, emailOtpsTable } from "@workspace/db";
 import { eq, and, isNull, desc } from "drizzle-orm";
 import { requireAuth, comparePassword, auditLog, securityLog, getClientIp, parseDevice } from "../../lib/auth";
 import { encryptField, decryptField } from "../../lib/encryption";
-import { hashOtp, generateNumericOtp, maskEmail } from "./helpers";
+import { hashOtp } from "./helpers";
 import { finalizeLogin } from "./login-helpers";
 import { notify2faEnabled, notify2faDisabled } from "../../services/notificationTemplates";
 import { asyncHandler } from "../../lib/async-handler";
-import { isSmtpConfigured } from "../../lib/mailer";
-import { enqueueEmail, buildOtpMailOptions } from "../../lib/queue-client";
 
 const router: IRouter = Router();
-
-// TOTP window = 120 seconds (code valid for 2 minutes, refreshes every 2 min)
-authenticator.options = { step: 120 };
 
 const BACKUP_CODE_COUNT = 8;
 
@@ -224,65 +219,29 @@ router.post("/auth/2fa/verify-otp", asyncHandler(async (req, res) => {
   res.json(result);
 }));
 
-// ─── POST /auth/2fa/disable — BLOCKED: 2FA is mandatory ──────────────────────
-router.post("/auth/2fa/disable", requireAuth, asyncHandler(async (_req, res) => {
-  res.status(403).json({ error: "Two-factor authentication is mandatory and cannot be disabled." });
-}));
-
-// ─── POST /auth/2fa/send-login-otp ────────────────────────────────────────────
-// Sends an OTP email to the pending-login user so they can switch from TOTP
-// to email OTP mid-challenge (e.g. "I don't have my authenticator app handy").
-router.post("/auth/2fa/send-login-otp", asyncHandler(async (req, res) => {
-  if (!req.session.pendingUserId) {
-    res.status(401).json({ error: "No pending login session." });
-    return;
-  }
-  if (!isSmtpConfigured()) {
-    res.status(503).json({ error: "Email service not configured. Contact administrator." });
-    return;
-  }
-
-  const userId = req.session.pendingUserId;
+// ─── POST /auth/2fa/disable ─────────────────────────────────────────────────────
+router.post("/auth/2fa/disable", requireAuth, asyncHandler(async (req, res) => {
+  const { currentPassword } = req.body as { currentPassword?: string };
+  const userId = req.session.userId!;
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
-  if (!user) { res.status(401).json({ error: "Session expired. Please log in again." }); return; }
+  if (!user) { res.status(404).json({ error: "User not found" }); return; }
+  if (!currentPassword || !(await comparePassword(currentPassword, user.passwordHash))) {
+    res.status(400).json({ error: "Current password is incorrect" });
+    return;
+  }
 
-  const OTP_EXPIRY_MS = 10 * 60 * 1000;
-  const otp = generateNumericOtp();
-  const expiresAt = new Date(Date.now() + OTP_EXPIRY_MS);
-  await db.insert(emailOtpsTable).values({
-    email: user.email,
-    purpose: "2fa_login",
-    otpHash: hashOtp(otp),
-    expiresAt,
-    ipAddress: getClientIp(req),
-  });
-  await enqueueEmail(buildOtpMailOptions(user.email, otp, "2fa_login", expiresAt));
-  await auditLog(userId, "2fa.login_otp_sent", "OTP sent (user switched from TOTP to email OTP)", getClientIp(req));
-  res.json({ sent: true, maskedEmail: maskEmail(user.email) });
-}));
+  await db.update(usersTable).set({
+    twoFaEnabled: false,
+    twoFaMethod: "otp",
+    totpSecret: null,
+    twoFaVerifiedAt: null,
+    backupCodes: null,
+  }).where(eq(usersTable.id, userId));
 
-// ─── GET /auth/2fa/current-totp-code — returns live TOTP code ─────────────────
-// Works in two contexts:
-//   • Setup mode  (req.session.userId set)   — user is authenticated, setting up TOTP
-//   • Login mode  (req.session.pendingUserId) — user passed credentials, awaiting TOTP
-// Returns the current code + seconds remaining until it rotates.
-router.get("/auth/2fa/current-totp-code", asyncHandler(async (req, res) => {
-  const userId = req.session.userId ?? req.session.pendingUserId;
-  if (!userId) { res.status(401).json({ error: "Not authenticated" }); return; }
-
-  const [user] = await db
-    .select({ totpSecret: usersTable.totpSecret })
-    .from(usersTable)
-    .where(eq(usersTable.id, userId));
-
-  if (!user?.totpSecret) { res.status(404).json({ error: "No TOTP configured" }); return; }
-
-  const secret = await decryptField(user.totpSecret);
-  const code = authenticator.generate(secret!);
-  const step = (authenticator.options as any).step as number ?? 120;
-  const timeRemaining = step - (Math.floor(Date.now() / 1000) % step);
-
-  res.json({ code, timeRemaining, step });
+  await auditLog(userId, "2fa.disabled", "2FA disabled", getClientIp(req));
+  await securityLog(userId, "2fa.disabled", true, getClientIp(req), null, null);
+  await notify2faDisabled(userId);
+  res.json({ message: "2FA disabled" });
 }));
 
 // ─── GET /auth/2fa/status ───────────────────────────────────────────────────────

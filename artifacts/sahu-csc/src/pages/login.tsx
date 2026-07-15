@@ -271,9 +271,9 @@ export default function Login() {
     toast.warning("Lockout lifted", "You can try logging in again.");
   }, [toast]);
 
-  const onVerifyTwoFactor = useCallback(async (data: { code: string; trustDevice: boolean; isBackupCode: boolean; method: "otp" | "totp" }) => {
+  const onVerifyTwoFactor = useCallback(async (data: { code: string; trustDevice: boolean; isBackupCode: boolean }) => {
     if (!challenge) return;
-    await verifyTwoFactor(data.method, {
+    await verifyTwoFactor(challenge.method, {
       code: data.code,
       trustDevice: data.trustDevice,
       isBackupCode: data.isBackupCode,
