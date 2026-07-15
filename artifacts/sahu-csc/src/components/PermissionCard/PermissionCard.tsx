@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Bell, Loader2, MapPin, ShieldCheck, X } from "lucide-react";
+import { Bell, FolderOpen, Loader2, MapPin, ShieldCheck, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetMeQueryKey } from "@workspace/api-client-react";
@@ -8,14 +8,20 @@ import { PermissionRow } from "./PermissionRow";
 import { usePermissions } from "./usePermissions";
 
 // ─── Permission Card — modal overlay shown once after first successful login ─
-// Step 1: "Permissions Required" intro — Location + Notifications rows, each
-//         with its own "Allow" button, plus Continue / Skip for now / X close.
+// Step 1: "Permissions Required" intro — Location + Notifications + File
+//         Manager rows, each with its own "Allow" button, plus Continue /
+//         Skip for now / X close.
 // Step 2: "Setting up Permissions" — requests fire one at a time (never
 //         simultaneously); rows update live (Requesting… → Allowed/Denied).
-// Continue is disabled until both permissions have been attempted (granted OR
-// denied both count). Skip / X still marks first_login_completed = true so
-// the card never reappears. iOS Safari has no Notification API, so that step
-// is skipped silently and treated as already satisfied.
+// Continue is disabled until every permission has been attempted (granted,
+// denied, or skipped all count — see ATTEMPTED below and the safety-net
+// timeouts in usePermissions, which guarantee no request can hang forever
+// and leave Continue stuck). Skip / X still marks first_login_completed =
+// true so the card never reappears. iOS Safari has no Notification API, so
+// that step is skipped silently and treated as already satisfied. File
+// Manager has no browser permission API at all — opening the native file
+// picker is itself the permission surface, and any interaction with it
+// (pick or cancel) counts as granted.
 
 async function apiPatch(path: string) {
   const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
@@ -39,13 +45,22 @@ const ATTEMPTED: ReadonlyArray<string> = ["granted", "denied", "skipped"];
 export function PermissionCard() {
   const [step, setStep] = useState<1 | 2>(1);
   const [isFinishing, setIsFinishing] = useState(false);
-  const { locationStatus, notifStatus, requestLocation, requestNotifications } = usePermissions();
+  const {
+    locationStatus,
+    notifStatus,
+    fileStatus,
+    requestLocation,
+    requestNotifications,
+    requestFileManager,
+  } = usePermissions();
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const skipNotifications = isIOSSafari();
   const canContinue =
-    ATTEMPTED.includes(locationStatus) && (skipNotifications || ATTEMPTED.includes(notifStatus));
+    ATTEMPTED.includes(locationStatus) &&
+    (skipNotifications || ATTEMPTED.includes(notifStatus)) &&
+    ATTEMPTED.includes(fileStatus);
 
   const finish = async () => {
     setIsFinishing(true);
@@ -72,6 +87,7 @@ export function PermissionCard() {
     if (!skipNotifications) {
       await requestNotifications();
     }
+    await requestFileManager();
   };
 
   if (!user) return null;
@@ -130,7 +146,7 @@ export function PermissionCard() {
             description="Needed to check nearby services and availability."
             status={locationStatus}
             onAllow={requestLocation}
-            showDivider={!skipNotifications}
+            showDivider
           />
           {!skipNotifications && (
             <PermissionRow
@@ -141,8 +157,18 @@ export function PermissionCard() {
               description="Get important updates and transaction alerts."
               status={notifStatus}
               onAllow={requestNotifications}
+              showDivider
             />
           )}
+          <PermissionRow
+            icon={FolderOpen}
+            iconBg="#FEF3C7"
+            iconColor="#D97706"
+            title="File Manager"
+            description="Access photos and files for receipts, uploads, and exports."
+            status={fileStatus}
+            onAllow={requestFileManager}
+          />
         </div>
 
         <p className="flex items-center justify-center gap-1.5 text-[11px] text-gray-400 mt-4">
