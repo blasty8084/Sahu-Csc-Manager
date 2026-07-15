@@ -145,3 +145,61 @@ export async function notifyProfileUpdated(userId: number) {
     link: `/profile`,
   });
 }
+
+// ─── 2FA / device-security notifications ──────────────────────────────────────
+
+export async function notify2faEnabled(userId: number, method: "otp" | "totp") {
+  await createNotification({
+    userId,
+    title: "Two-Factor Authentication Enabled",
+    message: `2FA via ${method === "totp" ? "Authenticator App" : "Email OTP"} was enabled on your account.`,
+    type: "security",
+    priority: "HIGH",
+    link: `/profile`,
+    meta: { method },
+  });
+}
+
+export async function notify2faDisabled(userId: number) {
+  await createNotification({
+    userId,
+    title: "Two-Factor Authentication Disabled",
+    message: "2FA was turned off for your account. If this was not you, contact admin immediately.",
+    type: "security",
+    priority: "CRITICAL",
+    link: `/profile`,
+  });
+}
+
+export async function notifyNewDeviceLogin(userId: number, ip: string, device: string) {
+  await createNotification({
+    userId,
+    title: "New Device Login",
+    message: `Your account was verified and signed in from a new device: ${device} (${ip}).`,
+    type: "security",
+    priority: "HIGH",
+    meta: { ip, device },
+  });
+}
+
+export async function notifyDeviceTrusted(userId: number, device: string) {
+  await createNotification({
+    userId,
+    title: "Device Trusted",
+    message: `${device} was marked as trusted and will skip verification for 30 days.`,
+    type: "security",
+    priority: "MEDIUM",
+    meta: { device },
+  });
+}
+
+export async function notifyOtherSessionsSignedOut(userId: number, device: string) {
+  await createNotification({
+    userId,
+    title: "Signed Out of Other Devices",
+    message: `Logging in from ${device} signed you out everywhere else, since only one device can be active at a time.`,
+    type: "security",
+    priority: "MEDIUM",
+    meta: { device },
+  });
+}

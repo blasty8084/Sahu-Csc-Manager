@@ -1,15 +1,21 @@
 import { createTransporter, esc, getFromEmail, buildV2Html } from "../transport";
 
+export type OtpPurpose = "registration" | "password_reset" | "2fa_login";
+
 function buildOtpText(
   otp: string,
-  purpose: "registration" | "password_reset",
+  purpose: OtpPurpose,
   expiresAt: Date
 ): string {
   const purposeLabel =
-    purpose === "registration" ? "Email Verification" : "Password Reset";
+    purpose === "registration" ? "Email Verification"
+      : purpose === "2fa_login" ? "Login Verification Code"
+      : "Password Reset";
   const purposeDesc =
     purpose === "registration"
       ? "You requested to create a SAHU CSC account. Use the OTP below to verify your email address."
+      : purpose === "2fa_login"
+      ? "Someone is trying to sign in to your SAHU CSC account. Use the code below to complete the login."
       : "You requested to reset your SAHU CSC password. Use the OTP below to continue.";
   const expiryTime = expiresAt.toLocaleTimeString("en-IN", {
     hour: "2-digit",
@@ -43,25 +49,30 @@ function buildOtpText(
 
 function buildOtpHtml(
   otp: string,
-  purpose: "registration" | "password_reset",
+  purpose: OtpPurpose,
   expiresAt: Date
 ): string {
   const isReset = purpose === "password_reset";
+  const is2fa = purpose === "2fa_login";
 
   // V2 accent colours
-  const accentColor = isReset ? "#f59e0b" : "#10b981";
-  const accentText  = isReset ? "#fbbf24" : "#34d399";
-  const accentDark  = isReset ? "#d97706" : "#059669";
-  const accentBorder = isReset ? "rgba(245,158,11,0.5)" : "rgba(16,185,129,0.5)";
+  const accentColor = isReset ? "#f59e0b" : is2fa ? "#3b82f6" : "#10b981";
+  const accentText  = isReset ? "#fbbf24" : is2fa ? "#60a5fa" : "#34d399";
+  const accentDark  = isReset ? "#d97706" : is2fa ? "#2563eb" : "#059669";
+  const accentBorder = isReset ? "rgba(245,158,11,0.5)" : is2fa ? "rgba(59,130,246,0.5)" : "rgba(16,185,129,0.5)";
 
-  const icon     = isReset ? "&#128273;" : "&#9989;";
-  const subtitle = isReset ? "Password Reset" : "Email Verification";
-  const heading  = isReset ? "Reset Your Password" : "Verify Your Email";
+  const icon     = isReset ? "&#128273;" : is2fa ? "&#128274;" : "&#9989;";
+  const subtitle = isReset ? "Password Reset" : is2fa ? "Login Verification" : "Email Verification";
+  const heading  = isReset ? "Reset Your Password" : is2fa ? "Verify Your Login" : "Verify Your Email";
   const desc     = isReset
     ? "Use the code below to reset your password. It expires in <strong style=\"color:#ffffff;\">10 minutes</strong> and can only be used once."
+    : is2fa
+    ? "Enter the code below to complete your sign-in. It expires in <strong style=\"color:#ffffff;\">10 minutes</strong>."
     : "Enter the code below in the SAHU CSC app to verify your email. It expires in <strong style=\"color:#ffffff;\">10 minutes</strong>.";
   const secNote  = isReset
     ? "Didn't request this? Ignore this email — your password stays unchanged."
+    : is2fa
+    ? "If you did not attempt to log in, change your password immediately and contact your administrator."
     : "Never share this code. Our team will never ask for it.";
 
   const expiryTime = expiresAt.toLocaleTimeString("en-IN", {
@@ -144,7 +155,7 @@ function buildOtpHtml(
 export function buildOtpMailOptions(
   to: string,
   otp: string,
-  purpose: "registration" | "password_reset",
+  purpose: OtpPurpose,
   expiresAt: Date,
 ): { to: string; from: string; subject: string; html: string; text: string } {
   const fromEmail = getFromEmail();
@@ -152,6 +163,7 @@ export function buildOtpMailOptions(
   const subjects: Record<string, string> = {
     registration: "SAHU CSC — Your Email Verification Code",
     password_reset: "SAHU CSC — Your Password Reset Code",
+    "2fa_login": "SAHU CSC — Your Login Verification Code",
   };
 
   return {
@@ -166,7 +178,7 @@ export function buildOtpMailOptions(
 export async function sendOtpEmail(
   to: string,
   otp: string,
-  purpose: "registration" | "password_reset",
+  purpose: OtpPurpose,
   expiresAt: Date
 ): Promise<void> {
   const opts = buildOtpMailOptions(to, otp, purpose, expiresAt);

@@ -8,6 +8,7 @@ import {
   clearUserSession,
   type UserSession,
 } from "@/lib/offline-db";
+import { getDeviceFingerprint } from "@/lib/device-fingerprint";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   getGetDashboardQueryOptions,
@@ -25,11 +26,27 @@ export interface LoginData extends LoginInput {
 
 export type LoadingPhase = "loading" | "slow" | "timeout";
 
+// Returned by `login()` when the credentials are correct but a 2FA/device
+// challenge must be completed before a session is issued.
+export interface TwoFaChallenge {
+  requires2fa: true;
+  method: "otp" | "totp";
+  isNewDevice: boolean;
+  maskedEmail?: string;
+}
+
+export interface TwoFaVerifyInput {
+  code: string;
+  trustDevice?: boolean;
+  isBackupCode?: boolean;
+}
+
 interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
   loadingPhase: LoadingPhase;
-  login: (data: LoginData) => Promise<void>;
+  login: (data: LoginData) => Promise<TwoFaChallenge | void>;
+  verifyTwoFactor: (method: "otp" | "totp", data: TwoFaVerifyInput) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -94,30 +111,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useLogout();
 
-  const handleLogin = async (data: LoginData) => {
-    const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
-    const response = await fetch(`${base}/api/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) {
-      let errBody: any = {};
-      try { errBody = await response.json(); } catch { /* ignore */ }
-      const err: any = new Error(errBody.error ?? "Login failed");
-      err.locked = errBody.locked;
-      err.lockedUntil = errBody.lockedUntil;
-      err.attemptsLeft = errBody.attemptsLeft;
-      err.rejected = errBody.rejected;
-      err.rejectionReason = errBody.rejectionReason ?? null;
-      err.pending = errBody.pending;
-      throw err;
-    }
-    // Login response already contains full user data — set it directly in
-    // the cache. This avoids a second /auth/me round-trip and bypasses any
-    // Replit-proxy cookie-forwarding timing issues.
-    const userData: AuthUser = await response.json();
+  const applyLoggedInUser = (userData: AuthUser) => {
+    // Login/2FA-verify responses already contain full user data — set it
+    // directly in the cache. This avoids a second /auth/me round-trip and
+    // bypasses any Replit-proxy cookie-forwarding timing issues.
     queryClient.setQueryData(["auth/me"], userData);
     void queryClient.prefetchQuery(getGetDashboardQueryOptions());
     void queryClient.prefetchQuery(getGetBalanceQueryOptions());
@@ -126,6 +123,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void queryClient.prefetchQuery(getGetProfileQueryOptions());
     void queryClient.prefetchQuery(getListServicesQueryOptions());
     void queryClient.prefetchQuery(getGetPreferencesQueryOptions());
+  };
+
+  const apiBase = () => import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+
+  const handleLogin = async (data: LoginData): Promise<TwoFaChallenge | void> => {
+    const deviceFingerprint = await getDeviceFingerprint();
+    const response = await fetch(`${apiBase()}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ ...data, deviceFingerprint }),
+    });
+    let body: any = {};
+    try { body = await response.json(); } catch { /* ignore */ }
+    if (!response.ok) {
+      const err: any = new Error(body.error ?? "Login failed");
+      err.locked = body.locked;
+      err.lockedUntil = body.lockedUntil;
+      err.attemptsLeft = body.attemptsLeft;
+      err.rejected = body.rejected;
+      err.rejectionReason = body.rejectionReason ?? null;
+      err.pending = body.pending;
+      throw err;
+    }
+    if (body.requires2fa) {
+      return {
+        requires2fa: true,
+        method: body.method,
+        isNewDevice: !!body.isNewDevice,
+        maskedEmail: body.maskedEmail,
+      };
+    }
+    applyLoggedInUser(body as AuthUser);
+  };
+
+  const verifyTwoFactor = async (method: "otp" | "totp", data: TwoFaVerifyInput) => {
+    const path = method === "totp" ? "/api/auth/2fa/verify-totp" : "/api/auth/2fa/verify-otp";
+    const response = await fetch(`${apiBase()}${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(data),
+    });
+    let body: any = {};
+    try { body = await response.json(); } catch { /* ignore */ }
+    if (!response.ok) {
+      throw new Error(body.error ?? "Verification failed");
+    }
+    applyLoggedInUser(body as AuthUser);
   };
 
   const handleLogout = async () => {
@@ -142,7 +188,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isLoading = liveLoading || !offlineChecked;
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, loadingPhase, login: handleLogin, logout: handleLogout }}>
+    <AuthContext.Provider value={{ user, isLoading, loadingPhase, login: handleLogin, verifyTwoFactor, logout: handleLogout }}>
       {children}
     </AuthContext.Provider>
   );

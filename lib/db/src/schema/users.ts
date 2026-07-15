@@ -26,6 +26,17 @@ export const usersTable = pgTable("users", {
   // Maintained running total of ledger credits minus debits. Updated atomically
   // on every ledger create/update/delete — avoids a full SUM() scan on writes.
   ledgerBalance: numeric("ledger_balance", { precision: 15, scale: 2 }).notNull().default("0"),
+  // First-time login permission overlay (notifications + file access) — shown
+  // once after first successful login, then never again.
+  firstLoginCompleted: boolean("first_login_completed").notNull().default(false),
+  // 2FA (OTP or TOTP). totpSecret is stored AES-256-GCM encrypted via
+  // lib/encryption.ts (encryptField/decryptField), never in plaintext.
+  twoFaEnabled: boolean("two_fa_enabled").notNull().default(false),
+  twoFaMethod: text("two_fa_method").notNull().default("otp"), // 'otp' | 'totp'
+  totpSecret: text("totp_secret"),
+  twoFaVerifiedAt: timestamp("two_fa_verified_at", { withTimezone: true }),
+  // JSON-stringified array of bcrypt-hashed one-time backup codes.
+  backupCodes: text("backup_codes"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 }, (t) => [

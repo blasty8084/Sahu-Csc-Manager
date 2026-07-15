@@ -14,3 +14,5 @@ export * from "./user_sessions";
 export * from "./email_otps";
 export * from "./udhari";
 export * from "./broadcast_logs";
+export * from "./device_sessions";
+export * from "./security_logs";

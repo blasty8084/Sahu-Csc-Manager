@@ -1,21 +1,25 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, userSessionsTable } from "@workspace/db";
-import { eq, or } from "drizzle-orm";
+import { db, usersTable, deviceSessionsTable, emailOtpsTable } from "@workspace/db";
+import { eq, or, and } from "drizzle-orm";
 import { LoginBody } from "@workspace/api-zod";
 import { comparePassword, auditLog, getClientIp, parseDevice } from "../../lib/auth";
 import {
-  notifyLoginSuccess,
   notifyLoginFailed,
   notifyAccountLocked,
 } from "../../services/notificationTemplates";
-import { randomUUID } from "crypto";
-import { fmtUser } from "./helpers";
+import { isSmtpConfigured } from "../../lib/mailer";
+import { enqueueEmail, buildOtpMailOptions } from "../../lib/queue-client";
+import { logger } from "../../lib/logger";
+import { generateNumericOtp, hashOtp, maskEmail } from "./helpers";
+import { finalizeLogin } from "./login-helpers";
 import { asyncHandler } from "../../lib/async-handler";
 
 const router: IRouter = Router();
 
 const MAX_ATTEMPTS = 3;
 const LOCK_MINUTES = 5;
+const OTP_EXPIRY_MS = 10 * 60 * 1000;
+const TRUST_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
 
 // ─── POST /auth/login ─────────────────────────────────────────────────────────
 router.post("/auth/login", asyncHandler(async (req, res) => {
@@ -26,6 +30,13 @@ router.post("/auth/login", asyncHandler(async (req, res) => {
   }
   const { identifier, password } = parsed.data;
   const rememberMe = req.body.rememberMe === true || req.body.rememberMe === "true";
+  // Client-computed device fingerprint (SHA-256 of UA+lang+screen+timezone) —
+  // optional so older clients / disabled JS crypto still degrade gracefully
+  // to "no device-based challenge, just the user's own 2FA setting".
+  const deviceFingerprint: string | null =
+    typeof req.body.deviceFingerprint === "string" && req.body.deviceFingerprint.length > 0
+      ? req.body.deviceFingerprint.slice(0, 128)
+      : null;
 
   const [user] = await db
     .select()
@@ -120,36 +131,69 @@ router.post("/auth/login", asyncHandler(async (req, res) => {
     return;
   }
 
-  const sessionId = randomUUID();
-  const sessionDuration = rememberMe ? 30 * 24 * 60 * 60 * 1000 : 8 * 60 * 60 * 1000;
-  const expiresAt = new Date(Date.now() + sessionDuration);
+  // ── Device recognition (single-device enforcement) + 2FA gating ───────────
+  let knownDevice: typeof deviceSessionsTable.$inferSelect | undefined;
+  if (deviceFingerprint) {
+    [knownDevice] = await db
+      .select()
+      .from(deviceSessionsTable)
+      .where(and(eq(deviceSessionsTable.userId, user.id), eq(deviceSessionsTable.deviceFingerprint, deviceFingerprint)));
+  }
 
-  await db
-    .update(usersTable)
-    .set({ failedLoginAttempts: 0, status: "ACTIVE", lockedUntil: null, activeSessionToken: sessionId })
-    .where(eq(usersTable.id, user.id));
+  const isNewDevice = deviceFingerprint != null && !knownDevice;
+  const trustedSkip = !!knownDevice?.isTrusted && !!knownDevice.trustedUntil && new Date() < knownDevice.trustedUntil;
+  const needsUserTwoFa = user.twoFaEnabled && !trustedSkip;
+  const needsChallenge = isNewDevice || needsUserTwoFa;
 
-  await db.insert(userSessionsTable).values({
-    userId: user.id,
-    sessionId,
+  if (needsChallenge) {
+    const method: "otp" | "totp" = needsUserTwoFa && user.twoFaMethod === "totp" ? "totp" : "otp";
+
+    req.session.pendingUserId = user.id;
+    req.session.pendingDeviceFingerprint = deviceFingerprint;
+    req.session.pendingDeviceName = deviceInfo;
+    req.session.pendingRememberMe = rememberMe;
+    req.session.pendingMethod = method;
+    req.session.pendingIsNewDevice = isNewDevice;
+    req.session.cookie.maxAge = 10 * 60 * 1000; // pending challenge window
+
+    if (method === "otp") {
+      if (!isSmtpConfigured()) {
+        res.status(503).json({ error: "Email service not configured. Cannot send verification code. Contact administrator." });
+        return;
+      }
+      const otp = generateNumericOtp();
+      const expiresAt = new Date(Date.now() + OTP_EXPIRY_MS);
+      await db.insert(emailOtpsTable).values({ email: user.email, purpose: "2fa_login", otpHash: hashOtp(otp), expiresAt, ipAddress: clientIp });
+      try {
+        await enqueueEmail(buildOtpMailOptions(user.email, otp, "2fa_login", expiresAt));
+      } catch (err) {
+        logger.error({ err }, "Failed to enqueue 2FA login OTP email");
+        res.status(502).json({ error: "Failed to send verification code. Please try again." });
+        return;
+      }
+      await auditLog(user.id, "2fa.login_otp_sent", `Verification code sent for ${isNewDevice ? "new device" : "2FA"} login from ${deviceInfo}`, clientIp);
+      res.json({ requires2fa: true, method: "otp", maskedEmail: maskEmail(user.email), isNewDevice });
+      return;
+    }
+
+    await auditLog(user.id, "2fa.login_challenge", `TOTP challenge issued for ${isNewDevice ? "new device" : "2FA"} login from ${deviceInfo}`, clientIp);
+    res.json({ requires2fa: true, method: "totp", isNewDevice });
+    return;
+  }
+
+  const result = await finalizeLogin({
+    req,
+    user,
+    ipAddress: clientIp,
     deviceInfo,
     browser,
     os,
-    ipAddress: getClientIp(req),
     rememberMe,
-    expiresAt,
+    deviceFingerprint,
+    wasNewDevice: false,
+    trustDevice: false,
   });
-
-  req.session.userId = user.id;
-  req.session.userRole = user.role;
-  req.session.sessionToken = sessionId;
-  req.session.sessionId = sessionId;
-  req.session.cookie.maxAge = sessionDuration;
-
-  await auditLog(user.id, "login", `Logged in from ${deviceInfo}`, getClientIp(req));
-  await notifyLoginSuccess(user.id, clientIp, deviceInfo);
-
-  res.json(fmtUser(user));
+  res.json(result);
 }));
 
 export default router;

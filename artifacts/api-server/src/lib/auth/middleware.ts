@@ -11,6 +11,15 @@ declare module "express-session" {
     userRole: string;
     sessionToken: string; // v1 backward compat
     sessionId: string;    // v2 multi-device session
+    // Set between password-verification and 2FA/device-challenge completion.
+    // A session carrying only these fields is NOT authenticated — requireAuth
+    // only ever looks at `userId`.
+    pendingUserId: number;
+    pendingDeviceFingerprint: string | null;
+    pendingDeviceName: string | null;
+    pendingRememberMe: boolean;
+    pendingMethod: "otp" | "totp";
+    pendingIsNewDevice: boolean;
   }
 }
 

@@ -17,11 +17,20 @@ import {
   LoginFormContentProps,
 } from "@/components/auth/LoginForm";
 import { DesktopHeroPanel, DesktopFooterBar } from "@/components/auth/AuthHero";
+import { TwoFactorStep } from "@/components/auth/TwoFactorStep";
+import type { TwoFaChallenge } from "@/hooks/use-auth";
+
+interface TwoFaProps {
+  challenge: TwoFaChallenge | null;
+  onVerify: (data: { code: string; trustDevice: boolean; isBackupCode: boolean }) => Promise<void>;
+  onBackFromChallenge: () => void;
+}
 
 // ── Mobile layout ─────────────────────────────────────────────────────────────
-function MobileLogin(props: Omit<LoginFormContentProps, "onForgotPassword">) {
+function MobileLogin(props: Omit<LoginFormContentProps, "onForgotPassword"> & TwoFaProps) {
   const [showForgot, setShowForgot] = useState(false);
   const { t } = useTranslation();
+  const { challenge, onVerify, onBackFromChallenge } = props;
 
   return (
     <div className="h-screen flex flex-col overflow-hidden" style={{ background: "#0B1340" }}>
@@ -36,7 +45,12 @@ function MobileLogin(props: Omit<LoginFormContentProps, "onForgotPassword">) {
         </div>
 
         <AnimatePresence mode="wait">
-          {!showForgot ? (
+          {challenge ? (
+            <motion.div key="2fa-header" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="mt-2 text-center">
+              <h2 className="text-white text-base font-bold">Verification Required</h2>
+              <p className="text-white/45 text-xs mt-0.5">One more step to secure your account</p>
+            </motion.div>
+          ) : !showForgot ? (
             <motion.div key="login-header" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="mt-2 text-center">
               <h2 className="text-white text-base font-bold">{t('auth.login.title')}</h2>
               <p className="text-white/45 text-xs mt-0.5">Sign in to continue to your dashboard</p>
@@ -58,7 +72,9 @@ function MobileLogin(props: Omit<LoginFormContentProps, "onForgotPassword">) {
       >
         <div className="flex-1 overflow-y-auto px-6 pt-5 pb-6">
           <AnimatePresence mode="wait">
-            {!showForgot ? (
+            {challenge ? (
+              <TwoFactorStep key="2fa-step" challenge={challenge} onVerify={onVerify} onBack={onBackFromChallenge} />
+            ) : !showForgot ? (
               <motion.div key="login-panel" initial={{ opacity: 0, x: -24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} transition={{ duration: 0.25 }}>
                 <div className="flex flex-col items-center mb-4">
                   <h3 className="text-gray-900 font-bold text-base">Login to your account</h3>
@@ -105,9 +121,10 @@ function MobileLogin(props: Omit<LoginFormContentProps, "onForgotPassword">) {
 }
 
 // ── Desktop layout ────────────────────────────────────────────────────────────
-function DesktopLogin(props: Omit<LoginFormContentProps, "onForgotPassword">) {
+function DesktopLogin(props: Omit<LoginFormContentProps, "onForgotPassword"> & TwoFaProps) {
   const [showForgot, setShowForgot] = useState(false);
   const { t } = useTranslation();
+  const { challenge, onVerify, onBackFromChallenge } = props;
 
   return (
     <div className="h-screen overflow-hidden flex flex-col" style={{ background: "#0B1340" }}>
@@ -123,7 +140,9 @@ function DesktopLogin(props: Omit<LoginFormContentProps, "onForgotPassword">) {
             className="w-full max-w-sm bg-white rounded-3xl shadow-2xl px-7 py-6 overflow-hidden"
           >
             <AnimatePresence mode="wait">
-              {!showForgot ? (
+              {challenge ? (
+                <TwoFactorStep key="2fa-step-desktop" challenge={challenge} onVerify={onVerify} onBack={onBackFromChallenge} />
+              ) : !showForgot ? (
                 <motion.div key="desktop-login" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.22 }}>
                   <div className="flex flex-col items-center mb-4">
                     <h3 className="text-gray-900 font-bold text-lg">Login to your account</h3>
@@ -169,7 +188,7 @@ function DesktopLogin(props: Omit<LoginFormContentProps, "onForgotPassword">) {
 
 // ── Main export ───────────────────────────────────────────────────────────────
 export default function Login() {
-  const { login, user } = useAuth();
+  const { login, user, verifyTwoFactor } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [, setLocation] = useLocation();
@@ -180,6 +199,7 @@ export default function Login() {
   const [rejectedInfo, setRejectedInfo] = useState<{ reason: string | null } | null>(null);
   const [isPendingApproval, setIsPendingApproval] = useState(false);
   const [adminContact, setAdminContact] = useState<{ name: string; phone: string | null; email: string | null } | null>(null);
+  const [challenge, setChallenge] = useState<TwoFaChallenge | null>(null);
 
   useEffect(() => {
     const base = (import.meta as any).env?.BASE_URL?.replace(/\/$/, "") ?? "";
@@ -219,9 +239,13 @@ export default function Login() {
       localStorage.removeItem("savedIdentifier");
     }
     try {
-      await login({ ...values, rememberMe });
+      const result = await login({ ...values, rememberMe });
       setAttemptsLeft(null);
       setLockoutUntil(null);
+      if (result?.requires2fa) {
+        setChallenge(result);
+        return;
+      }
       toast.success("Login successful", "Welcome back to the SAHU CSC Platform.");
     } catch (err: any) {
       if (err?.locked) {
@@ -247,10 +271,26 @@ export default function Login() {
     toast.warning("Lockout lifted", "You can try logging in again.");
   }, [toast]);
 
-  const formProps: Omit<LoginFormContentProps, "onForgotPassword"> = {
+  const onVerifyTwoFactor = useCallback(async (data: { code: string; trustDevice: boolean; isBackupCode: boolean }) => {
+    if (!challenge) return;
+    await verifyTwoFactor(challenge.method, {
+      code: data.code,
+      trustDevice: data.trustDevice,
+      isBackupCode: data.isBackupCode,
+    });
+    toast.success("Login successful", "Welcome back to the SAHU CSC Platform.");
+  }, [challenge, verifyTwoFactor, toast]);
+
+  const onBackFromChallenge = useCallback(() => {
+    setChallenge(null);
+    form.reset();
+  }, [form]);
+
+  const formProps: Omit<LoginFormContentProps, "onForgotPassword"> & TwoFaProps = {
     form, onSubmit, showPassword, setShowPassword, rememberMe, setRememberMe,
     attemptsLeft, lockoutUntil, onLockoutExpired: handleLockoutExpired,
     rejectedInfo, isPendingApproval, onDismissStatus, adminContact,
+    challenge, onVerify: onVerifyTwoFactor, onBackFromChallenge,
   };
 
   return isMobile

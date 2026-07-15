@@ -30,7 +30,7 @@ import {
   Camera, Trash2, User, Lock, Palette, Globe, LayoutDashboard,
   Building2, Settings2,
   ChevronRight, Clock,
-  LogOut, ShieldCheck, ShieldAlert, Loader2, RefreshCw, Wifi,
+  LogOut, ShieldCheck, ShieldAlert, Loader2, RefreshCw, Wifi, Smartphone,
 } from "lucide-react";
 
 import type { SessionEntry } from "@/components/profile/types";
@@ -41,6 +41,8 @@ import { SessionCard } from "@/components/profile/SessionCard";
 import { RegistrationControlSection } from "@/components/profile/RegistrationControlSection";
 import { ProfileInfoForm } from "@/components/profile/ProfileInfoForm";
 import { PasswordChangeForm } from "@/components/profile/PasswordChangeForm";
+import { TwoFactorSection } from "@/components/profile/TwoFactorSection";
+import { DevicesSection } from "@/components/profile/DevicesSection";
 
 // ─── Nav sections config ──────────────────────────────────────────────────────
 
@@ -346,6 +348,14 @@ export default function Profile() {
             </div>
           )}
         </div>
+        <div>
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">Two-Factor Authentication</p>
+          <TwoFactorSection />
+        </div>
+        <div>
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">Trusted Devices</p>
+          <DevicesSection />
+        </div>
       </div>
     ),
     preferences: (
@@ -555,6 +565,14 @@ export default function Profile() {
                 </Button>
               }>
               {sessionsContent}
+            </CmdCard>
+
+            <CmdCard title="Two-Factor Authentication" icon={<ShieldCheck size={15} />}>
+              <TwoFactorSection />
+            </CmdCard>
+
+            <CmdCard title="Trusted Devices" icon={<Smartphone size={15} />}>
+              <DevicesSection />
             </CmdCard>
           </div>
 

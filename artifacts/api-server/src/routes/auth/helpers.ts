@@ -32,5 +32,8 @@ export function fmtUser(user: any) {
     bio: user.bio ?? null,
     address: user.address ?? null,
     status: user.status ?? "ACTIVE",
+    firstLoginCompleted: user.firstLoginCompleted ?? false,
+    twoFaEnabled: user.twoFaEnabled ?? false,
+    twoFaMethod: user.twoFaMethod ?? "otp",
   };
 }

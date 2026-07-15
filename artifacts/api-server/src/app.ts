@@ -169,6 +169,18 @@ const otpVerifyLimiter = rateLimit({
   message: { error: "Too many attempts, please try again later" },
 });
 
+// 2FA verification endpoints guard both account 2FA and single-device login
+// enforcement — kept stricter than the general OTP verify limiter since a
+// successful guess here grants a full session, not just a reset token.
+const twoFaVerifyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: makeRlStore("2fa-verify"),
+  message: { error: "Too many verification attempts, please try again later" },
+});
+
 // /api/geo is public and unauthenticated — cap it tightly so it cannot be
 // used as a free IP-geolocation oracle.
 const geoLimiter = rateLimit({
@@ -239,6 +251,8 @@ app.use("/api/auth/send-otp", authWriteLimiter);
 app.use("/api/auth/forgot-password", authWriteLimiter);
 app.use("/api/auth/verify-otp", otpVerifyLimiter);
 app.use("/api/auth/reset-password", otpVerifyLimiter);
+app.use("/api/auth/2fa/verify-totp", twoFaVerifyLimiter);
+app.use("/api/auth/2fa/verify-otp", twoFaVerifyLimiter);
 app.use("/api", router);
 
 // Sentry error handler must come after all routes but before any custom
