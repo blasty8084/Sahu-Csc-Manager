@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Bell, FolderOpen, Loader2, MapPin, ShieldCheck, X } from "lucide-react";
+import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetMeQueryKey } from "@workspace/api-client-react";
@@ -57,6 +58,7 @@ export function PermissionCard() {
   } = usePermissions();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
 
   const skipNotifications = isIOSSafari();
   const canContinue =
@@ -76,6 +78,7 @@ export function PermissionCard() {
         prev ? { ...prev, firstLoginCompleted: true } : prev,
       );
       setIsFinishing(false);
+      navigate("/");
     }
   };
 
