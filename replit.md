@@ -373,18 +373,23 @@ A full-stack CSC (Common Service Center) business management platform for tracki
 
 ## Workflows
 
-| Workflow | Port | Purpose | Starts with Project |
-|----------|------|---------|---------------------|
-| `API Server` | 8080 | Express API — builds then runs the bundle | ✅ Yes |
+| Workflow | Port | Purpose | Auto-start |
+|----------|------|---------|------------|
+| `API Server` | 8080 | Express API — builds then runs `dist/index.mjs` | ✅ Yes |
 | `artifacts/sahu-csc: web` | 5000 → :80 | Vite frontend dev server (SAHU CSC FV1) | ✅ Yes |
-| `Seed Database` | — | One-shot DB seeder; requires ADMIN_PASSWORD + OPERATOR_PASSWORD secrets | ❌ Manual only |
-| `Typecheck` | — | `pnpm run typecheck:libs` + per-artifact typecheck | ❌ Manual only |
-| `Build Production` | — | Full typecheck + API build + frontend build, no serve | ❌ Manual only |
-| `Worker Server` | 8081 | BullMQ background jobs — skips automatically if REDIS_URL is not set | ❌ Optional |
+| `Seed Database` | — | One-shot DB seeder; requires `ADMIN_PASSWORD` + `OPERATOR_PASSWORD` secrets | ❌ Manual |
+| `Typecheck` | — | `pnpm run typecheck:libs` + per-artifact typecheck | ❌ Manual |
+| `Build Production` | — | Full typecheck + API build + frontend build, no serve | ❌ Manual |
+| `Worker Server` | 8081 | BullMQ background jobs — skips if `REDIS_URL` not set | ❌ Optional |
+| `artifacts/api-server: API Server` | — | **No-op stub** — cannot be removed (artifact-managed); echoes a message and exits | ✅ Auto (harmless) |
+| `artifacts/mockup-sandbox: Component Preview Server` | 3000 | UI component preview sandbox | ✅ Auto (dev tool) |
 
 > Port 5000 is the main app URL (Replit proxy → :80). The API runs on **port 8080**. The Vite proxy in `vite.config.ts` forwards `/api/*` to `http://localhost:8080`.
 > After any backend code change: restart **API Server** (it rebuilds on every start).
-> `SAHU CSC` (manual) and `Production Preview` workflows were removed on 2026-07-15 — the artifact-managed `artifacts/sahu-csc: web` workflow is now the sole frontend server.
+>
+> **`artifacts/api-server: API Server` — why it exists:** Replit auto-generates this workflow for every registered artifact. It cannot be removed by the agent (`removeWorkflow` rejects it). Its `dev` command is overridden to a harmless `echo` stub so it never conflicts with the real `API Server` on port 8080. Status will show `finished` immediately — this is correct and expected.
+>
+> **Removed (2026-07-15):** `SAHU CSC` (manual PORT=5000 dev server) and `Production Preview` — `artifacts/sahu-csc: web` is now the sole frontend workflow.
 
 ### Workflow commands (current)
 

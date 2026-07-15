@@ -579,9 +579,13 @@ Registrations require admin approval. Status values: `ACTIVE` → `INACTIVE` →
 | `Typecheck` | `pnpm run typecheck:libs && pnpm -r --filter "./artifacts/**" --if-present run typecheck` | — | Full TS check (manual) |
 | `Build Production` | `pnpm run typecheck:libs && pnpm --filter @workspace/api-server run build && PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run build` | — | Production build (manual) |
 | `Worker Server` | `[ -z "$REDIS_URL" ] && exit 0; PORT=8081 pnpm --filter @workspace/worker-server run build && PORT=8081 node --enable-source-maps artifacts/worker-server/dist/index.mjs` | 8081 | BullMQ jobs — skips if `REDIS_URL` unset (optional) |
+| `artifacts/api-server: API Server` | `echo 'API is managed by the API Server workflow...'` | — | **No-op stub** — artifact-managed, cannot be removed; exits immediately (harmless) |
 | `artifacts/mockup-sandbox: Component Preview Server` | `npm run dev` | 3000 | UI component preview sandbox (dev tool) |
 
-> The API workflow builds the backend before starting it. If you change backend source, restart the **API Server** workflow — it will rebuild automatically.
+> The `API Server` workflow builds the backend before starting it. Restart it after any backend source changes — it rebuilds automatically.
+>
+> **`artifacts/api-server: API Server` — why it exists and why it stays:** Replit auto-generates this workflow for the `artifacts/api-server` artifact. It **cannot be removed** — `removeWorkflow` rejects artifact-managed workflows with "managed by an artifact and cannot be removed". Its `dev` script is overridden to a harmless `echo` so it never touches port 8080. Status always shows `finished` immediately — correct and expected behaviour.
+>
 > **Removed (2026-07-15):** `SAHU CSC` (manual PORT=5000 dev server) and `Production Preview` — replaced by `artifacts/sahu-csc: web`.
 
 ---

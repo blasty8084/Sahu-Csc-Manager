@@ -291,19 +291,23 @@ All backend source files over ~300 lines split into focused sub-modules using th
 
 ## 4. Workflows
 
-| Workflow | Port | Purpose | Starts with Project |
-|----------|------|---------|---------------------|
+| Workflow | Port | Purpose | Auto-start |
+|----------|------|---------|------------|
 | `artifacts/sahu-csc: web` | 5000 → :80 | Vite frontend dev server (SAHU CSC FV1) | ✅ Yes |
 | `API Server` | 8080 | Express API — builds then runs `dist/index.mjs` | ✅ Yes |
-| `Seed Database` | — | One-shot DB seeder; requires `ADMIN_PASSWORD` + `OPERATOR_PASSWORD` secrets | ❌ Manual only |
-| `Typecheck` | — | TypeScript check across all packages | ❌ Manual only |
-| `Build Production` | — | Full production build: typecheck + API + Vite + PWA SW | ❌ Manual only |
+| `Seed Database` | — | One-shot DB seeder; requires `ADMIN_PASSWORD` + `OPERATOR_PASSWORD` secrets | ❌ Manual |
+| `Typecheck` | — | TypeScript check across all packages | ❌ Manual |
+| `Build Production` | — | Full production build: typecheck + API + Vite + PWA SW | ❌ Manual |
 | `Worker Server` | 8081 | BullMQ background jobs — skips if `REDIS_URL` not set | ❌ Optional |
+| `artifacts/api-server: API Server` | — | **No-op stub** — artifact-managed, cannot be removed; exits immediately | ✅ Auto (harmless) |
+| `artifacts/mockup-sandbox: Component Preview Server` | 3000 | UI component preview sandbox | ✅ Auto (dev tool) |
 
 > **Port note:** Port 5000 maps to external port 80 (Replit proxy). API runs on port 8080. Vite's `vite.config.ts` proxies `/api/*` → `http://localhost:8080`.
 > After any backend code change: restart **API Server** (it rebuilds automatically on start).
 >
-> **Removed workflows (2026-07-15):** `SAHU CSC` (manual dev server) and `Production Preview` were removed — `artifacts/sahu-csc: web` is now the sole frontend workflow.
+> **`artifacts/api-server: API Server` — duplicate explained:** Replit auto-generates this for the `artifacts/api-server` artifact registration. It **cannot be removed** — `removeWorkflow` rejects artifact-managed workflows. Its `dev` command is overridden to a harmless `echo` stub so it never conflicts with the real `API Server` on port 8080. It will always show status `finished` immediately — this is correct.
+>
+> **Removed (2026-07-15):** `SAHU CSC` (manual dev server) and `Production Preview` — `artifacts/sahu-csc: web` is the sole frontend workflow.
 
 ### Workflow commands (exact)
 
