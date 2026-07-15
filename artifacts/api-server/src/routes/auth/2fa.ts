@@ -7,10 +7,12 @@ import { db, usersTable, emailOtpsTable } from "@workspace/db";
 import { eq, and, isNull, desc } from "drizzle-orm";
 import { requireAuth, comparePassword, auditLog, securityLog, getClientIp, parseDevice } from "../../lib/auth";
 import { encryptField, decryptField } from "../../lib/encryption";
-import { hashOtp } from "./helpers";
+import { hashOtp, generateNumericOtp, maskEmail } from "./helpers";
 import { finalizeLogin } from "./login-helpers";
 import { notify2faEnabled, notify2faDisabled } from "../../services/notificationTemplates";
 import { asyncHandler } from "../../lib/async-handler";
+import { isSmtpConfigured } from "../../lib/mailer";
+import { enqueueEmail, buildOtpMailOptions } from "../../lib/queue-client";
 
 const router: IRouter = Router();
 
@@ -225,6 +227,38 @@ router.post("/auth/2fa/verify-otp", asyncHandler(async (req, res) => {
 // ─── POST /auth/2fa/disable — BLOCKED: 2FA is mandatory ──────────────────────
 router.post("/auth/2fa/disable", requireAuth, asyncHandler(async (_req, res) => {
   res.status(403).json({ error: "Two-factor authentication is mandatory and cannot be disabled." });
+}));
+
+// ─── POST /auth/2fa/send-login-otp ────────────────────────────────────────────
+// Sends an OTP email to the pending-login user so they can switch from TOTP
+// to email OTP mid-challenge (e.g. "I don't have my authenticator app handy").
+router.post("/auth/2fa/send-login-otp", asyncHandler(async (req, res) => {
+  if (!req.session.pendingUserId) {
+    res.status(401).json({ error: "No pending login session." });
+    return;
+  }
+  if (!isSmtpConfigured()) {
+    res.status(503).json({ error: "Email service not configured. Contact administrator." });
+    return;
+  }
+
+  const userId = req.session.pendingUserId;
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  if (!user) { res.status(401).json({ error: "Session expired. Please log in again." }); return; }
+
+  const OTP_EXPIRY_MS = 10 * 60 * 1000;
+  const otp = generateNumericOtp();
+  const expiresAt = new Date(Date.now() + OTP_EXPIRY_MS);
+  await db.insert(emailOtpsTable).values({
+    email: user.email,
+    purpose: "2fa_login",
+    otpHash: hashOtp(otp),
+    expiresAt,
+    ipAddress: getClientIp(req),
+  });
+  await enqueueEmail(buildOtpMailOptions(user.email, otp, "2fa_login", expiresAt));
+  await auditLog(userId, "2fa.login_otp_sent", "OTP sent (user switched from TOTP to email OTP)", getClientIp(req));
+  res.json({ sent: true, maskedEmail: maskEmail(user.email) });
 }));
 
 // ─── GET /auth/2fa/current-totp-code — returns live TOTP code ─────────────────
