@@ -8,7 +8,7 @@ import { eq, and, isNull, desc } from "drizzle-orm";
 import { requireAuth, comparePassword, auditLog, securityLog, getClientIp, parseDevice } from "../../lib/auth";
 import { encryptField, decryptField } from "../../lib/encryption";
 import { hashOtp } from "./helpers";
-import { finalizeLogin } from "./login-helpers";
+import { finalizeLogin, sendLoginOtp } from "./login-helpers";
 import { notify2faEnabled, notify2faDisabled } from "../../services/notificationTemplates";
 import { asyncHandler } from "../../lib/async-handler";
 
@@ -60,6 +60,63 @@ router.post("/auth/2fa/setup-totp", requireAuth, asyncHandler(async (req, res) =
   await db.update(usersTable).set({ totpSecret: await encryptField(secret) }).where(eq(usersTable.id, userId));
 
   res.json({ secret, qrCode, manualEntryKey: secret });
+}));
+
+// ─── POST /auth/2fa/setup-totp-pending — begin TOTP enrollment mid-login ──────
+// Same as setup-totp, but usable from the post-login "New Device Detected"
+// verification screen before a full session exists: the user only has a
+// `pendingUserId` at this point (password already verified). Lets someone
+// pick "Authenticator App" on that screen and enroll for the first time
+// without a separate trip to their profile settings.
+router.post("/auth/2fa/setup-totp-pending", asyncHandler(async (req, res) => {
+  if (!req.session.pendingUserId) { res.status(401).json({ error: "Not authenticated" }); return; }
+  const userId = req.session.pendingUserId;
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  if (!user) { res.status(401).json({ error: "Session expired. Please log in again." }); return; }
+
+  const secret = authenticator.generateSecret();
+  const otpauth = authenticator.keyuri(user.email, "SAHU CSC", secret);
+  const qrCode = await QRCode.toDataURL(otpauth);
+
+  // Store the (unconfirmed) secret encrypted; verify-totp's Mode B checks
+  // `pendingTotpEnrolling` to know it should also flip twoFaEnabled/method
+  // and issue backup codes once the user proves possession.
+  await db.update(usersTable).set({ totpSecret: await encryptField(secret) }).where(eq(usersTable.id, userId));
+  req.session.pendingTotpEnrolling = true;
+  req.session.pendingMethod = "totp";
+
+  res.json({ secret, qrCode, manualEntryKey: secret });
+}));
+
+// ─── POST /auth/2fa/switch-method — pick OTP vs TOTP on the verification screen
+// Mid-login only (pendingUserId). Switching to "otp" (re)sends the email code
+// (also doubles as the "Resend" action); switching to "totp" is a no-op aside
+// from telling the client whether an authenticator is already enrolled.
+router.post("/auth/2fa/switch-method", asyncHandler(async (req, res) => {
+  if (!req.session.pendingUserId) { res.status(401).json({ error: "Not authenticated" }); return; }
+  const { method } = req.body as { method?: "otp" | "totp" };
+  if (method !== "otp" && method !== "totp") { res.status(400).json({ error: "Invalid method" }); return; }
+
+  const userId = req.session.pendingUserId;
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  if (!user) { res.status(401).json({ error: "Session expired. Please log in again." }); return; }
+
+  req.session.pendingMethod = method;
+  const deviceFingerprint = req.session.pendingDeviceFingerprint ?? null;
+
+  if (method === "otp") {
+    req.session.pendingTotpEnrolling = false;
+    try {
+      const { maskedEmail } = await sendLoginOtp(user, getClientIp(req), "Verification code re-sent (method switched to Email OTP)");
+      await securityLog(user.id, "2fa.challenge", true, getClientIp(req), deviceFingerprint, "OTP challenge (re-)issued via method switch");
+      res.json({ method: "otp", maskedEmail });
+    } catch (err: any) {
+      res.status(err?.status ?? 500).json({ error: err?.message ?? "Failed to send verification code." });
+    }
+    return;
+  }
+
+  res.json({ method: "totp", totpEnrolled: !!user.totpSecret });
 }));
 
 // ─── POST /auth/2fa/verify-totp ────────────────────────────────────────────────
@@ -117,6 +174,30 @@ router.post("/auth/2fa/verify-totp", asyncHandler(async (req, res) => {
     }
 
     await securityLog(userId, "2fa.login_verified", true, getClientIp(req), req.session.pendingDeviceFingerprint ?? null, "TOTP/backup-code verification succeeded");
+
+    // If the user chose "Authenticator App" on the verification screen and
+    // had no TOTP set up yet, this same code confirms first-time enrollment
+    // — flip on 2FA for the account and mint backup codes, same as Mode A.
+    const wasEnrolling = !!req.session.pendingTotpEnrolling;
+    let newBackupCodes: string[] | undefined;
+    if (wasEnrolling) {
+      newBackupCodes = generateBackupCodes();
+      const twoFaVerifiedAt = new Date();
+      await db.update(usersTable).set({
+        twoFaEnabled: true,
+        twoFaMethod: "totp",
+        twoFaVerifiedAt,
+        backupCodes: await hashBackupCodes(newBackupCodes),
+      }).where(eq(usersTable.id, userId));
+      // `user` was fetched before this update — reflect the new fields
+      // locally so finalizeLogin's fmtUser(user) response isn't stale.
+      user.twoFaEnabled = true;
+      user.twoFaMethod = "totp";
+      user.twoFaVerifiedAt = twoFaVerifiedAt;
+      await auditLog(userId, "2fa.enabled", "2FA enabled via TOTP (enrolled during login)", getClientIp(req));
+      await notify2faEnabled(userId, "totp");
+    }
+
     const result = await finalizeLogin({
       req,
       user,
@@ -129,7 +210,7 @@ router.post("/auth/2fa/verify-totp", asyncHandler(async (req, res) => {
       wasNewDevice: !!req.session.pendingIsNewDevice,
       trustDevice: trustDevice === true,
     });
-    res.json(result);
+    res.json(newBackupCodes ? { ...result, backupCodes: newBackupCodes } : result);
     return;
   }
 

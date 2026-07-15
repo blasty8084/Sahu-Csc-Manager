@@ -22,7 +22,7 @@ import type { TwoFaChallenge } from "@/hooks/use-auth";
 
 interface TwoFaProps {
   challenge: TwoFaChallenge | null;
-  onVerify: (data: { code: string; trustDevice: boolean; isBackupCode: boolean }) => Promise<void>;
+  onVerifySuccess: () => void;
   onBackFromChallenge: () => void;
 }
 
@@ -30,7 +30,7 @@ interface TwoFaProps {
 function MobileLogin(props: Omit<LoginFormContentProps, "onForgotPassword"> & TwoFaProps) {
   const [showForgot, setShowForgot] = useState(false);
   const { t } = useTranslation();
-  const { challenge, onVerify, onBackFromChallenge } = props;
+  const { challenge, onVerifySuccess, onBackFromChallenge } = props;
 
   return (
     <div className="h-screen flex flex-col overflow-hidden" style={{ background: "#0B1340" }}>
@@ -73,7 +73,7 @@ function MobileLogin(props: Omit<LoginFormContentProps, "onForgotPassword"> & Tw
         <div className="flex-1 overflow-y-auto px-6 pt-5 pb-6">
           <AnimatePresence mode="wait">
             {challenge ? (
-              <TwoFactorStep key="2fa-step" challenge={challenge} onVerify={onVerify} onBack={onBackFromChallenge} />
+              <TwoFactorStep key="2fa-step" challenge={challenge} onSuccess={onVerifySuccess} onBack={onBackFromChallenge} />
             ) : !showForgot ? (
               <motion.div key="login-panel" initial={{ opacity: 0, x: -24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} transition={{ duration: 0.25 }}>
                 <div className="flex flex-col items-center mb-4">
@@ -124,7 +124,7 @@ function MobileLogin(props: Omit<LoginFormContentProps, "onForgotPassword"> & Tw
 function DesktopLogin(props: Omit<LoginFormContentProps, "onForgotPassword"> & TwoFaProps) {
   const [showForgot, setShowForgot] = useState(false);
   const { t } = useTranslation();
-  const { challenge, onVerify, onBackFromChallenge } = props;
+  const { challenge, onVerifySuccess, onBackFromChallenge } = props;
 
   return (
     <div className="h-screen overflow-hidden flex flex-col" style={{ background: "#0B1340" }}>
@@ -141,7 +141,7 @@ function DesktopLogin(props: Omit<LoginFormContentProps, "onForgotPassword"> & T
           >
             <AnimatePresence mode="wait">
               {challenge ? (
-                <TwoFactorStep key="2fa-step-desktop" challenge={challenge} onVerify={onVerify} onBack={onBackFromChallenge} />
+                <TwoFactorStep key="2fa-step-desktop" challenge={challenge} onSuccess={onVerifySuccess} onBack={onBackFromChallenge} />
               ) : !showForgot ? (
                 <motion.div key="desktop-login" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.22 }}>
                   <div className="flex flex-col items-center mb-4">
@@ -188,7 +188,7 @@ function DesktopLogin(props: Omit<LoginFormContentProps, "onForgotPassword"> & T
 
 // ── Main export ───────────────────────────────────────────────────────────────
 export default function Login() {
-  const { login, user, verifyTwoFactor } = useAuth();
+  const { login, user } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [, setLocation] = useLocation();
@@ -271,15 +271,9 @@ export default function Login() {
     toast.warning("Lockout lifted", "You can try logging in again.");
   }, [toast]);
 
-  const onVerifyTwoFactor = useCallback(async (data: { code: string; trustDevice: boolean; isBackupCode: boolean }) => {
-    if (!challenge) return;
-    await verifyTwoFactor(challenge.method, {
-      code: data.code,
-      trustDevice: data.trustDevice,
-      isBackupCode: data.isBackupCode,
-    });
+  const onVerifyTwoFactor = useCallback(() => {
     toast.success("Login successful", "Welcome back to the SAHU CSC Platform.");
-  }, [challenge, verifyTwoFactor, toast]);
+  }, [toast]);
 
   const onBackFromChallenge = useCallback(() => {
     setChallenge(null);
@@ -290,7 +284,7 @@ export default function Login() {
     form, onSubmit, showPassword, setShowPassword, rememberMe, setRememberMe,
     attemptsLeft, lockoutUntil, onLockoutExpired: handleLockoutExpired,
     rejectedInfo, isPendingApproval, onDismissStatus, adminContact,
-    challenge, onVerify: onVerifyTwoFactor, onBackFromChallenge,
+    challenge, onVerifySuccess: onVerifyTwoFactor, onBackFromChallenge,
   };
 
   return isMobile

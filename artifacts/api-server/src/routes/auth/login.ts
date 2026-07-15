@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, deviceSessionsTable, emailOtpsTable } from "@workspace/db";
+import { db, usersTable, deviceSessionsTable } from "@workspace/db";
 import { eq, or, and } from "drizzle-orm";
 import { LoginBody } from "@workspace/api-zod";
 import { comparePassword, auditLog, securityLog, getClientIp, parseDevice } from "../../lib/auth";
@@ -7,18 +7,13 @@ import {
   notifyLoginFailed,
   notifyAccountLocked,
 } from "../../services/notificationTemplates";
-import { isSmtpConfigured } from "../../lib/mailer";
-import { enqueueEmail, buildOtpMailOptions } from "../../lib/queue-client";
-import { logger } from "../../lib/logger";
-import { generateNumericOtp, hashOtp, maskEmail } from "./helpers";
-import { finalizeLogin } from "./login-helpers";
+import { finalizeLogin, sendLoginOtp } from "./login-helpers";
 import { asyncHandler } from "../../lib/async-handler";
 
 const router: IRouter = Router();
 
 const MAX_ATTEMPTS = 3;
 const LOCK_MINUTES = 5;
-const OTP_EXPIRY_MS = 10 * 60 * 1000;
 const TRUST_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
 
 // ─── POST /auth/login ─────────────────────────────────────────────────────────
@@ -148,7 +143,12 @@ router.post("/auth/login", asyncHandler(async (req, res) => {
   const needsChallenge = isNewDevice || needsUserTwoFa;
 
   if (needsChallenge) {
-    const method: "otp" | "totp" = needsUserTwoFa && user.twoFaMethod === "totp" ? "totp" : "otp";
+    // The verification screen now lets the user pick their method (default
+    // Email OTP) regardless of the account's stored `twoFaMethod` preference,
+    // so we always start the challenge on "otp" and send that email; the
+    // client can switch to "Authenticator App" via /auth/2fa/switch-method.
+    const method: "otp" | "totp" = "otp";
+    const totpEnrolled = !!user.totpSecret;
 
     req.session.pendingUserId = user.id;
     req.session.pendingDeviceFingerprint = deviceFingerprint;
@@ -156,32 +156,20 @@ router.post("/auth/login", asyncHandler(async (req, res) => {
     req.session.pendingRememberMe = rememberMe;
     req.session.pendingMethod = method;
     req.session.pendingIsNewDevice = isNewDevice;
+    req.session.pendingTotpEnrolling = false;
     req.session.cookie.maxAge = 10 * 60 * 1000; // pending challenge window
 
-    if (method === "otp") {
-      if (!isSmtpConfigured()) {
-        res.status(503).json({ error: "Email service not configured. Cannot send verification code. Contact administrator." });
-        return;
-      }
-      const otp = generateNumericOtp();
-      const expiresAt = new Date(Date.now() + OTP_EXPIRY_MS);
-      await db.insert(emailOtpsTable).values({ email: user.email, purpose: "2fa_login", otpHash: hashOtp(otp), expiresAt, ipAddress: clientIp });
-      try {
-        await enqueueEmail(buildOtpMailOptions(user.email, otp, "2fa_login", expiresAt));
-      } catch (err) {
-        logger.error({ err }, "Failed to enqueue 2FA login OTP email");
-        res.status(502).json({ error: "Failed to send verification code. Please try again." });
-        return;
-      }
-      await auditLog(user.id, "2fa.login_otp_sent", `Verification code sent for ${isNewDevice ? "new device" : "2FA"} login from ${deviceInfo}`, clientIp);
+    try {
+      const { maskedEmail } = await sendLoginOtp(
+        user,
+        clientIp,
+        `Verification code sent for ${isNewDevice ? "new device" : "2FA"} login from ${deviceInfo}`
+      );
       await securityLog(user.id, isNewDevice ? "device.new_challenge" : "2fa.challenge", true, clientIp, deviceFingerprint, "OTP challenge issued");
-      res.json({ requires2fa: true, method: "otp", maskedEmail: maskEmail(user.email), isNewDevice });
-      return;
+      res.json({ requires2fa: true, method: "otp", maskedEmail, totpEnrolled, isNewDevice });
+    } catch (err: any) {
+      res.status(err?.status ?? 500).json({ error: err?.message ?? "Failed to send verification code." });
     }
-
-    await auditLog(user.id, "2fa.login_challenge", `TOTP challenge issued for ${isNewDevice ? "new device" : "2FA"} login from ${deviceInfo}`, clientIp);
-    await securityLog(user.id, isNewDevice ? "device.new_challenge" : "2fa.challenge", true, clientIp, deviceFingerprint, "TOTP challenge issued");
-    res.json({ requires2fa: true, method: "totp", isNewDevice });
     return;
   }
 

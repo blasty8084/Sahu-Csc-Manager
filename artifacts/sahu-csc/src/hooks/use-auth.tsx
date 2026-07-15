@@ -33,6 +33,10 @@ export interface TwoFaChallenge {
   method: "otp" | "totp";
   isNewDevice: boolean;
   maskedEmail?: string;
+  // Whether the account already has an authenticator app enrolled — decides
+  // whether picking "Authenticator App" on the verification screen shows the
+  // 6-digit input or a "Set up Authenticator" enrollment CTA.
+  totpEnrolled?: boolean;
 }
 
 export interface TwoFaVerifyInput {
@@ -41,12 +45,28 @@ export interface TwoFaVerifyInput {
   isBackupCode?: boolean;
 }
 
+export interface TotpSetupData {
+  secret: string;
+  qrCode: string;
+  manualEntryKey: string;
+}
+
 interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
   loadingPhase: LoadingPhase;
   login: (data: LoginData) => Promise<TwoFaChallenge | void>;
-  verifyTwoFactor: (method: "otp" | "totp", data: TwoFaVerifyInput) => Promise<void>;
+  // Resolves without applying the session yet when the response includes
+  // freshly-minted `backupCodes` (first-time TOTP enrollment mid-login) —
+  // the caller should show those to the user, then call `completeLogin`.
+  // Otherwise the session is applied immediately and this resolves to void.
+  verifyTwoFactor: (method: "otp" | "totp", data: TwoFaVerifyInput) => Promise<{ backupCodes: string[]; user: AuthUser } | void>;
+  completeLogin: (user: AuthUser) => void;
+  // Switches the pending login challenge's method. "otp" (re)sends the email
+  // code (also used as "Resend"); "totp" just reports enrollment status.
+  switchTwoFaMethod: (method: "otp" | "totp") => Promise<{ maskedEmail?: string; totpEnrolled?: boolean }>;
+  // Begins first-time TOTP enrollment mid-login (no authenticator set up yet).
+  setupTotpPending: () => Promise<TotpSetupData>;
   logout: () => Promise<void>;
 }
 
@@ -153,6 +173,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         method: body.method,
         isNewDevice: !!body.isNewDevice,
         maskedEmail: body.maskedEmail,
+        totpEnrolled: !!body.totpEnrolled,
       };
     }
     applyLoggedInUser(body as AuthUser);
@@ -185,7 +206,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!response.ok) {
       throw new Error(body.error ?? "Verification failed");
     }
+    // Present when this verify call also confirmed first-time TOTP enrollment
+    // (user picked "Authenticator App" mid-login and had none set up yet) —
+    // hold off applying the session so the caller can show the codes first.
+    if (body.backupCodes) {
+      const { backupCodes, ...userData } = body;
+      return { backupCodes: backupCodes as string[], user: userData as AuthUser };
+    }
     applyLoggedInUser(body as AuthUser);
+    return undefined;
+  };
+
+  const completeLogin = (userData: AuthUser) => applyLoggedInUser(userData);
+
+  const switchTwoFaMethod = async (method: "otp" | "totp") => {
+    const response = await fetch(`${apiBase()}/api/auth/2fa/switch-method`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ method }),
+    });
+    let body: any = {};
+    try { body = await response.json(); } catch { /* ignore */ }
+    if (!response.ok) {
+      throw new Error(body.error ?? "Failed to switch verification method");
+    }
+    return { maskedEmail: body.maskedEmail as string | undefined, totpEnrolled: !!body.totpEnrolled };
+  };
+
+  const setupTotpPending = async (): Promise<TotpSetupData> => {
+    const response = await fetch(`${apiBase()}/api/auth/2fa/setup-totp-pending`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+    });
+    let body: any = {};
+    try { body = await response.json(); } catch { /* ignore */ }
+    if (!response.ok) {
+      throw new Error(body.error ?? "Failed to start authenticator setup");
+    }
+    return body as TotpSetupData;
   };
 
   const handleLogout = async () => {
@@ -202,7 +262,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isLoading = liveLoading || !offlineChecked;
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, loadingPhase, login: handleLogin, verifyTwoFactor, logout: handleLogout }}>
+    <AuthContext.Provider value={{ user, isLoading, loadingPhase, login: handleLogin, verifyTwoFactor, completeLogin, switchTwoFaMethod, setupTotpPending, logout: handleLogout }}>
       {children}
     </AuthContext.Provider>
   );

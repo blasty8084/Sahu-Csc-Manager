@@ -20,6 +20,11 @@ declare module "express-session" {
     pendingRememberMe: boolean;
     pendingMethod: "otp" | "totp";
     pendingIsNewDevice: boolean;
+    // Set while a first-time TOTP enrollment is happening mid-login (user
+    // chose "Authenticator App" on the verification screen but had no
+    // authenticator set up yet). Tells verify-totp's Mode B to also flip
+    // twoFaEnabled/twoFaMethod + issue backup codes on success.
+    pendingTotpEnrolling: boolean;
   }
 }
 

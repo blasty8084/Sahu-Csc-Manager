@@ -1,11 +1,48 @@
 import type { Request } from "express";
-import { db, usersTable, userSessionsTable, deviceSessionsTable } from "@workspace/db";
+import { db, usersTable, userSessionsTable, deviceSessionsTable, emailOtpsTable } from "@workspace/db";
 import { eq, and, not } from "drizzle-orm";
 import { randomUUID } from "crypto";
-import { auditLog } from "../../lib/auth";
+import { auditLog, securityLog, getClientIp } from "../../lib/auth";
 import { invalidateSessionCache } from "../../lib/auth/sessionCache";
 import { notifyLoginSuccess, notifyNewDeviceLogin, notifyDeviceTrusted, notifyOtherSessionsSignedOut } from "../../services/notificationTemplates";
-import { fmtUser } from "./helpers";
+import { isSmtpConfigured } from "../../lib/mailer";
+import { enqueueEmail, buildOtpMailOptions } from "../../lib/queue-client";
+import { logger } from "../../lib/logger";
+import { generateNumericOtp, hashOtp, maskEmail, fmtUser } from "./helpers";
+
+const OTP_EXPIRY_MS = 10 * 60 * 1000;
+
+/**
+ * Sends (or resends) the mid-login email OTP used by both the initial
+ * device/2FA challenge (routes/auth/login.ts) and the login-time method
+ * switcher (POST /auth/2fa/switch-method). Returns the masked email so the
+ * caller can echo it back to the client, or throws with an HTTP-status-ish
+ * `.status` field the route can forward as-is.
+ */
+export async function sendLoginOtp(
+  user: typeof usersTable.$inferSelect,
+  clientIp: string,
+  reason: string
+): Promise<{ maskedEmail: string }> {
+  if (!isSmtpConfigured()) {
+    const err: any = new Error("Email service not configured. Cannot send verification code. Contact administrator.");
+    err.status = 503;
+    throw err;
+  }
+  const otp = generateNumericOtp();
+  const expiresAt = new Date(Date.now() + OTP_EXPIRY_MS);
+  await db.insert(emailOtpsTable).values({ email: user.email, purpose: "2fa_login", otpHash: hashOtp(otp), expiresAt, ipAddress: clientIp });
+  try {
+    await enqueueEmail(buildOtpMailOptions(user.email, otp, "2fa_login", expiresAt));
+  } catch (err) {
+    logger.error({ err }, "Failed to enqueue 2FA login OTP email");
+    const e: any = new Error("Failed to send verification code. Please try again.");
+    e.status = 502;
+    throw e;
+  }
+  await auditLog(user.id, "2fa.login_otp_sent", reason, clientIp);
+  return { maskedEmail: maskEmail(user.email) };
+}
 
 export interface FinalizeLoginParams {
   req: Request;
@@ -109,6 +146,7 @@ export async function finalizeLogin(params: FinalizeLoginParams) {
   req.session.pendingRememberMe = undefined as unknown as boolean;
   req.session.pendingMethod = undefined as unknown as "otp" | "totp";
   req.session.pendingIsNewDevice = undefined as unknown as boolean;
+  req.session.pendingTotpEnrolling = undefined as unknown as boolean;
 
   await auditLog(user.id, "login", `Logged in from ${deviceInfo}`, ipAddress);
   await notifyLoginSuccess(user.id, ipAddress, deviceInfo);

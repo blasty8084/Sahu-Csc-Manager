@@ -29,4 +29,5 @@
 - [Pluggable cache backend](pluggable-cache-backend.md) — CACHE_BACKEND env picks memory (default) vs Redis; same drizzle-orm dual-peer bug recurs with any new optional-peer dep; user delete leaves orphaned rows in tables with no FK
 - [Worker server architecture](worker-server-architecture.md) — BullMQ on port 8081; REDIS_URL must be direct TCP (not REST URL); graceful fallback to direct calls when absent; build.mjs needs globalThis.require polyfill
 - [receipt_counters per-user schema](receipt-counters-schema.md) — composite PK (user_id, year); drizzle-kit push fails on NOT NULL column add; must DROP and recreate table (counters only, actual numbers stored in ledger)
+- [Login-time 2FA method choice](login-2fa-method-choice.md) — mid-login OTP/TOTP switch + inline TOTP enrollment; pendingUserId-only endpoints, pendingTotpEnrolling flag, mirror DB updates onto in-memory user objects
 - [Pre-existing TS errors in this project](preexisting-ts-errors.md) — AepsTransactionTable.tsx has session-possibly-null errors; queue-client.ts has ioredis/BullMQ type conflicts; both pre-date all L-series work and are not introduced by refactors
