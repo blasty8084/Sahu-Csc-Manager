@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { Request } from "express";
-import { db, auditLogsTable } from "@workspace/db";
+import { db, auditLogsTable, securityLogsTable } from "@workspace/db";
 import { logger } from "../logger";
 
 // ─── Password helpers ──────────────────────────────────────────────────────────
@@ -66,5 +66,32 @@ export async function auditLog(
     await db.insert(auditLogsTable).values({ userId, action, details, ipAddress });
   } catch (err) {
     logger.error({ err }, "Failed to write audit log");
+  }
+}
+
+// ─── Security log helper ────────────────────────────────────────────────────────
+// Distinct from auditLog: records authentication/2FA/device-trust events for
+// security review (failed password/OTP/TOTP attempts, lockouts, new-device
+// challenges, trust changes) rather than general user actions. userId may be
+// null for events during a pending (not-yet-authenticated) login session.
+export async function securityLog(
+  userId: number | null,
+  event: string,
+  success: boolean,
+  ipAddress: string,
+  deviceFingerprint?: string | null,
+  details?: string | null
+): Promise<void> {
+  try {
+    await db.insert(securityLogsTable).values({
+      userId,
+      event,
+      success,
+      ipAddress,
+      deviceFingerprint: deviceFingerprint ?? null,
+      details: details ?? null,
+    });
+  } catch (err) {
+    logger.error({ err }, "Failed to write security log");
   }
 }

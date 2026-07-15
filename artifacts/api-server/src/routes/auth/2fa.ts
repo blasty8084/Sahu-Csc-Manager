@@ -5,7 +5,7 @@ import bcrypt from "bcryptjs";
 import crypto from "node:crypto";
 import { db, usersTable, emailOtpsTable } from "@workspace/db";
 import { eq, and, isNull, desc } from "drizzle-orm";
-import { requireAuth, comparePassword, auditLog, getClientIp, parseDevice } from "../../lib/auth";
+import { requireAuth, comparePassword, auditLog, securityLog, getClientIp, parseDevice } from "../../lib/auth";
 import { encryptField, decryptField } from "../../lib/encryption";
 import { hashOtp } from "./helpers";
 import { finalizeLogin } from "./login-helpers";
@@ -88,6 +88,7 @@ router.post("/auth/2fa/verify-totp", asyncHandler(async (req, res) => {
     }).where(eq(usersTable.id, userId));
 
     await auditLog(userId, "2fa.enabled", "2FA enabled via TOTP", getClientIp(req));
+    await securityLog(userId, "2fa.enabled", true, getClientIp(req), null, "Enabled via TOTP");
     await notify2faEnabled(userId, "totp");
     res.json({ verified: true, backupCodes });
     return;
@@ -110,10 +111,12 @@ router.post("/auth/2fa/verify-totp", asyncHandler(async (req, res) => {
 
     if (!ok) {
       await auditLog(userId, "2fa.login_failed", "Failed TOTP/backup-code verification during login", getClientIp(req));
+      await securityLog(userId, "2fa.login_failed", false, getClientIp(req), req.session.pendingDeviceFingerprint ?? null, "Failed TOTP/backup-code verification");
       res.status(401).json({ error: "Invalid or expired code." });
       return;
     }
 
+    await securityLog(userId, "2fa.login_verified", true, getClientIp(req), req.session.pendingDeviceFingerprint ?? null, "TOTP/backup-code verification succeeded");
     const result = await finalizeLogin({
       req,
       user,
@@ -155,6 +158,7 @@ router.post("/auth/2fa/enable-otp", requireAuth, asyncHandler(async (req, res) =
   }).where(eq(usersTable.id, userId));
 
   await auditLog(userId, "2fa.enabled", "2FA enabled via Email OTP", getClientIp(req));
+  await securityLog(userId, "2fa.enabled", true, getClientIp(req), null, "Enabled via Email OTP");
   await notify2faEnabled(userId, "otp");
   res.json({ verified: true, backupCodes });
 }));
@@ -194,10 +198,12 @@ router.post("/auth/2fa/verify-otp", asyncHandler(async (req, res) => {
 
   if (!ok) {
     await auditLog(userId, "2fa.login_failed", "Failed OTP/backup-code verification during login", getClientIp(req));
+    await securityLog(userId, "2fa.login_failed", false, getClientIp(req), req.session.pendingDeviceFingerprint ?? null, "Failed OTP/backup-code verification");
     res.status(401).json({ error: "Invalid or expired code." });
     return;
   }
 
+  await securityLog(userId, "2fa.login_verified", true, getClientIp(req), req.session.pendingDeviceFingerprint ?? null, "OTP/backup-code verification succeeded");
   const result = await finalizeLogin({
     req,
     user,
@@ -233,6 +239,7 @@ router.post("/auth/2fa/disable", requireAuth, asyncHandler(async (req, res) => {
   }).where(eq(usersTable.id, userId));
 
   await auditLog(userId, "2fa.disabled", "2FA disabled", getClientIp(req));
+  await securityLog(userId, "2fa.disabled", true, getClientIp(req), null, null);
   await notify2faDisabled(userId);
   res.json({ message: "2FA disabled" });
 }));

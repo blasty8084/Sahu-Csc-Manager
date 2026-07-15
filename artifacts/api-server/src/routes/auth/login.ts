@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { db, usersTable, deviceSessionsTable, emailOtpsTable } from "@workspace/db";
 import { eq, or, and } from "drizzle-orm";
 import { LoginBody } from "@workspace/api-zod";
-import { comparePassword, auditLog, getClientIp, parseDevice } from "../../lib/auth";
+import { comparePassword, auditLog, securityLog, getClientIp, parseDevice } from "../../lib/auth";
 import {
   notifyLoginFailed,
   notifyAccountLocked,
@@ -110,6 +110,7 @@ router.post("/auth/login", asyncHandler(async (req, res) => {
         .set({ failedLoginAttempts: attempts, status: "LOCKED", lockedUntil })
         .where(eq(usersTable.id, user.id));
       await auditLog(user.id, "login.failed_max_attempts", `Account locked after ${MAX_ATTEMPTS} failed attempts from ${deviceInfo}`, clientIp);
+      await securityLog(user.id, "login.locked", false, clientIp, deviceFingerprint, `Account locked after ${MAX_ATTEMPTS} failed password attempts`);
       await notifyAccountLocked(user.id, clientIp, attempts);
       res.status(401).json({
         error: `Too many failed attempts. Account locked for ${LOCK_MINUTES} minutes.`,
@@ -122,6 +123,7 @@ router.post("/auth/login", asyncHandler(async (req, res) => {
         .set({ failedLoginAttempts: attempts })
         .where(eq(usersTable.id, user.id));
       await auditLog(user.id, "login.failed_password", `Wrong password attempt ${attempts}/${MAX_ATTEMPTS} from ${deviceInfo}`, clientIp);
+      await securityLog(user.id, "login.failed_password", false, clientIp, deviceFingerprint, `Attempt ${attempts}/${MAX_ATTEMPTS}`);
       await notifyLoginFailed(user.id, clientIp, deviceInfo, attempts, MAX_ATTEMPTS);
       res.status(401).json({
         error: "Invalid credentials",
@@ -172,11 +174,13 @@ router.post("/auth/login", asyncHandler(async (req, res) => {
         return;
       }
       await auditLog(user.id, "2fa.login_otp_sent", `Verification code sent for ${isNewDevice ? "new device" : "2FA"} login from ${deviceInfo}`, clientIp);
+      await securityLog(user.id, isNewDevice ? "device.new_challenge" : "2fa.challenge", true, clientIp, deviceFingerprint, "OTP challenge issued");
       res.json({ requires2fa: true, method: "otp", maskedEmail: maskEmail(user.email), isNewDevice });
       return;
     }
 
     await auditLog(user.id, "2fa.login_challenge", `TOTP challenge issued for ${isNewDevice ? "new device" : "2FA"} login from ${deviceInfo}`, clientIp);
+    await securityLog(user.id, isNewDevice ? "device.new_challenge" : "2fa.challenge", true, clientIp, deviceFingerprint, "TOTP challenge issued");
     res.json({ requires2fa: true, method: "totp", isNewDevice });
     return;
   }
