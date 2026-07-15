@@ -160,11 +160,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const verifyTwoFactor = async (method: "otp" | "totp", data: TwoFaVerifyInput) => {
     const path = method === "totp" ? "/api/auth/2fa/verify-totp" : "/api/auth/2fa/verify-otp";
+    // The backend expects different field names per method/mode:
+    //  - verify-totp: { code, backupCode, trustDevice }
+    //  - verify-otp:  { otp, backupCode, trustDevice }
+    // `data.code` holds whichever value the user typed (a 6-digit code or a
+    // backup code); route it to the right field based on `isBackupCode` and
+    // `method` so the server actually looks it up correctly.
+    const payload: Record<string, unknown> = { trustDevice: data.trustDevice };
+    if (data.isBackupCode) {
+      payload.backupCode = data.code;
+    } else if (method === "totp") {
+      payload.code = data.code;
+    } else {
+      payload.otp = data.code;
+    }
     const response = await fetch(`${apiBase()}${path}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
     let body: any = {};
     try { body = await response.json(); } catch { /* ignore */ }
