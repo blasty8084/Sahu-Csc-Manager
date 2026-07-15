@@ -213,7 +213,9 @@ export function TwoFactorSection() {
             Disable
           </Button>
         ) : (
-          <Button size="sm" onClick={() => setStage("choose")}>Enable</Button>
+          <Button size="sm" disabled={setupTotpMut.isPending} onClick={() => setupTotpMut.mutate()}>
+            {setupTotpMut.isPending ? <Loader2 size={14} className="animate-spin" /> : "Enable"}
+          </Button>
         )}
       </div>
       {twoFaEnabled && twoFaMethod === "totp" && (
