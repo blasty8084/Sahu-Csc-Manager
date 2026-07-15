@@ -30,3 +30,4 @@
 - [Worker server architecture](worker-server-architecture.md) — BullMQ on port 8081; REDIS_URL must be direct TCP (not REST URL); graceful fallback to direct calls when absent; build.mjs needs globalThis.require polyfill
 - [receipt_counters per-user schema](receipt-counters-schema.md) — composite PK (user_id, year); drizzle-kit push fails on NOT NULL column add; must DROP and recreate table (counters only, actual numbers stored in ledger)
 - [Pre-existing TS errors in this project](preexisting-ts-errors.md) — AepsTransactionTable.tsx has session-possibly-null errors; queue-client.ts has ioredis/BullMQ type conflicts; both pre-date all L-series work and are not introduced by refactors
+- [First-login OTP bypass](first-login-otp-bypass.md) — new-device OTP challenge is skipped only when firstLoginCompleted is false; every login after the first is challenged normally
