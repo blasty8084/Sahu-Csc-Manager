@@ -293,33 +293,35 @@ All backend source files over ~300 lines split into focused sub-modules using th
 
 | Workflow | Port | Purpose | Starts with Project |
 |----------|------|---------|---------------------|
-| `SAHU CSC` | 5000 → :80 | Vite frontend dev server | ✅ Yes |
-| `API Server` | 8080 | Express API (pre-built `dist/index.mjs`) | ✅ Yes |
-| `Build API` | — | Rebuild API ESM bundle after source changes | ❌ Manual only |
+| `artifacts/sahu-csc: web` | 5000 → :80 | Vite frontend dev server (SAHU CSC FV1) | ✅ Yes |
+| `API Server` | 8080 | Express API — builds then runs `dist/index.mjs` | ✅ Yes |
 | `Seed Database` | — | One-shot DB seeder; requires `ADMIN_PASSWORD` + `OPERATOR_PASSWORD` secrets | ❌ Manual only |
 | `Typecheck` | — | TypeScript check across all packages | ❌ Manual only |
 | `Build Production` | — | Full production build: typecheck + API + Vite + PWA SW | ❌ Manual only |
-| `Production Preview` | 5000 | Build + serve production bundle (replaces dev server on port 5000) | ❌ Manual only |
+| `Worker Server` | 8081 | BullMQ background jobs — skips if `REDIS_URL` not set | ❌ Optional |
 
 > **Port note:** Port 5000 maps to external port 80 (Replit proxy). API runs on port 8080. Vite's `vite.config.ts` proxies `/api/*` → `http://localhost:8080`.
-> After any backend code change: run **Build API** → restart **API Server**.
+> After any backend code change: restart **API Server** (it rebuilds automatically on start).
 >
-> **Duplicate workflow note:** Replit auto-generates `artifacts/api-server: API Server` and `artifacts/sahu-csc: web` from artifact registrations. The `artifacts/api-server: API Server` one is overridden in `.replit` with a harmless no-op stub so it never conflicts with the real `API Server` on port 8080. The `artifacts/sahu-csc: web` duplicate runs on a different random port and can be ignored.
+> **Removed workflows (2026-07-15):** `SAHU CSC` (manual dev server) and `Production Preview` were removed — `artifacts/sahu-csc: web` is now the sole frontend workflow.
 
 ### Workflow commands (exact)
 
 ```bash
-# SAHU CSC — frontend dev server (auto-start)
-PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run dev
+# artifacts/sahu-csc: web — Vite frontend dev server (auto-start, SAHU CSC FV1)
+pnpm --filter @workspace/sahu-csc run dev
 
-# API Server — runs pre-built bundle (auto-start)
-PORT=8080 NODE_ENV=development node --enable-source-maps artifacts/api-server/dist/index.mjs
-
-# Build API — rebuild after backend changes (manual)
-PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server run build
+# API Server — builds then runs the bundle (auto-start)
+PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server run build && PORT=8080 node --enable-source-maps artifacts/api-server/dist/index.mjs
 
 # Seed Database — create/reset admin + operator (manual, requires secrets)
 PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server exec tsx src/scripts/seed.ts
+
+# Typecheck (manual)
+pnpm run typecheck:libs && pnpm -r --filter "./artifacts/**" --if-present run typecheck
+
+# Build Production (manual)
+pnpm run typecheck:libs && pnpm --filter @workspace/api-server run build && PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run build
 ```
 
 ---

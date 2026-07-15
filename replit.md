@@ -190,16 +190,16 @@ Continuing from the 8.5/10 baseline (N+1 fixes, batched writes, pooled connectio
 ## Replit Setup
 
 ### How to run
-- **Frontend** (port 5000): `SAHU CSC` workflow — `PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run dev`
-- **API Server** (port 8080): `API Server` workflow — `node --enable-source-maps artifacts/api-server/dist/index.mjs`
+- **Frontend** (port 5000): `artifacts/sahu-csc: web` workflow (SAHU CSC FV1) — `pnpm --filter @workspace/sahu-csc run dev`
+- **API Server** (port 8080): `API Server` workflow — builds then runs `artifacts/api-server/dist/index.mjs`
 - **Seed DB**: Run the `Seed Database` workflow (requires `ADMIN_PASSWORD` and `OPERATOR_PASSWORD` secrets)
-- **Rebuild API**: `node artifacts/api-server/build.mjs` from workspace root
+- **Rebuild API**: restart `API Server` workflow (it rebuilds on every start)
 
 ### First-time setup
 1. `pnpm install` from workspace root
 2. Schema is auto-applied by `drizzle-kit push` (runs via `scripts/post-merge.sh`)
 3. Run `Seed Database` workflow to create admin/operator accounts
-4. Start `API Server`, `SAHU CSC`, and `Worker Server` workflows
+4. Start `API Server`, `artifacts/sahu-csc: web`, and `Worker Server` (optional, needs `REDIS_URL`) workflows
 
 #### Secrets required
 | Secret | Purpose |
@@ -376,19 +376,15 @@ A full-stack CSC (Common Service Center) business management platform for tracki
 | Workflow | Port | Purpose | Starts with Project |
 |----------|------|---------|---------------------|
 | `API Server` | 8080 | Express API — builds then runs the bundle | ✅ Yes |
-| `SAHU CSC` | 5000 → :80 | Vite frontend dev server | ✅ Yes |
+| `artifacts/sahu-csc: web` | 5000 → :80 | Vite frontend dev server (SAHU CSC FV1) | ✅ Yes |
 | `Seed Database` | — | One-shot DB seeder; requires ADMIN_PASSWORD + OPERATOR_PASSWORD secrets | ❌ Manual only |
 | `Typecheck` | — | `pnpm run typecheck:libs` + per-artifact typecheck | ❌ Manual only |
 | `Build Production` | — | Full typecheck + API build + frontend build, no serve | ❌ Manual only |
-| `Production Preview` | 5000 | Full production build then `vite preview`-style serve (kills port 5000 first) | ❌ Manual only |
+| `Worker Server` | 8081 | BullMQ background jobs — skips automatically if REDIS_URL is not set | ❌ Optional |
 
 > Port 5000 is the main app URL (Replit proxy → :80). The API runs on **port 8080**. The Vite proxy in `vite.config.ts` forwards `/api/*` to `http://localhost:8080`.
 > After any backend code change: restart **API Server** (it rebuilds on every start).
-> The standalone `Build API` workflow was permanently removed as redundant — it duplicated the build step that already runs at the start of `API Server`. To rebuild the API bundle without restarting the server, run `node artifacts/api-server/build.mjs` from the workspace root, or use the `Build Production` workflow.
-
-### Artifact-managed workflows (do not touch)
-
-Each registered artifact (`artifacts/api-server`, `artifacts/sahu-csc`, `artifacts/mockup-sandbox`) auto-generates its own workflow from its `artifact.toml` (e.g. `artifacts/sahu-csc: web`, `artifacts/mockup-sandbox: Component Preview Server`). These are **not accessible to the agent** — `removeWorkflow` explicitly rejects them ("managed by an artifact and cannot be removed"), and `artifact.toml` cannot be edited directly. They show as duplicates of the main `API Server`/`SAHU CSC` workflows and may appear `failed`/`finished` when unused — this is expected and only the user can rename/remove them via the Replit project UI (artifact tabs).
+> `SAHU CSC` (manual) and `Production Preview` workflows were removed on 2026-07-15 — the artifact-managed `artifacts/sahu-csc: web` workflow is now the sole frontend server.
 
 ### Workflow commands (current)
 
@@ -396,8 +392,8 @@ Each registered artifact (`artifacts/api-server`, `artifacts/sahu-csc`, `artifac
 # API Server — builds then runs the bundle (auto-start)
 PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server run build && PORT=8080 node --enable-source-maps artifacts/api-server/dist/index.mjs
 
-# SAHU CSC — frontend dev server (auto-start)
-PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run dev
+# artifacts/sahu-csc: web — Vite frontend dev server (auto-start, SAHU CSC FV1)
+pnpm --filter @workspace/sahu-csc run dev
 # dev script in package.json: fuser -k ${PORT:-5000}/tcp 2>/dev/null; sleep 1; vite --host 0.0.0.0
 
 # Seed Database — create/reset admin + operator (manual, requires secrets)
@@ -409,8 +405,8 @@ pnpm run typecheck:libs && pnpm -r --filter "./artifacts/**" --if-present run ty
 # Build Production (manual)
 pnpm run typecheck:libs && pnpm --filter @workspace/api-server run build && PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run build
 
-# Production Preview (manual)
-fuser -k 5000/tcp 2>/dev/null; sleep 1; pnpm run typecheck:libs && pnpm --filter @workspace/api-server run build && PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run build && PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run serve
+# Worker Server (optional — skips if REDIS_URL not set)
+[ -z "$REDIS_URL" ] && echo 'REDIS_URL not set — worker server skipped' && exit 0; PORT=8081 pnpm --filter @workspace/worker-server run build && PORT=8081 node --enable-source-maps artifacts/worker-server/dist/index.mjs
 ```
 
 ---

@@ -160,10 +160,10 @@ PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server exec tsx src/
 
 Start these two Replit workflows:
 
-| Workflow | Command | Port |
-|---|---|---|
-| API Server | `node artifacts/api-server/dist/index.mjs` | 8080 |
-| SAHU CSC | `pnpm --filter @workspace/sahu-csc run dev` | 5000 |
+| Workflow | Port |
+|---|---|
+| `API Server` | 8080 |
+| `artifacts/sahu-csc: web` (SAHU CSC FV1) | 5000 |
 
 The Vite dev server proxies all `/api/*` requests to `localhost:8080`.
 
@@ -573,12 +573,16 @@ Registrations require admin approval. Status values: `ACTIVE` → `INACTIVE` →
 
 | Workflow name | Command | Port | Purpose |
 |---|---|---|---|
-| API Server | `[ -f artifacts/api-server/dist/index.mjs ] \|\| node artifacts/api-server/build.mjs && PORT=8080 NODE_ENV=development node --enable-source-maps artifacts/api-server/dist/index.mjs` | 8080 | Express REST API |
-| SAHU CSC | `PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run dev` | 5000 | Vite dev server (frontend) |
-| Seed Database | `PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server exec tsx src/scripts/seed.ts` | — | One-time seed |
-| Component Preview Server | `pnpm --filter @workspace/mockup-sandbox run dev` | 3000 | UI mockup sandbox |
+| `API Server` | `PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server run build && PORT=8080 node --enable-source-maps artifacts/api-server/dist/index.mjs` | 8080 | Express REST API (auto-start) |
+| `artifacts/sahu-csc: web` | `pnpm --filter @workspace/sahu-csc run dev` | 5000 | Vite frontend dev server / SAHU CSC FV1 (auto-start) |
+| `Seed Database` | `PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server exec tsx src/scripts/seed.ts` | — | One-time seed (manual) |
+| `Typecheck` | `pnpm run typecheck:libs && pnpm -r --filter "./artifacts/**" --if-present run typecheck` | — | Full TS check (manual) |
+| `Build Production` | `pnpm run typecheck:libs && pnpm --filter @workspace/api-server run build && PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run build` | — | Production build (manual) |
+| `Worker Server` | `[ -z "$REDIS_URL" ] && exit 0; PORT=8081 pnpm --filter @workspace/worker-server run build && PORT=8081 node --enable-source-maps artifacts/worker-server/dist/index.mjs` | 8081 | BullMQ jobs — skips if `REDIS_URL` unset (optional) |
+| `artifacts/mockup-sandbox: Component Preview Server` | `npm run dev` | 3000 | UI component preview sandbox (dev tool) |
 
-> The API workflow builds the backend before starting it. If you change backend source, stop and restart the **API Server** workflow — it will rebuild automatically.
+> The API workflow builds the backend before starting it. If you change backend source, restart the **API Server** workflow — it will rebuild automatically.
+> **Removed (2026-07-15):** `SAHU CSC` (manual PORT=5000 dev server) and `Production Preview` — replaced by `artifacts/sahu-csc: web`.
 
 ---
 
