@@ -142,13 +142,7 @@ router.post("/auth/login", asyncHandler(async (req, res) => {
       .where(and(eq(deviceSessionsTable.userId, user.id), eq(deviceSessionsTable.deviceFingerprint, deviceFingerprint)));
   }
 
-  // The account's very first-ever login (firstLoginCompleted === false) skips the
-  // new-device OTP challenge: there is no "known device" to compare against yet,
-  // credentials were just verified, and the first-login permission overlay still
-  // runs right after. Every login after this one has a registered device row, so
-  // the normal new-device challenge applies from the second login onward.
-  const isFirstLogin = !user.firstLoginCompleted;
-  const isNewDevice = deviceFingerprint != null && !knownDevice && !isFirstLogin;
+  const isNewDevice = deviceFingerprint != null && !knownDevice;
   const trustedSkip = !!knownDevice?.isTrusted && !!knownDevice.trustedUntil && new Date() < knownDevice.trustedUntil;
   const needsUserTwoFa = user.twoFaEnabled && !trustedSkip;
   const needsChallenge = isNewDevice || needsUserTwoFa;
