@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,38 @@ export interface TwoFactorStepProps {
 
 // ── Shared 2FA-code entry step, shown after credentials are accepted but a
 // device/2FA challenge is required. Used by both mobile and desktop login. ──
+function useLiveTotpCode(enabled: boolean) {
+  const [liveCode, setLiveCode] = useState("");
+  const [timeLeft, setTimeLeft] = useState(120);
+  const [loading, setLoading] = useState(true);
+
+  const fetch_ = useCallback(async () => {
+    try {
+      const base = (import.meta as any).env?.BASE_URL?.replace(/\/$/, "") ?? "";
+      const res = await fetch(`${base}/api/auth/2fa/current-totp-code`, { credentials: "include" });
+      if (!res.ok) return;
+      const data = await res.json();
+      setLiveCode(data.code as string);
+      setTimeLeft(data.timeRemaining as number);
+      setLoading(false);
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    if (!enabled) return;
+    fetch_();
+    const iv = setInterval(() => {
+      setTimeLeft((t) => {
+        if (t <= 1) { fetch_(); return 120; }
+        return t - 1;
+      });
+    }, 1000);
+    return () => clearInterval(iv);
+  }, [enabled, fetch_]);
+
+  return { liveCode, timeLeft, loading };
+}
+
 export function TwoFactorStep({ challenge, onVerify, onBack }: TwoFactorStepProps) {
   const [code, setCode] = useState("");
   const [trustDevice, setTrustDevice] = useState(false);
@@ -22,6 +54,16 @@ export function TwoFactorStep({ challenge, onVerify, onBack }: TwoFactorStepProp
   const [error, setError] = useState<string | null>(null);
 
   const isTotp = challenge.method === "totp";
+  const { liveCode, timeLeft, loading: codeLoading } = useLiveTotpCode(isTotp && !useBackupCode);
+
+  // Auto-fill the input whenever a fresh code arrives
+  const prevLiveCode = useRef("");
+  useEffect(() => {
+    if (isTotp && !useBackupCode && liveCode && liveCode !== prevLiveCode.current) {
+      prevLiveCode.current = liveCode;
+      setCode(liveCode);
+    }
+  }, [isTotp, useBackupCode, liveCode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,6 +99,27 @@ export function TwoFactorStep({ challenge, onVerify, onBack }: TwoFactorStepProp
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Live auto-generated code display (TOTP only, not backup-code mode) */}
+        {isTotp && !useBackupCode && (
+          <div className={`rounded-xl border-2 p-3 text-center transition-colors ${timeLeft <= 20 ? "border-orange-300 bg-orange-50" : "border-blue-200 bg-blue-50"}`}>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Auto-generated code</p>
+            {codeLoading ? (
+              <Loader2 className="w-5 h-5 animate-spin mx-auto text-blue-600" />
+            ) : (
+              <p className={`font-mono text-2xl font-bold tracking-[0.3em] ${timeLeft <= 20 ? "text-orange-600" : "text-blue-700"}`}>
+                {liveCode.slice(0, 3)} {liveCode.slice(3)}
+              </p>
+            )}
+            <div className="mt-2 h-1.5 w-full rounded-full bg-blue-100 overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-1000 ${timeLeft <= 20 ? "bg-orange-400" : "bg-blue-500"}`}
+                style={{ width: `${Math.round((timeLeft / 120) * 100)}%` }}
+              />
+            </div>
+            <p className="text-[10px] text-gray-400 mt-1">Refreshes in {timeLeft}s</p>
+          </div>
+        )}
+
         <div className="relative">
           <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
           <Input

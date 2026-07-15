@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   ShieldCheck, ShieldOff, Mail, Smartphone, Loader2, Copy, Check,
-  AlertTriangle, KeyRound,
+  AlertTriangle, KeyRound, RefreshCw,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
@@ -12,6 +12,108 @@ import { apiFetch } from "@/components/profile/utils";
 import { getGetMeQueryKey } from "@workspace/api-client-react";
 
 type Method = "otp" | "totp";
+
+// ── Live TOTP code fetcher — polls /auth/2fa/current-totp-code every second
+// and fires onCode(code) whenever a fresh code arrives.
+function useLiveTotpCode(enabled: boolean, onCode: (code: string) => void) {
+  const [timeLeft, setTimeLeft] = useState<number>(120);
+  const [display, setDisplay] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+  const onCodeRef = useRef(onCode);
+  onCodeRef.current = onCode;
+
+  const fetch_ = useCallback(async () => {
+    try {
+      const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+      const res = await fetch(`${base}/api/auth/2fa/current-totp-code`, { credentials: "include" });
+      if (!res.ok) return;
+      const data = await res.json();
+      setDisplay(data.code as string);
+      setTimeLeft(data.timeRemaining as number);
+      setLoading(false);
+      onCodeRef.current(data.code as string);
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    if (!enabled) return;
+    fetch_();
+    const iv = setInterval(() => {
+      setTimeLeft((t) => {
+        if (t <= 1) { fetch_(); return 120; }
+        return t - 1;
+      });
+    }, 1000);
+    return () => clearInterval(iv);
+  }, [enabled, fetch_]);
+
+  return { display, timeLeft, loading };
+}
+
+// ── TOTP verify panel — shown after QR scan; auto-fills the confirmation code ──
+function TotpVerifyPanel({
+  totpSetup, totpCode, setTotpCode, isPending, onConfirm, onCancel,
+}: {
+  totpSetup: { qrCode: string; manualEntryKey: string };
+  totpCode: string;
+  setTotpCode: (v: string) => void;
+  isPending: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const { display, timeLeft, loading } = useLiveTotpCode(true, setTotpCode);
+
+  const pct = Math.round((timeLeft / 120) * 100);
+  const urgent = timeLeft <= 20;
+
+  return (
+    <div className="rounded-xl border bg-card p-4 space-y-3">
+      <p className="text-sm font-semibold">Scan with your authenticator app</p>
+      <div className="flex justify-center">
+        <img src={totpSetup.qrCode} alt="TOTP QR code" className="w-40 h-40 rounded-lg border" />
+      </div>
+      <p className="text-xs text-muted-foreground text-center">Or enter this key manually:</p>
+      <p className="text-center font-mono text-sm tracking-wider bg-muted rounded-lg py-2">{totpSetup.manualEntryKey}</p>
+
+      {/* Live code display */}
+      <div className={`rounded-lg border-2 p-3 text-center transition-colors ${urgent ? "border-orange-300 bg-orange-50" : "border-primary/20 bg-primary/5"}`}>
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1 flex items-center justify-center gap-1">
+          <RefreshCw size={9} /> Auto-generated code
+        </p>
+        {loading ? (
+          <Loader2 size={20} className="animate-spin mx-auto text-primary" />
+        ) : (
+          <p className={`font-mono text-2xl font-bold tracking-[0.3em] ${urgent ? "text-orange-600" : "text-primary"}`}>
+            {display.slice(0, 3)} {display.slice(3)}
+          </p>
+        )}
+        {/* Countdown bar */}
+        <div className="mt-2 h-1.5 w-full rounded-full bg-muted overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-1000 ${urgent ? "bg-orange-400" : "bg-primary"}`}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <p className="text-[10px] text-muted-foreground mt-1">Refreshes in {timeLeft}s</p>
+      </div>
+
+      <Input
+        placeholder="6-digit code"
+        value={totpCode}
+        onChange={(e) => setTotpCode(e.target.value)}
+        className="text-center tracking-widest font-semibold"
+        maxLength={6}
+        inputMode="numeric"
+      />
+      <div className="flex gap-2">
+        <Button variant="outline" className="flex-1" onClick={onCancel}>Cancel</Button>
+        <Button className="flex-1" disabled={isPending || totpCode.length < 6} onClick={onConfirm}>
+          {isPending ? <Loader2 size={14} className="animate-spin" /> : "Confirm"}
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 // ── Two-Factor Authentication settings — enable/disable OTP or TOTP,
 // TOTP setup with QR code, one-time backup code reveal. ──
@@ -111,27 +213,14 @@ export function TwoFactorSection() {
   // ── TOTP QR verification step ──
   if (stage === "totp-verify" && totpSetup) {
     return (
-      <div className="rounded-xl border bg-card p-4 space-y-3">
-        <p className="text-sm font-semibold">Scan with your authenticator app</p>
-        <div className="flex justify-center">
-          <img src={totpSetup.qrCode} alt="TOTP QR code" className="w-40 h-40 rounded-lg border" />
-        </div>
-        <p className="text-xs text-muted-foreground text-center">Or enter this key manually:</p>
-        <p className="text-center font-mono text-sm tracking-wider bg-muted rounded-lg py-2">{totpSetup.manualEntryKey}</p>
-        <Input
-          placeholder="Enter 6-digit code to confirm"
-          value={totpCode}
-          onChange={(e) => setTotpCode(e.target.value)}
-          className="text-center tracking-widest font-semibold"
-          maxLength={6}
-        />
-        <div className="flex gap-2">
-          <Button variant="outline" className="flex-1" onClick={() => { setStage("idle"); setTotpSetup(null); setTotpCode(""); }}>Cancel</Button>
-          <Button className="flex-1" disabled={verifyTotpMut.isPending || totpCode.length < 6} onClick={() => verifyTotpMut.mutate()}>
-            {verifyTotpMut.isPending ? <Loader2 size={14} className="animate-spin" /> : "Confirm"}
-          </Button>
-        </div>
-      </div>
+      <TotpVerifyPanel
+        totpSetup={totpSetup}
+        totpCode={totpCode}
+        setTotpCode={setTotpCode}
+        isPending={verifyTotpMut.isPending}
+        onConfirm={() => verifyTotpMut.mutate()}
+        onCancel={() => { setStage("idle"); setTotpSetup(null); setTotpCode(""); }}
+      />
     );
   }
 
@@ -209,9 +298,9 @@ export function TwoFactorSection() {
           </div>
         </div>
         {twoFaEnabled ? (
-          <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setStage("disable-password")}>
-            Disable
-          </Button>
+          <span className="flex items-center gap-1 text-[11px] font-semibold text-green-600 bg-green-50 border border-green-200 rounded-full px-2.5 py-1">
+            <ShieldCheck size={11} /> Always On
+          </span>
         ) : (
           <Button size="sm" disabled={setupTotpMut.isPending} onClick={() => setupTotpMut.mutate()}>
             {setupTotpMut.isPending ? <Loader2 size={14} className="animate-spin" /> : "Enable"}
