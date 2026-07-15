@@ -53,6 +53,11 @@ async function sendToUser(userId: number, payload: NotificationJobData["payload"
           await db
             .delete(pushSubscriptionsTable)
             .where(eq(pushSubscriptionsTable.endpoint, sub.endpoint));
+        } else {
+          logger.error(
+            { err: err?.message ?? err, statusCode: err?.statusCode, userId },
+            "push notification delivery failed",
+          );
         }
       }
     }),
@@ -73,6 +78,11 @@ async function sendToAll(payload: NotificationJobData["payload"]): Promise<void>
           await db
             .delete(pushSubscriptionsTable)
             .where(eq(pushSubscriptionsTable.endpoint, sub.endpoint));
+        } else {
+          logger.error(
+            { err: err?.message ?? err, statusCode: err?.statusCode, endpoint: sub.endpoint },
+            "broadcast push notification delivery failed",
+          );
         }
       }
     }),
