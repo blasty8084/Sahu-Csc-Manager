@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v3 / v4
-**Current version: 4.3.1 — July 14, 2026**
+**Current version: 4.4.0 — July 15, 2026**
 
 > Detailed record of every feature, change, and upgrade from v3.0.0 onward.  
 > For v2.x history, see `docs/archive/changelogV2.md`.  
@@ -13,6 +13,7 @@
 
 ## Table of Contents
 
+0. [v4.4.0 — First-Login Permissions, 2FA & Single-Device Enforcement (July 15, 2026)](#0-v440--first-login-permissions-2fa--single-device-enforcement-july-15-2026)
 0. [v4.3.2 — Optimization Audit & Measurements (July 14, 2026)](#0-v432--optimization-audit--measurements-july-14-2026)
 0. [v4.3.1 — Performance Pass: Bundle Size & Avatar Compression (July 14, 2026)](#0-v431--performance-pass-bundle-size--avatar-compression-july-14-2026)
 0. [v4.3.1 — Config & Maintenance Fixes (July 14, 2026)](#0-v431--config--maintenance-fixes-july-14-2026)
@@ -27,6 +28,19 @@
 0. [v3.5.10 — Navigation Performance — Instant Page Switching (July 12, 2026)](#0-v3510--navigation-performance--instant-page-switching-july-12-2026)
 0. [v3.5.9 — Redis Cache Live, i18n Fixes & Build Hardening (July 12, 2026)](#0-v359--redis-cache-live-i18n-fixes--build-hardening-july-12-2026)
 0. [v3.5.8 — Reports & Receipt Export Page Modularization (July 12, 2026)](#0-v358--reports--receipt-export-page-modularization-july-12-2026)
+
+---
+
+## 0. v4.4.0 — First-Login Permissions, 2FA & Single-Device Enforcement (July 15, 2026)
+
+Audited the running app against a written security/UX feature spec covering three features. Found the backend, schema, and frontend for all three were already built in an earlier session; fixed the one real gap found during the audit (`security_logs` was defined but never written to). No new schema changes — all required columns/tables already existed and were already migrated.
+
+| Change | Description |
+|--------|-------------|
+| **First-login permission overlay (verified, no code change)** | `FirstLoginOverlay.tsx` — fullscreen, non-skippable 2-step flow (notification permission, then a file/download-access acknowledgement) shown once per user, gated on `users.first_login_completed`; completes via `PATCH /users/first-login-completed`. |
+| **Two-factor authentication (verified, no code change)** | `/api/auth/2fa/setup-totp`, `/verify-totp`, `/enable-otp`, `/verify-otp`, `/disable`, `/status` — TOTP via `otplib` + QR code via `qrcode`, email OTP alternative, 8 bcrypt-hashed single-use backup codes, TOTP secret encrypted at rest with AES-256-GCM. `TwoFactorSection.tsx` (enable/disable/QR/backup-code reveal) and `TwoFactorStep.tsx` (login-time code entry with backup-code fallback) already implemented. Login-time 2FA verification rate-limited to 5 attempts/15 min. |
+| **Single-device login enforcement (verified, no code change)** | `device_sessions` table tracks device fingerprint/trust; new/unrecognized devices trigger a 2FA challenge on login; `finalizeLogin()` revokes every other active `user_sessions` row on each successful login, enforcing one active session per account; optional "trust this device for 30 days" skips the challenge on return visits. `DevicesSection.tsx` lists recognized devices with per-device and forget-all revoke actions. |
+| **`security_logs` now actually written to (real fix)** | Added `securityLog(userId, event, success, ipAddress, deviceFingerprint?, details?)` in `lib/auth/utils.ts`, parallel to the existing `auditLog()`. Wired into every failed/successful login, device/2FA challenge issuance, 2FA code verification, and 2FA enable/disable path in `routes/auth/login.ts` and `routes/auth/2fa.ts`. Verified live — a wrong-password attempt now produces a `security_logs` row (`event: login.failed_password`, `success: false`). |
 
 ---
 

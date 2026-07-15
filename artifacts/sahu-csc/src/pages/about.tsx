@@ -4,7 +4,7 @@ import {
   Smartphone, Monitor, Globe, Wifi, WifiOff, Database, Server, Shield,
   CheckCircle2, AlertCircle, Clock, BookOpen, Cpu, Cloud, Lock,
   Fingerprint, Bell, FileSpreadsheet, Download, Mail, Key, RefreshCw,
-  Users, BarChart3, Zap,
+  Users, BarChart3, Zap, ShieldCheck, Laptop2,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -13,6 +13,20 @@ const APP_VERSION = __APP_VERSION__;
 
 // ── Changelog ────────────────────────────────────────────────────────────────
 const CHANGELOG = [
+  {
+    version: "v4.4.0",
+    title: "First-Login Permissions, 2FA & Single-Device Enforcement",
+    date: "2026-07-15",
+    accent: "#dc2626",
+    changes: [
+      "First-time login now walks new users through a one-time, non-skippable notification and file-access permission flow before reaching the dashboard",
+      "Two-factor authentication is available for every account — choose an authenticator app (TOTP, with QR code) or email OTP, with 8 one-time backup codes if you lose access to both",
+      "Signing in from a new or unrecognized device now requires a verification code before access is granted, and you can mark a device as trusted for 30 days to skip future checks",
+      "Only one device can be actively signed in at a time — logging in elsewhere signs out the previous session automatically",
+      "Manage recognized devices from your profile — see last-active time and location, and forget any device (or all of them) remotely",
+      "Failed sign-in attempts, 2FA challenges, and device verification events are now recorded to a dedicated security log for auditing",
+    ],
+  },
   {
     version: "v4.3.2",
     title: "Optimization Audit & Measurements",
@@ -402,8 +416,10 @@ const FEATURES = [
   { icon: Bell,          color: "#e11d48", label: "Push Notifications",      desc: "Real-time VAPID push alerts for transactions, approvals, and system events" },
   { icon: WifiOff,       color: "#0369a1", label: "Offline Mode",            desc: "Create ledger entries offline; IndexedDB queue auto-syncs on reconnect" },
   { icon: Shield,        color: "#059669", label: "Role-Based Access",       desc: "Admin, Operator, User roles with granular permissions and per-user data isolation" },
-  { icon: Lock,          color: "#dc2626", label: "Account Security",        desc: "3-attempt lockout (5 min), bcrypt-12 hashing, idle auto-logout, full audit trail" },
+  { icon: Lock,          color: "#dc2626", label: "Account Security",        desc: "3-attempt lockout (5 min), bcrypt-12 hashing, idle auto-logout, full audit + security-event trail" },
   { icon: Key,           color: "#d97706", label: "Password Reset",          desc: "OTP-based 4-step reset flow; accepts username, email, or mobile as identifier" },
+  { icon: ShieldCheck,   color: "#0891b2", label: "Two-Factor Authentication", desc: "TOTP authenticator app or email OTP, with QR setup and one-time backup codes" },
+  { icon: Laptop2,       color: "#7c3aed", label: "Device & Session Control", desc: "New-device verification, single active session per account, trusted-device list with remote revoke" },
   { icon: RefreshCw,     color: "#0b2c60", label: "Backup & Restore",        desc: "Scheduled pg_dump backups with selective-table import and configurable retention" },
   { icon: Download,      color: "#7c3aed", label: "Install as App",          desc: "Install on Android, iOS, or desktop as a PWA — works like a native app offline" },
 ];
@@ -438,6 +454,10 @@ const SECURITY = [
   "Multi-device sessions — revoke any device remotely",
   "VAPID push keys auto-generated and persisted in settings table",
   "Encryption key persisted in settings table (override via ENCRYPTION_KEY secret)",
+  "Optional two-factor authentication — TOTP authenticator app or email OTP, with encrypted secrets and one-time backup codes",
+  "New-device login triggers a 2FA/verification challenge; only one device session stays active per account at a time",
+  "One-time first-login permission walkthrough (notifications + file access) for every new user",
+  "Dedicated security event log (security_logs) records failed logins, lockouts, and 2FA challenges separately from the general audit trail",
 ];
 
 // ── System requirements ───────────────────────────────────────────────────────
