@@ -9,6 +9,7 @@ import {
 } from "../../services/notificationTemplates";
 import { finalizeLogin, sendLoginOtp } from "./login-helpers";
 import { asyncHandler } from "../../lib/async-handler";
+import { maskEmail } from "./helpers";
 
 const router: IRouter = Router();
 
@@ -168,7 +169,24 @@ router.post("/auth/login", asyncHandler(async (req, res) => {
       await securityLog(user.id, isNewDevice ? "device.new_challenge" : "2fa.challenge", true, clientIp, deviceFingerprint, "OTP challenge issued");
       res.json({ requires2fa: true, method: "otp", maskedEmail, totpEnrolled, isNewDevice });
     } catch (err: any) {
-      res.status(err?.status ?? 500).json({ error: err?.message ?? "Failed to send verification code." });
+      // Email send failed — the session already has pendingUserId set so the
+      // challenge window is still valid. Instead of returning a hard error
+      // (which hides the verification page), fall back gracefully:
+      //   • User has TOTP enrolled → switch to TOTP challenge (no email needed)
+      //   • No TOTP → still show the verification page with an email error flag
+      //     so the user can see the problem and use a backup code or retry.
+      if (totpEnrolled) {
+        req.session.pendingMethod = "totp";
+        await securityLog(user.id, isNewDevice ? "device.new_challenge" : "2fa.challenge", true, clientIp, deviceFingerprint, "OTP email failed, fell back to TOTP challenge");
+        res.json({ requires2fa: true, method: "totp", totpEnrolled: true, isNewDevice });
+      } else {
+        // Still return requires2fa so the verification page renders; the
+        // otpError flag lets the frontend display a friendly warning about
+        // the email delivery failure.
+        const masked = maskEmail(user.email);
+        await securityLog(user.id, isNewDevice ? "device.new_challenge" : "2fa.challenge", false, clientIp, deviceFingerprint, `OTP email failed: ${err?.message}`);
+        res.json({ requires2fa: true, method: "otp", maskedEmail: masked, totpEnrolled, isNewDevice, otpError: err?.message ?? "Failed to send verification code." });
+      }
     }
     return;
   }

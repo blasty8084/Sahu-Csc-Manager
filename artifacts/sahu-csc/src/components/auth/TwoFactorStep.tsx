@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   ShieldCheck, KeyRound, Loader2, ArrowLeft, Mail, Smartphone,
-  QrCode, Copy, Check, AlertTriangle,
+  QrCode, Copy, Check, AlertTriangle, WifiOff,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import type { TwoFaChallenge } from "@/hooks/use-auth";
@@ -30,9 +30,11 @@ type TotpSetup = { qrCode: string; manualEntryKey: string };
 export function TwoFactorStep({ challenge, onSuccess, onBack }: TwoFactorStepProps) {
   const { verifyTwoFactor, switchTwoFaMethod, setupTotpPending, completeLogin } = useAuth();
 
-  const [method, setMethod] = useState<Method>("otp");
+  const [method, setMethod] = useState<Method>(challenge.method);
   const [maskedEmail, setMaskedEmail] = useState(challenge.maskedEmail);
   const [totpEnrolled, setTotpEnrolled] = useState(!!challenge.totpEnrolled);
+  // Shown when the initial OTP email failed to send (e.g. SMTP not configured).
+  const [otpSendError, setOtpSendError] = useState<string | null>(challenge.otpError ?? null);
   const [totpSetup, setTotpSetup] = useState<TotpSetup | null>(null);
   const [settingUpTotp, setSettingUpTotp] = useState(false);
   const [switching, setSwitching] = useState(false);
@@ -61,9 +63,11 @@ export function TwoFactorStep({ challenge, onSuccess, onBack }: TwoFactorStepPro
     }, 1000);
   };
 
-  // Login already sent the first Email OTP before this screen mounted.
+  // Start the resend cooldown only when the initial method is OTP (the login
+  // call already sent the first code). If we landed on TOTP (e.g. email
+  // failed and server fell back to TOTP), there is no cooldown to enforce.
   useEffect(() => {
-    startResendTimer();
+    if (challenge.method === "otp") startResendTimer();
     return () => { if (resendTimerRef.current) clearInterval(resendTimerRef.current); };
   }, []);
 
@@ -77,6 +81,7 @@ export function TwoFactorStep({ challenge, onSuccess, onBack }: TwoFactorStepPro
     if (next === method || switching) return;
     setSwitching(true);
     setError(null);
+    setOtpSendError(null);
     try {
       const result = await switchTwoFaMethod(next);
       setMethod(next);
@@ -98,6 +103,7 @@ export function TwoFactorStep({ challenge, onSuccess, onBack }: TwoFactorStepPro
     if (resendSeconds > 0 || switching) return;
     setSwitching(true);
     setError(null);
+    setOtpSendError(null);
     try {
       const result = await switchTwoFaMethod("otp");
       if (result.maskedEmail) setMaskedEmail(result.maskedEmail);
@@ -245,6 +251,20 @@ export function TwoFactorStep({ challenge, onSuccess, onBack }: TwoFactorStepPro
           <Smartphone className="w-3.5 h-3.5" />Authenticator App
         </button>
       </div>
+
+      {/* OTP email delivery error — shown when the initial OTP send failed
+          (e.g. SMTP not configured). User can switch to TOTP or use a backup code. */}
+      {otpSendError && method === "otp" && (
+        <div className="mb-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
+          <WifiOff className="mt-0.5 w-4 h-4 flex-shrink-0 text-amber-600" />
+          <div>
+            <p className="text-xs font-semibold text-amber-800">Verification email couldn't be sent</p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              Switch to <span className="font-semibold">Authenticator App</span> above, or use a backup code below.
+            </p>
+          </div>
+        </div>
+      )}
 
       <AnimatePresence mode="wait">
         {showTotpEnrollment ? (

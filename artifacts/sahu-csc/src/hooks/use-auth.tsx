@@ -37,6 +37,10 @@ export interface TwoFaChallenge {
   // whether picking "Authenticator App" on the verification screen shows the
   // 6-digit input or a "Set up Authenticator" enrollment CTA.
   totpEnrolled?: boolean;
+  // Set when the OTP email failed to send (SMTP not configured, etc.).
+  // The verification page still shows so the user can switch to TOTP or
+  // use a backup code; this message is displayed as a warning banner.
+  otpError?: string;
 }
 
 export interface TwoFaVerifyInput {
@@ -174,6 +178,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isNewDevice: !!body.isNewDevice,
         maskedEmail: body.maskedEmail,
         totpEnrolled: !!body.totpEnrolled,
+        otpError: body.otpError ?? undefined,
       };
     }
     applyLoggedInUser(body as AuthUser);

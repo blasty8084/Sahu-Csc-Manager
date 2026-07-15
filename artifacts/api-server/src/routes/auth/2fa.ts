@@ -116,7 +116,11 @@ router.post("/auth/2fa/switch-method", asyncHandler(async (req, res) => {
     return;
   }
 
-  res.json({ method: "totp", totpEnrolled: !!user.totpSecret });
+  // Only report TOTP as enrolled when it was actually confirmed (twoFaEnabled).
+  // A stale totpSecret from an abandoned enrollment must not bypass the QR
+  // setup flow, or the user would be asked to enter a code for a secret they
+  // never finished scanning.
+  res.json({ method: "totp", totpEnrolled: !!(user.totpSecret && user.twoFaEnabled) });
 }));
 
 // ─── POST /auth/2fa/verify-totp ────────────────────────────────────────────────
