@@ -27,7 +27,7 @@ import { PermissionCard } from "@/components/PermissionCard";
 declare const __APP_VERSION__: string;
 
 // ─── Static imports (tiny / needed on first paint) ───────────────────────────
-import Login from "@/pages/login";
+const Login = lazy(() => import("@/pages/login"));
 import NotFound from "@/pages/not-found";
 import Offline from "@/pages/offline";
 import RegionBlocked from "@/pages/region-blocked";
