@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Platform Documentation
-**Version 4.7.0** — last updated 2026-07-16
+**Version 4.7.1** — last updated 2026-07-16
 
 > Common Service Center (CSC) Business Management Platform for Odisha / India rural service centers.
 > Full-stack · PWA · Offline-capable · Multilingual (English / Hindi / Odia)
@@ -55,6 +55,11 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 ---
 
 ## 2. Version History
+
+### v4.7.1 — Security Score 100 & Login Code Display Fix (2026-07-16)
+
+- TOTP security score corrected: 92 → **100/100** when authenticator app is active
+- **Security fix**: removed `TotpLiveCode` from the login verification page — showing the rotating code on the same screen as the code-entry field defeated the purpose of 2FA; replaced with a hint card directing the user to their trusted device's profile page
 
 ### v4.7.0 — Built-in Authenticator: No QR Code, No External App (2026-07-16)
 

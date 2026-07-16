@@ -14,6 +14,17 @@ const APP_VERSION = __APP_VERSION__;
 // ── Changelog ────────────────────────────────────────────────────────────────
 const CHANGELOG = [
   {
+    version: "v4.7.1",
+    title: "Security Score 100 & Login Code Display Fix",
+    date: "2026-07-16",
+    accent: "#dc2626",
+    changes: [
+      "TOTP security score corrected to 100/100 — previously capped at 92 even when the authenticator app was fully active and protecting the account",
+      "Security fix: the rotating 6-digit code is no longer displayed on the login verification page — showing it on the same screen as the entry field defeated the purpose of two-factor authentication",
+      "The login TOTP step now shows a hint card instead: 'Open the app on your trusted device → My Profile → Security to view your current code'",
+    ],
+  },
+  {
     version: "v4.7.0",
     title: "Built-in Authenticator — Live Code, No QR, No External App",
     date: "2026-07-16",

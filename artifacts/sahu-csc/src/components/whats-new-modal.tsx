@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const VERSION = "4.7.0";
+const VERSION = "4.7.1";
 const STORAGE_KEY = `sahu-whats-new-v${VERSION}`;
 
 interface Feature {

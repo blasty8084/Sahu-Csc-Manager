@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v3 / v4
-**Current version: 4.7.0 — July 16, 2026**
+**Current version: 4.7.1 — July 16, 2026**
 
 > Detailed record of every feature, change, and upgrade from v3.0.0 onward.  
 > For v2.x history, see `docs/archive/changelogV2.md`.  
@@ -13,6 +13,7 @@
 
 ## Table of Contents
 
+0. [v4.7.1 — Security Score 100 & Login Code Display Fix (July 16, 2026)](#0-v471--security-score-100--login-code-display-fix-july-16-2026)
 0. [v4.7.0 — Built-in Authenticator: No QR Code, No External App (July 16, 2026)](#0-v470--built-in-authenticator-no-qr-code-no-external-app-july-16-2026)
 0. [v4.6.0 — Login-Time 2FA Method Choice (July 15, 2026)](#0-v460--login-time-2fa-method-choice-july-15-2026)
 0. [v4.5.1 — File Manager Permission: Real Granted/Denied Signal (July 15, 2026)](#0-v451--file-manager-permission-real-granteddenied-signal-july-15-2026)
