@@ -305,7 +305,7 @@ export function TwoFactorSection() {
           <div className="flex flex-wrap gap-1.5">
             <span
               className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold"
-              style={{ background: twoFaEnabled ? "rgba(16,185,129,0.18)", color: "#6ee7b7" }}
+              style={{ background: twoFaEnabled ? "rgba(16,185,129,0.18)" : "rgba(239,68,68,0.18)", color: twoFaEnabled ? "#6ee7b7" : "#fca5a5" }}
             >
               {twoFaEnabled ? <ShieldCheck size={10} /> : <ShieldOff size={10} />}
               {twoFaEnabled ? "2FA ON" : "2FA OFF"}
