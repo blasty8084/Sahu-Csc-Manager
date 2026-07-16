@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v3 / v4
-**Current version: 4.5.1 — July 15, 2026**
+**Current version: 4.7.0 — July 16, 2026**
 
 > Detailed record of every feature, change, and upgrade from v3.0.0 onward.  
 > For v2.x history, see `docs/archive/changelogV2.md`.  
@@ -13,6 +13,8 @@
 
 ## Table of Contents
 
+0. [v4.7.0 — Built-in Authenticator: No QR Code, No External App (July 16, 2026)](#0-v470--built-in-authenticator-no-qr-code-no-external-app-july-16-2026)
+0. [v4.6.0 — Login-Time 2FA Method Choice (July 15, 2026)](#0-v460--login-time-2fa-method-choice-july-15-2026)
 0. [v4.5.1 — File Manager Permission: Real Granted/Denied Signal (July 15, 2026)](#0-v451--file-manager-permission-real-granteddenied-signal-july-15-2026)
 0. [v4.5.0 — Permission Card Redesign: File Manager Access & Continue Fix (July 15, 2026)](#0-v450--permission-card-redesign-file-manager-access--continue-fix-july-15-2026)
 0. [v4.4.0 — First-Login Permissions, 2FA & Single-Device Enforcement (July 15, 2026)](#0-v440--first-login-permissions-2fa--single-device-enforcement-july-15-2026)
@@ -30,6 +32,38 @@
 0. [v3.5.10 — Navigation Performance — Instant Page Switching (July 12, 2026)](#0-v3510--navigation-performance--instant-page-switching-july-12-2026)
 0. [v3.5.9 — Redis Cache Live, i18n Fixes & Build Hardening (July 12, 2026)](#0-v359--redis-cache-live-i18n-fixes--build-hardening-july-12-2026)
 0. [v3.5.8 — Reports & Receipt Export Page Modularization (July 12, 2026)](#0-v358--reports--receipt-export-page-modularization-july-12-2026)
+
+---
+
+## 0. v4.7.0 — Built-in Authenticator: No QR Code, No External App (July 16, 2026)
+
+Replaced the external-authenticator (QR code / Google Authenticator / Authy) TOTP flow with a fully built-in soft token. No new DB schema changes — the existing `users.totp_secret` column is used as before.
+
+| Change | Description |
+|--------|-------------|
+| **No QR code, no external app** | `POST /auth/2fa/setup-totp` and `POST /auth/2fa/setup-totp-pending` no longer generate a QR code or call `qrcode.toDataURL()`. They auto-generate the secret, store it, and return `{ enrolled: true }`. The `qrcode` package import removed from `2fa.ts`. |
+| **GET /auth/2fa/totp-code (new)** | Authenticated endpoint — returns `{ code, remaining, step }` for the logged-in user's current TOTP window. Auto-generates a secret if one doesn't exist yet. |
+| **GET /auth/2fa/totp-code-pending (new)** | Mid-login variant — works with `pendingUserId` session key; same response shape. Used by the login TOTP step to display the live code before a full session exists. |
+| **120-second TOTP period** | `authenticator.options = { step: 120 }` applied at router creation — codes rotate every 120 s instead of the standard 30 s; the `otpauth://` URI embeds `period=120` for any app that still scans it. |
+| **TotpLiveCode component (new)** | `src/components/auth/TotpLiveCode.tsx` — shared React component that fetches a code from a given API path, shows big monospace digits with a countdown SVG ring (green → orange → red), and auto-refetches the moment the current window expires. No external deps beyond React. |
+| **Profile page (TwoFactorSection.tsx)** | QR setup stage replaced — no QR image, no scan countdown. "Enable Authenticator" calls `setup-totp`, then immediately renders `<TotpLiveCode apiPath="/api/auth/2fa/totp-code" />`. User reads the displayed code and enters it once to confirm enrollment. Removed `totpTimer`, `timerRef`, and `totpSetup` state; removed `useEffect` countdown. |
+| **Login TOTP step (TwoFactorStep.tsx)** | QR enrollment phase removed entirely. `handleChooseMethod("totp")` now silently calls `setupTotpPending()` if the account has no TOTP secret yet, then sets `totpEnrolled = true`. Code-entry phase renders `<TotpLiveCode apiPath="/api/auth/2fa/totp-code-pending" />` above the input field so the user sees and types the rotating code. |
+| **use-auth.tsx** | `TotpSetupData` type simplified to `{ enrolled: boolean }`; `setupTotpPending()` return value updated to match. |
+
+---
+
+## 0. v4.6.0 — Login-Time 2FA Method Choice (July 15, 2026)
+
+The post-login 2FA / new-device challenge screen was upgraded from a fixed-method code entry to a method picker with inline TOTP enrollment support.
+
+| Change | Description |
+|--------|-------------|
+| **Method picker UI** | `TwoFactorStep.tsx` now shows a phase-1 card picker — Email OTP (navy) or Authenticator App (orange) — before any code is requested. Either option can be chosen at login time regardless of the account's stored `twoFaMethod`. |
+| **POST /auth/2fa/switch-method (new)** | Switches the pending 2FA method mid-login (or resends OTP for the email path). Reads `pendingUserId` from session; does not require a full session. For `method: "otp"` it sends a fresh OTP email and returns `maskedEmail`. For `method: "totp"` it returns `totpEnrolled` status so the frontend knows whether to show setup or code-entry. |
+| **Email OTP resend cooldown** | 120-second client-side cooldown after OTP send/resend — same `RESEND_COOLDOWN` constant used by register and forgot-password. The button disables and shows a countdown during the cooldown period. |
+| **Inline TOTP enrollment (mid-login)** | `POST /auth/2fa/setup-totp-pending` starts TOTP enrollment mid-login (only `pendingUserId` required, no full session). Completing it during login (`verify-totp`) flips `twoFaEnabled`/`twoFaMethod` and mints backup codes, mirroring the profile-settings enrollment flow. Backup codes shown once on-screen before the session is applied. |
+| **completeLogin() split** | `verifyTwoFactor()` in `use-auth.tsx` now resolves with `{ backupCodes, user }` instead of applying the session immediately when backup codes are present — lets the caller show them first, then call `completeLogin(user)` to finish. |
+| **Session flag** | `req.session.pendingTotpEnrolling = true` set by `setup-totp-pending`; checked by `verify-totp` Mode B to know it should also finalize enrollment (flip DB flags + mint backup codes) on the first successful code. |
 
 ---
 

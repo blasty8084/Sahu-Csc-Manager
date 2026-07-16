@@ -14,6 +14,31 @@ const APP_VERSION = __APP_VERSION__;
 // ── Changelog ────────────────────────────────────────────────────────────────
 const CHANGELOG = [
   {
+    version: "v4.7.0",
+    title: "Built-in Authenticator — Live Code, No QR, No External App",
+    date: "2026-07-16",
+    accent: "#7c3aed",
+    changes: [
+      "Two-factor authentication no longer requires scanning a QR code or installing Google Authenticator or Authy — the app generates and displays your 6-digit code directly in a live card",
+      "A rotating code card with a countdown ring appears on your profile and during login — read the code, type it in, done",
+      "Codes rotate every 120 seconds automatically; the countdown ring shows exactly how many seconds the current code is still valid",
+      "Enabling authenticator 2FA is now a single step: press Enable → see your live code → confirm it — no QR scanning at all",
+      "TOTP period extended from 30 s to 120 s — more time to read and enter the code without it expiring mid-entry",
+    ],
+  },
+  {
+    version: "v4.6.0",
+    title: "Login-Time 2FA Method Choice",
+    date: "2026-07-15",
+    accent: "#0891b2",
+    changes: [
+      "The post-login verification screen now lets you choose your method — Email OTP or Authenticator App — at login time, not just at setup time",
+      "Email OTP resend now has a 120-second cooldown to prevent accidental double-sends",
+      "First-time authenticator enrollment can be completed right from the login verification screen — no separate trip to profile settings needed",
+      "New backend endpoints: POST /auth/2fa/switch-method (switch method / resend OTP) and POST /auth/2fa/setup-totp-pending (start TOTP enrollment mid-login)",
+    ],
+  },
+  {
     version: "v4.5.1",
     title: "File Manager Permission — Real Granted/Denied Signal",
     date: "2026-07-15",
@@ -440,7 +465,7 @@ const FEATURES = [
   { icon: Shield,        color: "#059669", label: "Role-Based Access",       desc: "Admin, Operator, User roles with granular permissions and per-user data isolation" },
   { icon: Lock,          color: "#dc2626", label: "Account Security",        desc: "3-attempt lockout (5 min), bcrypt-12 hashing, idle auto-logout, full audit + security-event trail" },
   { icon: Key,           color: "#d97706", label: "Password Reset",          desc: "OTP-based 4-step reset flow; accepts username, email, or mobile as identifier" },
-  { icon: ShieldCheck,   color: "#0891b2", label: "Two-Factor Authentication", desc: "TOTP authenticator app or email OTP, with QR setup and one-time backup codes" },
+  { icon: ShieldCheck,   color: "#0891b2", label: "Two-Factor Authentication", desc: "Built-in soft token (no external app needed) or email OTP — live rotating 6-digit code with 120 s countdown ring and one-time backup codes" },
   { icon: Laptop2,       color: "#7c3aed", label: "Device & Session Control", desc: "New-device verification, single active session per account, trusted-device list with remote revoke" },
   { icon: RefreshCw,     color: "#0b2c60", label: "Backup & Restore",        desc: "Scheduled pg_dump backups with selective-table import and configurable retention" },
   { icon: Download,      color: "#7c3aed", label: "Install as App",          desc: "Install on Android, iOS, or desktop as a PWA — works like a native app offline" },

@@ -31,6 +31,15 @@
 >
 > **v4.3.2 optimization audit & measurements (2026-07-14)**: Ran a real load test (`loadtest.ts`, 50 connections/20s against a logged-in session) to get measured numbers instead of estimates: `/api/dashboard` p50=143ms p95=345ms p99=476ms (302 req/s), `/api/admin/users-overview` p50=150ms p95=351ms (296 req/s), `/healthz` p50=45ms (1052 req/s) — all 0 errors at 50 concurrent connections. Added two missing DB indexes found by a schema audit: `users_mobile_idx` (mobile is used in direct `eq()` lookups on every login/OTP/reset-password request, alongside username/email which already had unique-constraint indexes) and `services_category_idx` (used in `ORDER BY`/filter on the services list). Applied directly via `CREATE INDEX IF NOT EXISTS` rather than `drizzle-kit push`, per this project's convention of avoiding push-triggered data loss. Audited every other upload path in the API for the same raw-base64 issue the avatar fix addressed — none found; profile pictures were the only user-uploaded images. Audited static asset caching — already solid: `serve.mjs` sets `Cache-Control: public, max-age=31536000, immutable` on Vite's content-hashed JS/CSS/asset files and `no-store` on the HTML shell, so a real CDN in front of the domain would mostly help with edge latency, not caching correctness — noted as an infra decision (DNS/Cloudflare) rather than a code change. A Postgres read replica was investigated and intentionally not implemented: the DB connects via a single `pg` `Pool` with no replica-aware read/write split, and setting one up requires provisioning a second database endpoint, which is an infrastructure decision for the user rather than something to wire up unprompted.
 
+## What's New in v4.7.0 (July 16, 2026) — Built-in Authenticator
+
+- Two-factor authentication no longer requires scanning a QR code or installing Google Authenticator / Authy — the app generates and displays the rotating 6-digit code directly.
+- A live code card with a countdown ring appears in your profile settings and during the login 2FA step — read the code, type it in, done.
+- Codes rotate every **120 seconds** automatically (extended from 30 s); the ring counts down and the digits update on their own — no manual refresh.
+- Enabling authenticator 2FA is now a single-step confirm: press Enable → see your live code → enter it once to activate.
+- New API endpoints: `GET /auth/2fa/totp-code` (authenticated, returns current code + remaining seconds) and `GET /auth/2fa/totp-code-pending` (mid-login variant using `pendingUserId`).
+- New shared component: `TotpLiveCode` — SVG countdown ring + big monospace digits, auto-refetches on window expiry.
+
 ## What's New in v4.6.0 (July 15, 2026) — 2FA Method Choice on Login
 
 - The verification screen shown after login (new device / 2FA) now has a tab toggle: "Email OTP" (default, unchanged behavior) or "Authenticator App (TOTP)".

@@ -2,11 +2,11 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
-  Sparkles, Puzzle, Wrench, CheckCircle2, Zap, ShieldCheck, FolderOpen, Clock3,
+  Sparkles, ShieldCheck, RefreshCw, KeyRound,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const VERSION = "4.5.0";
+const VERSION = "4.7.0";
 const STORAGE_KEY = `sahu-whats-new-v${VERSION}`;
 
 interface Feature {
@@ -22,32 +22,32 @@ interface Feature {
 const FEATURES: Feature[] = [
   {
     icon: <ShieldCheck size={15} />,
-    color: "#4f46e5",
-    bg: "rgba(79,70,229,0.10)",
-    title: "Permission Card Redesign",
+    color: "#7c3aed",
+    bg: "rgba(124,58,237,0.10)",
+    title: "Built-in Verification Code",
     description:
-      "The first-login permissions step is now a clean two-step card. Each permission — Location, Notifications, and File Manager — shows live status (Requesting… → Allowed/Denied) as it's requested, instead of a single opaque prompt.",
-    tag: "Design",
-    tagColor: "#4f46e5",
-  },
-  {
-    icon: <FolderOpen size={15} />,
-    color: "#d97706",
-    bg: "rgba(217,119,6,0.10)",
-    title: "File Manager Permission",
-    description:
-      "A new File Manager step opens the native photo/file picker so receipt uploads and file exports get a clear, visible consent step alongside Location and Notifications.",
+      "Two-factor authentication no longer needs Google Authenticator or Authy. The app now generates and shows your 6-digit code directly — just read it and type it in. No QR code, no external app.",
     tag: "New",
-    tagColor: "#d97706",
+    tagColor: "#7c3aed",
   },
   {
-    icon: <Clock3 size={15} />,
+    icon: <RefreshCw size={15} />,
+    color: "#0891b2",
+    bg: "rgba(8,145,178,0.10)",
+    title: "120-Second Code Window",
+    description:
+      "Verification codes are valid for 120 seconds — 4× longer than before. More time to read and enter the code without it expiring mid-entry.",
+    tag: "Improved",
+    tagColor: "#0891b2",
+  },
+  {
+    icon: <KeyRound size={15} />,
     color: "#16a34a",
     bg: "rgba(22,163,74,0.10)",
-    title: "Continue Button — Stuck Fix",
+    title: "Live Countdown Display",
     description:
-      "Fixed a bug where the Continue button could stay disabled forever if a permission prompt was blocked or never responded. Every permission request now safely times out after 10 seconds so onboarding always completes.",
-    tag: "Bug Fix",
+      "A countdown ring next to your code shows exactly how many seconds it's still valid. When the window expires, the code refreshes automatically — no manual action needed.",
+    tag: "Design",
     tagColor: "#16a34a",
   },
 ];
@@ -101,7 +101,7 @@ export function WhatsNewModal() {
             </DialogHeader>
           </div>
           <p className="text-[11px] leading-snug relative z-10" style={{ color: "rgba(255,255,255,0.65)" }}>
-            Redesigned permission card, File Manager access, and a Continue-button fix.
+            Built-in 2FA code — no QR, no external app, 120-second rotating code right in the app.
           </p>
 
           {/* step dots */}

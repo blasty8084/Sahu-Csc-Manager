@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Platform Documentation
-**Version 4.4.0** — last updated 2026-07-15
+**Version 4.7.0** — last updated 2026-07-16
 
 > Common Service Center (CSC) Business Management Platform for Odisha / India rural service centers.
 > Full-stack · PWA · Offline-capable · Multilingual (English / Hindi / Odia)
@@ -55,6 +55,24 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 ---
 
 ## 2. Version History
+
+### v4.7.0 — Built-in Authenticator: No QR Code, No External App (2026-07-16)
+
+Two-factor authentication no longer requires an external authenticator app. The app now generates and displays the rotating 6-digit code directly.
+
+- `GET /auth/2fa/totp-code` (new, authenticated) — returns `{ code, remaining, step }` for the logged-in user's current TOTP window
+- `GET /auth/2fa/totp-code-pending` (new) — same for mid-login `pendingUserId` state
+- `setup-totp` and `setup-totp-pending` no longer generate QR codes — auto-enroll and return `{ enrolled: true }`
+- TOTP period: 120 s (extended from 30 s for easier entry)
+- New `TotpLiveCode` React component: big monospace digits + SVG countdown ring, auto-refetches on window expiry
+- Profile and login TOTP flows updated — QR scan replaced by live code card; enabling authenticator is now a single-step confirm
+
+### v4.6.0 — Login-Time 2FA Method Choice (2026-07-15)
+
+- Post-login verification screen shows a method picker (Email OTP / Authenticator App) at login time
+- New: `POST /auth/2fa/switch-method` — switch method or resend OTP mid-login
+- New: `POST /auth/2fa/setup-totp-pending` — inline TOTP enrollment during login (no full session required)
+- Email OTP resend cooldown: 120 s; backup codes shown once on-screen before session is applied
 
 ### v4.5.1 — File Manager Permission: Real Granted/Denied Signal (2026-07-15)
 
