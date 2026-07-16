@@ -195,9 +195,21 @@ const geoLimiter = rateLimit({
 app.use(
   cors({
     origin: (() => {
+      const origins: string[] = [];
       if (process.env.CORS_ORIGIN) {
-        return process.env.CORS_ORIGIN.split(",").map((o) => o.trim());
+        origins.push(...process.env.CORS_ORIGIN.split(",").map((o) => o.trim()).filter(Boolean));
       }
+      // Auto-include current Replit dev/prod domains so the allow-list stays
+      // correct across repl renames, forks, and new environments without any
+      // manual CORS_ORIGIN update.
+      for (const raw of [
+        process.env.REPLIT_DEV_DOMAIN,
+        ...(process.env.REPLIT_DOMAINS ?? "").split(","),
+      ]) {
+        const d = raw?.trim();
+        if (d) origins.push(`https://${d}`);
+      }
+      if (origins.length > 0) return origins;
       // In production, CORS_ORIGIN must be set explicitly — falling back to
       // localhost would silently allow cross-origin requests from any browser
       // running on the server host if the env var is ever missing.

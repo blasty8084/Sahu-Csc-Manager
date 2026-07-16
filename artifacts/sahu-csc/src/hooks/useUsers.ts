@@ -10,8 +10,9 @@ export function useAdminSessions() {
       if (!res.ok) return [];
       return res.json();
     },
-    staleTime: 15_000,
-    refetchInterval: 30_000,
+    staleTime: 60_000,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -24,8 +25,9 @@ export function usePendingUsers() {
       if (!res.ok) return [];
       return res.json();
     },
-    staleTime: 20_000,
-    refetchInterval: 30_000,
+    staleTime: 60_000,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -38,8 +40,9 @@ export function useAppealUsers() {
       if (!res.ok) return [];
       return res.json();
     },
-    staleTime: 20_000,
-    refetchInterval: 30_000,
+    staleTime: 60_000,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
   });
 }
 

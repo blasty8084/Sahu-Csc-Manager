@@ -34,6 +34,12 @@ const bulkExportQuerySchema = z.object({
 }).refine((d) => d.startDate <= d.endDate, {
   message: "startDate must be on or before endDate",
   path: ["startDate"],
+}).refine((d) => {
+  const diffMs = new Date(d.endDate).getTime() - new Date(d.startDate).getTime();
+  return diffMs <= 90 * 24 * 60 * 60 * 1000;
+}, {
+  message: "Date range cannot exceed 90 days per export",
+  path: ["endDate"],
 });
 
 const monthlyDownloadQuerySchema = z.object({

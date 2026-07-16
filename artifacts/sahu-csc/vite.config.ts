@@ -171,6 +171,15 @@ export default defineConfig({
       filename: "sw.ts",
       injectManifest: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,webp}"],
+        // Exclude heavy on-demand chunks from the precache — they are loaded
+        // lazily on first use and then cached by the runtime cache strategy.
+        // Precaching them would add ~1 MB to the SW install payload for assets
+        // the user may never need in a given session.
+        globIgnores: [
+          "**/jspdf*",
+          "**/html2canvas*",
+          "**/vendor-charts*",
+        ],
       },
 
       devOptions: {
