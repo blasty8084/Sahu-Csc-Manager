@@ -39,7 +39,7 @@
 - **DB pool capped at 5** — `DB_POOL_MAX=5` added as a shared env var. Prevents connection exhaustion on Replit's shared PostgreSQL under concurrent load.
 - **Session expire index** — `CREATE INDEX session_expire_idx ON session (expire)` applied. The hourly session cleanup job is now an index scan (was full table scan).
 - **Receipt export date cap** — Bulk export rejects ranges > 90 days to prevent out-of-memory ZIP builds.
-- **PWA precache −985 KB** — jspdf, html2canvas, and vendor-charts excluded from the service worker precache manifest (71 entries / 2.4 MB, was 74 / 3.3 MB). Still runtime-cached on first use.
+- **PWA precache −985 KB** — jspdf, html2canvas, and vendor-charts excluded from the service worker precache manifest. Stable chunk names (`vendor-pdf`, `vendor-pdf-canvas`, `vendor-charts`) added to `globIgnores` so the exclusion survives content-hash renames. Still runtime-cached on first use.
 - **Boot backfill is now a no-op after first run** — `ledgerBalanceBackfillDone` flag in `settings` table skips the ledger UPDATE on every subsequent boot.
 
 ## What's New in v4.8.0 (July 16, 2026) — 2FA Security Upgrade
@@ -131,7 +131,7 @@ Systematic bug-fix release. No new user-visible features; no API contract change
 | **Template builders** | `approval.ts`, `rejection.ts`, `otp.ts` — added `build*MailOptions()` exports (pure, sync HTML render) so the api-server can pre-render emails before queuing them. |
 | **Routes updated** | `admin-appeals.ts`, `admin-registration.ts`, `broadcast.ts`, `auth/otp.ts` — push/email calls now go through `enqueueNotification()` / `enqueueEmail()`. |
 | **`pm2.config.js`** | Root PM2 ecosystem config: `api-server` in cluster mode, `worker-server` in fork mode (1 instance). |
-| **`Worker Server` workflow** | Added workflow (console, port 8081). Needs `REDIS_URL` secret to activate queue mode. Without it, the worker server won't start (exits with a clear message), and the api-server handles everything directly. |
+| **`Worker Server` workflow** | Added workflow (console, port 8081). Needs `REDIS_URL` secret to activate queue mode. Without it, the worker server exits immediately (`[ -z "$REDIS_URL" ] && exit 0`), and the api-server handles everything directly. |
 
 ### To enable full async queue mode
 
@@ -237,18 +237,18 @@ Continuing from the 8.5/10 baseline (N+1 fixes, batched writes, pooled connectio
 ## Replit Setup
 
 ### How to run
-- **Frontend** (port 5000): `Frontend` workflow — `PORT=5000 pnpm --filter @workspace/sahu-csc run dev`
+- **Frontend** (port 5000): `artifacts/sahu-csc: web` workflow — `pnpm --filter @workspace/sahu-csc run dev`
 - **API Server** (port 8080): `API Server` workflow — builds then runs `artifacts/api-server/dist/index.mjs`
-- **Seed DB**: Run the `Seed Database` workflow (requires `ADMIN_PASSWORD` and `OPERATOR_PASSWORD` secrets)
+- **Seed DB**: Run the `Seed Database` workflow — pushes schema first, then seeds (requires `ADMIN_PASSWORD` and `OPERATOR_PASSWORD` secrets)
 - **Rebuild API**: restart `API Server` workflow (it rebuilds on every start)
-- **Worker Server** (port 8081, optional): `Worker Server` workflow — only starts when `REDIS_URL` secret is set
+- **Worker Server** (port 8081, optional): `Worker Server` workflow — exits immediately if `REDIS_URL` is not set
 
 ### First-time setup on a new Replit import
 1. `pnpm install` from workspace root (or let post-merge run it automatically)
 2. Schema push is automatic via `scripts/post-merge.sh` (`drizzle-kit push --force` + session table DDL)
 3. Set secrets: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD` (see table below)
 4. Run the `Seed Database` workflow to create admin/operator accounts
-5. Start the `Frontend` and `API Server` workflows (the `Project` workflow starts both + Worker Server in parallel)
+5. Start the `artifacts/sahu-csc: web` and `API Server` workflows (the `Project` workflow starts both + Worker Server in parallel)
 6. ~~Update `CORS_ORIGIN`~~ — no longer needed; `REPLIT_DEV_DOMAIN` and `REPLIT_DOMAINS` are auto-included at startup (v4.9.0+)
 
 #### Secrets required
@@ -451,8 +451,8 @@ PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server run build && 
 pnpm --filter @workspace/sahu-csc run dev
 # dev script in package.json: fuser -k ${PORT:-5000}/tcp 2>/dev/null; sleep 1; vite --host 0.0.0.0
 
-# Seed Database — create/reset admin + operator (manual, requires secrets)
-PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server exec tsx src/scripts/seed.ts
+# Seed Database — push schema first, then create/reset admin + operator (manual, requires secrets)
+pnpm --filter @workspace/db run push-force && PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server exec tsx src/scripts/seed.ts
 
 # Typecheck (manual)
 pnpm run typecheck:libs && pnpm -r --filter "./artifacts/**" --if-present run typecheck
@@ -460,8 +460,8 @@ pnpm run typecheck:libs && pnpm -r --filter "./artifacts/**" --if-present run ty
 # Build Production (manual)
 pnpm run typecheck:libs && pnpm --filter @workspace/api-server run build && PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run build
 
-# Worker Server (optional — skips if REDIS_URL not set)
-[ -z "$REDIS_URL" ] && echo 'REDIS_URL not set — worker server skipped' && exit 0; PORT=8081 pnpm --filter @workspace/worker-server run build && PORT=8081 node --enable-source-maps artifacts/worker-server/dist/index.mjs
+# Worker Server (optional — exits immediately if REDIS_URL not set)
+[ -z "$REDIS_URL" ] && exit 0; PORT=8081 pnpm --filter @workspace/worker-server run build && PORT=8081 node --enable-source-maps artifacts/worker-server/dist/index.mjs
 ```
 
 ---
