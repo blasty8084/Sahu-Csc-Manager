@@ -199,30 +199,33 @@ Continuing from the 8.5/10 baseline (N+1 fixes, batched writes, pooled connectio
 ## Replit Setup
 
 ### How to run
-- **Frontend** (port 5000): `artifacts/sahu-csc: web` workflow (SAHU CSC FV1) — `pnpm --filter @workspace/sahu-csc run dev`
+- **Frontend** (port 5000): `Frontend` workflow — `PORT=5000 pnpm --filter @workspace/sahu-csc run dev`
 - **API Server** (port 8080): `API Server` workflow — builds then runs `artifacts/api-server/dist/index.mjs`
 - **Seed DB**: Run the `Seed Database` workflow (requires `ADMIN_PASSWORD` and `OPERATOR_PASSWORD` secrets)
 - **Rebuild API**: restart `API Server` workflow (it rebuilds on every start)
+- **Worker Server** (port 8081, optional): `Worker Server` workflow — only starts when `REDIS_URL` secret is set
 
-### First-time setup
-1. `pnpm install` from workspace root
-2. Schema is auto-applied by `drizzle-kit push` (runs via `scripts/post-merge.sh`)
-3. Run `Seed Database` workflow to create admin/operator accounts
-4. Start `API Server`, `artifacts/sahu-csc: web`, and `Worker Server` (optional, needs `REDIS_URL`) workflows
+### First-time setup on a new Replit import
+1. `pnpm install` from workspace root (or let post-merge run it automatically)
+2. Schema push is automatic via `scripts/post-merge.sh` (`drizzle-kit push --force` + session table DDL)
+3. Set secrets: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD` (see table below)
+4. Run the `Seed Database` workflow to create admin/operator accounts
+5. Start the `Frontend` and `API Server` workflows (the `Project` workflow starts both + Worker Server in parallel)
+6. Update `CORS_ORIGIN` in Replit shared env vars to include your new `$REPLIT_DEV_DOMAIN`
 
 #### Secrets required
 | Secret | Purpose |
 |--------|---------|
 | `SESSION_SECRET` | Express session signing key |
-| `ADMIN_PASSWORD` | Seed admin account password |
-| `OPERATOR_PASSWORD` | Seed operator account password |
+| `ADMIN_PASSWORD` | Seed admin account password (used at login: username `admin`) |
+| `OPERATOR_PASSWORD` | Seed operator account password (used at login: username `operator`) |
 | `UPSTASH_REDIS_REST_URL` | Upstash Redis REST endpoint — enables shared cache |
 | `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST token |
 | `REDIS_URL` | Upstash direct TCP URL (`rediss://...`) — required for Worker Server / BullMQ |
 
 #### Env vars to check after each re-import
-- `CACHE_BACKEND` — set to `redis` (shared env)
-- `CORS_ORIGIN` — must include the current `$REPLIT_DEV_DOMAIN`; update via `setEnvVars` or the Replit env panel whenever the domain changes (it changes on each import/re-deploy)
+- `CORS_ORIGIN` — must include the current `$REPLIT_DEV_DOMAIN`; update via the Replit env panel whenever the domain changes (it changes on each import). Current value lists the previous developer's domains — **update this before testing API calls from the preview.**
+- `CACHE_BACKEND` — set to `redis` only if Upstash Redis secrets are configured; default `memory` works for single-instance dev
 
 ### Login credentials
 - Admin: `admin` / value of `ADMIN_PASSWORD` secret
