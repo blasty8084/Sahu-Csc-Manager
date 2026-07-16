@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
   ShieldCheck, ShieldOff, Mail, Smartphone, Loader2,
   Copy, Check, AlertTriangle, KeyRound, Eye, EyeOff,
-  Clock, Star, Zap,
+  Clock, Star, Zap, RefreshCw, QrCode, ExternalLink,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
@@ -19,7 +19,7 @@ const ORANGE = "#F97316";
 const GREEN  = "#10b981";
 
 type Method  = "otp" | "totp";
-type Stage   = "idle" | "otp-confirm" | "totp-setup" | "backup-codes" | "disable-confirm";
+type Stage   = "idle" | "otp-confirm" | "totp-setup" | "backup-codes" | "disable-confirm" | "regen-confirm";
 
 // ── Animated security-score ring ────────────────────────────────────────────
 function SecurityRing({ score }: { score: number }) {
@@ -54,16 +54,22 @@ export function TwoFactorSection() {
   const score                         = twoFaEnabled ? (twoFaMethod === "totp" ? 100 : 74) : 28;
 
   // ── Local UI state ────────────────────────────────────────────────────────
-  const [stage,     setStage]     = useState<Stage>("idle");
-  const [pendingM,  setPendingM]  = useState<Method>("otp");   // method being set up / switched to
-  const [password,  setPassword]  = useState("");
-  const [showPass,  setShowPass]  = useState(false);
-  const [totpCode,  setTotpCode]  = useState("");
-  const [newCodes,  setNewCodes]  = useState<string[] | null>(null);  // one-time reveal after enable
-  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
-  const [showCodes, setShowCodes] = useState(false);
+  const [stage,         setStage]         = useState<Stage>("idle");
+  const [pendingM,      setPendingM]      = useState<Method>("otp");
+  const [password,      setPassword]      = useState("");
+  const [showPass,      setShowPass]      = useState(false);
+  const [totpCode,      setTotpCode]      = useState("");
+  const [newCodes,      setNewCodes]      = useState<string[] | null>(null);
+  const [copiedIdx,     setCopiedIdx]     = useState<number | null>(null);
+  const [showCodes,     setShowCodes]     = useState(false);
+  // QR / secret from setup-totp
+  const [qrDataUrl,     setQrDataUrl]     = useState<string | null>(null);
+  const [totpSecret,    setTotpSecret]    = useState<string | null>(null);
+  const [showSecret,    setShowSecret]    = useState(false);
+  const [copiedSecret,  setCopiedSecret]  = useState(false);
+
   // ── Backup-codes count from /auth/2fa/status ──────────────────────────────
-  const { data: statusData } = useQuery<{ backupCodesRemaining: number; twoFaEnabled: boolean; twoFaMethod: Method }>({
+  const { data: statusData } = useQuery<{ backupCodesRemaining: number; twoFaEnabled: boolean; twoFaMethod: Method; totpConfigured: boolean }>({
     queryKey: ["2fa-status"],
     queryFn:  () => apiFetch("/auth/2fa/status"),
     enabled:  twoFaEnabled,
@@ -83,12 +89,35 @@ export function TwoFactorSection() {
     setShowPass(false);
     setTotpCode("");
     setPendingM("otp");
+    setQrDataUrl(null);
+    setTotpSecret(null);
+    setShowSecret(false);
+    setCopiedSecret(false);
+  };
+
+  const copyCode = (code: string, idx: number) => {
+    navigator.clipboard?.writeText(code).then(() => {
+      setCopiedIdx(idx);
+      setTimeout(() => setCopiedIdx(null), 1500);
+    }).catch(() => {});
+  };
+
+  const copySecretKey = () => {
+    if (!totpSecret) return;
+    navigator.clipboard?.writeText(totpSecret).then(() => {
+      setCopiedSecret(true);
+      setTimeout(() => setCopiedSecret(false), 2000);
+    }).catch(() => {});
   };
 
   // ── Mutations ─────────────────────────────────────────────────────────────
   const setupTotpMut = useMutation({
     mutationFn: () => apiFetch("/auth/2fa/setup-totp", { method: "POST" }),
-    onSuccess: () => { setStage("totp-setup"); },
+    onSuccess: (data) => {
+      if (data.qrCodeDataUrl) setQrDataUrl(data.qrCodeDataUrl);
+      if (data.secret) setTotpSecret(data.secret);
+      setStage("totp-setup");
+    },
     onError: (e: any) => toast({ variant: "destructive", title: e.message ?? "Failed to start TOTP setup" }),
   });
 
@@ -120,12 +149,16 @@ export function TwoFactorSection() {
     onError: (e: any) => toast({ variant: "destructive", title: e.message ?? "Failed to disable" }),
   });
 
-  const copyCode = (code: string, idx: number) => {
-    navigator.clipboard?.writeText(code).then(() => {
-      setCopiedIdx(idx);
-      setTimeout(() => setCopiedIdx(null), 1500);
-    }).catch(() => {});
-  };
+  const regenMut = useMutation({
+    mutationFn: () => apiFetch("/auth/2fa/regenerate-backup-codes", { method: "POST", body: JSON.stringify({ currentPassword: password }) }),
+    onSuccess: (data) => {
+      setPassword("");
+      if (data.backupCodes?.length) { setNewCodes(data.backupCodes); setStage("backup-codes"); setPendingM(twoFaMethod); }
+      else { reset(); refreshAll(); }
+      toast.success("New backup codes generated", "Your old codes have been invalidated.");
+    },
+    onError: (e: any) => toast({ variant: "destructive", title: e.message ?? "Failed to regenerate" }),
+  });
 
   // ── Initiate enable / switch ──────────────────────────────────────────────
   const initiateMethod = (m: Method) => {
@@ -170,7 +203,7 @@ export function TwoFactorSection() {
     );
   }
 
-  // ── TOTP setup / verify screen ────────────────────────────────────────────
+  // ── TOTP setup screen ─────────────────────────────────────────────────────
   if (stage === "totp-setup") {
     return (
       <div className="rounded-2xl border bg-white p-4 space-y-3 shadow-sm">
@@ -179,16 +212,60 @@ export function TwoFactorSection() {
             <Smartphone size={16} style={{ color: ORANGE }} />
           </div>
           <div>
-            <p className="text-sm font-bold text-gray-900">Your verification code</p>
-            <p className="text-xs text-gray-400">Enter the code below to enable 2FA</p>
+            <p className="text-sm font-bold text-gray-900">Connect Authenticator App</p>
+            <p className="text-xs text-gray-400">Google Authenticator, Authy, or any TOTP app</p>
           </div>
         </div>
-        {/* Live rotating code display */}
-        <TotpLiveCode apiPath="/api/auth/2fa/totp-code" />
+
+        {/* QR code */}
+        {qrDataUrl && (
+          <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 flex flex-col items-center gap-2">
+            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-widest">Scan with your app</p>
+            <img src={qrDataUrl} alt="TOTP QR code" className="w-44 h-44 rounded-lg" />
+            <p className="text-[11px] text-gray-400 text-center">Open your authenticator app → Add account → Scan QR code</p>
+          </div>
+        )}
+
+        {/* Manual entry fallback */}
+        {totpSecret && (
+          <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-3 space-y-1.5">
+            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
+              <KeyRound size={10} /> Can't scan? Enter manually
+            </p>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 text-[11px] font-mono bg-white border border-gray-200 rounded-lg px-2.5 py-2 break-all text-gray-700 leading-relaxed">
+                {showSecret ? totpSecret : totpSecret.replace(/./g, "•")}
+              </code>
+              <div className="flex flex-col gap-1">
+                <button type="button" onClick={() => setShowSecret(v => !v)}
+                  className="p-1.5 rounded-lg border border-gray-200 bg-white text-gray-400 hover:text-gray-600">
+                  {showSecret ? <EyeOff size={12} /> : <Eye size={12} />}
+                </button>
+                <button type="button" onClick={copySecretKey}
+                  className="p-1.5 rounded-lg border border-gray-200 bg-white text-gray-400 hover:text-gray-600">
+                  {copiedSecret ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
+                </button>
+              </div>
+            </div>
+            <p className="text-[10px] text-gray-400">In your app: Time-based · 30-second codes</p>
+          </div>
+        )}
+
+        {/* In-app live code (fallback for users who prefer built-in viewer) */}
+        <details className="group">
+          <summary className="text-[11px] font-semibold text-gray-400 cursor-pointer flex items-center gap-1.5 select-none">
+            <span className="group-open:hidden">▶ Or use built-in code viewer</span>
+            <span className="hidden group-open:inline">▼ Built-in code viewer</span>
+          </summary>
+          <div className="mt-2">
+            <TotpLiveCode apiPath="/api/auth/2fa/totp-code" />
+          </div>
+        </details>
+
         <Input
           autoFocus
           inputMode="numeric"
-          placeholder="Enter the 6-digit code above to confirm"
+          placeholder="Enter 6-digit code from your app to confirm"
           value={totpCode}
           onChange={(e) => setTotpCode(e.target.value)}
           className="text-center tracking-widest font-bold h-11"
@@ -209,28 +286,45 @@ export function TwoFactorSection() {
     );
   }
 
-  // ── OTP password confirm / Disable confirm ────────────────────────────────
-  if (stage === "otp-confirm" || stage === "disable-confirm") {
+  // ── OTP password confirm / Disable confirm / Regen confirm ────────────────
+  if (stage === "otp-confirm" || stage === "disable-confirm" || stage === "regen-confirm") {
     const isDisable = stage === "disable-confirm";
-    const mut       = isDisable ? disableMut : enableOtpMut;
+    const isRegen   = stage === "regen-confirm";
+    const mut       = isDisable ? disableMut : isRegen ? regenMut : enableOtpMut;
+
+    const title   = isDisable ? "Confirm to disable 2FA"
+                  : isRegen   ? "Regenerate backup codes"
+                  : "Enable Email OTP";
+    const subtitle = isDisable ? "Your account will be less secure"
+                   : isRegen   ? "Old codes will be permanently invalidated"
+                   : "Enter your password to confirm";
+    const btnLabel = isDisable ? "Disable 2FA"
+                   : isRegen   ? "Regenerate Codes"
+                   : "Enable";
+    const btnColor = isDisable ? "#ef4444" : isRegen ? ORANGE : "#3b82f6";
+    const iconBg   = isDisable ? "#fef2f2" : isRegen ? "#fff7ed" : "#eff6ff";
+    const Icon     = isDisable ? ShieldOff : isRegen ? RefreshCw : Mail;
+    const iconColor = isDisable ? "text-red-500" : isRegen ? "" : "text-blue-500";
+
     return (
       <div className="rounded-2xl border bg-white p-4 space-y-3 shadow-sm">
         <div className="flex items-center gap-2 mb-1">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-            style={{ background: isDisable ? "#fef2f2" : "#eff6ff" }}>
-            {isDisable
-              ? <ShieldOff size={16} className="text-red-500" />
-              : <Mail size={16} className="text-blue-500" />}
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: iconBg }}>
+            <Icon size={16} className={iconColor} style={isRegen ? { color: ORANGE } : undefined} />
           </div>
           <div>
-            <p className="text-sm font-bold text-gray-900">
-              {isDisable ? "Confirm to disable 2FA" : "Enable Email OTP"}
-            </p>
-            <p className="text-xs text-gray-400">
-              {isDisable ? "Your account will be less secure" : "Enter your password to confirm"}
-            </p>
+            <p className="text-sm font-bold text-gray-900">{title}</p>
+            <p className="text-xs text-gray-400">{subtitle}</p>
           </div>
         </div>
+        {isRegen && (
+          <div className="rounded-xl bg-amber-50 border border-amber-200 p-3">
+            <p className="text-xs text-amber-700 flex items-start gap-1.5">
+              <AlertTriangle size={12} className="flex-shrink-0 mt-0.5" />
+              All {codesRemaining} remaining backup codes will be invalidated immediately. Save the new ones before closing.
+            </p>
+          </div>
+        )}
         <div className="relative">
           <Input
             autoFocus
@@ -253,11 +347,11 @@ export function TwoFactorSection() {
           <Button variant="outline" className="flex-1 h-10" onClick={reset}>Cancel</Button>
           <Button
             className="flex-1 h-10 font-bold text-white border-0"
-            style={{ background: isDisable ? "#ef4444" : "#3b82f6" }}
+            style={{ background: btnColor }}
             disabled={!password || mut.isPending}
             onClick={() => mut.mutate()}
           >
-            {mut.isPending ? <Loader2 size={14} className="animate-spin" /> : isDisable ? "Disable 2FA" : "Enable"}
+            {mut.isPending ? <Loader2 size={14} className="animate-spin" /> : btnLabel}
           </Button>
         </div>
       </div>
@@ -322,7 +416,7 @@ export function TwoFactorSection() {
             <Clock size={11} className="text-blue-300 flex-shrink-0" />
             <span className="text-[11px] text-blue-300">
               {twoFaMethod === "totp"
-                ? "Authenticator app active — codes rotate every 120 s"
+                ? "Authenticator app active — codes rotate every 30 s"
                 : userEmail
                   ? `OTP codes sent to ${userEmail}`
                   : "OTP codes sent to your registered email"}
@@ -368,7 +462,7 @@ export function TwoFactorSection() {
                       {m === "totp" ? "Authenticator App" : "Email OTP"}
                     </p>
                     <p className="text-xs text-gray-400">
-                      {m === "totp" ? "Most secure · TOTP codes" : "Code via email on sign-in"}
+                      {m === "totp" ? "Google Authenticator, Authy, any TOTP app" : "Code via email on sign-in"}
                     </p>
                   </div>
                   {active && (
@@ -413,10 +507,12 @@ export function TwoFactorSection() {
                     {m === "totp" ? "Authenticator App" : "Email OTP"}
                   </p>
                   <p className="text-xs text-gray-400">
-                    {m === "totp" ? "Google Authenticator, Authy — most secure" : "Code sent to your email"}
+                    {m === "totp" ? "Google Authenticator, Authy, any TOTP app" : "Code sent to your email"}
                   </p>
                 </div>
-                <Zap size={14} className="text-gray-300 flex-shrink-0" />
+                {m === "totp"
+                  ? <QrCode size={14} className="text-gray-300 flex-shrink-0" />
+                  : <Zap size={14} className="text-gray-300 flex-shrink-0" />}
               </button>
             ))}
           </div>
@@ -437,7 +533,7 @@ export function TwoFactorSection() {
               className="text-xs font-semibold px-3 py-1 rounded-full transition-colors"
               style={{ background: showCodes ? NAVY : "#eef0f9", color: showCodes ? "white" : NAVY }}
             >
-              {showCodes ? "Hide" : "Show codes"}
+              {showCodes ? "Hide" : "Show status"}
             </button>
           </div>
 
@@ -461,7 +557,7 @@ export function TwoFactorSection() {
             {codesRemaining <= 2 && (
               <p className="text-[11px] text-red-500 font-medium flex items-center gap-1">
                 <AlertTriangle size={10} />
-                Running low — disable and re-enable 2FA to generate fresh codes.
+                Running low — generate fresh codes below.
               </p>
             )}
           </div>
@@ -493,10 +589,16 @@ export function TwoFactorSection() {
             </div>
           )}
 
-          <p className="text-[11px] text-gray-400 flex items-center gap-1.5">
-            <KeyRound size={10} />
-            Lost your codes? Disable and re-enable 2FA to generate 8 fresh ones.
-          </p>
+          {/* Regenerate button */}
+          <button
+            type="button"
+            onClick={() => { setStage("regen-confirm"); setPendingM(twoFaMethod); }}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-dashed text-sm font-semibold transition-colors"
+            style={{ borderColor: "#e5e7eb", color: "#6b7280" }}
+          >
+            <RefreshCw size={13} />
+            Generate new backup codes
+          </button>
         </div>
       )}
 

@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
 
-const STEP = 120;
-
 interface Props {
   /** Full API path, e.g. "/api/auth/2fa/totp-code-pending" */
   apiPath: string;
@@ -9,7 +7,8 @@ interface Props {
 
 export function TotpLiveCode({ apiPath }: Props) {
   const [code, setCode]           = useState<string | null>(null);
-  const [remaining, setRemaining] = useState(STEP);
+  const [remaining, setRemaining] = useState(30);
+  const [step, setStep]           = useState(30); // read from server; default matches standard 30 s
 
   useEffect(() => {
     let expiryTimer: ReturnType<typeof setTimeout>;
@@ -22,9 +21,11 @@ export function TotpLiveCode({ apiPath }: Props) {
       try {
         const resp = await fetch(`${base}${apiPath}`, { credentials: "include" });
         if (!resp.ok || !alive) return;
-        const json: { code: string; remaining: number } = await resp.json();
+        const json: { code: string; remaining: number; step?: number } = await resp.json();
+        const serverStep = json.step ?? 30;
         setCode(json.code);
         setRemaining(json.remaining);
+        setStep(serverStep);
         clearInterval(ticker);
         ticker = setInterval(() => setRemaining(r => Math.max(0, r - 1)), 1000);
         // Re-fetch the moment the current window expires
@@ -40,10 +41,10 @@ export function TotpLiveCode({ apiPath }: Props) {
     };
   }, [apiPath]);
 
-  const pct   = remaining / STEP;
+  const pct   = step > 0 ? remaining / step : 0;
   const r     = 22;
   const circ  = 2 * Math.PI * r;
-  const color = remaining > 60 ? "#10b981" : remaining > 30 ? "#f97316" : "#ef4444";
+  const color = pct > 0.6 ? "#10b981" : pct > 0.3 ? "#f97316" : "#ef4444";
   const d1    = code ? code.slice(0, 3) : "• • •";
   const d2    = code ? code.slice(3)    : "• • •";
 
@@ -83,7 +84,7 @@ export function TotpLiveCode({ apiPath }: Props) {
       </div>
 
       <p className="text-[11px] text-blue-400 text-center">
-        Auto-refreshes every 120 s · valid for {remaining}s
+        Auto-refreshes every {step} s · valid for {remaining}s
       </p>
     </div>
   );

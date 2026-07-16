@@ -1,13 +1,22 @@
 import { Router, type IRouter } from "express";
 import { db, usersTable, emailOtpsTable, passwordResetTokensTable } from "@workspace/db";
 import { eq, or, and, gt, count, desc, isNull, sql } from "drizzle-orm";
-import { randomUUID } from "node:crypto";
+import { randomUUID, timingSafeEqual } from "node:crypto";
 import { getClientIp } from "../../lib/auth";
 import { isSmtpConfigured } from "../../lib/mailer";
 import { enqueueEmail, buildOtpMailOptions } from "../../lib/queue-client";
 import { logger } from "../../lib/logger";
 import { generateNumericOtp, hashOtp, maskEmail } from "./helpers";
 import { asyncHandler } from "../../lib/async-handler";
+
+/** Timing-safe comparison of two hex-encoded SHA-256 OTP hashes. */
+function timingSafeHashEqual(a: string, b: string): boolean {
+  try {
+    return timingSafeEqual(Buffer.from(a, "hex"), Buffer.from(b, "hex"));
+  } catch {
+    return false;
+  }
+}
 
 const router: IRouter = Router();
 
@@ -143,7 +152,7 @@ router.post("/auth/verify-otp", asyncHandler(async (req, res) => {
     }
 
     const otpHash = hashOtp(otp);
-    if (record.otpHash !== otpHash) {
+    if (!timingSafeHashEqual(record.otpHash, otpHash)) {
       await db
         .update(emailOtpsTable)
         .set({ failedAttempts: sql`${emailOtpsTable.failedAttempts} + 1` })
