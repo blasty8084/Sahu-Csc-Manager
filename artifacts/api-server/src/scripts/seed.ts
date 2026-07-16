@@ -18,13 +18,20 @@ async function seed() {
     process.exit(1);
   }
 
+  // Seed contact details — read from env vars so no personal data is hard-coded.
+  // ADMIN_EMAIL falls back to SMTP_USER (the configured Gmail), then to a generic placeholder.
+  const adminEmail    = process.env.ADMIN_EMAIL    ?? process.env.SMTP_USER    ?? "admin@example.com";
+  const adminMobile   = process.env.ADMIN_MOBILE   ?? "0000000000";
+  const operatorEmail = process.env.OPERATOR_EMAIL ?? "operator@example.com";
+  const operatorMobile = process.env.OPERATOR_MOBILE ?? "0000000001";
+
   const passwordHash = await bcrypt.hash(adminPassword, 12);
   await db
     .insert(usersTable)
     .values({
       username: "admin",
-      email: "sahuuttam690@gmail.com",
-      mobile: "9876543210",
+      email: adminEmail,
+      mobile: adminMobile,
       fullName: "SAHU Admin",
       passwordHash,
       role: "admin",
@@ -41,8 +48,8 @@ async function seed() {
     .insert(usersTable)
     .values({
       username: "operator",
-      email: "operator@sahucsc.in",
-      mobile: "9876543211",
+      email: operatorEmail,
+      mobile: operatorMobile,
       fullName: "CSC Operator",
       passwordHash: opHash,
       role: "operator",
@@ -86,11 +93,12 @@ async function seed() {
   console.log("✅ Services seeded");
 
   // ── Settings (skip each key if it already exists) ─────────────────────────
+  // Business defaults — read from env vars so the owner can customise without editing code.
   const defaults: Record<string, string> = {
-    businessName: "SAHU CSC Center",
-    businessAddress: "Main Road, Bargarh Block, Bargarh, Odisha - 768028",
-    businessMobile: "9876543210",
-    businessEmail: "sahuuttam690@gmail.com",
+    businessName:         process.env.BUSINESS_NAME    ?? "SAHU CSC Center",
+    businessAddress:      process.env.BUSINESS_ADDRESS ?? "Odisha, India",
+    businessMobile:       process.env.ADMIN_MOBILE     ?? process.env.BUSINESS_MOBILE ?? "0000000000",
+    businessEmail:        process.env.ADMIN_EMAIL      ?? process.env.SMTP_USER        ?? "admin@example.com",
     language: "en",
     theme: "light",
     currency: "INR",
