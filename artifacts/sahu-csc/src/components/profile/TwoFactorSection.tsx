@@ -51,7 +51,7 @@ export function TwoFactorSection() {
   const twoFaEnabled                  = !!(user as any)?.twoFaEnabled;
   const twoFaMethod: Method           = (user as any)?.twoFaMethod ?? "otp";
   const userEmail: string             = (user as any)?.email ?? "";
-  const score                         = twoFaEnabled ? (twoFaMethod === "totp" ? 92 : 74) : 28;
+  const score                         = twoFaEnabled ? (twoFaMethod === "totp" ? 100 : 74) : 28;
 
   // ── Local UI state ────────────────────────────────────────────────────────
   const [stage,     setStage]     = useState<Stage>("idle");
