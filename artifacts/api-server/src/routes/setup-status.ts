@@ -18,7 +18,7 @@ router.get("/setup-status", (_req, res) => {
     const smtpMissing: string[] = [];
     if (!process.env.SMTP_HOST) smtpMissing.push("SMTP_HOST");
     if (!process.env.SMTP_USER) smtpMissing.push("SMTP_USER");
-    if (!process.env.SMTP_PASS) smtpMissing.push("SMTP_PASS");
+    if (!process.env.SMTP_PASSWORD && !process.env.SMTP_PASS) smtpMissing.push("SMTP_PASSWORD");
 
     missing.push({
       key: "SMTP",

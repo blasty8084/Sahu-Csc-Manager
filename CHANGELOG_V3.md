@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v3 / v4
-**Current version: 4.8.0 — July 16, 2026**
+**Current version: 4.9.0 — July 16, 2026**
 
 > Detailed record of every feature, change, and upgrade from v3.0.0 onward.  
 > For v2.x history, see `docs/archive/changelogV2.md`.  
@@ -13,6 +13,7 @@
 
 ## Table of Contents
 
+0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
 0. [v4.8.0 — 2FA Security Upgrade: QR Codes, Replay Protection & Standard TOTP (July 16, 2026)](#0-v480--2fa-security-upgrade-qr-codes-replay-protection--standard-totp-july-16-2026)
 0. [v4.7.1 — Security Score 100 & Login Code Display Fix (July 16, 2026)](#0-v471--security-score-100--login-code-display-fix-july-16-2026)
 0. [v4.7.0 — Built-in Authenticator: No QR Code, No External App (July 16, 2026)](#0-v470--built-in-authenticator-no-qr-code-no-external-app-july-16-2026)
@@ -34,6 +35,24 @@
 0. [v3.5.10 — Navigation Performance — Instant Page Switching (July 12, 2026)](#0-v3510--navigation-performance--instant-page-switching-july-12-2026)
 0. [v3.5.9 — Redis Cache Live, i18n Fixes & Build Hardening (July 12, 2026)](#0-v359--redis-cache-live-i18n-fixes--build-hardening-july-12-2026)
 0. [v3.5.8 — Reports & Receipt Export Page Modularization (July 12, 2026)](#0-v358--reports--receipt-export-page-modularization-july-12-2026)
+
+---
+
+## 0. v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)
+
+Infrastructure and performance pass. No new user-facing features; no DB schema changes.
+
+| Change | Detail |
+|--------|--------|
+| **CORS auto-detects Replit domain** | `artifacts/api-server/src/app.ts`: origin callback now reads `REPLIT_DEV_DOMAIN` and `REPLIT_DOMAINS` at startup and appends them automatically. `CORS_ORIGIN` env var still accepted as an extra-origins override, but no longer required to list the dev domain manually on each re-import. |
+| **SMTP_PASSWORD secret** | `artifacts/api-server/src/lib/mailer/transport.ts`: mailer reads `process.env.SMTP_PASSWORD ?? process.env.SMTP_PASS` — new canonical name is `SMTP_PASSWORD`; `SMTP_PASS` still accepted as a backwards-compatible alias. `setup-status.ts` updated to check `SMTP_PASSWORD` first. |
+| **Admin polling 30 s → 60 s** | `artifacts/sahu-csc/src/hooks/useUsers.ts`: `staleTime` and `refetchInterval` for admin-sessions, pending-users, and appeal-users increased from 30 s to 60 s; added `refetchOnWindowFocus: true` as primary freshness trigger. |
+| **DB pool cap** | `DB_POOL_MAX=5` added to shared env vars. `lib/db/src/index.ts` already reads this env var (`max: Number(process.env.DB_POOL_MAX ?? 20)`). Prevents connection exhaustion on Replit's shared PostgreSQL under burst load. |
+| **Session expire index** | `CREATE INDEX IF NOT EXISTS session_expire_idx ON session (expire)` applied directly via psql. Hourly `connect-pg-simple` pruning scan is now O(log n) instead of O(n). |
+| **Receipt export 90-day cap** | `artifacts/api-server/src/routes/admin-receipt-export.ts`: second `.refine()` added to `bulkExportQuerySchema` — rejects date ranges > 90 days with a 400 error before hitting the DB, preventing large in-memory ZIP/PDF builds. |
+| **PWA precache −985 KB** | `artifacts/sahu-csc/vite.config.ts`: `injectManifest.globIgnores` added — excludes `jspdf*`, `html2canvas*`, `vendor-charts*` from precache manifest. Precache: 74 entries / 3.3 MB → 71 entries / 2.4 MB. Chunks are still runtime-cached via the existing NetworkFirst/StaleWhileRevalidate strategies on first use. |
+| **Ledger backfill gated** | `artifacts/api-server/src/index.ts`: `ledgerBalanceBackfillDone` key written to `settings` table after first successful run. Subsequent boots skip the correlated-subquery UPDATE entirely instead of running it on every restart. |
+| **pnpm install on fresh import** | Confirmed that `node_modules` is not committed (`.gitignore`); `pnpm install` is always required after a GitHub import before any build or workflow start. Documented in Getting Started. |
 
 ---
 

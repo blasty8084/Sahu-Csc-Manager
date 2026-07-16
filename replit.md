@@ -1,5 +1,5 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 4.8.0** — last updated 2026-07-16
+**Version 4.9.0** — last updated 2026-07-16
 
 > **v4.6.0 — Login-time method choice: Email OTP vs Authenticator App (2026-07-15)**: The post-login "New Device Detected" / 2FA verification screen now lets the user pick their verification method instead of it being fixed by the account's stored `twoFaMethod` — a navy/orange tab toggle between "Email OTP" (default, matches prior behavior) and "Authenticator App (TOTP)". Email OTP gained a 120s resend cooldown (reusing the `RESEND_COOLDOWN` pattern from register/forgot-password). Picking TOTP for an account with no authenticator enrolled yet shows a "Set up Authenticator" CTA → QR code + manual key → 6-digit confirm, all without a full session (mid-login, `pendingUserId`-only). Backend: new `POST /auth/2fa/switch-method` (mid-login method switch; doubles as OTP resend) and `POST /auth/2fa/setup-totp-pending` (mid-login TOTP enrollment start) in `2fa.ts`; `login.ts`'s challenge response now always defaults to `method: "otp"` and includes `totpEnrolled`; a new session flag `pendingTotpEnrolling` tells `verify-totp`'s existing mid-login branch to also flip `twoFaEnabled`/`twoFaMethod` and mint backup codes on first successful code, mirroring the settings-page enrollment flow. Backup codes generated this way are shown once on the login screen (held via a `completeLogin()` split from `verifyTwoFactor()`) before the session is actually applied and the user is redirected in. "Trust this device for 30 days" and Verify & Continue behavior unchanged.
 >
@@ -30,6 +30,17 @@
 > **v4.3.1 performance pass (2026-07-14)**: Backend bundle (`dist/index.mjs`) cut from 6.5MB → 2.6MB by externalizing 14 more pure-JS dependencies (express + its middleware stack, zod, web-push, bcryptjs, ioredis, bullmq, rate-limit-redis) in `build.mjs` instead of bundling them — pnpm already hoists them as direct deps, so nothing changes at runtime, just less duplicate code shipped in the single-file bundle. Deliberately left `drizzle-orm` and `@sentry/node` bundled — externalizing either reopens known risk (drizzle-orm dual-peer TS conflict; Sentry's un-hoisted transitive `@opentelemetry/*` deps), not worth it for this pass. Profile avatars are now resized to 512×512 and re-encoded as WebP (quality 80) server-side via `sharp` before storage, instead of storing the raw uploaded base64 as-is — verified end-to-end with a synthetic upload that a multi-KB photo now stores as a much smaller WebP blob. Full detail in `CHANGELOG_V3.md`.
 >
 > **v4.3.2 optimization audit & measurements (2026-07-14)**: Ran a real load test (`loadtest.ts`, 50 connections/20s against a logged-in session) to get measured numbers instead of estimates: `/api/dashboard` p50=143ms p95=345ms p99=476ms (302 req/s), `/api/admin/users-overview` p50=150ms p95=351ms (296 req/s), `/healthz` p50=45ms (1052 req/s) — all 0 errors at 50 concurrent connections. Added two missing DB indexes found by a schema audit: `users_mobile_idx` (mobile is used in direct `eq()` lookups on every login/OTP/reset-password request, alongside username/email which already had unique-constraint indexes) and `services_category_idx` (used in `ORDER BY`/filter on the services list). Applied directly via `CREATE INDEX IF NOT EXISTS` rather than `drizzle-kit push`, per this project's convention of avoiding push-triggered data loss. Audited every other upload path in the API for the same raw-base64 issue the avatar fix addressed — none found; profile pictures were the only user-uploaded images. Audited static asset caching — already solid: `serve.mjs` sets `Cache-Control: public, max-age=31536000, immutable` on Vite's content-hashed JS/CSS/asset files and `no-store` on the HTML shell, so a real CDN in front of the domain would mostly help with edge latency, not caching correctness — noted as an infra decision (DNS/Cloudflare) rather than a code change. A Postgres read replica was investigated and intentionally not implemented: the DB connects via a single `pg` `Pool` with no replica-aware read/write split, and setting one up requires provisioning a second database endpoint, which is an infrastructure decision for the user rather than something to wire up unprompted.
+
+## What's New in v4.9.0 (July 16, 2026) — Platform Optimization & Setup Hardening
+
+- **CORS no longer needs manual updates** — `app.ts` now reads `REPLIT_DEV_DOMAIN` and `REPLIT_DOMAINS` at startup and automatically appends them to the allowed-origins list. No more updating `CORS_ORIGIN` after each re-import.
+- **Email (OTP / password reset) now works** — `SMTP_PASSWORD` secret added. The mailer reads both `SMTP_PASSWORD` (new canonical name) and `SMTP_PASS` (legacy alias) so both names are accepted.
+- **Admin polling cut in half** — admin sessions, pending users, and appeal users poll every 60 s (was 30 s). `refetchOnWindowFocus` is now the primary freshness trigger, reducing idle API traffic.
+- **DB pool capped at 5** — `DB_POOL_MAX=5` added as a shared env var. Prevents connection exhaustion on Replit's shared PostgreSQL under concurrent load.
+- **Session expire index** — `CREATE INDEX session_expire_idx ON session (expire)` applied. The hourly session cleanup job is now an index scan (was full table scan).
+- **Receipt export date cap** — Bulk export rejects ranges > 90 days to prevent out-of-memory ZIP builds.
+- **PWA precache −985 KB** — jspdf, html2canvas, and vendor-charts excluded from the service worker precache manifest (71 entries / 2.4 MB, was 74 / 3.3 MB). Still runtime-cached on first use.
+- **Boot backfill is now a no-op after first run** — `ledgerBalanceBackfillDone` flag in `settings` table skips the ledger UPDATE on every subsequent boot.
 
 ## What's New in v4.8.0 (July 16, 2026) — 2FA Security Upgrade
 
@@ -238,7 +249,7 @@ Continuing from the 8.5/10 baseline (N+1 fixes, batched writes, pooled connectio
 3. Set secrets: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD` (see table below)
 4. Run the `Seed Database` workflow to create admin/operator accounts
 5. Start the `Frontend` and `API Server` workflows (the `Project` workflow starts both + Worker Server in parallel)
-6. Update `CORS_ORIGIN` in Replit shared env vars to include your new `$REPLIT_DEV_DOMAIN`
+6. ~~Update `CORS_ORIGIN`~~ — no longer needed; `REPLIT_DEV_DOMAIN` and `REPLIT_DOMAINS` are auto-included at startup (v4.9.0+)
 
 #### Secrets required
 | Secret | Purpose |
@@ -251,7 +262,7 @@ Continuing from the 8.5/10 baseline (N+1 fixes, batched writes, pooled connectio
 | `REDIS_URL` | Upstash direct TCP URL (`rediss://...`) — required for Worker Server / BullMQ |
 
 #### Env vars to check after each re-import
-- `CORS_ORIGIN` — must include the current `$REPLIT_DEV_DOMAIN`; update via the Replit env panel whenever the domain changes (it changes on each import). Current value lists the previous developer's domains — **update this before testing API calls from the preview.**
+- `CORS_ORIGIN` — **no longer required to update after re-imports** (v4.9.0+). `REPLIT_DEV_DOMAIN` and `REPLIT_DOMAINS` are now auto-included at startup. This var is only needed if you have a custom non-Replit origin to allow.
 - `CACHE_BACKEND` — set to `redis` only if Upstash Redis secrets are configured; default `memory` works for single-instance dev
 
 ### Login credentials
@@ -717,7 +728,7 @@ Response:
     {
       "key": "SMTP",
       "label": "Email / SMTP",
-      "description": "Required for OTP login and notifications. Missing: SMTP_HOST, SMTP_USER, SMTP_PASS."
+      "description": "Required for OTP login and notifications. Missing: SMTP_HOST, SMTP_USER, SMTP_PASSWORD."
     }
   ]
 }
@@ -725,7 +736,7 @@ Response:
 
 Checks performed (in order):
 - `SESSION_SECRET` — required (critical)
-- `SMTP_HOST` + `SMTP_USER` + `SMTP_PASS` — required for email/OTP (critical)
+- `SMTP_HOST` + `SMTP_USER` + `SMTP_PASSWORD` (or `SMTP_PASS`) — required for email/OTP (critical)
 - `ADMIN_PASSWORD` — required for Seed Database workflow (critical)
 - `OPERATOR_PASSWORD` — required for Seed Database workflow (critical)
 - `VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` + persistent flag — optional (push notifications)
@@ -763,7 +774,7 @@ This is configured in `.replit` under `[postMerge]` with a 20-second timeout. Th
 |--------|-------------|
 | `DATABASE_URL` | Auto-provisioned by Replit PostgreSQL |
 | `SESSION_SECRET` | Replit Secrets tab (🔒 in left sidebar) |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM_EMAIL` | Replit Secrets tab |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM_EMAIL` | Replit Secrets tab (`SMTP_PASS` also accepted as alias for `SMTP_PASSWORD`) |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_EMAIL` | Replit Secrets tab (optional) |
 | `SENTRY_DSN` | Replit Secrets tab — server-side error tracking (optional; Sentry no-ops if absent) |
 | `VITE_SENTRY_DSN` | Replit Env Vars (shared) — client-side error tracking (optional; no-ops if absent) |
@@ -779,7 +790,7 @@ This is configured in `.replit` under `[postMerge]` with a 20-second timeout. Th
 | `SMTP_HOST` | ✅ for email | SMTP server hostname (e.g. `smtp.gmail.com`) |
 | `SMTP_PORT` | ✅ for email | SMTP port (e.g. `587` for TLS, `465` for SSL) |
 | `SMTP_USER` | ✅ for email | SMTP username / email address |
-| `SMTP_PASS` | ✅ for email | SMTP password or app password |
+| `SMTP_PASSWORD` | ✅ for email | SMTP password or app password (`SMTP_PASS` accepted as alias) |
 | `SMTP_FROM_EMAIL` | Optional | From address shown in emails (defaults to `SMTP_USER`) |
 | `VAPID_PUBLIC_KEY` | Recommended | Web push notification public key |
 | `VAPID_PRIVATE_KEY` | Recommended | Web push notification private key |

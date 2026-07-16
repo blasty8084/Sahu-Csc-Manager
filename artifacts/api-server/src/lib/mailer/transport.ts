@@ -15,11 +15,12 @@ export function createTransporter() {
   const host = process.env.SMTP_HOST;
   const port = parseInt(process.env.SMTP_PORT ?? "587", 10);
   const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
+  // Accept both SMTP_PASSWORD (new canonical name) and SMTP_PASS (legacy alias).
+  const pass = process.env.SMTP_PASSWORD ?? process.env.SMTP_PASS;
 
   if (!host || !user || !pass) {
     throw new Error(
-      "SMTP configuration incomplete. Set SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASS in Secrets."
+      "SMTP configuration incomplete. Set SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASSWORD in Secrets."
     );
   }
 
@@ -33,7 +34,9 @@ export function createTransporter() {
 
 export function isSmtpConfigured(): boolean {
   return Boolean(
-    process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS
+    process.env.SMTP_HOST &&
+      process.env.SMTP_USER &&
+      (process.env.SMTP_PASSWORD ?? process.env.SMTP_PASS)
   );
 }
 

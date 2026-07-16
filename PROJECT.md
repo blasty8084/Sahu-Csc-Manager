@@ -1,5 +1,5 @@
 # SAHU CSC — Project Reference
-**Version 4.7.1 — July 16, 2026**
+**Version 4.9.0 — July 16, 2026**
 
 Complete structural guide for anyone importing or onboarding to this project.
 
@@ -123,7 +123,7 @@ Optional secrets (email / push notifications):
 | `SMTP_HOST` | SMTP server hostname |
 | `SMTP_PORT` | SMTP port (usually 465 or 587) |
 | `SMTP_USER` | SMTP login username |
-| `SMTP_PASS` | SMTP login password |
+| `SMTP_PASSWORD` | SMTP login password (`SMTP_PASS` also accepted as alias) |
 
 > `DATABASE_URL` is injected automatically by Replit's managed PostgreSQL.  
 > `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` are auto-generated and persisted in the `settings` table at first boot — do not set them manually.
@@ -177,10 +177,12 @@ The Vite dev server proxies all `/api/*` requests to `localhost:8080`.
 | `SESSION_SECRET` | ✅ | Replit Secret | Signs HTTP session cookies |
 | `ADMIN_PASSWORD` | ✅ | Replit Secret | Seed script — admin user password |
 | `OPERATOR_PASSWORD` | ✅ | Replit Secret | Seed script — operator user password |
-| `SMTP_HOST` | optional | Replit Secret | Outbound email (password reset, OTP) |
-| `SMTP_PORT` | optional | Replit Secret | SMTP port |
-| `SMTP_USER` | optional | Replit Secret | SMTP authentication username |
-| `SMTP_PASS` | optional | Replit Secret | SMTP authentication password |
+| `SMTP_HOST` | optional | Shared env | Outbound email server (e.g. `smtp.gmail.com`) |
+| `SMTP_PORT` | optional | Shared env | SMTP port (usually `587`) |
+| `SMTP_USER` | optional | Shared env | SMTP authentication username |
+| `SMTP_PASSWORD` | optional | Replit Secret | SMTP password or app password (`SMTP_PASS` also accepted as alias) |
+| `DB_POOL_MAX` | optional | Shared env | Max PostgreSQL pool connections (default `5`) |
+| `CORS_ORIGIN` | optional | Shared env | Extra allowed origins — Replit dev/prod domains auto-included; only needed for non-Replit origins |
 | `PORT` | optional | Workflow env | Override default server port |
 | `NODE_ENV` | optional | Workflow env | `development` or `production` |
 

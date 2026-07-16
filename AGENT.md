@@ -1,5 +1,5 @@
 # SAHU CSC — Agent Reference Document
-**Version 4.8.0** · Last updated 2026-07-16
+**Version 4.9.0** · Last updated 2026-07-16
 
 This file is the single authoritative reference for any AI agent working on this codebase. Read it first before touching any code.
 
@@ -105,7 +105,7 @@ Target users: rural Odisha CSC operators. UI languages: English, Hindi, Odia (`i
 | `SESSION_SECRET` | Express session signing — auto-generated is fine |
 | `ADMIN_PASSWORD` | Seed: admin account password |
 | `OPERATOR_PASSWORD` | Seed: operator account password |
-| `SMTP_PASS` | Gmail app password for SMTP |
+| `SMTP_PASSWORD` | Gmail app password for SMTP (legacy alias: `SMTP_PASS` also accepted) |
 
 ### Required Env Vars (shared)
 | Key | Value | Purpose |
@@ -118,7 +118,8 @@ Target users: rural Odisha CSC operators. UI languages: English, Hindi, Odia (`i
 | `API_PORT` | `8080` | Backend Express port |
 | `BASE_PATH` | `/` | URL base path |
 | `CACHE_BACKEND` | `memory` or `redis` | Cache driver |
-| `CORS_ORIGIN` | comma-separated URLs | Must include current `$REPLIT_DEV_DOMAIN` |
+| `DB_POOL_MAX` | `5` | Max pg pool connections (prevents exhaustion) |
+| `CORS_ORIGIN` | comma-separated URLs (optional) | Extra allowed origins — `REPLIT_DEV_DOMAIN` and `REPLIT_DOMAINS` are now included automatically; this var is only needed for non-Replit origins |
 
 ### Optional Secrets
 | Key | Purpose |
@@ -693,7 +694,7 @@ Without `REDIS_URL`: all queues fall back to direct in-process execution.
 
 15. **`finalizeLogin` is the single codepath** for all successful logins (direct + OTP + TOTP). If you add post-login logic, put it there.
 
-16. **OTP emails fail if SMTP is not configured** — `isSmtpConfigured()` checks `SMTP_HOST + SMTP_USER + SMTP_PASS`. If unconfigured, login still shows the verification page with an error (user can switch to TOTP or backup code).
+16. **OTP emails fail if SMTP is not configured** — `isSmtpConfigured()` checks `SMTP_HOST + SMTP_USER + (SMTP_PASSWORD ?? SMTP_PASS)`. If unconfigured, login still shows the verification page with an error (user can switch to TOTP or backup code).
 
 ---
 
@@ -729,6 +730,7 @@ Frontend main chunk: ~438KB (under 500KB Vite warning).
 
 | Version | Date | Key Change |
 |---------|------|-----------|
+| 4.9.0 | 2026-07-16 | Optimization pass: CORS auto-detects domain, SMTP_PASSWORD, 60 s polling, precache −985 KB, session index, 90-day export cap |
 | 4.8.0 | 2026-07-16 | 2FA: QR codes, replay protection, standard 30 s TOTP, regenerate backup codes |
 | 4.7.0 | 2026-07-16 | Built-in TOTP code display, explicit method selection, SMTP fixed |
 | 4.6.0 | 2026-07-15 | 2FA method toggle (OTP/TOTP) on login, inline TOTP enrollment |

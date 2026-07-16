@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Platform Documentation
-**Version 4.8.0** — last updated 2026-07-16
+**Version 4.9.0** — last updated 2026-07-16
 
 > Common Service Center (CSC) Business Management Platform for Odisha / India rural service centers.
 > Full-stack · PWA · Offline-capable · Multilingual (English / Hindi / Odia)
@@ -55,6 +55,18 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 ---
 
 ## 2. Version History
+
+### v4.9.0 — Platform Optimization & Setup Hardening (2026-07-16)
+
+- **CORS auto-detects Replit domain** — `app.ts` now reads `REPLIT_DEV_DOMAIN` and `REPLIT_DOMAINS` at startup and adds them automatically; `CORS_ORIGIN` no longer needs manual updating on each re-import
+- **SMTP secret renamed** — `SMTP_PASSWORD` is the new canonical secret name; `SMTP_PASS` still accepted as a backwards-compatible alias in `transport.ts`
+- **DB connection pool capped** — `DB_POOL_MAX=5` added as shared env var (was defaulting to 20, which could exhaust Replit's PostgreSQL connection limit under load)
+- **Admin polling intervals halved** — admin sessions, pending users, and appeal users now poll every 60 s (was 30 s) with `refetchOnWindowFocus` as primary freshness trigger
+- **Session expire index** — `CREATE INDEX session_expire_idx ON session (expire)` applied; hourly session pruning is now an index scan instead of a full table scan
+- **Receipt export 90-day cap** — bulk export endpoints now reject date ranges exceeding 90 days, preventing out-of-memory ZIP builds
+- **PWA precache −985 KB** — `jspdf`, `html2canvas`, and `vendor-charts` excluded from SW precache manifest (71 entries / 2.4 MB, down from 74 entries / 3.3 MB); these chunks are still runtime-cached on first use
+- **Ledger backfill gated** — `index.ts` writes a `ledgerBalanceBackfillDone` flag to the `settings` table after the first successful run; subsequent boots skip the UPDATE entirely
+- **Fresh-import setup** — confirmed that `pnpm install` is always required after importing from GitHub (esbuild and other build tools are not committed); documented in Getting Started
 
 ### v4.8.0 — 2FA Security Upgrade: QR Codes, Replay Protection & Standard TOTP (2026-07-16)
 
@@ -187,7 +199,7 @@ All backend source files over ~300 lines split into focused sub-modules using th
 | **sanitize.ts TS fix** | `xss.IFilterXSSOptions` → named import `IFilterXSSOptions` — resolved TypeScript error |
 | **Workflow cleanup** | `API Server` command simplified to direct `node` launch; `Build API`, `Typecheck`, `Build Production`, `Production Preview` workflows restored |
 | **postMerge timeout** | Increased from 20 s → 180 s — `pnpm install + drizzle push` reliably complete on future imports |
-| **All secrets set** | `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`, `SMTP_PASS`, `VAPID_PRIVATE_KEY` confirmed in Replit Secrets; `VAPID_PUBLIC_KEY` set as shared env var |
+| **All secrets set** | `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`, `SMTP_PASSWORD`, `VAPID_PRIVATE_KEY` confirmed in Replit Secrets; `VAPID_PUBLIC_KEY` set as shared env var |
 
 ---
 
@@ -197,7 +209,7 @@ All backend source files over ~300 lines split into focused sub-modules using th
 |--------|-------------|
 | **V2 dark premium email templates** | All 7 transactional email types rewritten. Dark gradient page + dark navy card + per-type glow accent. `esc()` helper applied to all dynamic fields. |
 | **OTP email copy strip** | Digit boxes joined to a copy strip showing the full OTP in large spaced monospace. Digit-only validation before render. |
-| **SMTP live** | Gmail (`smtp.gmail.com:587`) configured via env vars + `SMTP_PASS` secret. All transactional emails now deliver. |
+| **SMTP live** | Gmail (`smtp.gmail.com:587`) configured via env vars + `SMTP_PASSWORD` secret. All transactional emails now deliver. |
 | **Password policy** | 8+ chars, no max, upper + lower + number + special required. Frontend and backend in sync. |
 | **Login lockout** | 3 failed attempts → 5-minute lock (was 5 / 15 min). |
 
@@ -316,7 +328,7 @@ All backend source files over ~300 lines split into focused sub-modules using th
    | `SMTP_HOST` | Your SMTP server (e.g. `smtp.gmail.com`) |
    | `SMTP_PORT` | `587` (TLS) or `465` (SSL) |
    | `SMTP_USER` | SMTP email address |
-   | `SMTP_PASS` | SMTP password or app password |
+   | `SMTP_PASSWORD` | SMTP password or app password |
 
 4. **Run the Seed Database workflow** (manual, one-shot) — creates admin and operator accounts.
 5. **Start the project** — API Server + frontend start automatically.
@@ -398,7 +410,7 @@ All secrets are managed in the Replit Secrets tab (🔒 icon in left sidebar). N
 | `SMTP_HOST` | SMTP server hostname (e.g. `smtp.gmail.com`) |
 | `SMTP_PORT` | SMTP port (`587` for TLS, `465` for SSL) |
 | `SMTP_USER` | SMTP username / email address |
-| `SMTP_PASS` | SMTP password or app password |
+| `SMTP_PASSWORD` | SMTP password or app password (**new canonical name**; `SMTP_PASS` still accepted as alias) |
 | `SMTP_FROM_EMAIL` | From address in sent emails (defaults to `SMTP_USER`) |
 
 > Without SMTP, OTP login, password reset, and admin email broadcast are disabled. Username + password login still works.
@@ -417,7 +429,7 @@ All secrets are managed in the Replit Secrets tab (🔒 icon in left sidebar). N
 
 | Variable | Purpose |
 |----------|---------|
-| `CORS_ORIGIN` | Comma-separated list of allowed origins. Must include `http://localhost:5000` and `https://<current $REPLIT_DEV_DOMAIN>`. **Update this after every re-import** — the Replit dev domain changes with each import. |
+| `CORS_ORIGIN` | Extra comma-separated allowed origins. `REPLIT_DEV_DOMAIN` and `REPLIT_DOMAINS` are now **auto-included** at startup — this var is only needed for non-Replit origins (e.g. a custom domain). No longer requires manual updating after re-imports. |
 
 ### Optional (recommended for production)
 
@@ -913,7 +925,7 @@ Shown at the top of every admin page when secrets are missing. Session-dismissed
     {
       "key": "SMTP",
       "label": "Email / SMTP",
-      "description": "Required for OTP login and email notifications. Missing: SMTP_HOST, SMTP_USER, SMTP_PASS."
+      "description": "Required for OTP login and email notifications. Missing: SMTP_HOST, SMTP_USER, SMTP_PASSWORD."
     },
     {
       "key": "VAPID",
@@ -926,7 +938,7 @@ Shown at the top of every admin page when secrets are missing. Session-dismissed
 
 Secrets checked (in order):
 1. `SESSION_SECRET` — required
-2. `SMTP_HOST` + `SMTP_USER` + `SMTP_PASS` — required for email
+2. `SMTP_HOST` + `SMTP_USER` + `SMTP_PASSWORD` (or `SMTP_PASS`) — required for email
 3. `ADMIN_PASSWORD` — required for Seed Database workflow
 4. `OPERATOR_PASSWORD` — required for Seed Database workflow
 5. `VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` + persistent flag — optional
