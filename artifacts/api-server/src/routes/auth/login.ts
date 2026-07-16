@@ -144,50 +144,28 @@ router.post("/auth/login", asyncHandler(async (req, res) => {
   const needsChallenge = isNewDevice || needsUserTwoFa;
 
   if (needsChallenge) {
-    // The verification screen now lets the user pick their method (default
-    // Email OTP) regardless of the account's stored `twoFaMethod` preference,
-    // so we always start the challenge on "otp" and send that email; the
-    // client can switch to "Authenticator App" via /auth/2fa/switch-method.
-    const method: "otp" | "totp" = "otp";
-    const totpEnrolled = !!user.totpSecret;
+    // Show the method-selection screen first — do NOT auto-send an OTP here.
+    // The user picks "Email OTP" or "Authenticator App" on the verification
+    // screen and the chosen method's action (OTP send / TOTP entry) is
+    // triggered explicitly via POST /auth/2fa/switch-method.
+    const totpEnrolled = !!(user.totpSecret && user.twoFaEnabled);
 
     req.session.pendingUserId = user.id;
     req.session.pendingDeviceFingerprint = deviceFingerprint;
     req.session.pendingDeviceName = deviceInfo;
     req.session.pendingRememberMe = rememberMe;
-    req.session.pendingMethod = method;
+    req.session.pendingMethod = "otp"; // default; updated when user chooses
     req.session.pendingIsNewDevice = isNewDevice;
     req.session.pendingTotpEnrolling = false;
     req.session.cookie.maxAge = 10 * 60 * 1000; // pending challenge window
 
-    try {
-      const { maskedEmail } = await sendLoginOtp(
-        user,
-        clientIp,
-        `Verification code sent for ${isNewDevice ? "new device" : "2FA"} login from ${deviceInfo}`
-      );
-      await securityLog(user.id, isNewDevice ? "device.new_challenge" : "2fa.challenge", true, clientIp, deviceFingerprint, "OTP challenge issued");
-      res.json({ requires2fa: true, method: "otp", maskedEmail, totpEnrolled, isNewDevice });
-    } catch (err: any) {
-      // Email send failed — the session already has pendingUserId set so the
-      // challenge window is still valid. Instead of returning a hard error
-      // (which hides the verification page), fall back gracefully:
-      //   • User has TOTP enrolled → switch to TOTP challenge (no email needed)
-      //   • No TOTP → still show the verification page with an email error flag
-      //     so the user can see the problem and use a backup code or retry.
-      if (totpEnrolled) {
-        req.session.pendingMethod = "totp";
-        await securityLog(user.id, isNewDevice ? "device.new_challenge" : "2fa.challenge", true, clientIp, deviceFingerprint, "OTP email failed, fell back to TOTP challenge");
-        res.json({ requires2fa: true, method: "totp", totpEnrolled: true, isNewDevice });
-      } else {
-        // Still return requires2fa so the verification page renders; the
-        // otpError flag lets the frontend display a friendly warning about
-        // the email delivery failure.
-        const masked = maskEmail(user.email);
-        await securityLog(user.id, isNewDevice ? "device.new_challenge" : "2fa.challenge", false, clientIp, deviceFingerprint, `OTP email failed: ${err?.message}`);
-        res.json({ requires2fa: true, method: "otp", maskedEmail: masked, totpEnrolled, isNewDevice, otpError: err?.message ?? "Failed to send verification code." });
-      }
-    }
+    await securityLog(user.id, isNewDevice ? "device.new_challenge" : "2fa.challenge", true, clientIp, deviceFingerprint, "2FA challenge issued — awaiting method selection");
+    res.json({
+      requires2fa: true,
+      maskedEmail: maskEmail(user.email),
+      totpEnrolled,
+      isNewDevice,
+    });
     return;
   }
 

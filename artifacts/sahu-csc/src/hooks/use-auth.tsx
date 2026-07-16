@@ -30,17 +30,12 @@ export type LoadingPhase = "loading" | "slow" | "timeout";
 // challenge must be completed before a session is issued.
 export interface TwoFaChallenge {
   requires2fa: true;
-  method: "otp" | "totp";
   isNewDevice: boolean;
   maskedEmail?: string;
   // Whether the account already has an authenticator app enrolled — decides
-  // whether picking "Authenticator App" on the verification screen shows the
-  // 6-digit input or a "Set up Authenticator" enrollment CTA.
+  // whether picking "Authenticator App" shows the 6-digit input or the
+  // "Set up Authenticator" QR enrollment flow.
   totpEnrolled?: boolean;
-  // Set when the OTP email failed to send (SMTP not configured, etc.).
-  // The verification page still shows so the user can switch to TOTP or
-  // use a backup code; this message is displayed as a warning banner.
-  otpError?: string;
 }
 
 export interface TwoFaVerifyInput {
@@ -174,11 +169,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (body.requires2fa) {
       return {
         requires2fa: true,
-        method: body.method,
         isNewDevice: !!body.isNewDevice,
         maskedEmail: body.maskedEmail,
         totpEnrolled: !!body.totpEnrolled,
-        otpError: body.otpError ?? undefined,
       };
     }
     applyLoggedInUser(body as AuthUser);
