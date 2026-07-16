@@ -14,6 +14,10 @@ import { asyncHandler } from "../../lib/async-handler";
 
 const router: IRouter = Router();
 
+// Custom 120-second TOTP period (non-standard; QR URI includes period=120
+// so compatible authenticator apps honour it automatically).
+authenticator.options = { step: 120 };
+
 const BACKUP_CODE_COUNT = 8;
 
 // ─── Backup codes ──────────────────────────────────────────────────────────────

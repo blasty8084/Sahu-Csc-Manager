@@ -371,7 +371,7 @@ export function TwoFactorSection() {
             <Clock size={11} className="text-blue-300 flex-shrink-0" />
             <span className="text-[11px] text-blue-300">
               {twoFaMethod === "totp"
-                ? "Authenticator app active — codes rotate every 30 s"
+                ? "Authenticator app active — codes rotate every 120 s"
                 : userEmail
                   ? `OTP codes sent to ${userEmail}`
                   : "OTP codes sent to your registered email"}
