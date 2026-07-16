@@ -1,6 +1,5 @@
 import { Router, type IRouter } from "express";
 import { authenticator } from "otplib";
-import QRCode from "qrcode";
 import bcrypt from "bcryptjs";
 import crypto from "node:crypto";
 import { db, usersTable, emailOtpsTable } from "@workspace/db";
@@ -49,29 +48,22 @@ async function tryConsumeBackupCode(userId: number, code: string): Promise<boole
   return false;
 }
 
-// ─── POST /auth/2fa/setup-totp — begin TOTP enrollment (authenticated) ────────
+// ─── POST /auth/2fa/setup-totp — auto-enroll TOTP (authenticated) ─────────────
+// Auto-generates and stores the TOTP secret. No QR code — the app displays
+// the live rotating code directly via GET /auth/2fa/totp-code.
 router.post("/auth/2fa/setup-totp", requireAuth, asyncHandler(async (req, res) => {
   const userId = req.session.userId!;
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
   if (!user) { res.status(404).json({ error: "User not found" }); return; }
 
   const secret = authenticator.generateSecret();
-  const otpauth = authenticator.keyuri(user.email, "SAHU CSC", secret);
-  const qrCode = await QRCode.toDataURL(otpauth);
-
   // Store the (unconfirmed) secret encrypted. twoFaEnabled stays false until
   // the user proves possession via /auth/2fa/verify-totp.
   await db.update(usersTable).set({ totpSecret: await encryptField(secret) }).where(eq(usersTable.id, userId));
-
-  res.json({ secret, qrCode, manualEntryKey: secret });
+  res.json({ enrolled: true });
 }));
 
-// ─── POST /auth/2fa/setup-totp-pending — begin TOTP enrollment mid-login ──────
-// Same as setup-totp, but usable from the post-login "New Device Detected"
-// verification screen before a full session exists: the user only has a
-// `pendingUserId` at this point (password already verified). Lets someone
-// pick "Authenticator App" on that screen and enroll for the first time
-// without a separate trip to their profile settings.
+// ─── POST /auth/2fa/setup-totp-pending — auto-enroll TOTP mid-login ───────────
 router.post("/auth/2fa/setup-totp-pending", asyncHandler(async (req, res) => {
   if (!req.session.pendingUserId) { res.status(401).json({ error: "Not authenticated" }); return; }
   const userId = req.session.pendingUserId;
@@ -79,17 +71,41 @@ router.post("/auth/2fa/setup-totp-pending", asyncHandler(async (req, res) => {
   if (!user) { res.status(401).json({ error: "Session expired. Please log in again." }); return; }
 
   const secret = authenticator.generateSecret();
-  const otpauth = authenticator.keyuri(user.email, "SAHU CSC", secret);
-  const qrCode = await QRCode.toDataURL(otpauth);
-
-  // Store the (unconfirmed) secret encrypted; verify-totp's Mode B checks
-  // `pendingTotpEnrolling` to know it should also flip twoFaEnabled/method
-  // and issue backup codes once the user proves possession.
   await db.update(usersTable).set({ totpSecret: await encryptField(secret) }).where(eq(usersTable.id, userId));
   req.session.pendingTotpEnrolling = true;
   req.session.pendingMethod = "totp";
+  res.json({ enrolled: true });
+}));
 
-  res.json({ secret, qrCode, manualEntryKey: secret });
+// ─── GET /auth/2fa/totp-code — current rotating code for logged-in user ───────
+// Returns the live 6-digit code + seconds until it refreshes, so the app can
+// display it directly without any external authenticator app.
+router.get("/auth/2fa/totp-code", requireAuth, asyncHandler(async (req, res) => {
+  const userId = req.session.userId!;
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  if (!user) { res.status(404).json({ error: "User not found" }); return; }
+  if (!user.totpSecret) { res.status(400).json({ error: "TOTP not set up" }); return; }
+
+  const secret = await decryptField(user.totpSecret);
+  const code = authenticator.generate(secret!);
+  const step = (authenticator.options as any).step ?? 120;
+  const remaining = step - (Math.floor(Date.now() / 1000) % step);
+  res.json({ code, remaining, step });
+}));
+
+// ─── GET /auth/2fa/totp-code-pending — current code for mid-login state ───────
+router.get("/auth/2fa/totp-code-pending", asyncHandler(async (req, res) => {
+  if (!req.session.pendingUserId) { res.status(401).json({ error: "Not authenticated" }); return; }
+  const userId = req.session.pendingUserId;
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  if (!user) { res.status(401).json({ error: "Session expired" }); return; }
+  if (!user.totpSecret) { res.status(400).json({ error: "TOTP not set up" }); return; }
+
+  const secret = await decryptField(user.totpSecret);
+  const code = authenticator.generate(secret!);
+  const step = (authenticator.options as any).step ?? 120;
+  const remaining = step - (Math.floor(Date.now() / 1000) % step);
+  res.json({ code, remaining, step });
 }));
 
 // ─── POST /auth/2fa/switch-method — pick OTP vs TOTP on the verification screen

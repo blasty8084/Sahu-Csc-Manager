@@ -45,9 +45,7 @@ export interface TwoFaVerifyInput {
 }
 
 export interface TotpSetupData {
-  secret: string;
-  qrCode: string;
-  manualEntryKey: string;
+  enrolled: boolean;
 }
 
 interface AuthContextType {
@@ -243,7 +241,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!response.ok) {
       throw new Error(body.error ?? "Failed to start authenticator setup");
     }
-    return body as TotpSetupData;
+    return { enrolled: true };
   };
 
   const handleLogout = async () => {

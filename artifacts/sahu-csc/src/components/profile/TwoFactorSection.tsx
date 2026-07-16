@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { apiFetch } from "@/components/profile/utils";
 import { getGetMeQueryKey } from "@workspace/api-client-react";
+import { TotpLiveCode } from "@/components/auth/TotpLiveCode";
 
 // ── Brand tokens ────────────────────────────────────────────────────────────
 const NAVY   = "#0B1340";
@@ -57,14 +58,10 @@ export function TwoFactorSection() {
   const [pendingM,  setPendingM]  = useState<Method>("otp");   // method being set up / switched to
   const [password,  setPassword]  = useState("");
   const [showPass,  setShowPass]  = useState(false);
-  const [totpSetup, setTotpSetup] = useState<{ qrCode: string; manualEntryKey: string } | null>(null);
   const [totpCode,  setTotpCode]  = useState("");
   const [newCodes,  setNewCodes]  = useState<string[] | null>(null);  // one-time reveal after enable
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [showCodes, setShowCodes] = useState(false);
-  const [totpTimer, setTotpTimer] = useState(120);
-  const timerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
-
   // ── Backup-codes count from /auth/2fa/status ──────────────────────────────
   const { data: statusData } = useQuery<{ backupCodesRemaining: number; twoFaEnabled: boolean; twoFaMethod: Method }>({
     queryKey: ["2fa-status"],
@@ -80,47 +77,18 @@ export function TwoFactorSection() {
     qc.invalidateQueries({ queryKey: ["2fa-status"] });
   };
 
-  // ── 120-second TOTP scan countdown ───────────────────────────────────────
-  useEffect(() => {
-    if (stage === "totp-setup") {
-      setTotpTimer(120);
-      timerRef.current = setInterval(() => {
-        setTotpTimer(prev => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current!);
-            // auto-reset after delay so user sees "0"
-            setTimeout(() => {
-              setStage("idle");
-              setTotpSetup(null);
-              setTotpCode("");
-              setTotpTimer(120);
-            }, 800);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } else {
-      if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
-    }
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [stage]);
-
   const reset = () => {
-    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
-    setTotpTimer(120);
     setStage("idle");
     setPassword("");
     setShowPass(false);
     setTotpCode("");
-    setTotpSetup(null);
     setPendingM("otp");
   };
 
   // ── Mutations ─────────────────────────────────────────────────────────────
   const setupTotpMut = useMutation({
     mutationFn: () => apiFetch("/auth/2fa/setup-totp", { method: "POST" }),
-    onSuccess: (data) => { setTotpSetup(data); setStage("totp-setup"); },
+    onSuccess: () => { setStage("totp-setup"); },
     onError: (e: any) => toast({ variant: "destructive", title: e.message ?? "Failed to start TOTP setup" }),
   });
 
@@ -128,7 +96,6 @@ export function TwoFactorSection() {
     mutationFn: () => apiFetch("/auth/2fa/verify-totp", { method: "POST", body: JSON.stringify({ code: totpCode }) }),
     onSuccess: (data) => {
       setTotpCode("");
-      setTotpSetup(null);
       if (data.backupCodes?.length) { setNewCodes(data.backupCodes); setStage("backup-codes"); }
       else { reset(); refreshAll(); }
       toast.success("Authenticator app connected", "TOTP two-factor authentication is now active.");
@@ -204,7 +171,7 @@ export function TwoFactorSection() {
   }
 
   // ── TOTP setup / verify screen ────────────────────────────────────────────
-  if (stage === "totp-setup" && totpSetup) {
+  if (stage === "totp-setup") {
     return (
       <div className="rounded-2xl border bg-white p-4 space-y-3 shadow-sm">
         <div className="flex items-center gap-2 mb-1">
@@ -212,32 +179,16 @@ export function TwoFactorSection() {
             <Smartphone size={16} style={{ color: ORANGE }} />
           </div>
           <div>
-            <p className="text-sm font-bold text-gray-900">Scan with your authenticator app</p>
-            <p className="text-xs text-gray-400">Google Authenticator, Authy, etc.</p>
+            <p className="text-sm font-bold text-gray-900">Your verification code</p>
+            <p className="text-xs text-gray-400">Enter the code below to enable 2FA</p>
           </div>
         </div>
-        {/* QR + countdown ring */}
-        <div className="flex flex-col items-center gap-2">
-          <div className="relative">
-            <img src={totpSetup.qrCode} alt="TOTP QR code" className="w-44 h-44 rounded-xl border border-gray-200" />
-            {/* countdown badge */}
-            <div
-              className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full flex items-center justify-center text-xs font-black shadow-md border-2 border-white"
-              style={{ background: totpTimer <= 30 ? "#ef4444" : totpTimer <= 60 ? ORANGE : GREEN, color: "white" }}
-            >
-              {totpTimer}
-            </div>
-          </div>
-          <p className="text-[11px] text-gray-400 text-center">
-            {totpTimer > 0
-              ? `QR expires in ${totpTimer}s — scan now`
-              : "Expired — closing…"}
-          </p>
-        </div>
+        {/* Live rotating code display */}
+        <TotpLiveCode apiPath="/api/auth/2fa/totp-code" />
         <Input
           autoFocus
           inputMode="numeric"
-          placeholder="Enter 6-digit code to confirm"
+          placeholder="Enter the 6-digit code above to confirm"
           value={totpCode}
           onChange={(e) => setTotpCode(e.target.value)}
           className="text-center tracking-widest font-bold h-11"

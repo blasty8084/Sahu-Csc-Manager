@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   ShieldCheck, KeyRound, Loader2, ArrowLeft, Mail, Smartphone,
-  QrCode, Copy, Check, AlertTriangle, ChevronRight,
+  Copy, Check, AlertTriangle, ChevronRight,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import type { TwoFaChallenge } from "@/hooks/use-auth";
 import { RESEND_COOLDOWN } from "@/components/auth/loginTypes";
+import { TotpLiveCode } from "@/components/auth/TotpLiveCode";
 
 // ── Brand tokens ──────────────────────────────────────────────────────────────
 const NAVY = "#0B1340";
@@ -22,7 +23,6 @@ export interface TwoFactorStepProps {
 }
 
 type Method = "otp" | "totp";
-type TotpSetup = { qrCode: string; manualEntryKey: string };
 
 export function TwoFactorStep({ challenge, onSuccess, onBack }: TwoFactorStepProps) {
   const { verifyTwoFactor, switchTwoFaMethod, setupTotpPending, completeLogin } = useAuth();
@@ -58,10 +58,6 @@ export function TwoFactorStep({ challenge, onSuccess, onBack }: TwoFactorStepPro
     }, 1000);
   };
 
-  // ── TOTP setup ───────────────────────────────────────────────────────────────
-  const [totpSetup, setTotpSetup] = useState<TotpSetup | null>(null);
-  const [settingUpTotp, setSettingUpTotp] = useState(false);
-
   // ── Backup-codes post-enrollment ─────────────────────────────────────────────
   const [pendingBackupCodes, setPendingBackupCodes] = useState<string[] | null>(null);
   const [pendingUser, setPendingUser] = useState<any>(null);
@@ -89,7 +85,12 @@ export function TwoFactorStep({ challenge, onSuccess, onBack }: TwoFactorStepPro
         if (result.maskedEmail) setMaskedEmail(result.maskedEmail);
         startResendTimer();
       } else {
-        setTotpEnrolled(!!result.totpEnrolled);
+        // Auto-enroll if not yet set up — server stores secret, live code
+        // is fetched directly from /auth/2fa/totp-code-pending endpoint.
+        if (!result.totpEnrolled) {
+          await setupTotpPending();
+        }
+        setTotpEnrolled(true);
       }
       setMethod(next);
     } catch (err: any) {
@@ -112,20 +113,6 @@ export function TwoFactorStep({ challenge, onSuccess, onBack }: TwoFactorStepPro
       setError(err?.message ?? "Couldn't resend the code. Please try again.");
     } finally {
       setChoosing(null);
-    }
-  };
-
-  // ── TOTP enrollement ──────────────────────────────────────────────────────────
-  const handleSetupAuthenticator = async () => {
-    setSettingUpTotp(true);
-    setError(null);
-    try {
-      const setup = await setupTotpPending();
-      setTotpSetup({ qrCode: setup.qrCode, manualEntryKey: setup.manualEntryKey });
-    } catch (err: any) {
-      setError(err?.message ?? "Couldn't start authenticator setup. Please try again.");
-    } finally {
-      setSettingUpTotp(false);
     }
   };
 
@@ -187,7 +174,6 @@ export function TwoFactorStep({ challenge, onSuccess, onBack }: TwoFactorStepPro
   }
 
   const isTotp = method === "totp";
-  const showTotpEnrollment = isTotp && !totpEnrolled;
 
   return (
     <motion.div initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 24 }} transition={{ duration: 0.25 }}>
@@ -204,11 +190,9 @@ export function TwoFactorStep({ challenge, onSuccess, onBack }: TwoFactorStepPro
         <p className="text-xs text-gray-500 mt-1 max-w-xs">
           {method === null
             ? "Choose how you'd like to verify your identity."
-            : showTotpEnrollment
-              ? "Connect an authenticator app to verify with a code."
-              : method === "totp"
-                ? "Enter the 6-digit code from your authenticator app."
-                : `We've sent a verification code to ${maskedEmail ?? "your registered email"}.`}
+            : method === "totp"
+              ? "Copy the rotating code shown below and enter it to verify."
+              : `We've sent a verification code to ${maskedEmail ?? "your registered email"}.`}
         </p>
       </div>
 
@@ -256,7 +240,7 @@ export function TwoFactorStep({ challenge, onSuccess, onBack }: TwoFactorStepPro
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold" style={{ color: "#7c2d12" }}>Authenticator App</p>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  {totpEnrolled ? "Use your authenticator app code" : "Set up Google/Authy authenticator"}
+                  Use your built-in rotating verification code
                 </p>
               </div>
               <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
@@ -268,74 +252,21 @@ export function TwoFactorStep({ challenge, onSuccess, onBack }: TwoFactorStepPro
           </motion.div>
         )}
 
-        {/* ── Phase 2: TOTP enrollment ── */}
-        {method === "totp" && showTotpEnrollment && (
-          <motion.div key="totp-enroll" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="space-y-4">
-            {!totpSetup ? (
-              <Button type="button" onClick={handleSetupAuthenticator} disabled={settingUpTotp}
-                className="w-full h-11 font-bold text-white border-0" style={{ background: ORANGE }}>
-                {settingUpTotp
-                  ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Generating…</span>
-                  : <span className="flex items-center gap-2"><QrCode className="w-4 h-4" />Set up Authenticator</span>}
-              </Button>
-            ) : (
-              <>
-                <div className="rounded-xl border border-gray-200 p-3 space-y-2 text-center">
-                  <p className="text-xs font-semibold text-gray-700">Scan with your authenticator app</p>
-                  <div className="flex justify-center">
-                    <img src={totpSetup.qrCode} alt="TOTP QR code" className="w-36 h-36 rounded-lg border" />
-                  </div>
-                  <p className="text-[11px] text-gray-400">Or enter this key manually:</p>
-                  <button type="button" onClick={() => copyKey(totpSetup.manualEntryKey, -1)}
-                    className="w-full flex items-center justify-center gap-1.5 font-mono text-xs bg-gray-50 border border-gray-200 rounded-lg py-2 tracking-wider">
-                    {totpSetup.manualEntryKey}
-                    {copiedIdx === -1 ? <Check size={12} className="text-green-600" /> : <Copy size={12} className="text-gray-400" />}
-                  </button>
-                </div>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="relative">
-                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                    <Input autoFocus inputMode="numeric" placeholder="Enter 6-digit code to confirm"
-                      value={code} onChange={(e) => setCode(e.target.value)}
-                      className="pl-10 h-11 text-gray-900 placeholder:text-gray-400 border-gray-200 bg-white focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:border-blue-400 transition-all tracking-widest text-center font-semibold"
-                      maxLength={6} />
-                  </div>
-                  {error && <p className="text-xs font-medium text-center" style={{ color: "#be123c" }}>{error}</p>}
-                  <label className="flex items-center gap-2 cursor-pointer select-none justify-center">
-                    <Checkbox checked={trustDevice} onCheckedChange={(v) => setTrustDevice(!!v)}
-                      className="border-gray-300 data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500" />
-                    <span className="text-sm text-gray-600">Trust this device for 30 days</span>
-                  </label>
-                  <motion.div whileHover={{ scale: 1.015 }} whileTap={{ scale: 0.985 }}>
-                    <Button type="submit" disabled={isSubmitting || code.trim().length !== 6}
-                      className="w-full h-12 font-bold text-base tracking-wide text-white shadow-lg border-0"
-                      style={{ background: "linear-gradient(135deg, #1a2560, #0f1a4a)" }}>
-                      {isSubmitting
-                        ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Verifying…</span>
-                        : "Confirm & Continue →"}
-                    </Button>
-                  </motion.div>
-                </form>
-              </>
-            )}
-            {error && !totpSetup && <p className="text-xs font-medium text-center mt-3" style={{ color: "#be123c" }}>{error}</p>}
-            <button type="button" onClick={() => { setMethod(null); setTotpSetup(null); setError(null); }}
-              className="flex items-center gap-1 font-medium text-gray-500 hover:text-gray-700 text-xs">
-              <ArrowLeft className="w-3 h-3" />Choose a different method
-            </button>
-          </motion.div>
-        )}
-
         {/* ── Phase 2: OTP or TOTP code entry ── */}
-        {method !== null && !showTotpEnrollment && (
+        {method !== null && (
           <motion.form key={`code-entry-${method}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }} onSubmit={handleSubmit} className="space-y-4">
+
+            {/* Live rotating code display for TOTP */}
+            {isTotp && !useBackupCode && (
+              <TotpLiveCode apiPath="/api/auth/2fa/totp-code-pending" />
+            )}
 
             <div className="relative">
               <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
               <Input autoFocus
                 inputMode={useBackupCode ? "text" : "numeric"}
-                placeholder={useBackupCode ? "Backup code (e.g. 1A2B3-C4D5E)" : "6-digit code"}
+                placeholder={useBackupCode ? "Backup code (e.g. 1A2B3-C4D5E)" : isTotp ? "Enter the code shown above" : "6-digit code"}
                 value={code} onChange={(e) => setCode(e.target.value)}
                 className="pl-10 h-11 text-gray-900 placeholder:text-gray-400 border-gray-200 bg-white focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:border-blue-400 transition-all tracking-widest text-center font-semibold"
                 maxLength={useBackupCode ? 12 : 6} />
