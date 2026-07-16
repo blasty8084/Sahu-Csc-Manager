@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -49,6 +49,7 @@ export function TwoFactorSection() {
 
   const twoFaEnabled                  = !!(user as any)?.twoFaEnabled;
   const twoFaMethod: Method           = (user as any)?.twoFaMethod ?? "otp";
+  const userEmail: string             = (user as any)?.email ?? "";
   const score                         = twoFaEnabled ? (twoFaMethod === "totp" ? 92 : 74) : 28;
 
   // ── Local UI state ────────────────────────────────────────────────────────
@@ -61,6 +62,8 @@ export function TwoFactorSection() {
   const [newCodes,  setNewCodes]  = useState<string[] | null>(null);  // one-time reveal after enable
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [showCodes, setShowCodes] = useState(false);
+  const [totpTimer, setTotpTimer] = useState(120);
+  const timerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // ── Backup-codes count from /auth/2fa/status ──────────────────────────────
   const { data: statusData } = useQuery<{ backupCodesRemaining: number; twoFaEnabled: boolean; twoFaMethod: Method }>({
@@ -77,7 +80,35 @@ export function TwoFactorSection() {
     qc.invalidateQueries({ queryKey: ["2fa-status"] });
   };
 
+  // ── 120-second TOTP scan countdown ───────────────────────────────────────
+  useEffect(() => {
+    if (stage === "totp-setup") {
+      setTotpTimer(120);
+      timerRef.current = setInterval(() => {
+        setTotpTimer(prev => {
+          if (prev <= 1) {
+            clearInterval(timerRef.current!);
+            // auto-reset after delay so user sees "0"
+            setTimeout(() => {
+              setStage("idle");
+              setTotpSetup(null);
+              setTotpCode("");
+              setTotpTimer(120);
+            }, 800);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [stage]);
+
   const reset = () => {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    setTotpTimer(120);
     setStage("idle");
     setPassword("");
     setShowPass(false);
@@ -185,18 +216,24 @@ export function TwoFactorSection() {
             <p className="text-xs text-gray-400">Google Authenticator, Authy, etc.</p>
           </div>
         </div>
-        <div className="flex justify-center">
-          <img src={totpSetup.qrCode} alt="TOTP QR code" className="w-40 h-40 rounded-xl border border-gray-200" />
+        {/* QR + countdown ring */}
+        <div className="flex flex-col items-center gap-2">
+          <div className="relative">
+            <img src={totpSetup.qrCode} alt="TOTP QR code" className="w-44 h-44 rounded-xl border border-gray-200" />
+            {/* countdown badge */}
+            <div
+              className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full flex items-center justify-center text-xs font-black shadow-md border-2 border-white"
+              style={{ background: totpTimer <= 30 ? "#ef4444" : totpTimer <= 60 ? ORANGE : GREEN, color: "white" }}
+            >
+              {totpTimer}
+            </div>
+          </div>
+          <p className="text-[11px] text-gray-400 text-center">
+            {totpTimer > 0
+              ? `QR expires in ${totpTimer}s — scan now`
+              : "Expired — closing…"}
+          </p>
         </div>
-        <p className="text-xs text-gray-400 text-center">Or enter this key manually:</p>
-        <button
-          type="button"
-          onClick={() => { navigator.clipboard?.writeText(totpSetup.manualEntryKey); setCopiedIdx(-1); setTimeout(() => setCopiedIdx(null), 1500); }}
-          className="w-full flex items-center justify-center gap-2 font-mono text-sm tracking-wider bg-gray-50 border border-gray-200 rounded-xl py-2.5"
-        >
-          {totpSetup.manualEntryKey}
-          {copiedIdx === -1 ? <Check size={13} className="text-green-500" /> : <Copy size={13} className="text-gray-400" />}
-        </button>
         <Input
           autoFocus
           inputMode="numeric"
@@ -335,7 +372,9 @@ export function TwoFactorSection() {
             <span className="text-[11px] text-blue-300">
               {twoFaMethod === "totp"
                 ? "Authenticator app active — codes rotate every 30 s"
-                : "OTP codes sent to your registered email"}
+                : userEmail
+                  ? `OTP codes sent to ${userEmail}`
+                  : "OTP codes sent to your registered email"}
             </span>
           </div>
         )}
