@@ -10,7 +10,6 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import type { TwoFaChallenge } from "@/hooks/use-auth";
 import { RESEND_COOLDOWN } from "@/components/auth/loginTypes";
-import { TotpLiveCode } from "@/components/auth/TotpLiveCode";
 
 // ── Brand tokens ──────────────────────────────────────────────────────────────
 const NAVY = "#0B1340";
@@ -257,16 +256,21 @@ export function TwoFactorStep({ challenge, onSuccess, onBack }: TwoFactorStepPro
           <motion.form key={`code-entry-${method}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }} onSubmit={handleSubmit} className="space-y-4">
 
-            {/* Live rotating code display for TOTP */}
+            {/* TOTP hint — do NOT show the live code here (defeats 2FA purpose) */}
             {isTotp && !useBackupCode && (
-              <TotpLiveCode apiPath="/api/auth/2fa/totp-code-pending" />
+              <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 flex items-start gap-3">
+                <Smartphone className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-blue-700 leading-relaxed">
+                  Open the app on your <strong>trusted device</strong> → My Profile → Security to view your current 6-digit code.
+                </p>
+              </div>
             )}
 
             <div className="relative">
               <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
               <Input autoFocus
                 inputMode={useBackupCode ? "text" : "numeric"}
-                placeholder={useBackupCode ? "Backup code (e.g. 1A2B3-C4D5E)" : isTotp ? "Enter the code shown above" : "6-digit code"}
+                placeholder={useBackupCode ? "Backup code (e.g. 1A2B3-C4D5E)" : isTotp ? "Enter your 6-digit code" : "6-digit code"}
                 value={code} onChange={(e) => setCode(e.target.value)}
                 className="pl-10 h-11 text-gray-900 placeholder:text-gray-400 border-gray-200 bg-white focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:border-blue-400 transition-all tracking-widest text-center font-semibold"
                 maxLength={useBackupCode ? 12 : 6} />
