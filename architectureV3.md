@@ -40,7 +40,7 @@
 | **AePS** | Daily cash float (Aadhaar Enabled Payment System) · opening balance · withdrawal/deposit |
 | **Udhari Khata** | Customer credit ledger — "You Gave / You Got" · WhatsApp reminder · PDF statement |
 | **Reports** | Daily / Monthly / AePS / Service breakdown · Excel export · Command Center mobile + desktop design |
-| **Auth** | Session-based · V2 multi-device · OTP password reset · account locking · idle auto-logout |
+| **Auth** | Session-based · V2 multi-device · OTP password reset · account locking · idle auto-logout · 2FA (email OTP + TOTP with QR code) |
 | **Admin — Users** | Create/edit/delete · Pending registrations (bulk approve/reject) · email notifications |
 | **Admin — Oversight** | Cross-user balance/ledger/AePS · audit trail |
 | **Admin — Broadcast** | Push + email blast to all users · broadcast history log |
@@ -931,7 +931,9 @@ pnpm --filter @workspace/db run push
 | `willChange: transform` forbidden on ancestors of fixed nav | Creates CSS containing block → breaks `position: fixed` on bottom nav |
 | i18n constants inside component function | Translated arrays/objects must be after `const { t } = useTranslation()` — module scope = wrong language |
 | `POST /api/auth/send-otp` returns 200 for unknown identifier | Prevents account enumeration |
-| OTP resend cooldown = 120 seconds | Set in both `forgot-password.tsx` and `register.tsx` as `RESEND_COOLDOWN = 120` |
+| OTP resend cooldown = 120 seconds | Email OTP resend (login/register/forgot-password): `RESEND_COOLDOWN = 120` in `loginTypes.ts`; unrelated to TOTP window |
+| TOTP period = 30 seconds (RFC 6238) | Standard window; `window: 1` on verify for ±30 s clock drift; in-memory replay protection per userId |
+| TOTP uses `crypto.timingSafeEqual` | Backup-code hash comparison and OTP hash comparison use constant-time compare to prevent timing oracle attacks |
 | VAPID auto-generation | Dev-friendly; no manual key generation needed; production should use persistent secrets |
 | `post-merge.sh` is idempotent | Safe to run multiple times; `--frozen-lockfile` never modifies lockfile |
 | CDN sits in front of the single origin, doesn't split it | Single-VM deployment already sends correct per-asset-type cache headers (`serve.mjs`); a transparent reverse-proxy CDN (see `CDN_SETUP.md`) avoids CORS/asset-path-rewrite risk that a separate CDN-prefixed domain would add |

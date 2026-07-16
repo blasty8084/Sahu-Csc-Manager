@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const VERSION = "4.7.1";
+const VERSION = "4.8.0";
 const STORAGE_KEY = `sahu-whats-new-v${VERSION}`;
 
 interface Feature {
@@ -22,33 +22,33 @@ interface Feature {
 const FEATURES: Feature[] = [
   {
     icon: <ShieldCheck size={15} />,
-    color: "#7c3aed",
-    bg: "rgba(124,58,237,0.10)",
-    title: "Built-in Verification Code",
+    color: "#059669",
+    bg: "rgba(5,150,105,0.10)",
+    title: "QR Code 2FA — Works with Google Authenticator",
     description:
-      "Two-factor authentication no longer needs Google Authenticator or Authy. The app now generates and shows your 6-digit code directly — just read it and type it in. No QR code, no external app.",
-    tag: "New",
-    tagColor: "#7c3aed",
+      "Scan the QR code in Profile → Security with Google Authenticator, Authy, or any TOTP app to set up two-factor authentication. Or copy the secret key for manual entry.",
+    tag: "Fixed",
+    tagColor: "#059669",
   },
   {
     icon: <RefreshCw size={15} />,
     color: "#0891b2",
     bg: "rgba(8,145,178,0.10)",
-    title: "120-Second Code Window",
+    title: "Standard 30-Second Codes",
     description:
-      "Verification codes are valid for 120 seconds — 4× longer than before. More time to read and enter the code without it expiring mid-entry.",
-    tag: "Improved",
+      "TOTP codes now use the universal 30-second window (RFC 6238) that all authenticator apps expect. Clock-drift tolerance of ±30 seconds is also applied automatically.",
+    tag: "Security",
     tagColor: "#0891b2",
   },
   {
     icon: <KeyRound size={15} />,
-    color: "#16a34a",
-    bg: "rgba(22,163,74,0.10)",
-    title: "Live Countdown Display",
+    color: "#f97316",
+    bg: "rgba(249,115,22,0.10)",
+    title: "Regenerate Backup Codes Anytime",
     description:
-      "A countdown ring next to your code shows exactly how many seconds it's still valid. When the window expires, the code refreshes automatically — no manual action needed.",
-    tag: "Design",
-    tagColor: "#16a34a",
+      "Running low on backup codes? Generate a fresh set from Profile → Security with a password confirmation — no need to disable and re-enable two-factor authentication.",
+    tag: "New",
+    tagColor: "#f97316",
   },
 ];
 
@@ -101,7 +101,7 @@ export function WhatsNewModal() {
             </DialogHeader>
           </div>
           <p className="text-[11px] leading-snug relative z-10" style={{ color: "rgba(255,255,255,0.65)" }}>
-            Built-in 2FA code — no QR, no external app, 120-second rotating code right in the app.
+            2FA security upgrade — QR code export, standard 30-second codes, replay protection, regenerate backup codes.
           </p>
 
           {/* step dots */}

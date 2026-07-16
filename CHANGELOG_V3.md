@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v3 / v4
-**Current version: 4.7.1 — July 16, 2026**
+**Current version: 4.8.0 — July 16, 2026**
 
 > Detailed record of every feature, change, and upgrade from v3.0.0 onward.  
 > For v2.x history, see `docs/archive/changelogV2.md`.  
@@ -13,6 +13,7 @@
 
 ## Table of Contents
 
+0. [v4.8.0 — 2FA Security Upgrade: QR Codes, Replay Protection & Standard TOTP (July 16, 2026)](#0-v480--2fa-security-upgrade-qr-codes-replay-protection--standard-totp-july-16-2026)
 0. [v4.7.1 — Security Score 100 & Login Code Display Fix (July 16, 2026)](#0-v471--security-score-100--login-code-display-fix-july-16-2026)
 0. [v4.7.0 — Built-in Authenticator: No QR Code, No External App (July 16, 2026)](#0-v470--built-in-authenticator-no-qr-code-no-external-app-july-16-2026)
 0. [v4.6.0 — Login-Time 2FA Method Choice (July 15, 2026)](#0-v460--login-time-2fa-method-choice-july-15-2026)
@@ -36,7 +37,29 @@
 
 ---
 
+## 0. v4.8.0 — 2FA Security Upgrade: QR Codes, Replay Protection & Standard TOTP (July 16, 2026)
+
+Full security audit and upgrade of the two-factor authentication system. Supersedes the v4.7.0 built-in soft-token approach — external authenticator apps are now the primary TOTP method. No DB schema changes.
+
+| Change | Description |
+|--------|-------------|
+| **TOTP period 120 s → 30 s** | `authenticator.options = { step: 30 }` — aligns with RFC 6238. Google Authenticator, Authy, and Microsoft Authenticator all ignore a non-standard `period` param and always use 30 s, so the old 120-second codes were permanently invalid in those apps. `otpauth://` URIs no longer embed `period=120`. |
+| **QR code export restored** | `POST /auth/2fa/setup-totp` and `POST /auth/2fa/setup-totp-pending` now call `qrcode.toDataURL()` and `authenticator.keyuri()` and return `{ qrCodeDataUrl, otpauthUri, secret }`. |
+| **GET /auth/2fa/totp-qr (new)** | Authenticated endpoint — re-fetches the QR + secret for already-enrolled users (e.g. transferring to a new phone without disabling/re-enabling 2FA). |
+| **POST /auth/2fa/regenerate-backup-codes (new)** | Requires `currentPassword`. Invalidates all existing backup codes and generates a fresh set of 8. Returns `{ backupCodes }`. Triggers on "Generate new backup codes" button in profile. |
+| **TOTP replay protection** | In-memory `_usedTotpTokens` Map (per userId → last 6 tokens). Every successful TOTP verify stores the token; a second use within the same 30-second window returns 401. Intentionally in-memory (resets on restart, acceptable since sessions also reset). |
+| **Timing-safe hash compare** | `crypto.timingSafeEqual(Buffer.from(a,"hex"), Buffer.from(b,"hex"))` replaces `===` for backup-code hash comparison in `2fa.ts` and OTP hash comparison in `otp.ts`. |
+| **Clock-drift tolerance** | All `authenticator.verify()` calls now pass `window: 1` — accepts codes from ±1 window (±30 s). |
+| **TotpLiveCode.tsx — dynamic step** | Component reads `step` from the server response instead of `const STEP = 120`. SVG countdown ring and label are now driven by the server value. |
+| **TwoFactorSection.tsx rewrite** | (a) Shows scannable QR image after setup-totp; (b) reveal/copy manual secret key; (c) "Generate new backup codes" button with password confirm dialog; (d) backup-code health bar (available/used slots, regenerate CTA when ≤2 remain); (e) all "120 s" labels corrected to "30 s". |
+| **TwoFactorStep.tsx update** | Mid-login first-time TOTP enrollment: if `setup-totp-pending` returns `qrCodeDataUrl`, the QR is shown inline above the code-entry field so the user can scan with their app before entering the confirmation code. |
+| **use-auth.tsx** | `TotpSetupData` updated to `{ enrolled: boolean; qrCodeDataUrl?: string; secret?: string }`; `setupTotpPending()` passes through the full API response body. |
+
+---
+
 ## 0. v4.7.0 — Built-in Authenticator: No QR Code, No External App (July 16, 2026)
+
+> ⚠️ **Superseded by v4.8.0.** The built-in soft-token approach introduced here (no QR code, 120-second period) was found to be incompatible with all major authenticator apps, which hardcode a 30-second window. v4.8.0 reverts to the standard external-app QR-based flow with security improvements.
 
 Replaced the external-authenticator (QR code / Google Authenticator / Authy) TOTP flow with a fully built-in soft token. No new DB schema changes — the existing `users.totp_secret` column is used as before.
 

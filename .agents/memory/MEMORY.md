@@ -31,4 +31,5 @@
 - [receipt_counters per-user schema](receipt-counters-schema.md) — composite PK (user_id, year); drizzle-kit push fails on NOT NULL column add; must DROP and recreate table (counters only, actual numbers stored in ledger)
 - [Login-time 2FA method choice](login-2fa-method-choice.md) — mid-login OTP/TOTP switch + inline TOTP enrollment; pendingUserId-only endpoints, pendingTotpEnrolling flag, mirror DB updates onto in-memory user objects
 - [Explicit 2FA method picker](login-2fa-method-choice.md) — login NO LONGER auto-sends OTP; returns requires2fa with no method field; TwoFactorStep shows card picker first; switch-method triggers OTP send or TOTP entry; TwoFaChallenge type has no method/otpError
+- [TOTP standard 30-second period](totp-standard-period.md) — step must stay 30 s; major apps ignore period param; replay protection in-memory; timing-safe compare; QR export required for external apps
 - [Pre-existing TS errors in this project](preexisting-ts-errors.md) — AepsTransactionTable.tsx has session-possibly-null errors; queue-client.ts has ioredis/BullMQ type conflicts; both pre-date all L-series work and are not introduced by refactors

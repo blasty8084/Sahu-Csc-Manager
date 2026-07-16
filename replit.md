@@ -1,5 +1,5 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 4.7.0** — last updated 2026-07-16
+**Version 4.8.0** — last updated 2026-07-16
 
 > **v4.6.0 — Login-time method choice: Email OTP vs Authenticator App (2026-07-15)**: The post-login "New Device Detected" / 2FA verification screen now lets the user pick their verification method instead of it being fixed by the account's stored `twoFaMethod` — a navy/orange tab toggle between "Email OTP" (default, matches prior behavior) and "Authenticator App (TOTP)". Email OTP gained a 120s resend cooldown (reusing the `RESEND_COOLDOWN` pattern from register/forgot-password). Picking TOTP for an account with no authenticator enrolled yet shows a "Set up Authenticator" CTA → QR code + manual key → 6-digit confirm, all without a full session (mid-login, `pendingUserId`-only). Backend: new `POST /auth/2fa/switch-method` (mid-login method switch; doubles as OTP resend) and `POST /auth/2fa/setup-totp-pending` (mid-login TOTP enrollment start) in `2fa.ts`; `login.ts`'s challenge response now always defaults to `method: "otp"` and includes `totpEnrolled`; a new session flag `pendingTotpEnrolling` tells `verify-totp`'s existing mid-login branch to also flip `twoFaEnabled`/`twoFaMethod` and mint backup codes on first successful code, mirroring the settings-page enrollment flow. Backup codes generated this way are shown once on the login screen (held via a `completeLogin()` split from `verifyTwoFactor()`) before the session is actually applied and the user is redirected in. "Trust this device for 30 days" and Verify & Continue behavior unchanged.
 >
@@ -31,6 +31,18 @@
 >
 > **v4.3.2 optimization audit & measurements (2026-07-14)**: Ran a real load test (`loadtest.ts`, 50 connections/20s against a logged-in session) to get measured numbers instead of estimates: `/api/dashboard` p50=143ms p95=345ms p99=476ms (302 req/s), `/api/admin/users-overview` p50=150ms p95=351ms (296 req/s), `/healthz` p50=45ms (1052 req/s) — all 0 errors at 50 concurrent connections. Added two missing DB indexes found by a schema audit: `users_mobile_idx` (mobile is used in direct `eq()` lookups on every login/OTP/reset-password request, alongside username/email which already had unique-constraint indexes) and `services_category_idx` (used in `ORDER BY`/filter on the services list). Applied directly via `CREATE INDEX IF NOT EXISTS` rather than `drizzle-kit push`, per this project's convention of avoiding push-triggered data loss. Audited every other upload path in the API for the same raw-base64 issue the avatar fix addressed — none found; profile pictures were the only user-uploaded images. Audited static asset caching — already solid: `serve.mjs` sets `Cache-Control: public, max-age=31536000, immutable` on Vite's content-hashed JS/CSS/asset files and `no-store` on the HTML shell, so a real CDN in front of the domain would mostly help with edge latency, not caching correctness — noted as an infra decision (DNS/Cloudflare) rather than a code change. A Postgres read replica was investigated and intentionally not implemented: the DB connects via a single `pg` `Pool` with no replica-aware read/write split, and setting one up requires provisioning a second database endpoint, which is an infrastructure decision for the user rather than something to wire up unprompted.
 
+## What's New in v4.8.0 (July 16, 2026) — 2FA Security Upgrade
+
+- **Standard 30-second TOTP** (RFC 6238): reverted from the 120-second period introduced in v4.7.0. All major authenticator apps (Google Authenticator, Authy, Microsoft Authenticator) hardcode 30 s and silently ignore a non-standard period, so 120-second codes never worked in those apps.
+- **QR code export restored**: scanning with Google Authenticator, Authy, or any TOTP app is now the primary enrollment method. `setup-totp` and `setup-totp-pending` return `{ qrCodeDataUrl, otpauthUri, secret }`.
+- **New** `GET /auth/2fa/totp-qr` — re-fetch QR + secret for enrolled users (phone transfer without disabling 2FA).
+- **New** `POST /auth/2fa/regenerate-backup-codes` — generate a fresh set of 8 backup codes without disabling and re-enabling 2FA (password confirmation required).
+- **TOTP replay protection**: each 30-second code can only be used once; a second submission within the same window is rejected.
+- **Timing-safe hash comparison**: backup-code and OTP hash checks use `crypto.timingSafeEqual` instead of `===`.
+- **Clock-drift tolerance**: `window: 1` on all TOTP verify calls accepts codes ±30 seconds.
+- Profile 2FA section redesigned: shows QR image + reveal/copy secret, backup-code health bar, regenerate button.
+- Mid-login TOTP enrollment shows QR inline so users can scan before entering the confirmation code.
+
 ## What's New in v4.7.1 (July 16, 2026) — Security Fixes
 
 - **Score 100/100**: TOTP security score corrected from 92 → 100 when authenticator app is active.
@@ -38,11 +50,12 @@
 
 ## What's New in v4.7.0 (July 16, 2026) — Built-in Authenticator
 
+> ⚠️ Superseded by v4.8.0 — the 120-second TOTP period introduced here was incompatible with all major authenticator apps.
+
 - Two-factor authentication no longer requires scanning a QR code or installing Google Authenticator / Authy — the app generates and displays the rotating 6-digit code directly.
 - A live code card with a countdown ring appears in your profile settings and during the login 2FA step — read the code, type it in, done.
-- Codes rotate every **120 seconds** automatically (extended from 30 s); the ring counts down and the digits update on their own — no manual refresh.
 - Enabling authenticator 2FA is now a single-step confirm: press Enable → see your live code → enter it once to activate.
-- New API endpoints: `GET /auth/2fa/totp-code` (authenticated, returns current code + remaining seconds) and `GET /auth/2fa/totp-code-pending` (mid-login variant using `pendingUserId`).
+- New API endpoints: `GET /auth/2fa/totp-code` and `GET /auth/2fa/totp-code-pending`.
 - New shared component: `TotpLiveCode` — SVG countdown ring + big monospace digits, auto-refetches on window expiry.
 
 ## What's New in v4.6.0 (July 15, 2026) — 2FA Method Choice on Login
@@ -908,7 +921,9 @@ Full config in `infrastructure/twa/twa-config.json`.
 - **Mobile FAB clears bottom nav**: Use `bottom-20` (80px), not `bottom-6`. Bottom nav is ~64px tall.
 - **Forgot-password is a merged 4-step page**: `/forgot-password` covers identifier → OTP → new password → success. Do not split.
 - **Unified Profile + Settings (v2.3)**: `/profile` replaces standalone `/settings`. Desktop: sticky 144px side-nav with anchor links. Mobile: iOS drill-in pattern.
-- **OTP resend timer is 120 seconds**: Both `forgot-password.tsx` and `register.tsx` use `RESEND_COOLDOWN = 120`. Do not change.
+- **OTP resend timer is 120 seconds**: Both `forgot-password.tsx` and `register.tsx` use `RESEND_COOLDOWN = 120`. Do not change. This is the email OTP *resend cooldown*, unrelated to the TOTP 30-second code window.
+- **TOTP period is 30 seconds (RFC 6238 standard)**: `authenticator.options = { step: 30 }`. All TOTP verify calls use `window: 1` for ±30 s clock drift tolerance. Do not change to 120 — major apps ignore non-standard periods and always use 30 s.
+- **TOTP replay protection is in-memory**: `_usedTotpTokens` Map in `2fa.ts` resets on server restart (acceptable, since sessions also reset). Do not move to DB — it's an ephemeral security measure.
 - **send-otp silent success on unknown identifier**: Returns HTTP 200 with `{ maskedEmail: null }` — prevents account enumeration.
 - **AePS opening balance uses OpeningBalanceHeroCard**: Full-width navy gradient card. Never put it back into the stat-card grid.
 - **AePS mobile entry — Aadhaar masking**: `XXXX XXXX <last 4>` at rest; raw grouped value shown while focused. Store raw digits, derive masked display on render.

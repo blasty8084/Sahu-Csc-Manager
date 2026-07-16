@@ -1,5 +1,5 @@
 # SAHU CSC — Agent Reference Document
-**Version 4.7.0** · Last updated 2026-07-16
+**Version 4.8.0** · Last updated 2026-07-16
 
 This file is the single authoritative reference for any AI agent working on this codebase. Read it first before touching any code.
 
@@ -301,11 +301,13 @@ All routes mount under `/api/`. Auth middleware: `requireAuth` (session), `requi
 | POST | `/auth/2fa/switch-method` | pendingUserId | Switch OTP↔TOTP mid-login. Switching to `otp` sends email. Switching to `totp` returns `totpEnrolled` flag. |
 | POST | `/auth/2fa/verify-otp` | pendingUserId | Verify email OTP code mid-login → `finalizeLogin`. |
 | POST | `/auth/2fa/verify-totp` | userId or pendingUserId | Mode A (authenticated): confirm TOTP setup, enable 2FA. Mode B (pending): verify TOTP mid-login → `finalizeLogin`. |
-| POST | `/auth/2fa/setup-totp` | requireAuth | Begin TOTP enrollment (authenticated session). Returns QR + secret. |
-| POST | `/auth/2fa/setup-totp-pending` | pendingUserId | Begin TOTP enrollment mid-login (before full session). |
-| GET | `/auth/2fa/status` | requireAuth | Returns 2FA enabled/method/backupCodesRemaining. |
+| POST | `/auth/2fa/setup-totp` | requireAuth | Begin TOTP enrollment (authenticated session). Returns `{ qrCodeDataUrl, otpauthUri, secret }`. |
+| POST | `/auth/2fa/setup-totp-pending` | pendingUserId | Begin TOTP enrollment mid-login (before full session). Returns same QR payload. |
+| GET | `/auth/2fa/totp-qr` | requireAuth | Re-fetch QR code + secret for already-enrolled TOTP (e.g. for app transfer). |
+| GET | `/auth/2fa/status` | requireAuth | Returns 2FA enabled/method/backupCodesRemaining/totpConfigured. |
 | POST | `/auth/2fa/enable-otp` | requireAuth | Enable OTP-based 2FA (requires current password). |
-| POST | `/auth/2fa/disable` | requireAuth | Disable 2FA (requires current password). |
+| POST | `/auth/2fa/disable` | requireAuth | Disable 2FA (requires current password). Clears TOTP replay-protection cache. |
+| POST | `/auth/2fa/regenerate-backup-codes` | requireAuth | Invalidate old backup codes and generate a fresh set (requires current password). |
 | POST | `/auth/send-otp` | — | Send OTP for password reset flow. |
 | POST | `/auth/verify-otp` | — | Verify OTP for password reset flow. |
 | POST | `/auth/forgot-password` | — | Admin-targeted legacy forgot-password. |
@@ -579,9 +581,9 @@ All pages are in `artifacts/sahu-csc/src/pages/`.
 ### 2FA Verification Flow (`components/auth/TwoFactorStep.tsx`)
 - Phase 1: Method picker — two cards (Email OTP / Authenticator App)
   - Clicking Email OTP → `switchTwoFaMethod("otp")` → OTP sent → code entry
-  - Clicking Authenticator App → `switchTwoFaMethod("totp")` → TOTP entry (or QR enrollment)
+  - Clicking Authenticator App → `switchTwoFaMethod("totp")` → TOTP entry; if first time, shows QR code + manual secret for external app enrollment
 - Phase 2: Code entry with "Change method" back link
-- `RESEND_COOLDOWN = 120` seconds
+- Email OTP resend cooldown: `RESEND_COOLDOWN = 120` seconds
 
 ### Offline PWA (`lib/offline-db.ts`, `lib/sync-engine.ts`)
 - IndexedDB (Dexie) stores pending ledger entries when offline
@@ -727,7 +729,8 @@ Frontend main chunk: ~438KB (under 500KB Vite warning).
 
 | Version | Date | Key Change |
 |---------|------|-----------|
-| 4.7.0 | 2026-07-16 | Explicit 2FA method selection (no OTP auto-send), SMTP fixed |
+| 4.8.0 | 2026-07-16 | 2FA: QR codes, replay protection, standard 30 s TOTP, regenerate backup codes |
+| 4.7.0 | 2026-07-16 | Built-in TOTP code display, explicit method selection, SMTP fixed |
 | 4.6.0 | 2026-07-15 | 2FA method toggle (OTP/TOTP) on login, inline TOTP enrollment |
 | 4.5.1 | 2026-07-15 | File Manager permission real grant/deny |
 | 4.5.0 | 2026-07-15 | PermissionCard redesign, Location+Notifications+FileManager |

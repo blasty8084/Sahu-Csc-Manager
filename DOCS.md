@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Platform Documentation
-**Version 4.7.1** — last updated 2026-07-16
+**Version 4.8.0** — last updated 2026-07-16
 
 > Common Service Center (CSC) Business Management Platform for Odisha / India rural service centers.
 > Full-stack · PWA · Offline-capable · Multilingual (English / Hindi / Odia)
@@ -55,6 +55,20 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 ---
 
 ## 2. Version History
+
+### v4.8.0 — 2FA Security Upgrade: QR Codes, Replay Protection & Standard TOTP (2026-07-16)
+
+Full security audit and upgrade of the two-factor authentication system. No DB schema changes.
+
+- **TOTP period 120 s → 30 s** — RFC 6238 standard; Google Authenticator, Authy, Microsoft Authenticator all use 30 s regardless of the `period` param, so the old 120-second codes were never valid in those apps
+- **QR code export** — `setup-totp` and `setup-totp-pending` now return `{ qrCodeDataUrl, otpauthUri, secret }` so users can scan with any TOTP app
+- **New** `GET /auth/2fa/totp-qr` — re-fetch QR + secret for enrolled users (e.g. app transfer)
+- **New** `POST /auth/2fa/regenerate-backup-codes` — invalidate old backup codes and generate a fresh set of 8 (requires current password)
+- **TOTP replay protection** — in-memory token log per user; a code already used within its 30-second window is rejected
+- **Timing-safe backup-code comparison** — `crypto.timingSafeEqual` replaces `===` for hash checks
+- **Clock drift tolerance** — `window: 1` on all TOTP verify calls (±30 s)
+- Profile 2FA section redesigned: QR image, copy/reveal secret, backup-code health bar, "Generate new codes" button
+- Mid-login TOTP enrollment shows QR inline so users can scan before entering the confirmation code
 
 ### v4.7.1 — Security Score 100 & Login Code Display Fix (2026-07-16)
 
@@ -534,6 +548,18 @@ All routes are mounted under `/api/`. Auth middleware: `requireAuth` (session), 
 
 | Method | Path | Description |
 |--------|------|-------------|
+| `POST` | `/api/auth/2fa/switch-method` | Switch OTP↔TOTP mid-login, or resend OTP |
+| `POST` | `/api/auth/2fa/setup-totp` | Begin TOTP enrollment — returns `{ qrCodeDataUrl, otpauthUri, secret }` |
+| `POST` | `/api/auth/2fa/setup-totp-pending` | Same, for mid-login `pendingUserId` state |
+| `GET` | `/api/auth/2fa/totp-qr` | Re-fetch QR code + secret for enrolled user |
+| `GET` | `/api/auth/2fa/totp-code` | Current TOTP code + countdown for authenticated user |
+| `GET` | `/api/auth/2fa/totp-code-pending` | Same, for mid-login `pendingUserId` state |
+| `POST` | `/api/auth/2fa/verify-totp` | Confirm TOTP enrollment or verify mid-login code |
+| `POST` | `/api/auth/2fa/verify-otp` | Verify email OTP mid-login |
+| `POST` | `/api/auth/2fa/enable-otp` | Enable email-OTP 2FA (requires current password) |
+| `POST` | `/api/auth/2fa/disable` | Disable 2FA entirely (requires current password) |
+| `GET` | `/api/auth/2fa/status` | 2FA enabled/method/backupCodesRemaining/totpConfigured |
+| `POST` | `/api/auth/2fa/regenerate-backup-codes` | Invalidate old codes + generate fresh set (requires password) |
 | `GET` | `/api/ledger` | List ledger entries (per-user) |
 | `POST` | `/api/ledger` | Create ledger entry |
 | `PUT` | `/api/ledger/:id` | Update ledger entry |
@@ -803,6 +829,20 @@ sahu-csc/                          ← monorepo root
 | OTP reset | Email OTP for password reset; tokens expire and are single-use |
 | Rate limiting | express-rate-limit on all auth endpoints |
 | Security headers | helmet (CSP, HSTS, XSS protection, etc.) |
+
+### Two-factor authentication
+
+| Feature | Detail |
+|---------|--------|
+| Methods | Email OTP or Authenticator App (TOTP) — chosen at login time via method picker |
+| TOTP standard | RFC 6238 · 30-second window · `window: 1` clock-drift tolerance |
+| TOTP apps | Any TOTP app (Google Authenticator, Authy, Microsoft Authenticator) via QR code or manual secret |
+| QR export | `setup-totp` returns `qrCodeDataUrl` + `otpauthUri` + plain `secret`; QR re-fetchable via `GET /auth/2fa/totp-qr` |
+| Replay protection | In-memory token log per user — a 30-second code already used once is rejected immediately |
+| Timing-safe | Backup-code hash comparison uses `crypto.timingSafeEqual` to prevent timing oracle attacks |
+| Backup codes | 8 single-use codes, bcrypt-hashed at rest, shown once on enrollment; regeneratable via password confirmation |
+| Enrollment | Profile → Security (authenticated) or inline at first login (mid-login, before full session exists) |
+| Audit | Every 2FA enable/disable/verify event written to `security_logs` and `audit_logs` |
 
 ### Session endpoints
 
