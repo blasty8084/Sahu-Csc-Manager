@@ -248,7 +248,7 @@ Continuing from the 8.5/10 baseline (N+1 fixes, batched writes, pooled connectio
 2. Schema push is automatic via `scripts/post-merge.sh` (`drizzle-kit push --force` + session table DDL)
 3. Set secrets: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD` (see table below)
 4. Run the `Seed Database` workflow to create admin/operator accounts
-5. Start the `artifacts/sahu-csc: web` and `API Server` workflows (the `Project` workflow starts both + Worker Server in parallel)
+5. Start the `artifacts/sahu-csc: web` and `API Server` workflows (or use the `Project` workflow to start both + Worker Server in parallel)
 6. ~~Update `CORS_ORIGIN`~~ — no longer needed; `REPLIT_DEV_DOMAIN` and `REPLIT_DOMAINS` are auto-included at startup (v4.9.0+)
 
 #### Secrets required

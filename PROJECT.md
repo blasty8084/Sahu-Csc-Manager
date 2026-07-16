@@ -589,8 +589,7 @@ Registrations require admin approval. Status values: `ACTIVE` → `INACTIVE` →
 > **`artifacts/api-server: API Server` — why it exists and why it stays:** Replit auto-generates this workflow for the `artifacts/api-server` artifact. It **cannot be removed** — `removeWorkflow` rejects artifact-managed workflows with "managed by an artifact and cannot be removed". Its `dev` script is overridden to a harmless `echo` so it never touches port 8080. Status always shows `finished` immediately — correct and expected behaviour.
 >
 > **Removed (2026-07-15):** `SAHU CSC` (manual PORT=5000 dev server) and `Production Preview` — replaced by `artifacts/sahu-csc: web`.
->
-> **`Start application`** — legacy alias kept for compatibility; runs the same Vite dev command as `artifacts/sahu-csc: web`. The `Project` runButton points to `artifacts/sahu-csc: web`; `Start application` will show as failed if that workflow already holds port 5000 (expected, harmless).
+> **Removed (2026-07-16):** `Start application` — duplicate of `artifacts/sahu-csc: web` on port 5000; always conflicted and failed.
 
 ---
 
