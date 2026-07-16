@@ -30,4 +30,5 @@
 - [Worker server architecture](worker-server-architecture.md) — BullMQ on port 8081; REDIS_URL must be direct TCP (not REST URL); graceful fallback to direct calls when absent; build.mjs needs globalThis.require polyfill
 - [receipt_counters per-user schema](receipt-counters-schema.md) — composite PK (user_id, year); drizzle-kit push fails on NOT NULL column add; must DROP and recreate table (counters only, actual numbers stored in ledger)
 - [Login-time 2FA method choice](login-2fa-method-choice.md) — mid-login OTP/TOTP switch + inline TOTP enrollment; pendingUserId-only endpoints, pendingTotpEnrolling flag, mirror DB updates onto in-memory user objects
+- [Explicit 2FA method picker](login-2fa-method-choice.md) — login NO LONGER auto-sends OTP; returns requires2fa with no method field; TwoFactorStep shows card picker first; switch-method triggers OTP send or TOTP entry; TwoFaChallenge type has no method/otpError
 - [Pre-existing TS errors in this project](preexisting-ts-errors.md) — AepsTransactionTable.tsx has session-possibly-null errors; queue-client.ts has ioredis/BullMQ type conflicts; both pre-date all L-series work and are not introduced by refactors
