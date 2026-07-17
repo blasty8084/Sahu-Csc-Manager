@@ -1,4 +1,4 @@
-modules = ["nodejs-20", "web", "bash"]
+modules = ["nodejs-20", "web", "bash", "postgresql-16"]
 
 [deployment]
 router = "application"
@@ -126,7 +126,7 @@ SMTP_PORT = "587"
 SMTP_USER = "sahuuttam690@gmail.com"
 VAPID_PUBLIC_KEY = "BAvYzdJK_Y1P8GePiSN3fvDPOQejzUMWfa51hRp5p2wrF8adZ4x54cChfyZLbmBt2LJVOy5ZhbyajkOaiGi86cM"
 CACHE_BACKEND = "memory"
-CORS_ORIGIN = "http://localhost:5000,https://7c4f704f-0a89-4099-b939-af8684d98099-00-2t2gaj26z7g0.sisko.replit.dev,https://2a397192-8b17-4b82-84ff-e25572006b2a-00-2u8qdajcfoo0v.pike.replit.dev,https://dc36ce7b-ace3-4cb8-ac87-cf6752e09233-00-2yhhtcgdvtnu3.sisko.replit.dev,https://5f052788-3077-47cb-b9db-15333418442c-00-1vazb23v9idk1.pike.replit.dev,https://b49d7f22-9771-46b3-86ab-2a7abd8ff568-00-og7jnrttmhp1.sisko.replit.dev"
+CORS_ORIGIN = "https://b4d2cc78-e47f-498e-8542-09922ecf891c-00-goff9apj5lfs.pike.replit.dev"
 DB_POOL_MAX = "5"
 ADMIN_MOBILE = "9876543210"
 BUSINESS_ADDRESS = "Main Road, Bargarh Block, Bargarh, Odisha - 768028"
