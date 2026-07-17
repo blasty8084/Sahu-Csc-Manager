@@ -963,6 +963,49 @@ Design exploration in `artifacts/mockup-sandbox/`. Preview server on port 8081 �
 
 ---
 
+## Getting Started on Replit
+
+After importing or forking this project, run through these steps once to get the app running:
+
+### 1. Install dependencies
+```
+pnpm install
+```
+
+### 2. Push the database schema
+The project uses Replit's built-in PostgreSQL (`DATABASE_URL` is set automatically). Run:
+```
+pnpm --filter @workspace/db exec drizzle-kit push
+```
+
+### 3. Set required secrets
+Add the following in Replit Secrets:
+| Secret | Description |
+|--------|-------------|
+| `SESSION_SECRET` | Random string for Express session signing |
+| `ADMIN_PASSWORD` | Password for the default admin account |
+| `OPERATOR_PASSWORD` | Password for the default operator account |
+| `SMTP_PASS` | Gmail App Password for email OTP / notifications |
+
+Optional secrets (features degrade gracefully without them):
+| Secret | Description |
+|--------|-------------|
+| `REDIS_URL` | Redis connection URL — enables background job queue and worker server |
+
+### 4. Seed the database
+Run the **Seed Database** workflow once. This creates the admin and operator accounts using the passwords from Secrets.
+
+### 5. Start the app
+Run the **API Server** workflow (port 8080) and the **artifacts/sahu-csc: web** workflow (port 5000, Vite dev server). The preview pane shows the frontend; it proxies `/api` requests to port 8080.
+
+### CORS
+`CORS_ORIGIN` only needs to list `http://localhost:5000`. The API server automatically appends the current `REPLIT_DEV_DOMAIN` and any `REPLIT_DOMAINS` at startup — no manual update needed after repl renames or forks.
+
+### Worker Server
+The Worker Server (BullMQ, port 8081) skips silently when `REDIS_URL` is not set — the app works without it, but background jobs (email queuing, PDF exports) won't run. Set `REDIS_URL` to enable it.
+
+---
+
 ## User Preferences
 
 - Language: EN (English) by default
