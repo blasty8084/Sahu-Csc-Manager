@@ -577,7 +577,7 @@ Registrations require admin approval. Status values: `ACTIVE` → `INACTIVE` →
 |---|---|---|---|
 | `API Server` | `PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server run build && PORT=8080 node --enable-source-maps artifacts/api-server/dist/index.mjs` | 8080 | Express REST API (auto-start) |
 | `artifacts/sahu-csc: web` | `pnpm --filter @workspace/sahu-csc run dev` | 5000 | Vite frontend dev server / SAHU CSC FV1 (auto-start) |
-| `Seed Database` | `pnpm --filter @workspace/db run push-force && PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server exec tsx src/scripts/seed.ts` | — | One-time seed (manual) — pushes schema then seeds |
+| `Seed Database` | `PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server exec tsx src/scripts/seed.ts` | — | One-time seed (manual) |
 | `Typecheck` | `pnpm run typecheck:libs && pnpm -r --filter "./artifacts/**" --if-present run typecheck` | — | Full TS check (manual) |
 | `Build Production` | `pnpm run typecheck:libs && pnpm --filter @workspace/api-server run build && PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run build` | — | Production build (manual) |
 | `Worker Server` | `[ -z "$REDIS_URL" ] && exit 0; PORT=8081 pnpm --filter @workspace/worker-server run build && PORT=8081 node --enable-source-maps artifacts/worker-server/dist/index.mjs` | 8081 | BullMQ jobs — skips if `REDIS_URL` unset (optional) |
@@ -589,7 +589,6 @@ Registrations require admin approval. Status values: `ACTIVE` → `INACTIVE` →
 > **`artifacts/api-server: API Server` — why it exists and why it stays:** Replit auto-generates this workflow for the `artifacts/api-server` artifact. It **cannot be removed** — `removeWorkflow` rejects artifact-managed workflows with "managed by an artifact and cannot be removed". Its `dev` script is overridden to a harmless `echo` so it never touches port 8080. Status always shows `finished` immediately — correct and expected behaviour.
 >
 > **Removed (2026-07-15):** `SAHU CSC` (manual PORT=5000 dev server) and `Production Preview` — replaced by `artifacts/sahu-csc: web`.
-> **Removed (2026-07-16):** `Start application` — duplicate of `artifacts/sahu-csc: web` on port 5000; always conflicted and failed.
 
 ---
 
@@ -632,19 +631,15 @@ Creates (or resets) the `admin` and `operator` users using `ADMIN_PASSWORD` and 
 |---|---|
 | `vendor-react` | react, react-dom |
 | `vendor-query` | @tanstack/react-query |
-| `vendor-query-persist` | @tanstack/query-async-storage-persister |
 | `vendor-motion` | framer-motion |
 | `vendor-router` | wouter |
-| `vendor-charts` | recharts (lazy-loaded — only fetched when Reports page opens) |
+| `vendor-charts` | recharts |
 | `vendor-ui` | lucide-react |
 | `vendor-radix` | all @radix-ui/* |
 | `vendor-i18n` | i18next, react-i18next |
 | `vendor-forms` | react-hook-form, zod |
 | `vendor-date` | date-fns, react-day-picker |
 | `vendor-icons` | react-icons |
-| `vendor-idb` | dexie, idb-keyval |
-| `vendor-pdf` | jspdf (dynamic-import only) |
-| `vendor-pdf-canvas` | html2canvas (dynamic-import only) |
 | `vendor-misc` | sonner, cmdk, vaul, embla-carousel, etc. |
 
 ---

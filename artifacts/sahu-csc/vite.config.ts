@@ -178,8 +178,6 @@ export default defineConfig({
         globIgnores: [
           "**/jspdf*",
           "**/html2canvas*",
-          "**/vendor-pdf*",
-          "**/vendor-pdf-canvas*",
           "**/vendor-charts*",
         ],
       },
@@ -259,16 +257,10 @@ export default defineConfig({
             return "vendor-react";
           if (id.includes("/node_modules/@tanstack/react-query"))
             return "vendor-query";
-          // Persist adapter is large; keep it out of the main query chunk so it
-          // doesn't bloat the synchronous bootstrap path.
-          if (id.includes("/node_modules/@tanstack/query-async-storage-persister"))
-            return "vendor-query-persist";
           if (id.includes("/node_modules/framer-motion"))
             return "vendor-motion";
           if (id.includes("/node_modules/wouter"))
             return "vendor-router";
-          // recharts: kept in its own chunk and lazy-loaded via React.lazy in
-          // reports.tsx — excluded from the SW precache (see injectManifest config).
           if (id.includes("/node_modules/recharts"))
             return "vendor-charts";
           if (id.includes("/node_modules/lucide-react"))
@@ -281,16 +273,6 @@ export default defineConfig({
             return "vendor-forms";
           if (id.includes("/node_modules/date-fns") || id.includes("/node_modules/react-day-picker"))
             return "vendor-date";
-          // IndexedDB helpers — used by offline queue and query persister;
-          // split so they don't sit in the main entry chunk.
-          if (id.includes("/node_modules/dexie") || id.includes("/node_modules/idb-keyval"))
-            return "vendor-idb";
-          // jspdf + html2canvas: already dynamic-import-only; give them a stable
-          // chunk name so the SW can reliably exclude them from precache.
-          if (id.includes("/node_modules/jspdf"))
-            return "vendor-pdf";
-          if (id.includes("/node_modules/html2canvas"))
-            return "vendor-pdf-canvas";
           if (
             id.includes("/node_modules/sonner") ||
             id.includes("/node_modules/cmdk") ||
