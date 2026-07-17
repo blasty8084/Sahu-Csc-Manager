@@ -29,6 +29,11 @@ const RegisterBody = z.object({
   emailOtp: z.string().length(6, "OTP must be exactly 6 digits").regex(/^\d{6}$/, "OTP must be numeric"),
 });
 
+// When 2FA is globally disabled, emailOtp is not required.
+const RegisterBodyNo2FA = RegisterBody.extend({
+  emailOtp: z.string().optional().default("000000"),
+});
+
 // ─── POST /auth/register ──────────────────────────────────────────────────────
 router.post("/auth/register", asyncHandler(async (req, res) => {
   // Check registration toggle server-side
@@ -44,7 +49,11 @@ router.post("/auth/register", asyncHandler(async (req, res) => {
     return;
   }
 
-  const parsed = RegisterBody.safeParse(req.body);
+  // ── DISABLE_2FA flag — skips email OTP requirement at registration ─────────
+  const twoFaGloballyDisabled = process.env.DISABLE_2FA === "true";
+  const schema = twoFaGloballyDisabled ? RegisterBodyNo2FA : RegisterBody;
+
+  const parsed = schema.safeParse(req.body);
   if (!parsed.success) {
     const firstIssue = parsed.error.issues?.[0];
     res.status(400).json({ error: firstIssue?.message ?? "Validation failed" });
@@ -53,58 +62,83 @@ router.post("/auth/register", asyncHandler(async (req, res) => {
   const data = parsed.data;
 
   // ── Verify email OTP before doing anything else ───────────────────────────
-  const otpHash = hashOtp(data.emailOtp);
-  const [otpRecord] = await db
-    .select()
-    .from(emailOtpsTable)
-    .where(
-      and(
-        eq(emailOtpsTable.email, data.email),
-        eq(emailOtpsTable.purpose, "registration"),
-        eq(emailOtpsTable.otpHash, otpHash),
-        isNull(emailOtpsTable.usedAt)
+  if (!twoFaGloballyDisabled) {
+    const otpHash = hashOtp(data.emailOtp);
+    const [otpRecord] = await db
+      .select()
+      .from(emailOtpsTable)
+      .where(
+        and(
+          eq(emailOtpsTable.email, data.email),
+          eq(emailOtpsTable.purpose, "registration"),
+          eq(emailOtpsTable.otpHash, otpHash),
+          isNull(emailOtpsTable.usedAt)
+        )
       )
-    )
-    .orderBy(desc(emailOtpsTable.createdAt))
-    .limit(1);
+      .orderBy(desc(emailOtpsTable.createdAt))
+      .limit(1);
 
-  if (!otpRecord) {
-    res.status(400).json({ error: "Invalid OTP. Please request a new verification code." });
-    return;
-  }
-  if (new Date() > otpRecord.expiresAt) {
-    res.status(400).json({ error: "OTP has expired. Please request a new verification code." });
-    return;
-  }
-
-  // Check uniqueness
-  const conditions: any[] = [
-    eq(usersTable.username, data.username),
-    eq(usersTable.email, data.email),
-  ];
-  if (data.mobile) conditions.push(eq(usersTable.mobile, data.mobile));
-
-  const [existing] = await db
-    .select({ id: usersTable.id, username: usersTable.username, email: usersTable.email, mobile: usersTable.mobile })
-    .from(usersTable)
-    .where(or(...conditions));
-
-  if (existing) {
-    if (existing.username === data.username) {
-      res.status(409).json({ error: "Username already taken" });
-    } else if (existing.email === data.email) {
-      res.status(409).json({ error: "Email already registered" });
-    } else {
-      res.status(409).json({ error: "Mobile number already registered" });
+    if (!otpRecord) {
+      res.status(400).json({ error: "Invalid OTP. Please request a new verification code." });
+      return;
     }
-    return;
+    if (new Date() > otpRecord.expiresAt) {
+      res.status(400).json({ error: "OTP has expired. Please request a new verification code." });
+      return;
+    }
+
+    // Check uniqueness (inside 2FA block so otpRecord is in scope for mark-used below)
+    const conditions2fa: any[] = [
+      eq(usersTable.username, data.username),
+      eq(usersTable.email, data.email),
+    ];
+    if (data.mobile) conditions2fa.push(eq(usersTable.mobile, data.mobile));
+    const [existing2fa] = await db
+      .select({ id: usersTable.id, username: usersTable.username, email: usersTable.email, mobile: usersTable.mobile })
+      .from(usersTable)
+      .where(or(...conditions2fa));
+    if (existing2fa) {
+      if (existing2fa.username === data.username) {
+        res.status(409).json({ error: "Username already taken" });
+      } else if (existing2fa.email === data.email) {
+        res.status(409).json({ error: "Email already registered" });
+      } else {
+        res.status(409).json({ error: "Mobile number already registered" });
+      }
+      return;
+    }
+
+    // Mark OTP as used before inserting user
+    await db
+      .update(emailOtpsTable)
+      .set({ usedAt: new Date() })
+      .where(eq(emailOtpsTable.id, otpRecord.id));
   }
 
-  // Mark OTP as used before inserting user
-  await db
-    .update(emailOtpsTable)
-    .set({ usedAt: new Date() })
-    .where(eq(emailOtpsTable.id, otpRecord.id));
+  // Check uniqueness (no-2FA path — 2FA path already checked above)
+  if (twoFaGloballyDisabled) {
+    const conditions: any[] = [
+      eq(usersTable.username, data.username),
+      eq(usersTable.email, data.email),
+    ];
+    if (data.mobile) conditions.push(eq(usersTable.mobile, data.mobile));
+
+    const [existing] = await db
+      .select({ id: usersTable.id, username: usersTable.username, email: usersTable.email, mobile: usersTable.mobile })
+      .from(usersTable)
+      .where(or(...conditions));
+
+    if (existing) {
+      if (existing.username === data.username) {
+        res.status(409).json({ error: "Username already taken" });
+      } else if (existing.email === data.email) {
+        res.status(409).json({ error: "Email already registered" });
+      } else {
+        res.status(409).json({ error: "Mobile number already registered" });
+      }
+      return;
+    }
+  }
 
   const passwordHash = await hashPassword(data.password);
   const [user] = await db

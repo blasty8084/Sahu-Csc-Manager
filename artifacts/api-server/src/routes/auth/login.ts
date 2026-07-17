@@ -143,7 +143,10 @@ router.post("/auth/login", asyncHandler(async (req, res) => {
   const needsUserTwoFa = user.twoFaEnabled && !trustedSkip;
   const needsChallenge = isNewDevice || needsUserTwoFa;
 
-  if (needsChallenge) {
+  // ── DISABLE_2FA flag — bypasses ALL 2FA/device challenges without touching DB ─
+  const twoFaGloballyDisabled = process.env.DISABLE_2FA === "true";
+
+  if (needsChallenge && !twoFaGloballyDisabled) {
     // Show the method-selection screen first — do NOT auto-send an OTP here.
     // The user picks "Email OTP" or "Authenticator App" on the verification
     // screen and the chosen method's action (OTP send / TOTP entry) is

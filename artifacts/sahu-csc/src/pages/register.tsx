@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion, AnimatePresence } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRegistrationStatus } from "@/hooks/use-registration-status";
@@ -119,11 +120,27 @@ function OtpRateLimitPanel({ seconds, onBack }: { seconds: number; onBack: () =>
   );
 }
 
+function useTwoFaDisabled() {
+  const { data } = useQuery<{ twoFaDisabled?: boolean }>({
+    queryKey: ["setup-status-2fa"],
+    queryFn: async () => {
+      const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+      const res = await fetch(`${base}/api/setup-status`, { credentials: "include" });
+      if (!res.ok) return {};
+      return res.json();
+    },
+    staleTime: 60_000,
+    retry: false,
+  });
+  return data?.twoFaDisabled === true;
+}
+
 function RegisterForm() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const twoFaDisabled = useTwoFaDisabled();
 
   // Multi-step state
   const [step, setStep] = useState<RegisterStep>("form");
@@ -203,6 +220,39 @@ function RegisterForm() {
     setSendingOtp(true);
     setOtpError(null);
     try {
+      // When 2FA is globally disabled, skip OTP entirely and register directly.
+      if (twoFaDisabled) {
+        const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+        const body: Record<string, string> = {
+          username: values.username,
+          email: values.email,
+          password: values.password,
+        };
+        if (values.fullName) body.fullName = values.fullName;
+        if (values.mobile) body.mobile = values.mobile;
+        const res = await fetch(`${base}/api/auth/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          if (res.status === 403) { setLocation("/register/closed"); return; }
+          if (res.status === 409) {
+            setOtpError(data.error ?? "An account with these details already exists.");
+          } else {
+            toast({ variant: "destructive", title: "Registration failed", description: data.error ?? "Please try again." });
+          }
+          return;
+        }
+        if (data.pending) { setLocation("/register/pending"); return; }
+        form.reset();
+        setLocation("/login");
+        return;
+      }
+
+      // Normal flow: send OTP then show verification step.
       const ok = await sendOtp(values.email);
       if (!ok) return;
       setFormValues(values);

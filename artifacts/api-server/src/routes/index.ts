@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import authRouter from "./auth";
+import setupStatusRouter from "./setup-status";
 import ledgerRouter from "./ledger";
 import servicesRouter from "./services";
 import usersRouter from "./users";
@@ -46,5 +47,6 @@ router.use(udhariRouter);
 router.use(receiptsRouter);
 router.use(broadcastRouter);
 router.use(adminReceiptExportRouter);
+router.use(setupStatusRouter);
 
 export default router;

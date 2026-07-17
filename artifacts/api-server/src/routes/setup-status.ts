@@ -61,6 +61,10 @@ router.get("/setup-status", (_req, res) => {
   res.json({
     configured: missing.length === 0,
     missing,
+    // Feature flag: when true, all 2FA/OTP challenges are bypassed globally.
+    // Flip DISABLE_2FA=true to re-enable. Never remove this field — the frontend
+    // register page reads it to skip the OTP verification step.
+    twoFaDisabled: process.env.DISABLE_2FA === "true",
   });
 });
 
