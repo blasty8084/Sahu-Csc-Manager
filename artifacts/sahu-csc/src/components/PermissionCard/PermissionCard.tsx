@@ -3,7 +3,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Bell, FolderOpen, Loader2, MapPin, ShieldCheck, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQueryClient } from "@tanstack/react-query";
-import { getGetMeQueryKey } from "@workspace/api-client-react";
 import { PermissionRow } from "./PermissionRow";
 import { usePermissions } from "./usePermissions";
 
@@ -72,7 +71,7 @@ export function PermissionCard() {
       // Even if the PATCH fails (e.g. offline), don't trap the user — the
       // server flag stays false, so it will simply be retried next login.
     } finally {
-      queryClient.setQueryData(getGetMeQueryKey(), (prev: any) =>
+      queryClient.setQueryData(["auth/me"], (prev: any) =>
         prev ? { ...prev, firstLoginCompleted: true } : prev,
       );
       setIsFinishing(false);
