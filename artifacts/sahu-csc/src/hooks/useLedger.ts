@@ -1,10 +1,11 @@
-import { useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   useListLedgerEntries, useCreateLedgerEntry, useUpdateLedgerEntry, useDeleteLedgerEntry,
   useGetBalance, useListServices, useGetSettings,
   getListLedgerEntriesQueryKey, getGetBalanceQueryKey
 } from "@workspace/api-client-react";
+import { useToast } from "@/hooks/use-toast";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -14,6 +15,15 @@ export interface EntryForm {
   serviceType: string;
   credit: number;
   debit: number;
+  description: string;
+}
+
+export interface QuickAddState {
+  date: string;
+  customerName: string;
+  serviceType: string;
+  entryType: "credit" | "debit";
+  amount: string;
   description: string;
 }
 
@@ -47,22 +57,44 @@ export const fmtDateGroup = (d: string, t: (key: string) => string) => {
   return new Date(d + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short", weekday: "short" });
 };
 
-export interface LedgerListParams {
-  page: number;
-  limit: number;
-  startDate?: string;
-  endDate?: string;
-  customerName?: string;
-  serviceType?: string;
-}
-
 /**
- * Non-UI data layer for the Ledger page: query hooks, mutations, and derived
- * (filtered/sorted) data. All UI state (dialogs, filters inputs, active tab, etc.)
- * stays in the ledger.tsx orchestrator.
+ * Data layer + filter/pagination state for the Ledger page.
+ *
+ * Owns: data fetching, mutations, filter state (page, dates, customer, service,
+ * showFilters), quick-add state and handler. All modal/dialog/form state stays
+ * in the ledger.tsx orchestrator.
  */
-export function useLedger(params: LedgerListParams, receiptSearch: string) {
+export function useLedger(receiptSearch: string) {
   const qc = useQueryClient();
+  const { toast } = useToast();
+
+  // ── Filter & pagination state ────────────────────────────────────────────
+  const [page, setPage] = useState(1);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [serviceFilter, setServiceFilter] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+
+  const hasFilters = !!(startDate || endDate || customerName || serviceFilter);
+  const clearFilters = () => { setStartDate(""); setEndDate(""); setCustomerName(""); setServiceFilter(""); setPage(1); };
+
+  // ── Quick-add strip state ────────────────────────────────────────────────
+  const todayStr = new Date().toISOString().split("T")[0];
+  const [quickAdd, setQuickAdd] = useState<QuickAddState>({
+    date: todayStr, customerName: "", serviceType: "", entryType: "credit", amount: "", description: "",
+  });
+  const [quickAddSaving, setQuickAddSaving] = useState(false);
+
+  // ── Queries ──────────────────────────────────────────────────────────────
+  const params = {
+    page,
+    limit: 15,
+    ...(startDate && { startDate }),
+    ...(endDate && { endDate }),
+    ...(customerName && { customerName }),
+    ...(serviceFilter && serviceFilter !== "all" && { serviceType: serviceFilter }),
+  };
 
   const { data, isLoading } = useListLedgerEntries(params);
   const { data: allEntriesData } = useListLedgerEntries({ limit: 500 });
@@ -70,11 +102,14 @@ export function useLedger(params: LedgerListParams, receiptSearch: string) {
   const { data: services } = useListServices();
   const { data: settings } = useGetSettings();
 
+  const totalPages = Math.ceil((data?.total ?? 0) / 15);
+
   const businessName = (settings as any)?.businessName ?? "SAHU CSC";
   const businessAddress = (settings as any)?.businessAddress ?? "";
   const businessMobile = (settings as any)?.businessMobile ?? "";
   const businessWebsite = (settings as any)?.businessWebsite ?? "";
 
+  // ── Mutations ────────────────────────────────────────────────────────────
   const createMut = useCreateLedgerEntry();
   const updateMut = useUpdateLedgerEntry();
   const deleteMut = useDeleteLedgerEntry();
@@ -95,6 +130,7 @@ export function useLedger(params: LedgerListParams, receiptSearch: string) {
     qc.invalidateQueries({ queryKey: getGetBalanceQueryKey() });
   };
 
+  // ── Derived lists ────────────────────────────────────────────────────────
   const serviceTypes = services?.map((s: any) => s.name) ?? [];
 
   const customerNameSuggestions = useMemo(() => {
@@ -124,10 +160,51 @@ export function useLedger(params: LedgerListParams, receiptSearch: string) {
       .sort((a: any, b: any) => b.id - a.id);
   }, [allEntriesData, receiptSearch]);
 
+  // ── Quick-add handler ────────────────────────────────────────────────────
+  const saveQuickAdd = async () => {
+    const amt = parseFloat(quickAdd.amount);
+    if (!quickAdd.customerName.trim() || !quickAdd.serviceType || !amt || amt <= 0) {
+      toast({ title: "Fill in customer, service, and a valid amount", variant: "destructive" });
+      return;
+    }
+    setQuickAddSaving(true);
+    try {
+      await createMut.mutateAsync({
+        data: {
+          date: quickAdd.date,
+          customerName: quickAdd.customerName.trim(),
+          serviceType: quickAdd.serviceType,
+          credit: quickAdd.entryType === "credit" ? amt : 0,
+          debit: quickAdd.entryType === "debit" ? amt : 0,
+          description: quickAdd.description,
+        },
+      });
+      toast.success("Entry added");
+      setQuickAdd({ date: todayStr, customerName: "", serviceType: "", entryType: "credit", amount: "", description: "" });
+      invalidate();
+    } catch {
+      toast({ title: "Failed to add entry", variant: "destructive" });
+    } finally {
+      setQuickAddSaving(false);
+    }
+  };
+
   return {
+    // queries & derived
     data, isLoading, allEntriesData, balance, services, settings,
     businessName, businessAddress, businessMobile, businessWebsite,
-    createMut, updateMut, deleteMut, deleteAllMut, invalidate,
     serviceTypes, customerNameSuggestions, frequentCustomers, receiptEntries,
+    // mutations
+    createMut, updateMut, deleteMut, deleteAllMut, invalidate,
+    // filter state
+    page, setPage,
+    startDate, setStartDate,
+    endDate, setEndDate,
+    customerName, setCustomerName,
+    serviceFilter, setServiceFilter,
+    showFilters, setShowFilters,
+    hasFilters, totalPages, clearFilters,
+    // quick-add state
+    quickAdd, setQuickAdd, quickAddSaving, saveQuickAdd,
   };
 }

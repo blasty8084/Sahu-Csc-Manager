@@ -1,5 +1,5 @@
 # SAHU CSC — Change Log v3 / v4
-**Current version: 4.9.0 — July 16, 2026**
+**Current version: 4.9.0 — July 18, 2026**
 
 > Detailed record of every feature, change, and upgrade from v3.0.0 onward.  
 > For v2.x history, see `docs/archive/changelogV2.md`.  
@@ -13,7 +13,38 @@
 
 ## Table of Contents
 
+0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — Ledger page split into focused components (July 18, 2026)
+
+**Zero behaviour change — identical output, identical exports.**
+
+| File | Lines | Role |
+|---|---|---|
+| `pages/ledger.tsx` | 215 (was 784) | Thin orchestrator: dialogs, form state, handlers |
+| `hooks/useLedger.ts` | 210 (was ~130) | Data + filter/pagination + quick-add state |
+| `components/ledger/LedgerSummaryCards.tsx` | 75 | 4-stat desktop card grid (balance, credits, debits, count) |
+| `components/ledger/LedgerMobileHeader.tsx` | 79 | Mobile navy hero + tab switcher |
+| `components/ledger/LedgerDesktopHeader.tsx` | 46 | Desktop gradient header with export/delete-all buttons |
+| `components/ledger/LedgerQuickAddStrip.tsx` | 57 | Inline quick-add row (desktop) |
+| `components/ledger/LedgerRightPanel.tsx` | 143 | Right sidebar: Quick Actions, summary donut, recent activity |
+| `components/ledger/LedgerMobilePending.tsx` | 59 | Mobile offline-pending entries banner |
+| `components/ledger/LedgerFilters.tsx` | 225 | Already existed |
+| `components/ledger/LedgerEntryForm.tsx` | 278 | Already existed |
+| `components/ledger/LedgerTable.tsx` | 606 | Already existed |
+
+**What moved into `useLedger`:**
+- Filter state: `page`, `startDate`, `endDate`, `customerName`, `serviceFilter`, `showFilters`
+- Derived: `hasFilters`, `totalPages`, `clearFilters`
+- Quick-add state: `quickAdd`, `quickAddSaving`, `saveQuickAdd`
+
+**Typecheck:** sahu-csc passes clean.
+
+---
+
 0. [v4.8.0 — 2FA Security Upgrade: QR Codes, Replay Protection & Standard TOTP (July 16, 2026)](#0-v480--2fa-security-upgrade-qr-codes-replay-protection--standard-totp-july-16-2026)
 0. [v4.7.1 — Security Score 100 & Login Code Display Fix (July 16, 2026)](#0-v471--security-score-100--login-code-display-fix-july-16-2026)
 0. [v4.7.0 — Built-in Authenticator: No QR Code, No External App (July 16, 2026)](#0-v470--built-in-authenticator-no-qr-code-no-external-app-july-16-2026)
