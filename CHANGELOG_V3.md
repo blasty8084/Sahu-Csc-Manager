@@ -13,6 +13,7 @@
 
 ## Table of Contents
 
+0. [Refactor — Udhari page split into focused components (July 18, 2026)](#0-refactor--udhari-page-split-into-focused-components-july-18-2026)
 0. [Fix — PermissionCard Continue/Skip single-tap UX (July 18, 2026)](#0-fix--permissioncard-continueskip-single-tap-ux-july-18-2026)
 0. [Refactor — AePS DailyTab split into focused components + hook (July 18, 2026)](#0-refactor--aeps-dailytab-split-into-focused-components--hook-july-18-2026)
 0. [Refactor — Dashboard page split into focused components (July 18, 2026)](#0-refactor--dashboard-page-split-into-focused-components-july-18-2026)
@@ -22,6 +23,25 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — Udhari page split into focused components (July 18, 2026)
+
+**Zero behaviour change — routes, API calls, and rendered output are identical.**
+
+`pages/udhari.tsx` (464 lines) broken into a 71-line thin page plus 5 focused files in `components/udhari/`:
+
+| New file | Lines | Role |
+|---|---|---|
+| `UdhariCustomerCard.tsx` | 86 | `fmt` helper, `BalanceBadge`, mobile `CustomerCard`, desktop `CustomerRow` |
+| `UdhariAddCustomerDialog.tsx` | 197 | Mobile dialog + desktop full-screen split-panel add-customer form |
+| `UdhariSearchBar.tsx` | 37 | Search input + sort select (Recent / Highest Balance / A–Z) |
+| `UdhariCustomerList.tsx` | 61 | Mobile card list + desktop table with loading/empty states |
+| `UdhariSummaryBanner.tsx` | 45 | To-collect / to-pay summary grid cards |
+
+`pages/udhari.tsx` is now **71 lines** — state, data fetch, layout wrapper, component composition only.  
+No import sites outside `pages/udhari.tsx` needed updating. TypeScript clean.
 
 ---
 
