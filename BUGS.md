@@ -2,7 +2,7 @@
 
 > Generated: 14 July 2026  
 > Scanned: API server, frontend, database schema, configuration  
-> Total: **24 issues** — 3 Critical · 4 Security · 6 Logic · 2 Validation · 4 Frontend · 2 Schema · 3 Config
+> Total: **23 open / 1 fixed** — 3 Critical · 4 Security · 6 Logic · 2 Validation · 3 Frontend open + 1 fixed · 2 Schema · 3 Config
 
 ---
 
@@ -55,7 +55,7 @@
 |---|--------|------|-------|
 | 16 | ⬜ Open | `pages/ledger.tsx` | Ledger entry form does **not call `form.reset()`** after a successful submit — stale values persist when the dialog is reopened for a new entry. |
 | 17 | ⬜ Open | `pages/udhari.tsx` | "Add Customer" form does **not reset** after success — previous customer name and details remain populated in the input fields. |
-| 18 | ⬜ Open | `pages/register.tsx` | Registration form leaves **sensitive field values in React state** after a successful submit — if the user navigates back, personal data is still visible in the form. |
+| 18 | ✅ Fixed | `pages/register.tsx` → `components/auth/RegisterForm.tsx` | `form.reset()`, `setFormValues(null)`, and `setOtpDigits([])` called after every successful submit path — sensitive state cleared before redirect. Fixed as part of register page refactor (July 18, 2026). |
 | 19 | ⬜ Open | `App.tsx` | `ShareTargetHandler` calls `setLocation` inside `useEffect([])` with an empty dependency array — **stale closure** risk if wouter's `setLocation` reference ever changes. |
 
 ---

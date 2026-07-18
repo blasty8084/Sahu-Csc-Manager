@@ -13,11 +13,28 @@
 
 ## Table of Contents
 
+0. [Fix — PermissionCard Continue/Skip single-tap UX (July 18, 2026)](#0-fix--permissioncard-continueskip-single-tap-ux-july-18-2026)
 0. [Refactor — Register page split into focused components (July 18, 2026)](#0-refactor--register-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Profile page final split into focused components (July 18, 2026)](#0-refactor--profile-page-final-split-into-focused-components-july-18-2026)
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Fix — PermissionCard Continue/Skip single-tap UX (July 18, 2026)
+
+**Root cause:** `handleContinueStep1` set step to 2 then awaited all three permission requests sequentially. On Android, all three resolve near-instantly (location denied by OS/WebView policy, notifications already denied, `showOpenFilePicker` fails without a fresh user gesture after the async geolocation await). Step 2 appeared with an already-enabled Continue button — the user had to press Continue a **second time** to call `finish()`. Both presses felt like "going to the dashboard" with no visible permission activity, so the flow appeared broken.
+
+**Fix — `PermissionCard.tsx`:**
+
+| Before | After |
+|---|---|
+| `handleContinueStep1` requests permissions, transitions to step 2, stops. User must press Continue again to call `finish()`. | `handleContinueStep1` requests permissions then **auto-calls `finish()`** — one tap completes the entire flow. |
+| Step 2 shows a "Continue" button (enabled when all permissions attempted). | Step 2 shows a non-interactive **"Setting up…" / "Saving…" spinner** — no second tap ever required. |
+| Skip for now → `finish()` → dashboard (unchanged). | Skip for now → `finish()` → dashboard (unchanged). |
+
+**No backend changes.** `PATCH /users/first-login-completed` contract unchanged. `usePermissions.ts` logic unchanged. `PermissionRow.tsx` unchanged. Individual per-row "Allow" buttons still work as before in step 1.
 
 ---
 

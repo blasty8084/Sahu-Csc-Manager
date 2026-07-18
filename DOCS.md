@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Platform Documentation
-**Version 4.9.0** — last updated 2026-07-16
+**Version 4.9.0** — last updated 2026-07-18
 
 > Common Service Center (CSC) Business Management Platform for Odisha / India rural service centers.
 > Full-stack · PWA · Offline-capable · Multilingual (English / Hindi / Odia)
@@ -104,6 +104,30 @@ Two-factor authentication no longer requires an external authenticator app. The 
 - New: `POST /auth/2fa/switch-method` — switch method or resend OTP mid-login
 - New: `POST /auth/2fa/setup-totp-pending` — inline TOTP enrollment during login (no full session required)
 - Email OTP resend cooldown: 120 s; backup codes shown once on-screen before session is applied
+
+### Fixes & Refactors — July 18, 2026
+
+**PermissionCard Continue/Skip single-tap fix**
+
+- **Root cause**: On Android, all three permission requests resolve near-instantly when already denied by OS, leaving step 2's Continue button enabled immediately — users had to press Continue twice, which felt like "nothing happened"
+- **Fix**: `handleContinueStep1` auto-calls `finish()` after all permissions are attempted; step 2 now shows a non-interactive "Setting up…" spinner instead of a second Continue button
+- One tap completes the full onboarding flow; Skip unchanged; no backend changes
+
+**Register page split — `pages/register.tsx` 729 → 89 lines**
+
+| New file | Role |
+|---|---|
+| `components/auth/registerTypes.ts` | Schema, types, `maskEmail`, `useTwoFaDisabled`; re-exports shared constants |
+| `components/auth/PasswordStrength.tsx` | Animated strength bar + per-rule checklist |
+| `components/auth/RegisterPersonalForm.tsx` | username + fullName + email + mobile fields |
+| `components/auth/RegisterCredentialsForm.tsx` | password + confirm + error + submit button |
+| `components/auth/RegisterStepIndicator.tsx` | OTP step 2 header (shield icon + masked email) |
+| `components/auth/RegisterOtpStep.tsx` | OTP digit grid + submit + resend countdown ring |
+| `components/auth/RegisterMobileLayout.tsx` | Navy header + slide-up white card (mobile) |
+| `components/auth/RegisterDesktopLayout.tsx` | Hero panel + form card split (desktop) |
+| `components/auth/RegisterForm.tsx` | All form state, timers, and API calls |
+
+---
 
 ### v4.5.1 — File Manager Permission: Real Granted/Denied Signal (2026-07-15)
 

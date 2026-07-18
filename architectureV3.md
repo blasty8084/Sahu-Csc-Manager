@@ -1,5 +1,5 @@
 # SAHU CSC — Architecture Reference v3
-**Version 4.7.1 — July 16, 2026**
+**Version 4.9.0 — July 18, 2026**
 
 > This is the single authoritative reference for the SAHU CSC platform architecture.  
 > It supersedes `docs/archive/architectureV2.md` and `docs/archive/ARCHITECTURE.md`.  
@@ -155,7 +155,7 @@ workspace/
 │   │       ├── main.tsx         # createRoot + registerSW + syncEngine.init()
 │   │       ├── pages/           # 25 pages — all fully translated
 │   │       │   ├── login.tsx               # Mobile: navy header + white card + "Register here" CTA
-│   │       │   ├── register.tsx            # Self-registration + PasswordStrength meter + OTP
+│   │       │   ├── register.tsx            # Thin orchestrator (~89 lines): status check, mobile/desktop layout wiring
 │   │       │   ├── forgot-password.tsx     # 4-step merged: identifier → OTP → new pw → success
 │   │       │   ├── reset-password.tsx      # Token-based reset (legacy, merged into forgot-password)
 │   │       │   ├── dashboard.tsx           # Real-time stats + Udhari summary + offline cache
@@ -166,7 +166,6 @@ workspace/
 │   │       │   ├── services.tsx            # Service catalog
 │   │       │   ├── reports.tsx             # Command Center: horizontal nav · KPI strip · charts
 │   │       │   ├── notifications.tsx       # Notification inbox
-│   │       │   ├── register.tsx            # Registration — thin orchestrator (~89 lines)
 │   │       │   ├── profile.tsx             # Unified Profile+Settings — thin orchestrator (~82 lines)
 │   │       │   ├── preferences.tsx         # Standalone: language + theme + dashboard layout
 │   │       │   ├── users.tsx               # User management (admin) — 6 tabs
@@ -192,6 +191,35 @@ workspace/
 │   │       │   ├── receipt-modal.tsx        # Receipt: QR · Print · PDF · Web Share API
 │   │       │   ├── language-switcher.tsx    # EN / हि / ଓ toggle
 │   │       │   ├── theme-provider.tsx
+│   │       │   ├── auth/                    # Auth sub-components (login + register)
+│   │       │   │   ├── loginTypes.ts        # Shared: RESEND_COOLDOWN, OTP_RATE_LIMIT, apiPost, PWD_RULES, LoginFormValues
+│   │       │   │   ├── registerTypes.ts     # Register: schema, RegisterFormValues, maskEmail, useTwoFaDisabled
+│   │       │   │   ├── PasswordStrength.tsx # Animated strength bar + per-rule checklist
+│   │       │   │   ├── RegisterPersonalForm.tsx   # username + fullName + email + mobile fields
+│   │       │   │   ├── RegisterCredentialsForm.tsx # password + confirm + error + submit button
+│   │       │   │   ├── RegisterStepIndicator.tsx   # OTP step 2 header (shield icon + masked email)
+│   │       │   │   ├── RegisterOtpStep.tsx         # OTP digit grid + submit + resend countdown
+│   │       │   │   ├── RegisterMobileLayout.tsx    # Navy header + slide-up white card (mobile)
+│   │       │   │   ├── RegisterDesktopLayout.tsx   # Hero panel + form card split (desktop)
+│   │       │   │   ├── RegisterForm.tsx            # All form state, timers, API calls (~235 lines)
+│   │       │   │   ├── LoginForm.tsx        # Barrel re-export for login sub-components
+│   │       │   │   ├── LoginCredentialsStep.tsx    # Login form with lockout / status panels
+│   │       │   │   ├── TwoFactorStep.tsx           # 2FA method picker (OTP + TOTP)
+│   │       │   │   ├── OtpRateLimitPanel.tsx       # Shared OTP rate-limit countdown panel
+│   │       │   │   ├── OtpRequestForm.tsx / OtpVerifyForm.tsx
+│   │       │   │   ├── ForgotPasswordPanel.tsx / ForgotPasswordStepper.tsx / NewPasswordForm.tsx
+│   │       │   │   ├── AuthHero.tsx                # Desktop hero split for login
+│   │       │   │   ├── TotpLiveCode.tsx            # SVG countdown ring + live TOTP digits
+│   │       │   │   └── useLockoutCountdown.ts
+│   │       │   ├── PermissionCard/          # First-login permission onboarding modal
+│   │       │   │   ├── PermissionCard.tsx   # 2-step modal; step 1 = intro, step 2 = auto-requests + auto-finish
+│   │       │   │   ├── PermissionRow.tsx    # Per-permission row with live status badge
+│   │       │   │   ├── usePermissions.ts    # requestLocation / requestNotifications / requestFileManager hooks
+│   │       │   │   └── index.ts             # Barrel export
+│   │       │   ├── profile/                 # Profile page sub-components
+│   │       │   │   ├── ProfileSessionDialogs.tsx   # AlertDialogs: revoke-one / logout-others / logout-everywhere
+│   │       │   │   ├── ProfileDesktopLayout.tsx    # Desktop two-column grid + all CmdCards
+│   │       │   │   └── ProfileMobileLayout.tsx     # Mobile nav list + drill-in sections
 │   │       │   └── ui/                      # shadcn/ui components
 │   │       ├── hooks/
 │   │       │   ├── use-auth.tsx             # AuthContext + offline session cache (IndexedDB)
@@ -930,6 +958,7 @@ pnpm --filter @workspace/db run push
 | React Query cache cleared on logout | `queryClient.clear()` in `handleLogout` — prevents stale data across account switches |
 | CSS for responsive layout, not JS `isMobile` | `useIsMobile()` has render-before-measure delay causing layout flicker |
 | `willChange: transform` forbidden on ancestors of fixed nav | Creates CSS containing block → breaks `position: fixed` on bottom nav |
+| PermissionCard Continue is single-tap (auto-finish) | On Android, all three permission requests resolve near-instantly (OS already denied, or no user gesture after async geo-await). A two-step "request then confirm" design required a second Continue tap that felt broken. `handleContinueStep1` now calls `finish()` automatically after all permissions are attempted; step 2 shows a non-interactive spinner instead of a second button. |
 | i18n constants inside component function | Translated arrays/objects must be after `const { t } = useTranslation()` — module scope = wrong language |
 | `POST /api/auth/send-otp` returns 200 for unknown identifier | Prevents account enumeration |
 | OTP resend cooldown = 120 seconds | Email OTP resend (login/register/forgot-password): `RESEND_COOLDOWN = 120` in `loginTypes.ts`; unrelated to TOTP window |
