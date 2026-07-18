@@ -13,6 +13,7 @@
 
 ## Table of Contents
 
+0. [Refactor — Backups page split into focused components (July 18, 2026)](#0-refactor--backups-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Udhari page split into focused components (July 18, 2026)](#0-refactor--udhari-page-split-into-focused-components-july-18-2026)
 0. [Fix — PermissionCard Continue/Skip single-tap UX (July 18, 2026)](#0-fix--permissioncard-continueskip-single-tap-ux-july-18-2026)
 0. [Refactor — AePS DailyTab split into focused components + hook (July 18, 2026)](#0-refactor--aeps-dailytab-split-into-focused-components--hook-july-18-2026)
@@ -23,6 +24,23 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — Backups page split into focused components (July 18, 2026)
+
+**Zero behaviour change — routes, API calls, and rendered output are identical.**
+
+`pages/backups.tsx` (411 lines) broken into a 105-line thin page plus 4 new focused files in `components/backups/`. Existing `BackupList`, `BackupActions`, and `BackupCards` are unchanged.
+
+| New file | Lines | Role |
+|---|---|---|
+| `BackupManualTrigger.tsx` | 35 | Page header — snapshot count, "Create Backup" / "Creating…" button |
+| `BackupScheduleCard.tsx` | 145 | Auto-backup enable toggle, frequency (daily/weekly/custom), time picker, day selector, retention, save |
+| `BackupImportCard.tsx` | 144 | SQL file picker, file analysis, table selection checklist, selective import trigger |
+| `BackupStorageTrend.tsx` | 81 | Recharts area chart — cumulative storage, auto vs manual breakdown |
+
+`pages/backups.tsx` is now **105 lines** — hook destructure + layout + component composition only. TypeScript clean.
 
 ---
 
