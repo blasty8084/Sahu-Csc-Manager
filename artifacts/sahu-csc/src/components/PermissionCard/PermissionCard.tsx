@@ -90,6 +90,8 @@ export function PermissionCard() {
       await requestNotifications();
     }
     await requestFileManager();
+    // Auto-finish once all permissions have been attempted — no second tap needed.
+    await finish();
   };
 
   if (!user) return null;
@@ -178,32 +180,31 @@ export function PermissionCard() {
           {step === 1 ? "Your data is safe and secure with us." : "We only use permissions to improve your experience."}
         </p>
 
-        <button
-          type="button"
-          onClick={step === 1 ? handleContinueStep1 : finish}
-          disabled={step === 2 && (!canContinue || isFinishing)}
-          className="w-full h-11 mt-3 rounded-xl font-semibold text-sm text-white flex items-center justify-center gap-2 shadow-md transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-          style={{ background: "linear-gradient(135deg, #4F46E5, #4338CA)" }}
-        >
-          {isFinishing ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" /> Saving...
-            </>
-          ) : (
-            <>
+        {step === 1 ? (
+          <>
+            <button
+              type="button"
+              onClick={handleContinueStep1}
+              className="w-full h-11 mt-3 rounded-xl font-semibold text-sm text-white flex items-center justify-center gap-2 shadow-md"
+              style={{ background: "linear-gradient(135deg, #4F46E5, #4338CA)" }}
+            >
               <ShieldCheck className="w-4 h-4" /> Continue
-            </>
-          )}
-        </button>
-
-        {step === 1 && (
-          <button
-            type="button"
-            onClick={handleSkip}
-            className="w-full text-center text-xs text-gray-500 mt-3"
+            </button>
+            <button
+              type="button"
+              onClick={handleSkip}
+              className="w-full text-center text-xs text-gray-500 mt-3"
+            >
+              Skip for now
+            </button>
+          </>
+        ) : (
+          <div className="w-full h-11 mt-3 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold text-white opacity-80"
+            style={{ background: "linear-gradient(135deg, #4F46E5, #4338CA)" }}
           >
-            Skip for now
-          </button>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            {isFinishing ? "Saving…" : "Setting up…"}
+          </div>
         )}
       </motion.div>
     </div>
