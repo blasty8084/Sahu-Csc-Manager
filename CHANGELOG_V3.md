@@ -13,9 +13,31 @@
 
 ## Table of Contents
 
+0. [Refactor — Profile page final split into focused components (July 18, 2026)](#0-refactor--profile-page-final-split-into-focused-components-july-18-2026)
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — Profile page final split into focused components (July 18, 2026)
+
+**Zero behaviour change — identical output, identical exports.**
+
+| File | Lines | Role |
+|---|---|---|
+| `pages/profile.tsx` | 82 (was 261) | Thin orchestrator: useProfileData, prop bundling, Layout wiring |
+| `components/profile/ProfileSessionDialogs.tsx` | 95 (new) | Three AlertDialogs for single-revoke / logout-others / logout-everywhere |
+| `components/profile/ProfileDesktopLayout.tsx` | 128 (new) | Desktop (md+) two-column grid: banner + all CmdCards |
+| `components/profile/ProfileMobileLayout.tsx` | 177 (new) | Mobile nav list + drill-in per section; owns `mobileSection` state and `MOBILE_NAV` config |
+
+**What moved where:**
+- Session revoke dialogs → `ProfileSessionDialogs`
+- Desktop grid (ProfileDesktopBanner + all CmdCards) → `ProfileDesktopLayout`
+- `MobileTab` type, `MOBILE_NAV` config, `mobileSectionContent`, mobile nav/drill-in → `ProfileMobileLayout` (owns its own `useState`)
+- `profile.tsx` no longer imports from `lucide-react`, shadcn `AlertDialog`, or `useState`
+
+**Typecheck:** sahu-csc passes clean.
 
 ---
 

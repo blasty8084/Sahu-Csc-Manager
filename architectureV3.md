@@ -166,7 +166,7 @@ workspace/
 │   │       │   ├── services.tsx            # Service catalog
 │   │       │   ├── reports.tsx             # Command Center: horizontal nav · KPI strip · charts
 │   │       │   ├── notifications.tsx       # Notification inbox
-│   │       │   ├── profile.tsx             # Unified Profile+Settings v2.3
+│   │       │   ├── profile.tsx             # Unified Profile+Settings — thin orchestrator (~82 lines)
 │   │       │   ├── preferences.tsx         # Standalone: language + theme + dashboard layout
 │   │       │   ├── users.tsx               # User management (admin) — 6 tabs
 │   │       │   ├── users-overview.tsx      # Admin cross-user balance summary
