@@ -13,8 +13,29 @@
 
 ## Table of Contents
 
+0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — Server Health page split into focused components (July 18, 2026)
+
+**Zero behaviour change — identical output, identical exports.**
+
+| File | Lines | Role |
+|---|---|---|
+| `pages/server-health.tsx` | 137 (was 765) | Thin orchestrator: fetch state, polling interval, layout |
+| `components/server-health/health-types.ts` | 86 | Shared interfaces (`HealthData`, `DbStats`, `AuditRecent`, etc.) + `formatBytes` / `formatUptime` |
+| `components/server-health/HealthMetricCard.tsx` | 157 | `useLiveFps`, `StatCell`, `StatusBadge`, `TierBadge`, `DevicePerformanceCard` |
+| `components/server-health/HealthOverviewCard.tsx` | 109 | Overall status banner + API Server card (uptime, memory, CPU) |
+| `components/server-health/HealthDatabaseSection.tsx` | 137 | Database connection card + Table Stats card with row-delta trends |
+| `components/server-health/HealthAlertList.tsx` | 107 | Recent Activity / audit-log tail (scrollable, severity-coloured) |
+| `components/server-health/HealthTimelineChart.tsx` | 109 | VAPID/Push card + Quick Fixes diagnostic tips |
+
+**Typecheck:** sahu-csc passes clean.
+
+---
 
 ---
 
