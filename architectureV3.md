@@ -151,7 +151,16 @@ workspace/
 │   │   │   ├── pwa-{96,144,192,512}x{96,144,192,512}.png
 │   │   │   └── .well-known/assetlinks.json   # Digital Asset Links for TWA
 │   │   └── src/
-│   │       ├── App.tsx          # QueryClient, AuthProvider, Router, IdleTimer
+│   │       ├── App.tsx          # 69 ln thin root — GeoGate + provider tree + Router mount
+│   │       ├── providers/
+│   │       │   ├── QueryProvider.tsx   # 69 ln — queryClient (exported), persister, PersistQueryClientProvider
+│   │       │   └── AuthProvider.tsx    # 153 ln — AppAuthProvider wraps HookAuthProvider + BadgeUpdater
+│   │       │   #     + EagerPreloader + SessionManager + FirstLoginGate + SyncBadge
+│   │       ├── components/
+│   │       │   ├── Router.tsx          # 96 ln — all lazy imports + 30 <Route> definitions + ShareTargetHandler
+│   │       │   ├── ProtectedRoute.tsx  # 33 ln — auth guard; redirects to /login; renders 403 for adminOnly
+│   │       │   ├── LoadingScreen.tsx   # 168 ln — branded full-screen loading with phase-aware spinner/rings
+│   │       │   └── AuthFade.tsx        # 15 ln — enter-only opacity fade for public auth pages
 │   │       ├── main.tsx         # createRoot + registerSW + syncEngine.init()
 │   │       ├── pages/           # 25 pages — all fully translated
 │   │       │   ├── login.tsx               # Mobile: navy header + white card + "Register here" CTA
@@ -610,13 +619,29 @@ router.use(settingsRouter)
 
 ### 6.1 App Bootstrap (`App.tsx`)
 
+`App.tsx` is now a 69-line thin root. Each concern lives in its own file:
+
+| File | Role |
+|---|---|
+| `providers/QueryProvider.tsx` | `queryClient` singleton, IDB persister, `PersistQueryClientProvider` |
+| `providers/AuthProvider.tsx` | `AppAuthProvider` — wraps `HookAuthProvider` + all session side-effects |
+| `components/Router.tsx` | All 30 `<Route>` definitions + lazy page imports + `ShareTargetHandler` |
+| `components/ProtectedRoute.tsx` | Auth guard — redirects to `/login`, renders 403 for `adminOnly` |
+| `components/LoadingScreen.tsx` | Branded full-screen spinner used by `ProtectedRoute` while auth resolves |
+| `components/AuthFade.tsx` | Enter-only opacity fade wrapper for public auth pages |
+
 ```
-QueryClientProvider
-  AuthProvider (use-auth.tsx)
-    ThemeProvider
-      Router (wouter)
-        Layout (sidebar + mobile nav + banners + idle timeout)
-          <Route> per page
+GeoGate (inline in App.tsx — 15 ln)
+  ErrorBoundary
+    PerformanceProvider
+      SplashScreen (once per browser session)
+      QueryProvider          ← providers/QueryProvider.tsx
+        TooltipProvider
+          ThemeProvider
+            WouterRouter
+              AppAuthProvider  ← providers/AuthProvider.tsx
+                Router         ← components/Router.tsx
+            Toaster
 ```
 
 ### 6.2 Routes & Access Control

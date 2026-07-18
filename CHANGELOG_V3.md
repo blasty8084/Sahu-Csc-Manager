@@ -25,6 +25,26 @@
 
 ---
 
+## 0. Refactor — App.tsx split into providers + focused components (July 18, 2026)
+
+**Zero behaviour change — provider tree, routes, and rendered output are identical.**
+
+`App.tsx` (562 lines) broken into a 69-line thin root plus 6 focused files:
+
+| New file | Lines | Role |
+|---|---|---|
+| `providers/QueryProvider.tsx` | 69 | `queryClient` (exported), IDB persister, `PersistQueryClientProvider` wrapper |
+| `providers/AuthProvider.tsx` | 153 | `AppAuthProvider` — bundles `HookAuthProvider` + `BadgeUpdater` + `EagerPreloader` + `SessionManager` + `FirstLoginGate` + `SyncBadge` |
+| `components/Router.tsx` | 96 | All 30 `<Route>` definitions, every lazy page import, `ShareTargetHandler` |
+| `components/ProtectedRoute.tsx` | 33 | Auth guard — redirects to `/login`; renders 403 for `adminOnly` routes |
+| `components/LoadingScreen.tsx` | 168 | Branded full-screen spinner with phase-aware animation (loading / slow / timeout) |
+| `components/AuthFade.tsx` | 15 | Enter-only opacity fade wrapper for public auth pages |
+
+`App.tsx` is now **69 lines** — `GeoGate` inline (15 ln) + provider tree + `Router` mount.  
+No import sites outside `App.tsx` needed updating; none of these were previously exported.
+
+---
+
 ## 0. Refactor — AePS DailyTab split into focused components + hook (July 18, 2026)
 
 **Zero behaviour change — identical output, identical exports.**
