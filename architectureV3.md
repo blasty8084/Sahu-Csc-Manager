@@ -168,7 +168,11 @@ workspace/
 │   │       │   ├── notifications.tsx       # Notification inbox
 │   │       │   ├── profile.tsx             # Unified Profile+Settings — thin orchestrator (~82 lines)
 │   │       │   ├── preferences.tsx         # Standalone: language + theme + dashboard layout
-│   │       │   ├── users.tsx               # User management (admin) — 6 tabs
+│   │       │   ├── users.tsx               # User management (admin) — 6 tabs (120 ln thin orchestrator)
+│   │       │   │   # components/users/: UserTable (249), UserTablePending (182), UserFormDialog (104),
+│   │       │   │   #   UserFormDesktop (192), UserBulkActions, UserFilters, UserTabBar, UserPageDialogs,
+│   │       │   │   #   AppealsTab, AdminSessionsTab, AepsOverviewTab, CashOverviewTab, + dialog components
+│   │       │   │   # hooks/: useUsersPage, useUserActions (228), useResetLinkActions (53), useUsers
 │   │       │   ├── users-overview.tsx      # Admin cross-user balance summary
 │   │       │   ├── audit-logs.tsx          # Full audit trail (admin)
 │   │       │   ├── settings.tsx            # Redirects to /profile (deprecated)

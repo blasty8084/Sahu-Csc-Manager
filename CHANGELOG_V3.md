@@ -14,11 +14,36 @@
 ## Table of Contents
 
 0. [Fix — PermissionCard Continue/Skip single-tap UX (July 18, 2026)](#0-fix--permissioncard-continueskip-single-tap-ux-july-18-2026)
+0. [Refactor — Users page over-limit files split into focused components (July 18, 2026)](#0-refactor--users-page-over-limit-files-split-into-focused-components-july-18-2026)
 0. [Refactor — Register page split into focused components (July 18, 2026)](#0-refactor--register-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Profile page final split into focused components (July 18, 2026)](#0-refactor--profile-page-final-split-into-focused-components-july-18-2026)
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — Users page over-limit files split into focused components (July 18, 2026)
+
+**Zero behaviour change — identical output, identical exports.**
+
+Three files that exceeded the 250-line limit were split. New files created:
+
+| New file | Lines | Role |
+|---|---|---|
+| `components/users/UserTablePending.tsx` | 182 | Pending-tab UI: bulk action bar + mobile cards + desktop table |
+| `components/users/UserFormDesktop.tsx` | 192 | Desktop split-layout form panel (navy info panel + right form) |
+| `hooks/useResetLinkActions.ts` | 53 | Reset-link actions (open, close, generate, copy, email) |
+
+Files trimmed:
+
+| File | Before | After |
+|---|---|---|
+| `components/users/UserTable.tsx` | 383 | 249 — delegates `tab === "pending"` to `UserTablePending` |
+| `components/users/UserFormDialog.tsx` | 259 | 104 — mobile Dialog unchanged; desktop delegates to `UserFormDesktop` |
+| `hooks/useUserActions.ts` | 273 | 228 — reset-link group extracted to `useResetLinkActions`; spread into return |
+
+`pages/users.tsx` (120 lines) and all other import sites unchanged.
 
 ---
 
