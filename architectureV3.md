@@ -176,7 +176,7 @@ workspace/
 │   │       │   ├── sessions.tsx            # Standalone multi-device sessions page
 │   │       │   ├── pwa-status.tsx          # App & Offline Status
 │   │       │   ├── server-health.tsx       # Live API/DB/VAPID health check
-│   │       │   ├── broadcast.tsx           # Admin broadcast center (push + email)
+│   │       │   ├── broadcast.tsx           # Admin broadcast center — thin page (~129 lines); logic in components/broadcast/
 │   │       │   ├── download-app.tsx        # PWA install guide (Android/iOS/Desktop/Web)
 │   │       │   ├── receipts-verify.tsx     # Public receipt verification (no auth)
 │   │       │   ├── about.tsx               # Docs & system requirements, changelog
@@ -216,6 +216,15 @@ workspace/
 │   │       │   │   ├── PermissionRow.tsx    # Per-permission row with live status badge
 │   │       │   │   ├── usePermissions.ts    # requestLocation / requestNotifications / requestFileManager hooks
 │   │       │   │   └── index.ts             # Barrel export
+│   │       │   ├── broadcast/               # Broadcast page sub-components
+│   │       │   │   ├── broadcastTypes.ts        # Shared interfaces (BroadcastStats, BroadcastLogEntry, HistoryResponse), constants (NOTIF_TYPES, NOTIF_PRIORITIES, BASE), Tab type
+│   │       │   │   ├── useBroadcast.ts          # All state + queries + mutations (push/email/inapp/history)
+│   │       │   │   ├── BroadcastStatsBar.tsx    # Subscriber/active-user stat cards + loading skeleton
+│   │       │   │   ├── BroadcastPushForm.tsx    # Push notification compose card
+│   │       │   │   ├── BroadcastEmailForm.tsx   # Email blast card + SMTP warning banner
+│   │       │   │   ├── BroadcastInAppForm.tsx   # In-app notification card (type + priority pickers)
+│   │       │   │   ├── BroadcastHistoryTable.tsx # Paginated broadcast log with ChannelBadge + expand/collapse
+│   │       │   │   └── BroadcastPreviewCard.tsx  # Tips card shown below each compose tab
 │   │       │   ├── profile/                 # Profile page sub-components
 │   │       │   │   ├── ProfileSessionDialogs.tsx   # AlertDialogs: revoke-one / logout-others / logout-everywhere
 │   │       │   │   ├── ProfileDesktopLayout.tsx    # Desktop two-column grid + all CmdCards
