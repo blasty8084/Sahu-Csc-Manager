@@ -177,6 +177,7 @@ workspace/
 │   │       │   ├── pwa-status.tsx          # App & Offline Status
 │   │       │   ├── server-health.tsx       # Live API/DB/VAPID health check
 │   │       │   ├── broadcast.tsx           # Admin broadcast center — thin page (~129 lines); logic in components/broadcast/
+│   │       │   ├── receipt-export.tsx      # Bulk receipt export — thin orchestrator (~45 lines); logic in components/receipt-export/
 │   │       │   ├── download-app.tsx        # PWA install guide (Android/iOS/Desktop/Web)
 │   │       │   ├── receipts-verify.tsx     # Public receipt verification (no auth)
 │   │       │   ├── about.tsx               # Docs & system requirements, changelog
@@ -216,6 +217,19 @@ workspace/
 │   │       │   │   ├── PermissionRow.tsx    # Per-permission row with live status badge
 │   │       │   │   ├── usePermissions.ts    # requestLocation / requestNotifications / requestFileManager hooks
 │   │       │   │   └── index.ts             # Barrel export
+│   │       │   ├── receipt-export/          # Receipt export page sub-components
+│   │       │   │   ├── types.ts                 # Brand tokens (NAVY/SAFFRON), shared interfaces (PreviewEntry, CountResult, FullReceiptEntry, BusinessInfo, UserOverview), formatters (fmtDate, fmtDateShort)
+│   │       │   │   ├── ExportFilters.tsx        # DesktopExportFilters, MobileExportFilterToggle, MobileExportFilterPanel, MobileByDatePanel
+│   │       │   │   ├── ReceiptMonthlyPanel.tsx  # Monthly auto-export card (month/year picker, Download + Email Admins buttons)
+│   │       │   │   ├── ReceiptExportStats.tsx   # DesktopStatBar (4 KPI cards) · MobileKpiStrip (3 chips) · MobileSummaryCards
+│   │       │   │   ├── ReceiptExportActions.tsx # DesktopBulkBar · DesktopExportOptionsCard · MobileExportTab
+│   │       │   │   ├── DesktopReceiptTable.tsx  # Sortable table with checkbox + search + action buttons
+│   │       │   │   ├── DesktopReceiptExpandedPreview.tsx # Right-sidebar receipt mini-preview card
+│   │       │   │   ├── MobileReceiptList.tsx    # Swipeable receipt cards + bulk bar
+│   │       │   │   ├── MobileReceiptPreview.tsx # Full-screen receipt detail overlay + Print/PDF/Share/WhatsApp
+│   │       │   │   ├── DesktopExportLayout.tsx  # Full desktop layout orchestrator (uses ReceiptExportState)
+│   │       │   │   ├── MobileExportLayout.tsx   # Full mobile layout + tab switcher (uses ReceiptExportState)
+│   │       │   │   └── ReceiptPreviewList.tsx   # Barrel re-export → DesktopReceiptTable, DesktopReceiptExpandedPreview, MobileReceiptList
 │   │       │   ├── broadcast/               # Broadcast page sub-components
 │   │       │   │   ├── broadcastTypes.ts        # Shared interfaces (BroadcastStats, BroadcastLogEntry, HistoryResponse), constants (NOTIF_TYPES, NOTIF_PRIORITIES, BASE), Tab type
 │   │       │   │   ├── useBroadcast.ts          # All state + queries + mutations (push/email/inapp/history)
