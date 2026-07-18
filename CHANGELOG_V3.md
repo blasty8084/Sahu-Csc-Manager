@@ -13,10 +13,38 @@
 
 ## Table of Contents
 
+0. [Refactor — Register page split into focused components (July 18, 2026)](#0-refactor--register-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Profile page final split into focused components (July 18, 2026)](#0-refactor--profile-page-final-split-into-focused-components-july-18-2026)
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — Register page split into focused components (July 18, 2026)
+
+**Zero behaviour change — identical output, identical exports.**
+
+| File | Lines | Role |
+|---|---|---|
+| `pages/register.tsx` | 89 (was 729) | Thin orchestrator: status check, LoadingScreen, mobile/desktop layout wiring |
+| `components/auth/registerTypes.ts` | 66 (new) | Schema, types (`RegisterStep`, `RegisterFormValues`), `maskEmail`, `useTwoFaDisabled`; re-exports `RESEND_COOLDOWN`/`OTP_RATE_LIMIT` from loginTypes |
+| `components/auth/PasswordStrength.tsx` | 47 (new) | Animated strength bar + per-rule checklist; extracted from inline in register.tsx |
+| `components/auth/RegisterPersonalForm.tsx` | 81 (new) | Username, full name, email, mobile fields (inside shadcn `<Form>`) |
+| `components/auth/RegisterCredentialsForm.tsx` | 105 (new) | Password, confirm-password, error banner, submit button |
+| `components/auth/RegisterStepIndicator.tsx` | 29 (new) | OTP step 2 header: shield icon + "Verify your email" + masked email |
+| `components/auth/RegisterOtpStep.tsx` | 123 (new) | OTP digit grid, submit button, resend countdown ring, back link |
+| `components/auth/RegisterMobileLayout.tsx` | 49 (new) | Navy header + slide-up white card (mobile wrapper) |
+| `components/auth/RegisterDesktopLayout.tsx` | 97 (new) | Navy hero panel + form card (desktop split wrapper) |
+| `components/auth/RegisterForm.tsx` | 235 (new) | All form state, timers, API calls; renders via sub-components |
+
+**What moved where:**
+- Duplicate `OtpRateLimitPanel` removed — now imports the existing shared one from `components/auth/`
+- `RESEND_COOLDOWN` / `OTP_RATE_LIMIT` no longer re-declared — imported from `loginTypes`
+- `mobileSection` state (drill-in nav) stays in `RegisterForm`; layout wrappers are stateless
+- `register.tsx` no longer imports from `lucide-react`, `react-hook-form`, `framer-motion`, or `zod`
+
+**Typecheck:** sahu-csc passes clean.
 
 ---
 
