@@ -164,6 +164,9 @@ workspace/
 │   │       │   │   #   DashboardRecentActivity (91), DashboardQuickActions (55), UdhariSummaryCard (49)
 │   │       │   ├── ledger.tsx              # Transactions · offline queue · desktop split form
 │   │       │   ├── aeps.tsx                # AePS daily session · withdrawal/deposit · desktop split
+│   │       │   │   # pages/aeps/DailyTab.tsx (87 ln orchestrator) — hook: hooks/useDailyTab.ts (249)
+│   │       │   │   #   components/aeps/daily/: DailyTabEntryRow (68), DailyTabSummaryCard (43),
+│   │       │   │   #     DailyTabEntryList (68), DailyTabForm (112)
 │   │       │   ├── udhari.tsx              # Udhari customer list · search/sort · To Collect/To Pay
 │   │       │   ├── udhari-customer.tsx     # Per-customer ledger · WhatsApp · PDF · desktop split
 │   │       │   ├── services.tsx            # Service catalog

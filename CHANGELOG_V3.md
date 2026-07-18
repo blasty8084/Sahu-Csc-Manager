@@ -14,6 +14,7 @@
 ## Table of Contents
 
 0. [Fix — PermissionCard Continue/Skip single-tap UX (July 18, 2026)](#0-fix--permissioncard-continueskip-single-tap-ux-july-18-2026)
+0. [Refactor — AePS DailyTab split into focused components + hook (July 18, 2026)](#0-refactor--aeps-dailytab-split-into-focused-components--hook-july-18-2026)
 0. [Refactor — Dashboard page split into focused components (July 18, 2026)](#0-refactor--dashboard-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Users page over-limit files split into focused components (July 18, 2026)](#0-refactor--users-page-over-limit-files-split-into-focused-components-july-18-2026)
 0. [Refactor — Register page split into focused components (July 18, 2026)](#0-refactor--register-page-split-into-focused-components-july-18-2026)
@@ -21,6 +22,25 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — AePS DailyTab split into focused components + hook (July 18, 2026)
+
+**Zero behaviour change — identical output, identical exports.**
+
+`pages/aeps/DailyTab.tsx` (563 lines) broken into an 87-line orchestrator plus a custom hook and 4 focused components:
+
+| New file | Lines | Role |
+|---|---|---|
+| `hooks/useDailyTab.ts` | 249 | All state, queries, mutations, offline handlers, form logic; exports `UseDailyTabReturn` type |
+| `components/aeps/daily/DailyTabEntryRow.tsx` | 68 | Date navigator row — prev/next arrows, date input, Today badge & jump button |
+| `components/aeps/daily/DailyTabSummaryCard.tsx` | 43 | Three summary stat cards: Withdrawals / Deposits / Current Balance |
+| `components/aeps/daily/DailyTabEntryList.tsx` | 68 | Withdrawal & Deposit action buttons + `AepsTransactionTable` |
+| `components/aeps/daily/DailyTabForm.tsx` | 112 | All 6 dialog/form overlays (open-day, withdrawal, deposit, edit, delete, receipt) |
+
+`pages/aeps/DailyTab.tsx` is now 87 lines — calls `useDailyTab()`, renders the date nav, no-session card (kept inline), session content via sub-components, and `DailyTabForm`.  
+Import site (`pages/aeps.tsx:5`) unchanged — still `import DailyTab from "./aeps/DailyTab"`.
 
 ---
 
