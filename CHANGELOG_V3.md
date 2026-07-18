@@ -13,6 +13,7 @@
 
 ## Table of Contents
 
+0. [Refactor — Receipts-verify page split into focused components (July 18, 2026)](#0-refactor--receipts-verify-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Backups page split into focused components (July 18, 2026)](#0-refactor--backups-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Udhari page split into focused components (July 18, 2026)](#0-refactor--udhari-page-split-into-focused-components-july-18-2026)
 0. [Fix — PermissionCard Continue/Skip single-tap UX (July 18, 2026)](#0-fix--permissioncard-continueskip-single-tap-ux-july-18-2026)
@@ -24,6 +25,22 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — Receipts-verify page split into focused components (July 18, 2026)
+
+**Zero behaviour change — routes, API calls, and rendered output are identical.**
+
+`pages/receipts-verify.tsx` (407 lines) reduced to an 87-line page. Three new files created in `components/receipts/`. `ReceiptData` interface promoted to an exported type in `ReceiptVerifyCard.tsx`.
+
+| New file | Lines | Role |
+|---|---|---|
+| `ReceiptVerifyBadge.tsx` | 19 | Top pill banner — "CRYPTOGRAPHICALLY VERIFIED" (green) or "LEGACY RECEIPT" (amber) |
+| `ReceiptVerifyCard.tsx` | 167 | Full printable receipt card — navy header, receipt number, inline verified badge, amount block, detail rows, inline QR, business contact, footer. Accepts `cardRef` for html2canvas PDF capture. Exports `ReceiptData` interface. |
+| `ReceiptQrSection.tsx` | 131 | Action button grid — Print, Download PDF, WhatsApp PDF, Share Link. Owns `generatePdfBlob` (html2canvas + jsPDF), sharing handlers, and loading states. |
+
+`pages/receipts-verify.tsx` is now **87 lines** — fetch effect, loading/error renders, computed values, component composition. TypeScript clean.
 
 ---
 
