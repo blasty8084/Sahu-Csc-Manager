@@ -13,6 +13,7 @@
 
 ## Table of Contents
 
+0. [Refactor — Sessions page split into focused components (July 18, 2026)](#0-refactor--sessions-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Receipts-verify page split into focused components (July 18, 2026)](#0-refactor--receipts-verify-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Backups page split into focused components (July 18, 2026)](#0-refactor--backups-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Udhari page split into focused components (July 18, 2026)](#0-refactor--udhari-page-split-into-focused-components-july-18-2026)
@@ -25,6 +26,23 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — Sessions page split into focused components (July 18, 2026)
+
+**Zero behaviour change — routes, API calls, and rendered output are identical.**
+
+`pages/sessions.tsx` (377 lines) broken into a 126-line page plus 4 focused files in `components/sessions/`.
+
+| New file | Lines | Role |
+|---|---|---|
+| `SessionCard.tsx` | 120 | Exports `SessionEntry` type, `apiFetch` utility, date/device helpers, and the device-row component. Accepts optional `onRevoke` + `revokeDisabled` props to render the Revoke button for other-device rows. |
+| `SessionCurrentBadge.tsx` | 24 | "Current Session" Card wrapper — shield icon, "This Device" badge, session detail row. |
+| `SessionRevokeDialog.tsx` | 36 | Single-session revoke `AlertDialog`. |
+| `SessionBulkActions.tsx` | 141 | Orange/red bulk-action panel ("Logout Others", "Logout All") with its own `revokeOthersMutation`, `revokeAllMutation`, dialog state, and two confirm `AlertDialog`s. Returns `null` when no sessions exist. |
+
+`pages/sessions.tsx` is now **126 lines** — query, single-session mutation, security summary grid, component composition. TypeScript clean.
 
 ---
 
