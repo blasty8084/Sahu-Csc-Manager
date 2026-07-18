@@ -158,7 +158,10 @@ workspace/
 │   │       │   ├── register.tsx            # Thin orchestrator (~89 lines): status check, mobile/desktop layout wiring
 │   │       │   ├── forgot-password.tsx     # 4-step merged: identifier → OTP → new pw → success
 │   │       │   ├── reset-password.tsx      # Token-based reset (legacy, merged into forgot-password)
-│   │       │   ├── dashboard.tsx           # Real-time stats + Udhari summary + offline cache
+│   │       │   ├── dashboard.tsx           # 13 ln thin orchestrator — mobile/desktop branch
+│   │       │   │   # components/dashboard/: MobileDashboard (96), DesktopDashboard (95),
+│   │       │   │   #   DashboardStatCards (128, MobileStatCards+DesktopStatCards), DashboardWeeklyBar (60),
+│   │       │   │   #   DashboardRecentActivity (91), DashboardQuickActions (55), UdhariSummaryCard (49)
 │   │       │   ├── ledger.tsx              # Transactions · offline queue · desktop split form
 │   │       │   ├── aeps.tsx                # AePS daily session · withdrawal/deposit · desktop split
 │   │       │   ├── udhari.tsx              # Udhari customer list · search/sort · To Collect/To Pay

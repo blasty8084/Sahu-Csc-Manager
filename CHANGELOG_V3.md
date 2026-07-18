@@ -14,12 +14,34 @@
 ## Table of Contents
 
 0. [Fix — PermissionCard Continue/Skip single-tap UX (July 18, 2026)](#0-fix--permissioncard-continueskip-single-tap-ux-july-18-2026)
+0. [Refactor — Dashboard page split into focused components (July 18, 2026)](#0-refactor--dashboard-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Users page over-limit files split into focused components (July 18, 2026)](#0-refactor--users-page-over-limit-files-split-into-focused-components-july-18-2026)
 0. [Refactor — Register page split into focused components (July 18, 2026)](#0-refactor--register-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Profile page final split into focused components (July 18, 2026)](#0-refactor--profile-page-final-split-into-focused-components-july-18-2026)
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — Dashboard page split into focused components (July 18, 2026)
+
+**Zero behaviour change — identical output, identical exports.**
+
+`pages/dashboard.tsx` (565 lines) broken into a 13-line orchestrator plus 7 focused files under `components/dashboard/`:
+
+| New file | Lines | Role |
+|---|---|---|
+| `components/dashboard/UdhariSummaryCard.tsx` | 49 | Udhari credit summary card (shared mobile + desktop) |
+| `components/dashboard/DashboardStatCards.tsx` | 128 | `MobileStatCards` (2×2 grid) + `DesktopStatCards` (4-col grid) |
+| `components/dashboard/DashboardWeeklyBar.tsx` | 60 | 7-day CSS bar chart with `useMemo`-computed week data |
+| `components/dashboard/DashboardRecentActivity.tsx` | 91 | Recent ledger entries table with avatar initials |
+| `components/dashboard/DashboardQuickActions.tsx` | 55 | FAB-style 4-button quick-action grid |
+| `components/dashboard/MobileDashboard.tsx` | 96 | Mobile layout: offline cache, stat cards, quick actions, top services |
+| `components/dashboard/DesktopDashboard.tsx` | 95 | Desktop layout: offline cache, stat cards, weekly bar, top services, recent activity |
+
+`pages/dashboard.tsx` is now 13 lines — imports `MobileDashboard` / `DesktopDashboard` and branches on `useIsMobile`.  
+No import sites changed (no other file imported from `pages/dashboard`).
 
 ---
 
