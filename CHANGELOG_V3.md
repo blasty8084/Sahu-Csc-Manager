@@ -13,6 +13,7 @@
 
 ## Table of Contents
 
+0. [Refactor — TwoFactorSection split into focused components (July 19, 2026)](#0-refactor--twofactorsection-split-into-focused-components-july-19-2026)
 0. [Refactor — Layout component split into focused components (July 19, 2026)](#0-refactor--layout-component-split-into-focused-components-july-19-2026)
 0. [Refactor — Services page split into focused components (July 19, 2026)](#0-refactor--services-page-split-into-focused-components-july-19-2026)
 0. [Refactor — AepsReceiptVerify page split into focused components (July 18, 2026)](#0-refactor--aepsreceiptverify-page-split-into-focused-components-july-18-2026)
@@ -31,6 +32,23 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — TwoFactorSection split into focused components (July 19, 2026)
+
+**Zero behaviour change — rendered output, all stage screens, and mutation flows are identical.**
+
+`components/profile/TwoFactorSection.tsx` (617 lines) reduced to 382 lines by extracting four focused components.
+
+| New file | Lines | Role |
+|---|---|---|
+| `profile/totp/TotpSetupCard.tsx` | 124 | TOTP enrollment screen — QR code display, manual secret reveal with show/copy buttons, built-in `TotpLiveCode` fallback, 6-digit confirm input, and verify/cancel buttons. Pure display; receives all state and callbacks from parent. |
+| `profile/totp/TotpRegenCard.tsx` | 83 | Password-confirm dialog for the `regen-confirm` stage. Shows amber warning that existing codes are invalidated, password input with show/hide toggle, and regenerate/cancel buttons. |
+| `profile/otp/OtpToggleCard.tsx` | 84 | Password-confirm dialog shared by `otp-confirm` (enable Email OTP) and `disable-confirm` stages. Visual tone switches between blue (enable) and red (disable) based on `stage` prop. |
+| `profile/BackupCodesHealthBar.tsx` | 108 | Backup codes section card — progress bar, slot-availability grid (8 slots, green=available/grey=used), "Generate new codes" dashed trigger. Props: `codesRemaining`, `twoFaMethod`, `showCodes`, `onToggleShowCodes`, `onRegen`. |
+
+**What stays in `TwoFactorSection.tsx`:** all state, all five mutations (`setupTotpMut`, `verifyTotpMut`, `enableOtpMut`, `disableMut`, `regenMut`), the `2fa-status` query, the backup-codes-saved one-time screen, `SecurityRing` animated SVG, hero card, method-switcher/enable-CTA cards, and the disable button. Import sites (`ProfileDesktopLayout`, `ProfileMobileLayout`) unchanged. TypeScript clean.
 
 ---
 
