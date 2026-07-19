@@ -13,6 +13,7 @@
 
 ## Table of Contents
 
+0. [Refactor — Layout component split into focused components (July 19, 2026)](#0-refactor--layout-component-split-into-focused-components-july-19-2026)
 0. [Refactor — Services page split into focused components (July 19, 2026)](#0-refactor--services-page-split-into-focused-components-july-19-2026)
 0. [Refactor — AepsReceiptVerify page split into focused components (July 18, 2026)](#0-refactor--aepsreceiptverify-page-split-into-focused-components-july-18-2026)
 0. [Refactor — UdhariReceiptVerify page split into focused components (July 18, 2026)](#0-refactor--udharireceiptverify-page-split-into-focused-components-july-18-2026)
@@ -30,6 +31,28 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — Layout component split into focused components (July 19, 2026)
+
+**Zero behaviour change — rendered output, routing, and all visual styles are identical.**
+
+`components/layout.tsx` (700 lines) reduced to 82 lines of composition. All extracted files live in `components/layout/` and two new hooks.
+
+| New file | Lines | Role |
+|---|---|---|
+| `layout/NavLink.tsx` | 53 | `NavItem` type export + sidebar nav link — active styling, badge pill, prefetch on hover/focus/touch. Used by `Sidebar`. |
+| `layout/LiveClock.tsx` | 21 | `React.memo` clock that ticks its own state every second — never causes Layout to re-render. |
+| `layout/Sidebar.tsx` | 136 | `SidebarNav` — logo header, main nav links, admin section, version strip, user footer (avatar → `/profile`, theme toggle, logout button). Uses `NavLink`. |
+| `layout/BottomNav.tsx` | 54 | Mobile 4-tab fixed bottom bar. Self-contained — calls `useLocation` and `useTranslation` internally; Layout passes no props. |
+| `layout/TopHeader.tsx` | 162 | Mobile 3-layer header: 3 px accent stripe + white bar (logo, bell, avatar-chip Sheet trigger) + navy greeting bar. Owns greeting state via `useGreeting`. Sheet renders `SidebarNav` for mobile nav. |
+| `layout/DesktopHeader.tsx` | 124 | Desktop sticky header — page title (derived internally from `useLocation`), animated greeting, sync dot, theme toggle, notifications button, profile chip. Owns its own greeting state via `useGreeting`. |
+| `layout/UserMenu.tsx` | 40 | Logout confirmation dialog. Props: `open`, `onCancel`, `onConfirm`. |
+| `hooks/use-nav-items.ts` | 50 | Builds `mainNavItems` + `adminNavItems` arrays and returns `unreadCount`. Removes 25 lines of icon imports from `layout.tsx`. |
+| `hooks/use-greeting.ts` | 51 | Greeting text/emoji/date state that updates at the start of each minute with a 350 ms fade transition. Shared by `TopHeader` and `DesktopHeader` (which are mutually exclusive on screen). |
+
+**Import sites:** `components/layout.tsx` is kept as the sole export of `Layout` — all 20 page files that `import { Layout } from "@/components/layout"` are unchanged.
 
 ---
 
