@@ -13,6 +13,7 @@
 
 ## Table of Contents
 
+0. [Refactor — LedgerTable split into focused components (July 19, 2026)](#0-refactor--ledgertable-split-into-focused-components-july-19-2026)
 0. [Refactor — TwoFactorSection split into focused components (July 19, 2026)](#0-refactor--twofactorsection-split-into-focused-components-july-19-2026)
 0. [Refactor — Layout component split into focused components (July 19, 2026)](#0-refactor--layout-component-split-into-focused-components-july-19-2026)
 0. [Refactor — Services page split into focused components (July 19, 2026)](#0-refactor--services-page-split-into-focused-components-july-19-2026)
@@ -32,6 +33,29 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — LedgerTable split into focused components (July 19, 2026)
+
+**Zero behaviour change — all named exports are preserved and all import sites unchanged.**
+
+`components/ledger/LedgerTable.tsx` (606 lines) replaced by a 25-line barrel. Content distributed across 10 files.
+
+| New file | Lines | Role |
+|---|---|---|
+| `LedgerEmptyState.tsx` | 32 | "No transactions found" empty state — icon, heading, optional "Add New Entry" CTA. Used inside `DesktopTransactionsTable` wrapped in `<tr><td colSpan={10}>`. |
+| `LedgerRowActions.tsx` | 42 | Shared Receipt / Edit / Delete button cluster. `size="sm"` = mobile 24×24 px; `size="md"` = desktop 28×28 px. Used by both `LedgerDesktopRow` and `LedgerMobileRow`. |
+| `LedgerRow.tsx` | 123 | Two exports: `LedgerDesktopRow` — full non-editing `<tr>` (receipt number, date, customer avatar, service badge, credit/debit/balance, note, `LedgerRowActions size="md"`); `LedgerMobileRow` — colour-coded card entry (left accent bar, icon badge, customer + service, amount + balance, `LedgerRowActions size="sm"`). |
+| `LedgerPagination.tsx` | 104 | Absorbs `TableFooterPagination` (desktop footer: page summary Cr/Dr/Net + page button cluster + security note) and `MobilePagination` (prev/next mobile buttons). Both were previously inline in `LedgerTable.tsx`. |
+| `table/TableTabsHeader.tsx` | 37 | Tabs row (Transactions / Receipt History) with entry count, Filtered badge, Offline badge, retrying badge. |
+| `table/PendingSyncBanners.tsx` | 24 | Amber + purple banners for pending offline entries and background-sync queue. |
+| `table/DesktopReceiptsPanel.tsx` | 85 | Desktop Receipt History tab — search input, table with receipt number / date / customer / service / amount / View+PDF actions. |
+| `table/DesktopTransactionsTable.tsx` | 156 | Desktop transactions table — sticky header, skeleton loading rows, `LedgerEmptyState` for empty state, inline-editing row (all fields), `LedgerDesktopRow` for display rows. |
+| `table/MobileReceiptsList.tsx` | 73 | Mobile receipt cards — search input, receipt number chip, customer name, service, amount, View + PDF buttons. |
+| `table/MobileTransactionsList.tsx` | 47 | Mobile date-grouped list — skeleton, `LedgerSkeleton`, date group headers, `LedgerMobileRow` per entry. |
+
+**Import sites unchanged:** `pages/ledger.tsx` and `pages/aeps/all-tx/AllTxTable.tsx` both import the same 8 named exports from `@/components/ledger/LedgerTable` — the barrel re-exports them all without any import-site edits. TypeScript clean.
 
 ---
 
