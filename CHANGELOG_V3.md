@@ -13,6 +13,7 @@
 
 ## Table of Contents
 
+0. [Refactor — AllTransactionsTab split into focused components (July 18, 2026)](#0-refactor--alltransactionstab-split-into-focused-components-july-18-2026)
 0. [Refactor — Sessions page split into focused components (July 18, 2026)](#0-refactor--sessions-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Receipts-verify page split into focused components (July 18, 2026)](#0-refactor--receipts-verify-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Backups page split into focused components (July 18, 2026)](#0-refactor--backups-page-split-into-focused-components-july-18-2026)
@@ -26,6 +27,23 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — AllTransactionsTab split into focused components (July 18, 2026)
+
+**Zero behaviour change — existing rendered output is identical. One additive feature: Export CSV button.**
+
+`pages/aeps/AllTransactionsTab.tsx` (372 lines) broken into a 75-line parent plus 4 focused files in `pages/aeps/all-tx/`.
+
+| New file | Lines | Role |
+|---|---|---|
+| `AllTxExportButton.tsx` | 46 | Standalone CSV download button — exports current filtered page as a `.csv` file with date, customer name, type, amount, and description columns. |
+| `AllTxFilterBar.tsx` | 117 | Toolbar (transaction count, export button, filter toggle, clear) plus collapsible 4-field filter panel (from/to date, type select, customer name autocomplete). Renders `AllTxExportButton` internally. |
+| `AllTxSummaryStrip.tsx` | 31 | Two-card strip showing withdrawal and deposit totals for the current page. |
+| `AllTxTable.tsx` | 244 | Paginated transaction list, pagination controls, empty state, and all three dialogs (edit, delete, receipt modal). Owns `editingTx`/`deletingTx`/`receiptTx` state, `editForm`, `editMut`, and `deleteMut` — the parent no longer needs any of these. |
+
+`pages/aeps/AllTransactionsTab.tsx` is now **75 lines** — query, filter state, derived values, component composition. TypeScript clean.
 
 ---
 
