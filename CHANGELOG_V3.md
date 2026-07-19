@@ -13,6 +13,7 @@
 
 ## Table of Contents
 
+0. [Refactor — UdhariReceiptVerify page split into focused components (July 18, 2026)](#0-refactor--udharireceiptverify-page-split-into-focused-components-july-18-2026)
 0. [Refactor — AllTransactionsTab split into focused components (July 18, 2026)](#0-refactor--alltransactionstab-split-into-focused-components-july-18-2026)
 0. [Refactor — Sessions page split into focused components (July 18, 2026)](#0-refactor--sessions-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Receipts-verify page split into focused components (July 18, 2026)](#0-refactor--receipts-verify-page-split-into-focused-components-july-18-2026)
@@ -27,6 +28,22 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — UdhariReceiptVerify page split into focused components (July 18, 2026)
+
+**Zero behaviour change — rendered output and route are identical.**
+
+`pages/udhari-receipt-verify.tsx` (358 lines) broken into a 75-line page plus 3 focused files in `components/receipts/`.
+
+| New file | Lines | Role |
+|---|---|---|
+| `UdhariReceiptFooter.tsx` | 46 | Business contact block (address, mobile, website with icons) + dark navy footer bar ("Thank you for choosing SAHU CSC"). Rendered at the bottom of the printable card. |
+| `UdhariReceiptCard.tsx` | 136 | Full printable receipt card — coloured header, accent stripe, amount box, balance snapshot chip, customer/transaction detail rows, QR code, and `UdhariReceiptFooter`. Accepts `cardRef: RefObject<HTMLDivElement \| null>` forwarded from the page for html2canvas / print capture. Internally computes all colour/label variants from the raw `receipt` prop. |
+| `UdhariReceiptActions.tsx` | 164 | Print / Download PDF / Share via WhatsApp / Share Link button grid. Owns `generatingPdf` and `sendingWa` state, `generatePdfBlob` (A4 html2canvas→jsPDF), `handlePrint`, `handleDownloadPdf`, `handleWhatsApp` (native share API with PDF file → WhatsApp text fallback), and `handleShare`. `WhatsAppIcon` SVG moved here. |
+
+`pages/udhari-receipt-verify.tsx` is now **75 lines** — query, loading/error states, `printRef`, and component composition. TypeScript clean (`RefObject<HTMLDivElement | null>` used throughout to match React 19 `useRef` return type).
 
 ---
 
