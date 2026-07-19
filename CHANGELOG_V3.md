@@ -13,6 +13,7 @@
 
 ## Table of Contents
 
+0. [Refactor — Services page split into focused components (July 19, 2026)](#0-refactor--services-page-split-into-focused-components-july-19-2026)
 0. [Refactor — AepsReceiptVerify page split into focused components (July 18, 2026)](#0-refactor--aepsreceiptverify-page-split-into-focused-components-july-18-2026)
 0. [Refactor — UdhariReceiptVerify page split into focused components (July 18, 2026)](#0-refactor--udharireceiptverify-page-split-into-focused-components-july-18-2026)
 0. [Refactor — AllTransactionsTab split into focused components (July 18, 2026)](#0-refactor--alltransactionstab-split-into-focused-components-july-18-2026)
@@ -29,6 +30,22 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — Services page split into focused components (July 19, 2026)
+
+**Zero behaviour change — rendered output, routing, and all `data-testid` attributes are identical.**
+
+`pages/services.tsx` (332 lines) broken into a 110-line page plus 3 focused files in `components/services/`.
+
+| New file | Lines | Role |
+|---|---|---|
+| `ServiceCard.tsx` | 45 | Single service grid card — name, description, price (formatted `en-IN`), "Inactive" badge when `isActive=false`, edit and delete icon buttons. Props: `service`, `onEdit`, `onDelete`. |
+| `ServiceEditDialog.tsx` | 223 | Edit-service form for both viewports. Mobile: shadcn `Dialog` with labelled inputs and Switch. Desktop: full-screen two-panel overlay (orange gradient info panel + white form panel). Owns `useUpdateService`, `useForm<ServiceForm>`, and a `useEffect` that resets the form whenever the `service` prop changes. |
+| `ServiceAddDialog.tsx` | 217 | Add-service form — structurally identical to `ServiceEditDialog` but owns `useCreateService` and resets the form to blank defaults whenever `open` flips to `true`. |
+
+**Key structural decision:** the original used one shared `form` + `showForm` boolean for both add and edit. After the split each dialog owns its own form and mutation, removing the need for `openCreate`/`openEdit` coordinators in the parent. The parent now holds only `showAddForm`, `editService`, `deleteId`, `deleteMut`, `invalidate`, and the delete-confirm `Dialog`. TypeScript clean.
 
 ---
 
