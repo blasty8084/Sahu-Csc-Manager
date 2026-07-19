@@ -13,6 +13,7 @@
 
 ## Table of Contents
 
+0. [Refactor — AepsReceiptVerify page split into focused components (July 18, 2026)](#0-refactor--aepsreceiptverify-page-split-into-focused-components-july-18-2026)
 0. [Refactor — UdhariReceiptVerify page split into focused components (July 18, 2026)](#0-refactor--udharireceiptverify-page-split-into-focused-components-july-18-2026)
 0. [Refactor — AllTransactionsTab split into focused components (July 18, 2026)](#0-refactor--alltransactionstab-split-into-focused-components-july-18-2026)
 0. [Refactor — Sessions page split into focused components (July 18, 2026)](#0-refactor--sessions-page-split-into-focused-components-july-18-2026)
@@ -28,6 +29,22 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — AepsReceiptVerify page split into focused components (July 18, 2026)
+
+**Zero behaviour change — rendered output and route are identical.**
+
+`pages/aeps-receipt-verify.tsx` (333 lines) broken into a 75-line page plus 3 focused files in `components/receipts/`.
+
+| New file | Lines | Role |
+|---|---|---|
+| `AepsReceiptFooter.tsx` | 46 | Agent / business contact block (address, mobile, website with icons) + dark navy footer bar ("AePS transaction receipt · Aadhaar-Enabled Payment System"). |
+| `AepsReceiptCard.tsx` | 133 | Full printable receipt card — colour-coded header (red=withdrawal, green=deposit), accent stripe, amount box with Fingerprint icon, transaction detail rows, QR code, and `AepsReceiptFooter`. Accepts `cardRef: RefObject<HTMLDivElement \| null>` for html2canvas / print capture. Internally computes all colour/label variants from the raw `receipt` prop. |
+| `AepsReceiptActions.tsx` | 138 | Print / Download PDF / Share via WhatsApp / Share Link button grid. Owns `generatingPdf` and `sendingWa` state, `generatePdfBlob` (html2canvas→jsPDF A4), `handlePrint`, `handleDownloadPdf`, `handleWhatsApp` (native share API with PDF → WhatsApp text fallback), and `handleShare`. `WhatsAppIcon` SVG moved here. |
+
+`pages/aeps-receipt-verify.tsx` is now **75 lines** — query, loading/error states, `printRef`, and component composition. TypeScript clean.
 
 ---
 
