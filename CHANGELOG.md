@@ -9,6 +9,7 @@
 
 ## Table of Contents
 
+0. [Refactor — TwoFactorStep split into focused 2FA sub-components + hook (July 20, 2026)](#0-refactor--twofactorstep-split-into-focused-2fa-sub-components--hook-july-20-2026)
 0. [Refactor — ForgotPasswordPanel split into focused auth step sub-components (July 20, 2026)](#0-refactor--forgotpasswordpanel-split-into-focused-auth-step-sub-components-july-20-2026)
 0. [Refactor — UdhariReceiptModal split into focused receipt sub-components (July 20, 2026)](#0-refactor--udhariReceiptmodal-split-into-focused-receipt-sub-components-july-20-2026)
 0. [Refactor — AepsDepositForm split into focused sub-components + hook (July 20, 2026)](#0-refactor--aepsdepositform-split-into-focused-sub-components--hook-july-20-2026)
@@ -38,6 +39,23 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — TwoFactorStep split into focused 2FA sub-components + hook (July 20, 2026)
+
+**Zero behaviour change — single import site (`pages/login.tsx`) still imports `TwoFactorStep` from `@/components/auth/TwoFactorStep`; the export is unchanged.**
+
+`components/auth/TwoFactorStep.tsx` (395 lines) reduced to **114 lines** by extracting all state/handlers into a hook and the three rendering phases into dedicated files under `components/auth/twofa/`.
+
+| New file | Lines | Role |
+|---|---|---|
+| `twofa/useTwoFactorStep.ts` | 152 | All state, refs, timers, and handlers (`handleChooseMethod`, `handleResend`, `handleSubmit`, `finishAfterBackupCodes`, `goBackToMethodPicker`, `onToggleBackupCode`, `copyKey`, `copySecretKey`, `toggleShowSecret`) |
+| `twofa/MethodPicker.tsx` | 64 | Phase 1 — Email OTP vs Authenticator App choice cards + error + back-to-login |
+| `twofa/OtpEntry.tsx` | 83 | Phase 2 (OTP) — 6-digit input, resend countdown, trust-device checkbox, verify button, backup-code toggle |
+| `twofa/TotpEntry.tsx` | 133 | Phase 2 (TOTP) — QR enrollment panel (scan + manual-entry fallback + show/copy secret), enrolled hint, 6-digit input, verify button, backup-code toggle |
+
+Orchestrator keeps: backup-codes screen JSX, header (icon + title + sub-text), and `AnimatePresence` delegation to the three sub-components. TypeScript clean (`pnpm --filter @workspace/sahu-csc exec tsc --noEmit` exits 0).
 
 ---
 

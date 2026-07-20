@@ -277,7 +277,11 @@ workspace/
 │   │       │   │   │   ├── LockoutPanel.tsx         # Account-locked countdown panel (draining progress bar)
 │   │       │   │   │   └── AttemptCounter.tsx       # Failed-attempt dots + security/lockout-warning badge
 │   │       │   │   ├── BiometricPrompt.tsx          # WebAuthn fingerprint/Face ID (ready; not yet wired into form)
-│   │       │   │   ├── TwoFactorStep.tsx           # 2FA method picker (OTP + TOTP)
+│   │       │   │   ├── TwoFactorStep.tsx (114 ln thin orchestrator) — backup-codes screen, header, AnimatePresence; assembles:
+│   │       │   │   │   ├── twofa/useTwoFactorStep.ts  (152 ln) — all state, refs, timers, handlers (choose, resend, submit, backup-codes, goBack, toggles, clipboard)
+│   │       │   │   │   ├── twofa/MethodPicker.tsx     (64 ln)  — Email OTP vs Authenticator App choice cards + error + back-to-login
+│   │       │   │   │   ├── twofa/OtpEntry.tsx         (83 ln)  — 6-digit OTP input, resend countdown, trust-device, verify, backup-code toggle
+│   │       │   │   │   └── twofa/TotpEntry.tsx        (133 ln) — QR enrollment panel + manual-entry fallback, enrolled hint, 6-digit input, verify, backup-code toggle
 │   │       │   │   ├── OtpRateLimitPanel.tsx       # Shared OTP rate-limit countdown panel
 │   │       │   │   ├── OtpRequestForm.tsx / OtpVerifyForm.tsx
 │   │       │   │   ├── ForgotPasswordPanel.tsx (221 ln thin orchestrator) — all state, timers, handlers; assembles:
