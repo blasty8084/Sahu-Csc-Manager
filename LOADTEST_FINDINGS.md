@@ -50,7 +50,7 @@ rather than failing.
   is correct-by-construction (balance is never trusted from the client) but means write cost scales with
   history size, and it isn't cached because correctness there requires always reading fresh state.
 - **This matches the design intent, not a bug.** The write path already intentionally does more work per
-  request than the read path for financial-integrity reasons (see `architectureV3.md` §11.1). These numbers
+  request than the read path for financial-integrity reasons (see `ARCHITECTURE.md` §11.1). These numbers
   quantify that tradeoff at concurrency rather than reveal a defect.
 
 ## What this does and doesn't tell us
@@ -63,7 +63,7 @@ rather than failing.
   more than one API instance behind a load balancer; (2) moving the ledger balance calculation to a
   maintained running total (e.g. a `balance` column updated transactionally) instead of recomputing
   `SUM()` over full history on every write, if write latency at scale became a real complaint; (3) read
-  replicas, if the DB provider ever supports them (see `architectureV3.md` §5.6 for which queries would be
+  replicas, if the DB provider ever supports them (see `ARCHITECTURE.md` §5.6 for which queries would be
   safe to route to one).
 - None of the above were implemented here — this document is a measurement, deliberately scoped to not
   trigger an architecture change on its own.

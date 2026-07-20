@@ -1,9 +1,9 @@
-# SAHU CSC — Architecture Reference v3
-**Version 4.9.0 — July 18, 2026**
+# SAHU CSC — Architecture Reference
+**Version 4.9.0 — July 20, 2026**
 
 > This is the single authoritative reference for the SAHU CSC platform architecture.  
 > It supersedes `docs/archive/architectureV2.md` and `docs/archive/ARCHITECTURE.md`.  
-> For per-feature change history: `CHANGELOG_V3.md` (v3) · `docs/archive/changelogV2.md` (v2) · `CHANGELOG.md` (v1)
+> For per-feature change history: `CHANGELOG.md` (v3/v4 current · v1/v2 archive at bottom) · `docs/archive/changelogV2.md` (v2 detail)
 
 ---
 

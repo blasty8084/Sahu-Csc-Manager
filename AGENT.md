@@ -61,7 +61,7 @@ Target users: rural Odisha CSC operators. UI languages: English, Hindi, Odia (`i
 ├── AGENT.md                 # ← You are here
 ├── replit.md                # Setup notes, version changelog, Replit-specific quirks
 ├── DOCS.md                  # API + module reference (verbose)
-├── CHANGELOG_V3.md          # Full version history
+├── CHANGELOG.md          # Full version history
 └── memory.md                # Session chat history
 ```
 
