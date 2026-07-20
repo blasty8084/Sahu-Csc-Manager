@@ -196,6 +196,10 @@ workspace/
 │   │       │   │   #   receipt/UdhariReceiptDetails.tsx  (129 ln) — colored header, receipt-info row, amount hero, detail rows, QR block
 │   │       │   │   #   receipt/UdhariReceiptFooter.tsx    (48 ln) — business contact (name/address/phone/website) + footer bar
 │   │       │   │   #   receipt/UdhariReceiptActions.tsx   (48 ln) — Print/PDF/WhatsApp/Share action panel; WhatsAppIcon SVG lives here
+│   │       │   │   # components/aeps-receipt-modal.tsx   (206 ln thin orchestrator) — Dialog shell, all state/handlers/derived values; assembles:
+│   │       │   │   #   receipt/AepsReceiptDetails.tsx    (116 ln) — gradient header, receipt-info row, amount hero, detail rows, QR block
+│   │       │   │   #   receipt/AepsReceiptFooter.tsx      (55 ln) — business contact (name/address/phone/website) + AePS footer bar
+│   │       │   │   #   receipt/AepsReceiptActions.tsx     (50 ln) — Print/PDF/WhatsApp/Share action panel; WhatsAppIcon SVG lives here
 │   │       │   ├── services.tsx            # Service catalog
 │   │       │   ├── reports.tsx             # Command Center: thin page; delegates to DesktopReports / MobileReports
 │   │       │   │   # components/reports/:

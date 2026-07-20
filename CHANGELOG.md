@@ -9,6 +9,7 @@
 
 ## Table of Contents
 
+0. [Refactor — AepsReceiptModal split into focused receipt sub-components (July 20, 2026)](#0-refactor--aepsreceiptmodal-split-into-focused-receipt-sub-components-july-20-2026)
 0. [Refactor — TwoFactorStep split into focused 2FA sub-components + hook (July 20, 2026)](#0-refactor--twofactorstep-split-into-focused-2fa-sub-components--hook-july-20-2026)
 0. [Refactor — ForgotPasswordPanel split into focused auth step sub-components (July 20, 2026)](#0-refactor--forgotpasswordpanel-split-into-focused-auth-step-sub-components-july-20-2026)
 0. [Refactor — UdhariReceiptModal split into focused receipt sub-components (July 20, 2026)](#0-refactor--udhariReceiptmodal-split-into-focused-receipt-sub-components-july-20-2026)
@@ -39,6 +40,22 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — AepsReceiptModal split into focused receipt sub-components (July 20, 2026)
+
+**Zero behaviour change — both import sites (`components/aeps/daily/DailyTabForm.tsx`, `pages/aeps/all-tx/AllTxTable.tsx`) still import `AepsReceiptModal` and `AepsTxReceipt` from `@/components/aeps-receipt-modal`; exports unchanged.**
+
+`components/aeps-receipt-modal.tsx` (392 lines) reduced to **206 lines** by extracting three focused files into `components/receipt/`.
+
+| New file | Lines | Role |
+|---|---|---|
+| `receipt/AepsReceiptDetails.tsx` | 116 | Gradient header (Fingerprint icon + type + stripe), receipt-info row (number + verified badge), amount hero typography, detail rows card (customer/date/balance/note), QR block |
+| `receipt/AepsReceiptFooter.tsx` |  55 | Business contact block (name, address, phone, website) + AePS footer bar |
+| `receipt/AepsReceiptActions.tsx` |  50 | Print/PDF/WhatsApp/Share 4-button action panel; `WhatsAppIcon` SVG moved here |
+
+Orchestrator keeps: `AepsTxReceipt` interface, all state (`generatingPdf`, `sendingWa`), all derived values (colors, labels, dates, `receiptNumber`, `verifyUrl`, `qrValue`, amount parts), `generatePdfBlob`, and all four handlers (`handlePrint`, `handleDownloadPdf`, `handleWhatsApp`, `handleShare`). TypeScript clean.
 
 ---
 
