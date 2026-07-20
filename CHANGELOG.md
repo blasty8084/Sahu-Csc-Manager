@@ -9,6 +9,7 @@
 
 ## Table of Contents
 
+0. [Refactor — ForgotPasswordPanel split into focused auth step sub-components (July 20, 2026)](#0-refactor--forgotpasswordpanel-split-into-focused-auth-step-sub-components-july-20-2026)
 0. [Refactor — UdhariReceiptModal split into focused receipt sub-components (July 20, 2026)](#0-refactor--udhariReceiptmodal-split-into-focused-receipt-sub-components-july-20-2026)
 0. [Refactor — AepsDepositForm split into focused sub-components + hook (July 20, 2026)](#0-refactor--aepsdepositform-split-into-focused-sub-components--hook-july-20-2026)
 0. [Refactor — skeletons.tsx split into per-feature skeleton files (July 20, 2026)](#0-refactor--skeletontstsx-split-into-per-feature-skeleton-files-july-20-2026)
@@ -37,6 +38,23 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — ForgotPasswordPanel split into focused auth step sub-components (July 20, 2026)
+
+**Zero behaviour change — import chain (`login.tsx` → `LoginForm.tsx` → `ForgotPasswordPanel.tsx`) untouched; `ForgotPasswordPanel` still exported from the same path.**
+
+`components/auth/ForgotPasswordPanel.tsx` (404 lines) reduced to **221 lines** by extracting four files into `components/auth/forgot/`.
+
+| New file | Lines | Role |
+|---|---|---|
+| `forgot/ForgotStepHeader.tsx`  |  47 | Back-to-login link + 3-dot step progress dots (hidden on success) |
+| `forgot/StepRequestOtp.tsx`    |  66 | Step 1 — identifier input + Send OTP button; includes own `motion.div` animation wrapper |
+| `forgot/StepVerifyOtp.tsx`     | 104 | Step 2 — 6-digit OTP grid (paste-to-auto-submit), resend countdown, rate-limit fallback panel; OTP event handlers defined internally |
+| `forgot/StepNewPassword.tsx`   |  82 | Step 3 — new password field + per-rule strength indicator + confirm field + match badge |
+
+Orchestrator keeps: all state, `useRef`s, `useEffect` cleanup, `startResendTimer` / `startRateLimitTimer` / `startCountdown` callbacks, `handleSendOtp`, `verifyOtp`, `handleResend`, `handleSetPassword`, and the success step (inline). `ForgotStepHeader` was added beyond the three requested to keep the orchestrator under the 250-line rule. TypeScript clean.
 
 ---
 

@@ -280,7 +280,11 @@ workspace/
 │   │       │   │   ├── TwoFactorStep.tsx           # 2FA method picker (OTP + TOTP)
 │   │       │   │   ├── OtpRateLimitPanel.tsx       # Shared OTP rate-limit countdown panel
 │   │       │   │   ├── OtpRequestForm.tsx / OtpVerifyForm.tsx
-│   │       │   │   ├── ForgotPasswordPanel.tsx / ForgotPasswordStepper.tsx / NewPasswordForm.tsx
+│   │       │   │   ├── ForgotPasswordPanel.tsx (221 ln thin orchestrator) — all state, timers, handlers; assembles:
+│   │       │   │   │   ├── forgot/ForgotStepHeader.tsx   (47 ln) — back-to-login link + 3-dot step progress indicator
+│   │       │   │   │   ├── forgot/StepRequestOtp.tsx     (66 ln) — identifier input + Send OTP button (step 1)
+│   │       │   │   │   ├── forgot/StepVerifyOtp.tsx     (104 ln) — 6-digit OTP grid + paste + resend timer + rate-limit fallback (step 2)
+│   │       │   │   │   └── forgot/StepNewPassword.tsx    (82 ln) — new password + strength rules + confirm + match indicator (step 3)
 │   │       │   │   ├── AuthHero.tsx                # Desktop hero split for login
 │   │       │   │   ├── TotpLiveCode.tsx            # SVG countdown ring + live TOTP digits
 │   │       │   │   └── useLockoutCountdown.ts
