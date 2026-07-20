@@ -192,6 +192,10 @@ workspace/
 │   │       │   │   #   aeps/DepositSuccessStep.tsx       (64 ln) — success panel (checkmark, recorded summary, New/Done buttons)
 │   │       │   ├── udhari.tsx              # Udhari customer list · search/sort · To Collect/To Pay
 │   │       │   ├── udhari-customer.tsx     # Per-customer ledger · WhatsApp · PDF · desktop split
+│   │       │   │   # components/udhari-receipt-modal.tsx (239 ln thin orchestrator) — Dialog shell, all state/handlers/derived values; assembles:
+│   │       │   │   #   receipt/UdhariReceiptDetails.tsx  (129 ln) — colored header, receipt-info row, amount hero, detail rows, QR block
+│   │       │   │   #   receipt/UdhariReceiptFooter.tsx    (48 ln) — business contact (name/address/phone/website) + footer bar
+│   │       │   │   #   receipt/UdhariReceiptActions.tsx   (48 ln) — Print/PDF/WhatsApp/Share action panel; WhatsAppIcon SVG lives here
 │   │       │   ├── services.tsx            # Service catalog
 │   │       │   ├── reports.tsx             # Command Center: thin page; delegates to DesktopReports / MobileReports
 │   │       │   │   # components/reports/:

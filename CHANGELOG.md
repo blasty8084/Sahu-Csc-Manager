@@ -9,6 +9,7 @@
 
 ## Table of Contents
 
+0. [Refactor — UdhariReceiptModal split into focused receipt sub-components (July 20, 2026)](#0-refactor--udhariReceiptmodal-split-into-focused-receipt-sub-components-july-20-2026)
 0. [Refactor — AepsDepositForm split into focused sub-components + hook (July 20, 2026)](#0-refactor--aepsdepositform-split-into-focused-sub-components--hook-july-20-2026)
 0. [Refactor — skeletons.tsx split into per-feature skeleton files (July 20, 2026)](#0-refactor--skeletontstsx-split-into-per-feature-skeleton-files-july-20-2026)
 0. [Refactor — DesktopReports split into focused report sub-components (July 20, 2026)](#0-refactor--desktopreports-split-into-focused-report-sub-components-july-20-2026)
@@ -36,6 +37,22 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — UdhariReceiptModal split into focused receipt sub-components (July 20, 2026)
+
+**Zero behaviour change — single import site (`pages/udhari-customer.tsx`) unchanged; `UdhariReceiptModal` and `UdhariEntryReceipt` still exported from `@/components/udhari-receipt-modal`.**
+
+`components/udhari-receipt-modal.tsx` (418 lines) reduced to **239 lines** by extracting three focused files into `components/receipt/`.
+
+| New file | Lines | Role |
+|---|---|---|
+| `receipt/UdhariReceiptDetails.tsx` | 129 | Colored gradient header, receipt-info row, amount hero typography, detail-rows card, QR block |
+| `receipt/UdhariReceiptFooter.tsx` |  48 | Business contact block (name, address, phone, website) + "Computer generated receipt" footer bar |
+| `receipt/UdhariReceiptActions.tsx` |  48 | Print / PDF / WhatsApp / Share 4-button action panel; `WhatsAppIcon` SVG moved here |
+
+Orchestrator keeps: all state (`generatingPdf`, `sendingWa`), all derived values (colors, labels, dates, `qrValue`), `generatePdfBlob`, and all four handlers (`handlePrint`, `handleDownloadPdf`, `handleWhatsApp`, `handleShare`). TypeScript clean.
 
 ---
 
