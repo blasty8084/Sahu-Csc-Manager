@@ -9,6 +9,7 @@
 
 ## Table of Contents
 
+0. [Refactor — UserTable split into focused user row + badge sub-components (July 20, 2026)](#0-refactor--usertable-split-into-focused-user-row--badge-sub-components-july-20-2026)
 0. [Refactor — AepsReceiptModal split into focused receipt sub-components (July 20, 2026)](#0-refactor--aepsreceiptmodal-split-into-focused-receipt-sub-components-july-20-2026)
 0. [Refactor — TwoFactorStep split into focused 2FA sub-components + hook (July 20, 2026)](#0-refactor--twofactorstep-split-into-focused-2fa-sub-components--hook-july-20-2026)
 0. [Refactor — ForgotPasswordPanel split into focused auth step sub-components (July 20, 2026)](#0-refactor--forgotpasswordpanel-split-into-focused-auth-step-sub-components-july-20-2026)
@@ -40,6 +41,23 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — UserTable split into focused user row + badge sub-components (July 20, 2026)
+
+**Zero behaviour change — single import site (`pages/users.tsx`) still imports `UserTable` from `@/components/users/UserTable`; export unchanged.**
+
+`components/users/UserTable.tsx` (249 lines) reduced to **131 lines** by extracting four focused files.
+
+| New file | Lines | Role |
+|---|---|---|
+| `users/UserRow.tsx` | 91 | `UserRowMobile` (mobile card — avatar, name, role, status, contact, joined) + `UserRowDesktop` (desktop `<tr>` — all 7 columns); both compose the three sub-components below |
+| `users/UserRoleBadge.tsx` | 13 | Colored role `<span>` (admin / operator / user) via `ROLE_COLORS` |
+| `users/UserStatusBadge.tsx` | 13 | Active / Inactive `<Badge>` |
+| `users/UserActionMenu.tsx` | 66 | Link2 / KeyRound / Pencil / Trash2 icon-button cluster; `mobile` prop switches between `h-8`/icon-13 (card) and `h-7`/icon-12 (table) sizing |
+
+Orchestrator keeps: `UserTableProps` interface, loading skeleton, empty-state JSX (search / pending / generic), pending-tab delegation to `UserTablePending`, bulk-action bar, and the mobile + desktop container shells that map over `displayedUsers` via `UserRowMobile` / `UserRowDesktop`. TypeScript clean.
 
 ---
 

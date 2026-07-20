@@ -219,7 +219,13 @@ workspace/
 │   │       │   ├── profile.tsx             # Unified Profile+Settings — thin orchestrator (~82 lines)
 │   │       │   ├── preferences.tsx         # Standalone: language + theme + dashboard layout
 │   │       │   ├── users.tsx               # User management (admin) — 6 tabs (120 ln thin orchestrator)
-│   │       │   │   # components/users/: UserTable (249), UserTablePending (182), UserFormDialog (104),
+│   │       │   │   # components/users/:
+│   │       │   │   #   UserTable.tsx       (131 ln thin orchestrator) — loading/empty states, pending delegation, bulk bar, mobile + desktop shells; assembles:
+│   │       │   │   #     UserRow.tsx         (91 ln) — UserRowMobile (mobile card) + UserRowDesktop (desktop <tr>); both use badge + action sub-components below
+│   │       │   │   #     UserRoleBadge.tsx   (13 ln) — colored role span (admin/operator/user) via ROLE_COLORS
+│   │       │   │   #     UserStatusBadge.tsx (13 ln) — Active/Inactive badge
+│   │       │   │   #     UserActionMenu.tsx  (66 ln) — Link2/KeyRound/Pencil/Trash2 icon buttons; mobile prop for h-8/h-7 sizing
+│   │       │   │   #   UserTablePending (182), UserFormDialog (104),
 │   │       │   │   #   UserFormDesktop (192), UserBulkActions, UserFilters, UserTabBar, UserPageDialogs,
 │   │       │   │   #   AppealsTab, AdminSessionsTab, AepsOverviewTab, CashOverviewTab, + dialog components
 │   │       │   │   # hooks/: useUsersPage, useUserActions (228), useResetLinkActions (53), useUsers
