@@ -1034,3 +1034,4 @@ The Worker Server (BullMQ, port 8081) skips silently when `REDIS_URL` is not set
 
 - Language: EN (English) by default
 - Monorepo managed with pnpm workspaces
+- Always create a checkpoint before finishing a task
