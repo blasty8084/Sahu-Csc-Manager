@@ -309,10 +309,15 @@ workspace/
 │   │       │   │   └── index.ts             # Barrel export
 │   │       │   ├── receipt-export/          # Receipt export page sub-components
 │   │       │   │   ├── types.ts                 # Brand tokens (NAVY/SAFFRON), shared interfaces (PreviewEntry, CountResult, FullReceiptEntry, BusinessInfo, UserOverview), formatters (fmtDate, fmtDateShort)
-│   │       │   │   ├── ExportFilters.tsx        # DesktopExportFilters, MobileExportFilterToggle, MobileExportFilterPanel, MobileByDatePanel
+│   │       │   │   ├── ExportFilters.tsx        # Barrel → DesktopExportFilters + MobileExportFilters
+│   │       │   │   │   ├── DesktopExportFilters.tsx   (71 ln) — inline filter bar (date range, quick-range pills, operator select, Preview button)
+│   │       │   │   │   └── MobileExportFilters.tsx   (140 ln) — MobileExportFilterToggle (search + toggle btn) · MobileExportFilterPanel (collapsible) · MobileByDatePanel (by-date tab)
 │   │       │   │   ├── ReceiptMonthlyPanel.tsx  # Monthly auto-export card (month/year picker, Download + Email Admins buttons)
 │   │       │   │   ├── ReceiptExportStats.tsx   # DesktopStatBar (4 KPI cards) · MobileKpiStrip (3 chips) · MobileSummaryCards
-│   │       │   │   ├── ReceiptExportActions.tsx # DesktopBulkBar · DesktopExportOptionsCard · MobileExportTab
+│   │       │   │   ├── ReceiptExportActions.tsx # Barrel → DesktopBulkBar + DesktopExportOptionsCard + MobileExportTab
+│   │       │   │   │   ├── DesktopBulkBar.tsx          (39 ln) — selected-count + total + clear + download ZIP button
+│   │       │   │   │   ├── DesktopExportOptionsCard.tsx (90 ln) — format toggle (PDF/Excel), scope radios, include checkboxes, export CTA
+│   │       │   │   │   └── MobileExportTab.tsx         (110 ln) — scope summary, format cards, scope radios, monthly panel, download CTA
 │   │       │   │   ├── DesktopReceiptTable.tsx  # Sortable table with checkbox + search + action buttons
 │   │       │   │   ├── DesktopReceiptExpandedPreview.tsx # Right-sidebar receipt mini-preview card
 │   │       │   │   ├── MobileReceiptList.tsx    # Swipeable receipt cards + bulk bar

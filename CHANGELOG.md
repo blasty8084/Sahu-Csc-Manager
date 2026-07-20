@@ -9,6 +9,7 @@
 
 ## Table of Contents
 
+0. [Refactor — receipt-export ReceiptExportActions + ExportFilters split into individual component files (July 20, 2026)](#0-refactor--receipt-export-receiptexportactions--exportfilters-split-into-individual-component-files-july-20-2026)
 0. [Refactor — UserTable split into focused user row + badge sub-components (July 20, 2026)](#0-refactor--usertable-split-into-focused-user-row--badge-sub-components-july-20-2026)
 0. [Refactor — AepsReceiptModal split into focused receipt sub-components (July 20, 2026)](#0-refactor--aepsreceiptmodal-split-into-focused-receipt-sub-components-july-20-2026)
 0. [Refactor — TwoFactorStep split into focused 2FA sub-components + hook (July 20, 2026)](#0-refactor--twofactorstep-split-into-focused-2fa-sub-components--hook-july-20-2026)
@@ -41,6 +42,24 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — receipt-export ReceiptExportActions + ExportFilters split into individual component files (July 20, 2026)
+
+**Zero behaviour change — `DesktopExportLayout.tsx` and `MobileExportLayout.tsx` import sites unchanged; both original files converted to barrel re-exports.**
+
+`ReceiptExportActions.tsx` (249 lines) and `ExportFilters.tsx` (219 lines) each held multiple unrelated component exports. Split into five focused files:
+
+| New file | Lines | Role |
+|---|---|---|
+| `DesktopBulkBar.tsx` | 39 | Selected-count chip + total amount + clear + Download ZIP button |
+| `DesktopExportOptionsCard.tsx` | 90 | Format toggle (PDF/Excel), scope radios, include checkboxes, export CTA |
+| `MobileExportTab.tsx` | 110 | Scope summary card, format cards, scope radios, monthly panel, download CTA |
+| `DesktopExportFilters.tsx` | 71 | Inline filter bar — date range inputs, quick-range pills, operator select, Preview button |
+| `MobileExportFilters.tsx` | 140 | `MobileExportFilterToggle` (search + toggle btn) · `MobileExportFilterPanel` (collapsible receipts-tab panel) · `MobileByDatePanel` (by-date tab panel) |
+
+`ReceiptExportActions.tsx` and `ExportFilters.tsx` each reduced to a 3–4 line barrel. TypeScript clean.
 
 ---
 
