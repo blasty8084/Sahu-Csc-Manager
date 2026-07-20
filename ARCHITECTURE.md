@@ -183,6 +183,13 @@ workspace/
 │   │       │   │   # pages/aeps/DailyTab.tsx (87 ln orchestrator) — hook: hooks/useDailyTab.ts (249)
 │   │       │   │   #   components/aeps/daily/: DailyTabEntryRow (68), DailyTabSummaryCard (43),
 │   │       │   │   #     DailyTabEntryList (68), DailyTabForm (112)
+│   │       │   │   # components/aeps/AepsDepositForm.tsx (204 ln thin orchestrator) — desktop 3-step panel; assembles:
+│   │       │   │   #   hooks/useAepsDeposit.ts          (43 ln) — all derived values + validation flags
+│   │       │   │   #   aeps/DepositLeftPanel.tsx         (83 ln) — gradient info panel (branding, session stats, security badge)
+│   │       │   │   #   aeps/DepositAmountField.tsx       (41 ln) — amount hero input + quick-denomination chips
+│   │       │   │   #   aeps/DepositCustomerFields.tsx    (81 ln) — customer autocomplete + Aadhaar input + digit progress bar
+│   │       │   │   #   aeps/DepositSummaryRow.tsx        (65 ln) — confirm-step summary card (amount hero + detail rows + caution)
+│   │       │   │   #   aeps/DepositSuccessStep.tsx       (64 ln) — success panel (checkmark, recorded summary, New/Done buttons)
 │   │       │   ├── udhari.tsx              # Udhari customer list · search/sort · To Collect/To Pay
 │   │       │   ├── udhari-customer.tsx     # Per-customer ledger · WhatsApp · PDF · desktop split
 │   │       │   ├── services.tsx            # Service catalog

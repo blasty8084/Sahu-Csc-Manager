@@ -9,6 +9,7 @@
 
 ## Table of Contents
 
+0. [Refactor — AepsDepositForm split into focused sub-components + hook (July 20, 2026)](#0-refactor--aepsdepositform-split-into-focused-sub-components--hook-july-20-2026)
 0. [Refactor — skeletons.tsx split into per-feature skeleton files (July 20, 2026)](#0-refactor--skeletontstsx-split-into-per-feature-skeleton-files-july-20-2026)
 0. [Refactor — DesktopReports split into focused report sub-components (July 20, 2026)](#0-refactor--desktopreports-split-into-focused-report-sub-components-july-20-2026)
 0. [Refactor — LoginCredentialsStep split into focused auth sub-components (July 20, 2026)](#0-refactor--logincredentialsstep-split-into-focused-auth-sub-components-july-20-2026)
@@ -35,6 +36,25 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — AepsDepositForm split into focused sub-components + hook (July 20, 2026)
+
+**Zero behaviour change — one import site (`components/aeps/daily/DailyTabForm.tsx`) still imports `AepsDepositForm` from the same path. `AepsDepositFormProps` interface unchanged.**
+
+`components/aeps/AepsDepositForm.tsx` (420 lines) reduced to **204 lines** by extracting six focused files.
+
+| New file | Lines | Role |
+|---|---|---|
+| `hooks/useAepsDeposit.ts` | 43 | Derives all computed values + validation flags (`amtNum`, `isWd`, accent colours, `isFormValid`, `displayAadhaar`, etc.) from props |
+| `aeps/DepositAmountField.tsx` | 41 | Amount hero card — large number input + quick-denomination chip buttons |
+| `aeps/DepositCustomerFields.tsx` | 81 | Customer name autocomplete (with frequent-customer chips) + Aadhaar input with masking, eye toggle, and 12-digit progress bar |
+| `aeps/DepositSummaryRow.tsx` | 65 | Before-submit confirm step — amount hero, icon-row detail card (Customer/Aadhaar/Bank/Account/Note), caution banner |
+| `aeps/DepositLeftPanel.tsx` | 83 | Left gradient info panel — branding, transaction title/subtitle, session balance stats, security badge |
+| `aeps/DepositSuccessStep.tsx` | 64 | Post-save success panel — checkmark, recorded amount, detail rows, New/Done buttons |
+
+`DepositLeftPanel` and `DepositSuccessStep` were added beyond the originally requested four to keep `AepsDepositForm.tsx` under the 250-line rule. TypeScript clean.
 
 ---
 
