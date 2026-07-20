@@ -172,6 +172,11 @@ workspace/
 │   │       │   │   #   DashboardStatCards (128, MobileStatCards+DesktopStatCards), DashboardWeeklyBar (60),
 │   │       │   │   #   DashboardRecentActivity (91), DashboardQuickActions (55), UdhariSummaryCard (49)
 │   │       │   ├── ledger.tsx              # Transactions · offline queue · desktop split form
+│   │       │   │   # components/ledger/: LedgerTable (125 barrel), LedgerRow (245 — tabs header,
+│   │       │   │   #   sync banners, DesktopLedgerRow, DesktopLedgerRowEdit, MobileLedgerCard),
+│   │       │   │   #   LedgerRowActions (192 — shared icon buttons, DesktopReceiptsPanel, MobileReceiptsList),
+│   │       │   │   #   LedgerPagination (99 — TableFooterPagination, MobilePagination),
+│   │       │   │   #   LedgerEmptyState (25 — DesktopLedgerEmptyState)
 │   │       │   ├── aeps.tsx                # AePS daily session · withdrawal/deposit · desktop split
 │   │       │   │   # pages/aeps/DailyTab.tsx (87 ln orchestrator) — hook: hooks/useDailyTab.ts (249)
 │   │       │   │   #   components/aeps/daily/: DailyTabEntryRow (68), DailyTabSummaryCard (43),
