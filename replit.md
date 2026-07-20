@@ -35,7 +35,7 @@
 
 ## Fixes & Refactors — July 20, 2026
 
-- **LedgerTable component split** — `components/ledger/LedgerTable.tsx` reduced from 606 → 125 lines by extracting into four focused files in `components/ledger/`: `LedgerRow.tsx` (245 ln — `TableTabsHeader`, `PendingSyncBanners`, `DesktopLedgerRow`, `DesktopLedgerRowEdit`, `MobileLedgerCard`), `LedgerRowActions.tsx` (192 ln — `LedgerRowActions` shared action-button component, `DesktopReceiptsPanel`, `MobileReceiptsList`), `LedgerPagination.tsx` (99 ln — `TableFooterPagination`, `MobilePagination`), `LedgerEmptyState.tsx` (25 ln — `DesktopLedgerEmptyState`). `LedgerTable.tsx` kept as thin barrel re-exporting all original names so `pages/ledger.tsx` import site is unchanged. All files ≤ 245 lines. TypeScript clean.
+- **LedgerTable component split** — `components/ledger/LedgerTable.tsx` reduced from 606 → 125 lines by extracting into six focused files in `components/ledger/`: `LedgerRow.tsx` (166 ln — `TableTabsHeader`, `PendingSyncBanners`, `DesktopLedgerRow`, `MobileLedgerCard`), `LedgerRowEdit.tsx` (79 ln — `DesktopLedgerRowEdit`), `LedgerRowActions.tsx` (38 ln — `LedgerRowActions` shared icon-buttons), `LedgerReceiptsPanel.tsx` (86 ln — `DesktopReceiptsPanel`), `LedgerMobileReceipts.tsx` (74 ln — `MobileReceiptsList`), `LedgerPagination.tsx` (99 ln — `TableFooterPagination`, `MobilePagination`), `LedgerEmptyState.tsx` (25 ln — `DesktopLedgerEmptyState`). All barrel re-exports preserved; `pages/ledger.tsx` import unchanged. All files ≤ 166 lines. TypeScript clean.
 
 ## Fixes & Refactors — July 18, 2026
 

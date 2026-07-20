@@ -43,12 +43,15 @@
 
 | New file | Lines | Role |
 |---|---|---|
-| `ledger/LedgerRow.tsx` | 245 | `TableTabsHeader` (tabs row + status badges), `PendingSyncBanners` (offline/bg-sync banners), `DesktopLedgerRow` (single normal desktop row), `DesktopLedgerRowEdit` (inline-editing row), `MobileLedgerCard` (mobile date-grouped card) |
-| `ledger/LedgerRowActions.tsx` | 192 | `LedgerRowActions` (shared receipt/edit/delete icon buttons; `size="md"` for desktop, `size="sm"` for mobile), `DesktopReceiptsPanel` (receipt history tab with search + table), `MobileReceiptsList` (mobile receipt cards with View/PDF buttons) |
+| `ledger/LedgerRow.tsx` | 166 | `TableTabsHeader` (tabs row + status badges), `PendingSyncBanners` (offline/bg-sync banners), `DesktopLedgerRow` (single normal desktop row), `MobileLedgerCard` (mobile date-grouped card) |
+| `ledger/LedgerRowEdit.tsx` | 79 | `DesktopLedgerRowEdit` (inline-editing row with date/customer/service/Cr-Dr/amount/note inputs + Save/Cancel buttons) |
+| `ledger/LedgerRowActions.tsx` | 38 | `LedgerRowActions` (shared receipt/edit/delete icon buttons; `size="md"` for desktop, `size="sm"` for mobile) |
+| `ledger/LedgerReceiptsPanel.tsx` | 86 | `DesktopReceiptsPanel` (receipt history tab with search input + sortable table + View/PDF buttons) |
+| `ledger/LedgerMobileReceipts.tsx` | 74 | `MobileReceiptsList` (mobile receipt cards with search input + View/PDF buttons) |
 | `ledger/LedgerPagination.tsx` | 99 | `TableFooterPagination` (desktop page summary + number buttons + security footer), `MobilePagination` (Prev/Next mobile bar) |
 | `ledger/LedgerEmptyState.tsx` | 25 | `DesktopLedgerEmptyState` (IndianRupee icon + "No transactions found" + Add Entry button) |
 
-**What stays in `LedgerTable.tsx`:** `DesktopTransactionsTable` (table shell + thead + skeleton rows + calls to extracted row/empty-state components) and `MobileTransactionsList` (date-group wrapper + calls `MobileLedgerCard`). All eight original export names re-exported so `pages/ledger.tsx` import is unchanged. TypeScript clean.
+**What stays in `LedgerTable.tsx`:** `DesktopTransactionsTable` (table shell + thead + skeleton rows + calls to extracted row/empty-state components) and `MobileTransactionsList` (date-group wrapper + calls `MobileLedgerCard`). All barrel re-exports chain through so `pages/ledger.tsx` import is unchanged. All files ≤ 166 lines. TypeScript clean.
 
 ---
 
