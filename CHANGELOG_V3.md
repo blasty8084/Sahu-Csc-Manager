@@ -37,6 +37,51 @@
 
 ---
 
+## 0. Refactor — receipt-modal, ForgotPasswordPanel, TwoFactorStep split (July 20, 2026)
+
+**Zero behaviour change — all existing import sites unchanged.**
+
+### receipt-modal.tsx (443 ln → 84 ln)
+
+| New file | Lines | Role |
+|---|---|---|
+| `receipt/receiptTypes.ts` | 29 | `ReceiptEntry` + `ReceiptModalProps` type exports |
+| `receipt/ReceiptCard.tsx` | 142 | Printable receipt body — navy header, amount hero, detail rows, QR code, business contact, footer. Receives `containerRef` for PDF capture. |
+| `receipt/ReceiptActionBar.tsx` | 34 | Bottom Print / PDF / WhatsApp / Share action bar. |
+| `receipt/useReceiptActions.ts` | 136 | `generatePdfBlob`, `handlePrint`, `handleDownloadPdf`, `handleWhatsApp`, `handleShare` + loading flags. All PDF/share logic in one hook. |
+
+`receipt-modal.tsx` reduced to an 84-line orchestrator: creates `printRef`, derives `receiptNumber`/`verifyUrl`, runs auto-action `useEffect`, wraps `ReceiptCard` + `ReceiptActionBar` in the Dialog.
+
+### ForgotPasswordPanel.tsx (404 ln → 207 ln)
+
+Four step sub-components extracted into `components/auth/forgot/`:
+
+| New file | Lines | Role |
+|---|---|---|
+| `ForgotIdentifierStep.tsx` | 56 | Step 1 — username/email/mobile input + error display with register link. |
+| `ForgotOtpStep.tsx` | 83 | Step 2 — 6-box OTP entry, paste-auto-advance, resend timer, rate-limit panel. |
+| `ForgotPasswordStep.tsx` | 87 | Step 3 — new password + confirm fields, strength rule dots, match indicator, submit. |
+| `ForgotSuccessStep.tsx` | 32 | Step 4 — animated success checkmark, countdown auto-redirect, back button. |
+
+`ForgotPasswordPanel.tsx` reduced to a 207-line orchestrator holding all state, API handlers, timer refs, and thin step-selector render.
+
+### TwoFactorStep.tsx (395 ln → 193 ln)
+
+Four sub-components extracted into `components/auth/twofa/`:
+
+| New file | Lines | Role |
+|---|---|---|
+| `TwoFactorMethodPicker.tsx` | 64 | Phase 1 — Email OTP + Authenticator App selection cards with loading spinners. |
+| `TotpEnrollmentCard.tsx` | 56 | QR code + manual key fallback for first-time TOTP setup at login. |
+| `TwoFactorBackupCodesScreen.tsx` | 41 | Post-enrollment backup codes grid with copy-per-code and continue button. |
+| `TwoFactorCodeEntry.tsx` | 120 | Phase 2 — code input, OTP resend, trust-device checkbox, backup-code toggle, submit. Renders `TotpEnrollmentCard` internally when enrolling. |
+
+`TwoFactorStep.tsx` reduced to a 193-line orchestrator: all state/handlers + thin phase-switch render.
+
+TypeScript clean on all new files.
+
+---
+
 ## 0. Refactor — LoginCredentialsStep + DesktopReports split into focused components (July 20, 2026)
 
 **Zero behaviour change — all existing import sites unchanged.**
