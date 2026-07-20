@@ -228,7 +228,11 @@ workspace/
 │   │       │   ├── sync-status-bar.tsx      # 🟢/🟡/🔴 global sync status
 │   │       │   ├── pwa-install-banner.tsx   # PWA install prompt
 │   │       │   ├── app-logo.tsx             # AppLogo (sidebar) + LoginLogo (auth); uses sahu-logo.png
-│   │       │   ├── receipt-modal.tsx        # Receipt: QR · Print · PDF · Web Share API
+│   │       │   ├── receipt-modal.tsx        # Receipt modal — thin orchestrator (~137 ln); assembles:
+│   │       │   │   # receipt/ReceiptHeader.tsx          (52 ln) — navy gradient header + receipt-number/date row
+│   │       │   │   # receipt/ReceiptLineItems.tsx        (77 ln) — amount hero + verification badge + detail-rows card
+│   │       │   │   # receipt/ReceiptQrCode.tsx           (79 ln) — QR verify block + business contact + footer
+│   │       │   │   # receipt/ReceiptDownloadButton.tsx  (243 ln) — generatePdfBlob, all handlers (print/PDF/WA/share), auto-action useEffect, 4-button action panel
 │   │       │   ├── language-switcher.tsx    # EN / हि / ଓ toggle
 │   │       │   ├── theme-provider.tsx
 │   │       │   ├── auth/                    # Auth sub-components (login + register)

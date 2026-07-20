@@ -37,6 +37,23 @@
 
 ---
 
+## 0. Refactor — receipt-modal.tsx split into focused receipt/ sub-components (July 20, 2026)
+
+**Zero behaviour change — import sites unchanged (`ledger.tsx`, `receipt-export.tsx` both still import `ReceiptModal` from `@/components/receipt-modal`).**
+
+`components/receipt-modal.tsx` (443 lines) reduced to **137 lines** by extracting four focused files into `components/receipt/`.
+
+| New file | Lines | Role |
+|---|---|---|
+| `receipt/ReceiptHeader.tsx` | 52 | Navy gradient brand header (SAHU CSC logo, "Official E-Receipt", noise/circle decoration, gold accent stripe) + receipt-number / date row |
+| `receipt/ReceiptLineItems.tsx` | 77 | Amount hero typography (prefix + whole + decimal, ShieldCheck watermark) + crypto/verified badge + detail-rows card (Customer, Service, Issued, Operator, Note) |
+| `receipt/ReceiptQrCode.tsx` | 79 | QR code + "Scan to open & download" hint + business contact block (address, mobile, website) + footer |
+| `receipt/ReceiptDownloadButton.tsx` | 243 | `generatePdfBlob` (html2canvas + jsPDF) · `handlePrint` · `handleDownloadPdf` · `handleWhatsApp` · `handleShare` · auto-action `useEffect` · four-button action panel |
+
+`generatingPdf`, `sendingWa` state and `useToast` migrated into `ReceiptDownloadButton`. `printRef` created in parent and passed down. Prop type `RefObject<HTMLDivElement | null>` used (React 19 ref shape). TypeScript clean.
+
+---
+
 ## 0. Refactor — offline-db.ts split into focused offline-db/ modules (July 20, 2026)
 
 **Zero behaviour change — all exports and import sites unchanged.**
