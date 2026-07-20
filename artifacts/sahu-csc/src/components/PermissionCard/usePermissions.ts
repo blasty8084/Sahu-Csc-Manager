@@ -17,6 +17,41 @@ export function usePermissions() {
   const [notifStatus, setNotifStatus] = useState<PermStatus>("idle");
   const [fileStatus, setFileStatus] = useState<PermStatus>("idle");
 
+  // ── Pre-check: read current browser permission state WITHOUT requesting ──
+  // Call this on mount. If a permission is already granted or denied in the
+  // browser, reflect that immediately so the user doesn't need to tap "Allow"
+  // for something already decided, and doesn't see a confusing instant-denial.
+  const initializeFromBrowser = useCallback(async () => {
+    // Location
+    if (typeof navigator !== "undefined" && "permissions" in navigator) {
+      try {
+        const locPerm = await navigator.permissions.query({ name: "geolocation" });
+        if (locPerm.state === "granted") {
+          setLocationStatus("granted");
+          localStorage.setItem("perm_location", "granted");
+        } else if (locPerm.state === "denied") {
+          setLocationStatus("denied");
+          localStorage.setItem("perm_location", "denied");
+        }
+        // "prompt" → keep "idle" so the Allow button shows
+      } catch { /* permissions API not supported — keep idle */ }
+    }
+
+    // Notifications
+    if (typeof Notification !== "undefined") {
+      if (Notification.permission === "granted") {
+        setNotifStatus("granted");
+        localStorage.setItem("perm_notifications", "granted");
+      } else if (Notification.permission === "denied") {
+        setNotifStatus("denied");
+        localStorage.setItem("perm_notifications", "denied");
+      }
+      // "default" → keep "idle"
+    }
+
+    // File Manager has no queryable API — keep "idle"
+  }, []);
+
   const requestLocation = useCallback(async (): Promise<PermStatus> => {
     setLocationStatus("requesting");
 
@@ -121,16 +156,17 @@ export function usePermissions() {
 
     // Fallback path: classic hidden <input type="file"> for browsers
     // without the File System Access API (Safari, Firefox, most mobile).
-    // No reliable cancel signal exists here, so any interaction settles
-    // as "granted" — same limitation as before, just isolated to this branch.
+    // Position it at opacity:0 in the top-left corner (NOT off-screen at
+    // -1000px) — Android Chrome blocks programmatic .click() on inputs
+    // that are positioned outside the viewport.
     return new Promise<PermStatus>((resolve) => {
       const input = document.createElement("input");
       input.type = "file";
       input.accept = "image/*,application/pdf,.doc,.docx,.xls,.xlsx,*/*";
       input.multiple = true;
-      input.style.position = "fixed";
-      input.style.top = "-1000px";
-      input.style.left = "-1000px";
+      // Keep within viewport so Android Chrome doesn't block .click()
+      input.style.cssText =
+        "position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none;z-index:-1;";
 
       let settled = false;
       let fallbackTimer: number;
@@ -161,6 +197,7 @@ export function usePermissions() {
     requestLocation,
     requestNotifications,
     requestFileManager,
+    initializeFromBrowser,
     setLocationStatus,
     setNotifStatus,
     setFileStatus,

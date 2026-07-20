@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Bell, FolderOpen, Loader2, MapPin, ShieldCheck, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
@@ -53,9 +53,17 @@ export function PermissionCard() {
     requestLocation,
     requestNotifications,
     requestFileManager,
+    initializeFromBrowser,
   } = usePermissions();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+
+  // On mount: read current browser permission state without requesting anything.
+  // This shows already-granted slots as ✓ and already-denied slots as "Denied"
+  // immediately, so the user isn't confused when tapping Allow yields no OS dialog.
+  useEffect(() => {
+    void initializeFromBrowser();
+  }, [initializeFromBrowser]);
 
   const skipNotifications = isIOSSafari();
   const canContinue =

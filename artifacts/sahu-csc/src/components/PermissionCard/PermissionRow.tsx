@@ -1,4 +1,4 @@
-import { Check, Loader2, X } from "lucide-react";
+import { Check, ExternalLink, Loader2, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { PermStatus } from "./usePermissions";
 
@@ -42,7 +42,7 @@ export function PermissionRow({
           <button
             type="button"
             onClick={onAllow}
-            className="text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors"
+            className="text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors active:opacity-70"
             style={{ borderColor: "#1E293B", color: "#1E293B" }}
           >
             Allow
@@ -53,20 +53,32 @@ export function PermissionRow({
             <Loader2 className="w-3.5 h-3.5 animate-spin" /> Requesting...
           </span>
         )}
-        {status === "granted" && (
+        {(status === "granted" || status === "skipped") && (
           <span className="flex items-center gap-1 text-xs font-medium" style={{ color: "#16A34A" }}>
             <Check className="w-3.5 h-3.5" /> Allowed
           </span>
         )}
         {status === "denied" && (
-          <span className="flex items-center gap-1 text-xs font-medium text-red-500">
-            <X className="w-3.5 h-3.5" /> Denied
-          </span>
-        )}
-        {status === "skipped" && (
-          <span className="flex items-center gap-1 text-xs font-medium" style={{ color: "#16A34A" }}>
-            <Check className="w-3.5 h-3.5" /> Allowed
-          </span>
+          <div className="flex flex-col items-end gap-0.5">
+            <span className="flex items-center gap-1 text-xs font-medium text-red-500">
+              <X className="w-3.5 h-3.5" /> Denied
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                // Open browser settings — best-effort, works on Android Chrome
+                // and some desktop browsers. Silently ignored elsewhere.
+                try {
+                  window.open("chrome://settings/content", "_blank");
+                } catch { /* ignore */ }
+              }}
+              className="flex items-center gap-0.5 text-[10px] font-medium text-gray-400 underline-offset-2 hover:text-gray-600 active:opacity-70"
+              style={{ textDecoration: "underline" }}
+            >
+              <ExternalLink className="w-2.5 h-2.5" />
+              Enable in Settings
+            </button>
+          </div>
         )}
       </div>
     </div>
