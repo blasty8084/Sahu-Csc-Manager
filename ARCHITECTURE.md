@@ -340,6 +340,11 @@ workspace/
 │   │       │   │   └── ProfileMobileLayout.tsx     # Mobile nav list + drill-in sections
 │   │       │   └── ui/                      # shadcn/ui components
 │   │       ├── hooks/
+│   │       │   ├── backupTypes.ts           # Shared types (TableInfo, ImportStep, ScheduleConfig), constants (DAYS, DEFAULT_SCHEDULE), formatters (formatSize, relativeTime, parseBackupMeta)
+│   │       │   ├── useBackups.ts            # Barrel + composite hook — re-exports sub-hooks + types; useBackups() spreads all three below
+│   │       │   │   ├── useBackupList.ts     (87 ln) — list/create/delete backups; deleteId dialog state; totalSize + chartData derived values
+│   │       │   │   ├── useBackupSchedule.ts (61 ln) — fetch/save schedule config; toggleDay; nextRunLabel derived value
+│   │       │   │   └── useBackupRestore.ts (140 ln) — restore-from-record dialog + handler; full import workflow (analyze → select tables → selective-import → reset)
 │   │       │   ├── use-auth.tsx             # AuthContext + offline session cache (IndexedDB)
 │   │       │   ├── use-network-status.ts    # Online/offline/slow + 30s latency probe
 │   │       │   ├── use-pwa.ts               # Install prompt · badge · periodic sync · share · wake lock

@@ -9,6 +9,7 @@
 
 ## Table of Contents
 
+0. [Refactor — useBackups hook split into focused sub-hooks + barrel (July 20, 2026)](#0-refactor--usebackups-hook-split-into-focused-sub-hooks--barrel-july-20-2026)
 0. [Refactor — receipt-export ReceiptExportActions + ExportFilters split into individual component files (July 20, 2026)](#0-refactor--receipt-export-receiptexportactions--exportfilters-split-into-individual-component-files-july-20-2026)
 0. [Refactor — UserTable split into focused user row + badge sub-components (July 20, 2026)](#0-refactor--usertable-split-into-focused-user-row--badge-sub-components-july-20-2026)
 0. [Refactor — AepsReceiptModal split into focused receipt sub-components (July 20, 2026)](#0-refactor--aepsreceiptmodal-split-into-focused-receipt-sub-components-july-20-2026)
@@ -42,6 +43,23 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — useBackups hook split into focused sub-hooks + barrel (July 20, 2026)
+
+**Zero behaviour change — single import site (`pages/backups.tsx`) still imports `useBackups` from `@/hooks/useBackups`; destructured return shape identical.**
+
+`hooks/useBackups.ts` (330 lines) split into four focused files:
+
+| New file | Lines | Role |
+|---|---|---|
+| `hooks/backupTypes.ts` | 50 | Shared types (`TableInfo`, `ImportStep`, `ScheduleConfig`), constants (`DAYS`, `DEFAULT_SCHEDULE`), pure formatters (`formatSize`, `relativeTime`, `parseBackupMeta`) |
+| `hooks/useBackupList.ts` | 87 | `useListBackups` + `useCreateBackup`; delete-dialog state; `handleCreate`, `handleDelete`, `onDeleteClick`; `totalSize` + `chartData` derived values |
+| `hooks/useBackupSchedule.ts` | 61 | Schedule fetch (`useEffect`) + save; `toggleDay`; `nextRunLabel` derived value |
+| `hooks/useBackupRestore.ts` | 140 | Restore-from-record dialog + `handleRestore`; full import workflow — `handleFileSelect` → `handleAnalyze` → `toggleTable` → `handleSelectiveImport` → `resetImport` |
+
+`hooks/useBackups.ts` reduced to **17 lines**: re-exports `backupTypes.*` + three sub-hooks, then defines the composite `useBackups()` that spreads all three return values into the original flat shape. TypeScript clean.
 
 ---
 
