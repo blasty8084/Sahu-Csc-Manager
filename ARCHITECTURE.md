@@ -230,7 +230,15 @@ workspace/
 │   │       │   │   ├── RegisterDesktopLayout.tsx   # Hero panel + form card split (desktop)
 │   │       │   │   ├── RegisterForm.tsx            # All form state, timers, API calls (~235 lines)
 │   │       │   │   ├── LoginForm.tsx        # Barrel re-export for login sub-components
-│   │       │   │   ├── LoginCredentialsStep.tsx    # Login form with lockout / status panels
+│   │       │   │   ├── LoginCredentialsStep.tsx    # Thin orchestrator (~112 lines); assembles sub-components below
+│   │       │   │   │   ├── UsernameField.tsx        # Identifier input (mobile/username/email)
+│   │       │   │   │   ├── PasswordField.tsx        # Password input + show/hide toggle
+│   │       │   │   │   ├── RememberMeRow.tsx        # Remember-me checkbox + forgot-password link
+│   │       │   │   │   ├── RejectedPanel.tsx        # Registration-declined panel + WhatsApp/email appeal buttons
+│   │       │   │   │   ├── PendingApprovalPanel.tsx # Awaiting-admin-approval panel
+│   │       │   │   │   ├── LockoutPanel.tsx         # Account-locked countdown panel (draining progress bar)
+│   │       │   │   │   └── AttemptCounter.tsx       # Failed-attempt dots + security/lockout-warning badge
+│   │       │   │   ├── BiometricPrompt.tsx          # WebAuthn fingerprint/Face ID (ready; not yet wired into form)
 │   │       │   │   ├── TwoFactorStep.tsx           # 2FA method picker (OTP + TOTP)
 │   │       │   │   ├── OtpRateLimitPanel.tsx       # Shared OTP rate-limit countdown panel
 │   │       │   │   ├── OtpRequestForm.tsx / OtpVerifyForm.tsx

@@ -9,6 +9,8 @@
 
 ## Table of Contents
 
+0. [Refactor — LoginCredentialsStep split into focused auth sub-components (July 20, 2026)](#0-refactor--logincredentialsstep-split-into-focused-auth-sub-components-july-20-2026)
+0. [Optimize — PermissionCard animation performance (July 20, 2026)](#0-optimize--permissioncard-animation-performance-july-20-2026)
 0. [Doc consolidation — single CHANGELOG.md + ARCHITECTURE.md (July 20, 2026)](#0-doc-consolidation--single-changelogmd--architecturemd-july-20-2026)
 0. [Refactor — LedgerTable further split to reduce file sizes (July 20, 2026)](#0-refactor--ledgertable-further-split-to-reduce-file-sizes-july-20-2026)
 0. [Refactor — LedgerTable split into focused components (July 20, 2026)](#0-refactor--ledgertable-split-into-focused-components-july-20-2026)
@@ -31,6 +33,39 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — LoginCredentialsStep split into focused auth sub-components (July 20, 2026)
+
+**Zero behaviour change — all exports and import sites unchanged.**
+
+`components/auth/LoginCredentialsStep.tsx` (511 lines) reduced to **112 lines** by extracting seven focused files plus one new ready-to-wire component.
+
+| New file | Lines | Role |
+|---|---|---|
+| `UsernameField.tsx` | 33 | Identifier input (mobile/username/email) with Smartphone icon |
+| `PasswordField.tsx` | 43 | Password input + show/hide toggle |
+| `RememberMeRow.tsx` | 33 | Remember-me checkbox + forgot-password link |
+| `RejectedPanel.tsx` | 152 | Registration-declined animated panel; owns `fireAppealLog` + WhatsApp/email appeal buttons |
+| `PendingApprovalPanel.tsx` | 62 | Awaiting-admin-approval animated panel |
+| `LockoutPanel.tsx` | 83 | Account-locked countdown panel with draining progress bar |
+| `AttemptCounter.tsx` | 131 | Failed-attempt dots + animated security/lockout-warning badge swap |
+| `BiometricPrompt.tsx` | 99 | WebAuthn fingerprint/Face ID component (ready; not yet wired into form) |
+
+`LoginForm.tsx` barrel comment updated. `login.tsx` and all other import sites unchanged — they all go through the `LoginForm` barrel which still re-exports `LoginFormContent` from `LoginCredentialsStep`. TypeScript clean (`sahu-csc` typecheck passes; pre-existing `mockup-sandbox/SecurityHub.tsx` error unrelated).
+
+---
+
+## 0. Optimize — PermissionCard animation performance (July 20, 2026)
+
+**Zero behaviour change — same rendered output, smoother on mobile.**
+
+- **Removed `backdrop-blur-sm`** from the overlay — the blur filter forces full compositing-layer repaints on every frame and is the primary cause of jank on mid-range Android devices.
+- **Pure CSS transitions on row status badges** — Allow → Requesting → Allowed/Denied now uses `opacity` + `transform` (GPU-composited) instead of React-driven element swaps.
+- **Smooth indigo fill bar** at the top of the card grows 0→100% (`width` CSS transition, 0.5 s ease) as each permission is granted.
+- **Card entry via CSS `@keyframes`** — replaced Framer Motion JS-driven entry with a single `perm-card-in` animation (`translateY + scale`).
+- **Icon badge spring pop** — icon scales up with a spring curve when its permission is granted.
 
 ---
 
