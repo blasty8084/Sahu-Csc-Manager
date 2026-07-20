@@ -233,6 +233,16 @@ workspace/
 │   │       │   │   # receipt/ReceiptLineItems.tsx        (77 ln) — amount hero + verification badge + detail-rows card
 │   │       │   │   # receipt/ReceiptQrCode.tsx           (79 ln) — QR verify block + business contact + footer
 │   │       │   │   # receipt/ReceiptDownloadButton.tsx  (243 ln) — generatePdfBlob, all handlers (print/PDF/WA/share), auto-action useEffect, 4-button action panel
+│   │       │   ├── skeletons/               # Loading-skeleton library — split from skeletons.tsx (432 ln)
+│   │       │   │   ├── Pulse.tsx            #   Internal helper: animated bg-slate-100 pulse div
+│   │       │   │   ├── shared.tsx           #   Misc skeletons: Notifications, Services, Prefs, Sessions, AdminSessions, UsersOverview, Backup×2, Profile×2, AuditLogs (217 ln)
+│   │       │   │   └── index.ts             #   Barrel — re-exports all symbols; "@/components/skeletons" resolves here
+│   │       │   │   # Feature-colocated skeleton files (each imported by index.ts):
+│   │       │   │   # ledger/LedgerSkeleton.tsx     (36 ln) — LedgerSkeleton, LedgerBalanceSkeleton
+│   │       │   │   # aeps/AepsSkeleton.tsx          (40 ln) — AepsSkeleton
+│   │       │   │   # udhari/UdhariSkeleton.tsx      (62 ln) — UdhariListSkeleton, UdhariSummarySkeleton, UdhariCustomerHeaderSkeleton
+│   │       │   │   # reports/ReportsSkeleton.tsx    (24 ln) — ReportsSkeleton
+│   │       │   │   # dashboard/DashboardSkeleton.tsx (54 ln) — DashboardServicesSkeleton, DashboardStatsSkeleton, RecentTxSkeleton
 │   │       │   ├── language-switcher.tsx    # EN / हि / ଓ toggle
 │   │       │   ├── theme-provider.tsx
 │   │       │   ├── auth/                    # Auth sub-components (login + register)

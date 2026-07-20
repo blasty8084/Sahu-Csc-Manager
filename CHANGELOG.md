@@ -9,6 +9,7 @@
 
 ## Table of Contents
 
+0. [Refactor — skeletons.tsx split into per-feature skeleton files (July 20, 2026)](#0-refactor--skeletontstsx-split-into-per-feature-skeleton-files-july-20-2026)
 0. [Refactor — DesktopReports split into focused report sub-components (July 20, 2026)](#0-refactor--desktopreports-split-into-focused-report-sub-components-july-20-2026)
 0. [Refactor — LoginCredentialsStep split into focused auth sub-components (July 20, 2026)](#0-refactor--logincredentialsstep-split-into-focused-auth-sub-components-july-20-2026)
 0. [Optimize — PermissionCard animation performance (July 20, 2026)](#0-optimize--permissioncard-animation-performance-july-20-2026)
@@ -34,6 +35,27 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — skeletons.tsx split into per-feature skeleton files (July 20, 2026)
+
+**Zero behaviour change — all 24 import sites unchanged. `@/components/skeletons` now resolves to `components/skeletons/index.ts` (directory barrel) instead of the deleted monolithic file.**
+
+`components/skeletons.tsx` (432 lines) replaced by a structured directory. The shared `Pulse` helper is extracted once into `skeletons/Pulse.tsx` and imported by every feature file — no duplication.
+
+| New file | Lines | Exports |
+|---|---|---|
+| `skeletons/Pulse.tsx` | 5 | Internal helper only (not re-exported) |
+| `ledger/LedgerSkeleton.tsx` | 36 | `LedgerSkeleton`, `LedgerBalanceSkeleton` |
+| `aeps/AepsSkeleton.tsx` | 40 | `AepsSkeleton` |
+| `udhari/UdhariSkeleton.tsx` | 62 | `UdhariListSkeleton`, `UdhariSummarySkeleton`, `UdhariCustomerHeaderSkeleton` |
+| `reports/ReportsSkeleton.tsx` | 24 | `ReportsSkeleton` |
+| `dashboard/DashboardSkeleton.tsx` | 54 | `DashboardServicesSkeleton`, `DashboardStatsSkeleton`, `RecentTxSkeleton` |
+| `skeletons/shared.tsx` | 217 | `NotificationsSkeleton`, `ServicesSkeleton`, `PreferencesSkeleton`, `SessionsListSkeleton`, `AdminSessionsSkeleton`, `UsersOverviewSkeleton`, `BackupHistorySkeleton`, `BackupScheduleSkeleton`, `ProfileToggleSkeleton`, `ProfilePageSkeleton`, `AuditLogsSkeleton` |
+| `skeletons/index.ts` | 21 | Barrel — re-exports all of the above |
+
+TypeScript clean. All 24 consumer files verified by `pnpm run typecheck` with no errors.
 
 ---
 
