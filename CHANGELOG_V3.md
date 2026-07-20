@@ -13,6 +13,7 @@
 
 ## Table of Contents
 
+0. [Refactor — LoginCredentialsStep + DesktopReports split into focused components (July 20, 2026)](#0-refactor--logincredentialsstep--desktopreports-split-into-focused-components-july-20-2026)
 0. [Refactor — LedgerTable split into focused components (July 19, 2026)](#0-refactor--ledgertable-split-into-focused-components-july-19-2026)
 0. [Refactor — TwoFactorSection split into focused components (July 19, 2026)](#0-refactor--twofactorsection-split-into-focused-components-july-19-2026)
 0. [Refactor — Layout component split into focused components (July 19, 2026)](#0-refactor--layout-component-split-into-focused-components-july-19-2026)
@@ -33,6 +34,39 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — LoginCredentialsStep + DesktopReports split into focused components (July 20, 2026)
+
+**Zero behaviour change — all existing import sites unchanged.**
+
+### LoginCredentialsStep.tsx (511 ln → 89 ln)
+
+Four focused sub-components extracted into `components/auth/`:
+
+| New file | Lines | Role |
+|---|---|---|
+| `LoginRejectedPanel.tsx` | 129 | Registration Declined card — reason box, WhatsApp + Email appeal buttons with rate-limit protection via `fireAppealLog`, cooldown message, "Try a different account" dismiss. |
+| `LoginPendingPanel.tsx` | 49 | Awaiting Approval card — animated clock icon, info note, "Back to login" dismiss. |
+| `LoginLockoutPanel.tsx` | 66 | Account Locked card — animated draining progress bar, big countdown display (gets `remaining`/`display`/`progress` from parent), "Reset password instead" escape hatch. |
+| `LoginFormFields.tsx` | 174 | Username + password fields, Remember Me + Forgot Password row, animated attempt-counter dots, Submit button, secure/warning badge. Derives `urgency`, `showCounter`, `usedAttempts` internally. |
+
+`LoginCredentialsStep.tsx` reduced to an 89-line orchestrator: calls `useLockoutCountdown`, derives `showStatusPanel`, conditionally renders the four panels.
+
+### DesktopReports.tsx (463 ln → 101 ln)
+
+Three extractions:
+
+| New file | Lines | Role |
+|---|---|---|
+| `hooks/useReportPrint.ts` | 178 | `useReportPrint(activeTab, filters, data)` hook returning a `printReport()` function. Builds a fully self-contained A4 HTML page with CSS, KPI row, tables, summary boxes and opens a print window. |
+| `hooks/useReportKpis.ts` | 59 | `useReportKpis(activeTab, daily, monthly, aepsReport, breakdown)` hook returning the navy KPI strip chip array (`label`, `value`, `trend`, `pos`). |
+| `components/reports/DesktopReportsContent.tsx` | 144 | Scrollable content area with all four tab panels (Daily, Monthly, AePS, Services). Receives data and filter props; renders charts, tables, and empty states. |
+
+`DesktopReports.tsx` reduced to a 101-line orchestrator: tab state, filter state, data queries, `useReportPrint`, `useReportKpis`, nav bar, KPI strip, `<DesktopReportsContent>`.
+
+TypeScript clean on all new files.
 
 ---
 
