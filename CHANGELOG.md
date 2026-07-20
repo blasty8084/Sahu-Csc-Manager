@@ -37,6 +37,23 @@
 
 ---
 
+## 0. Refactor — offline-db.ts split into focused offline-db/ modules (July 20, 2026)
+
+**Zero behaviour change — all exports and import sites unchanged.**
+
+`lib/offline-db.ts` (457 lines) deleted and replaced by a `lib/offline-db/` directory. All consumer imports (`@/lib/offline-db` and `./offline-db`) resolve to the folder's `index.ts` barrel automatically — no import sites touched.
+
+| New file | Lines | Role |
+|---|---|---|
+| `offline-db/schema.ts` | 115 | All exported interfaces/types, `DB_NAME`/`DB_VERSION` constants, `openDB()` singleton (upgrade logic for all 3 schema versions) |
+| `offline-db/queue.ts` | 174 | Pending ledger entry queue (`addPendingEntry`, `getAllPendingEntries`, `removePendingEntry`, `updatePendingEntryRetry`, `getPendingCount`) · pending actions queue (AePS/Udhari) · pending notifications queue |
+| `offline-db/sync.ts` | 184 | Generic KV cache (`setCacheItem`, `getCacheItem`, `clearExpiredCache`) · user session cache (`saveUserSession`, `getCachedUserSession`, `clearUserSession`) · cached reports · `getStorageUsage` · `getOfflineStats` (imports `getPendingCount` + `getAllPendingNotifications` from queue) |
+| `offline-db/index.ts` | 47 | Barrel — re-exports every public symbol from schema, queue, sync |
+
+TypeScript clean.
+
+---
+
 ## 0. Refactor — DesktopReports split into focused report sub-components (July 20, 2026)
 
 **Zero behaviour change — all exports and import sites unchanged.**

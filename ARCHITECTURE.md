@@ -309,7 +309,11 @@ workspace/
 │   │       │   └── or/translation.json      # Odia
 │   │       └── lib/
 │   │           ├── i18n.ts         # i18next init; reads localStorage "sahu-lang"
-│   │           ├── offline-db.ts   # IndexedDB v2 wrapper (5 stores)
+│   │           ├── offline-db/     # IndexedDB v2 wrapper — split into focused modules
+│   │           │   ├── schema.ts  #   Types + DB constants + openDB() singleton (115 ln)
+│   │           │   ├── queue.ts   #   Write queues: pending ledger, actions, notifications (174 ln)
+│   │           │   ├── sync.ts    #   Read/write caches: KV cache, session, reports, storage stats (184 ln)
+│   │           │   └── index.ts   #   Barrel — all symbols re-exported; "@/lib/offline-db" resolves here
 │   │           ├── sync-engine.ts  # Offline queue processor; auto-syncs on window.online
 │   │           ├── pwa-badge.ts    # App Badge API updater
 │   │           └── utils.ts
@@ -735,7 +739,7 @@ Applied via: `pnpm --filter @workspace/db run push`
 | `cached_reports` | Previously generated reports | Configurable |
 | `pending_notifications` | Notifications queued offline | Cleared when read |
 
-Wrapper: `lib/offline-db.ts` (IndexedDB v2, no external library)  
+Wrapper: `lib/offline-db/` (IndexedDB v2, no external library — split into schema / queue / sync; all consumer imports via `@/lib/offline-db` resolve to `index.ts`)  
 Sync engine: `lib/sync-engine.ts` — singleton, auto-triggers on `window.online`, max 3 retries/entry
 
 ### Tier 3 — Service Worker Cache (speed/offline, 10 buckets)
