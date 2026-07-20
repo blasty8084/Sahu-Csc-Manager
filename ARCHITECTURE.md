@@ -186,7 +186,20 @@ workspace/
 │   │       │   ├── udhari.tsx              # Udhari customer list · search/sort · To Collect/To Pay
 │   │       │   ├── udhari-customer.tsx     # Per-customer ledger · WhatsApp · PDF · desktop split
 │   │       │   ├── services.tsx            # Service catalog
-│   │       │   ├── reports.tsx             # Command Center: horizontal nav · KPI strip · charts
+│   │       │   ├── reports.tsx             # Command Center: thin page; delegates to DesktopReports / MobileReports
+│   │       │   │   # components/reports/:
+│   │       │   │   #   DesktopReports.tsx      (~50 ln thin orchestrator) — assembles sub-components below
+│   │       │   │   #   ReportDatePicker.tsx    (79 ln) — DESKTOP_TABS + brand nav bar + DesktopReportFilters
+│   │       │   │   #   IncomeExpenseChart.tsx  (132 ln) — DailyTabPanel + MonthlyTabPanel (charts, tables, AePS summary)
+│   │       │   │   #   MonthlyBreakdownTable.tsx (66 ln) — AepsTabPanel + ServicesTabPanel (day-wise + service tables)
+│   │       │   │   #   ReportSummaryCards.tsx  (193 ln) — KpiChip, DesktopStatCard, MobileStatCard, DesktopKpiStrip, EmptyState, Sparkline
+│   │       │   │   #   useDesktopPrint.ts      (187 ln) — A4 print-window generator hook (all 4 tabs)
+│   │       │   │   #   ReportsSummaryCards.tsx, ReportsFilters.tsx, ReportChart.tsx — barrel re-exports
+│   │       │   │   #   ReportFilters.tsx       (154 ln) — MobileReportFilters + DesktopReportFilters
+│   │       │   │   #   ReportsChart.tsx        (295 ln) — DailyCashflowChart, MonthlyRevenueChart, AepsBarChart, etc.
+│   │       │   │   #   ReportsTable.tsx        (190 ln) — ServicesUsedTable, MonthlySummaryCard, AepsDayWiseTable, etc.
+│   │       │   │   #   MobileReports.tsx       (289 ln) — mobile layout; uses ReportFilters + ReportsChart + MobileStatCard
+│   │       │   │   #   hooks/useReports.ts     (74 ln)  — useFilterState, useReportsData, FilterState, fmt, formatINR, MONTHS
 │   │       │   ├── notifications.tsx       # Notification inbox
 │   │       │   ├── profile.tsx             # Unified Profile+Settings — thin orchestrator (~82 lines)
 │   │       │   ├── preferences.tsx         # Standalone: language + theme + dashboard layout

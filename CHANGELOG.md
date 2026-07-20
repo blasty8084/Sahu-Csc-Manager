@@ -9,6 +9,7 @@
 
 ## Table of Contents
 
+0. [Refactor — DesktopReports split into focused report sub-components (July 20, 2026)](#0-refactor--desktopreports-split-into-focused-report-sub-components-july-20-2026)
 0. [Refactor — LoginCredentialsStep split into focused auth sub-components (July 20, 2026)](#0-refactor--logincredentialsstep-split-into-focused-auth-sub-components-july-20-2026)
 0. [Optimize — PermissionCard animation performance (July 20, 2026)](#0-optimize--permissioncard-animation-performance-july-20-2026)
 0. [Doc consolidation — single CHANGELOG.md + ARCHITECTURE.md (July 20, 2026)](#0-doc-consolidation--single-changelogmd--architecturemd-july-20-2026)
@@ -33,6 +34,25 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — DesktopReports split into focused report sub-components (July 20, 2026)
+
+**Zero behaviour change — all exports and import sites unchanged.**
+
+`components/reports/DesktopReports.tsx` (463 lines) reduced to **50 lines** by extracting four focused files plus a print hook.
+
+| New file | Lines | Role |
+|---|---|---|
+| `ReportDatePicker.tsx` | 79 | `DESKTOP_TABS` constant + `DesktopReportNav` — brand logo, tab strip, filter/export controls |
+| `IncomeExpenseChart.tsx` | 132 | `DailyTabPanel` + `MonthlyTabPanel` — daily cashflow/service charts + monthly revenue/AePS charts |
+| `MonthlyBreakdownTable.tsx` | 66 | `AepsTabPanel` + `ServicesTabPanel` — AePS day-wise table + services revenue breakdown |
+| `useDesktopPrint.ts` | 187 | `useDesktopPrint` hook — A4 print-window generator for all 4 report tabs |
+
+`ReportSummaryCards.tsx` extended (+70 lines) with `DesktopKpiStrip` — the navy KPI bar + per-tab chip computation (previously inlined in `DesktopReports`; now uses the existing `fmt` import). The strip's border-on-last-chip behaviour is preserved exactly.
+
+`DesktopReports.tsx` is now a thin orchestrator: state + hooks + one JSX tree composing the four sub-components. `reports.tsx` (page) unchanged; `MobileReports.tsx` and all existing barrel files unchanged. TypeScript clean.
 
 ---
 

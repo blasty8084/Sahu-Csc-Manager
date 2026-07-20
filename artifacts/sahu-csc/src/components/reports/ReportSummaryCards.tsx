@@ -1,5 +1,6 @@
 import { LineChart, Line } from "recharts";
 import { BarChart2 } from "lucide-react";
+import { fmt } from "@/hooks/useReports";
 
 // ── Sparkline ─────────────────────────────────────────────────────────────────
 export function Sparkline({ data, color }: { data: { v: number }[]; color: string }) {
@@ -118,6 +119,75 @@ export function EmptyState({ label }: { label: string }) {
         <BarChart2 size={28} style={{ color: "#94a3b8" }} />
       </div>
       <p className="text-sm font-semibold text-slate-400">{label}</p>
+    </div>
+  );
+}
+
+// ── Desktop KPI strip (navy bar at top of desktop report) ─────────────────────
+interface DesktopKpiStripProps {
+  activeTab: string;
+  daily: { data: any };
+  monthly: { data: any };
+  aepsReport: { data: any };
+  breakdown: { data: any };
+}
+
+export function DesktopKpiStrip({ activeTab, daily, monthly, aepsReport, breakdown }: DesktopKpiStripProps) {
+  const chips = (() => {
+    if (activeTab === "daily" && daily.data) {
+      const avg = daily.data.transactionCount > 0 ? daily.data.netRevenue / daily.data.transactionCount : 0;
+      return [
+        { label: "Total Credits",  value: fmt(daily.data.totalCredits),  trend: undefined,                                                                     pos: undefined },
+        { label: "Total Debits",   value: fmt(daily.data.totalDebits),   trend: undefined,                                                                     pos: undefined },
+        { label: "Net Revenue",    value: fmt(daily.data.netRevenue),    trend: daily.data.netRevenue >= 0 ? "Profitable day" : "Loss day",  pos: daily.data.netRevenue >= 0 },
+        { label: "Transactions",   value: daily.data.transactionCount,   trend: undefined,                                                                     pos: undefined },
+        { label: "Avg Ticket",     value: fmt(avg),                      trend: undefined,                                                                     pos: undefined },
+      ];
+    }
+    if (activeTab === "monthly" && monthly.data) {
+      const avg = monthly.data.totalTransactions > 0 ? monthly.data.netProfit / monthly.data.totalTransactions : 0;
+      return [
+        { label: "Total Credits",  value: fmt(monthly.data.totalCredits),  trend: undefined,                                                                       pos: undefined },
+        { label: "Total Debits",   value: fmt(monthly.data.totalDebits),   trend: undefined,                                                                       pos: undefined },
+        { label: "Net Profit",     value: fmt(monthly.data.netProfit),     trend: monthly.data.netProfit >= 0 ? "Month profit" : "Month loss", pos: monthly.data.netProfit >= 0 },
+        { label: "Transactions",   value: monthly.data.totalTransactions,  trend: undefined,                                                                       pos: undefined },
+        { label: "Avg Ticket",     value: fmt(avg),                        trend: undefined,                                                                       pos: undefined },
+      ];
+    }
+    if (activeTab === "aeps" && aepsReport.data) {
+      return [
+        { label: "AePS Tx",     value: aepsReport.data.totalTransactions,    trend: undefined,                                                                                    pos: undefined },
+        { label: "Withdrawals", value: fmt(aepsReport.data.totalWithdrawals), trend: undefined,                                                                                    pos: undefined },
+        { label: "Deposits",    value: fmt(aepsReport.data.totalDeposits),    trend: undefined,                                                                                    pos: undefined },
+        { label: "Net Flow",    value: fmt(aepsReport.data.netFlow),          trend: aepsReport.data.netFlow >= 0 ? "Net positive" : "Net negative", pos: aepsReport.data.netFlow >= 0 },
+      ];
+    }
+    if (activeTab === "services" && breakdown.data?.length) {
+      const totalTx  = breakdown.data.reduce((s: number, r: any) => s + r.count, 0);
+      const totalRev = breakdown.data.reduce((s: number, r: any) => s + parseFloat(r.revenue || 0), 0);
+      return [
+        { label: "Services",      value: breakdown.data.length, trend: undefined, pos: undefined },
+        { label: "Total Tx",      value: totalTx,               trend: undefined, pos: undefined },
+        { label: "Total Revenue", value: fmt(totalRev),         trend: undefined, pos: undefined },
+      ];
+    }
+    return [];
+  })();
+
+  if (!chips.length) return null;
+
+  return (
+    <div style={{ background: "#0b2c60", padding: "14px 28px", display: "flex", flexShrink: 0 }}>
+      {chips.map((c, i) => (
+        <div
+          key={c.label}
+          style={{ flex: 1, padding: "0 20px", borderRight: i < chips.length - 1 ? "1px solid rgba(255,255,255,0.10)" : "none" }}
+        >
+          <div style={{ fontSize: 9, color: "rgba(255,255,255,0.45)", letterSpacing: "0.1em", marginBottom: 5, textTransform: "uppercase" }}>{c.label}</div>
+          <div style={{ fontSize: 19, fontWeight: 900, color: "white", marginBottom: 3, letterSpacing: "-0.5px" }}>{c.value}</div>
+          {c.trend && <div style={{ fontSize: 10, fontWeight: 700, color: c.pos ? "#34d399" : "#fca5a5" }}>{c.trend}</div>}
+        </div>
+      ))}
     </div>
   );
 }
