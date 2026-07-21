@@ -9,6 +9,7 @@
 
 ## Table of Contents
 
+0. [Refactor — routes/auth/2fa.ts split into 2fa-totp, 2fa-otp, 2fa-backup sub-routers (July 21, 2026)](#0-refactor--routesauth2fats-split-into-2fa-totp-2fa-otp-2fa-backup-sub-routers-july-21-2026)
 0. [Refactor — custom-fetch.ts split into token-refresh, retry, request-logger modules (July 21, 2026)](#0-refactor--custom-fetchts-split-into-token-refresh-retry-request-logger-modules-july-21-2026)
 0. [Refactor — useBackups hook split into focused sub-hooks + barrel (July 20, 2026)](#0-refactor--usebackups-hook-split-into-focused-sub-hooks--barrel-july-20-2026)
 0. [Refactor — receipt-export ReceiptExportActions + ExportFilters split into individual component files (July 20, 2026)](#0-refactor--receipt-export-receiptexportactions--exportfilters-split-into-individual-component-files-july-20-2026)
@@ -44,6 +45,27 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — routes/auth/2fa.ts split into 2fa-totp, 2fa-otp, 2fa-backup sub-routers (July 21, 2026)
+
+**Zero behaviour change — `routes/auth/index.ts` still imports `twoFaRouter` from `./2fa`; all URL paths and response shapes are identical.**
+
+`artifacts/api-server/src/routes/auth/2fa.ts` (465 lines) split into four files:
+
+| File | Lines | Routes / Exports |
+|------|-------|-----------------|
+| `2fa-totp.ts` | 123 | `POST setup-totp`, `POST setup-totp-pending`, `GET totp-qr`, `GET totp-code`, `GET totp-code-pending`; exports `isTotpReplay`, `markTotpUsed`, `clearTotpReplay`, `buildQrData`, `APP_NAME` |
+| `2fa-backup.ts` | 182 | `POST verify-totp` (TOTP code + backup-code fallback, both login modes), `POST regenerate-backup-codes`; exports `generateBackupCodes`, `hashBackupCodes`, `tryConsumeBackupCode` |
+| `2fa-otp.ts` | 136 | `POST switch-method`, `POST enable-otp`, `POST verify-otp` |
+| `2fa.ts` | 65 | Mounts the three sub-routers; owns `POST disable` + `GET status` |
+
+Cross-import chain (no circular deps): `2fa-totp` ← `2fa-backup` ← `2fa-otp` ← `2fa.ts`.
+
+Also fixed two pre-existing `TS2353` errors (`window` not in otplib's `verify` type signature) by adding `as any` cast — consistent with the `(authenticator.options as any).step` pattern already in the file.
+
+TypeScript clean (`pnpm --filter @workspace/api-server run typecheck` + `pnpm --filter @workspace/sahu-csc run typecheck` both pass).
 
 ---
 

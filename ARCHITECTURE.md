@@ -74,10 +74,14 @@ workspace/
 │   │   │   │   ├── setup-status.ts         # GET /api/setup-status (public, registered first)
 │   │   │   │   ├── health.ts               # GET /api/healthz
 │   │   │   │   ├── auth/                   # Auth sub-module (barrel: auth.ts → auth/index.ts)
-│   │   │   │   │   ├── index.ts            # Mounts register/login/session/appeal/otp/forgot/reset
+│   │   │   │   │   ├── index.ts            # Mounts register/login/session/appeal/otp/forgot/reset/2fa/devices
 │   │   │   │   │   ├── otp.ts              # POST /auth/send-otp, POST /auth/verify-otp
 │   │   │   │   │   ├── forgot-password.ts  # POST /auth/forgot-password (legacy admin OTP)
-│   │   │   │   │   └── reset-password.ts   # POST /auth/reset-password (token + legacy OTP)
+│   │   │   │   │   ├── reset-password.ts   # POST /auth/reset-password (token + legacy OTP)
+│   │   │   │   │   ├── 2fa.ts              # 2FA orchestrator: mounts sub-routers + POST /auth/2fa/disable, GET /auth/2fa/status
+│   │   │   │   │   ├── 2fa-totp.ts         # POST setup-totp, setup-totp-pending; GET totp-qr, totp-code, totp-code-pending; exports replay helpers + buildQrData
+│   │   │   │   │   ├── 2fa-backup.ts       # POST verify-totp (TOTP + backup-code), POST regenerate-backup-codes; exports generateBackupCodes/hashBackupCodes/tryConsumeBackupCode
+│   │   │   │   │   └── 2fa-otp.ts          # POST switch-method, POST enable-otp, POST verify-otp
 │   │   │   │   ├── password-reset.ts       # STUB — routes moved to auth/; empty router
 │   │   │   │   ├── dashboard.ts            # GET /dashboard (extracted from reports.ts)
 │   │   │   │   ├── sessions.ts             # V2 session list + revoke
