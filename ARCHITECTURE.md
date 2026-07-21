@@ -378,6 +378,13 @@ workspace/
 │   │   └── src/schema/          # One .ts file per table
 │   ├── api-spec/                # @workspace/api-spec — openapi.yaml (source of truth)
 │   ├── api-client-react/        # @workspace/api-client-react — Orval-generated hooks (do not edit)
+│   │   └── src/
+│   │       ├── token-refresh.ts  # Base-URL + auth-token config; URL resolution helpers
+│   │       ├── retry.ts          # ApiError + ResponseParseError classes; error-message helpers
+│   │       ├── request-logger.ts # Media-type detection; response body deserialisation pipeline
+│   │       ├── custom-fetch.ts   # Thin orchestrator: CustomFetchOptions type + customFetch(); re-exports all public symbols
+│   │       ├── index.ts          # Package entry point
+│   │       └── generated/        # Orval-generated React Query hooks (do not edit manually)
 │   └── api-zod/                 # @workspace/api-zod — Zod schemas
 │
 ├── infrastructure/

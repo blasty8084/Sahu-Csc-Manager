@@ -9,6 +9,7 @@
 
 ## Table of Contents
 
+0. [Refactor — custom-fetch.ts split into token-refresh, retry, request-logger modules (July 21, 2026)](#0-refactor--custom-fetchts-split-into-token-refresh-retry-request-logger-modules-july-21-2026)
 0. [Refactor — useBackups hook split into focused sub-hooks + barrel (July 20, 2026)](#0-refactor--usebackups-hook-split-into-focused-sub-hooks--barrel-july-20-2026)
 0. [Refactor — receipt-export ReceiptExportActions + ExportFilters split into individual component files (July 20, 2026)](#0-refactor--receipt-export-receiptexportactions--exportfilters-split-into-individual-component-files-july-20-2026)
 0. [Refactor — UserTable split into focused user row + badge sub-components (July 20, 2026)](#0-refactor--usertable-split-into-focused-user-row--badge-sub-components-july-20-2026)
@@ -43,6 +44,23 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — custom-fetch.ts split into token-refresh, retry, request-logger modules (July 21, 2026)
+
+**Zero behaviour change — all exports from `custom-fetch.ts` are preserved as re-exports; `generated/api.ts` and `index.ts` import sites are unchanged.**
+
+`lib/api-client-react/src/custom-fetch.ts` (371 lines) split into four files, each ≤ 140 lines:
+
+| File | Lines | Responsibility |
+|------|-------|---------------|
+| `token-refresh.ts` | 71 | `AuthTokenGetter` type; `_baseUrl`/`_authTokenGetter` module state; `setBaseUrl`, `setAuthTokenGetter`, `getAuthTokenGetter`; URL resolution helpers (`isRequest`, `isUrl`, `resolveUrl`, `applyBaseUrl`) |
+| `retry.ts` | 102 | `ApiError` + `ResponseParseError` classes; error-message helper functions (`getStringField`, `truncate`, `buildErrorMessage`) |
+| `request-logger.ts` | 139 | Media-type detection (`getMediaType`, `isJsonMediaType`, `isTextMediaType`); body helpers (`hasNoBody`, `stripBom`, `looksLikeJson`); full deserialisation pipeline (`parseJsonBody`, `parseErrorBody`, `inferResponseType`, `parseSuccessBody`) |
+| `custom-fetch.ts` | 91 | `CustomFetchOptions`, `ErrorType`, `BodyType` types; `resolveMethod`, `mergeHeaders`; `customFetch` orchestrator; re-exports all public symbols from the three new files |
+
+TypeScript clean (`pnpm run typecheck:libs` + `pnpm --filter @workspace/sahu-csc run typecheck` both pass).
 
 ---
 
