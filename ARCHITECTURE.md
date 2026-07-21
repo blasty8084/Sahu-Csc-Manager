@@ -102,7 +102,12 @@ workspace/
 │   │   │   │   ├── notifications.ts        # Notification inbox
 │   │   │   │   ├── reports.ts              # Reports + Excel export (exports getServiceBreakdownData/getAepsData)
 │   │   │   │   ├── audit.ts                # Audit log viewer (admin)
-│   │   │   │   ├── settings.ts             # Global settings + backups
+│   │   │   │   ├── settings.ts             # Global settings BARREL → settings/
+│   │   │   │   ├── settings/               # Settings sub-module
+│   │   │   │   │   ├── general.ts          # Business name/address/mobile/website settings
+│   │   │   │   │   ├── backups.ts          # Thin router (~139 ln) — 10 handlers; logic in services/backup*
+│   │   │   │   │   ├── smtp.ts             # SMTP configuration
+│   │   │   │   │   └── vapid.ts            # VAPID key management
 │   │   │   │   ├── push.ts                 # VAPID push subscription CRUD
 │   │   │   │   ├── udhari.ts               # BARREL → udhari/ sub-module
 │   │   │   │   ├── udhari/                 # Udhari Khata sub-module

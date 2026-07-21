@@ -9,6 +9,7 @@
 
 ## Table of Contents
 
+0. [Refactor — settings/backups.ts split into backupCore, backupSchedule, backupImport services (July 21, 2026)](#0-refactor--settingsbackupsts-split-into-backupcore-backupschedule-backupimport-services-july-21-2026)
 0. [Refactor — admin-receipt-export.ts split into schemas, queries, builders, zip service (July 21, 2026)](#0-refactor--admin-receipt-exportts-split-into-schemas-queries-builders-zip-service-july-21-2026)
 0. [Refactor — routes/auth/2fa.ts split into 2fa-totp, 2fa-otp, 2fa-backup sub-routers (July 21, 2026)](#0-refactor--routesauth2fats-split-into-2fa-totp-2fa-otp-2fa-backup-sub-routers-july-21-2026)
 0. [Refactor — custom-fetch.ts split into token-refresh, retry, request-logger modules (July 21, 2026)](#0-refactor--custom-fetchts-split-into-token-refresh-retry-request-logger-modules-july-21-2026)
@@ -46,6 +47,25 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — settings/backups.ts split into backupCore, backupSchedule, backupImport services (July 21, 2026)
+
+**Zero behaviour change — `settings/index.ts` still imports `backupsRouter` from `./backups`; all URL paths, response shapes, file streaming, and error codes are identical.**
+
+`artifacts/api-server/src/routes/settings/backups.ts` (411 lines) split into four files, all ≤ 140 lines:
+
+| File | Lines | Responsibility |
+|------|-------|---------------|
+| `services/backupCore.ts` | 109 | `BACKUP_DIR`, `upload` (multer), `parseSqlBlocks`, `TableBlock`; `listBackups` (disk auto-sync + DB), `createBackup` (pg_dump), `getBackupForDownload`, `deleteBackup`, `restoreBackup` (psql) |
+| `services/backupSchedule.ts` | 50 | `getSchedule` (read settings table), `saveSchedule` (multi-row upsert + `applySchedule`) |
+| `services/backupImport.ts` | 111 | `analyzeUpload` (parse COPY blocks → table list), `doSelectiveImport` (filter + psql), `doFullImport` (rename + psql) |
+| `routes/settings/backups.ts` | 139 | Thin router — 10 handlers each: validate → call service → audit log → respond/stream |
+
+`BACKUP_DIR` was exported from the old route file but nothing imported it from there (`backup-scheduler.ts`, `scripts/backup.ts`, and `scripts/restore.ts` each define their own local copy). No import sites needed updating.
+
+TypeScript clean (`pnpm --filter @workspace/api-server run typecheck` passes).
 
 ---
 
