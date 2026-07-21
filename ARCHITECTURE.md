@@ -96,7 +96,7 @@ workspace/
 │   │   │   │   ├── admin-sessions.ts       # Admin session revocation
 │   │   │   │   ├── admin-registration.ts   # Pending user approve/reject + registration settings
 │   │   │   │   ├── admin-appeals.ts        # Appeals: GET/re-approve/dismiss-appeal/dismiss-all
-│   │   │   │   ├── admin-receipt-export.ts # Bulk receipt export
+│   │   │   │   ├── admin-receipt-export.ts # Bulk receipt export — thin router (~102 ln); logic in services/receiptExport*
 │   │   │   │   ├── profile.ts              # Own profile + avatar
 │   │   │   │   ├── preferences.ts          # Per-user UI preferences
 │   │   │   │   ├── notifications.ts        # Notification inbox

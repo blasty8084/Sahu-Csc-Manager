@@ -9,6 +9,7 @@
 
 ## Table of Contents
 
+0. [Refactor — admin-receipt-export.ts split into schemas, queries, builders, zip service (July 21, 2026)](#0-refactor--admin-receipt-exportts-split-into-schemas-queries-builders-zip-service-july-21-2026)
 0. [Refactor — routes/auth/2fa.ts split into 2fa-totp, 2fa-otp, 2fa-backup sub-routers (July 21, 2026)](#0-refactor--routesauth2fats-split-into-2fa-totp-2fa-otp-2fa-backup-sub-routers-july-21-2026)
 0. [Refactor — custom-fetch.ts split into token-refresh, retry, request-logger modules (July 21, 2026)](#0-refactor--custom-fetchts-split-into-token-refresh-retry-request-logger-modules-july-21-2026)
 0. [Refactor — useBackups hook split into focused sub-hooks + barrel (July 20, 2026)](#0-refactor--usebackups-hook-split-into-focused-sub-hooks--barrel-july-20-2026)
@@ -45,6 +46,26 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — admin-receipt-export.ts split into schemas, queries, builders, zip service (July 21, 2026)
+
+**Zero behaviour change — `routes/index.ts` still imports `adminReceiptExportRouter` from `./admin-receipt-export`; all URL paths, response shapes, and streaming behaviour are identical.**
+
+`artifacts/api-server/src/routes/admin-receipt-export.ts` (451 lines) split into five files, all ≤ 140 lines:
+
+| File | Lines | Responsibility |
+|------|-------|---------------|
+| `services/receiptExportSchemas.ts` | 57 | Zod schemas (`bulkExportQuerySchema`, `monthlyDownloadQuerySchema`, `monthlyTriggerBodySchema`) + inferred TS types |
+| `services/receiptExportQueries.ts` | 128 | `buildBulkConditions`, `countBulkReceipts`, `previewBulkReceipts`, `fetchBulkReceiptPage`, `fetchAllReceiptsForExcel`, `fetchSingleReceiptEntry` — all DB query logic |
+| `services/receiptExportBuilders.ts` | 60 | `buildExcelBuffer` — ExcelJS workbook builder + `ExcelReceiptRow` type |
+| `services/receiptExportZip.ts` | 83 | `streamBulkZip` — archiver setup, paged PDF generation loop, client-disconnect abort, response piping |
+| `routes/admin-receipt-export.ts` | 102 | Thin router: six route handlers each reduced to validate → call service → stream/send |
+
+`services/receiptExportService.ts` (existing, 211 lines) is unchanged — `generateReceiptPdf` and `getBusinessSettings` remain there and are called by the new service files.
+
+TypeScript clean (`pnpm --filter @workspace/api-server run typecheck` passes).
 
 ---
 
