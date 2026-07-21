@@ -92,7 +92,7 @@ workspace/
 │   │   │   │   │   └── transactions.ts     # Transaction CRUD + public receipt verify
 │   │   │   │   ├── services.ts             # Service catalog CRUD
 │   │   │   │   ├── users.ts                # User management (admin)
-│   │   │   │   ├── admin.ts                # Cross-user oversight endpoints
+│   │   │   │   ├── admin.ts                # Cross-user oversight — thin router (~138 ln); query logic in services/adminStatsService + adminUserService
 │   │   │   │   ├── admin-sessions.ts       # Admin session revocation
 │   │   │   │   ├── admin-registration.ts   # Pending user approve/reject + registration settings
 │   │   │   │   ├── admin-appeals.ts        # Appeals: GET/re-approve/dismiss-appeal/dismiss-all
@@ -135,6 +135,19 @@ workspace/
 │   │   │       ├── async-handler.ts        # asyncHandler(fn) — wraps async route handlers to forward rejections to next()
 │   │   │       ├── ledgerHelpers.ts        # Pure ledger helpers: nowInIST · istDateStr · resolveDateRange · lockUserEntries · recalculateBalances · generateReceiptNumber · formatEntry · getUserFilter · entryColumns
 │   │   │       └── queue-client.ts         # enqueueNotification/enqueueEmail — BullMQ when REDIS_URL set, direct fallback otherwise
+│   │   │   ├── services/
+│   │   │   │   ├── adminStatsService.ts    # Cross-user stats: getUsersOverview · getRecentAuditLogs · getDbStats (135 ln)
+│   │   │   │   ├── adminUserService.ts     # Per-user admin queries: getUserLedger (36 ln)
+│   │   │   │   ├── backupCore.ts           # listBackups · createBackup · getBackupForDownload · deleteBackup · restoreBackup
+│   │   │   │   ├── backupSchedule.ts       # getSchedule · saveSchedule
+│   │   │   │   ├── backupImport.ts         # analyzeUpload · doSelectiveImport · doFullImport
+│   │   │   │   ├── notificationService.ts  # createNotification · notifyNewRegistration · markAllRead
+│   │   │   │   ├── notificationTemplates.ts # Notification message templates
+│   │   │   │   ├── receiptExportService.ts # generateReceiptPdf · getBusinessSettings
+│   │   │   │   ├── receiptExportSchemas.ts # Zod schemas for bulk/monthly export
+│   │   │   │   ├── receiptExportQueries.ts # DB query helpers for receipt export
+│   │   │   │   ├── receiptExportBuilders.ts # buildExcelBuffer
+│   │   │   │   └── receiptExportZip.ts     # streamBulkZip
 │   │   ├── build.mjs              # esbuild bundler (connect-pg-simple MUST be in external)
 │   │   └── scripts/
 │   │       ├── seed.ts            # DB seeder (users, services, settings, notifications)

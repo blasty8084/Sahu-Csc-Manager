@@ -9,6 +9,7 @@
 
 ## Table of Contents
 
+0. [Refactor — routes/admin.ts split into thin router + adminStatsService + adminUserService (July 21, 2026)](#0-refactor--routesadmints-split-into-thin-router--adminstatsservice--adminuserservice-july-21-2026)
 0. [Refactor — routes/ledger.ts split into route handlers + lib/ledgerHelpers.ts (July 21, 2026)](#0-refactor--routesledgerts-split-into-route-handlers--libledgerhelpersts-july-21-2026)
 0. [Refactor — settings/backups.ts split into backupCore, backupSchedule, backupImport services (July 21, 2026)](#0-refactor--settingsbackupsts-split-into-backupcore-backupschedule-backupimport-services-july-21-2026)
 0. [Refactor — admin-receipt-export.ts split into schemas, queries, builders, zip service (July 21, 2026)](#0-refactor--admin-receipt-exportts-split-into-schemas-queries-builders-zip-service-july-21-2026)
@@ -77,6 +78,25 @@
 
 ### Typecheck
 `pnpm --filter @workspace/api-server run typecheck` — clean.
+
+---
+
+## 0. Refactor — routes/admin.ts split into thin router + adminStatsService + adminUserService (July 21, 2026)
+
+**Zero behaviour change — all URL paths, response shapes, HTTP status codes, and caching behaviour are identical.**
+
+`artifacts/api-server/src/routes/admin.ts` (313 lines) split into three files:
+
+| File | Lines | Responsibility |
+|------|-------|----------------|
+| `services/adminStatsService.ts` | 135 | `getUsersOverview` (cached cross-user balance summary, DISTINCT ON recent entry), `getRecentAuditLogs`, `getDbStats` (per-table row counts + last-entry timestamps) |
+| `services/adminUserService.ts` | 36 | `getUserLedger` — paginated ledger for a single user with parallel count + user lookup |
+| `routes/admin.ts` | 138 | Thin router — 6 route handlers (validate → call service → respond); reset-link action handlers remain inline as they are not query functions |
+
+No import sites needed updating — nothing imports from `routes/admin.ts` directly.
+
+### Typecheck
+`pnpm --filter @workspace/api-server exec tsc -p tsconfig.json --noEmit` — clean.
 
 ---
 
