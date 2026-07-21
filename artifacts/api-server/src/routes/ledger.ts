@@ -1,11 +1,9 @@
 import { Router, type IRouter } from "express";
-import { db, ledgerTable, usersTable, receiptCountersTable, settingsTable } from "@workspace/db";
+import { db, ledgerTable, usersTable, settingsTable } from "@workspace/db";
 import { eq, and, gte, lte, like, desc, count, sum, sql } from "drizzle-orm";
 import {
-  CreateLedgerEntryBody,
-  UpdateLedgerEntryBody,
-  ListLedgerEntriesQueryParams,
-  GetLedgerSummaryQueryParams,
+  CreateLedgerEntryBody, UpdateLedgerEntryBody,
+  ListLedgerEntriesQueryParams, GetLedgerSummaryQueryParams,
 } from "@workspace/api-zod";
 import { requireAuth, requireRole, requirePermission, auditLog, getClientIp } from "../lib/auth";
 import { notifyLargeTransaction } from "../services/notificationTemplates";
@@ -13,356 +11,129 @@ import { signReceiptToken } from "../lib/jwt";
 import { sanitize } from "../lib/sanitize";
 import { invalidateLedgerCaches, cached } from "../lib/query-cache";
 import crypto from "crypto";
-import { computeRunningBalances, formatReceiptNumber } from "../lib/ledger-utils";
 import { asyncHandler } from "../lib/async-handler";
 import { logger } from "../lib/logger";
-
-// India Standard Time is UTC+5:30 with no DST — a fixed offset is correct and
-// avoids pulling in a full tz-database dependency.
-const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
-/** Returns a Date whose UTC fields (getUTCFullYear, getUTCMonth, …) represent the current IST calendar values. */
-function nowInIST(): Date {
-  return new Date(Date.now() + IST_OFFSET_MS);
-}
-/** Formats a Date (already IST-shifted via nowInIST) as YYYY-MM-DD. */
-function istDateStr(d: Date): string {
-  return d.toISOString().split("T")[0];
-}
+import {
+  formatEntry, getUserFilter, recalculateBalances, lockUserEntries,
+  generateReceiptNumber, resolveDateRange, entryColumns,
+} from "../lib/ledgerHelpers";
 
 const router: IRouter = Router();
 
-function formatEntry(entry: any, createdByName?: string | null) {
-  return {
-    id: entry.id,
-    date: entry.date,
-    customerName: entry.customerName,
-    serviceType: entry.serviceType,
-    credit: parseFloat(entry.credit ?? "0"),
-    debit: parseFloat(entry.debit ?? "0"),
-    description: entry.description,
-    balance: parseFloat(entry.balance ?? "0"),
-    createdBy: entry.createdBy,
-    createdByName: createdByName ?? null,
-    receiptNumber: entry.receiptNumber ?? null,
-    receiptToken: entry.receiptToken ?? null,
-    createdAt: entry.createdAt instanceof Date ? entry.createdAt.toISOString() : entry.createdAt,
-  };
-}
-
-function getUserFilter(req: any) {
-  const userId = req.session.userId!;
-  return eq(ledgerTable.createdBy, userId);
-}
-
-// Balances are a running total per user, in creation order (matches how new entries
-// are appended). Editing or deleting an entry can shift every later balance, so we
-// recompute all of a user's balances whenever an entry changes. Must be called with
-// a `tx` that already holds a row lock (see lockUserEntries) on the same user's rows
-// obtained inside the same transaction as the mutation, so concurrent edits/deletes
-// for the same user serialize instead of racing on stale snapshots.
-async function recalculateBalances(tx: any, userId: number): Promise<void> {
-  const entries = (await tx
-    .select({ id: ledgerTable.id, credit: ledgerTable.credit, debit: ledgerTable.debit })
-    .from(ledgerTable)
-    .where(eq(ledgerTable.createdBy, userId))
-    .orderBy(ledgerTable.id)) as { id: number; credit: string | null; debit: string | null }[];
-
-  if (entries.length === 0) return;
-
-  const ids = entries.map((e) => e.id);
-  const balances = computeRunningBalances(entries).map(String);
-
-  // Single batched UPDATE (was: one UPDATE per row in a loop) using UNNEST,
-  // instead of N round-trips to the database. Arrays are built as fully bound
-  // parameters (not string-interpolated literals) to avoid any SQL injection risk.
-  const idsArray = sql.join(ids.map((id) => sql`${id}`), sql`,`);
-  const balancesArray = sql.join(balances.map((b) => sql`${b}`), sql`,`);
-  await tx.execute(sql`
-    UPDATE ledger AS l
-    SET balance = v.balance
-    FROM (
-      SELECT * FROM UNNEST(ARRAY[${idsArray}]::int[], ARRAY[${balancesArray}]::numeric[]) AS v(id, balance)
-    ) AS v
-    WHERE l.id = v.id
-  `);
-}
-
-// Locks all of a user's ledger rows (FOR UPDATE) within the caller's transaction so
-// concurrent PATCH/DELETE requests for the same user cannot interleave their reads
-// and balance recomputation.
-async function lockUserEntries(tx: any, userId: number): Promise<void> {
-  await tx.execute(sql`select id from ledger where created_by = ${userId} for update`);
-}
-
-async function generateReceiptNumber(tx: typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0], userId: number, year: number): Promise<string> {
-  const [row] = await tx
-    .insert(receiptCountersTable)
-    .values({ userId, year, lastCount: 1 })
-    .onConflictDoUpdate({
-      target: [receiptCountersTable.userId, receiptCountersTable.year],
-      set: { lastCount: sql`${receiptCountersTable.lastCount} + 1` },
-    })
-    .returning({ lastCount: receiptCountersTable.lastCount });
-  return formatReceiptNumber(year, row.lastCount);
-}
-
 router.get("/ledger/balance", requireAuth, requirePermission("ledger:view"), asyncHandler(async (req, res) => {
   const userId = req.session.userId!;
-  // Single LEFT JOIN: users.ledger_balance gives the O(1) maintained running
-  // total (no full-table scan), while SUM gives the credit/debit breakdown that
-  // LedgerEntryForm displays as separate stats.
   const result = await db
-    .select({
-      ledgerBalance: usersTable.ledgerBalance,
-      totalCredits: sum(ledgerTable.credit),
-      totalDebits: sum(ledgerTable.debit),
-    })
-    .from(usersTable)
-    .leftJoin(ledgerTable, eq(ledgerTable.createdBy, usersTable.id))
-    .where(eq(usersTable.id, userId))
-    .groupBy(usersTable.id);
-
-  const balance = parseFloat(result[0]?.ledgerBalance ?? "0");
-  const totalCredits = parseFloat(result[0]?.totalCredits ?? "0");
-  const totalDebits = parseFloat(result[0]?.totalDebits ?? "0");
-  res.json({ balance, totalCredits, totalDebits });
+    .select({ ledgerBalance: usersTable.ledgerBalance, totalCredits: sum(ledgerTable.credit), totalDebits: sum(ledgerTable.debit) })
+    .from(usersTable).leftJoin(ledgerTable, eq(ledgerTable.createdBy, usersTable.id))
+    .where(eq(usersTable.id, userId)).groupBy(usersTable.id);
+  res.json({
+    balance: parseFloat(result[0]?.ledgerBalance ?? "0"),
+    totalCredits: parseFloat(result[0]?.totalCredits ?? "0"),
+    totalDebits: parseFloat(result[0]?.totalDebits ?? "0"),
+  });
 }));
 
 router.get("/ledger/summary", requireAuth, requirePermission("ledger:view"), asyncHandler(async (req, res) => {
   const params = GetLedgerSummaryQueryParams.safeParse(req.query);
   const period = params.success ? params.data.period ?? "today" : "today";
-
-  let startDate: string;
-  let endDate: string;
-
-  // Use IST calendar dates throughout — the server runs UTC but users and ledger
-  // dates are in IST.  Using UTC dates here would shift the "today/yesterday/month"
-  // window by up to 5h30m, causing boundary errors for evening transactions.
-  const todayIST = nowInIST();
-
-  if (period === "custom" && params.success && params.data.startDate && params.data.endDate) {
-    startDate = params.data.startDate as string;
-    endDate = params.data.endDate as string;
-  } else if (period === "yesterday") {
-    const y = new Date(todayIST);
-    y.setUTCDate(y.getUTCDate() - 1);
-    startDate = endDate = istDateStr(y);
-  } else if (period === "week") {
-    const start = new Date(todayIST);
-    start.setUTCDate(start.getUTCDate() - 6);
-    startDate = istDateStr(start);
-    endDate = istDateStr(todayIST);
-  } else if (period === "month") {
-    startDate = `${todayIST.getUTCFullYear()}-${String(todayIST.getUTCMonth() + 1).padStart(2, "0")}-01`;
-    endDate = istDateStr(todayIST);
-  } else {
-    startDate = endDate = istDateStr(todayIST);
-  }
-
-  const userFilter = getUserFilter(req);
-  const dateFilter = and(gte(ledgerTable.date, startDate), lte(ledgerTable.date, endDate));
-  const whereClause = userFilter ? and(userFilter, dateFilter) : dateFilter;
-
-  const result = await db
-    .select({ totalCredits: sum(ledgerTable.credit), totalDebits: sum(ledgerTable.debit), totalTransactions: count() })
-    .from(ledgerTable)
-    .where(whereClause);
-
-  const totalCredits = parseFloat(result[0]?.totalCredits ?? "0");
-  const totalDebits = parseFloat(result[0]?.totalDebits ?? "0");
-
-  res.json({
-    totalTransactions: result[0]?.totalTransactions ?? 0,
-    totalCredits,
-    totalDebits,
-    netChange: totalCredits - totalDebits,
-    period,
-  });
+  const { startDate, endDate } = resolveDateRange(period, params.success ? params.data : undefined);
+  const where = and(getUserFilter(req.session.userId!), gte(ledgerTable.date, startDate), lte(ledgerTable.date, endDate));
+  const [r] = await db.select({ totalCredits: sum(ledgerTable.credit), totalDebits: sum(ledgerTable.debit), totalTransactions: count() }).from(ledgerTable).where(where);
+  const totalCredits = parseFloat(r?.totalCredits ?? "0");
+  const totalDebits = parseFloat(r?.totalDebits ?? "0");
+  res.json({ totalTransactions: r?.totalTransactions ?? 0, totalCredits, totalDebits, netChange: totalCredits - totalDebits, period });
 }));
 
 router.get("/ledger", requireAuth, requirePermission("ledger:view"), asyncHandler(async (req, res) => {
   const params = ListLedgerEntriesQueryParams.safeParse(req.query);
   const page = params.success && params.data.page ? params.data.page : 1;
   const limit = params.success && params.data.limit ? params.data.limit : 20;
-  const offset = (page - 1) * limit;
-
-  const userFilter = getUserFilter(req);
-  const conditions: any[] = userFilter ? [userFilter] : [];
-
+  const conditions: any[] = [getUserFilter(req.session.userId!)];
   if (params.success) {
     if (params.data.startDate) conditions.push(gte(ledgerTable.date, params.data.startDate as string));
     if (params.data.endDate) conditions.push(lte(ledgerTable.date, params.data.endDate as string));
     if (params.data.serviceType) conditions.push(eq(ledgerTable.serviceType, params.data.serviceType as string));
     if (params.data.customerName) conditions.push(like(ledgerTable.customerName, `%${params.data.customerName}%`));
   }
-
-  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-
+  const where = and(...conditions);
   const [entries, totalResult] = await Promise.all([
-    db.select({
-      id: ledgerTable.id, date: ledgerTable.date, customerName: ledgerTable.customerName,
-      serviceType: ledgerTable.serviceType, credit: ledgerTable.credit, debit: ledgerTable.debit,
-      description: ledgerTable.description, balance: ledgerTable.balance, createdBy: ledgerTable.createdBy,
-      createdAt: ledgerTable.createdAt, createdByName: usersTable.username,
-      receiptNumber: ledgerTable.receiptNumber, receiptToken: ledgerTable.receiptToken,
-    })
-      .from(ledgerTable)
-      .leftJoin(usersTable, eq(ledgerTable.createdBy, usersTable.id))
-      .where(whereClause)
-      .orderBy(desc(ledgerTable.createdAt))
-      .limit(limit)
-      .offset(offset),
-    db.select({ total: count() }).from(ledgerTable).where(whereClause),
+    db.select(entryColumns).from(ledgerTable).leftJoin(usersTable, eq(ledgerTable.createdBy, usersTable.id))
+      .where(where).orderBy(desc(ledgerTable.createdAt)).limit(limit).offset((page - 1) * limit),
+    db.select({ total: count() }).from(ledgerTable).where(where),
   ]);
-
-  res.json({
-    entries: entries.map((e: any) => formatEntry(e, e.createdByName)),
-    total: totalResult[0]?.total ?? 0,
-    page,
-    limit,
-  });
+  res.json({ entries: entries.map((e) => formatEntry(e, e.createdByName)), total: totalResult[0]?.total ?? 0, page, limit });
 }));
 
 router.post("/ledger", requireAuth, requirePermission("ledger:create"), asyncHandler(async (req, res) => {
   const parsed = CreateLedgerEntryBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
-
   const { date, serviceType, credit, debit } = parsed.data;
   const customerName = sanitize(parsed.data.customerName);
   const description = parsed.data.description !== undefined ? sanitize(parsed.data.description) : parsed.data.description;
   const userId = req.session.userId!;
-  const delta = (credit ?? 0) - (debit ?? 0);
-  const txYear = new Date(date).getFullYear();
-
-  // All four mutations run inside a single transaction so a mid-flight crash
-  // cannot leave ledger_balance, receipt_counters, and ledger out of sync.
-  const [entry, receiptJwt] = await db.transaction(async (tx) => {
-    // 1. Atomically update the running balance and capture the new total.
+  const entry = await db.transaction(async (tx) => {
     const balanceRows = await tx.execute<{ ledger_balance: string }>(
-      sql`UPDATE users SET ledger_balance = ledger_balance + ${delta} WHERE id = ${userId} RETURNING ledger_balance`
+      sql`UPDATE users SET ledger_balance = ledger_balance + ${(credit ?? 0) - (debit ?? 0)} WHERE id = ${userId} RETURNING ledger_balance`
     );
     const newBalance = parseFloat(balanceRows.rows[0]?.ledger_balance ?? "0");
-
-    // 2. Atomically claim the next receipt sequence number.
-    const receiptNumber = await generateReceiptNumber(tx, userId, txYear);
+    const receiptNumber = await generateReceiptNumber(tx, userId, new Date(date).getFullYear());
     const uuid = crypto.randomUUID();
-
-    // 3. Insert the ledger row.
-    const [entry] = await tx
-      .insert(ledgerTable)
-      .values({
-        date, customerName, serviceType,
-        credit: String(credit ?? 0),
-        debit: String(debit ?? 0),
-        description,
-        balance: String(newBalance),
-        createdBy: userId,
-        receiptNumber,
-        receiptToken: uuid,
-      })
-      .returning();
-
-    // 4. Sign the tamper-proof JWT and write it back within the same transaction.
-    const receiptJwt = await signReceiptToken(uuid, entry.id, receiptNumber, "ledger");
-    await tx
-      .update(ledgerTable)
-      .set({ receiptToken: receiptJwt })
-      .where(eq(ledgerTable.id, entry.id));
-    entry.receiptToken = receiptJwt;
-
-    return [entry, receiptJwt] as const;
+    const [e] = await tx.insert(ledgerTable).values({
+      date, customerName, serviceType, credit: String(credit ?? 0), debit: String(debit ?? 0),
+      description, balance: String(newBalance), createdBy: userId, receiptNumber, receiptToken: uuid,
+    }).returning();
+    const jwt = await signReceiptToken(uuid, e.id, receiptNumber, "ledger");
+    await tx.update(ledgerTable).set({ receiptToken: jwt }).where(eq(ledgerTable.id, e.id));
+    e.receiptToken = jwt;
+    return e;
   });
-
   await invalidateLedgerCaches();
   await auditLog(userId, "ledger.create", `Created ledger entry for ${customerName} (${entry.receiptNumber})`, getClientIp(req));
-
   const amount = (credit ?? 0) + (debit ?? 0);
-  // Read the threshold from settings so operators can configure it without a
-  // code deploy.  Cached for 30 s to avoid a DB hit on every POST.
-  const threshold = await cached<number>(
-    "settings:largeTransactionThreshold",
-    30_000,
-    async () => {
-      const [row] = await db
-        .select({ value: settingsTable.value })
-        .from(settingsTable)
-        .where(eq(settingsTable.key, "largeTransactionThreshold"))
-        .limit(1);
-      return row ? parseFloat(row.value) : 10_000;
-    },
-  );
+  const threshold = await cached<number>("settings:largeTransactionThreshold", 30_000, async () => {
+    const [row] = await db.select({ value: settingsTable.value }).from(settingsTable).where(eq(settingsTable.key, "largeTransactionThreshold")).limit(1);
+    return row ? parseFloat(row.value) : 10_000;
+  });
   if (amount >= threshold) {
-    // Fire-and-forget but log failures so they are not silently swallowed.
     notifyLargeTransaction(userId, amount, entry.id).catch((err) => {
       logger.warn({ err, userId, amount, entryId: entry.id }, "Large-transaction notification failed");
     });
   }
-
   res.status(201).json(formatEntry(entry));
 }));
 
 router.get("/ledger/:id", requireAuth, requirePermission("ledger:view"), asyncHandler(async (req, res) => {
-  const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-  const id = parseInt(rawId, 10);
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
-
-  const [entry] = await db.select({
-    id: ledgerTable.id, date: ledgerTable.date, customerName: ledgerTable.customerName,
-    serviceType: ledgerTable.serviceType, credit: ledgerTable.credit, debit: ledgerTable.debit,
-    description: ledgerTable.description, balance: ledgerTable.balance, createdBy: ledgerTable.createdBy,
-    createdAt: ledgerTable.createdAt, createdByName: usersTable.username,
-    receiptNumber: ledgerTable.receiptNumber, receiptToken: ledgerTable.receiptToken,
-  })
-    .from(ledgerTable)
-    .leftJoin(usersTable, eq(ledgerTable.createdBy, usersTable.id))
-    .where(eq(ledgerTable.id, id));
-
+  const [entry] = await db.select(entryColumns).from(ledgerTable).leftJoin(usersTable, eq(ledgerTable.createdBy, usersTable.id)).where(eq(ledgerTable.id, id));
   if (!entry) { res.status(404).json({ error: "Not found" }); return; }
-
-  if (entry.createdBy !== req.session.userId && req.session.userRole !== "admin") {
-    res.status(403).json({ error: "Forbidden" }); return;
-  }
-
+  if (entry.createdBy !== req.session.userId && req.session.userRole !== "admin") { res.status(403).json({ error: "Forbidden" }); return; }
   res.json(formatEntry(entry, entry.createdByName));
 }));
 
 router.patch("/ledger/:id", requireAuth, requirePermission("ledger:edit"), asyncHandler(async (req, res) => {
-  const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-  const id = parseInt(rawId, 10);
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
-
   const parsed = UpdateLedgerEntryBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
-
   const [existing] = await db.select().from(ledgerTable).where(eq(ledgerTable.id, id));
   if (!existing) { res.status(404).json({ error: "Not found" }); return; }
-
-  if (existing.createdBy !== req.session.userId && req.session.userRole !== "admin") {
-    res.status(403).json({ error: "Forbidden" }); return;
-  }
-
-  const updateData: Record<string, any> = {};
-  if (parsed.data.date !== undefined) updateData.date = parsed.data.date;
-  if (parsed.data.customerName !== undefined) updateData.customerName = sanitize(parsed.data.customerName);
-  if (parsed.data.serviceType !== undefined) updateData.serviceType = parsed.data.serviceType;
-  if (parsed.data.credit !== undefined) updateData.credit = String(parsed.data.credit);
-  if (parsed.data.debit !== undefined) updateData.debit = String(parsed.data.debit);
-  if (parsed.data.description !== undefined) updateData.description = sanitize(parsed.data.description);
-
-  // Compute the delta to users.ledger_balance before entering the transaction
-  const oldCredit = parseFloat(existing.credit ?? "0");
-  const oldDebit = parseFloat(existing.debit ?? "0");
-  const newCredit = parsed.data.credit !== undefined ? parsed.data.credit : oldCredit;
-  const newDebit = parsed.data.debit !== undefined ? parsed.data.debit : oldDebit;
+  if (existing.createdBy !== req.session.userId && req.session.userRole !== "admin") { res.status(403).json({ error: "Forbidden" }); return; }
+  const u: Record<string, any> = {};
+  if (parsed.data.date !== undefined) u.date = parsed.data.date;
+  if (parsed.data.customerName !== undefined) u.customerName = sanitize(parsed.data.customerName);
+  if (parsed.data.serviceType !== undefined) u.serviceType = parsed.data.serviceType;
+  if (parsed.data.credit !== undefined) u.credit = String(parsed.data.credit);
+  if (parsed.data.debit !== undefined) u.debit = String(parsed.data.debit);
+  if (parsed.data.description !== undefined) u.description = sanitize(parsed.data.description);
+  const oldCredit = parseFloat(existing.credit ?? "0"), oldDebit = parseFloat(existing.debit ?? "0");
+  const newCredit = parsed.data.credit ?? oldCredit, newDebit = parsed.data.debit ?? oldDebit;
   const balanceDelta = (newCredit - newDebit) - (oldCredit - oldDebit);
-
   const refreshed = await db.transaction(async (tx: any) => {
     await lockUserEntries(tx, existing.createdBy);
-    const [updated] = await tx.update(ledgerTable).set(updateData).where(eq(ledgerTable.id, id)).returning();
+    const [updated] = await tx.update(ledgerTable).set(u).where(eq(ledgerTable.id, id)).returning();
     await recalculateBalances(tx, existing.createdBy);
-    if (balanceDelta !== 0) {
-      await tx.execute(sql`UPDATE users SET ledger_balance = ledger_balance + ${balanceDelta} WHERE id = ${existing.createdBy}`);
-    }
+    if (balanceDelta !== 0) await tx.execute(sql`UPDATE users SET ledger_balance = ledger_balance + ${balanceDelta} WHERE id = ${existing.createdBy}`);
     const [row] = await tx.select().from(ledgerTable).where(eq(ledgerTable.id, id));
     return row ?? updated;
   });
@@ -380,19 +151,12 @@ router.delete("/ledger/all", requireRole("admin"), asyncHandler(async (req, res)
 }));
 
 router.delete("/ledger/:id", requireAuth, requirePermission("ledger:edit"), asyncHandler(async (req, res) => {
-  const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-  const id = parseInt(rawId, 10);
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
-
   const [existing] = await db.select().from(ledgerTable).where(eq(ledgerTable.id, id));
   if (!existing) { res.status(404).json({ error: "Not found" }); return; }
-
-  if (existing.createdBy !== req.session.userId && req.session.userRole !== "admin") {
-    res.status(403).json({ error: "Forbidden" }); return;
-  }
-
+  if (existing.createdBy !== req.session.userId && req.session.userRole !== "admin") { res.status(403).json({ error: "Forbidden" }); return; }
   const deletedNet = parseFloat(existing.credit ?? "0") - parseFloat(existing.debit ?? "0");
-
   await db.transaction(async (tx: any) => {
     await lockUserEntries(tx, existing.createdBy);
     await tx.delete(ledgerTable).where(eq(ledgerTable.id, id));

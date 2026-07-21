@@ -9,6 +9,7 @@
 
 ## Table of Contents
 
+0. [Refactor — routes/ledger.ts split into route handlers + lib/ledgerHelpers.ts (July 21, 2026)](#0-refactor--routesledgerts-split-into-route-handlers--libledgerhelpersts-july-21-2026)
 0. [Refactor — settings/backups.ts split into backupCore, backupSchedule, backupImport services (July 21, 2026)](#0-refactor--settingsbackupsts-split-into-backupcore-backupschedule-backupimport-services-july-21-2026)
 0. [Refactor — admin-receipt-export.ts split into schemas, queries, builders, zip service (July 21, 2026)](#0-refactor--admin-receipt-exportts-split-into-schemas-queries-builders-zip-service-july-21-2026)
 0. [Refactor — routes/auth/2fa.ts split into 2fa-totp, 2fa-otp, 2fa-backup sub-routers (July 21, 2026)](#0-refactor--routesauth2fats-split-into-2fa-totp-2fa-otp-2fa-backup-sub-routers-july-21-2026)
@@ -47,6 +48,35 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — routes/ledger.ts split into route handlers + lib/ledgerHelpers.ts (July 21, 2026)
+
+**Zero behaviour change — all URL paths, response shapes, query semantics, transaction logic, and error codes are identical.**
+
+### What moved
+
+`artifacts/api-server/src/lib/ledgerHelpers.ts` (new, 140 ln) now owns:
+
+- **IST date utilities** — `nowInIST()`, `istDateStr()`, `IST_OFFSET_MS`
+- **Date range resolver** — `resolveDateRange(period, custom?)` → `DateRange` (extracted from GET /ledger/summary)
+- **Balance recalculation** — `lockUserEntries(tx, userId)`, `recalculateBalances(tx, userId)` (batched UNNEST UPDATE)
+- **Receipt number generation** — `generateReceiptNumber(tx, userId, year)`
+- **Shared column set** — `entryColumns` (used by GET /ledger list and GET /ledger/:id)
+- **Entry formatter** — `formatEntry(entry, createdByName?)`
+- **User filter** — `getUserFilter(userId)` → drizzle WHERE expression
+
+`artifacts/api-server/src/routes/ledger.ts` reduced from **407 → 171 lines** (route handlers only).
+
+### Files changed
+| File | Before | After |
+|---|---|---|
+| `routes/ledger.ts` | 407 ln | 171 ln |
+| `lib/ledgerHelpers.ts` | — | 140 ln (new) |
+
+### Typecheck
+`pnpm --filter @workspace/api-server run typecheck` — clean.
 
 ---
 

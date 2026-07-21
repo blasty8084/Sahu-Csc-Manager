@@ -85,7 +85,7 @@ workspace/
 │   │   │   │   ├── password-reset.ts       # STUB — routes moved to auth/; empty router
 │   │   │   │   ├── dashboard.ts            # GET /dashboard (extracted from reports.ts)
 │   │   │   │   ├── sessions.ts             # V2 session list + revoke
-│   │   │   │   ├── ledger.ts               # Ledger CRUD + balance/summary
+│   │   │   │   ├── ledger.ts               # Ledger CRUD + balance/summary (route handlers only, ~171 ln)
 │   │   │   │   ├── aeps.ts                 # BARREL → aeps/ sub-module
 │   │   │   │   ├── aeps/                   # AePS sub-module
 │   │   │   │   │   ├── sessions.ts         # GET/POST /aeps/session, GET /admin/aeps-overview
@@ -133,6 +133,7 @@ workspace/
 │   │   │       ├── vapid.ts                # VAPID key auto-generation + env detection
 │   │   │       ├── otp-cleanup.ts          # Hourly job: prunes expired OTP rows
 │   │   │       ├── async-handler.ts        # asyncHandler(fn) — wraps async route handlers to forward rejections to next()
+│   │   │       ├── ledgerHelpers.ts        # Pure ledger helpers: nowInIST · istDateStr · resolveDateRange · lockUserEntries · recalculateBalances · generateReceiptNumber · formatEntry · getUserFilter · entryColumns
 │   │   │       └── queue-client.ts         # enqueueNotification/enqueueEmail — BullMQ when REDIS_URL set, direct fallback otherwise
 │   │   ├── build.mjs              # esbuild bundler (connect-pg-simple MUST be in external)
 │   │   └── scripts/
