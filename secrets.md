@@ -178,12 +178,12 @@ Replit injects these automatically. Adding them to Secrets or Env Vars will caus
 
 | Variable | Injected By | Explanation |
 |----------|-------------|-------------|
-| `DATABASE_URL` | Replit PostgreSQL | Full `postgresql://user:pass@host:port/db` connection string. The `pg` pool and Drizzle ORM both read this. |
-| `PGDATABASE` | Replit PostgreSQL | Database name component of the connection. |
-| `PGHOST` | Replit PostgreSQL | Database server hostname. |
-| `PGPORT` | Replit PostgreSQL | Database server port (usually `5432`). |
-| `PGUSER` | Replit PostgreSQL | Database login username. |
-| `PGPASSWORD` | Replit PostgreSQL | Database login password. |
+| `DATABASE_URL` | Replit PostgreSQL | Full `postgresql://user:pass@host:port/db` connection string injected by Replit's managed PostgreSQL. Used as a **fallback** — `lib/db` checks `NEON_DATABASE_URL` first and only falls back to this if `NEON_DATABASE_URL` is not set. |
+| `PGDATABASE` | Replit PostgreSQL | Database name component of the Replit-managed connection. |
+| `PGHOST` | Replit PostgreSQL | Database server hostname of the Replit-managed instance. |
+| `PGPORT` | Replit PostgreSQL | Database server port of the Replit-managed instance (usually `5432`). |
+| `PGUSER` | Replit PostgreSQL | Database login username for the Replit-managed instance. |
+| `PGPASSWORD` | Replit PostgreSQL | Database login password for the Replit-managed instance. |
 | `REPLIT_DEV_DOMAIN` | Replit platform | The current dev preview domain (e.g. `abc123.replit.dev`). Changes on each re-import. Auto-added to CORS since v4.9.0. |
 | `REPLIT_DOMAINS` | Replit platform | Comma-separated list of all domains assigned to this repl (dev + deployed). Auto-added to CORS since v4.9.0. |
 | `REPL_ID` | Replit platform | Unique identifier for this repl. Used internally by Replit tooling. |
@@ -197,6 +197,7 @@ Minimum required after importing the project fresh from GitHub:
 
 ### Secrets Tab (🔒)
 ```
+☐ NEON_DATABASE_URL   — Neon PostgreSQL connection string (postgresql://... from Neon dashboard; use pooled connection)
 ☐ SESSION_SECRET      — 32+ character random string (e.g. openssl rand -base64 32)
 ☐ ADMIN_PASSWORD      — strong password for admin account
 ☐ OPERATOR_PASSWORD   — strong password for operator account
@@ -220,7 +221,7 @@ Minimum required after importing the project fresh from GitHub:
 ```bash
 1.  pnpm install                              # install all dependencies
 2.  cd lib/db && pnpm drizzle-kit push        # apply DB schema
-3.  psql "$DATABASE_URL" -c "
+3.  psql "${NEON_DATABASE_URL:-$DATABASE_URL}" -c "
       CREATE TABLE IF NOT EXISTS session (
         sid    varchar      NOT NULL COLLATE \"default\",
         sess   json         NOT NULL,
@@ -236,7 +237,8 @@ Minimum required after importing the project fresh from GitHub:
 
 ### Not Required to Set
 ```
-✓  DATABASE_URL      — auto-injected by Replit
+✓  NEON_DATABASE_URL — set as a Replit Secret (user-owned Neon account; takes priority over DATABASE_URL)
+✓  DATABASE_URL      — auto-injected by Replit (used as fallback if NEON_DATABASE_URL is not set)
 ✓  CORS_ORIGIN       — Replit domains auto-included since v4.9.0
 ✓  ENCRYPTION_KEY    — auto-generated at first boot, persisted in DB
 ✓  JWT_SECRET        — auto-generated at first boot, persisted in DB

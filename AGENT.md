@@ -74,7 +74,7 @@ Target users: rural Odisha CSC operators. UI languages: English, Hindi, Odia (`i
 | Runtime | Node.js (ESM), TypeScript 5.9 |
 | Backend framework | Express 5.2 |
 | ORM | Drizzle ORM + drizzle-kit |
-| Database | PostgreSQL (Replit-managed, `DATABASE_URL` auto-injected) |
+| Database | PostgreSQL (Neon · user-managed via `NEON_DATABASE_URL`; falls back to Replit-managed `DATABASE_URL`) |
 | Session | express-session + connect-pg-simple (`session` table) |
 | Cache | In-process TTL map (default) or Upstash Redis (`CACHE_BACKEND=redis`) |
 | Queue | BullMQ + ioredis (optional, needs `REDIS_URL`) |
@@ -132,8 +132,13 @@ Target users: rural Odisha CSC operators. UI languages: English, Hindi, Odia (`i
 | `SENTRY_DSN` | Server-side error tracking |
 | `VITE_SENTRY_DSN` | Client-side error tracking |
 
+### Database connection secret
+| Key | Purpose |
+|-----|---------|
+| `NEON_DATABASE_URL` | Neon PostgreSQL connection string — set as a Replit Secret. `lib/db` reads this first; falls back to `DATABASE_URL` if absent. |
+
 ### Runtime-managed (never set manually)
-`DATABASE_URL`, `PGDATABASE`, `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `REPLIT_DOMAINS`, `REPLIT_DEV_DOMAIN`, `REPL_ID`
+`DATABASE_URL` (Replit-managed PostgreSQL fallback), `PGDATABASE`, `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `REPLIT_DOMAINS`, `REPLIT_DEV_DOMAIN`, `REPL_ID`
 
 ### Auto-generated (stored in `settings` table)
 `ENCRYPTION_KEY` equivalent, VAPID public/private key pair, JWT secret
@@ -621,7 +626,7 @@ All pages are in `artifacts/sahu-csc/src/pages/`.
 ```bash
 pnpm install --frozen-lockfile
 pnpm --filter @workspace/db run push-force    # apply schema
-psql "$DATABASE_URL" -c "CREATE TABLE IF NOT EXISTS session ..."   # session table
+psql "${NEON_DATABASE_URL:-$DATABASE_URL}" -c "CREATE TABLE IF NOT EXISTS session ..."   # session table
 # Run "Seed Database" workflow
 # Start "API Server" + "artifacts/sahu-csc: web" workflows
 # Update CORS_ORIGIN env var to include current $REPLIT_DEV_DOMAIN

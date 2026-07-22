@@ -340,7 +340,7 @@ All backend source files over ~300 lines split into focused sub-modules using th
 
 ### After importing to Replit
 
-1. **PostgreSQL is auto-provisioned** — `DATABASE_URL` is set automatically.
+1. **Add the `NEON_DATABASE_URL` secret** — paste your Neon connection string into Replit Secrets (🔒). `lib/db` reads this first and falls back to Replit's auto-injected `DATABASE_URL` if absent.
 2. `scripts/post-merge.sh` runs automatically — installs deps + applies DB schema.
 3. **Add required secrets** in the Replit Secrets tab (🔒 left sidebar):
 
@@ -422,7 +422,8 @@ All secrets are managed in the Replit Secrets tab (🔒 icon in left sidebar). N
 
 | Variable | Purpose |
 |----------|---------|
-| `DATABASE_URL` | PostgreSQL connection string (auto-provisioned by Replit) |
+| `NEON_DATABASE_URL` | Neon PostgreSQL connection string — set as a Replit Secret (takes priority over `DATABASE_URL`) |
+| `DATABASE_URL` | Replit-managed PostgreSQL fallback — auto-injected; used only if `NEON_DATABASE_URL` is absent |
 | `SESSION_SECRET` | Express session signing key — any long random string |
 | `ADMIN_PASSWORD` | Default admin account password (used by Seed Database workflow) |
 | `OPERATOR_PASSWORD` | Default operator account password (used by Seed Database workflow) |

@@ -432,7 +432,7 @@ workspace/
 | Theme | Navy `#0b2c60` + Saffron `#f97316` | |
 | API | Express 5, express-session, helmet, hpp, express-rate-limit | |
 | Session store | connect-pg-simple (PostgreSQL) | Survives server restarts; must be in esbuild `external` |
-| Database | PostgreSQL + Drizzle ORM | Replit-provisioned |
+| Database | PostgreSQL + Drizzle ORM | Neon (user-managed); falls back to Replit-provisioned |
 | Validation | Zod (`zod/v4`), drizzle-zod | |
 | API contracts | OpenAPI 3.1 → Orval codegen → typed React Query hooks | |
 | Push | web-push (VAPID) | Auto-generates keys on startup if not set |
@@ -1096,7 +1096,8 @@ pnpm --filter @workspace/db run push
 
 | Variable | Required | Purpose |
 |----------|----------|---------|
-| `DATABASE_URL` | ✅ | PostgreSQL connection (auto-provisioned by Replit) |
+| `NEON_DATABASE_URL` | ✅ | Neon PostgreSQL connection string — Replit Secret (takes priority) |
+| `DATABASE_URL` | fallback | Replit-managed PostgreSQL — auto-injected; used only if `NEON_DATABASE_URL` is absent |
 | `SESSION_SECRET` | ✅ | Express session signing secret |
 | `SMTP_HOST` | ✅ for email | SMTP server hostname |
 | `SMTP_PORT` | ✅ for email | SMTP port (587 / 465) |

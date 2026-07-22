@@ -54,7 +54,7 @@ The app is a full-stack TypeScript monorepo: an Express REST API backed by Postg
 |---|---|
 | Package manager | pnpm workspaces |
 | Backend | Node.js · Express · TypeScript |
-| Database | PostgreSQL (Replit managed) · Drizzle ORM |
+| Database | PostgreSQL (Neon · user-managed) · Drizzle ORM |
 | Frontend | React 19 · Vite 7 · Tailwind CSS v4 |
 | State / data fetching | TanStack Query v5 |
 | Routing (frontend) | Wouter |
@@ -125,7 +125,7 @@ Optional secrets (email / push notifications):
 | `SMTP_USER` | SMTP login username |
 | `SMTP_PASSWORD` | SMTP login password (`SMTP_PASS` also accepted as alias) |
 
-> `DATABASE_URL` is injected automatically by Replit's managed PostgreSQL.  
+> `NEON_DATABASE_URL` is a Replit Secret pointing to the user-owned Neon PostgreSQL account. `lib/db` reads `NEON_DATABASE_URL` first and falls back to Replit's auto-injected `DATABASE_URL` if it is not set.  
 > `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` are auto-generated and persisted in the `settings` table at first boot — do not set them manually.
 
 ### 3. Push the database schema
@@ -137,7 +137,7 @@ pnpm --filter @workspace/db run push-force
 ### 4. Create the session table (one-time)
 
 ```sql
-psql "$DATABASE_URL" -c "
+psql "${NEON_DATABASE_URL:-$DATABASE_URL}" -c "
   CREATE TABLE IF NOT EXISTS \"session\" (
     \"sid\"    varchar      NOT NULL COLLATE \"default\",
     \"sess\"   json         NOT NULL,
@@ -173,7 +173,8 @@ The Vite dev server proxies all `/api/*` requests to `localhost:8080`.
 
 | Name | Required | Set by | Purpose |
 |---|---|---|---|
-| `DATABASE_URL` | ✅ | Replit (auto) | PostgreSQL connection string |
+| `NEON_DATABASE_URL` | ✅ | Replit Secret | Neon PostgreSQL connection string (takes priority over `DATABASE_URL`) |
+| `DATABASE_URL` | fallback | Replit (auto) | Replit-managed PostgreSQL — used only if `NEON_DATABASE_URL` is absent |
 | `SESSION_SECRET` | ✅ | Replit Secret | Signs HTTP session cookies |
 | `ADMIN_PASSWORD` | ✅ | Replit Secret | Seed script — admin user password |
 | `OPERATOR_PASSWORD` | ✅ | Replit Secret | Seed script — operator user password |

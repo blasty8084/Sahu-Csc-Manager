@@ -9,6 +9,7 @@
 
 ## Table of Contents
 
+0. [Infra — Switched database to user-owned Neon PostgreSQL (July 22, 2026)](#0-infra--switched-database-to-user-owned-neon-postgresql-july-22-2026)
 0. [Refactor — API test scripts split into auth and utils modules (July 21, 2026)](#0-refactor--api-test-scripts-split-into-auth-and-utils-modules-july-21-2026)
 0. [Fix — index.html meta/title update (July 21, 2026)](#0-fix--indexhtml-metatitle-update-july-21-2026)
 0. [Refactor — routes/admin.ts split into thin router + adminStatsService + adminUserService (July 21, 2026)](#0-refactor--routesadmints-split-into-thin-router--adminstatsservice--adminuserservice-july-21-2026)
@@ -885,6 +886,19 @@ Files trimmed:
 0. [v3.5.10 — Navigation Performance — Instant Page Switching (July 12, 2026)](#0-v3510--navigation-performance--instant-page-switching-july-12-2026)
 0. [v3.5.9 — Redis Cache Live, i18n Fixes & Build Hardening (July 12, 2026)](#0-v359--redis-cache-live-i18n-fixes--build-hardening-july-12-2026)
 0. [v3.5.8 — Reports & Receipt Export Page Modularization (July 12, 2026)](#0-v358--reports--receipt-export-page-modularization-july-12-2026)
+
+---
+
+## 0. Infra — Switched database to user-owned Neon PostgreSQL (July 22, 2026)
+
+Infrastructure change only. No schema changes, no API contract changes, no user-facing behavior changes.
+
+| Change | Detail |
+|--------|--------|
+| **`lib/db` reads `NEON_DATABASE_URL` first** | `lib/db/src/index.ts` and `lib/db/drizzle.config.ts` now resolve the connection string as `NEON_DATABASE_URL \|\| DATABASE_URL`. When `NEON_DATABASE_URL` is set (Replit Secret), all connections (ORM pool, session store, drizzle-kit push) target the user-owned Neon instance. Falls back to Replit's auto-injected `DATABASE_URL` if the secret is absent. |
+| **Schema + session table pushed to Neon** | `pnpm --filter @workspace/db run push-force` and the session-table `CREATE TABLE IF NOT EXISTS` SQL applied against the Neon database. |
+| **Seed re-run against Neon** | `Seed Database` workflow re-executed — `admin` and `operator` accounts, services, settings, and welcome notification created in the Neon database. |
+| **All documentation updated** | `DOCS.md`, `ARCHITECTURE.md`, `PROJECT.md`, `AGENT.md`, `secrets.md`, `CHANGELOG.md`, `memory.md`, `replit.md` updated to reflect `NEON_DATABASE_URL` as the primary database secret. |
 
 ---
 
