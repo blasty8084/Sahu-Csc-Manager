@@ -1,5 +1,5 @@
 # SAHU CSC — Secrets & Environment Variables Reference
-**Version 4.9.0** · Last updated 2026-07-16
+**Version 4.9.0** · Last updated 2026-07-22
 
 Complete list of every secret and environment variable used by this project.  
 Set **Secrets** via the Replit Secrets tab (🔒 left sidebar) — values are encrypted and never visible.  

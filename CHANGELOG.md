@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Changelog
-**Current version: 4.9.0 — July 20, 2026**
+**Current version: 4.9.0 — July 22, 2026**
 
 > Single authoritative changelog covering all versions from v1.x through v4.x.
 > - **v3.x / v4.x entries** (current) — listed first, newest at top
@@ -9,6 +9,8 @@
 
 ## Table of Contents
 
+0. [Refactor — API test scripts split into auth and utils modules (July 21, 2026)](#0-refactor--api-test-scripts-split-into-auth-and-utils-modules-july-21-2026)
+0. [Fix — index.html meta/title update (July 21, 2026)](#0-fix--indexhtml-metatitle-update-july-21-2026)
 0. [Refactor — routes/admin.ts split into thin router + adminStatsService + adminUserService (July 21, 2026)](#0-refactor--routesadmints-split-into-thin-router--adminstatsservice--adminuserservice-july-21-2026)
 0. [Refactor — routes/ledger.ts split into route handlers + lib/ledgerHelpers.ts (July 21, 2026)](#0-refactor--routesledgerts-split-into-route-handlers--libledgerhelpersts-july-21-2026)
 0. [Refactor — settings/backups.ts split into backupCore, backupSchedule, backupImport services (July 21, 2026)](#0-refactor--settingsbackupsts-split-into-backupcore-backupschedule-backupimport-services-july-21-2026)
@@ -78,6 +80,26 @@
 
 ### Typecheck
 `pnpm --filter @workspace/api-server run typecheck` — clean.
+
+---
+
+## 0. Refactor — API test scripts split into auth and utils modules (July 21, 2026)
+
+`scripts/test-api.ts` (284 lines) split into three focused files:
+
+| File | Lines | Responsibility |
+|------|-------|----------------|
+| `scripts/test-api.ts` | ~12 | Entry point — imports and runs all test suites |
+| `scripts/test-auth.ts` | 192 | Auth-focused tests: login, logout, 2FA, session management |
+| `scripts/test-utils.ts` | 109 | Shared test helpers and utility functions |
+
+Zero behaviour change — test coverage identical, just better organised for future additions.
+
+---
+
+## 0. Fix — index.html meta/title update (July 21, 2026)
+
+`artifacts/sahu-csc/index.html` — minor meta/title attribute update. No functional change.
 
 ---
 

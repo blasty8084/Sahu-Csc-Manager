@@ -1,5 +1,5 @@
 # SAHU CSC — Architecture Reference
-**Version 4.9.0 — July 20, 2026**
+**Version 4.9.0 — July 22, 2026**
 
 > This is the single authoritative reference for the SAHU CSC platform architecture.  
 > It supersedes `docs/archive/architectureV2.md` and `docs/archive/ARCHITECTURE.md`.  
@@ -65,7 +65,7 @@ Credentials are never hardcoded — the seed script (`artifacts/api-server/src/s
 ```
 workspace/
 ├── artifacts/
-│   ├── api-server/              # @workspace/api-server v4.1.2 — Express 5 (port 8080)
+│   ├── api-server/              # @workspace/api-server v4.9.0 — Express 5 (port 8080)
 │   │   ├── src/
 │   │   │   ├── app.ts           # Express app, middleware, connect-pg-simple session
 │   │   │   ├── index.ts         # HTTP server entry point
@@ -165,7 +165,7 @@ workspace/
 │   │   │       └── sms.worker.ts           # SMS (stub)
 │   │   └── build.mjs
 │   │
-│   ├── sahu-csc/                # @workspace/sahu-csc v4.1.2 — React + Vite (port 5000)
+│   ├── sahu-csc/                # @workspace/sahu-csc v4.9.0 — React + Vite (port 5000)
 │   │   ├── index.html
 │   │   ├── vite.config.ts       # port from PORT env · VitePWA + Workbox · proxy /api → 8080
 │   │   ├── public/
@@ -847,7 +847,7 @@ Sync engine: `lib/sync-engine.ts` — singleton, auto-triggers on `window.online
 
 ### Service Worker
 
-Strategy: `generateSW` (vite-plugin-pwa + Workbox).  
+Strategy: `injectManifest` (vite-plugin-pwa + Workbox) — custom `sw.ts` for push/periodic sync support.  
 Dev mode: enabled (`devOptions.enabled: true, type: "module"`).
 
 ### Manifest (embedded in vite.config.ts + `infrastructure/pwa/manifest.json`)
