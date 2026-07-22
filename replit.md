@@ -1,7 +1,7 @@
 # SAHU CSC — Common Service Center Management Platform
 **Version 4.9.0** — last updated 2026-07-22
 
-> **Set up on Replit 2026-07-22 (latest)**: Ran `scripts/post-merge.sh` (pnpm install + schema push + session table), built API server and frontend, seeded DB via `Seed Database` workflow. `API Server` (port 8080) and `Start application` (port 5000) running. `Worker Server` skips cleanly — `REDIS_URL` not set. Secrets set: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. CORS auto-includes `REPLIT_DEV_DOMAIN`/`REPLIT_DOMAINS` (v4.9.0+). Verified: dashboard renders correctly in preview.
+> **Set up on Replit 2026-07-22 (latest)**: Switched database to user's Neon PostgreSQL account. `lib/db` now prefers `NEON_DATABASE_URL` over `DATABASE_URL`. Pushed schema + session table to Neon, rebuilt API server, reseeded. `API Server` (port 8080) and `Start application` (port 5000) running. Secrets set: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`, `NEON_DATABASE_URL`. Verified: dashboard renders correctly in preview.
 >
 > **Set up on Replit 2026-07-22**: Ran `pnpm install` (node_modules missing after import), pushed DB schema via `pnpm --filter @workspace/db run push-force` (lib/db/), created session table + index via raw SQL, seeded DB via `Seed Database` workflow. `API Server` (port 8080) and `artifacts/sahu-csc: web` (port 5000) running. `Worker Server` skips cleanly — `REDIS_URL` not set. Secrets set: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. CORS auto-includes `REPLIT_DEV_DOMAIN`/`REPLIT_DOMAINS` (v4.9.0+). Both `dev` and `main` branches are at the same commit (v4.9.0). Verified: login page renders correctly in preview.
 >
