@@ -8,13 +8,14 @@ import { getAppVersion } from "../lib/version";
 
 const router: IRouter = Router();
 
-// Alias /health → /healthz for load-balancers, PM2, and Replit port probes
-router.get("/health", (_req, res) => {
+// Aliases for load-balancers, PM2, Replit port probes, and artifact health checker.
+// The Replit artifact health checker probes /api/health; the server is mounted at /.
+router.get(["/health", "/api/health"], (_req, res) => {
   res.set("Cache-Control", "no-store");
   res.json({ status: "ok", version: getAppVersion(), uptime: process.uptime() });
 });
 
-router.get("/healthz", async (_req, res) => {
+router.get(["/healthz", "/api/healthz"], async (_req, res) => {
   const startTime = Date.now();
 
   // ── Database check ──────────────────────────────────────────────────────────
