@@ -4,7 +4,9 @@ import * as schema from "./schema";
 
 const { Pool } = pg;
 
-if (!process.env.DATABASE_URL) {
+const resolvedDatabaseUrl = process.env.NEON_DATABASE_URL || process.env.DATABASE_URL;
+
+if (!resolvedDatabaseUrl) {
   throw new Error(
     "DATABASE_URL must be set. Did you forget to provision a database?",
   );
@@ -18,7 +20,7 @@ if (!process.env.DATABASE_URL) {
 // - connectionTimeoutMillis: fail fast (instead of hanging the request) when
 //   the pool is saturated and Postgres can't hand out a new connection.
 export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: resolvedDatabaseUrl,
   max: Number(process.env.DB_POOL_MAX ?? 20),
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 5_000,
