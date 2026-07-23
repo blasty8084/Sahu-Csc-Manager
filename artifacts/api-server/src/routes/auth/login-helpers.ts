@@ -152,5 +152,5 @@ export async function finalizeLogin(params: FinalizeLoginParams) {
   await notifyLoginSuccess(user.id, ipAddress, deviceInfo);
   if (wasNewDevice) await notifyNewDeviceLogin(user.id, ipAddress, deviceInfo);
 
-  return fmtUser(user);
+  return await fmtUser(user);
 }

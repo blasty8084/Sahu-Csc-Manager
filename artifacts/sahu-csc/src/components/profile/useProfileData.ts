@@ -106,6 +106,10 @@ export function useProfileData() {
   const invalidateProfile = () => {
     qc.invalidateQueries({ queryKey: getGetProfileQueryKey() });
     qc.invalidateQueries({ queryKey: getGetMeQueryKey() });
+    // The global header/sidebar consume /auth/me rather than /profile.
+    // Explicitly invalidate the stable auth key so an avatar change is
+    // visible outside the Profile page without requiring a full reload.
+    qc.invalidateQueries({ queryKey: ["auth/me"] });
   };
 
   // ── Submit handlers ──────────────────────────────────────────────────────

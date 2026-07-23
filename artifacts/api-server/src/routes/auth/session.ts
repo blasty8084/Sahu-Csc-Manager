@@ -45,7 +45,7 @@ router.get("/auth/me", requireAuth, asyncHandler(async (req, res) => {
     res.status(401).json({ error: "Not authenticated" });
     return;
   }
-  res.json(fmtUser(user));
+  res.json(await fmtUser(user));
 }));
 
 export default router;

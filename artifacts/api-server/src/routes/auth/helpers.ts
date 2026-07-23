@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { getB2SignedUrl, isB2Configured } from "../../lib/b2";
 
 /** Generate a 6-digit numeric OTP. */
 export function generateNumericOtp(): string {
@@ -20,7 +21,23 @@ export function maskEmail(email: string): string {
 }
 
 /** Formats a user DB row into the public-safe shape returned by auth endpoints. */
-export function fmtUser(user: any) {
+export async function fmtUser(user: any) {
+  let profilePicture = user.profilePicture ?? null;
+  // B2 keys are database storage references, not browser image URLs. Resolve
+  // them here because /auth/me and login responses feed the global header,
+  // sidebar, and other screens directly (the profile route already did this).
+  if (profilePicture?.startsWith("b2:")) {
+    if (!isB2Configured()) {
+      profilePicture = null;
+    } else {
+      try {
+        profilePicture = await getB2SignedUrl(profilePicture.slice(3), 3600);
+      } catch {
+        profilePicture = null;
+      }
+    }
+  }
+
   return {
     id: user.id,
     username: user.username,
@@ -28,7 +45,7 @@ export function fmtUser(user: any) {
     mobile: user.mobile ?? null,
     role: user.role,
     fullName: user.fullName ?? null,
-    profilePicture: user.profilePicture ?? null,
+    profilePicture,
     bio: user.bio ?? null,
     address: user.address ?? null,
     status: user.status ?? "ACTIVE",
