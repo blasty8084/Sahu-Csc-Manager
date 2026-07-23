@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useSyncExternalStore } from "react";
 
 export type NetworkQuality = "online" | "slow" | "offline";
 
@@ -14,6 +14,8 @@ export interface NetworkStatus {
 const BASE = typeof window !== "undefined"
   ? (import.meta as any).env?.BASE_URL?.replace(/\/$/, "") ?? ""
   : "";
+
+const PROBE_INTERVAL_MS = 30_000;
 
 async function measureLatency(): Promise<number | null> {
   try {
@@ -48,41 +50,102 @@ function getStatus(latencyMs: number | null): NetworkStatus {
   };
 }
 
-export function useNetworkStatus(): NetworkStatus {
-  const [latency, setLatency] = useState<number | null>(null);
-  const [status, setStatus] = useState<NetworkStatus>(() => getStatus(null));
-  const probeRef = useRef<ReturnType<typeof setInterval> | null>(null);
+// This hook is consumed by many dashboard/PWA components. Keep one shared
+// browser probe instead of creating one timer and one /api/health request per
+// component instance. The state lives on globalThis, not only in this module:
+// Vite can place copies of a shared hook into multiple lazy chunks.
+interface SharedProbeState {
+  status: NetworkStatus;
+  timer: ReturnType<typeof setInterval> | null;
+  inFlight: boolean;
+  listeners: Set<() => void>;
+  onlineListenersAttached: boolean;
+  onlineHandler: (() => void) | null;
+}
 
-  const runProbe = async () => {
-    const ms = await measureLatency();
-    setLatency(ms);
-    setStatus(getStatus(ms));
+const shared: SharedProbeState = (() => {
+  const root = globalThis as typeof globalThis & { __SAHU_NETWORK_PROBE__?: SharedProbeState };
+  return root.__SAHU_NETWORK_PROBE__ ??= {
+    status: getStatus(null),
+    timer: null,
+    inFlight: false,
+    listeners: new Set(),
+    onlineListenersAttached: false,
+    onlineHandler: null,
   };
+})();
 
-  useEffect(() => {
-    const update = () => {
-      setStatus(getStatus(latency));
-      if (navigator.onLine) runProbe();
-    };
+function notify() {
+  shared.listeners.forEach((listener) => listener());
+}
 
-    window.addEventListener("online", update);
-    window.addEventListener("offline", update);
+async function runSharedProbe() {
+  if (shared.inFlight) return;
+  shared.inFlight = true;
+  try {
+    const ms = await measureLatency();
+    shared.status = getStatus(ms);
+    notify();
+  } finally {
+    shared.inFlight = false;
+  }
+}
+
+function handleConnectionChange() {
+  shared.status = getStatus(shared.status.latencyMs);
+  notify();
+  if (typeof navigator !== "undefined" && navigator.onLine) {
+    void runSharedProbe();
+  }
+}
+
+function startSharedProbe() {
+  if (typeof window === "undefined" || shared.onlineListenersAttached) return;
+  shared.onlineListenersAttached = true;
+  shared.onlineHandler = handleConnectionChange;
+  window.addEventListener("online", shared.onlineHandler);
+  window.addEventListener("offline", shared.onlineHandler);
+  const conn = (navigator as any).connection;
+  conn?.addEventListener("change", shared.onlineHandler);
+  void runSharedProbe();
+  shared.timer = setInterval(() => {
+    if (navigator.onLine) void runSharedProbe();
+  }, PROBE_INTERVAL_MS);
+}
+
+function stopSharedProbe() {
+  if (!shared.onlineListenersAttached) return;
+  const handler = shared.onlineHandler;
+  if (handler) {
+    window.removeEventListener("online", handler);
+    window.removeEventListener("offline", handler);
     const conn = (navigator as any).connection;
-    conn?.addEventListener("change", update);
+    conn?.removeEventListener("change", handler);
+  }
+  if (shared.timer) clearInterval(shared.timer);
+  shared.timer = null;
+  shared.onlineListenersAttached = false;
+  shared.onlineHandler = null;
+  shared.inFlight = false;
+}
 
-    runProbe();
+function subscribe(listener: () => void) {
+  shared.listeners.add(listener);
+  if (shared.listeners.size === 1) startSharedProbe();
+  return () => {
+    shared.listeners.delete(listener);
+    if (shared.listeners.size === 0) stopSharedProbe();
+  };
+}
 
-    probeRef.current = setInterval(() => {
-      if (navigator.onLine) runProbe();
-    }, 30_000);
+function getSnapshot() {
+  return shared.status;
+}
 
-    return () => {
-      window.removeEventListener("online", update);
-      window.removeEventListener("offline", update);
-      conn?.removeEventListener("change", update);
-      if (probeRef.current) clearInterval(probeRef.current);
-    };
-  }, []);
+function getServerSnapshot() {
+  return shared.status;
+}
 
-  return status;
+export function useNetworkStatus(): NetworkStatus {
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }

@@ -35,3 +35,4 @@
 - [Pre-existing TS errors in this project](preexisting-ts-errors.md) — AepsTransactionTable.tsx has session-possibly-null errors; queue-client.ts has ioredis/BullMQ type conflicts; both pre-date all L-series work and are not introduced by refactors
 - [Backblaze B2 integration](b2-integration.md) — optional S3-compatible avatar/backup storage; normalize hostname-only endpoints and preserve local/base64 fallback
 - [B2 avatar response contract](b2-avatar-response.md) — never expose `b2:` storage keys to the browser; auth and profile responses must return signed image URLs
+- [Shared health probing](shared-health-probing.md) — use one browser-global network probe; lazy chunks can otherwise create duplicate `/api/health` timers
