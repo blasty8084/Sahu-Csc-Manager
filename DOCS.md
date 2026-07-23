@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Platform Documentation
-**Version 4.10.0** — last updated 2026-07-23
+**Version 4.9.0** — last updated 2026-07-22
 
 > Common Service Center (CSC) Business Management Platform for Odisha / India rural service centers.
 > Full-stack · PWA · Offline-capable · Multilingual (English / Hindi / Odia)
@@ -631,13 +631,6 @@ All routes are mounted under `/api/`. Auth middleware: `requireAuth` (session), 
 | `POST` | `/api/push/subscribe` | Subscribe to push notifications |
 | `POST` | `/api/push/unsubscribe` | Unsubscribe from push |
 | `GET` | `/api/push/subscriptions` | List user push subscriptions |
-| `GET` | `/api/files/status` | Drive configured? `{ driveConfigured, storage }` |
-| `POST` | `/api/files/receipt` | Upload receipt PDF (`multipart/form-data`, field: `file`) |
-| `POST` | `/api/files/profile` | Upload profile photo (`multipart/form-data`, field: `file`) |
-| `POST` | `/api/files/export` | Upload report PDF (`multipart/form-data`, field: `file`) |
-| `POST` | `/api/files/document` | Upload Udhari document (`multipart/form-data`, field: `file`) |
-| `GET` | `/api/files/local/:filename` | Serve local fallback file (no auth required) |
-| `DELETE` | `/api/files/:fileId` | Delete file from Drive or local storage |
 
 ### Admin only
 

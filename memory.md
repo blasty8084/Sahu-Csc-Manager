@@ -1,5 +1,5 @@
 # SAHU CSC — Session Memory / Chat History
-**Session date:** 2026-07-15 to 2026-07-23  
+**Session date:** 2026-07-15 to 2026-07-22  
 **Agent:** Replit Agent (main)
 
 This file records what was done in each conversation turn, why, and what the outcome was. Use it to understand the history of decisions without reading through the full conversation logs.
@@ -111,7 +111,13 @@ New two-phase flow:
 - "Change method" link → back to Phase 1 (clears timer and code)
 - "Use a backup code" toggle
 
-**Outcome:** Verification flow is now completely explicit. No OTP waste. User has a clear choice every time.
+**Key state changes:**
+- `method: Method | null` — null = Phase 1, "otp"/"totp" = Phase 2
+- `choosing: Method | null` — which card is loading
+- `resendSeconds: 0` initial (timer only starts after user requests OTP)
+- Removed `otpSendError` initial state (no auto-send, so no initial error possible)
+
+**Outcome:** Verification flow is now completely explicit. No OTP waste. User has a clear choice every time. API logs confirmed new flow: `login 200` → `switch-method 200` → `switch-method 200` (resend or second method pick).
 
 ---
 
@@ -120,68 +126,23 @@ New two-phase flow:
 **User asked:** "Update documents md and create a agent.md complete app document one file for agent understand, create also memory.md for chat history"
 
 **What was done:**
-- Created `AGENT.md` — single-file comprehensive reference for any agent
+- Created `AGENT.md` — single-file comprehensive reference for any agent:
+  - Project overview, monorepo layout, full tech stack
+  - All environment variables and secrets
+  - Complete database schema (all tables, columns, relationships)
+  - All API routes (method, path, auth, description)
+  - Auth and session system (full 2FA flow, roles, rate limiting)
+  - All frontend pages (public, authenticated, admin-only)
+  - Key frontend architecture (auth state, offline PWA, i18n, performance)
+  - How to run (first-time + ongoing)
+  - Background jobs and cron
+  - Known quirks and non-obvious decisions (15 critical items)
+  - Testing, build process
+  - Version history summary
+
 - Created `memory.md` (this file) — session chat history
+
 - Updated `.agents/memory/MEMORY.md` — added new entries for 2FA method picker redesign
-
----
-
-## Turn 6 — Google Drive File Storage Integration (2026-07-23)
-
-**User uploaded:** `SAHU_CSC_Google_Drive_Integration_Prompt_1784780511848.md` — detailed spec for Drive integration.
-
-**What was done:**
-
-### New files created
-- `artifacts/api-server/src/services/googleDrive.ts` — unified Drive service with local fallback
-- `artifacts/api-server/src/middleware/upload.ts` — multer memory-storage, 10 MB limit, jpeg/png/webp/pdf
-- `artifacts/api-server/src/routes/files.ts` — 7 new endpoints
-
-### New API endpoints
-- `GET /api/files/status` — Drive configured?
-- `POST /api/files/receipt|profile|export|document` — multipart upload
-- `GET /api/files/local/:filename` — serve local fallback
-- `DELETE /api/files/:fileId` — delete from Drive or local
-
-### Schema changes (pushed to Neon)
-- New `file_uploads` table
-- `ledger`: + `file_url`, `drive_file_id`, `storage_dest`
-- `users`: + `avatar_url`, `avatar_file_id`
-
-### Profile avatar updated
-`POST /profile/avatar` now uploads WebP to Drive when configured. Falls back to base64 otherwise.
-
-### Key finding — Shared Drive required
-Service accounts cannot upload to regular My Drive folders (no storage quota). `GOOGLE_DRIVE_FOLDER_ID` must point to a **Shared Drive** folder where the service account is a Content Manager member. `supportsAllDrives: true` added to all Drive API calls.
-
-### Secrets added
-- `GOOGLE_SERVICE_ACCOUNT_JSON` ✅
-- `GOOGLE_DRIVE_FOLDER_ID` ✅
-
-### Status
-- Drive API confirmed working: `GET /api/files/status` → `{ driveConfigured: true }`
-- Test upload failed with "Service Accounts do not have storage quota" — user needs to use a Shared Drive folder (not My Drive)
-
----
-
-## Turn 7 — Documentation Update (2026-07-23)
-
-**User asked:** "Update all md documents"
-
-**What was done:**
-Updated all project MD files to v4.10.0 reflecting the Google Drive integration:
-
-| File | Changes |
-|------|---------|
-| `secrets.md` | Added §4 Google Drive File Storage; renumbered all sections; updated checklist |
-| `AGENT.md` | Updated version; added Drive secrets to optional secrets; updated schema (16 tables); added quirks #17 + #18; added cleanup cron job; updated version history |
-| `ARCHITECTURE.md` | Updated version; 15→16 tables; added `file_uploads` table; added columns to `ledger` + `users` |
-| `CHANGELOG.md` | Updated current version; added v4.10.0 entry at top with full details |
-| `replit.md` | Updated version; added latest setup note; added v4.10.0 "What's New" section |
-| `DOCS.md` | Updated version; added all 7 `/api/files/*` endpoints to route reference |
-| `BUGS.md` | Updated review date |
-| `PROJECT.md` | Updated version |
-| `memory.md` | Added Turns 6 + 7 (this file) |
 
 ---
 
@@ -192,19 +153,31 @@ Updated all project MD files to v4.10.0 reflecting the Google Drive integration:
 | Email notifications fully configured | ✅ Done (SMTP live, OTP emails working) |
 | Redis / BullMQ worker server | ⏳ Pending — needs `REDIS_URL` secret |
 | Publish to stable URL | ⏳ Pending — deploy workflow not run |
-| Google Drive test upload | ⏳ Pending — user needs to set up a Shared Drive folder and update `GOOGLE_DRIVE_FOLDER_ID` |
+| CORS_ORIGIN includes current dev domain | ✅ In env vars |
 
 ---
 
-## Environment State (end of Turn 7)
+## Key Files Changed This Session
+
+| File | Change |
+|------|--------|
+| `artifacts/api-server/src/routes/auth/login.ts` | Removed OTP auto-send; returns method-neutral challenge; fixed totpEnrolled check |
+| `artifacts/api-server/src/routes/auth/2fa.ts` | Fixed `totpEnrolled: !!(totpSecret && twoFaEnabled)` in switch-method |
+| `artifacts/sahu-csc/src/hooks/use-auth.tsx` | Simplified TwoFaChallenge type (removed method + otpError fields) |
+| `artifacts/sahu-csc/src/components/auth/TwoFactorStep.tsx` | Full rewrite — explicit method picker + code entry phases |
+| `AGENT.md` | Created — full agent reference |
+| `memory.md` | Created — this file |
+
+---
+
+## Environment State (end of session)
 
 | Item | Value |
 |------|-------|
 | API Server | Running, port 8080 |
 | Frontend | Running, port 5000 (Vite dev) |
 | Worker Server | Not running (no REDIS_URL) |
-| Database | Neon PostgreSQL, schema v4.10.0 applied |
+| Database | Schema applied, seeded |
 | SMTP | ✅ Working (Gmail, verified) |
 | 2FA | ✅ Fixed + redesigned |
-| Google Drive | ✅ Configured (awaiting Shared Drive folder) |
-| Secrets set | SESSION_SECRET, ADMIN_PASSWORD, OPERATOR_PASSWORD, SMTP_PASSWORD, NEON_DATABASE_URL, GOOGLE_SERVICE_ACCOUNT_JSON, GOOGLE_DRIVE_FOLDER_ID |
+| Secrets set | SESSION_SECRET, ADMIN_PASSWORD, OPERATOR_PASSWORD, SMTP_PASS |

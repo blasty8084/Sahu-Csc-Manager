@@ -4,7 +4,6 @@ import { eq, and, not } from "drizzle-orm";
 import { z } from "zod/v4";
 import sharp from "sharp";
 import { requireAuth, hashPassword, auditLog, getClientIp } from "../lib/auth";
-import { uploadFile, deleteFromDrive, driveAvailable } from "../services/googleDrive";
 import { invalidateSessionCache, invalidateUserCache } from "../lib/auth/sessionCache";
 import { encryptField, decryptField } from "../lib/encryption";
 import { sanitize } from "../lib/sanitize";
@@ -102,7 +101,7 @@ router.patch("/profile", requireAuth, asyncHandler(async (req, res) => {
         )
       )
       .returning({ sessionId: userSessionsTable.sessionId });
-    await Promise.all(revoked.map((r: { sessionId: string }) => invalidateSessionCache(r.sessionId)));
+    await Promise.all(revoked.map((r) => invalidateSessionCache(r.sessionId)));
     await invalidateUserCache(userId);
   }
 
@@ -149,49 +148,19 @@ router.post("/profile/avatar", requireAuth, asyncHandler(async (req, res) => {
     res.status(400).json({ error: "Could not process image. Please upload a valid image file." }); return;
   }
 
-  const outputBuffer = Buffer.from(compressedDataUrl.slice(compressedDataUrl.indexOf(",") + 1), "base64");
-
-  let avatarUrl: string | null = null;
-  let avatarFileId: string | null = null;
-  let profilePicture: string | null = compressedDataUrl; // base64 fallback
-
-  if (driveAvailable) {
-    try {
-      const result = await uploadFile(outputBuffer, `avatar-${userId}.webp`, "image/webp", "profiles");
-      avatarUrl = result.url;
-      avatarFileId = result.fileId;
-      profilePicture = null; // clear base64 when Drive is used
-      // Delete old Drive file if it exists
-      const [existing] = await db.select({ avatarFileId: usersTable.avatarFileId }).from(usersTable).where(eq(usersTable.id, userId)) as [{ avatarFileId: string | null } | undefined];
-      if (existing?.avatarFileId) {
-        await deleteFromDrive(existing.avatarFileId).catch(() => { /* old file may already be gone */ });
-      }
-    } catch (err) {
-      // Drive upload failed — fall back to base64 silently
-      console.warn("Drive avatar upload failed, using base64 fallback:", err);
-    }
-  }
-
   const [updated] = await db
     .update(usersTable)
-    .set({ profilePicture, avatarUrl, avatarFileId })
+    .set({ profilePicture: compressedDataUrl })
     .where(eq(usersTable.id, userId))
     .returning();
 
   await auditLog(userId, "profile.avatar_update", "User updated profile picture", getClientIp(req));
-  res.json({
-    profilePicture: updated.profilePicture,
-    avatarUrl: updated.avatarUrl,
-  });
+  res.json({ profilePicture: updated.profilePicture });
 }));
 
 router.delete("/profile/avatar", requireAuth, asyncHandler(async (req, res) => {
   const userId = req.session.userId!;
-  const [existing] = await db.select({ avatarFileId: usersTable.avatarFileId }).from(usersTable).where(eq(usersTable.id, userId));
-  if (existing?.avatarFileId && driveAvailable) {
-    await deleteFromDrive(existing.avatarFileId).catch(() => { /* ignore if already deleted */ });
-  }
-  await db.update(usersTable).set({ profilePicture: null, avatarUrl: null, avatarFileId: null }).where(eq(usersTable.id, userId));
+  await db.update(usersTable).set({ profilePicture: null }).where(eq(usersTable.id, userId));
   await auditLog(userId, "profile.avatar_delete", "User removed profile picture", getClientIp(req));
   res.json({ message: "Profile picture removed" });
 }));

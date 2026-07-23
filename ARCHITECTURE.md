@@ -1,5 +1,5 @@
 # SAHU CSC — Architecture Reference
-**Version 4.10.0 — July 23, 2026**
+**Version 4.9.0 — July 22, 2026**
 
 > This is the single authoritative reference for the SAHU CSC platform architecture.  
 > It supersedes `docs/archive/architectureV2.md` and `docs/archive/ARCHITECTURE.md`.  
@@ -12,7 +12,7 @@
 1. [Overview](#1-overview)
 2. [Monorepo Layout](#2-monorepo-layout)
 3. [Runtime & Tech Stack](#3-runtime--tech-stack)
-4. [Database Schema — 16 Tables](#4-database-schema--16-tables)
+4. [Database Schema — 15 Tables](#4-database-schema--15-tables)
 5. [Backend — Express API Server](#5-backend--express-api-server)
 6. [Frontend — React SPA](#6-frontend--react-spa)
 7. [3-Tier Data Architecture](#7-3-tier-data-architecture)
@@ -444,7 +444,7 @@ workspace/
 
 ---
 
-## 4. Database Schema — 16 Tables
+## 4. Database Schema — 15 Tables
 
 ### `users`
 | Column | Type | Notes |
@@ -461,9 +461,7 @@ workspace/
 | `failed_login_attempts` | integer | Reset on success; 5 failures → lock 15 min |
 | `locked_until` | timestamptz NULL | |
 | `active_session_token` | text NULL | V1 backward-compat |
-| `profile_picture` | text NULL | base64 data URL (legacy / Drive fallback) |
-| `avatar_url` | text NULL | Google Drive URL (set when Drive is configured) |
-| `avatar_file_id` | text NULL | Drive fileId for deletion on avatar replace/remove |
+| `profile_picture` | text NULL | base64 data URL |
 | `bio` | text NULL | Max 500 chars |
 | `address` | text NULL | Max 500 chars |
 | `ledger_balance` | numeric(15,2) NOT NULL DEFAULT 0 | Maintained running total of ledger credits − debits; updated atomically on every ledger write (O(1) alternative to full `SUM()` scan) |
@@ -507,9 +505,6 @@ Express session store — managed by `connect-pg-simple`. Auto-created at startu
 | `description` | text | |
 | `receipt_number` | text NULL | `CSC-YYYY-NNNN` |
 | `receipt_token` | text NULL | UUID for QR verification |
-| `file_url` | text NULL | Drive/local URL for receipt PDF |
-| `drive_file_id` | text NULL | Drive fileId for deletion |
-| `storage_dest` | text DEFAULT `'local'` | `'drive'` or `'local'` |
 | `created_by` | integer | FK → `users.id` |
 | `created_at` / `updated_at` | timestamptz | |
 
@@ -620,21 +615,6 @@ Complete action codes: `login.success` · `login.failed_*` · `logout` · `sessi
 | `recipient_filter` | text NULL | `all` / `active` (email only) |
 | `recipient_count` | integer | |
 | `failed_count` | integer | |
-| `created_at` | timestamptz | |
-
-### `file_uploads`
-Tracks every file uploaded through the Drive/local storage service.
-
-| Column | Type | Notes |
-|--------|------|-------|
-| `id` | serial PK | |
-| `user_id` | integer NULL | FK → `users.id` ON DELETE SET NULL |
-| `drive_file_id` | text NOT NULL | Drive fileId or local filename key |
-| `url` | text NOT NULL | Drive download URL or `/api/files/local/:key` |
-| `destination` | text NOT NULL | `'drive'` or `'local'` |
-| `mime_type` | text NOT NULL | e.g. `'application/pdf'`, `'image/webp'` |
-| `size_bytes` | integer NOT NULL | |
-| `folder` | text NOT NULL | `'receipts'` / `'profiles'` / `'exports'` / `'documents'` |
 | `created_at` | timestamptz | |
 
 ---

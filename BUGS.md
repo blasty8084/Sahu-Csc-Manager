@@ -1,6 +1,6 @@
 # SAHU CSC — Bug & Issue Tracker
 
-> Generated: 14 July 2026 · Last reviewed: 23 July 2026  
+> Generated: 14 July 2026  
 > Scanned: API server, frontend, database schema, configuration  
 > Total: **23 open / 1 fixed** — 3 Critical · 4 Security · 6 Logic · 2 Validation · 3 Frontend open + 1 fixed · 2 Schema · 3 Config
 

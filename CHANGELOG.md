@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Changelog
-**Current version: 4.10.0 — July 23, 2026**
+**Current version: 4.9.0 — July 22, 2026**
 
 > Single authoritative changelog covering all versions from v1.x through v4.x.
 > - **v3.x / v4.x entries** (current) — listed first, newest at top
@@ -9,7 +9,6 @@
 
 ## Table of Contents
 
-0. [v4.10.0 — Google Drive File Storage Integration (July 23, 2026)](#0-v4100--google-drive-file-storage-integration-july-23-2026)
 0. [Infra — Switched database to user-owned Neon PostgreSQL (July 22, 2026)](#0-infra--switched-database-to-user-owned-neon-postgresql-july-22-2026)
 0. [Refactor — API test scripts split into auth and utils modules (July 21, 2026)](#0-refactor--api-test-scripts-split-into-auth-and-utils-modules-july-21-2026)
 0. [Fix — index.html meta/title update (July 21, 2026)](#0-fix--indexhtml-metatitle-update-july-21-2026)
@@ -53,75 +52,6 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
-
----
-
-## 0. v4.10.0 — Google Drive File Storage Integration (July 23, 2026)
-
-Adds persistent cloud file storage for receipt PDFs, profile photos, exported reports, and Udhari documents. Falls back gracefully to local `/tmp/` when credentials are absent.
-
-### New files
-
-| File | Purpose |
-|------|---------|
-| `artifacts/api-server/src/services/googleDrive.ts` | Core Drive service — `uploadFile()`, `deleteFromDrive()`, `uploadToLocal()`, `serveLocalFile()`, `cleanupLocalTempFiles()`. `driveAvailable` boolean export guards all upload paths. |
-| `artifacts/api-server/src/middleware/upload.ts` | Multer memory-storage middleware — 10 MB limit, JPEG / PNG / WebP / PDF only. |
-| `artifacts/api-server/src/routes/files.ts` | 7 new REST endpoints (see below). |
-
-### New API endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/files/status` | `{ driveConfigured, storage }` — Drive vs local |
-| `POST` | `/api/files/receipt` | Upload receipt PDF → `receipts/` folder |
-| `POST` | `/api/files/profile` | Upload profile photo → `profiles/` folder |
-| `POST` | `/api/files/export` | Upload report PDF → `exports/` folder |
-| `POST` | `/api/files/document` | Upload Udhari document → `documents/` folder |
-| `GET` | `/api/files/local/:filename` | Serve local fallback file |
-| `DELETE` | `/api/files/:fileId` | Delete from Drive or local |
-
-All upload endpoints accept `multipart/form-data` with a `file` field.
-
-### Database changes
-
-**New table `file_uploads`** — tracks every uploaded file:
-```
-id, user_id, drive_file_id, url, destination, mime_type, size_bytes, folder, created_at
-```
-
-**`ledger` table** — 3 new nullable columns:
-```
-file_url TEXT, drive_file_id TEXT, storage_dest TEXT DEFAULT 'local'
-```
-
-**`users` table** — 2 new nullable columns:
-```
-avatar_url TEXT, avatar_file_id TEXT
-```
-
-### Profile avatar updated
-
-`POST /profile/avatar` now uploads the processed WebP to Drive when configured, stores `avatar_url` + `avatar_file_id` on the user row, and deletes the previous Drive file automatically. Falls back to base64 in `profile_picture` when Drive is not configured. `DELETE /profile/avatar` also removes the Drive file.
-
-### New secrets
-
-| Secret | Purpose |
-|--------|---------|
-| `GOOGLE_SERVICE_ACCOUNT_JSON` | Full JSON key file from Google Cloud Console |
-| `GOOGLE_DRIVE_FOLDER_ID` | Shared Drive folder ID — **must** be a Shared Drive, not My Drive |
-
-> ⚠️ Google service accounts have no storage quota on regular My Drive. The folder must be inside a **Shared Drive** with the service account added as Content Manager.
-
-### Fallback behaviour
-
-When `GOOGLE_SERVICE_ACCOUNT_JSON` is absent:
-- Files go to `/tmp/sahu-csc-uploads/`
-- Served via `GET /api/files/local/:filename`
-- Cleaned up hourly (files older than 24 h deleted by `cleanupLocalTempFiles()`)
-
-### New package
-
-`googleapis@^148` added to `@workspace/api-server` dependencies.
 
 ---
 

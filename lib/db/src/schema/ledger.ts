@@ -17,10 +17,6 @@ export const ledgerTable = pgTable("ledger", {
   createdBy: integer("created_by").notNull().references(() => usersTable.id, { onDelete: "restrict" }),
   receiptNumber: text("receipt_number").unique(),
   receiptToken: text("receipt_token").unique(),
-  // Google Drive / file storage for receipt PDFs
-  fileUrl: text("file_url"),
-  driveFileId: text("drive_file_id"),
-  storageDest: text("storage_dest").default("local"), // 'drive' | 'local'
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 }, (t) => [

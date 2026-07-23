@@ -1,8 +1,6 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 4.10.0** — last updated 2026-07-23
+**Version 4.9.0** — last updated 2026-07-22
 
-> **Set up on Replit 2026-07-23 (latest)**: Google Drive file storage integrated. `googleapis` installed. New service (`services/googleDrive.ts`), middleware (`middleware/upload.ts`), and routes (`routes/files.ts`). Schema pushed: `file_uploads` table added; `ledger` + `users` tables received Drive columns. Secrets set: `GOOGLE_SERVICE_ACCOUNT_JSON`, `GOOGLE_DRIVE_FOLDER_ID`. Drive status confirmed: `GET /api/files/status` → `{ driveConfigured: true, storage: "google_drive" }`. Note: folder must be in a Shared Drive (not My Drive) — service accounts have no storage quota on My Drive. All MD documents updated to v4.10.0.
->
 > **Set up on Replit 2026-07-22 (latest)**: Switched database to user's Neon PostgreSQL account. `lib/db` now prefers `NEON_DATABASE_URL` over `DATABASE_URL`. Pushed schema + session table to Neon, rebuilt API server, reseeded. `API Server` (port 8080) and `Start application` (port 5000) running. Secrets set: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`, `NEON_DATABASE_URL`. Verified: dashboard renders correctly in preview.
 >
 > **Set up on Replit 2026-07-22**: Ran `pnpm install` (node_modules missing after import), pushed DB schema via `pnpm --filter @workspace/db run push-force` (lib/db/), created session table + index via raw SQL, seeded DB via `Seed Database` workflow. `API Server` (port 8080) and `artifacts/sahu-csc: web` (port 5000) running. `Worker Server` skips cleanly — `REDIS_URL` not set. Secrets set: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. CORS auto-includes `REPLIT_DEV_DOMAIN`/`REPLIT_DOMAINS` (v4.9.0+). Both `dev` and `main` branches are at the same commit (v4.9.0). Verified: login page renders correctly in preview.
@@ -71,19 +69,6 @@
 - **Receipts-verify page split** — `pages/receipts-verify.tsx` reduced from 407 → 88 lines by extracting into `components/receipts/`: `ReceiptVerifyBadge.tsx` (verified/legacy pill banner), `ReceiptVerifyCard.tsx` (full printable receipt card — navy header, amount, detail rows, inline QR, business contact, footer; exports `ReceiptData` type), `ReceiptQrSection.tsx` (PDF generation, WhatsApp share, download, print action buttons). All files ≤ 200 lines. TypeScript clean.
 - **Backups page split** — `pages/backups.tsx` reduced from 411 → 85 lines by extracting into `components/backups/`: `BackupManualTrigger.tsx` (page header + create button), `BackupScheduleCard.tsx` (auto-backup enable toggle, frequency, time, day picker, retention), `BackupImportCard.tsx` (SQL file picker, table analysis, selective import), `BackupStorageTrend.tsx` (recharts area chart). Existing `BackupList`, `BackupActions`, `BackupCards` unchanged. All files ≤149 lines. TypeScript clean.
 - **Udhari page split** — `pages/udhari.tsx` reduced from 464 → 71 lines by extracting into `components/udhari/`: `UdhariCustomerCard.tsx` (`fmt` helper + `BalanceBadge` + mobile `CustomerCard` + desktop `CustomerRow`), `UdhariAddCustomerDialog.tsx` (mobile dialog + desktop split-panel form), `UdhariSearchBar.tsx` (search input + sort select), `UdhariCustomerList.tsx` (mobile card list + desktop table), `UdhariSummaryBanner.tsx` (to-collect / to-pay summary grid). No behaviour change. All files ≤197 lines. TypeScript clean.
-
-## What's New in v4.10.0 (July 23, 2026) — Google Drive File Storage
-
-- **Google Drive integration** — `services/googleDrive.ts` provides a unified `uploadFile()` that routes to Drive when `GOOGLE_SERVICE_ACCOUNT_JSON` is set, or falls back to local `/tmp/sahu-csc-uploads/` otherwise.
-- **7 new `/api/files/*` endpoints** — `POST /files/receipt|profile|export|document` (multipart upload), `GET /files/local/:filename` (local fallback), `DELETE /files/:fileId`, `GET /files/status`.
-- **`file_uploads` table** — tracks every uploaded file with destination, URL, folder, mime type, and size.
-- **`ledger` + `users` schema updates** — `ledger` gains `file_url`, `drive_file_id`, `storage_dest`; `users` gains `avatar_url`, `avatar_file_id`.
-- **Profile avatar** — `POST /profile/avatar` now uploads WebP to Drive when configured and falls back to base64 otherwise. `DELETE /profile/avatar` removes the Drive file.
-- **Shared Drive required** — `GOOGLE_DRIVE_FOLDER_ID` must point to a folder in a **Shared Drive** (not My Drive). Service accounts have no storage quota on regular My Drive.
-- **New secrets**: `GOOGLE_SERVICE_ACCOUNT_JSON` + `GOOGLE_DRIVE_FOLDER_ID`.
-- **Hourly cleanup** — `cleanupLocalTempFiles()` runs every hour to remove local fallback files older than 24 h.
-
----
 
 ## What's New in v4.9.0 (July 16, 2026) — Platform Optimization & Setup Hardening
 
