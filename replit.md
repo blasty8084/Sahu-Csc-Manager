@@ -1,7 +1,7 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 4.9.0** — last updated 2026-07-22
+**Version 4.9.0** — last updated 2026-07-23
 
-> **Set up on Replit 2026-07-22 (latest)**: Switched database to user's Neon PostgreSQL account. `lib/db` now prefers `NEON_DATABASE_URL` over `DATABASE_URL`. Pushed schema + session table to Neon, rebuilt API server, reseeded. `API Server` (port 8080) and `Start application` (port 5000) running. Secrets set: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`, `NEON_DATABASE_URL`. Verified: dashboard renders correctly in preview.
+> **Set up on Replit 2026-07-23 (latest)**: Connected the imported project to the user's external Neon PostgreSQL database via the `NEON_DATABASE_URL` secret. Dependencies were installed, the API and frontend production builds succeeded, the database connection returned healthy PostgreSQL 18.4, and the admin/operator accounts were seeded. `API Server` (port 8080) and `Start application` (port 5000) are running. `Worker Server` skips cleanly because `REDIS_URL` is not set. SMTP remains optional and is currently missing `SMTP_PASSWORD`, so email OTP/notifications are unavailable until configured. Verified: frontend renders in preview and `/api/healthz` returns 200.
 >
 > **Set up on Replit 2026-07-22**: Ran `pnpm install` (node_modules missing after import), pushed DB schema via `pnpm --filter @workspace/db run push-force` (lib/db/), created session table + index via raw SQL, seeded DB via `Seed Database` workflow. `API Server` (port 8080) and `artifacts/sahu-csc: web` (port 5000) running. `Worker Server` skips cleanly — `REDIS_URL` not set. Secrets set: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. CORS auto-includes `REPLIT_DEV_DOMAIN`/`REPLIT_DOMAINS` (v4.9.0+). Both `dev` and `main` branches are at the same commit (v4.9.0). Verified: login page renders correctly in preview.
 >
@@ -1012,7 +1012,7 @@ pnpm install
 ```
 
 ### 2. Push the database schema
-The project uses Replit's built-in PostgreSQL (`DATABASE_URL` is set automatically). Run:
+The project uses external Neon PostgreSQL. Set the `NEON_DATABASE_URL` secret before running:
 ```
 pnpm --filter @workspace/db exec drizzle-kit push
 ```
@@ -1024,7 +1024,8 @@ Add the following in Replit Secrets:
 | `SESSION_SECRET` | Random string for Express session signing |
 | `ADMIN_PASSWORD` | Password for the default admin account |
 | `OPERATOR_PASSWORD` | Password for the default operator account |
-| `SMTP_PASS` | Gmail App Password for email OTP / notifications |
+| `SMTP_PASSWORD` | Gmail App Password for email OTP / notifications |
+| `NEON_DATABASE_URL` | External Neon PostgreSQL connection string |
 
 Optional secrets (features degrade gracefully without them):
 | Secret | Description |
@@ -1035,7 +1036,7 @@ Optional secrets (features degrade gracefully without them):
 Run the **Seed Database** workflow once. This creates the admin and operator accounts using the passwords from Secrets.
 
 ### 5. Start the app
-Run the **API Server** workflow (port 8080) and the **artifacts/sahu-csc: web** workflow (port 5000, Vite dev server). The preview pane shows the frontend; it proxies `/api` requests to port 8080.
+Run the **API Server** workflow (port 8080) and the **Start application** workflow (port 5000, serving the built frontend). The preview pane shows the frontend; it proxies `/api` requests to port 8080.
 
 ### CORS
 `CORS_ORIGIN` only needs to list `http://localhost:5000`. The API server automatically appends the current `REPLIT_DEV_DOMAIN` and any `REPLIT_DOMAINS` at startup — no manual update needed after repl renames or forks.
