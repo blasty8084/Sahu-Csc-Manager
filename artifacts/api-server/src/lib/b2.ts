@@ -7,7 +7,12 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import type { Readable } from "stream";
 
-const B2_ENDPOINT = process.env["B2_BUCKET_ENDPOINT"];
+const rawB2Endpoint = process.env["B2_BUCKET_ENDPOINT"]?.trim();
+const B2_ENDPOINT = rawB2Endpoint
+  ? /^https?:\/\//i.test(rawB2Endpoint)
+    ? rawB2Endpoint
+    : `https://${rawB2Endpoint}`
+  : undefined;
 const B2_KEY_ID = process.env["B2_KEY_ID"];
 const B2_APP_KEY = process.env["B2_APP_KEY"];
 export const B2_BUCKET = process.env["B2_BUCKET_NAME"] ?? "";
