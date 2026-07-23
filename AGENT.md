@@ -1,5 +1,5 @@
 # SAHU CSC — Agent Reference Document
-**Version 4.9.0** · Last updated 2026-07-22
+**Version 4.10.0** · Last updated 2026-07-23
 
 This file is the single authoritative reference for any AI agent working on this codebase. Read it first before touching any code.
 
@@ -131,6 +131,8 @@ Target users: rural Odisha CSC operators. UI languages: English, Hindi, Odia (`i
 | `MAXMIND_LICENSE_KEY` | Weekly GeoIP database updates |
 | `SENTRY_DSN` | Server-side error tracking |
 | `VITE_SENTRY_DSN` | Client-side error tracking |
+| `GOOGLE_SERVICE_ACCOUNT_JSON` | Full JSON key file content — enables Google Drive file storage |
+| `GOOGLE_DRIVE_FOLDER_ID` | Shared Drive folder ID — root for receipts/profiles/exports/documents sub-folders |
 
 ### Database connection secret
 | Key | Purpose |
@@ -147,7 +149,7 @@ Target users: rural Odisha CSC operators. UI languages: English, Hindi, Odia (`i
 
 ## 5. Database Schema
 
-All tables live in `lib/db/src/schema/`. Schema is managed by drizzle-kit.
+All tables live in `lib/db/src/schema/`. Schema is managed by drizzle-kit. **16 tables total** (was 15 before v4.10.0).
 
 > ⚠️ `drizzle-kit push` can empty tables. Always re-seed after schema changes.  
 > ⚠️ The `session` table (express-session) is NOT managed by Drizzle — create it manually (see §10).
@@ -649,6 +651,7 @@ pnpm --filter @workspace/db run push-force
 | Job | Schedule | Description |
 |-----|----------|-------------|
 | OTP cleanup | Every 1 hour | Delete expired `email_otps` rows |
+| Local file cleanup | Every 1 hour | Delete `/tmp/sahu-csc-uploads/` files older than 24 h (Drive fallback only) |
 | Monthly receipt export | `5 0 1 * *` (1st of month, midnight IST) | PDF/ZIP → email to admins |
 | GeoIP update | `0 3 * * 0` (Sunday 3am) | MaxMind DB update via `geoip-lite` (needs `MAXMIND_LICENSE_KEY`) |
 | Auto-backup | Disabled by default | Configurable in settings |
@@ -690,6 +693,10 @@ Without `REDIS_URL`: all queues fall back to direct in-process execution.
 10. **Login body uses `identifier` not `username`** — the `LoginBody` Zod schema has `identifier` which matches username OR email OR mobile.
 
 11. **Receipt counter is per-user, per-year** — composite PK `(userId, year)` in `receipt_counters`. Format: `CSC-YYYY-NNNN`.
+
+17. **Google Drive requires a Shared Drive folder** — service accounts have no storage quota on regular My Drive. `GOOGLE_DRIVE_FOLDER_ID` must point to a folder inside a Shared Drive where the service account is a Content Manager member. `supportsAllDrives: true` is set on all Drive API calls. Without credentials the service falls back silently to local `/tmp/sahu-csc-uploads/`.
+
+18. **File uploads use unified `uploadFile()` entry point** — `artifacts/api-server/src/services/googleDrive.ts`. Never call Drive API or write to disk directly from routes. The function auto-detects Drive availability from `GOOGLE_SERVICE_ACCOUNT_JSON` at startup (`driveAvailable` boolean export).
 
 12. **Ledger balance is IST-based** — period queries use `Asia/Kolkata` timezone offset, not UTC.
 
@@ -735,6 +742,7 @@ Frontend main chunk: ~438KB (under 500KB Vite warning).
 
 | Version | Date | Key Change |
 |---------|------|-----------|
+| 4.10.0 | 2026-07-23 | Google Drive file storage — Drive service, upload middleware, `/api/files/*` routes, `file_uploads` table, Drive columns on `ledger` + `users`, local /tmp fallback |
 | 4.9.0 | 2026-07-16 | Optimization pass: CORS auto-detects domain, SMTP_PASSWORD, 60 s polling, precache −985 KB, session index, 90-day export cap |
 | 4.8.0 | 2026-07-16 | 2FA: QR codes, replay protection, standard 30 s TOTP, regenerate backup codes |
 | 4.7.0 | 2026-07-16 | Built-in TOTP code display, explicit method selection, SMTP fixed |

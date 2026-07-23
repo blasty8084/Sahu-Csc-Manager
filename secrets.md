@@ -1,5 +1,5 @@
 # SAHU CSC — Secrets & Environment Variables Reference
-**Version 4.9.0** · Last updated 2026-07-22
+**Version 4.10.0** · Last updated 2026-07-23
 
 > Complete reference for every secret and environment variable in this project.
 >
@@ -17,7 +17,8 @@
 1. [Critical Secrets — App will not boot without these](#1-critical-secrets--app-will-not-boot-without-these)
 2. [Email Secrets — Required for OTP login & password reset](#2-email-secrets--required-for-otp-login--password-reset)
 3. [Optional Secrets — Enable additional features](#3-optional-secrets--enable-additional-features)
-4. [Core Environment Variables](#4-core-environment-variables)
+4. [Google Drive File Storage](#4-google-drive-file-storage)
+5. [Core Environment Variables](#5-core-environment-variables)
 5. [Email Environment Variables](#5-email-environment-variables)
 6. [Database & Performance](#6-database--performance)
 7. [Cache & Queue](#7-cache--queue)
@@ -70,7 +71,38 @@ Without this, OTP-based 2FA, email verification, and password reset are silently
 
 ---
 
-## 4. Core Environment Variables
+## 4. Google Drive File Storage
+
+Enables persistent cloud storage for receipt PDFs, profile photos, exported reports, and Udhari documents. Without these, the app falls back to local `/tmp/sahu-csc-uploads/` (files lost on restart).
+
+> ⚠️ **Shared Drive required** — Google service accounts have no storage quota of their own. The folder ID must point to a folder inside a **Shared Drive** (not a regular My Drive). Service account must be added as a member (Content Manager role) of the Shared Drive.
+
+| Secret | Status | Format | Explanation |
+|--------|--------|--------|-------------|
+| `GOOGLE_SERVICE_ACCOUNT_JSON` | ✅ Set | Full JSON content of service account key file | The entire contents of the `.json` key file downloaded from Google Cloud Console → IAM → Service Accounts → Keys. Paste the raw JSON (including braces). |
+| `GOOGLE_DRIVE_FOLDER_ID` | ✅ Set | Folder ID string (e.g. `1ABCxyz123`) | The ID from the Shared Drive folder URL: `drive.google.com/drive/folders/`**`THIS_PART`**. The service account must have Content Manager access to this folder. |
+
+### Folder structure created automatically
+
+```
+SAHU-CSC-Files/         ← your Shared Drive folder (GOOGLE_DRIVE_FOLDER_ID)
+├── receipts/           ← receipt PDFs (POST /api/files/receipt)
+├── profiles/           ← user avatar images (POST /api/files/profile)
+├── exports/            ← monthly report PDFs (POST /api/files/export)
+└── documents/          ← Udhari customer documents (POST /api/files/document)
+```
+
+Sub-folders are auto-created on first upload. Uploaded files are made publicly readable (anyone with the link).
+
+### When Drive is not configured
+- All file uploads go to `/tmp/sahu-csc-uploads/` instead
+- Local files are served via `GET /api/files/local/:filename`
+- Local files older than 24 hours are cleaned up hourly
+- `GET /api/files/status` returns `{ "driveConfigured": false, "storage": "local" }`
+
+---
+
+## 5. Core Environment Variables
 
 Set in **Replit → Env Vars → Shared**.
 
@@ -83,7 +115,7 @@ Set in **Replit → Env Vars → Shared**.
 
 ---
 
-## 5. Email Environment Variables
+## 6. Email Environment Variables
 
 Required for SMTP email sending (OTP, approvals, monthly export). Pair with the `SMTP_PASSWORD` secret above.
 
@@ -98,7 +130,7 @@ Required for SMTP email sending (OTP, approvals, monthly export). Pair with the 
 
 ---
 
-## 6. Database & Performance
+## 7. Database & Performance
 
 | Variable | Status | Value | Explanation |
 |----------|--------|-------|-------------|
@@ -108,7 +140,7 @@ Required for SMTP email sending (OTP, approvals, monthly export). Pair with the 
 
 ---
 
-## 7. Cache & Queue
+## 8. Cache & Queue
 
 | Variable | Status | Value | Explanation |
 |----------|--------|-------|-------------|
@@ -120,7 +152,7 @@ Required for SMTP email sending (OTP, approvals, monthly export). Pair with the 
 
 ---
 
-## 8. Push Notifications (VAPID)
+## 9. Push Notifications (VAPID)
 
 VAPID (Voluntary Application Server Identification) is the Web Push standard for identifying your server to browser push services.
 
@@ -134,7 +166,7 @@ VAPID (Voluntary Application Server Identification) is the Web Push standard for
 
 ---
 
-## 9. CORS
+## 10. CORS
 
 Cross-Origin Resource Sharing controls which domains the API will accept requests from.
 
@@ -146,7 +178,7 @@ Cross-Origin Resource Sharing controls which domains the API will accept request
 
 ---
 
-## 10. Seed Data
+## 11. Seed Data
 
 Used **only** by the `Seed Database` workflow. These set the default values for accounts and business info on first setup. After seeding, all values can be changed from the app UI (Admin → Settings, Profile page).
 
@@ -162,7 +194,7 @@ Used **only** by the `Seed Database` workflow. These set the default values for 
 
 ---
 
-## 11. Observability & Feature Flags
+## 12. Observability & Feature Flags
 
 | Variable | Status | Default | Explanation |
 |----------|--------|---------|-------------|
@@ -172,7 +204,7 @@ Used **only** by the `Seed Database` workflow. These set the default values for 
 
 ---
 
-## 12. Runtime-Managed (Never Set Manually)
+## 13. Runtime-Managed (Never Set Manually)
 
 Replit injects these automatically. Adding them to Secrets or Env Vars will cause conflicts.
 
@@ -191,17 +223,19 @@ Replit injects these automatically. Adding them to Secrets or Env Vars will caus
 
 ---
 
-## 13. Quick-Start Checklist
+## 14. Quick-Start Checklist
 
 Minimum required after importing the project fresh from GitHub:
 
 ### Secrets Tab (🔒)
 ```
-☐ NEON_DATABASE_URL   — Neon PostgreSQL connection string (postgresql://... from Neon dashboard; use pooled connection)
-☐ SESSION_SECRET      — 32+ character random string (e.g. openssl rand -base64 32)
-☐ ADMIN_PASSWORD      — strong password for admin account
-☐ OPERATOR_PASSWORD   — strong password for operator account
-☐ SMTP_PASSWORD       — Gmail app password (16 chars, from Google Account → App Passwords)
+☐ NEON_DATABASE_URL              — Neon PostgreSQL connection string
+☐ SESSION_SECRET                 — 32+ character random string
+☐ ADMIN_PASSWORD                 — strong password for admin account
+☐ OPERATOR_PASSWORD              — strong password for operator account
+☐ SMTP_PASSWORD                  — Gmail app password (16 chars)
+☐ GOOGLE_SERVICE_ACCOUNT_JSON    — (optional) full JSON key for Drive storage
+☐ GOOGLE_DRIVE_FOLDER_ID         — (optional) Shared Drive folder ID
 ```
 
 ### Env Vars Tab → Shared
