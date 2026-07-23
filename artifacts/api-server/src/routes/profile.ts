@@ -9,6 +9,7 @@ import { encryptField, decryptField } from "../lib/encryption";
 import { sanitize } from "../lib/sanitize";
 import { passwordPolicySchema } from "../lib/password-policy";
 import { asyncHandler } from "../lib/async-handler";
+import { uploadToB2, deleteFromB2, getB2SignedUrl, isB2Configured } from "../lib/b2";
 
 const router: IRouter = Router();
 
@@ -27,6 +28,18 @@ const UpdateAvatarBody = z.object({
 });
 
 async function fmtProfile(user: any) {
+  let profilePicture = user.profilePicture ?? null;
+
+  // Resolve B2 keys to a 1-hour pre-signed URL. Legacy base64 values pass
+  // through unchanged so existing avatars remain compatible.
+  if (profilePicture?.startsWith("b2:") && isB2Configured()) {
+    try {
+      profilePicture = await getB2SignedUrl(profilePicture.slice(3), 3600);
+    } catch {
+      profilePicture = null;
+    }
+  }
+
   return {
     id: user.id,
     username: user.username,
@@ -34,7 +47,7 @@ async function fmtProfile(user: any) {
     mobile: user.mobile ?? null,
     fullName: user.fullName ?? null,
     role: user.role,
-    profilePicture: user.profilePicture ?? null,
+    profilePicture,
     bio: await decryptField(user.bio),
     address: await decryptField(user.address),
     createdAt: user.createdAt instanceof Date ? user.createdAt.toISOString() : user.createdAt,
@@ -136,21 +149,38 @@ router.post("/profile/avatar", requireAuth, asyncHandler(async (req, res) => {
   const base64Payload = dataUrl.slice(dataUrl.indexOf(",") + 1);
   const inputBuffer = Buffer.from(base64Payload, "base64");
 
-  let compressedDataUrl: string;
+  let outputBuffer: Buffer;
   try {
-    const outputBuffer = await sharp(inputBuffer)
+    outputBuffer = await sharp(inputBuffer)
       .rotate() // honor EXIF orientation before stripping it below
       .resize(AVATAR_MAX_DIMENSION, AVATAR_MAX_DIMENSION, { fit: "cover", withoutEnlargement: true })
       .webp({ quality: AVATAR_WEBP_QUALITY })
       .toBuffer();
-    compressedDataUrl = `data:image/webp;base64,${outputBuffer.toString("base64")}`;
   } catch {
     res.status(400).json({ error: "Could not process image. Please upload a valid image file." }); return;
   }
 
+  let profilePicture: string;
+
+  if (isB2Configured()) {
+    const [existing] = await db
+      .select({ profilePicture: usersTable.profilePicture })
+      .from(usersTable)
+      .where(eq(usersTable.id, userId));
+    if (existing?.profilePicture?.startsWith("b2:")) {
+      try { await deleteFromB2(existing.profilePicture.slice(3)); } catch {}
+    }
+
+    const key = `avatars/user_${userId}_${Date.now()}.webp`;
+    await uploadToB2(key, outputBuffer, "image/webp");
+    profilePicture = `b2:${key}`;
+  } else {
+    profilePicture = `data:image/webp;base64,${outputBuffer.toString("base64")}`;
+  }
+
   const [updated] = await db
     .update(usersTable)
-    .set({ profilePicture: compressedDataUrl })
+    .set({ profilePicture })
     .where(eq(usersTable.id, userId))
     .returning();
 
@@ -160,6 +190,16 @@ router.post("/profile/avatar", requireAuth, asyncHandler(async (req, res) => {
 
 router.delete("/profile/avatar", requireAuth, asyncHandler(async (req, res) => {
   const userId = req.session.userId!;
+  if (isB2Configured()) {
+    const [existing] = await db
+      .select({ profilePicture: usersTable.profilePicture })
+      .from(usersTable)
+      .where(eq(usersTable.id, userId));
+    if (existing?.profilePicture?.startsWith("b2:")) {
+      try { await deleteFromB2(existing.profilePicture.slice(3)); } catch {}
+    }
+  }
+
   await db.update(usersTable).set({ profilePicture: null }).where(eq(usersTable.id, userId));
   await auditLog(userId, "profile.avatar_delete", "User removed profile picture", getClientIp(req));
   res.json({ message: "Profile picture removed" });

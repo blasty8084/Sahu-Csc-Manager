@@ -164,6 +164,8 @@ async function buildAll() {
       "protobufjs",
       "onnxruntime-node",
       "geoip-lite",
+      "@aws-sdk/client-s3",
+      "@aws-sdk/s3-request-presigner",
       "@tensorflow/*",
       "@prisma/client",
       "@mikro-orm/*",
