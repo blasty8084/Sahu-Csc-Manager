@@ -30,6 +30,8 @@ export async function getOrCreateFolder(
   const res = await drive.files.list({
     q: `name='${name}' and '${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
     fields: "files(id)",
+    includeItemsFromAllDrives: true,
+    supportsAllDrives: true,
   });
   if (res.data.files?.length) return res.data.files[0].id!;
   const folder = await drive.files.create({
@@ -39,6 +41,7 @@ export async function getOrCreateFolder(
       parents: [parentId],
     },
     fields: "id",
+    supportsAllDrives: true,
   });
   return folder.data.id!;
 }
@@ -57,6 +60,7 @@ export async function uploadToDrive(
     requestBody: { name: filename, parents: [folderId] },
     media: { mimeType, body: Readable.from(buffer) },
     fields: "id",
+    supportsAllDrives: true,
   });
 
   const fileId = res.data.id!;
@@ -64,6 +68,7 @@ export async function uploadToDrive(
   await drive.permissions.create({
     fileId,
     requestBody: { role: "reader", type: "anyone" },
+    supportsAllDrives: true,
   });
 
   return {
@@ -74,7 +79,7 @@ export async function uploadToDrive(
 
 export async function deleteFromDrive(fileId: string): Promise<void> {
   const drive = await getDrive();
-  await drive.files.delete({ fileId });
+  await drive.files.delete({ fileId, supportsAllDrives: true });
 }
 
 // ── Local fallback ──────────────────────────────────────────────────────────
