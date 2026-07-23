@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { cleanupLocalTempFiles } from "./services/googleDrive";
 import { startOtpCleanup } from "./lib/otp-cleanup";
 import { scheduleMonthlyExport } from "./lib/monthly-export";
 import { initBackupScheduler } from "./lib/backup-scheduler";
@@ -79,4 +80,6 @@ app.listen(port, (err) => {
   initBackupScheduler();
   initGeoipUpdater();
   recordBootAndCheckCrashLoop();
+  // Clean up local /tmp fallback files older than 24 h (runs every hour)
+  setInterval(cleanupLocalTempFiles, 60 * 60 * 1000);
 });
