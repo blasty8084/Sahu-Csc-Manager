@@ -22,6 +22,7 @@ import udhariRouter from "./udhari";
 import receiptsRouter from "./receipts";
 import broadcastRouter from "./broadcast";
 import adminReceiptExportRouter from "./admin-receipt-export";
+import filesRouter from "./files";
 
 const router: IRouter = Router();
 
@@ -47,6 +48,7 @@ router.use(udhariRouter);
 router.use(receiptsRouter);
 router.use(broadcastRouter);
 router.use(adminReceiptExportRouter);
+router.use(filesRouter);
 router.use(setupStatusRouter);
 
 export default router;

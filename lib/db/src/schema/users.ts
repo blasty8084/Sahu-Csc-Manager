@@ -16,7 +16,9 @@ export const usersTable = pgTable("users", {
   failedLoginAttempts: integer("failed_login_attempts").notNull().default(0),
   lockedUntil: timestamp("locked_until", { withTimezone: true }),
   rejectionReason: text("rejection_reason"),
-  profilePicture: text("profile_picture"),
+  profilePicture: text("profile_picture"),  // base64 data URL (legacy / local fallback)
+  avatarUrl: text("avatar_url"),            // Google Drive URL when Drive is configured
+  avatarFileId: text("avatar_file_id"),     // Drive fileId for deletion
   bio: text("bio"),
   address: text("address"),
   // kept for backward-compat; V2 multi-device uses user_sessions table instead

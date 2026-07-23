@@ -16,3 +16,4 @@ export * from "./udhari";
 export * from "./broadcast_logs";
 export * from "./device_sessions";
 export * from "./security_logs";
+export * from "./file_uploads";
