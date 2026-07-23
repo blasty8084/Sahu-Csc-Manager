@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Platform Documentation
-**Version 4.9.0** — last updated 2026-07-22
+**Version 4.9.0** — last updated 2026-07-23
 
 > Common Service Center (CSC) Business Management Platform for Odisha / India rural service centers.
 > Full-stack · PWA · Offline-capable · Multilingual (English / Hindi / Odia)
@@ -30,6 +30,7 @@
 20. [Android TWA Setup](#20-android-twa-setup)
 21. [Architecture Decisions](#21-architecture-decisions)
 22. [Common Commands](#22-common-commands)
+23. [Performance Measurements](#23-performance-measurements)
 
 ---
 
@@ -67,6 +68,15 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 - **PWA precache −985 KB** — `jspdf`, `html2canvas`, and `vendor-charts` excluded from SW precache manifest (71 entries / 2.4 MB, down from 74 entries / 3.3 MB); these chunks are still runtime-cached on first use
 - **Ledger backfill gated** — `index.ts` writes a `ledgerBalanceBackfillDone` flag to the `settings` table after the first successful run; subsequent boots skip the UPDATE entirely
 - **Fresh-import setup** — confirmed that `pnpm install` is always required after importing from GitHub (esbuild and other build tools are not committed); documented in Getting Started
+
+### B2 Storage Integration — Optional External File Storage (2026-07-23)
+
+- Added optional Backblaze B2 S3-compatible storage using `@aws-sdk/client-s3` and `@aws-sdk/s3-request-presigner`
+- Profile avatars upload as compressed WebP objects under `avatars/`; PostgreSQL stores a `b2:` object key instead of base64 when B2 is configured
+- Existing base64 avatars remain supported and are returned unchanged
+- Database backups remain local-first, with B2 mirroring, download/restore fallback, and cleanup when B2 is configured
+- Without B2 settings, the application keeps its existing base64-avatar and local-backup behavior
+- `B2_BUCKET_ENDPOINT` accepts either a complete URL or a hostname; hostname-only values are normalized to HTTPS
 
 ### v4.8.0 — 2FA Security Upgrade: QR Codes, Replay Protection & Standard TOTP (2026-07-16)
 
@@ -463,8 +473,14 @@ All secrets are managed in the Replit Secrets tab (🔒 icon in left sidebar). N
 | `VAPID_PUBLIC_KEY` | Web push notification public key (set as shared env var — not a secret) |
 | `VAPID_PRIVATE_KEY` | Web push notification private key (set as Replit Secret) |
 | `VAPID_EMAIL` | VAPID contact email (default: `mailto:sahuuttam690@gmail.com`) |
+| `B2_KEY_ID` | Backblaze B2 application key ID for optional file storage |
+| `B2_APP_KEY` | Backblaze B2 application key for optional file storage |
+| `B2_BUCKET_NAME` | Private B2 bucket used for avatars and backup copies |
+| `B2_BUCKET_ENDPOINT` | B2 S3 endpoint, with or without the `https://` prefix |
 
 > VAPID keys auto-generate on first boot and persist in the `settings` DB table — the app works without them. Setting them explicitly as env var / secret ensures `GET /api/healthz` reports `vapid.persistent: true` and removes the yellow Setup Wizard banner. The public key is safe as a plain env var; the private key must be a Replit Secret.
+>
+> B2 is fully optional. If any required B2 setting is missing, the app does not call B2 and continues using base64 avatars and local-only backups.
 
 ### Setup Wizard Banner severity
 
@@ -534,6 +550,23 @@ The app uses **3 tiers of storage** working together:
 
 Schema applied via: `pnpm --filter @workspace/db run push`
 Also runs automatically via `scripts/post-merge.sh` on every import or task merge.
+
+### Tier 1.5 — Backblaze B2 (optional durable file storage)
+
+B2 is an S3-compatible object store used only when all four B2 settings are present.
+
+| Object type | Object key | Database value / behavior |
+|-------------|------------|---------------------------|
+| Profile avatar | `avatars/user_<id>_<timestamp>.webp` | `users.profilePicture` stores `b2:<key>`; `/api/profile` returns a 1-hour signed URL |
+| Backup copy | `backups/<filename>.sql` | `backups` metadata stays in PostgreSQL; local disk is preferred and B2 is used when the local file is missing |
+| Uploaded media | `uploads/<filename>` | Used for explicitly uploaded external assets |
+
+Operational rules:
+
+- B2 upload failures do not fail a local database backup; the local copy remains available
+- B2 is never required for startup
+- Legacy `data:image/...;base64,...` avatar values remain valid
+- B2 object keys are not exposed directly as public URLs; profile responses use short-lived signed URLs
 
 ### Tier 2 — IndexedDB (offline / browser)
 
@@ -1037,10 +1070,12 @@ Translated string constants (arrays, config objects) must be **inside** the comp
 | Feature | Detail |
 |---------|--------|
 | Engine | `pg_dump` — creates portable `.sql` file |
-| Storage | `/backups/` directory on server |
+| Storage | `/backups/` directory on server; optional B2 mirror under `backups/` |
 | Download | `GET /api/backups/:id/download` streams file with `Content-Disposition: attachment` |
 | Schedule | `node-cron` scheduler; daily/weekly/custom cron; configurable time + retention count |
 | UI | 2-column "Minimal Clean" layout: backup history left, schedule + import right |
+
+When B2 is configured, `createBackup()` uploads the generated `.sql` file after `pg_dump` succeeds. Downloads and restores use the local file when available and rehydrate it from B2 when the local Replit disk no longer contains it. Deleting a backup removes the local file, B2 object, and database metadata. Without B2, behavior is unchanged.
 
 ### Restore / Import
 
@@ -1133,6 +1168,8 @@ These decisions are non-obvious and must be respected in future changes.
 | **`ADMIN_PASSWORD` / `OPERATOR_PASSWORD` from secrets** | `seed.ts` hard-fails if either secret is missing | Passwords are never printed to logs or hardcoded |
 | **VAPID base64 must be unpadded** | `initPush()` strips trailing `=` and whitespace from both VAPID keys before `webPush.setVapidDetails()` | `web-push` rejects URL-safe base64 with `=` padding — copy-paste from secrets form can introduce it |
 | **VAPID keypair atomicity** | If only one VAPID key exists in `settings` (partial/corrupt state), both are deleted and regenerated together | A mismatched public/private pair silently breaks all push subscriptions |
+| **B2 is optional and local-first** | Gate every B2 operation with `isB2Configured()`; keep base64 avatars and `/backups/` as fallbacks | External storage can be unavailable or intentionally unconfigured without blocking core app behavior |
+| **B2 endpoints are normalized** | Add `https://` when `B2_BUCKET_ENDPOINT` is supplied as a hostname-only value | Backblaze UI/key forms may provide `s3.<region>.backblazeb2.com` without a URL scheme |
 | **Duplicate artifact workflow override** | `artifacts/api-server: API Server` entry in `.replit` is a no-op echo — not a real server | Replit auto-generates this from artifact registration; without the override it tries to start on port 8080 and crashes |
 
 ---
@@ -1173,3 +1210,28 @@ pnpm --filter @workspace/api-server exec tsx src/scripts/restore.ts <file>
 ---
 
 *Documentation for SAHU CSC v3.3.1 — Built for Odisha / India rural Common Service Centers*
+
+---
+
+## 23. Performance Measurements
+
+Measured on 2026-07-23 from the running Replit development environment. These are one-off live measurements, not service-level guarantees.
+
+| Check | Measured latency |
+|-------|------------------:|
+| Frontend static page | ~6 ms |
+| API `/api/healthz` total request | ~484 ms |
+| Database portion of health check | ~469 ms |
+| B2 upload of 130 KB JPEG | ~2,189 ms |
+| B2 signed URL generation | ~4 ms |
+| B2 signed HTTP download | ~1,501 ms |
+| B2 SDK stream download | ~963 ms |
+| B2 object deletion | ~254 ms |
+| Complete B2 upload/read/delete probe | ~4,910 ms |
+
+Interpretation:
+
+- Frontend serving is fast.
+- The Neon database round trip was the main API latency contributor in this measurement.
+- B2 is suitable for avatars and backup operations, but its upload/download timings are too high for a high-frequency synchronous request path.
+- Re-test from the intended production region before making infrastructure decisions; database and object-storage latency depends heavily on geographic placement and network conditions.
