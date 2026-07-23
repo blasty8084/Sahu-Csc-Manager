@@ -1,5 +1,5 @@
 # SAHU CSC — Secrets & Environment Variables Reference
-**Version 4.9.0** · Last updated 2026-07-22
+**Version 4.9.0** · Last updated 2026-07-23
 
 > Complete reference for every secret and environment variable in this project.
 >
@@ -44,13 +44,13 @@ Set in **Replit → Secrets tab**.
 
 ---
 
-## 2. Email Secrets — Required for OTP login & password reset
+## 2. Email Secrets — Optional feature
 
 Without this, OTP-based 2FA, email verification, and password reset are silently disabled. Users can still log in with TOTP or backup codes.
 
 | Secret | Status | Format | Explanation |
 |--------|--------|--------|-------------|
-| `SMTP_PASSWORD` | ✅ Set | Gmail App Password (16 chars, no spaces) | The Gmail app password used to authenticate the SMTP sender. **Not** your Gmail account password — generate one at Google Account → Security → 2-Step Verification → App Passwords. Legacy alias `SMTP_PASS` is also accepted. |
+| `SMTP_PASSWORD` | ⬜ Not set | Gmail App Password (16 chars, no spaces) | The Gmail app password used to authenticate the SMTP sender. **Not** your Gmail account password — generate one at Google Account → Security → 2-Step Verification → App Passwords. Legacy alias `SMTP_PASS` is also accepted. Without it, email OTP, password reset, and email notifications are unavailable; the app still boots and password/TOTP/backup-code login remains available. |
 
 > **Gmail setup:** Enable 2-Step Verification → App Passwords → Select app: "Mail" → Select device: "Other" → copy the 16-character code.
 
@@ -67,6 +67,10 @@ Without this, OTP-based 2FA, email verification, and password reset are silently
 | `JWT_SECRET` | ⬜ Not set | Auto-generated & saved in DB | Signing secret for internal JWT tokens. Auto-generated at first boot. Set explicitly in production for stability. |
 | `MAXMIND_LICENSE_KEY` | ⬜ Not set | GeoIP uses bundled snapshot | MaxMind license key for weekly GeoIP database updates (runs every Sunday at 03:00 via node-cron). Without it, geo-blocking works from the bundled snapshot that may be a few months old. Get a free key at maxmind.com. |
 | `SENTRY_DSN` | ⬜ Not set | Server-side error tracking disabled | Sentry DSN for capturing unhandled errors and exceptions in the API server. Get from sentry.io → Project → Settings → Client Keys. |
+| `B2_KEY_ID` | ✅ Set | Backblaze application key ID | Enables optional B2 avatar and database-backup object storage when paired with the other B2 settings. |
+| `B2_APP_KEY` | ✅ Set | Backblaze application key | Secret application key for the private B2 bucket. Never place this value in Markdown, logs, or client code. |
+| `B2_BUCKET_NAME` | ✅ Set | Private B2 bucket name | Bucket used for avatar objects and mirrored database backups. |
+| `B2_BUCKET_ENDPOINT` | ✅ Set | B2 S3 endpoint URL or hostname | S3-compatible endpoint. Hostname-only values are normalized to HTTPS by the application. |
 
 ---
 
@@ -103,6 +107,7 @@ Required for SMTP email sending (OTP, approvals, monthly export). Pair with the 
 | Variable | Status | Value | Explanation |
 |----------|--------|-------|-------------|
 | `DB_POOL_MAX` | ✅ Set | `5` | Maximum number of simultaneous PostgreSQL connections the `pg` pool will hold open. Replit's free-tier PostgreSQL has a hard limit of ~20 connections shared across all repls on the account. Setting this to `5` prevents the API from exhausting the limit under concurrent load. Increase only if you are on a dedicated database with a higher connection limit. |
+| `NEON_DATABASE_URL` | ✅ Set | Neon pooled PostgreSQL connection string | Active database connection for this Replit setup. `lib/db` checks this before the Replit-managed `DATABASE_URL` fallback. |
 | `LOG_LEVEL` | ⬜ Not set | `info` | Pino structured log verbosity. Options: `trace` (everything) → `debug` → `info` (default, production-safe) → `warn` → `error` (quiet). Set to `debug` for troubleshooting; never use `trace` in production — it logs raw request bodies. |
 | `SLOW_REQUEST_MS` | ⬜ Not set | `500` | Threshold in milliseconds. Any API request taking longer than this value is logged at `warn` level with its route and duration. Useful for spotting slow DB queries without a full profiler. |
 
@@ -201,7 +206,11 @@ Minimum required after importing the project fresh from GitHub:
 ☐ SESSION_SECRET      — 32+ character random string (e.g. openssl rand -base64 32)
 ☐ ADMIN_PASSWORD      — strong password for admin account
 ☐ OPERATOR_PASSWORD   — strong password for operator account
-☐ SMTP_PASSWORD       — Gmail app password (16 chars, from Google Account → App Passwords)
+☐ SMTP_PASSWORD       — optional Gmail app password (16 chars, enables email OTP/notifications)
+☐ B2_KEY_ID           — optional Backblaze B2 application key ID
+☐ B2_APP_KEY          — optional Backblaze B2 application key
+☐ B2_BUCKET_NAME      — optional private B2 bucket name
+☐ B2_BUCKET_ENDPOINT  — optional B2 S3 endpoint URL or hostname
 ```
 
 ### Env Vars Tab → Shared

@@ -1,5 +1,5 @@
 # SAHU CSC — Architecture Reference
-**Version 4.9.0 — July 22, 2026**
+**Version 4.9.0 — July 23, 2026**
 
 > This is the single authoritative reference for the SAHU CSC platform architecture.  
 > It supersedes `docs/archive/architectureV2.md` and `docs/archive/ARCHITECTURE.md`.  
@@ -432,14 +432,15 @@ workspace/
 | Theme | Navy `#0b2c60` + Saffron `#f97316` | |
 | API | Express 5, express-session, helmet, hpp, express-rate-limit | |
 | Session store | connect-pg-simple (PostgreSQL) | Survives server restarts; must be in esbuild `external` |
-| Database | PostgreSQL + Drizzle ORM | Neon (user-managed); falls back to Replit-provisioned |
+| Database | PostgreSQL + Drizzle ORM | User-managed Neon via `NEON_DATABASE_URL`; Replit `DATABASE_URL` is fallback only |
+| File storage | Backblaze B2 S3-compatible storage | Optional for avatars and backup copies; local/base64 fallback remains |
 | Validation | Zod (`zod/v4`), drizzle-zod | |
 | API contracts | OpenAPI 3.1 → Orval codegen → typed React Query hooks | |
 | Push | web-push (VAPID) | Auto-generates keys on startup if not set |
 | Email | Nodemailer (any SMTP provider) | Disabled gracefully if SMTP not configured |
 | i18n | i18next + react-i18next (EN / HI / OR) | |
 | Build | esbuild (API ESM bundle), Vite (frontend) | |
-| PWA | vite-plugin-pwa + Workbox | generateSW strategy |
+| PWA | vite-plugin-pwa + Workbox | injectManifest strategy with custom `sw.ts` |
 | Monorepo | pnpm workspaces | |
 
 ---
@@ -669,7 +670,7 @@ Permissions by role:
 ### 5.4 SMTP & Email
 
 `lib/mailer.ts` provides:
-- `isSmtpConfigured()` — returns `true` when `SMTP_HOST` + `SMTP_USER` + `SMTP_PASS` all set
+- `isSmtpConfigured()` — returns `true` when `SMTP_HOST` + `SMTP_USER` + (`SMTP_PASSWORD` or legacy `SMTP_PASS`) are all set; email is optional at boot
 - `sendOtpEmail(to, otp, type)` — 6-digit OTP email with copy block + auto-fill hint
 - `sendApprovalEmail(to, status)` — registration approval/rejection
 - `sendBroadcastEmail(recipients, subject, body)` — admin email blast
@@ -1056,7 +1057,7 @@ Returns `{ configured: boolean, missing: Array<{ key, label, severity, descripti
 
 Checks:
 - `SESSION_SECRET` → critical
-- `SMTP_HOST` + `SMTP_USER` + `SMTP_PASS` → critical (SMTP group)
+- `SMTP_HOST` + `SMTP_USER` + `SMTP_PASSWORD` (or `SMTP_PASS`) → optional email group; missing SMTP disables email OTP/password reset/notifications but does not prevent app boot
 - VAPID keys + persistent flag → optional
 
 ### `SetupWizardBanner`
@@ -1086,7 +1087,8 @@ pnpm --filter @workspace/db run push
 | Item | Where |
 |------|-------|
 | `SESSION_SECRET` | Replit Secrets tab |
-| `SMTP_*` (5 vars) | Replit Secrets tab |
+| `SMTP_*` (5 vars) | Replit Secrets tab, only when email features are needed |
+| `B2_KEY_ID`, `B2_APP_KEY`, `B2_BUCKET_NAME`, `B2_BUCKET_ENDPOINT` | Replit Secrets / shared env, only when external avatar/backup storage is needed |
 | `VAPID_*` (optional) | Replit Secrets tab |
 | Run "Seed Database" workflow | Replit Workflows panel (one-time) |
 
@@ -1107,6 +1109,10 @@ pnpm --filter @workspace/db run push
 | `VAPID_PUBLIC_KEY` | Recommended | Web push public key |
 | `VAPID_PRIVATE_KEY` | Recommended | Web push private key |
 | `VAPID_EMAIL` | Optional | VAPID contact email |
+| `B2_KEY_ID` | Optional | Backblaze B2 application key ID |
+| `B2_APP_KEY` | Optional | Backblaze B2 application key |
+| `B2_BUCKET_NAME` | Optional | Private B2 bucket for avatars and backup copies |
+| `B2_BUCKET_ENDPOINT` | Optional | B2 S3 endpoint; hostname-only values are normalized to HTTPS |
 
 ---
 

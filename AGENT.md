@@ -1,5 +1,5 @@
 # SAHU CSC — Agent Reference Document
-**Version 4.9.0** · Last updated 2026-07-22
+**Version 4.9.0** · Last updated 2026-07-23
 
 This file is the single authoritative reference for any AI agent working on this codebase. Read it first before touching any code.
 
@@ -75,6 +75,7 @@ Target users: rural Odisha CSC operators. UI languages: English, Hindi, Odia (`i
 | Backend framework | Express 5.2 |
 | ORM | Drizzle ORM + drizzle-kit |
 | Database | PostgreSQL (Neon · user-managed via `NEON_DATABASE_URL`; falls back to Replit-managed `DATABASE_URL`) |
+| File storage | Backblaze B2 S3-compatible storage (optional; local/base64 fallbacks remain available) |
 | Session | express-session + connect-pg-simple (`session` table) |
 | Cache | In-process TTL map (default) or Upstash Redis (`CACHE_BACKEND=redis`) |
 | Queue | BullMQ + ioredis (optional, needs `REDIS_URL`) |
@@ -105,15 +106,10 @@ Target users: rural Odisha CSC operators. UI languages: English, Hindi, Odia (`i
 | `SESSION_SECRET` | Express session signing — auto-generated is fine |
 | `ADMIN_PASSWORD` | Seed: admin account password |
 | `OPERATOR_PASSWORD` | Seed: operator account password |
-| `SMTP_PASSWORD` | Gmail app password for SMTP (legacy alias: `SMTP_PASS` also accepted) |
 
-### Required Env Vars (shared)
+### Core Env Vars (shared)
 | Key | Value | Purpose |
 |-----|-------|---------|
-| `SMTP_HOST` | `smtp.gmail.com` | Mail server host |
-| `SMTP_PORT` | `587` | Mail server port |
-| `SMTP_USER` | `sahuuttam690@gmail.com` | SMTP auth user |
-| `SMTP_FROM_EMAIL` | `SAHU CSC Support <...>` | From address |
 | `PORT` | `5000` | Frontend Vite port |
 | `API_PORT` | `8080` | Backend Express port |
 | `BASE_PATH` | `/` | URL base path |
@@ -121,12 +117,21 @@ Target users: rural Odisha CSC operators. UI languages: English, Hindi, Odia (`i
 | `DB_POOL_MAX` | `5` | Max pg pool connections (prevents exhaustion) |
 | `CORS_ORIGIN` | comma-separated URLs (optional) | Extra allowed origins — `REPLIT_DEV_DOMAIN` and `REPLIT_DOMAINS` are now included automatically; this var is only needed for non-Replit origins |
 
+SMTP variables are optional and only needed for email OTP, password reset, and email notifications:
+`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, and `SMTP_FROM_EMAIL` are shared variables; `SMTP_PASSWORD`
+is a secret (legacy alias: `SMTP_PASS`).
+
 ### Optional Secrets
 | Key | Purpose |
 |-----|---------|
+| `SMTP_PASSWORD` | Gmail app password for email OTP/notifications (legacy alias: `SMTP_PASS` also accepted); email features remain disabled when absent |
 | `REDIS_URL` | Upstash direct TCP URL (`rediss://...`) — enables BullMQ Worker Server |
 | `UPSTASH_REDIS_REST_URL` | Upstash REST endpoint for shared cache |
 | `UPSTASH_REDIS_REST_TOKEN` | Upstash REST token |
+| `B2_KEY_ID` | Backblaze B2 application key ID for optional avatar and backup storage |
+| `B2_APP_KEY` | Backblaze B2 application key for optional avatar and backup storage |
+| `B2_BUCKET_NAME` | Private B2 bucket name |
+| `B2_BUCKET_ENDPOINT` | B2 S3-compatible endpoint; accepts a full URL or hostname |
 | `ENCRYPTION_KEY` | 32-byte base64 AES key (auto-generated if absent) |
 | `MAXMIND_LICENSE_KEY` | Weekly GeoIP database updates |
 | `SENTRY_DSN` | Server-side error tracking |
@@ -135,7 +140,7 @@ Target users: rural Odisha CSC operators. UI languages: English, Hindi, Odia (`i
 ### Database connection secret
 | Key | Purpose |
 |-----|---------|
-| `NEON_DATABASE_URL` | Neon PostgreSQL connection string — set as a Replit Secret. `lib/db` reads this first; falls back to `DATABASE_URL` if absent. |
+| `NEON_DATABASE_URL` | Neon PostgreSQL connection string — set as a Replit Secret. This is the active database connection; `lib/db` falls back to `DATABASE_URL` only when it is absent. |
 
 ### Runtime-managed (never set manually)
 `DATABASE_URL` (Replit-managed PostgreSQL fallback), `PGDATABASE`, `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `REPLIT_DOMAINS`, `REPLIT_DEV_DOMAIN`, `REPL_ID`
@@ -165,7 +170,7 @@ Primary user table. Roles: `admin`, `operator`, `user`.
 | `role` | enum | `admin` / `operator` / `user` |
 | `status` | enum | `ACTIVE` / `PENDING` / `LOCKED` / `SUSPENDED` / `DELETED` / `INACTIVE` |
 | `fullName` | text nullable | |
-| `profilePicture` | text nullable | WebP base64, resized to 512×512 server-side |
+| `profilePicture` | text nullable | WebP base64 fallback or `b2:<object-key>` when B2 is configured; resized to 512×512 server-side |
 | `bio` | text nullable | AES-256-GCM encrypted |
 | `address` | text nullable | AES-256-GCM encrypted |
 | `isActive` | boolean | |
@@ -699,7 +704,9 @@ Without `REDIS_URL`: all queues fall back to direct in-process execution.
 
 15. **`finalizeLogin` is the single codepath** for all successful logins (direct + OTP + TOTP). If you add post-login logic, put it there.
 
-16. **OTP emails fail if SMTP is not configured** — `isSmtpConfigured()` checks `SMTP_HOST + SMTP_USER + (SMTP_PASSWORD ?? SMTP_PASS)`. If unconfigured, login still shows the verification page with an error (user can switch to TOTP or backup code).
+16. **SMTP is optional for boot** — `isSmtpConfigured()` checks `SMTP_HOST + SMTP_USER + (SMTP_PASSWORD ?? SMTP_PASS)`. If unconfigured, email OTP/password reset/notifications are unavailable, but password login and TOTP/backup-code flows still work.
+17. **B2 is optional and local-first** — avatars use base64 PostgreSQL storage and backups use `./backups/` when B2 is absent; configured B2 mirrors avatar/backup objects and provides download/restore fallback.
+18. **B2 endpoints are normalized** — `B2_BUCKET_ENDPOINT` receives an `https://` prefix when supplied as a hostname only.
 
 ---
 
@@ -736,6 +743,7 @@ Frontend main chunk: ~438KB (under 500KB Vite warning).
 | Version | Date | Key Change |
 |---------|------|-----------|
 | 4.9.0 | 2026-07-16 | Optimization pass: CORS auto-detects domain, SMTP_PASSWORD, 60 s polling, precache −985 KB, session index, 90-day export cap |
+| Setup | 2026-07-23 | Imported project connected to Neon; optional B2 avatar/backup storage configured and verified; API/frontend workflows running |
 | 4.8.0 | 2026-07-16 | 2FA: QR codes, replay protection, standard 30 s TOTP, regenerate backup codes |
 | 4.7.0 | 2026-07-16 | Built-in TOTP code display, explicit method selection, SMTP fixed |
 | 4.6.0 | 2026-07-15 | 2FA method toggle (OTP/TOTP) on login, inline TOTP enrollment |

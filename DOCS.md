@@ -486,7 +486,8 @@ All secrets are managed in the Replit Secrets tab (🔒 icon in left sidebar). N
 
 | Secret(s) | Banner severity |
 |-----------|----------------|
-| `SESSION_SECRET`, `SMTP_*`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD` | 🔴 REQUIRED (red) |
+| `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD` | 🔴 REQUIRED (red) |
+| `SMTP_*` | 🟡 OPTIONAL (email features only) |
 | `VAPID_*` | 🟡 OPTIONAL (yellow) |
 
 ---

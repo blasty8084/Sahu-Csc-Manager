@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Changelog
-**Current version: 4.9.0 — July 22, 2026**
+**Current version: 4.9.0 — July 23, 2026**
 
 > Single authoritative changelog covering all versions from v1.x through v4.x.
 > - **v3.x / v4.x entries** (current) — listed first, newest at top
@@ -10,6 +10,7 @@
 ## Table of Contents
 
 0. [Infra — Switched database to user-owned Neon PostgreSQL (July 22, 2026)](#0-infra--switched-database-to-user-owned-neon-postgresql-july-22-2026)
+0. [Infra — Optional Backblaze B2 storage for avatars and backups (July 23, 2026)](#0-infra--optional-backblaze-b2-storage-for-avatars-and-backups-july-23-2026)
 0. [Refactor — API test scripts split into auth and utils modules (July 21, 2026)](#0-refactor--api-test-scripts-split-into-auth-and-utils-modules-july-21-2026)
 0. [Fix — index.html meta/title update (July 21, 2026)](#0-fix--indexhtml-metatitle-update-july-21-2026)
 0. [Refactor — routes/admin.ts split into thin router + adminStatsService + adminUserService (July 21, 2026)](#0-refactor--routesadmints-split-into-thin-router--adminstatsservice--adminuserservice-july-21-2026)
@@ -52,6 +53,17 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Infra — Optional Backblaze B2 storage for avatars and backups (July 23, 2026)
+
+- Added optional Backblaze B2 S3-compatible storage for profile avatars and database-backup copies.
+- Avatars use `b2:<object-key>` references when B2 is configured; existing base64 WebP avatars remain supported.
+- Backups stay local-first under `./backups/`; B2 provides mirroring plus download/restore fallback when configured.
+- Missing or incomplete B2 settings do not block the application and preserve the local/base64 behavior.
+- `B2_BUCKET_ENDPOINT` accepts a complete URL or hostname; hostname-only values are normalized to HTTPS.
+- Verified the complete B2 upload, signed-read, SDK-download, and delete lifecycle. A 130 KB JPEG probe took approximately 4.9 s end-to-end from the Replit development environment, so B2 is intended for avatars/backups rather than high-frequency synchronous operations.
 
 ---
 

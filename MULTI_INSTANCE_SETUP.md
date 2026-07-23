@@ -162,8 +162,8 @@ No code changes needed — the load balancer handles routing. Redis cache (Step 
                         │
           ┌─────────────┼──────────────┐
           ▼             ▼              ▼
-     PostgreSQL      Upstash        (shared state)
-     (sessions,      Redis
+      Neon PostgreSQL  Upstash        (shared state)
+      (sessions,      Redis
       data, keys)   (cache,
                      rate-limit
                      counters)
@@ -175,13 +175,13 @@ No code changes needed — the load balancer handles routing. Redis cache (Step 
 
 - **All routes, handlers, and business logic** — no changes needed
 - **The frontend** — it talks to the same `/api/…` URL; routing is transparent
-- **Drizzle ORM queries** — they use the shared Postgres connection pool (`max: 20` per process — with 4 workers that's up to 80 total connections; adjust `DB_POOL_MAX` downward if needed, e.g. `DB_POOL_MAX=5` per worker)
+- **Drizzle ORM queries** — they use the shared Neon Postgres connection pool (`DB_POOL_MAX=5` in the current setup; size the per-worker pool so the aggregate stays within the Neon plan's connection limit)
 
 ---
 
 ## Connection Pool Note with Multiple Workers
 
-With `N` PM2 workers and `DB_POOL_MAX=20` (default), the database will see up to `N × 20` concurrent connections. Replit's built-in Postgres handles this fine for small deployments. If you hit connection limits, lower the per-worker pool:
+With `N` PM2 workers and `DB_POOL_MAX=5`, the database can see up to `N × 5` concurrent connections. Keep the aggregate within the Neon plan's connection limit and lower the per-worker pool further if needed:
 
 ```
 DB_POOL_MAX=5   # for 4 workers → max 20 DB connections total

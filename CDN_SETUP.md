@@ -6,6 +6,7 @@
 
 - **Single origin, single deployment.** The app is a Replit VM deployment (`deploymentTarget = "vm"` in `.replit`) with exactly one externally-exposed port: local `5000` → external `:80` (see `[[ports]]` in `.replit`). The API server (port `8080`) is internal-only — the frontend's own server proxies `/api/*` to it in dev (Vite) and both processes share the same public domain in production (`scripts/start-prod.sh` starts both; only port 5000 is externally routed).
 - **Static files are served by `artifacts/sahu-csc/scripts/serve.mjs`**, a thin wrapper around the `sirv` package, from `artifacts/sahu-csc/dist/public/` (the Vite build output). There is no separate object-storage bucket or static-asset domain — everything is served directly from this one container.
+- **Backblaze B2 is not the static-asset CDN.** The optional B2 integration stores profile avatars and database-backup copies only; the SPA shell, JavaScript, CSS, and public assets continue to come from the Replit origin.
 - **Cache headers are already correct and must not be re-derived by the CDN:**
   | Asset type | Match | Header |
   |---|---|---|

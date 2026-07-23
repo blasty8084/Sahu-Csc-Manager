@@ -1,7 +1,7 @@
 # SAHU CSC — Common Service Center Management Platform
 **Version 4.9.0** — last updated 2026-07-23
 
-> **Set up on Replit 2026-07-23 (latest)**: Connected the imported project to the user's external Neon PostgreSQL database via the `NEON_DATABASE_URL` secret. Dependencies were installed, the API and frontend production builds succeeded, the database connection returned healthy PostgreSQL 18.4, and the admin/operator accounts were seeded. `API Server` (port 8080) and `Start application` (port 5000) are running. `Worker Server` skips cleanly because `REDIS_URL` is not set. SMTP remains optional and is currently missing `SMTP_PASSWORD`, so email OTP/notifications are unavailable until configured. Verified: frontend renders in preview and `/api/healthz` returns 200.
+> **Set up on Replit 2026-07-23 (latest)**: Connected the imported project to the user's external Neon PostgreSQL database via the `NEON_DATABASE_URL` secret. Dependencies were installed, the API and frontend production builds succeeded, the database connection returned healthy PostgreSQL 18.4, and the admin/operator accounts were seeded. Optional Backblaze B2 storage is configured for avatar and backup copies, with local/base64 fallbacks retained. `API Server` (port 8080) and `Start application` (port 5000) are running. `Worker Server` skips cleanly because `REDIS_URL` is not set. SMTP remains optional and is currently missing `SMTP_PASSWORD`, so email OTP/notifications are unavailable until configured. Verified: frontend renders in preview, `/api/healthz` returns 200, and the B2 upload/download/delete lifecycle passed.
 >
 > **Set up on Replit 2026-07-22**: Ran `pnpm install` (node_modules missing after import), pushed DB schema via `pnpm --filter @workspace/db run push-force` (lib/db/), created session table + index via raw SQL, seeded DB via `Seed Database` workflow. `API Server` (port 8080) and `artifacts/sahu-csc: web` (port 5000) running. `Worker Server` skips cleanly — `REDIS_URL` not set. Secrets set: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. CORS auto-includes `REPLIT_DEV_DOMAIN`/`REPLIT_DOMAINS` (v4.9.0+). Both `dev` and `main` branches are at the same commit (v4.9.0). Verified: login page renders correctly in preview.
 >
@@ -767,7 +767,7 @@ Response:
     {
       "key": "SMTP",
       "label": "Email / SMTP",
-      "description": "Required for OTP login and notifications. Missing: SMTP_HOST, SMTP_USER, SMTP_PASSWORD."
+      "description": "Optional for email OTP and notifications. Missing: SMTP_HOST, SMTP_USER, SMTP_PASSWORD."
     }
   ]
 }
@@ -775,7 +775,7 @@ Response:
 
 Checks performed (in order):
 - `SESSION_SECRET` — required (critical)
-- `SMTP_HOST` + `SMTP_USER` + `SMTP_PASSWORD` (or `SMTP_PASS`) — required for email/OTP (critical)
+- `SMTP_HOST` + `SMTP_USER` + `SMTP_PASSWORD` (or `SMTP_PASS`) — optional (email OTP/notifications only)
 - `ADMIN_PASSWORD` — required for Seed Database workflow (critical)
 - `OPERATOR_PASSWORD` — required for Seed Database workflow (critical)
 - `VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` + persistent flag — optional (push notifications)
@@ -824,20 +824,27 @@ This is configured in `.replit` under `[postMerge]` with a 20-second timeout. Th
 
 | Variable | Required | Purpose |
 |----------|----------|---------|
-| `DATABASE_URL` | ✅ | PostgreSQL connection string (auto-provisioned by Replit) |
+| `NEON_DATABASE_URL` | ✅ | Active external Neon PostgreSQL connection string |
+| `DATABASE_URL` | fallback | Replit-managed PostgreSQL connection, used only when `NEON_DATABASE_URL` is absent |
 | `SESSION_SECRET` | ✅ | Express session signing secret — any long random string |
-| `SMTP_HOST` | ✅ for email | SMTP server hostname (e.g. `smtp.gmail.com`) |
-| `SMTP_PORT` | ✅ for email | SMTP port (e.g. `587` for TLS, `465` for SSL) |
-| `SMTP_USER` | ✅ for email | SMTP username / email address |
-| `SMTP_PASSWORD` | ✅ for email | SMTP password or app password (`SMTP_PASS` accepted as alias) |
+| `SMTP_HOST` | optional | SMTP server hostname (e.g. `smtp.gmail.com`) |
+| `SMTP_PORT` | optional | SMTP port (e.g. `587` for TLS, `465` for SSL) |
+| `SMTP_USER` | optional | SMTP username / email address |
+| `SMTP_PASSWORD` | optional | SMTP password or app password (`SMTP_PASS` accepted as alias); required only for email features |
 | `SMTP_FROM_EMAIL` | Optional | From address shown in emails (defaults to `SMTP_USER`) |
 | `VAPID_PUBLIC_KEY` | Recommended | Web push notification public key |
 | `VAPID_PRIVATE_KEY` | Recommended | Web push notification private key |
 | `VAPID_EMAIL` | Optional | VAPID contact email (default: `mailto:admin@sahucsc.in`) |
+| `B2_KEY_ID` | Optional | Backblaze B2 application key ID |
+| `B2_APP_KEY` | Optional | Backblaze B2 application key |
+| `B2_BUCKET_NAME` | Optional | Private B2 bucket for avatars and backup copies |
+| `B2_BUCKET_ENDPOINT` | Optional | B2 S3 endpoint URL or hostname |
 
 > If VAPID keys are not set, the API auto-generates temporary keys on startup. These are lost on restart — push subscriptions won't survive server restarts. Set real keys for production.
 >
 > If SMTP is not configured, OTP login, password reset, and admin email notifications are disabled. The app still works for users who log in with username + password.
+>
+> If B2 is not configured completely, avatars remain in PostgreSQL as base64 WebP and backups remain under `./backups/`. B2 endpoints supplied as hostnames are normalized to HTTPS.
 
 ---
 
@@ -1024,13 +1031,14 @@ Add the following in Replit Secrets:
 | `SESSION_SECRET` | Random string for Express session signing |
 | `ADMIN_PASSWORD` | Password for the default admin account |
 | `OPERATOR_PASSWORD` | Password for the default operator account |
-| `SMTP_PASSWORD` | Gmail App Password for email OTP / notifications |
+| `SMTP_PASSWORD` | Gmail App Password for email OTP / notifications (optional) |
 | `NEON_DATABASE_URL` | External Neon PostgreSQL connection string |
 
 Optional secrets (features degrade gracefully without them):
 | Secret | Description |
 |--------|-------------|
 | `REDIS_URL` | Redis connection URL — enables background job queue and worker server |
+| `B2_KEY_ID`, `B2_APP_KEY`, `B2_BUCKET_NAME`, `B2_BUCKET_ENDPOINT` | Backblaze B2 avatar and backup storage |
 
 ### 4. Seed the database
 Run the **Seed Database** workflow once. This creates the admin and operator accounts using the passwords from Secrets.

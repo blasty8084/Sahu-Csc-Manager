@@ -1,5 +1,5 @@
 # SAHU CSC — Project Reference
-**Version 4.9.0 — July 16, 2026**
+**Version 4.9.0 — July 23, 2026**
 
 Complete structural guide for anyone importing or onboarding to this project.
 
@@ -55,6 +55,7 @@ The app is a full-stack TypeScript monorepo: an Express REST API backed by Postg
 | Package manager | pnpm workspaces |
 | Backend | Node.js · Express · TypeScript |
 | Database | PostgreSQL (Neon · user-managed) · Drizzle ORM |
+| File storage | Backblaze B2 S3-compatible storage (optional) with local/base64 fallbacks |
 | Frontend | React 19 · Vite 7 · Tailwind CSS v4 |
 | State / data fetching | TanStack Query v5 |
 | Routing (frontend) | Wouter |
@@ -116,7 +117,7 @@ Open **Replit Secrets** and add:
 | `OPERATOR_PASSWORD` | Password for the `operator` account |
 | `SESSION_SECRET` | Random string used to sign HTTP sessions |
 
-Optional secrets (email / push notifications):
+Optional secrets (email / push notifications / external storage):
 
 | Secret | Purpose |
 |---|---|
@@ -124,6 +125,10 @@ Optional secrets (email / push notifications):
 | `SMTP_PORT` | SMTP port (usually 465 or 587) |
 | `SMTP_USER` | SMTP login username |
 | `SMTP_PASSWORD` | SMTP login password (`SMTP_PASS` also accepted as alias) |
+| `B2_KEY_ID` | Backblaze B2 application key ID |
+| `B2_APP_KEY` | Backblaze B2 application key |
+| `B2_BUCKET_NAME` | Private B2 bucket name |
+| `B2_BUCKET_ENDPOINT` | B2 S3 endpoint URL or hostname |
 
 > `NEON_DATABASE_URL` is a Replit Secret pointing to the user-owned Neon PostgreSQL account. `lib/db` reads `NEON_DATABASE_URL` first and falls back to Replit's auto-injected `DATABASE_URL` if it is not set.  
 > `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` are auto-generated and persisted in the `settings` table at first boot — do not set them manually.
@@ -181,7 +186,11 @@ The Vite dev server proxies all `/api/*` requests to `localhost:8080`.
 | `SMTP_HOST` | optional | Shared env | Outbound email server (e.g. `smtp.gmail.com`) |
 | `SMTP_PORT` | optional | Shared env | SMTP port (usually `587`) |
 | `SMTP_USER` | optional | Shared env | SMTP authentication username |
-| `SMTP_PASSWORD` | optional | Replit Secret | SMTP password or app password (`SMTP_PASS` also accepted as alias) |
+| `SMTP_PASSWORD` | optional | Replit Secret | SMTP password or app password (`SMTP_PASS` also accepted as alias); email features are disabled when absent |
+| `B2_KEY_ID` | optional | Replit Secret | B2 application key ID for avatar/backup storage |
+| `B2_APP_KEY` | optional | Replit Secret | B2 application key for avatar/backup storage |
+| `B2_BUCKET_NAME` | optional | Replit Secret | Private B2 bucket name |
+| `B2_BUCKET_ENDPOINT` | optional | Shared env or secret | B2 S3 endpoint; hostname-only values receive an HTTPS prefix |
 | `DB_POOL_MAX` | optional | Shared env | Max PostgreSQL pool connections (default `5`) |
 | `CORS_ORIGIN` | optional | Shared env | Extra allowed origins — Replit dev/prod domains auto-included; only needed for non-Replit origins |
 | `PORT` | optional | Workflow env | Override default server port |
