@@ -191,7 +191,7 @@ export default function Login() {
   const { login, user } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [attemptsLeft, setAttemptsLeft] = useState<number | null>(null);
@@ -211,7 +211,12 @@ export default function Login() {
     defaultValues: { identifier: "", password: "" },
   });
 
-  useEffect(() => { if (user) setLocation("/"); }, [user]);
+  useEffect(() => {
+    if (user) {
+      const publicRoutes = ["/", "/login", "/register", "/forgot-password"];
+      if (publicRoutes.includes(location)) setLocation("/");
+    }
+  }, [user, location]);
 
   useEffect(() => {
     const saved = localStorage.getItem("rememberMe") === "true";

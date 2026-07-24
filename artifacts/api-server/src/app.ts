@@ -9,6 +9,8 @@ import hpp from "hpp";
 import rateLimit from "express-rate-limit";
 import { RedisStore, type RedisReply } from "rate-limit-redis";
 import IORedis from "ioredis";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import router from "./routes";
 import healthRouter from "./routes/health";
 import setupStatusRouter from "./routes/setup-status";
@@ -16,6 +18,9 @@ import { logger } from "./lib/logger";
 import { pool } from "@workspace/db";
 import { initSentry, setupSentryErrorHandler } from "./lib/sentry";
 import { geoBlock } from "./lib/geo-block";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Initialise Sentry before any middleware so it can instrument the full
 // request lifecycle.  No-ops when SENTRY_DSN is not set.
@@ -266,6 +271,16 @@ app.use("/api/auth/reset-password", otpVerifyLimiter);
 app.use("/api/auth/2fa/verify-totp", twoFaVerifyLimiter);
 app.use("/api/auth/2fa/verify-otp", twoFaVerifyLimiter);
 app.use("/api", router);
+
+// SPA fallback — serve index.html for all non-API routes so deep links and
+// page refreshes work correctly in the browser history router.
+app.get("/{*path}", (req, res, next) => {
+  if (req.path.startsWith("/api")) return next();
+  const indexPath = path.join(__dirname, "../../sahu-csc/dist/public/index.html");
+  res.sendFile(indexPath, (err) => {
+    if (err) next(); // fall through to error handler if file not found
+  });
+});
 
 // Sentry error handler must come after all routes but before any custom
 // error-handler middleware.  No-ops when SENTRY_DSN is not set.

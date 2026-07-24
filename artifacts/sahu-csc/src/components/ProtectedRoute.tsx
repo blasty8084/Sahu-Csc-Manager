@@ -1,22 +1,17 @@
 import React from "react";
-import { useLocation } from "wouter";
+import { Redirect } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { LoadingScreen } from "@/components/LoadingScreen";
 
 // ─── Route protection ─────────────────────────────────────────────────────────
 export function ProtectedRoute({ component: Component, adminOnly = false, ...rest }: any) {
   const { user, isLoading, loadingPhase } = useAuth();
-  const [location, setLocation] = useLocation();
 
-  React.useEffect(() => {
-    if (!isLoading && !user && location !== "/login") {
-      setLocation("/login");
-    }
-  }, [user, isLoading, location, setLocation]);
-
+  // Wait for auth check to finish — never redirect while loading
   if (isLoading) return <LoadingScreen phase={loadingPhase} />;
 
-  if (!user) return null;
+  // Not authenticated — redirect to login synchronously (no flash)
+  if (!user) return <Redirect to="/login" />;
 
   if (adminOnly && user.role !== "admin") {
     return (
