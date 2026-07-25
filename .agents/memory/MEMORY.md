@@ -36,3 +36,4 @@
 - [Backblaze B2 integration](b2-integration.md) — optional S3-compatible avatar/backup storage; normalize hostname-only endpoints and preserve local/base64 fallback
 - [B2 avatar response contract](b2-avatar-response.md) — never expose `b2:` storage keys to the browser; auth and profile responses must return signed image URLs
 - [Shared health probing](shared-health-probing.md) — use one browser-global network probe; lazy chunks can otherwise create duplicate `/api/health` timers
+- [serve.mjs API proxy](serve-api-proxy.md) — production serve script must proxy /api/* to port 8080; without it sirv SPA-fallback returns index.html as a string → runtime crash

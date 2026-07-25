@@ -7,9 +7,10 @@
 // deploy. Vite's hashed filenames (assets/*-[hash].js) are safe to cache
 // forever; index.html (and any other unhashed file) must always revalidate.
 import sirv from "sirv";
-import { createServer } from "node:http";
+import { createServer, request as httpRequest } from "node:http";
 
 const port = Number(process.env.PORT ?? 5000);
+const apiPort = Number(process.env.API_PORT ?? 8080);
 const dir = new URL("../dist/public", import.meta.url).pathname;
 
 const assets = sirv(dir, {
@@ -45,9 +46,44 @@ const assets = sirv(dir, {
   },
 });
 
-createServer((req, res) => assets(req, res, () => {
-  res.statusCode = 404;
-  res.end("Not found");
-})).listen(port, "0.0.0.0", () => {
+// Proxy /api/* and /socket.io/* requests to the API server on apiPort.
+function proxyToApi(req, res) {
+  const options = {
+    hostname: "127.0.0.1",
+    port: apiPort,
+    path: req.url,
+    method: req.method,
+    headers: { ...req.headers, host: `127.0.0.1:${apiPort}` },
+  };
+
+  const proxy = httpRequest(options, (apiRes) => {
+    res.writeHead(apiRes.statusCode, apiRes.headers);
+    apiRes.pipe(res, { end: true });
+  });
+
+  proxy.on("error", (err) => {
+    console.error(`[proxy] API request failed: ${err.message}`);
+    if (!res.headersSent) {
+      res.writeHead(502, { "Content-Type": "application/json" });
+    }
+    res.end(JSON.stringify({ error: "API server unavailable" }));
+  });
+
+  req.pipe(proxy, { end: true });
+}
+
+createServer((req, res) => {
+  // Forward API and WebSocket upgrade paths to the API server.
+  if (req.url.startsWith("/api/") || req.url.startsWith("/socket.io/")) {
+    return proxyToApi(req, res);
+  }
+
+  // Everything else: serve static files with SPA fallback.
+  assets(req, res, () => {
+    res.statusCode = 404;
+    res.end("Not found");
+  });
+}).listen(port, "0.0.0.0", () => {
   console.log(`serve: listening on http://0.0.0.0:${port}`);
+  console.log(`serve: proxying /api/* → http://127.0.0.1:${apiPort}`);
 });

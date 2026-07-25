@@ -214,6 +214,16 @@ export default function Login() {
   useEffect(() => {
     if (user) {
       const publicRoutes = ["/", "/login", "/register", "/forgot-password"];
+      // Restore last visited protected route (set by ProtectedRoute on refresh redirect)
+      try {
+        const saved = sessionStorage.getItem("sahu-last-route");
+        if (saved && !publicRoutes.includes(saved)) {
+          sessionStorage.removeItem("sahu-last-route");
+          setLocation(saved);
+          return;
+        }
+      } catch { /* ignore */ }
+      // Default: only redirect from public routes — stay if already on correct page
       if (publicRoutes.includes(location)) setLocation("/");
     }
   }, [user, location]);
