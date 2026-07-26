@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Platform Documentation
-**Version 4.9.0** — last updated 2026-07-23
+**Version 4.9.1** — last updated 2026-07-26
 
 > Common Service Center (CSC) Business Management Platform for Odisha / India rural service centers.
 > Full-stack · PWA · Offline-capable · Multilingual (English / Hindi / Odia)
@@ -56,6 +56,12 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 ---
 
 ## 2. Version History
+
+### v4.9.1 — Bug Fix & Infra (2026-07-26)
+
+- **Login page flash eliminated** — `ProtectedRoute` was briefly redirecting to `/login` on page refresh due to a one-frame gap where React Query's `isLoading` dropped to `false` before the `auth/me` fetch actually started. Fixed by using `isPending` (stays `true` until data resolves, regardless of fetch state) and initialising `offlineChecked` eagerly for online users. File: `hooks/use-auth.tsx`.
+- **Backblaze B2 storage live** — B2 credentials re-entered and verified (upload → signed URL → delete lifecycle) against bucket `SAHUCSCV2`. Avatar uploads and database backup mirroring are now active.
+- **Re-import setup (July 26)** — `pnpm install`, schema push, session table, frontend build, and database seed completed after fresh GitHub import. Secrets set: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`, `B2_KEY_ID`, `B2_APP_KEY`, `B2_BUCKET_ENDPOINT`, `B2_BUCKET_NAME`.
 
 ### v4.9.0 — Platform Optimization & Setup Hardening (2026-07-16)
 

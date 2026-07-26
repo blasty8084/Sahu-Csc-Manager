@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Changelog
-**Current version: 4.9.0 — July 23, 2026**
+**Current version: 4.9.1 — July 26, 2026**
 
 > Single authoritative changelog covering all versions from v1.x through v4.x.
 > - **v3.x / v4.x entries** (current) — listed first, newest at top
@@ -9,6 +9,8 @@
 
 ## Table of Contents
 
+0. [Fix — Login page flash on refresh eliminated (July 26, 2026)](#0-fix--login-page-flash-on-refresh-eliminated-july-26-2026)
+0. [Infra — Backblaze B2 storage credentials verified and live (July 26, 2026)](#0-infra--backblaze-b2-storage-credentials-verified-and-live-july-26-2026)
 0. [Infra — Switched database to user-owned Neon PostgreSQL (July 22, 2026)](#0-infra--switched-database-to-user-owned-neon-postgresql-july-22-2026)
 0. [Infra — Optional Backblaze B2 storage for avatars and backups (July 23, 2026)](#0-infra--optional-backblaze-b2-storage-for-avatars-and-backups-july-23-2026)
 0. [Refactor — API test scripts split into auth and utils modules (July 21, 2026)](#0-refactor--api-test-scripts-split-into-auth-and-utils-modules-july-21-2026)
@@ -53,6 +55,41 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Fix — Login page flash on refresh eliminated (July 26, 2026)
+
+**Problem:** When a logged-in user refreshed the page, the login page was visible for ~1 ms before the dashboard appeared. This happened because of a race in the auth loading state calculation inside `use-auth.tsx`.
+
+**Root cause (two overlapping issues):**
+
+1. React Query's `isLoading` flag is defined as `status === 'pending' && fetchStatus === 'fetching'`. During the brief window after `PersistQueryClientProvider` finishes its IndexedDB restore and before the `auth/me` query actually starts fetching (`fetchStatus === 'idle'`), `isLoading` briefly dropped to `false` even though no auth data had arrived. `ProtectedRoute` read this false `false` and redirected to `/login`.
+
+2. The `offlineChecked` flag (used to gate the loading state for offline users) started as `false` and was set to `true` via a `useEffect` — meaning an unnecessary second render was injected into the online path, providing a second window for the race.
+
+**Fix — `artifacts/sahu-csc/src/hooks/use-auth.tsx`:**
+
+- Replaced `isLoading` with `isPending` from `useGetMe`. `isPending` is `status === 'pending'` (true any time no data has resolved yet, regardless of whether the query is actively fetching or momentarily idle). This closes the "idle before first fetch" gap.
+- Initialised `offlineChecked` state eagerly: `useState(() => typeof navigator !== 'undefined' && navigator.onLine)`. Online users start with `offlineChecked = true` — no state update needed, no extra render, no race.
+
+**Files changed:**
+- `artifacts/sahu-csc/src/hooks/use-auth.tsx` — two-line change; no behaviour change for offline users or logout flow
+
+---
+
+## 0. Infra — Backblaze B2 storage credentials verified and live (July 26, 2026)
+
+**Context:** B2 storage was architected and code-complete since July 23, 2026 (`lib/b2.ts`, `routes/profile.ts`, `services/backupCore.ts`). On this re-import the B2 secrets were not carried over.
+
+**What was done:**
+- Re-entered all four B2 secrets via Replit Secrets: `B2_KEY_ID`, `B2_APP_KEY`, `B2_BUCKET_ENDPOINT`, `B2_BUCKET_NAME`
+- Verified the full upload → signed-URL → delete lifecycle against bucket `SAHUCSCV2` on `s3.us-west-004.backblazeb2.com`
+- API Server restarted to pick up the new credentials; B2 client initialised successfully on boot
+
+**Storage is now active for:**
+- Profile avatar uploads (stored as `avatars/<userId>-<timestamp>.webp`; DB holds `b2:` key prefix)
+- Database backup mirroring (local pg_dump + B2 copy; restore falls back to local if B2 unavailable)
 
 ---
 

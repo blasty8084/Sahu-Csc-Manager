@@ -1,8 +1,8 @@
 # SAHU CSC — Bug & Issue Tracker
 
 > Original audit generated: 14 July 2026
-> Status reconciled: 23 July 2026 against the current API, frontend, schema, and changelog
-> Current total: **1 open / 23 fixed** — the async PDF/SMS worker limitation remains intentionally explicit
+> Status reconciled: 26 July 2026 against the current API, frontend, schema, and changelog
+> Current total: **1 open / 24 fixed** — the async PDF/SMS worker limitation remains intentionally explicit
 
 ---
 
@@ -57,6 +57,7 @@
 | 17 | ✅ Fixed | `pages/udhari.tsx` | Add-customer forms reset after success and close. |
 | 18 | ✅ Fixed | `pages/register.tsx` → `components/auth/RegisterForm.tsx` | `form.reset()`, `setFormValues(null)`, and `setOtpDigits([])` called after every successful submit path — sensitive state cleared before redirect. Fixed as part of register page refactor (July 18, 2026). |
 | 19 | ✅ Fixed | `App.tsx` | `ShareTargetHandler` includes `setLocation` in its effect dependencies. |
+| 25 | ✅ Fixed | `hooks/use-auth.tsx` | Login page flashed for ~1 ms on page refresh. React Query's `isLoading` briefly becomes `false` between IDB restore completion and the `auth/me` fetch starting (`fetchStatus === 'idle'`); `ProtectedRoute` misread this and redirected to `/login`. Fixed by switching to `isPending` (true any time no data has resolved, regardless of fetch state) and initialising `offlineChecked` eagerly to `true` for online users so no extra render is needed. |
 
 ---
 

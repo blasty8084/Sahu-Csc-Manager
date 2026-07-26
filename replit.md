@@ -1,5 +1,5 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 4.9.0** — last updated 2026-07-23
+**Version 4.9.1** — last updated 2026-07-26
 
 > **Set up on Replit 2026-07-26 (latest)**: Ran `pnpm install` (node_modules missing after import), pushed DB schema via `pnpm --filter @workspace/db run push-force`, created `session` table + index via raw SQL, built frontend (`PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run build`), seeded DB via `Seed Database` workflow. `API Server` (port 8080) and `Start application` (port 5000) running. `Worker Server` skips cleanly — `REDIS_URL` not set. Secrets set: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`, `B2_BUCKET_ENDPOINT`, `B2_BUCKET_NAME`, `B2_KEY_ID`, `B2_APP_KEY`. CORS auto-includes `REPLIT_DEV_DOMAIN`/`REPLIT_DOMAINS`. B2 upload/signed-URL/delete lifecycle verified. SMTP missing `SMTP_PASSWORD` — email OTP/notifications unavailable until configured. Verified: login page renders in preview, `/api/healthz` returns 200, DB connected (PostgreSQL 16.10).
 >
