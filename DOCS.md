@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Platform Documentation
-**Version 4.9.1** — last updated 2026-07-26
+**Version 4.9.2** — last updated 2026-07-26
 
 > Common Service Center (CSC) Business Management Platform for Odisha / India rural service centers.
 > Full-stack · PWA · Offline-capable · Multilingual (English / Hindi / Odia)
@@ -57,7 +57,12 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 
 ## 2. Version History
 
-### v4.9.1 — Bug Fix & Infra (2026-07-26)
+### v4.9.2 — Navigation & Production Proxy Fixes (2026-07-26)
+
+- **Post-login redirect to saved route** — `ProtectedRoute` now writes the pre-redirect path to `sessionStorage` (`sahu-last-route`) before sending the user to `/login`. After a successful login, `login.tsx` reads that key and navigates back to the original page, falling back to `/` if absent. Deep links and session-expired refreshes now return the user to where they were.
+- **Production API proxy** — `scripts/serve.mjs` was missing an `/api` proxy, causing `sirv`'s SPA fallback to return `index.html` for every API call. Added a zero-dependency `node:http` reverse proxy that forwards `/api/*` and `/socket.io/*` to port 8080. Pages that called `.map()` on API data (e.g. Ledger) were crashing with `TypeError` in production; now fixed.
+
+### v4.9.1 — Auth Flash & B2 (2026-07-26)
 
 - **Login page flash eliminated** — `ProtectedRoute` was briefly redirecting to `/login` on page refresh due to a one-frame gap where React Query's `isLoading` dropped to `false` before the `auth/me` fetch actually started. Fixed by using `isPending` (stays `true` until data resolves, regardless of fetch state) and initialising `offlineChecked` eagerly for online users. File: `hooks/use-auth.tsx`.
 - **Backblaze B2 storage live** — B2 credentials re-entered and verified (upload → signed URL → delete lifecycle) against bucket `SAHUCSCV2`. Avatar uploads and database backup mirroring are now active.

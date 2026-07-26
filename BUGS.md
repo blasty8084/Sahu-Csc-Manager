@@ -2,7 +2,7 @@
 
 > Original audit generated: 14 July 2026
 > Status reconciled: 26 July 2026 against the current API, frontend, schema, and changelog
-> Current total: **1 open / 24 fixed** — the async PDF/SMS worker limitation remains intentionally explicit
+> Current total: **1 open / 26 fixed** — the async PDF/SMS worker limitation remains intentionally explicit
 
 ---
 
@@ -58,6 +58,8 @@
 | 18 | ✅ Fixed | `pages/register.tsx` → `components/auth/RegisterForm.tsx` | `form.reset()`, `setFormValues(null)`, and `setOtpDigits([])` called after every successful submit path — sensitive state cleared before redirect. Fixed as part of register page refactor (July 18, 2026). |
 | 19 | ✅ Fixed | `App.tsx` | `ShareTargetHandler` includes `setLocation` in its effect dependencies. |
 | 25 | ✅ Fixed | `hooks/use-auth.tsx` | Login page flashed for ~1 ms on page refresh. React Query's `isLoading` briefly becomes `false` between IDB restore completion and the `auth/me` fetch starting (`fetchStatus === 'idle'`); `ProtectedRoute` misread this and redirected to `/login`. Fixed by switching to `isPending` (true any time no data has resolved, regardless of fetch state) and initialising `offlineChecked` eagerly to `true` for online users so no extra render is needed. |
+| 26 | ✅ Fixed | `scripts/serve.mjs` | In production (`serve.mjs`), all `/api/*` requests were handled by `sirv`'s SPA fallback — returning `index.html` (200 OK) instead of forwarding to the API server. React Query stored the HTML string as query data; pages calling `.map()` on the result (e.g. Ledger) crashed with `TypeError: entries.map is not a function`. Fixed by adding a Node `http.request` reverse proxy in `serve.mjs` that forwards `/api/*` and `/socket.io/*` to port 8080 before `sirv` can intercept. |
+| 27 | ✅ Fixed | `components/ProtectedRoute.tsx` · `pages/login.tsx` | After a session expired or a deep link was opened unauthenticated, successful login always redirected to `/` (dashboard) instead of the originally requested page. `ProtectedRoute` now saves the pre-redirect path to `sessionStorage` (`sahu-last-route`); `login.tsx` reads, clears, and navigates to it after login. |
 
 ---
 

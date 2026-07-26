@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Changelog
-**Current version: 4.9.1 — July 26, 2026**
+**Current version: 4.9.2 — July 26, 2026**
 
 > Single authoritative changelog covering all versions from v1.x through v4.x.
 > - **v3.x / v4.x entries** (current) — listed first, newest at top
@@ -9,6 +9,8 @@
 
 ## Table of Contents
 
+0. [Fix — Post-login redirect to saved route (July 26, 2026)](#0-fix--post-login-redirect-to-saved-route-july-26-2026)
+0. [Fix — Production API proxy in serve.mjs (July 26, 2026)](#0-fix--production-api-proxy-in-servemjs-july-26-2026)
 0. [Fix — Login page flash on refresh eliminated (July 26, 2026)](#0-fix--login-page-flash-on-refresh-eliminated-july-26-2026)
 0. [Infra — Backblaze B2 storage credentials verified and live (July 26, 2026)](#0-infra--backblaze-b2-storage-credentials-verified-and-live-july-26-2026)
 0. [Infra — Switched database to user-owned Neon PostgreSQL (July 22, 2026)](#0-infra--switched-database-to-user-owned-neon-postgresql-july-22-2026)
@@ -55,6 +57,45 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Fix — Post-login redirect to saved route (July 26, 2026)
+
+**Problem:** When an unauthenticated user visited a deep link (e.g. `/ledger`, `/reports`) or refreshed a protected page, `ProtectedRoute` redirected them to `/login`. After they logged in, they were always taken to `/` (dashboard) rather than the page they originally wanted.
+
+**Fix:**
+
+- **`artifacts/sahu-csc/src/components/ProtectedRoute.tsx`** — on redirect to `/login`, the current path is written to `sessionStorage` under the key `sahu-last-route` (skipped for paths that are already public routes to avoid saving `/login` itself).
+- **`artifacts/sahu-csc/src/pages/login.tsx`** — after a successful login, reads `sahu-last-route` from `sessionStorage`, removes the key, then navigates to that path. Falls back to `/` if no saved path exists or if the saved path is itself a public route.
+
+**Result:** Refreshing on `/aeps` → logs in → lands back on `/aeps`. Deep links work correctly end-to-end.
+
+---
+
+## 0. Fix — Production API proxy in serve.mjs (July 26, 2026)
+
+**Problem:** The production static-file server (`artifacts/sahu-csc/scripts/serve.mjs`) had no `/api` proxy. `sirv`'s SPA fallback was silently returning `index.html` (200 OK) for every `/api/*` request. React Query stored the HTML string as the query data, and any page that called `.map()` on the result (e.g. Ledger's `entries.map(...)`) crashed with `TypeError: entries.map is not a function`.
+
+This bug only affected the production `serve.mjs` path. The Vite dev server was unaffected because Vite's `server.proxy` was already forwarding API calls.
+
+**Fix — `artifacts/sahu-csc/scripts/serve.mjs`:**
+
+Added a zero-dependency reverse proxy using Node's built-in `http.request`:
+
+```
+GET/POST/… /api/*       → forwarded to http://127.0.0.1:8080
+GET/POST/… /socket.io/* → forwarded to http://127.0.0.1:8080
+everything else          → served by sirv (SPA fallback for client routes)
+```
+
+- No npm dependencies added — uses `node:http` only
+- Preserves all original request headers, method, and body
+- On proxy error (e.g. API server down), returns `502 Bad Gateway` as JSON
+- `API_PORT` env var (default `8080`) controls the upstream target
+
+**Files changed:**
+- `artifacts/sahu-csc/scripts/serve.mjs` — `proxyToApi()` function + routing guard before `assets()` handler
 
 ---
 
