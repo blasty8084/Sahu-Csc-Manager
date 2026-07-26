@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Platform Documentation
-**Version 4.9.2** — last updated 2026-07-26
+**Version 4.9.3** — last updated 2026-07-26
 
 > Common Service Center (CSC) Business Management Platform for Odisha / India rural service centers.
 > Full-stack · PWA · Offline-capable · Multilingual (English / Hindi / Odia)
@@ -56,6 +56,12 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 ---
 
 ## 2. Version History
+
+### v4.9.3 — Profile Permissions Section & PermissionCard Screen Fit (2026-07-26)
+
+- **Profile duplicate controls removed** — `ProfileSystemSettings` contained Theme and Language selects that were already present in `ProfilePreferencesForm`; admins saw both controls twice. Removed them from `ProfileSystemSettings`; it now shows only Currency and Auto Backup.
+- **New: Permissions section in profile** — `ProfilePermissionsSection` component lets users view and manage browser permissions (Location, Notifications, File Manager) without re-triggering the first-login modal. Shows a live status summary banner (X of 3 granted), per-permission Allow / Enable-in-Settings controls, and a Refresh button. Added as a "Permissions" nav item on mobile (between Security and Preferences) and as an "App Permissions" card on desktop (left column, below Trusted Devices). Reuses `usePermissions` + `PermissionRow` from the existing `PermissionCard` system.
+- **PermissionCard screen fit fixed** — the shield-icon badge was inside the card's `overflow: hidden` container and was clipped on many browsers. Moved the icon outside the card as a flex sibling with `mb-[-32px]`. Added `maxHeight: calc(100svh - 96px)` + `overflow-y: auto` on the scrollable content area so the card scrolls rather than overflows on short-screen devices.
 
 ### v4.9.2 — Navigation & Production Proxy Fixes (2026-07-26)
 

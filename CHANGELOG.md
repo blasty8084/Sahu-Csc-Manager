@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Changelog
-**Current version: 4.9.2 — July 26, 2026**
+**Current version: 4.9.3 — July 26, 2026**
 
 > Single authoritative changelog covering all versions from v1.x through v4.x.
 > - **v3.x / v4.x entries** (current) — listed first, newest at top
@@ -9,6 +9,9 @@
 
 ## Table of Contents
 
+0. [Fix — Profile page duplicate Theme/Language controls removed (July 26, 2026)](#0-fix--profile-page-duplicate-themelanguage-controls-removed-july-26-2026)
+0. [Feature — Profile page Permissions section (July 26, 2026)](#0-feature--profile-page-permissions-section-july-26-2026)
+0. [Fix — PermissionCard screen fit on small devices (July 26, 2026)](#0-fix--permissioncard-screen-fit-on-small-devices-july-26-2026)
 0. [Fix — Post-login redirect to saved route (July 26, 2026)](#0-fix--post-login-redirect-to-saved-route-july-26-2026)
 0. [Fix — Production API proxy in serve.mjs (July 26, 2026)](#0-fix--production-api-proxy-in-servemjs-july-26-2026)
 0. [Fix — Login page flash on refresh eliminated (July 26, 2026)](#0-fix--login-page-flash-on-refresh-eliminated-july-26-2026)
@@ -57,6 +60,49 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Fix — Profile page duplicate Theme/Language controls removed (July 26, 2026)
+
+**Problem:** Admin users saw Theme and Language controls in two places on the profile page — once in the "Preferences" section (`ProfilePreferencesForm`) and again in the "System Settings" section (`ProfileSystemSettings`). Both sections rendered `<Select>` fields bound to the same underlying values, so every change had to be made twice and the UI looked broken.
+
+**Fix:**
+
+- **`artifacts/sahu-csc/src/components/profile/ProfileSystemSettings.tsx`** — removed the Language and Theme `<Select>` fields. The component now contains only Currency and Auto Backup (the two genuinely system-level settings that do not belong in personal Preferences).
+
+**Result:** Theme and Language appear exactly once (in Preferences). System Settings shows only Currency and Auto Backup.
+
+---
+
+## 0. Feature — Profile page Permissions section (July 26, 2026)
+
+A new `ProfilePermissionsSection` component lets users view and manage browser permissions directly from the profile page, without having to re-trigger the first-login onboarding modal.
+
+**New file:** `artifacts/sahu-csc/src/components/profile/ProfilePermissionsSection.tsx`
+
+- Status summary banner — shows "X of 3 granted" with a green tint when all are granted or orange when some are missing; includes a Refresh button that re-reads current browser permission state via `initializeFromBrowser()`
+- Location, Notifications (skipped automatically on iOS Safari), and File Manager rows — each row shows the current state: animated **Allow** button when unprompted, **Allowed** badge when granted, **Denied** + "Enable in Settings" link when blocked
+- Reuses `usePermissions` hook and `PermissionRow` component from the first-login `PermissionCard` — identical behaviour, no duplication of logic
+
+**Wired into the profile layout:**
+
+- **Mobile** (`ProfileMobileLayout.tsx`) — new "Permissions" nav item (ShieldCheck icon) inserted between Security and Preferences; drill-in renders `ProfilePermissionsSection`
+- **Desktop** (`ProfileDesktopLayout.tsx`) — new "App Permissions" card in the left column, below Trusted Devices; uses existing `CmdCard` wrapper
+
+---
+
+## 0. Fix — PermissionCard screen fit on small devices (July 26, 2026)
+
+**Problem:** On short-screen devices (viewport height ≲ 600 px) the first-login `PermissionCard` modal overflowed the viewport bottom and became inaccessible. Additionally, the shield-icon badge was rendered *inside* the card's `overflow: hidden` container using a `-mt-14` (−56 px) negative margin to protrude above the card edge — on most browsers this caused the icon to be partially or fully clipped rather than floating above the card as intended.
+
+**Fix — `artifacts/sahu-csc/src/components/PermissionCard/PermissionCard.tsx`:**
+
+- **Icon moved outside the card** — the `ShieldCheck` badge is now a flex sibling rendered *before* the card `<div>`, with `mb-[-32px]` pulling the card up underneath it. The icon is guaranteed to be visible and never clipped, regardless of browser `overflow: hidden` behaviour on border-radius containers.
+- **Card height capped and scrollable** — `maxHeight: "calc(100svh - 96px)"` (using `svh` — small viewport height, which correctly excludes the mobile browser's address bar and toolbar). The card uses `display: flex; flex-direction: column`; the inner content area has `overflow-y: auto` so it scrolls on short screens rather than overflowing.
+- **Backdrop padding adjusted** — top padding increased to `40px` to leave visual breathing room above the floating icon in the flex stack.
+
+**Result:** The PermissionCard modal fits any screen from ~480 px height upward; the shield icon is always visible above the card; content remains accessible and scrollable on the smallest supported devices.
 
 ---
 
