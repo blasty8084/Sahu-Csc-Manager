@@ -76,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const {
     data: liveUser,
-    isLoading: liveLoading,
+    isPending: liveLoading,
   } = useGetMe({
     query: {
       retry: false,
@@ -85,7 +85,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const [offlineUser, setOfflineUser] = React.useState<AuthUser | null>(null);
-  const [offlineChecked, setOfflineChecked] = React.useState(false);
+  // Start as true for online users — avoids a state-update race where
+  // offlineChecked flips to true in the same render that liveLoading briefly
+  // reads false (idle before the query fires), which caused a 1-frame redirect
+  // to /login on page refresh.
+  const [offlineChecked, setOfflineChecked] = React.useState(
+    () => typeof navigator !== "undefined" && navigator.onLine,
+  );
   const [loadingPhase, setLoadingPhase] = React.useState<LoadingPhase>("loading");
 
   // After 4s still loading → show "slow" message; after 12s → force past loading
