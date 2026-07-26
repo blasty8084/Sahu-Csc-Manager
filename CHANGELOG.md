@@ -9,6 +9,8 @@
 
 ## Table of Contents
 
+0. [Infra — ALLOW_NON_INDIA geo-block bypass for Replit preview (July 26, 2026)](#0-infra--allow_non_india-geo-block-bypass-for-replit-preview-july-26-2026)
+0. [Refactor — Brand color token audit & CSS variable consolidation (July 26, 2026)](#0-refactor--brand-color-token-audit--css-variable-consolidation-july-26-2026)
 0. [Fix — Profile page duplicate Theme/Language controls removed (July 26, 2026)](#0-fix--profile-page-duplicate-themelanguage-controls-removed-july-26-2026)
 0. [Feature — Profile page Permissions section (July 26, 2026)](#0-feature--profile-page-permissions-section-july-26-2026)
 0. [Fix — PermissionCard screen fit on small devices (July 26, 2026)](#0-fix--permissioncard-screen-fit-on-small-devices-july-26-2026)
@@ -60,6 +62,59 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Infra — ALLOW_NON_INDIA geo-block bypass for Replit preview (July 26, 2026)
+
+**Problem:** Replit's container servers are located outside India. The frontend `GeoGate` component in `App.tsx` calls `GET /api/geo` on mount and renders the `<RegionBlocked>` screen when the response returns `allowed: false`. Because the request reaches Express from the Replit proxy IP (a non-Indian address), users saw the "India only" lock screen instead of the login page when previewing in the Replit pane.
+
+**Fix:**
+
+- Set `ALLOW_NON_INDIA=true` as a **shared environment variable** in Replit Secrets panel.
+- `artifacts/api-server/src/lib/geo-block.ts` already checks `process.env.ALLOW_NON_INDIA === "true"` and skips the block (line 59).
+- `artifacts/api-server/src/routes/health.ts` (`GET /api/geo`) also short-circuits to `{ allowed: true, country: "IN" }` when this var is set (line 157).
+
+**Result:** Preview pane shows the login page normally. The geo-restriction remains enforced in production deployments where the var is absent.
+
+**Files:** `lib/geo-block.ts`, `routes/health.ts` (no code change — env var only).
+
+---
+
+## 0. Refactor — Brand color token audit & CSS variable consolidation (July 26, 2026)
+
+**Goal:** Establish a single source of truth for every color used across the 170-file frontend, as the prerequisite for a correct dark-mode replacement pass. No visual change in this commit.
+
+**Audit findings** (across `artifacts/sahu-csc/src/**`):
+
+| Color family | Unique hex values | Occurrences |
+|---|---|---|
+| Navy (`#0b2c60` family) | 8 | 1 040+ |
+| Orange/Saffron (`#f97316` family) | 5 | 400+ |
+| Slate/neutral | 9 | 550+ |
+| Semantic success | 5 | 220+ |
+| Semantic error/destructive | 7 | 170+ |
+| Misc feature colors | 8 | 100+ |
+| **Total hardcoded hex** | — | **2 271** |
+| Tailwind literal classes (`bg-orange-500`, `text-white`, etc.) | — | **825** |
+
+**Changes:**
+
+- **`artifacts/sahu-csc/src/index.css`** — added 142 CSS custom properties in two new blocks inserted before `@layer base`:
+  - `:root` — brand primitive tokens: navy scale (`--brand-navy` → `--brand-navy-500`), orange scale (`--brand-orange` → `--brand-orange-300`), 14 alpha-tint variables, slate neutral scale (`--color-slate-50` → `--color-slate-800`), semantic success/error/warning families, feature colors (violet, indigo, sky, blue), surface tokens.
+  - `.dark` — semantic overrides: success shifts lighter, error shifts to rose variant, `--color-slate-400/500` flips for correct readability on dark bg, surfaces become semi-transparent.
+
+**Token map (brand anchors):**
+
+| Token | Value | Role |
+|---|---|---|
+| `--brand-navy` | `#0B1340` | Auth page backgrounds — brand primary dark |
+| `--brand-navy-800` | `#0b2c60` | Primary text, icon color (447 uses) |
+| `--brand-orange` | `#F97316` | Brand saffron = `hsl(var(--accent))` |
+| `--color-success` | `#059669` light / `#10b981` dark | Income, positive balance |
+| `--color-error` | `#e11d48` light / `#f43f5e` dark | Expense, destructive |
+
+**Next pass:** Replace every inline hex string and relevant Tailwind literal class across the 170 files with the corresponding `var(--…)` call. That pass delivers the actual dark-mode correctness improvement.
 
 ---
 

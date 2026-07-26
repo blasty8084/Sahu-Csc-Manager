@@ -57,6 +57,11 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 
 ## 2. Version History
 
+### Color Token Audit & Geo-Block Bypass (2026-07-26)
+
+- **ALLOW_NON_INDIA env var** — Replit preview servers are outside India; the `GeoGate` component in `App.tsx` was showing the region-blocked screen. Set `ALLOW_NON_INDIA=true` as a shared env var to bypass for development. Production deployments can leave this unset to keep geo-gating active.
+- **Brand color token consolidation** — Audited all 170 TSX/TS source files in `artifacts/sahu-csc/src/` for hardcoded color values (2271 hex occurrences, 825 Tailwind literal-color occurrences). Added 142 CSS custom properties to `artifacts/sahu-csc/src/index.css` under `:root` (light) and `.dark` (dark-mode overrides): navy scale (`--brand-navy` → `--brand-navy-500`), orange/saffron scale (`--brand-orange` → `--brand-orange-300`), 14 alpha-tint variables (`--brand-orange-glow`, `--brand-navy-tint-*`, etc.), slate neutral scale (`--color-slate-50` → `--color-slate-800`), semantic success/error/warning families, feature colors (violet, indigo, sky, blue), and surface tokens. No visual change in this pass — tokens are defined, not yet wired into components.
+
 ### v4.9.3 — Profile Permissions Section & PermissionCard Screen Fit (2026-07-26)
 
 - **Profile duplicate controls removed** — `ProfileSystemSettings` contained Theme and Language selects that were already present in `ProfilePreferencesForm`; admins saw both controls twice. Removed them from `ProfileSystemSettings`; it now shows only Currency and Auto Backup.
