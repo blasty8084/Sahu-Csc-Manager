@@ -210,6 +210,143 @@ html.dark, html.dark body {
   --chart-5: 27 87% 67%;
 }
 
+/* ── Brand Primitive Tokens ───────────────────────────────────────────────────
+   Source-of-truth values for every hardcoded color found in the component tree.
+   These do NOT replace existing Tailwind/HSL semantic tokens (--primary,
+   --accent, etc.) — they are raw hex/rgba primitives that the NEXT replacement
+   pass will wire into var(--…) calls instead of inline literals.
+
+   Audit summary (unique hex occurrences across 170 TSX/TS files):
+     #0b2c60 × 447  #94a3b8 × 262  #f97316 × 217  #e2e8f0 × 172
+     #059669 × 106  #64748b ×  93  #f8fafc ×  90  #10b981 ×  70
+     #e11d48 ×  63  #ea580c ×  62  #1a4a9e ×  55  + 60 more
+
+   Navy  (#0B1340 family) → maps to --primary dark-bg
+   Orange (#F97316 family) → maps to --accent saffron
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/* Primitive tokens — light mode defaults */
+:root {
+  /* ── Navy scale ─ auth backgrounds, headings, gradients ─────────────────── */
+  --brand-navy:       #0B1340;   /* auth page bg (darkest)           18 uses  */
+  --brand-navy-900:   #080f2e;   /* loading screen gradient start             */
+  --brand-navy-800:   #0b2c60;   /* primary text / icon dark navy   447 uses  */
+  --brand-navy-750:   #0f1f4a;   /* gradient fill variant            18 uses  */
+  --brand-navy-700:   #0f3872;   /* gradient end point               13 uses  */
+  --brand-navy-650:   #1a2560;   /* mid-dark variant                 20 uses  */
+  --brand-navy-600:   #1a4a9e;   /* lighter navy, highlight grad     55 uses  */
+  --brand-navy-500:   #1e40af;   /* blue-800 border accents          11 uses  */
+
+  /* ── Orange / Saffron scale ─ accent, CTA, brand highlight ──────────────── */
+  --brand-orange:     #F97316;   /* brand saffron = hsl(var(--accent)) 217 uses */
+  --brand-orange-700: #c2410c;   /* deep orange, hover states        12 uses  */
+  --brand-orange-600: #ea580c;   /* darker, gradient tail            62 uses  */
+  --brand-orange-400: #fb923c;   /* lighter, soft gradient fill      22 uses  */
+  --brand-orange-300: #fbbf24;   /* warm gold tail (gradient end)    10 uses  */
+
+  /* ── Alpha tints ─ rgba() backgrounds, glows, shadows ───────────────────── */
+  --brand-orange-glow:      rgba(249, 115, 22, 0.40);
+  --brand-orange-tint-xs:   rgba(249, 115, 22, 0.09);
+  --brand-orange-tint-sm:   rgba(249, 115, 22, 0.12);
+  --brand-orange-tint-md:   rgba(249, 115, 22, 0.25);
+  --brand-orange-tint-soft: rgba(249, 115, 22, 0.35);
+  --brand-orange-border:    rgba(249, 115, 22, 0.30);
+  --brand-navy-tint-xs:     rgba(11, 44, 96, 0.025);
+  --brand-navy-tint-sm:     rgba(11, 44, 96, 0.03);
+  --brand-navy-tint-md:     rgba(11, 44, 96, 0.06);
+  --brand-navy-shadow:      rgba(11, 44, 96, 0.28);
+  --brand-navy-shadow-sm:   rgba(11, 44, 96, 0.25);
+  --brand-white-low:        rgba(255, 255, 255, 0.08);
+  --brand-white-mid:        rgba(255, 255, 255, 0.12);
+  --brand-white-high:       rgba(255, 255, 255, 0.18);
+  --brand-white-border:     rgba(255, 255, 255, 0.20);
+  --brand-black-overlay:    rgba(0, 0, 0, 0.55);
+
+  /* ── Slate / neutral scale ─ muted text, borders, card backgrounds ───────── */
+  --color-slate-50:  #f8fafc;   /*  90 uses */
+  --color-slate-100: #f1f5f9;   /*  70 uses */
+  --color-slate-200: #e2e8f0;   /* 172 uses */
+  --color-slate-300: #cbd5e1;   /*   9 uses */
+  --color-slate-400: #94a3b8;   /* 262 uses */
+  --color-slate-500: #64748b;   /*  93 uses */
+  --color-slate-600: #475569;   /*  38 uses */
+  --color-slate-700: #334155;   /*  20 uses */
+  --color-slate-800: #1e293b;   /*  10 uses */
+
+  /* ── Semantic ─ success (income / positive balance) ─────────────────────── */
+  --color-success:       #059669;   /* emerald-600  106 uses */
+  --color-success-light: #10b981;   /* emerald-400   70 uses */
+  --color-success-soft:  #22c55e;   /* green-400     20 uses */
+  --color-success-dim:   #16a34a;   /* green-600     15 uses */
+  --color-success-glow:  #34d399;   /* emerald-300    9 uses */
+  --color-success-bg:    #dcfce7;   /* green-100      6 uses */
+
+  /* ── Semantic ─ error / expense / destructive ───────────────────────────── */
+  --color-error:      #e11d48;   /* rose-600   63 uses */
+  --color-error-soft: #f43f5e;   /* rose-500   18 uses */
+  --color-error-std:  #ef4444;   /* red-500    44 uses */
+  --color-error-dim:  #dc2626;   /* red-600    20 uses */
+  --color-error-dark: #be123c;   /* rose-700    9 uses */
+  --color-error-deep: #b91c1c;   /* red-700     8 uses */
+  --color-error-bg:   #fee2e2;   /* red-100     4 uses */
+  --color-error-bg-sm:#fff1f2;   /* rose-50     5 uses */
+
+  /* ── Semantic ─ warning ──────────────────────────────────────────────────── */
+  --color-warning:      #d97706;   /* amber-600  16 uses */
+  --color-warning-dark: #92400e;   /* amber-800   5 uses */
+  --color-warning-bg:   #fef3c7;   /* amber-100   4 uses */
+  --color-warning-text: #a16207;   /* amber-700   7 uses */
+
+  /* ── Feature / misc brand colors ─────────────────────────────────────────── */
+  --color-violet:    #7c3aed;   /* violet-700  — reports, analytics  25 uses */
+  --color-violet-sm: #8b5cf6;   /* violet-500  — lighter variant     13 uses */
+  --color-indigo:    #4F46E5;   /* indigo-600  — permission cards     8 uses */
+  --color-sky:       #0891b2;   /* sky-600     — 2FA, info badges     7 uses */
+  --color-blue:      #3b82f6;   /* blue-500    — links               17 uses */
+  --color-blue-600:  #2563eb;   /*              — blue medium          5 uses */
+  --color-blue-700:  #1d4ed8;   /*              — blue dark           12 uses */
+  --color-rose-400:  #f43f5e;
+  --color-rose-200:  #fecdd3;
+  --color-rose-100:  #fff1f2;
+
+  /* ── Special surface tokens ──────────────────────────────────────────────── */
+  --surface-permission-bg:   #EEF0FF;
+  --surface-permission-icon: #4F46E5;
+  --surface-card-white:      #ffffff;
+  --surface-card-near-white: #fafafa;
+  --surface-toast-amber:     #fff7ed;
+  --surface-toast-blue:      #eff6ff;
+  --surface-toast-green:     #f0fdf4;
+  --surface-blue-tint:       #dbeafe;
+  --surface-blue-tint-sm:    #bfdbfe;
+}
+
+/* Dark-mode semantic overrides — only tokens that differ in dark mode */
+.dark {
+  /* Success shifts lighter in dark */
+  --color-success:       #10b981;
+  --color-success-light: #34d399;
+  --color-success-dim:   #059669;
+  --color-success-bg:    rgba(16, 185, 129, 0.12);
+
+  /* Error shifts to rose variant in dark */
+  --color-error:      #f43f5e;
+  --color-error-soft: #e11d48;
+  --color-error-std:  #ef4444;
+  --color-error-bg:   rgba(244, 63, 94, 0.12);
+
+  /* Slate flips 400↔500 so muted-text reads correctly on dark bg */
+  --color-slate-400: #64748b;
+  --color-slate-500: #94a3b8;
+
+  /* Surfaces become semi-transparent on dark */
+  --surface-permission-bg:  rgba(79, 70, 229, 0.15);
+  --surface-card-white:     transparent;
+  --surface-toast-amber:    rgba(245, 158, 11, 0.10);
+  --surface-toast-blue:     rgba(59, 130, 246, 0.10);
+  --surface-toast-green:    rgba(16, 185, 129, 0.10);
+}
+
 @layer base {
   * {
     @apply border-border;
