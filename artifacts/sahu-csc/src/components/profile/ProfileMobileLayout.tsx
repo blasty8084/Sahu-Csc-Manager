@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Lock, Palette, Building2, Settings2,
-  User, ChevronRight, RefreshCw,
+  User, ChevronRight, RefreshCw, ShieldCheck,
 } from "lucide-react";
 import { ProfileAvatarCard, ProfileAvatarSummary } from "./ProfileAvatarUpload";
 import { ProfileInfoForm } from "./ProfileInfoForm";
@@ -18,13 +18,15 @@ import { ProfilePreferencesForm } from "./ProfilePreferencesForm";
 import { ProfileBusinessForm } from "./ProfileBusinessForm";
 import { RegistrationControlSection } from "./RegistrationControlSection";
 import { ProfileSystemSettings } from "./ProfileSystemSettings";
+import { ProfilePermissionsSection } from "./ProfilePermissionsSection";
 
 // ─── Nav config ───────────────────────────────────────────────────────────────
-type MobileTab = "profile" | "security" | "preferences" | "business" | "system";
+type MobileTab = "profile" | "security" | "permissions" | "preferences" | "business" | "system";
 interface MobileNavItem { id: MobileTab; label: string; icon: React.ReactNode; adminOnly?: boolean; }
 const MOBILE_NAV: MobileNavItem[] = [
   { id: "profile",     label: "My Profile",    icon: <User size={16} /> },
   { id: "security",    label: "Security",       icon: <Lock size={16} /> },
+  { id: "permissions", label: "Permissions",   icon: <ShieldCheck size={16} /> },
   { id: "preferences", label: "Preferences",   icon: <Palette size={16} /> },
   { id: "business",    label: "Business Info",  icon: <Building2 size={16} />, adminOnly: true },
   { id: "system",      label: "System",         icon: <Settings2 size={16} />, adminOnly: true },
@@ -105,6 +107,11 @@ export function ProfileMobileLayout({
           <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">Trusted Devices</p>
           <DevicesSection />
         </div>
+      </div>
+    ),
+    permissions: (
+      <div className="space-y-2">
+        <ProfilePermissionsSection />
       </div>
     ),
     preferences: (

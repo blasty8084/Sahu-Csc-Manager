@@ -18,6 +18,7 @@ import { ProfilePreferencesForm } from "./ProfilePreferencesForm";
 import { ProfileBusinessForm } from "./ProfileBusinessForm";
 import { RegistrationControlSection } from "./RegistrationControlSection";
 import { ProfileSystemSettings } from "./ProfileSystemSettings";
+import { ProfilePermissionsSection } from "./ProfilePermissionsSection";
 
 interface Props {
   // avatar / banner
@@ -94,6 +95,9 @@ export function ProfileDesktopLayout({
           </CmdCard>
           <CmdCard title="Trusted Devices" icon={<Smartphone size={15} />}>
             <DevicesSection />
+          </CmdCard>
+          <CmdCard title="App Permissions" icon={<Wifi size={15} />}>
+            <ProfilePermissionsSection />
           </CmdCard>
         </div>
 

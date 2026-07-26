@@ -50,7 +50,6 @@ export function PermissionCard() {
 
   const skipNotifications = isIOSSafari();
 
-  // Progress: count how many are done out of total
   const total = skipNotifications ? 2 : 3;
   const done = [
     ATTEMPTED.includes(locationStatus),
@@ -90,22 +89,35 @@ export function PermissionCard() {
   if (!user) return null;
 
   return (
-    // Plain semi-transparent backdrop — no backdrop-blur (too GPU-heavy on mobile)
+    // Backdrop — no backdrop-blur (GPU-heavy on mobile)
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-5"
-      style={{ backgroundColor: "rgba(0,0,0,0.55)" }}
+      className="fixed inset-0 z-[100] flex flex-col items-center justify-center px-5 pb-5"
+      style={{ backgroundColor: "rgba(0,0,0,0.55)", paddingTop: "40px" }}
     >
+      {/* Shield icon floats above the card via negative bottom margin — outside
+          the card's overflow:hidden so it's never clipped */}
+      <div
+        className="w-16 h-16 rounded-full flex items-center justify-center shadow-sm ring-4 ring-white relative z-10 shrink-0"
+        style={{ background: "#EEF0FF", marginBottom: "-32px" }}
+      >
+        <ShieldCheck className="w-8 h-8" style={{ color: "#4F46E5" }} />
+      </div>
+
+      {/* Card — max-height + flex column so content scrolls on small devices */}
       <div
         style={{
           width: "100%",
           maxWidth: 360,
+          // svh = small viewport height (accounts for mobile browser chrome)
+          maxHeight: "calc(100svh - 96px)",
           background: "#fff",
           borderRadius: 20,
           boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
-          // GPU-composited entry animation via CSS
           animation: "perm-card-in 0.22s cubic-bezier(0.34,1.56,0.64,1) both",
           overflow: "hidden",
           position: "relative",
+          display: "flex",
+          flexDirection: "column",
         }}
       >
         {/* Progress fill bar — grows as permissions are granted */}
@@ -119,10 +131,12 @@ export function PermissionCard() {
             background: "linear-gradient(90deg, #4F46E5, #818CF8)",
             borderRadius: "0 2px 2px 0",
             transition: "width 0.5s cubic-bezier(0.4,0,0.2,1)",
+            zIndex: 1,
           }}
         />
 
-        <div className="px-6 py-6">
+        {/* Scrollable content area */}
+        <div className="px-6 pb-6 overflow-y-auto flex-1" style={{ paddingTop: "36px" }}>
           {step === 1 && (
             <button
               type="button"
@@ -133,13 +147,6 @@ export function PermissionCard() {
               <X className="w-5 h-5" />
             </button>
           )}
-
-          <div
-            className="w-16 h-16 rounded-full flex items-center justify-center mx-auto -mt-14 mb-3 shadow-sm ring-4 ring-white"
-            style={{ background: "#EEF0FF" }}
-          >
-            <ShieldCheck className="w-8 h-8" style={{ color: "#4F46E5" }} />
-          </div>
 
           {/* Title — crossfades between steps with pure CSS */}
           <div style={{ position: "relative", height: 52, overflow: "hidden" }}>
@@ -224,7 +231,6 @@ export function PermissionCard() {
                 className="w-full h-11 mt-3 rounded-xl font-semibold text-sm text-white flex items-center justify-center gap-2 shadow-md active:opacity-90"
                 style={{
                   background: "linear-gradient(135deg, #4F46E5, #4338CA)",
-                  // Use transform for press effect — no layout shift
                   transition: "transform 0.1s ease",
                 }}
                 onPointerDown={e => (e.currentTarget.style.transform = "scale(0.97)")}
@@ -236,14 +242,14 @@ export function PermissionCard() {
               <button
                 type="button"
                 onClick={handleSkip}
-                className="w-full text-center text-xs text-gray-500 mt-3"
+                className="w-full text-center text-xs text-gray-500 mt-3 mb-1"
               >
                 Skip for now
               </button>
             </>
           ) : (
             <div
-              className="w-full h-11 mt-3 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold text-white"
+              className="w-full h-11 mt-3 mb-1 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold text-white"
               style={{
                 background: "linear-gradient(135deg, #4F46E5, #4338CA)",
                 opacity: canContinue ? 0.7 : 0.85,
@@ -257,7 +263,7 @@ export function PermissionCard() {
         </div>
       </div>
 
-      {/* Keyframe for card entry — defined once globally via a style tag */}
+      {/* Keyframe for card entry */}
       <style>{`
         @keyframes perm-card-in {
           from { opacity: 0; transform: translateY(12px) scale(0.96); }
