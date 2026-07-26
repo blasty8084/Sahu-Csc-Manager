@@ -1,13 +1,12 @@
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
-import { Sun, Moon, Bell } from "lucide-react";
+import { Bell } from "lucide-react";
 import { LiveClock } from "./LiveClock";
 import { SyncDot } from "@/components/sync-status-bar";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { useGreeting } from "@/hooks/use-greeting";
 
 interface DesktopHeaderProps {
-  isDark: boolean;
-  onToggleTheme: () => void;
   unreadCount: number;
   initials: string;
   avatarSrc?: string;
@@ -22,8 +21,6 @@ interface DesktopHeaderProps {
  * need to derive or pass it.
  */
 export function DesktopHeader({
-  isDark,
-  onToggleTheme,
   unreadCount,
   initials,
   avatarSrc,
@@ -75,14 +72,7 @@ export function DesktopHeader({
         {/* Right: sync dot, theme toggle, notifications, profile chip */}
         <div className="flex items-center gap-3">
           <SyncDot />
-          <button
-            onClick={onToggleTheme}
-            title={isDark ? t("nav.switch_light") : t("nav.switch_dark")}
-            className="h-8 w-8 rounded-lg flex items-center justify-center transition-colors duration-100"
-            style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0" }}
-          >
-            {isDark ? <Sun size={15} color="#64748b" /> : <Moon size={15} color="#64748b" />}
-          </button>
+          <ThemeToggle />
           <Link href="/notifications">
             <button
               className="relative flex items-center gap-2 rounded-xl px-3 h-8 text-sm font-medium transition-colors duration-100"

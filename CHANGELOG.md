@@ -9,6 +9,7 @@
 
 ## Table of Contents
 
+0. [Feature — ThemeToggle component: standalone Sun/Moon toggle, prop-drilling removed (July 26, 2026)](#0-feature--themetoggle-component-standalone-sunmoon-toggle-prop-drilling-removed-july-26-2026)
 0. [Feature — ThemeProvider setup: canonical provider, no-flash script, system mode (July 26, 2026)](#0-feature--themeprovider-setup-canonical-provider-no-flash-script-system-mode-july-26-2026)
 0. [Infra — ALLOW_NON_INDIA geo-block bypass for Replit preview (July 26, 2026)](#0-infra--allow_non_india-geo-block-bypass-for-replit-preview-july-26-2026)
 0. [Refactor — Brand color token audit & CSS variable consolidation (July 26, 2026)](#0-refactor--brand-color-token-audit--css-variable-consolidation-july-26-2026)

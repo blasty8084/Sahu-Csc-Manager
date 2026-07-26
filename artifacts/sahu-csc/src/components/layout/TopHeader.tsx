@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AppLogo } from "@/components/app-logo";
 import { LiveClock } from "./LiveClock";
 import { SidebarNav } from "./Sidebar";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { useGreeting } from "@/hooks/use-greeting";
 import type { NavItem } from "./NavLink";
 
@@ -16,8 +17,6 @@ interface TopHeaderProps {
   displayName: string;
   roleLabel: string;
   firstName: string;
-  isDark: boolean;
-  onToggleTheme: () => void;
   onLogout: () => void;
   mainNavItems: NavItem[];
   adminNavItems: NavItem[];
@@ -38,8 +37,6 @@ export function TopHeader({
   displayName,
   roleLabel,
   firstName,
-  isDark,
-  onToggleTheme,
   onLogout,
   mainNavItems,
   adminNavItems,
@@ -89,8 +86,9 @@ export function TopHeader({
             </div>
           </div>
 
-          {/* Right: bell + avatar chip (opens sidebar Sheet) */}
+          {/* Right: theme toggle + bell + avatar chip (opens sidebar Sheet) */}
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <Link href="/notifications">
               <button
                 className="relative flex items-center justify-center rounded-xl"
@@ -137,8 +135,6 @@ export function TopHeader({
                   roleLabel={roleLabel}
                   location={location}
                   onLogout={onLogout}
-                  onToggleTheme={onToggleTheme}
-                  isDark={isDark}
                 />
               </SheetContent>
             </Sheet>

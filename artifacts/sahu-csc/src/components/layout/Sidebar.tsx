@@ -1,8 +1,9 @@
 import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
-import { Sun, Moon, LogIn } from "lucide-react";
+import { LogIn } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AppLogo } from "@/components/app-logo";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { NavLink } from "./NavLink";
 import type { NavItem } from "./NavLink";
 
@@ -17,8 +18,6 @@ interface SidebarNavProps {
   roleLabel: string;
   location: string;
   onLogout: () => void;
-  onToggleTheme: () => void;
-  isDark: boolean;
 }
 
 /**
@@ -40,8 +39,6 @@ export function SidebarNav({
   roleLabel,
   location,
   onLogout,
-  onToggleTheme,
-  isDark,
 }: SidebarNavProps) {
   const { t } = useTranslation();
   const isActive = (href: string) =>
@@ -105,18 +102,7 @@ export function SidebarNav({
           <p className="text-[11px] text-white/45 mt-0.5 capitalize">{roleLabel}</p>
         </Link>
 
-        <button
-          onClick={onToggleTheme}
-          title={isDark ? t("nav.switch_light") : t("nav.switch_dark")}
-          className="
-            flex-shrink-0 w-8 h-8 rounded-xl border border-white/15 bg-white/5
-            flex items-center justify-center
-            text-white/40 hover:text-white hover:border-white/30 hover:bg-white/12
-            transition-colors duration-100 cursor-pointer
-          "
-        >
-          {isDark ? <Sun size={13} /> : <Moon size={13} />}
-        </button>
+        <ThemeToggle variant="sidebar" />
 
         <button
           onClick={onLogout}
