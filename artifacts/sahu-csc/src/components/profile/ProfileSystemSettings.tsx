@@ -1,5 +1,5 @@
 /**
- * ProfileSystemSettings — system language, theme, currency, auto-backup toggle.
+ * ProfileSystemSettings — currency and auto-backup settings (admin-only).
  * Admin-only. Used in both the desktop System card and the mobile System tab
  * (alongside RegistrationControlSection which stays outside this component).
  */
@@ -26,25 +26,6 @@ interface Props {
 export function ProfileSystemSettings({ settingsForm, updateSettingsMut, onSaveSettings }: Props) {
   return (
     <form onSubmit={onSaveSettings} className="space-y-3">
-      <FormField label="Language">
-        <Select value={settingsForm.watch("language")} onValueChange={v => settingsForm.setValue("language", v)}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="en">English</SelectItem>
-            <SelectItem value="hi">Hindi</SelectItem>
-            <SelectItem value="or">Odia</SelectItem>
-          </SelectContent>
-        </Select>
-      </FormField>
-      <FormField label="Theme">
-        <Select value={settingsForm.watch("theme")} onValueChange={v => settingsForm.setValue("theme", v)}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="light">Light</SelectItem>
-            <SelectItem value="dark">Dark</SelectItem>
-          </SelectContent>
-        </Select>
-      </FormField>
       <FormField label="Currency">
         <Select value={settingsForm.watch("currency")} onValueChange={v => settingsForm.setValue("currency", v)}>
           <SelectTrigger><SelectValue /></SelectTrigger>
