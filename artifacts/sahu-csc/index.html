@@ -4,6 +4,30 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
+    <!--
+      NO-FLASH THEME SCRIPT — must be the very first script in <head>.
+      Runs synchronously before any CSS or React renders, so the correct
+      dark/light class is on <html> on the very first paint.
+      Reads localStorage key "sahu-theme" (migrates legacy "sahu-csc-theme").
+    -->
+    <script>
+      (function () {
+        var KEY = 'sahu-theme';
+        var LEGACY = 'sahu-csc-theme';
+        var stored;
+        try {
+          stored = localStorage.getItem(KEY);
+          if (!stored) {
+            var leg = localStorage.getItem(LEGACY);
+            if (leg) { localStorage.setItem(KEY, leg); localStorage.removeItem(LEGACY); stored = leg; }
+          }
+        } catch (e) {}
+        var theme = stored || 'light';
+        var dark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (dark) document.documentElement.classList.add('dark');
+      })();
+    </script>
+
     <title>SAHU CSC — Common Service Center</title>
     <meta name="description" content="SAHU CSC — Business management platform for Common Service Centers. Track ledger, services, reports and more." />
     <meta name="application-name" content="SAHU CSC" />

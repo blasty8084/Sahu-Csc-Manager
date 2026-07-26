@@ -57,6 +57,13 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 
 ## 2. Version History
 
+### ThemeProvider Setup — Canonical Provider, No-Flash Script, System Mode (2026-07-26)
+
+- **`providers/ThemeProvider.tsx`** — new canonical location; supports `light | dark | system`; persists in `sahu-theme` localStorage key; migrates legacy `sahu-csc-theme` key on first load; adds live `matchMedia` listener for system-mode OS changes; exports `resolvedTheme` (always `"light" | "dark"`, never `"system"`) alongside `theme` and `setTheme`.
+- **No-flash inline script** — synchronous `<script>` placed as the first element in `index.html <head>` reads `sahu-theme` before any CSS or React renders and applies `class="dark"` to `<html>` on the first paint — eliminates white flash on dark-mode page load.
+- **`main.tsx` wrap** — `<ThemeProvider>` now wraps `<App />` at the React root instead of being nested inside `App.tsx`; old `components/theme-provider.tsx` is a re-export shim (no consumer import changes needed).
+- **API decoupling** — removed `useGetSettings` from ThemeProvider (async data dependency at theme init); server→local theme sync moved to `useProfileData.ts` which already has settings data.
+
 ### Color Token Audit & Geo-Block Bypass (2026-07-26)
 
 - **ALLOW_NON_INDIA env var** — Replit preview servers are outside India; the `GeoGate` component in `App.tsx` was showing the region-blocked screen. Set `ALLOW_NON_INDIA=true` as a shared env var to bypass for development. Production deployments can leave this unset to keep geo-gating active.

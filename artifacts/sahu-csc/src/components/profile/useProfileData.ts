@@ -91,7 +91,12 @@ export function useProfileData() {
     if (profile) profileForm.reset({ fullName: profile.fullName ?? "", email: profile.email, mobile: profile.mobile ?? "", bio: profile.bio ?? "", address: profile.address ?? "" });
   }, [profile]);
   useEffect(() => {
-    if (prefs) { prefsForm.reset({ theme: prefs.theme, language: prefs.language, dashboardLayout: prefs.dashboardLayout }); if (prefs.language) setLanguage(prefs.language); }
+    if (prefs) {
+      prefsForm.reset({ theme: prefs.theme, language: prefs.language, dashboardLayout: prefs.dashboardLayout });
+      if (prefs.language) setLanguage(prefs.language);
+      // Sync server-stored theme preference into the local ThemeProvider
+      if (prefs.theme) setTheme(prefs.theme as "light" | "dark" | "system");
+    }
   }, [prefs]);
   useEffect(() => {
     if (settings) settingsForm.reset({

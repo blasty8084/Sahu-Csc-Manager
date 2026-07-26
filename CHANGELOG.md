@@ -9,6 +9,7 @@
 
 ## Table of Contents
 
+0. [Feature — ThemeProvider setup: canonical provider, no-flash script, system mode (July 26, 2026)](#0-feature--themeprovider-setup-canonical-provider-no-flash-script-system-mode-july-26-2026)
 0. [Infra — ALLOW_NON_INDIA geo-block bypass for Replit preview (July 26, 2026)](#0-infra--allow_non_india-geo-block-bypass-for-replit-preview-july-26-2026)
 0. [Refactor — Brand color token audit & CSS variable consolidation (July 26, 2026)](#0-refactor--brand-color-token-audit--css-variable-consolidation-july-26-2026)
 0. [Fix — Profile page duplicate Theme/Language controls removed (July 26, 2026)](#0-fix--profile-page-duplicate-themelanguage-controls-removed-july-26-2026)
@@ -62,6 +63,75 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Feature — ThemeProvider setup: canonical provider, no-flash script, system mode (July 26, 2026)
+
+Rewrote the theme system from scratch to eliminate flash-of-wrong-theme, add live system-mode tracking, and move the provider to its canonical location.
+
+### Problems fixed
+
+| Problem | Old behaviour | Fix |
+|---|---|---|
+| Flash of light theme on dark-mode load | ThemeProvider applied class after React hydration — visible white flash | Inline `<script>` in `<head>` applies `dark` class synchronously before first paint |
+| System mode didn't track OS changes live | No `matchMedia` event listener | `addEventListener("change")` on the MQ; cleans up on unmount |
+| Wrong storage key | `sahu-csc-theme` (passed as prop from App.tsx) | `sahu-theme` hardcoded in provider; migrates legacy key on first read |
+| Provider coupled to API | `useGetSettings()` inside ThemeProvider — theme init had an async data dependency | Removed; server→local sync moved into `useProfileData.ts` (already has settings data) |
+| Wrong module location | `components/theme-provider.tsx` | `providers/ThemeProvider.tsx` (canonical); old file becomes a re-export shim |
+| Provider wrapped too deep | Inside `App.tsx`, nested under QueryProvider | Moved to `main.tsx` root — wraps everything including ErrorBoundary |
+
+### Files changed
+
+| File | Change |
+|---|---|
+| **`artifacts/sahu-csc/src/providers/ThemeProvider.tsx`** | New canonical file (created) |
+| **`artifacts/sahu-csc/src/components/theme-provider.tsx`** | Replaced with re-export shim → no consumer import changes needed |
+| **`artifacts/sahu-csc/index.html`** | Inline `<script>` added as first element in `<head>` |
+| **`artifacts/sahu-csc/src/main.tsx`** | `<ThemeProvider>` wraps `<App />` at root |
+| **`artifacts/sahu-csc/src/App.tsx`** | `ThemeProvider` import + JSX wrapper removed |
+| **`artifacts/sahu-csc/src/components/profile/useProfileData.ts`** | Server→local theme sync added to prefs `useEffect` |
+
+### New ThemeProvider API
+
+```ts
+type Theme = "light" | "dark" | "system";
+
+// Context value
+interface ThemeContextValue {
+  theme: Theme;           // stored preference
+  resolvedTheme: "light" | "dark";  // what's actually applied (never "system")
+  setTheme: (t: Theme) => void;
+}
+
+// Hook (unchanged call site)
+const { theme, resolvedTheme, setTheme } = useTheme();
+
+// Storage
+localStorage.getItem("sahu-theme"); // "light" | "dark" | "system"
+```
+
+### No-flash script (inline, synchronous)
+
+```html
+<script>
+  (function () {
+    var KEY = 'sahu-theme', LEGACY = 'sahu-csc-theme', stored;
+    try {
+      stored = localStorage.getItem(KEY);
+      if (!stored) {
+        var leg = localStorage.getItem(LEGACY);
+        if (leg) { localStorage.setItem(KEY, leg); localStorage.removeItem(LEGACY); stored = leg; }
+      }
+    } catch (e) {}
+    var theme = stored || 'light';
+    var dark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (dark) document.documentElement.classList.add('dark');
+  })();
+</script>
+```
+
+Placed as the **first element** in `<head>` — before any `<style>` or `<link>` tags — so it runs before the browser has painted anything.
 
 ---
 

@@ -5,6 +5,7 @@ import { initSentry } from "./lib/sentry";
 initSentry();
 import { createRoot } from "react-dom/client";
 import App from "./App";
+import { ThemeProvider } from "@/providers/ThemeProvider";
 import "./index.css";
 import { registerSW } from "virtual:pwa-register";
 import { syncEngine } from "./lib/sync-engine";
@@ -70,4 +71,8 @@ if (navigator.onLine) {
   syncEngine.sync().catch(() => {});
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(
+  <ThemeProvider>
+    <App />
+  </ThemeProvider>
+);

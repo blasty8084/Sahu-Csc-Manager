@@ -1,80 +1,8 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { useGetSettings } from "@workspace/api-client-react";
-
-type Theme = "dark" | "light" | "system";
-
-type ThemeProviderProps = {
-  children: React.ReactNode;
-  defaultTheme?: Theme;
-  storageKey?: string;
-};
-
-type ThemeProviderState = {
-  theme: Theme;
-  setTheme: (theme: Theme) => void;
-};
-
-const initialState: ThemeProviderState = {
-  theme: "system",
-  setTheme: () => null,
-};
-
-const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
-
-export function ThemeProvider({
-  children,
-  defaultTheme = "system",
-  storageKey = "vite-ui-theme",
-  ...props
-}: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
-  );
-  
-  const { data: settings } = useGetSettings();
-
-  useEffect(() => {
-    if (settings?.theme) {
-      setTheme(settings.theme as Theme);
-    }
-  }, [settings?.theme]);
-
-  useEffect(() => {
-    const root = window.document.documentElement;
-    root.classList.remove("light", "dark");
-
-    if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-        .matches
-        ? "dark"
-        : "light";
-      root.classList.add(systemTheme);
-      return;
-    }
-
-    root.classList.add(theme);
-  }, [theme]);
-
-  const value = {
-    theme,
-    setTheme: (theme: Theme) => {
-      localStorage.setItem(storageKey, theme);
-      setTheme(theme);
-    },
-  };
-
-  return (
-    <ThemeProviderContext.Provider {...props} value={value}>
-      {children}
-    </ThemeProviderContext.Provider>
-  );
-}
-
-export const useTheme = () => {
-  const context = useContext(ThemeProviderContext);
-
-  if (context === undefined)
-    throw new Error("useTheme must be used within a ThemeProvider");
-
-  return context;
-};
+/**
+ * Backward-compatibility re-export shim.
+ * Canonical implementation lives in providers/ThemeProvider.tsx.
+ * All existing consumers (layout.tsx, useProfileData.ts, preferences.tsx)
+ * import from this path — no import changes needed in those files.
+ */
+export { ThemeProvider, useTheme, THEME_STORAGE_KEY } from "@/providers/ThemeProvider";
+export type { Theme } from "@/providers/ThemeProvider";
