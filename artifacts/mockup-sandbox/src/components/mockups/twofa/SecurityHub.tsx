@@ -71,7 +71,7 @@ export function SecurityHub() {
             {/* Status pill row */}
             <div className="flex gap-2">
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
-                style={{ background: enabled ? "rgba(16,185,129,0.18)", color: "#6ee7b7" }}>
+                style={{ background: enabled ? "rgba(16,185,129,0.18)" : "rgba(239,68,68,0.18)", color: "#6ee7b7" }}>
                 {enabled ? <ShieldCheck size={11} /> : <ShieldOff size={11} />}
                 {enabled ? "2FA ON" : "2FA OFF"}
               </div>

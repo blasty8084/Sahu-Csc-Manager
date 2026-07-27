@@ -1031,9 +1031,9 @@ pnpm install
 ```
 
 ### 2. Push the database schema
-The project uses external Neon PostgreSQL. Set the `NEON_DATABASE_URL` secret before running:
+The project uses Replit's provisioned PostgreSQL database. `DATABASE_URL` is injected automatically:
 ```
-pnpm --filter @workspace/db exec drizzle-kit push
+pnpm --filter @workspace/db run push
 ```
 
 ### 3. Set required secrets
@@ -1044,7 +1044,6 @@ Add the following in Replit Secrets:
 | `ADMIN_PASSWORD` | Password for the default admin account |
 | `OPERATOR_PASSWORD` | Password for the default operator account |
 | `SMTP_PASSWORD` | Gmail App Password for email OTP / notifications (optional) |
-| `NEON_DATABASE_URL` | External Neon PostgreSQL connection string |
 
 Optional secrets (features degrade gracefully without them):
 | Secret | Description |
@@ -1056,7 +1055,7 @@ Optional secrets (features degrade gracefully without them):
 Run the **Seed Database** workflow once. This creates the admin and operator accounts using the passwords from Secrets.
 
 ### 5. Start the app
-Run the **API Server** workflow (port 8080) and the **Start application** workflow (port 5000, serving the built frontend). The preview pane shows the frontend; it proxies `/api` requests to port 8080.
+Run the **API Server** workflow (port 8080) and the **Start application** workflow (port 5000, serving the built frontend). The preview pane shows the frontend; it proxies `/api` requests to port 8080. Run **Build Production** first after frontend or API changes.
 
 ### CORS
 `CORS_ORIGIN` only needs to list `http://localhost:5000`. The API server automatically appends the current `REPLIT_DEV_DOMAIN` and any `REPLIT_DOMAINS` at startup — no manual update needed after repl renames or forks.
