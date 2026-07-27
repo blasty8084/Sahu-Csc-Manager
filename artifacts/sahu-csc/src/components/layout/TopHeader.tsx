@@ -135,6 +135,7 @@ export function TopHeader({
                   roleLabel={roleLabel}
                   location={location}
                   onLogout={onLogout}
+                  showThemeToggle={false}
                 />
               </SheetContent>
             </Sheet>

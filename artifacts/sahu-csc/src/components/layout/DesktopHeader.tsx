@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { Bell } from "lucide-react";
 import { LiveClock } from "./LiveClock";
 import { SyncDot } from "@/components/sync-status-bar";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { useGreeting } from "@/hooks/use-greeting";
 
 interface DesktopHeaderProps {
@@ -69,10 +68,9 @@ export function DesktopHeader({
           </div>
         </div>
 
-        {/* Right: sync dot, theme toggle, notifications, profile chip */}
+        {/* Right: sync dot, notifications, profile chip */}
         <div className="flex items-center gap-3">
           <SyncDot />
-          <ThemeToggle />
           <Link href="/notifications">
             <button
               className="relative flex items-center gap-2 rounded-xl px-3 h-8 text-sm font-medium transition-colors duration-100"

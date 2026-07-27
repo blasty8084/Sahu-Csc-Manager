@@ -18,6 +18,8 @@ interface SidebarNavProps {
   roleLabel: string;
   location: string;
   onLogout: () => void;
+  /** Pass false when rendering inside the mobile Sheet — TopHeader already has a toggle */
+  showThemeToggle?: boolean;
 }
 
 /**
@@ -39,6 +41,7 @@ export function SidebarNav({
   roleLabel,
   location,
   onLogout,
+  showThemeToggle = true,
 }: SidebarNavProps) {
   const { t } = useTranslation();
   const isActive = (href: string) =>
@@ -102,7 +105,7 @@ export function SidebarNav({
           <p className="text-[11px] text-white/45 mt-0.5 capitalize">{roleLabel}</p>
         </Link>
 
-        <ThemeToggle variant="sidebar" />
+        {showThemeToggle && <ThemeToggle variant="sidebar" />}
 
         <button
           onClick={onLogout}

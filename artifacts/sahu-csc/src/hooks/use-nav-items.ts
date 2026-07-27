@@ -30,7 +30,6 @@ export function useNavItems() {
     { href: "/services",      label: t("nav.services"),    icon: Briefcase },
     { href: "/reports",       label: t("nav.reports"),     icon: BarChart3 },
     { href: "/notifications", label: t("nav.notifications"), icon: Bell, badge: unreadCount },
-    { href: "/profile",       label: t("nav.profile"),     icon: UserCircle },
     { href: "/sessions",      label: t("nav.sessions"),    icon: MonitorSmartphone, mobileOnly: true },
     { href: "/pwa-status",    label: t("nav.pwa_status"),  icon: WifiOff },
     { href: "/download-app",  label: t("nav.download_app"), icon: ArrowDownToLine },
