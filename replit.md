@@ -1,6 +1,10 @@
 # SAHU CSC — Common Service Center Management Platform
 **Version 4.9.5** — last updated 2026-07-27
 
+> **2026-07-27 (current session — Navigation & Header fixes)**: Fixed duplicate UI elements reported after re-import. (1) **Profile removed from sidebar nav list** (`use-nav-items.ts`) — profile is already accessible via the avatar chip in the desktop header and the avatar in the sidebar footer; removing it from the nav list eliminates the triple-occurrence on desktop. (2) **ThemeToggle placement consolidated** — added `showThemeToggle?: boolean` prop to `SidebarNav`; the mobile `TopHeader` Sheet passes `showThemeToggle={false}` so the toggle inside the sheet is hidden (the `TopHeader` white bar already shows it); the desktop sidebar footer retains its own toggle. ThemeToggle is present in `DesktopHeader` for quick desktop access. (3) **Mobile TopHeader menu button** — replaced the avatar/name chip `SheetTrigger` with a clean `☰` hamburger icon button (same 38×38 size as the bell button, `Menu` icon from lucide-react) that opens the sidebar Sheet; the `firstName` label and avatar image are removed from the trigger, decluttering the mobile header. **Files changed:** `src/hooks/use-nav-items.ts`, `src/components/layout/Sidebar.tsx`, `src/components/layout/TopHeader.tsx`, `src/components/layout/DesktopHeader.tsx`.
+>
+> **2026-07-27 (current session — Re-import setup)**: Re-imported from GitHub. Ran `pnpm install` (1164 packages). Secrets added: `NEON_DATABASE_URL`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`, `SMTP_PASSWORD`. Started `API Server` (port 8080, builds then runs `dist/index.mjs`) and `artifacts/sahu-csc: web` (port 5000, Vite dev). Ran `Seed Database` workflow — admin and operator accounts created/reset, services and settings seeded. `Worker Server` skips cleanly (`REDIS_URL` not set). CORS auto-includes `REPLIT_DEV_DOMAIN`/`REPLIT_DOMAINS` (v4.9.0+). Verified: login page renders correctly in preview, `/api/health` returns 200.
+>
 > **2026-07-27 — Dark Mode Performance & Verification v4.9.5**: Theme changes now use an external visual-state store with `useSyncExternalStore`. The `<html>` class and CSS variables update synchronously, while only theme-aware controls and the toast renderer subscribe to React updates; dashboard, Ledger/Udhari Khata, notifications, and mobile navigation remain outside the theme subscription boundary. Added `color-scheme` declarations and `aria-pressed` state to both theme-toggle variants. Corrected the toast renderer to use the project's canonical `ThemeProvider` instead of the unused `next-themes` provider. Verified the login/auth shell, dashboard, ledger, Udhari Khata, notifications, and mobile navigation paths; no Framer Motion, GSAP, or Lottie dependency/import was added by this dark-mode pass. Existing Framer Motion usage remains in pre-existing auth, splash, page-transition, and toast interactions.
 
 > **2026-07-27 (current session — Dark Mode Component Fixes v4.9.4)**: Component-level dark mode pass across shadcn/ui and custom components. (1) `Pulse.tsx` — added `dark:bg-zinc-700` so all skeleton pulse animations render correctly on dark backgrounds (was `bg-slate-100` only). (2) `skeleton.tsx` — switched from `bg-primary/10` to `bg-muted` for proper dark-mode contrast. (3) `toaster.tsx` — fixed toast card: `bg-white → dark:bg-zinc-900`, title `dark:text-zinc-100`, description `dark:text-zinc-400`, close button `dark:text-zinc-500 dark:hover:bg-zinc-800`, progress rail `dark:bg-zinc-800`. (4) All skeleton wrappers (`LedgerSkeleton`, `DashboardSkeleton`, `UdhariSkeleton`, `skeletons/shared` → `NotificationsSkeleton`, `ProfilePageSkeleton`, `UdhariEntryList` empty state) — `bg-white → bg-card` so they inherit the CSS-variable-backed card surface. (5) `AepsTransactionTable` — main list card, export card, and dropdown all `bg-white → bg-card`; all hover states (`hover:bg-slate-50/80`, `hover:bg-slate-100`, `hover:bg-red-50`, `hover:bg-slate-50`) received `dark:` counterparts; dropdown wrapped with `border border-border`. (6) `LedgerEntryForm` — desktop right panel, top-bar, and footer: `background`/`borderTop`/`borderBottom` removed from inline styles and re-expressed as Tailwind `className` with `dark:bg-zinc-900/800` and `dark:border-zinc-700`; all desktop and mobile `<input>`, `<textarea>`, and `<SelectTrigger>` form fields: `background`/`color` removed from inline styles and expressed as `bg-white dark:bg-zinc-700 text-[#0b2c60] dark:text-zinc-100`; close buttons and type-switcher pill similarly updated. Print/thermal receipt output intentionally untouched. Build verified clean (3855 modules). **Rule: always use `bg-card` for card/list-item skeleton wrappers; never `bg-white`. Inline styles win over Tailwind dark: variants — always split background/color out of inline style into className when dark mode support is needed.**
@@ -297,22 +301,23 @@ Continuing from the 8.5/10 baseline (N+1 fixes, batched writes, pooled connectio
 - **Worker Server** (port 8081, optional): `Worker Server` workflow — only starts when `REDIS_URL` secret is set
 
 ### First-time setup on a new Replit import
-1. `pnpm install` from workspace root (or let post-merge run it automatically)
-2. Schema push is automatic via `scripts/post-merge.sh` (`drizzle-kit push --force` + session table DDL)
-3. Set secrets: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD` (see table below)
-4. Run the `Seed Database` workflow to create admin/operator accounts
-5. Start the `Frontend` and `API Server` workflows (the `Project` workflow starts both + Worker Server in parallel)
-6. ~~Update `CORS_ORIGIN`~~ — no longer needed; `REPLIT_DEV_DOMAIN` and `REPLIT_DOMAINS` are auto-included at startup (v4.9.0+)
+1. `pnpm install` from workspace root
+2. Set secrets: `NEON_DATABASE_URL`, `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD` (required); `SMTP_PASSWORD` (optional — email/OTP)
+3. Run the `Seed Database` workflow to create admin/operator accounts
+4. Restart `API Server` and `artifacts/sahu-csc: web` workflows
+5. ~~Update `CORS_ORIGIN`~~ — no longer needed; `REPLIT_DEV_DOMAIN` and `REPLIT_DOMAINS` are auto-included at startup (v4.9.0+)
 
 #### Secrets required
 | Secret | Purpose |
 |--------|---------|
+| `NEON_DATABASE_URL` | Neon PostgreSQL connection string (`postgresql://...?sslmode=require`) |
 | `SESSION_SECRET` | Express session signing key |
-| `ADMIN_PASSWORD` | Seed admin account password (used at login: username `admin`) |
-| `OPERATOR_PASSWORD` | Seed operator account password (used at login: username `operator`) |
-| `UPSTASH_REDIS_REST_URL` | Upstash Redis REST endpoint — enables shared cache |
-| `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST token |
-| `REDIS_URL` | Upstash direct TCP URL (`rediss://...`) — required for Worker Server / BullMQ |
+| `ADMIN_PASSWORD` | Seed admin account password (login: username `admin`) |
+| `OPERATOR_PASSWORD` | Seed operator account password (login: username `operator`) |
+| `SMTP_PASSWORD` | Gmail App Password for OTP / password-reset emails (optional) |
+| `UPSTASH_REDIS_REST_URL` | Upstash Redis REST endpoint — enables shared cache (optional) |
+| `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST token (optional) |
+| `REDIS_URL` | Upstash direct TCP URL (`rediss://...`) — required for Worker Server / BullMQ (optional) |
 
 #### Env vars to check after each re-import
 - `CORS_ORIGIN` — **no longer required to update after re-imports** (v4.9.0+). `REPLIT_DEV_DOMAIN` and `REPLIT_DOMAINS` are now auto-included at startup. This var is only needed if you have a custom non-Replit origin to allow.
