@@ -18,7 +18,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
-  useState,
+  useSyncExternalStore,
 } from "react";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -57,19 +57,66 @@ function applyTheme(resolved: "light" | "dark") {
   root.classList.add(resolved);
 }
 
+function isTheme(value: string | null): value is Theme {
+  return value === "light" || value === "dark" || value === "system";
+}
+
 function readStoredTheme(): Theme {
   try {
     // Migrate legacy key on first read
     const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
-    if (legacy) {
+    if (isTheme(legacy)) {
       localStorage.setItem(THEME_STORAGE_KEY, legacy);
       localStorage.removeItem(LEGACY_STORAGE_KEY);
-      return legacy as Theme;
+      return legacy;
     }
-    return (localStorage.getItem(THEME_STORAGE_KEY) as Theme) || DEFAULT_THEME;
+    const stored = localStorage.getItem(THEME_STORAGE_KEY);
+    return isTheme(stored) ? stored : DEFAULT_THEME;
   } catch {
     return DEFAULT_THEME;
   }
+}
+
+// Theme is visual state rather than application data. Keeping the store outside
+// the React tree lets the DOM class and CSS variables change synchronously while
+// only components that explicitly call useTheme() receive a React update.
+interface ThemeSnapshot {
+  theme: Theme;
+  resolvedTheme: "light" | "dark";
+}
+
+const SERVER_SNAPSHOT: ThemeSnapshot = {
+  theme: DEFAULT_THEME,
+  resolvedTheme: "light",
+};
+const INITIAL_THEME = readStoredTheme();
+let themeSnapshot: ThemeSnapshot = {
+  theme: INITIAL_THEME,
+  resolvedTheme: resolveTheme(INITIAL_THEME),
+};
+const themeListeners = new Set<() => void>();
+
+function subscribeTheme(listener: () => void) {
+  themeListeners.add(listener);
+  return () => themeListeners.delete(listener);
+}
+
+function getThemeSnapshot(): ThemeSnapshot {
+  return themeSnapshot;
+}
+
+function getServerThemeSnapshot(): ThemeSnapshot {
+  return SERVER_SNAPSHOT;
+}
+
+function updateThemeSnapshot(next: Theme) {
+  const resolvedTheme = resolveTheme(next);
+  if (themeSnapshot.theme === next && themeSnapshot.resolvedTheme === resolvedTheme) {
+    return;
+  }
+  themeSnapshot = { theme: next, resolvedTheme };
+  applyTheme(resolvedTheme);
+  themeListeners.forEach((listener) => listener());
 }
 
 // ── Context ───────────────────────────────────────────────────────────────────
@@ -83,43 +130,34 @@ const ThemeContext = createContext<ThemeContextValue>({
 // ── Provider ──────────────────────────────────────────────────────────────────
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(readStoredTheme);
-  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">(() =>
-    resolveTheme(readStoredTheme())
+  const { theme, resolvedTheme } = useSyncExternalStore(
+    subscribeTheme,
+    getThemeSnapshot,
+    getServerThemeSnapshot,
   );
 
-  // Apply theme to DOM and update resolvedTheme state
-  const applyAndSync = useCallback((t: Theme) => {
-    const resolved = resolveTheme(t);
-    applyTheme(resolved);
-    setResolvedTheme(resolved);
+  // Keep the no-flash class and external store aligned after mount.
+  useEffect(() => {
+    applyTheme(themeSnapshot.resolvedTheme);
   }, []);
-
-  // On mount: apply stored theme immediately (handles SSR/hydration edge cases)
-  useEffect(() => {
-    applyAndSync(theme);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // When theme changes: apply to DOM
-  useEffect(() => {
-    applyAndSync(theme);
-  }, [theme, applyAndSync]);
 
   // System mode: listen for OS preference changes live
   useEffect(() => {
     if (theme !== "system") return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const handler = () => applyAndSync("system");
+    const handler = () => updateThemeSnapshot("system");
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
-  }, [theme, applyAndSync]);
+  }, [theme]);
 
   const setTheme = useCallback(
     (next: Theme) => {
       try {
         localStorage.setItem(THEME_STORAGE_KEY, next);
       } catch {}
-      setThemeState(next);
+      // Apply before notifying React so there is no geometry-changing
+      // intermediate render during a visual-only theme change.
+      updateThemeSnapshot(next);
     },
     []
   );

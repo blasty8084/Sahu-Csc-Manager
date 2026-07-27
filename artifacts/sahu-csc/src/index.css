@@ -7,8 +7,16 @@ html, body {
   min-height: 100%;
 }
 
+html {
+  color-scheme: light;
+}
+
 html.dark, html.dark body {
   background-color: hsl(222 47% 11%);
+}
+
+html.dark {
+  color-scheme: dark;
 }
 
 @custom-variant dark (&:is(.dark *));

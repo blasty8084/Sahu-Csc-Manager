@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Platform Documentation
-**Version 4.9.3** — last updated 2026-07-26
+**Version 4.9.5** — last updated 2026-07-27
 
 > Common Service Center (CSC) Business Management Platform for Odisha / India rural service centers.
 > Full-stack · PWA · Offline-capable · Multilingual (English / Hindi / Odia)
@@ -56,6 +56,14 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 ---
 
 ## 2. Version History
+
+### v4.9.5 — Dark Mode Performance & Verification (2026-07-27)
+
+- Theme state uses an external store so only theme-aware controls and the toast renderer update when the user switches modes.
+- The `<html>` class and CSS variables update synchronously; data-heavy Dashboard, Ledger/Udhari Khata, Notifications, and mobile navigation are outside the theme subscription boundary.
+- Root `color-scheme` and toggle `aria-pressed` state improve native control consistency and accessibility without changing layout geometry.
+- The toast renderer uses the canonical `providers/ThemeProvider` rather than the unused `next-themes` provider.
+- Verification covered dashboard, ledger/Udhari Khata, auth screens, notifications, and mobile navigation. No Framer Motion, GSAP, or Lottie was introduced by this pass; existing Framer Motion usage is pre-existing.
 
 ### ThemeProvider Setup — Canonical Provider, No-Flash Script, System Mode (2026-07-26)
 

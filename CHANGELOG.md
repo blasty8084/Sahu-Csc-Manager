@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Changelog
-**Current version: 4.9.3 — July 26, 2026**
+**Current version: 4.9.5 — July 27, 2026**
 
 > Single authoritative changelog covering all versions from v1.x through v4.x.
 > - **v3.x / v4.x entries** (current) — listed first, newest at top
@@ -9,6 +9,7 @@
 
 ## Table of Contents
 
+0. [Performance — Dark mode visual-state isolation & verification (July 27, 2026)](#0-performance--dark-mode-visual-state-isolation--verification-july-27-2026)
 0. [Feature — ThemeToggle component: standalone Sun/Moon toggle, prop-drilling removed (July 26, 2026)](#0-feature--themetoggle-component-standalone-sunmoon-toggle-prop-drilling-removed-july-26-2026)
 0. [Feature — ThemeProvider setup: canonical provider, no-flash script, system mode (July 26, 2026)](#0-feature--themeprovider-setup-canonical-provider-no-flash-script-system-mode-july-26-2026)
 0. [Infra — ALLOW_NON_INDIA geo-block bypass for Replit preview (July 26, 2026)](#0-infra--allow_non_india-geo-block-bypass-for-replit-preview-july-26-2026)
@@ -64,6 +65,32 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Performance — Dark mode visual-state isolation & verification (July 27, 2026)
+
+### What changed
+
+- `ThemeProvider` now uses an external visual-state store through `useSyncExternalStore`.
+- Theme changes update the `<html>` class and CSS variables synchronously before notifying the small set of theme-aware consumers.
+- Data-heavy screens do not subscribe to theme state and remain mounted without a theme-triggered re-render: Dashboard, Ledger/Udhari Khata, Notifications, and mobile navigation.
+- Added `color-scheme: light/dark` to the root theme selectors so native controls follow the active visual mode without changing layout geometry.
+- Added `aria-pressed` to both theme-toggle variants and corrected the toast renderer to consume the canonical project `ThemeProvider`.
+
+### Verification matrix
+
+| Surface | Result |
+|---|---|
+| Dashboard | Theme CSS updates without data-page subscription |
+| Ledger / Udhari Khata | Theme CSS updates without data-page subscription |
+| Auth screens | No-flash class is applied by the first `<head>` script |
+| Notifications | Theme CSS updates without data-page subscription |
+| Mobile navigation | Fixed geometry remains unchanged; theme toggle state is accessible |
+
+### Animation boundary
+
+No Framer Motion, GSAP, or Lottie import/dependency was introduced by this dark-mode work. Existing Framer Motion remains in pre-existing auth, splash, page-transition, and toast interactions; the theme change itself is CSS-variable/class based.
 
 ---
 

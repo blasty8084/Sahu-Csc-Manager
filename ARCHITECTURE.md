@@ -1,5 +1,5 @@
 # SAHU CSC — Architecture Reference
-**Version 4.9.2 — July 26, 2026**
+**Version 4.9.5 — July 27, 2026**
 
 > This is the single authoritative reference for the SAHU CSC platform architecture.  
 > It supersedes `docs/archive/architectureV2.md` and `docs/archive/ARCHITECTURE.md`.  
@@ -65,7 +65,7 @@ Credentials are never hardcoded — the seed script (`artifacts/api-server/src/s
 ```
 workspace/
 ├── artifacts/
-│   ├── api-server/              # @workspace/api-server v4.9.0 — Express 5 (port 8080)
+│   ├── api-server/              # @workspace/api-server v4.9.5 — Express 5 (port 8080)
 │   │   ├── src/
 │   │   │   ├── app.ts           # Express app, middleware, connect-pg-simple session
 │   │   │   ├── index.ts         # HTTP server entry point
@@ -165,7 +165,7 @@ workspace/
 │   │   │       └── sms.worker.ts           # SMS (stub)
 │   │   └── build.mjs
 │   │
-│   ├── sahu-csc/                # @workspace/sahu-csc v4.9.0 — React + Vite (port 5000)
+│   ├── sahu-csc/                # @workspace/sahu-csc v4.9.5 — React + Vite (port 5000)
 │   │   ├── index.html
 │   │   ├── vite.config.ts       # port from PORT env · VitePWA + Workbox · proxy /api → 8080
 │   │   ├── public/
@@ -1149,6 +1149,8 @@ pnpm --filter @workspace/db run push
 | CDN sits in front of the single origin, doesn't split it | Single-VM deployment already sends correct per-asset-type cache headers (`serve.mjs`); a transparent reverse-proxy CDN (see `CDN_SETUP.md`) avoids CORS/asset-path-rewrite risk that a separate CDN-prefixed domain would add |
 | ThemeProvider lives in `providers/`, not `components/` | Canonical: `providers/ThemeProvider.tsx`. Old `components/theme-provider.tsx` is a re-export shim. Provider is pure-local (no API dependency); wraps at `main.tsx` root so ErrorBoundary and QueryProvider are inside it, not outside. |
 | No-flash theme script is the first `<script>` in `<head>` | Inline synchronous script reads `sahu-theme` from localStorage and applies `class="dark"` before any CSS or React renders — avoids visible light flash on dark-mode load. Must stay before any `<link>` or `<style>` tags. |
+| Theme store is external visual state | `useSyncExternalStore` updates the root class/CSS variables synchronously and notifies only theme-aware consumers. Data-heavy pages must not call `useTheme()` merely to style themselves; use semantic CSS variables and Tailwind dark selectors instead. |
+| Theme switching cannot change geometry | Theme tokens, root `color-scheme`, and toggle dimensions must be layout-neutral. Do not add theme-triggered conditional markup, font changes, or size changes to fixed mobile navigation and page chrome. |
 | `resolvedTheme` exposed alongside `theme` | `theme` = stored pref (`"system"` possible); `resolvedTheme` = what's actually applied (`"light"` or `"dark"` always). Components that need to branch on the visual mode use `resolvedTheme`, not `theme`. |
 | System mode tracks OS preference live | `matchMedia("(prefers-color-scheme: dark)").addEventListener("change")` inside the provider; listener is cleaned up on unmount. Without this, switching OS dark mode while the app is open has no effect. |
 | Brand color tokens defined in `index.css`, not inline hex | 2271 hardcoded hex occurrences found across 170 files; consolidated into 142 CSS custom properties (`--brand-navy*`, `--brand-orange*`, `--color-slate-*`, `--color-success/error/warning`, `--surface-*`) in `:root` + `.dark`. Next replacement pass wires `var(--…)` into components — keeping all color decisions in one file makes dark-mode overrides trivially correct. |

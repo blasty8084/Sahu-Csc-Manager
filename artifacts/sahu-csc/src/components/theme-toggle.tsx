@@ -54,6 +54,7 @@ export function ThemeToggle({ variant = "icon", className }: ThemeToggleProps) {
         onClick={toggle}
         aria-label={label}
         title={label}
+        aria-pressed={isDark}
         className={cn(
           "flex-shrink-0 w-8 h-8 rounded-xl",
           "border border-white/15 bg-white/5",
@@ -78,6 +79,7 @@ export function ThemeToggle({ variant = "icon", className }: ThemeToggleProps) {
       onClick={toggle}
       aria-label={label}
       title={label}
+      aria-pressed={isDark}
       className={cn(
         "h-8 w-8 rounded-lg",
         "border border-border bg-muted/60",
