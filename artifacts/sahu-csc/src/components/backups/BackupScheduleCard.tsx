@@ -2,7 +2,6 @@ import { Loader2, CalendarClock, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BackupScheduleSkeleton } from "@/components/skeletons";
 import { NavyCard, CardHead } from "@/components/backups/BackupCards";
-import { ClockDesign1, ClockDesign2, ClockDesign3 } from "@/components/backups/BackupClockPicker";
 import { DAYS } from "@/hooks/useBackups";
 import type { ScheduleConfig } from "@/hooks/useBackups";
 
@@ -75,42 +74,14 @@ export function BackupScheduleCard({
               </div>
             </div>
 
-            {/* ── 3 Clock Design Variants ─────────────────────────── */}
-            <div className="space-y-3">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Backup Time — Pick a Design</p>
-
-              {/* Design 1 */}
-              <div className="rounded-xl overflow-hidden border border-slate-200">
-                <p className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest bg-slate-800 text-white/50">
-                  Design 1 — Digital
-                </p>
-                <ClockDesign1
-                  value={schedule.time}
-                  onChange={(v) => setSchedule((s) => ({ ...s, time: v }))}
-                />
-              </div>
-
-              {/* Design 2 */}
-              <div className="rounded-xl overflow-hidden border border-slate-200">
-                <p className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest bg-slate-50 text-slate-400">
-                  Design 2 — Minimal
-                </p>
-                <ClockDesign2
-                  value={schedule.time}
-                  onChange={(v) => setSchedule((s) => ({ ...s, time: v }))}
-                />
-              </div>
-
-              {/* Design 3 */}
-              <div className="rounded-xl overflow-hidden border border-slate-200">
-                <p className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest bg-slate-50 text-slate-400">
-                  Design 3 — Watch Dial
-                </p>
-                <ClockDesign3
-                  value={schedule.time}
-                  onChange={(v) => setSchedule((s) => ({ ...s, time: v }))}
-                />
-              </div>
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Time (24h)</p>
+              <input
+                type="time"
+                value={schedule.time}
+                onChange={(e) => setSchedule((s) => ({ ...s, time: e.target.value }))}
+                className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-slate-50 w-full focus:outline-none focus:ring-2 focus:ring-[var(--brand-navy-800)]/20"
+              />
             </div>
 
             {(schedule.frequency === "weekly" || schedule.frequency === "custom") && (
