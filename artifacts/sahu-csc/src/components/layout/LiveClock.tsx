@@ -7,12 +7,12 @@ import React, { useState, useEffect } from "react";
 export const LiveClock = React.memo(function LiveClock({ style }: { style?: React.CSSProperties }) {
   const [time, setTime] = useState(() => {
     const n = new Date();
-    return n.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+    return n.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" });
   });
 
   useEffect(() => {
     const id = setInterval(() => {
-      setTime(new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true }));
+      setTime(new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" }));
     }, 1000);
     return () => clearInterval(id);
   }, []);
