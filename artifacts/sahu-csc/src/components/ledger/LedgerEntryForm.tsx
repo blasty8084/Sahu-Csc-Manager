@@ -38,13 +38,13 @@ export function MobileEntryFormDialog({
           <h2 style={{ fontSize: 18, fontWeight: 900, color: accentColor }}>
             {editEntry ? "Edit Entry" : (entryType === "credit" ? "New Credit Entry" : "New Debit Entry")}
           </h2>
-          <button type="button" onClick={() => setShowForm(false)} style={{ width: 32, height: 32, borderRadius: 8, background: "#f1f5f9", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+          <button type="button" onClick={() => setShowForm(false)} className="bg-[#f1f5f9] dark:bg-zinc-700" style={{ width: 32, height: 32, borderRadius: 8, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
             <X size={15} color="#64748b" />
           </button>
         </div>
         <form onSubmit={onSubmit} className="px-5 pb-6 space-y-3">
           {!editEntry && (
-            <div style={{ background: "#f1f5f9", borderRadius: 14, padding: 4, display: "flex", gap: 4 }}>
+            <div className="bg-[#f1f5f9] dark:bg-zinc-700" style={{ borderRadius: 14, padding: 4, display: "flex", gap: 4 }}>
               {(["credit", "debit"] as const).map(t => (
                 <button key={t} type="button" onClick={() => setEntryType(t)}
                   style={{ flex: 1, height: 40, borderRadius: 11, border: "none", cursor: "pointer", fontWeight: 800, fontSize: 13, background: entryType === t ? (t === "credit" ? "#059669" : "#e11d48") : "transparent", color: entryType === t ? "#fff" : "#94a3b8", transition: "all 0.15s", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
@@ -68,10 +68,11 @@ export function MobileEntryFormDialog({
             <User size={14} color="#94a3b8" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }} />
             <input {...form.register("customerName", { required: true })} placeholder="Customer name"
               list="ledger-customer-names" autoComplete="off" data-testid="input-customer"
-              style={{ width: "100%", height: 44, paddingLeft: 36, paddingRight: 12, borderRadius: 12, border: "1.5px solid #e2e8f0", background: "#fafafa", fontSize: 14, color: "#0b2c60", outline: "none", boxSizing: "border-box", fontWeight: 600 }} />
+              className="bg-[#fafafa] dark:bg-zinc-700 text-[#0b2c60] dark:text-zinc-100 dark:placeholder:text-zinc-500"
+              style={{ width: "100%", height: 44, paddingLeft: 36, paddingRight: 12, borderRadius: 12, border: "1.5px solid #e2e8f0", fontSize: 14, outline: "none", boxSizing: "border-box", fontWeight: 600 }} />
           </div>
           <Select value={form.watch("serviceType")} onValueChange={(v) => form.setValue("serviceType", v)}>
-            <SelectTrigger data-testid="select-service" className="h-11 rounded-xl border-[#e2e8f0] bg-[#fafafa] text-sm font-semibold text-[#0b2c60]">
+            <SelectTrigger data-testid="select-service" className="h-11 rounded-xl border-[#e2e8f0] dark:border-zinc-600 bg-[#fafafa] dark:bg-zinc-700 text-sm font-semibold text-[#0b2c60] dark:text-zinc-100">
               <SelectValue placeholder="Select service type" />
             </SelectTrigger>
             <SelectContent className="max-h-60 overflow-y-auto">
@@ -82,12 +83,14 @@ export function MobileEntryFormDialog({
           <div style={{ position: "relative" }}>
             <Calendar size={14} color="#94a3b8" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
             <input type="date" {...form.register("date", { required: true })} data-testid="input-date"
-              style={{ width: "100%", height: 44, paddingLeft: 36, paddingRight: 12, borderRadius: 12, border: "1.5px solid #e2e8f0", background: "#fafafa", fontSize: 14, color: "#0b2c60", outline: "none", boxSizing: "border-box", fontWeight: 600 }} />
+              className="bg-[#fafafa] dark:bg-zinc-700 text-[#0b2c60] dark:text-zinc-100"
+              style={{ width: "100%", height: 44, paddingLeft: 36, paddingRight: 12, borderRadius: 12, border: "1.5px solid #e2e8f0", fontSize: 14, outline: "none", boxSizing: "border-box", fontWeight: 600 }} />
           </div>
           <div style={{ position: "relative" }}>
             <FileText size={14} color="#94a3b8" style={{ position: "absolute", left: 12, top: 13 }} />
             <textarea {...form.register("description")} rows={2} placeholder="Add a note (optional)" data-testid="input-description"
-              style={{ width: "100%", paddingLeft: 36, paddingRight: 12, paddingTop: 12, paddingBottom: 12, borderRadius: 12, border: "1.5px solid #e2e8f0", background: "#fafafa", fontSize: 13, color: "#0b2c60", outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit" }} />
+              className="bg-[#fafafa] dark:bg-zinc-700 text-[#0b2c60] dark:text-zinc-100 dark:placeholder:text-zinc-500"
+              style={{ width: "100%", paddingLeft: 36, paddingRight: 12, paddingTop: 12, paddingBottom: 12, borderRadius: 12, border: "1.5px solid #e2e8f0", fontSize: 13, outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit" }} />
           </div>
           <button type="submit" data-testid="button-save-entry" disabled={createMut.isPending || updateMut.isPending}
             style={{ width: "100%", height: 52, borderRadius: 16, border: "none", cursor: "pointer", background: accentGrad, color: "#fff", fontSize: 16, fontWeight: 900, letterSpacing: "0.02em", boxShadow: `0 6px 20px ${accentColor}35`, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, opacity: (createMut.isPending || updateMut.isPending) ? 0.7 : 1 }}>
@@ -152,16 +155,16 @@ export function DesktopEntryFormPanel({
         </div>
 
         {/* ── RIGHT FORM PANEL ── */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "#f8fafc" }}>
+        <div className="bg-[#f8fafc] dark:bg-zinc-900" style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
           {/* Top bar */}
-          <div style={{ background: "#fff", borderBottom: "1px solid #f1f5f9", padding: "20px 40px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+          <div className="bg-white dark:bg-zinc-800 border-b border-[#f1f5f9] dark:border-zinc-700" style={{ padding: "20px 40px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
             <div>
               <h2 style={{ fontSize: 18, fontWeight: 800, color: "#0b2c60", margin: 0 }}>{editEntry ? "Edit Entry" : "New Transaction"}</h2>
               <p style={{ fontSize: 12, color: "#94a3b8", margin: 0, marginTop: 2 }}>Ledger · {new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</p>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               {!editEntry && (
-                <div style={{ display: "flex", background: "#f1f5f9", borderRadius: 14, padding: 4, gap: 4 }}>
+                <div className="bg-[#f1f5f9] dark:bg-zinc-700" style={{ display: "flex", borderRadius: 14, padding: 4, gap: 4 }}>
                   {(["credit", "debit"] as const).map(t => (
                     <button key={t} type="button" onClick={() => setEntryType(t)}
                       style={{ padding: "8px 18px", borderRadius: 11, border: "none", cursor: "pointer", background: entryType === t ? (t === "credit" ? "linear-gradient(135deg,#059669,#10b981)" : "linear-gradient(135deg,#e11d48,#f43f5e)") : "transparent", color: entryType === t ? "#fff" : "#64748b", fontWeight: 700, fontSize: 13, boxShadow: entryType === t ? `0 2px 10px ${t === "credit" ? "rgba(5,150,105,0.35)" : "rgba(225,29,72,0.35)"}` : "none", transition: "all 0.15s" }}>
@@ -171,7 +174,8 @@ export function DesktopEntryFormPanel({
                 </div>
               )}
               <button type="button" onClick={() => setShowForm(false)}
-                style={{ width: 38, height: 38, borderRadius: 12, border: "1.5px solid #e2e8f0", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                className="bg-[#f8fafc] dark:bg-zinc-700 border border-[#e2e8f0] dark:border-zinc-600"
+                style={{ width: 38, height: 38, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                 <X size={16} color="#64748b" />
               </button>
             </div>
@@ -201,7 +205,8 @@ export function DesktopEntryFormPanel({
                   <div style={{ position: "relative" }}>
                     <User size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
                     <input {...form.register("customerName", { required: true })} placeholder="Customer name" list="ledger-customer-names" autoComplete="off" data-testid="input-customer"
-                      style={{ width: "100%", height: 50, paddingLeft: 40, paddingRight: 14, borderRadius: 14, border: "1.5px solid #e2e8f0", fontSize: 14, fontWeight: 600, color: "#0b2c60", outline: "none", background: "#fff", boxSizing: "border-box", boxShadow: "0 1px 4px rgba(11,44,96,0.06)" }}
+                      className="bg-white dark:bg-zinc-700 text-[#0b2c60] dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                      style={{ width: "100%", height: 50, paddingLeft: 40, paddingRight: 14, borderRadius: 14, border: "1.5px solid #e2e8f0", fontSize: 14, fontWeight: 600, outline: "none", boxSizing: "border-box", boxShadow: "0 1px 4px rgba(11,44,96,0.06)" }}
                       onFocus={e => (e.target.style.borderColor = accentColor)} onBlur={e => (e.target.style.borderColor = "#e2e8f0")} />
                   </div>
                 </div>
@@ -210,7 +215,8 @@ export function DesktopEntryFormPanel({
                   <div style={{ position: "relative" }}>
                     <Calendar size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" }} />
                     <input type="date" {...form.register("date", { required: true })} data-testid="input-date"
-                      style={{ width: "100%", height: 50, paddingLeft: 40, paddingRight: 14, borderRadius: 14, border: "1.5px solid #e2e8f0", fontSize: 14, fontWeight: 600, color: "#0b2c60", outline: "none", background: "#fff", boxSizing: "border-box", boxShadow: "0 1px 4px rgba(11,44,96,0.06)" }}
+                      className="bg-white dark:bg-zinc-700 text-[#0b2c60] dark:text-zinc-100"
+                      style={{ width: "100%", height: 50, paddingLeft: 40, paddingRight: 14, borderRadius: 14, border: "1.5px solid #e2e8f0", fontSize: 14, fontWeight: 600, outline: "none", boxSizing: "border-box", boxShadow: "0 1px 4px rgba(11,44,96,0.06)" }}
                       onFocus={e => (e.target.style.borderColor = accentColor)} onBlur={e => (e.target.style.borderColor = "#e2e8f0")} />
                   </div>
                 </div>
@@ -220,7 +226,7 @@ export function DesktopEntryFormPanel({
               <div>
                 <label style={{ fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>Service Type</label>
                 <Select value={form.watch("serviceType")} onValueChange={(v) => form.setValue("serviceType", v)}>
-                  <SelectTrigger data-testid="select-service" className="h-[50px] rounded-[14px] border-[#e2e8f0] bg-white text-sm font-semibold text-[#0b2c60] shadow-[0_1px_4px_rgba(11,44,96,0.06)]">
+                  <SelectTrigger data-testid="select-service" className="h-[50px] rounded-[14px] border-[#e2e8f0] dark:border-zinc-600 bg-white dark:bg-zinc-700 text-sm font-semibold text-[#0b2c60] dark:text-zinc-100 shadow-[0_1px_4px_rgba(11,44,96,0.06)]">
                     <SelectValue placeholder="Select service type" />
                   </SelectTrigger>
                   <SelectContent className="max-h-60 overflow-y-auto">
@@ -236,7 +242,8 @@ export function DesktopEntryFormPanel({
                 <div style={{ position: "relative" }}>
                   <FileText size={15} style={{ position: "absolute", left: 14, top: 16, color: "#94a3b8" }} />
                   <textarea {...form.register("description")} rows={3} placeholder="Add a note about this transaction…" data-testid="input-description"
-                    style={{ width: "100%", paddingLeft: 40, paddingRight: 14, paddingTop: 14, paddingBottom: 14, borderRadius: 14, border: "1.5px solid #e2e8f0", fontSize: 14, color: "#0b2c60", resize: "none", outline: "none", boxSizing: "border-box", fontFamily: "inherit", background: "#fff", lineHeight: 1.6, boxShadow: "0 1px 4px rgba(11,44,96,0.06)" }}
+                    className="bg-white dark:bg-zinc-700 text-[#0b2c60] dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                    style={{ width: "100%", paddingLeft: 40, paddingRight: 14, paddingTop: 14, paddingBottom: 14, borderRadius: 14, border: "1.5px solid #e2e8f0", fontSize: 14, resize: "none", outline: "none", boxSizing: "border-box", fontFamily: "inherit", lineHeight: 1.6, boxShadow: "0 1px 4px rgba(11,44,96,0.06)" }}
                     onFocus={e => (e.target.style.borderColor = accentColor)} onBlur={e => (e.target.style.borderColor = "#e2e8f0")} />
                 </div>
               </div>
@@ -261,9 +268,10 @@ export function DesktopEntryFormPanel({
             </div>
 
             {/* Footer */}
-            <div style={{ padding: "20px 40px", borderTop: "1px solid #f1f5f9", background: "#fff", flexShrink: 0, display: "flex", gap: 14, marginTop: "auto" }}>
+            <div className="bg-white dark:bg-zinc-800 border-t border-[#f1f5f9] dark:border-zinc-700" style={{ padding: "20px 40px", flexShrink: 0, display: "flex", gap: 14, marginTop: "auto" }}>
               <button type="button" onClick={() => setShowForm(false)}
-                style={{ height: 50, padding: "0 28px", borderRadius: 14, border: "1.5px solid #e2e8f0", background: "#f8fafc", cursor: "pointer", fontWeight: 700, fontSize: 14, color: "#64748b" }}>Cancel</button>
+                className="bg-[#f8fafc] dark:bg-zinc-700 border border-[#e2e8f0] dark:border-zinc-600"
+                style={{ height: 50, padding: "0 28px", borderRadius: 14, cursor: "pointer", fontWeight: 700, fontSize: 14, color: "#64748b" }}>Cancel</button>
               <button type="submit" data-testid="button-save-entry" disabled={createMut.isPending || updateMut.isPending}
                 style={{ flex: 1, height: 50, borderRadius: 14, border: "none", cursor: "pointer", background: accentGrad, color: "#fff", fontSize: 15, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: `0 6px 20px ${accentColor}35`, opacity: (createMut.isPending || updateMut.isPending) ? 0.7 : 1 }}>
                 <CheckCircle2 size={18} strokeWidth={2.5} />

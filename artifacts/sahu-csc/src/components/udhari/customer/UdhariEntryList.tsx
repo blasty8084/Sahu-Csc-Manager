@@ -48,7 +48,7 @@ export function UdhariEntryList({ customerId, entries, loading, onEdit, onReceip
         {loading ? (
           <SessionsListSkeleton />
         ) : entries.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-2xl"
+          <div className="text-center py-12 bg-card rounded-2xl"
             style={{ boxShadow: "0 1px 6px rgba(11,44,96,0.06)" }}>
             <Plus size={28} className="mx-auto text-muted-foreground/30 mb-2" />
             <p className="text-sm text-muted-foreground font-medium">No entries yet</p>

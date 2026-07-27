@@ -4,7 +4,7 @@ export function LedgerSkeleton() {
   return (
     <div className="space-y-2">
       {[1, 2, 3, 4, 5, 6, 7].map((i) => (
-        <div key={i} className="bg-white rounded-xl px-4 py-3 flex items-center gap-3 border border-border shadow-sm">
+        <div key={i} className="bg-card rounded-xl px-4 py-3 flex items-center gap-3 border border-border shadow-sm">
           <Pulse className="w-9 h-9 rounded-full flex-shrink-0" />
           <div className="flex-1 space-y-1.5 min-w-0">
             <Pulse className="h-3.5 w-32" />
@@ -22,7 +22,7 @@ export function LedgerSkeleton() {
 
 export function LedgerBalanceSkeleton() {
   return (
-    <div className="bg-white rounded-2xl overflow-hidden border border-border shadow-sm mb-4">
+    <div className="bg-card rounded-2xl overflow-hidden border border-border shadow-sm mb-4">
       <Pulse className="h-1 w-full rounded-none" style={{ background: "rgba(11,44,96,0.1)" }} />
       <div className="px-4 py-4 flex items-center justify-between">
         <div className="space-y-1.5">

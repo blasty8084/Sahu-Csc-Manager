@@ -34,7 +34,7 @@ export function AepsTransactionTable({
     <>
       {/* ── Transaction List ── */}
       <div
-        className="bg-white rounded-2xl overflow-hidden"
+        className="bg-card rounded-2xl overflow-hidden"
         style={{ boxShadow: "0 2px 14px rgba(11,44,96,0.08), 0 1px 3px rgba(0,0,0,0.04)" }}
       >
         {/* List header */}
@@ -99,7 +99,7 @@ export function AepsTransactionTable({
               return (
                 <div
                   key={tx.id}
-                  className="flex items-center justify-between px-4 py-3 transition-colors hover:bg-slate-50/80"
+                  className="flex items-center justify-between px-4 py-3 transition-colors hover:bg-slate-50/80 dark:hover:bg-zinc-800/50"
                   style={{ borderBottom: "1px solid rgba(11,44,96,0.05)" }}
                 >
                   <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -156,7 +156,7 @@ export function AepsTransactionTable({
                       type="button"
                       title="View Receipt"
                       onClick={() => onViewReceipt(tx)}
-                      className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-slate-100"
+                      className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-slate-100 dark:hover:bg-zinc-700/60"
                       style={{ color: "#94a3b8" }}
                     >
                       <Receipt size={13} />
@@ -164,7 +164,7 @@ export function AepsTransactionTable({
                     <button
                       type="button"
                       onClick={() => onEdit(tx)}
-                      className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-slate-100"
+                      className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-slate-100 dark:hover:bg-zinc-700/60"
                       style={{ color: "#94a3b8" }}
                     >
                       <Pencil size={13} />
@@ -172,7 +172,7 @@ export function AepsTransactionTable({
                     <button
                       type="button"
                       onClick={() => onDelete(tx)}
-                      className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-red-50"
+                      className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-red-50 dark:hover:bg-red-950/30"
                       style={{ color: "#e11d48" }}
                     >
                       <Trash2 size={13} />
@@ -213,7 +213,7 @@ export function AepsTransactionTable({
       {/* ── Export / Share row ── */}
       {session.transactions.length > 0 && (
         <div className="relative">
-          <div className="bg-white rounded-2xl px-4 py-3 flex items-center justify-between" style={{ boxShadow: "0 2px 10px rgba(11,44,96,0.07)" }}>
+          <div className="bg-card rounded-2xl px-4 py-3 flex items-center justify-between" style={{ boxShadow: "0 2px 10px rgba(11,44,96,0.07)" }}>
             <div>
               <p className="text-xs font-semibold" style={{ color: "#0b2c60" }}>Daily Summary Export</p>
               <p className="text-[11px] text-muted-foreground">{session.transactions.length} transaction{session.transactions.length !== 1 ? "s" : ""} · {fmtDate(session.date)}</p>
@@ -234,7 +234,7 @@ export function AepsTransactionTable({
             <>
               <div className="fixed inset-0 z-10" onClick={() => onSetShowExportMenu(false)} />
               <div
-                className="absolute right-0 top-full mt-2 z-20 bg-white rounded-2xl overflow-hidden"
+                className="absolute right-0 top-full mt-2 z-20 bg-card border border-border rounded-2xl overflow-hidden"
                 style={{ minWidth: 200, boxShadow: "0 8px 32px rgba(11,44,96,0.18), 0 2px 8px rgba(0,0,0,0.08)" }}
               >
                 <div className="px-4 py-2.5 border-b" style={{ background: "rgba(11,44,96,0.03)" }}>
@@ -244,7 +244,7 @@ export function AepsTransactionTable({
                   type="button"
                   onClick={onGeneratePDF}
                   disabled={exportLoading !== null}
-                  className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-slate-50 transition-colors disabled:opacity-50"
+                  className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
                 >
                   <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, #e11d48, #f43f5e)" }}>
                     <Download size={14} color="#fff" />
@@ -259,7 +259,7 @@ export function AepsTransactionTable({
                   type="button"
                   onClick={onShareWhatsApp}
                   disabled={exportLoading !== null}
-                  className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-slate-50 transition-colors disabled:opacity-50"
+                  className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
                 >
                   <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, #25d366, #16a34a)" }}>
                     <MessageCircle size={14} color="#fff" />

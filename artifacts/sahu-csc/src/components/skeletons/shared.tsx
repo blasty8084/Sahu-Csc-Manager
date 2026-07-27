@@ -4,7 +4,7 @@ export function NotificationsSkeleton() {
   return (
     <div className="space-y-2">
       {[1, 2, 3, 4, 5].map((i) => (
-        <div key={i} className="bg-white rounded-xl px-4 py-3 flex items-start gap-3 border border-border shadow-sm">
+        <div key={i} className="bg-card rounded-xl px-4 py-3 flex items-start gap-3 border border-border shadow-sm">
           <Pulse className="w-9 h-9 rounded-xl flex-shrink-0 mt-0.5" />
           <div className="flex-1 space-y-1.5 min-w-0">
             <div className="flex items-center justify-between gap-2">
@@ -163,7 +163,7 @@ export function ProfileToggleSkeleton() {
 export function ProfilePageSkeleton() {
   return (
     <div className="space-y-4" style={{ minHeight: "60vh" }}>
-      <div className="bg-white rounded-2xl border border-border p-5 flex items-center gap-4">
+      <div className="bg-card rounded-2xl border border-border p-5 flex items-center gap-4">
         <Pulse className="w-16 h-16 rounded-full flex-shrink-0" />
         <div className="flex-1 space-y-2">
           <Pulse className="h-4 w-40" />
@@ -172,7 +172,7 @@ export function ProfilePageSkeleton() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="bg-white rounded-xl border border-border p-4 space-y-2">
+          <div key={i} className="bg-card rounded-xl border border-border p-4 space-y-2">
             <Pulse className="h-3 w-24" />
             <Pulse className="h-9 w-full rounded-lg" />
           </div>

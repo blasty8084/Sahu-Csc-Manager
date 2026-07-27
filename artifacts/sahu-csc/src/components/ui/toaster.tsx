@@ -117,7 +117,7 @@ function ToastItem({ id, title, description, variant = "default", isTop, dismiss
       }}
       onDragStart={clearTimer}
       onDragEnd={handleDragEnd}
-      className="relative w-full cursor-grab touch-pan-y select-none overflow-hidden rounded-2xl bg-white active:cursor-grabbing"
+      className="relative w-full cursor-grab touch-pan-y select-none overflow-hidden rounded-2xl bg-white dark:bg-zinc-900 active:cursor-grabbing"
     >
       <div className="flex items-start gap-3 px-4 py-3.5 pr-11">
         <div
@@ -129,10 +129,10 @@ function ToastItem({ id, title, description, variant = "default", isTop, dismiss
 
         <div className="min-w-0 flex-1 pt-0.5">
           {title && (
-            <p className="text-[13px] font-semibold leading-snug text-gray-900">{title}</p>
+            <p className="text-[13px] font-semibold leading-snug text-gray-900 dark:text-zinc-100">{title}</p>
           )}
           {description && (
-            <p className="mt-0.5 text-xs leading-relaxed text-gray-500">{description}</p>
+            <p className="mt-0.5 text-xs leading-relaxed text-gray-500 dark:text-zinc-400">{description}</p>
           )}
         </div>
       </div>
@@ -140,12 +140,12 @@ function ToastItem({ id, title, description, variant = "default", isTop, dismiss
       <button
         onPointerDown={(e) => e.stopPropagation()}
         onClick={() => { clearTimer(); dismiss(id) }}
-        className="absolute right-2.5 top-2.5 flex h-6 w-6 items-center justify-center rounded-full text-gray-400 transition-all hover:bg-gray-100 hover:text-gray-700 active:scale-95"
+        className="absolute right-2.5 top-2.5 flex h-6 w-6 items-center justify-center rounded-full text-gray-400 dark:text-zinc-500 transition-all hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-700 dark:hover:text-zinc-300 active:scale-95"
       >
         <X className="h-3.5 w-3.5" />
       </button>
 
-      <div className="absolute bottom-0 left-0 h-[3px] w-full bg-gray-100">
+      <div className="absolute bottom-0 left-0 h-[3px] w-full bg-gray-100 dark:bg-zinc-800">
         <motion.div
           className="h-full origin-left rounded-full"
           style={{ background: cfg.accent }}
