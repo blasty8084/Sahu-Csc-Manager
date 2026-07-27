@@ -29,14 +29,14 @@ export function ForgotStepHeader({ step, stepIndex, onBack }: ForgotStepHeaderPr
             <div
               className="w-2 h-2 rounded-full transition-all duration-300"
               style={{
-                background: stepIndex >= i ? "#f97316" : "rgba(0,0,0,0.15)",
+                background: stepIndex >= i ? "var(--brand-orange)" : "var(--brand-navy-tint-md)",
                 transform: stepIndex === i ? "scale(1.35)" : "scale(1)",
               }}
             />
             {i < 2 && (
               <div
                 className="h-0.5 w-8 rounded-full transition-all duration-300"
-                style={{ background: stepIndex > i ? "#f97316" : "rgba(0,0,0,0.12)" }}
+                style={{ background: stepIndex > i ? "var(--brand-orange)" : "var(--brand-navy-border)" }}
               />
             )}
           </React.Fragment>

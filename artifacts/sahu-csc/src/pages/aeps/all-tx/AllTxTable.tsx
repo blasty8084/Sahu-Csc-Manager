@@ -96,7 +96,7 @@ export function AllTxTable({
       {/* Transaction list */}
       <div
         className="bg-white rounded-2xl overflow-hidden"
-        style={{ boxShadow: "0 2px 14px rgba(11,44,96,0.08)" }}
+        style={{ boxShadow: "0 2px 14px var(--brand-navy-tint-md)" }}
       >
         {isLoading ? (
           <LedgerSkeleton />
@@ -104,16 +104,16 @@ export function AllTxTable({
           <div className="py-16 flex flex-col items-center gap-3 text-center">
             <div style={{
               width: 52, height: 52, borderRadius: 15,
-              background: "rgba(11,44,96,0.06)",
+              background: "var(--brand-navy-tint-md)",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
-              <Fingerprint size={24} style={{ color: "#0b2c60", opacity: 0.35 }} />
+              <Fingerprint size={24} style={{ color: "var(--brand-navy-800)", opacity: 0.35 }} />
             </div>
             <div>
-              <p style={{ fontSize: 13, fontWeight: 600, color: "#0b2c60" }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "var(--brand-navy-800)" }}>
                 {hasFilters ? "No transactions match the filters" : "No AePS transactions yet"}
               </p>
-              <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 3 }}>
+              <p style={{ fontSize: 11, color: "var(--color-slate-400)", marginTop: 3 }}>
                 {hasFilters ? "Try adjusting or clearing the filters" : "Open a daily session and record withdrawals/deposits"}
               </p>
             </div>
@@ -129,34 +129,34 @@ export function AllTxTable({
                 <div
                   key={tx.id}
                   className="flex items-center justify-between px-4 py-3 hover:bg-slate-50/80 transition-colors"
-                  style={{ borderBottom: "1px solid rgba(11,44,96,0.05)" }}
+                  style={{ borderBottom: "1px solid var(--brand-navy-tint-sm)" }}
                 >
                   <div className="flex items-center gap-3 min-w-0 flex-1">
                     <div style={{
                       width: 36, height: 36, borderRadius: 11, flexShrink: 0,
-                      background: isWd ? "linear-gradient(135deg, #f43f5e, #e11d48)" : "linear-gradient(135deg, #10b981, #059669)",
+                      background: isWd ? "linear-gradient(135deg, var(--color-error-soft), var(--color-error))" : "linear-gradient(135deg, var(--color-success-light), var(--color-success))",
                       boxShadow: isWd ? "0 3px 8px rgba(244,63,94,0.28)" : "0 3px 8px rgba(16,185,129,0.28)",
                       display: "flex", alignItems: "center", justifyContent: "center",
                     }}>
                       {isWd ? <ArrowDownLeft size={15} color="#fff" /> : <ArrowUpRight size={15} color="#fff" />}
                     </div>
                     <div className="min-w-0">
-                      <p style={{ fontSize: 13, fontWeight: 600, color: "#0b2c60" }} className="truncate max-w-[140px] sm:max-w-none">
+                      <p style={{ fontSize: 13, fontWeight: 600, color: "var(--brand-navy-800)" }} className="truncate max-w-[140px] sm:max-w-none">
                         {tx.customerName}
                       </p>
                       <div className="flex items-center gap-2 flex-wrap mt-0.5">
                         <span style={{
                           fontSize: 9, fontWeight: 700, borderRadius: 4, padding: "2px 5px",
-                          color: isWd ? "#e11d48" : "#059669",
+                          color: isWd ? "var(--color-error)" : "var(--color-success)",
                           background: isWd ? "rgba(244,63,94,0.09)" : "rgba(16,185,129,0.09)",
                         }}>
                           {isWd ? "Withdrawal" : "Deposit"}
                         </span>
-                        <span style={{ fontSize: 10, color: "#94a3b8" }}>
+                        <span style={{ fontSize: 10, color: "var(--color-slate-400)" }}>
                           {new Date(tx.date + "T00:00:00").toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}
                         </span>
                         {tx.description && (
-                          <span style={{ fontSize: 10, color: "#94a3b8" }} className="hidden sm:inline truncate max-w-[100px]">
+                          <span style={{ fontSize: 10, color: "var(--color-slate-400)" }} className="hidden sm:inline truncate max-w-[100px]">
                             {tx.description}
                           </span>
                         )}
@@ -165,22 +165,22 @@ export function AllTxTable({
                   </div>
 
                   <div className="flex items-center gap-1 shrink-0 ml-2">
-                    <p style={{ fontSize: 13, fontWeight: 800, color: isWd ? "#e11d48" : "#059669", marginRight: 4 }}>
+                    <p style={{ fontSize: 13, fontWeight: 800, color: isWd ? "var(--color-error)" : "var(--color-success)", marginRight: 4 }}>
                       {isWd ? "−" : "+"}₹{fmt(tx.amount)}
                     </p>
                     <button type="button" title="View Receipt" onClick={() => setReceiptTx(tx)}
                       className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-slate-100 transition-colors"
-                      style={{ color: "#94a3b8" }}>
+                      style={{ color: "var(--color-slate-400)" }}>
                       <Receipt size={13} />
                     </button>
                     <button type="button" onClick={() => openEditDialog(tx)}
                       className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-slate-100 transition-colors"
-                      style={{ color: "#94a3b8" }}>
+                      style={{ color: "var(--color-slate-400)" }}>
                       <Pencil size={13} />
                     </button>
                     <button type="button" onClick={() => setDeletingTx(tx)}
                       className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-red-50 transition-colors"
-                      style={{ color: "#e11d48" }}>
+                      style={{ color: "var(--color-error)" }}>
                       <Trash2 size={13} />
                     </button>
                   </div>
@@ -190,8 +190,8 @@ export function AllTxTable({
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between px-4 py-3" style={{ borderTop: "1px solid rgba(11,44,96,0.07)" }}>
-                <span style={{ fontSize: 11, color: "#94a3b8" }}>
+              <div className="flex items-center justify-between px-4 py-3" style={{ borderTop: "1px solid var(--brand-navy-tint-md)" }}>
+                <span style={{ fontSize: 11, color: "var(--color-slate-400)" }}>
                   Page {page} of {totalPages} · {total} total
                 </span>
                 <div className="flex gap-2">

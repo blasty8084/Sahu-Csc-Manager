@@ -25,7 +25,7 @@ export function StepNewPassword({ password, confirmPassword, showPassword, showC
   return (
     <motion.div key="fp-password" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
       <div className="flex flex-col items-center mb-5">
-        <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm mb-3" style={{ background: "#fef3c7" }}>
+        <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm mb-3" style={{ background: "var(--color-warning-bg)" }}>
           <KeyRound className="w-6 h-6 text-amber-500" />
         </div>
         <h2 className="text-gray-900 font-bold text-lg">Set New Password</h2>
@@ -45,8 +45,8 @@ export function StepNewPassword({ password, confirmPassword, showPassword, showC
           <div className="grid grid-cols-2 gap-1">
             {PWD_RULES.map((r) => (
               <div key={r.label} className="flex items-center gap-1.5 text-[11px]">
-                <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: r.test(password) ? "#22c55e" : "#d1d5db" }} />
-                <span style={{ color: r.test(password) ? "#16a34a" : "#9ca3af" }}>{r.label}</span>
+                <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: r.test(password) ? "var(--color-success-soft)" : "var(--color-gray-300)" }} />
+                <span style={{ color: r.test(password) ? "var(--color-success-dim)" : "var(--color-gray-400)" }}>{r.label}</span>
               </div>
             ))}
           </div>
@@ -73,7 +73,7 @@ export function StepNewPassword({ password, confirmPassword, showPassword, showC
           </div>
         )}
 
-        <Button type="submit" disabled={submitting || !pwdRulesMet || !passwordsMatch} className="w-full h-11 font-bold text-white border-0" style={{ background: "linear-gradient(135deg, #1a2560, #0f1a4a)" }}>
+        <Button type="submit" disabled={submitting || !pwdRulesMet || !passwordsMatch} className="w-full h-11 font-bold text-white border-0" style={{ background: "linear-gradient(135deg, var(--brand-navy-650), #0f1a4a)" }}>
           {submitting ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Saving…</span> : <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4" />Set New Password</span>}
         </Button>
       </form>

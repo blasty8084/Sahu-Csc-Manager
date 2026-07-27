@@ -26,9 +26,9 @@ export function OtpRequestForm({
       <div className="flex flex-col items-center mb-6">
         <div
           className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm mb-3"
-          style={{ background: "#e8eef8" }}
+          style={{ background: "var(--surface-blue-tint)" }}
         >
-          <User className="w-6 h-6" style={{ color: "#0b2c60" }} />
+          <User className="w-6 h-6" style={{ color: "var(--brand-navy-800)" }} />
         </div>
         <h2 className="text-gray-900 font-bold text-lg">Forgot Password?</h2>
         <p className="text-gray-500 text-xs mt-1 text-center max-w-xs">
@@ -67,7 +67,7 @@ export function OtpRequestForm({
                 <button
                   type="button"
                   className="w-full h-9 rounded-lg font-semibold text-xs border-0 text-white"
-                  style={{ background: "linear-gradient(135deg, #f97316, #ea580c)" }}
+                  style={{ background: "linear-gradient(135deg, var(--brand-orange), var(--brand-orange-600))" }}
                 >
                   Register a New Account →
                 </button>
@@ -80,7 +80,7 @@ export function OtpRequestForm({
           type="submit"
           disabled={submitting}
           className="w-full h-11 font-bold text-white border-0"
-          style={{ background: "linear-gradient(135deg, #1a2560, #0f1a4a)" }}
+          style={{ background: "linear-gradient(135deg, var(--brand-navy-650), #0f1a4a)" }}
         >
           {submitting ? (
             <span className="flex items-center gap-2">

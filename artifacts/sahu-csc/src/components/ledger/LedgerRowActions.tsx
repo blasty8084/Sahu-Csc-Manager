@@ -22,16 +22,16 @@ export function LedgerRowActions({
   return (
     <div style={{ display: "flex", gap: 4, justifyContent: "flex-end", marginTop: mt }}>
       <button onClick={() => setReceiptEntry(entry)} title="Receipt"
-        style={{ width: sz, height: sz, borderRadius: br, border: "1px solid #e2e8f0", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-        <Receipt size={iconSz} color="#64748b" />
+        style={{ width: sz, height: sz, borderRadius: br, border: "1px solid var(--color-slate-200)", background: "var(--color-slate-50)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+        <Receipt size={iconSz} color="var(--color-slate-500)" />
       </button>
       <button onClick={() => openEdit(entry)} title="Edit"
-        style={{ width: sz, height: sz, borderRadius: br, border: size === "md" ? "1px solid rgba(11,44,96,0.15)" : "1px solid #e2e8f0", background: size === "md" ? "rgba(11,44,96,0.04)" : "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-        <Pencil size={iconSz} color={size === "md" ? "#0b2c60" : "#64748b"} />
+        style={{ width: sz, height: sz, borderRadius: br, border: size === "md" ? "1px solid var(--brand-navy-tint-md)" : "1px solid var(--color-slate-200)", background: size === "md" ? "var(--brand-navy-tint-sm)" : "var(--color-slate-50)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+        <Pencil size={iconSz} color={size === "md" ? "var(--brand-navy-800)" : "var(--color-slate-500)"} />
       </button>
       <button onClick={() => setDeleteId(entry.id)} title="Delete"
-        style={{ width: sz, height: sz, borderRadius: br, border: size === "md" ? "1px solid rgba(225,29,72,0.2)" : "1px solid #fee2e2", background: size === "md" ? "rgba(225,29,72,0.04)" : "#fff5f5", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-        <Trash2 size={iconSz} color="#e11d48" />
+        style={{ width: sz, height: sz, borderRadius: br, border: size === "md" ? "1px solid rgba(225,29,72,0.2)" : "1px solid var(--color-error-bg)", background: size === "md" ? "rgba(225,29,72,0.04)" : "#fff5f5", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+        <Trash2 size={iconSz} color="var(--color-error)" />
       </button>
     </div>
   );

@@ -14,7 +14,7 @@ export function RegisterStepIndicator({ email }: Props) {
     <div className="flex flex-col items-center mb-6">
       <div
         className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm mb-3"
-        style={{ background: "#dcfce7" }}
+        style={{ background: "var(--color-success-bg)" }}
       >
         <ShieldCheck className="w-6 h-6 text-emerald-600" />
       </div>

@@ -31,7 +31,7 @@ export function DepositAmountField({ txForm, txAmountVal, accent, accentColor, a
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         {AEPS_QUICK_AMOUNTS.map(v => (
           <button key={v} type="button" onClick={() => txForm.setValue("amount", String(v))}
-            style={{ padding: "7px 16px", borderRadius: 10, fontSize: 12, fontWeight: 700, background: txAmountVal === String(v) ? accent : "#f1f5f9", color: txAmountVal === String(v) ? "#fff" : "#64748b", border: txAmountVal === String(v) ? "none" : "1px solid #e2e8f0", cursor: "pointer" }}>
+            style={{ padding: "7px 16px", borderRadius: 10, fontSize: 12, fontWeight: 700, background: txAmountVal === String(v) ? accent : "var(--color-slate-100)", color: txAmountVal === String(v) ? "#fff" : "var(--color-slate-500)", border: txAmountVal === String(v) ? "none" : "1px solid var(--color-slate-200)", cursor: "pointer" }}>
             ₹{v >= 1000 ? (v / 1000) + "K" : v}
           </button>
         ))}

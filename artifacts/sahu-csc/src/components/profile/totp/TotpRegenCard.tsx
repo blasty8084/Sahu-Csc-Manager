@@ -2,7 +2,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Loader2, Eye, EyeOff, AlertTriangle } from "lucide-react";
 
-const ORANGE = "#F97316";
+const ORANGE = "var(--brand-orange)";
 
 interface TotpRegenCardProps {
   codesRemaining: number;
@@ -32,7 +32,7 @@ export function TotpRegenCard({
   return (
     <div className="rounded-2xl border bg-white p-4 space-y-3 shadow-sm">
       <div className="flex items-center gap-2 mb-1">
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "#fff7ed" }}>
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "var(--surface-warn-bg)" }}>
           <RefreshCw size={16} style={{ color: ORANGE }} />
         </div>
         <div>

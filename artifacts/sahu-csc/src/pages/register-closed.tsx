@@ -27,8 +27,8 @@ function ClosedCard() {
       </div>
 
       <div className="w-full border border-dashed border-blue-200 rounded-2xl p-4 bg-blue-50 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "#e8eef8" }}>
-          <Phone className="w-5 h-5" style={{ color: "#0b2c60" }} />
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "var(--surface-blue-tint)" }}>
+          <Phone className="w-5 h-5" style={{ color: "var(--brand-navy-800)" }} />
         </div>
         <div className="text-left">
           <p className="text-xs font-bold text-gray-800">{t("auth.register.contact_distributor")}</p>
@@ -37,7 +37,7 @@ function ClosedCard() {
       </div>
 
       <Link href="/login">
-        <Button className="w-full h-11 font-semibold" style={{ background: "linear-gradient(135deg, #1a2560, #0f1a4a)" }}>
+        <Button className="w-full h-11 font-semibold" style={{ background: "linear-gradient(135deg, var(--brand-navy-650), #0f1a4a)" }}>
           <ArrowLeft className="w-4 h-4 mr-2" />
           {t("auth.register.back_to_login")}
         </Button>
@@ -52,10 +52,10 @@ export default function RegistrationClosed() {
 
   if (isMobile) {
     return (
-      <div className="h-screen flex flex-col overflow-hidden" style={{ background: "#0B1340" }}>
+      <div className="h-screen flex flex-col overflow-hidden" style={{ background: "var(--brand-navy)" }}>
         <div className="flex-shrink-0 pt-6 px-6 pb-4 flex flex-col items-center text-center relative">
           <Link href="/login">
-            <button className="absolute left-4 top-6 w-9 h-9 rounded-xl flex items-center justify-center transition-colors" style={{ background: "rgba(255,255,255,0.15)" }}>
+            <button className="absolute left-4 top-6 w-9 h-9 rounded-xl flex items-center justify-center transition-colors" style={{ background: "var(--brand-white-mid)" }}>
               <ArrowLeft className="w-4 h-4 text-white" />
             </button>
           </Link>
@@ -63,7 +63,7 @@ export default function RegistrationClosed() {
           <div className="mt-2.5">
             <h1 className="text-xl font-black">
               <span className="text-white">SAHU </span>
-              <span style={{ color: "#F97316" }}>CSC</span>
+              <span style={{ color: "var(--brand-orange)" }}>CSC</span>
             </h1>
             <p className="text-white/50 text-xs">{t("common.platform")}</p>
           </div>
@@ -83,13 +83,13 @@ export default function RegistrationClosed() {
   }
 
   return (
-    <div className="min-h-screen flex" style={{ background: "#0B1340" }}>
+    <div className="min-h-screen flex" style={{ background: "var(--brand-navy)" }}>
       <div className="w-[45%] flex flex-col justify-center px-16 py-12">
         <div className="flex items-center gap-3 mb-10">
           <LoginLogo size={36} />
           <div>
             <span className="text-white font-black text-lg">SAHU </span>
-            <span className="font-black text-lg" style={{ color: "#F97316" }}>CSC</span>
+            <span className="font-black text-lg" style={{ color: "var(--brand-orange)" }}>CSC</span>
             <p className="text-white/40 text-xs -mt-0.5">{t("common.platform")}</p>
           </div>
         </div>

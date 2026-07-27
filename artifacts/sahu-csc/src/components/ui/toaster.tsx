@@ -19,27 +19,27 @@ const VARIANT_CONFIG: Record<Variant, {
 }> = {
   default: {
     icon: <Info className="h-4 w-4" />,
-    accent: "#0b2c60",
-    iconBg: "rgba(11,44,96,0.12)",
-    iconColor: "#0b2c60",
+    accent: "var(--brand-navy-800)",
+    iconBg: "var(--brand-navy-border)",
+    iconColor: "var(--brand-navy-800)",
   },
   destructive: {
     icon: <XCircle className="h-4 w-4" />,
-    accent: "#ef4444",
+    accent: "var(--color-error-std)",
     iconBg: "rgba(239,68,68,0.12)",
-    iconColor: "#ef4444",
+    iconColor: "var(--color-error-std)",
   },
   success: {
     icon: <CheckCircle2 className="h-4 w-4" />,
-    accent: "#16a34a",
+    accent: "var(--color-success-dim)",
     iconBg: "rgba(22,163,74,0.12)",
-    iconColor: "#16a34a",
+    iconColor: "var(--color-success-dim)",
   },
   warning: {
     icon: <AlertTriangle className="h-4 w-4" />,
-    accent: "#d97706",
-    iconBg: "rgba(217,119,6,0.12)",
-    iconColor: "#d97706",
+    accent: "var(--color-warning)",
+    iconBg: "var(--color-warning-tint)",
+    iconColor: "var(--color-warning)",
   },
 }
 

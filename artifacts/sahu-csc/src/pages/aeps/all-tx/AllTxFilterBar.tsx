@@ -41,7 +41,7 @@ export function AllTxFilterBar({
     <>
       {/* Toolbar */}
       <div className="flex items-center justify-between gap-2">
-        <p style={{ fontSize: 12, color: "#94a3b8" }}>
+        <p style={{ fontSize: 12, color: "var(--color-slate-400)" }}>
           {total} transaction{total !== 1 ? "s" : ""}
         </p>
         <div className="flex gap-2">
@@ -67,7 +67,7 @@ export function AllTxFilterBar({
       {showFilters && (
         <div
           className="bg-white rounded-2xl p-4"
-          style={{ boxShadow: "0 2px 10px rgba(11,44,96,0.07)", border: "1px solid rgba(11,44,96,0.08)" }}
+          style={{ boxShadow: "0 2px 10px var(--brand-navy-tint-md)", border: "1px solid var(--brand-navy-tint-md)" }}
         >
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="space-y-1">

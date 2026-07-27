@@ -13,11 +13,11 @@ export function DesktopBulkBar({
   selectedSize, selTotal, downloading, clearSelected, handleDownload,
 }: DesktopBulkBarProps) {
   return (
-    <div className="bg-[#0b2c60]/5 border border-[#0b2c60]/20 rounded-xl px-4 py-2.5 flex items-center gap-3">
+    <div className="bg-[var(--brand-navy-800)]/5 border border-[var(--brand-navy-800)]/20 rounded-xl px-4 py-2.5 flex items-center gap-3">
       <div className="w-5 h-5 rounded flex items-center justify-center" style={{ background: NAVY }}>
         <Hash size={9} className="text-white" />
       </div>
-      <span className="text-xs font-semibold text-[#0b2c60]">
+      <span className="text-xs font-semibold text-[var(--brand-navy-800)]">
         {selectedSize} selected · ₹{selTotal.toLocaleString("en-IN")}
       </span>
       <div className="flex-1" />

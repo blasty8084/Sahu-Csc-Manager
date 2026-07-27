@@ -24,7 +24,7 @@ export function RememberMeRow({ rememberMe, setRememberMe, onForgotPassword }: R
         type="button"
         onClick={onForgotPassword}
         className="text-sm font-semibold cursor-pointer transition-colors"
-        style={{ color: "#0b2c60" }}
+        style={{ color: "var(--brand-navy-800)" }}
       >
         {t("auth.login.forgot_password")}
       </button>

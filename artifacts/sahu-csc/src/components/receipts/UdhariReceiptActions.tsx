@@ -31,7 +31,7 @@ export function UdhariReceiptActions({ cardRef, receipt, pageUrl }: UdhariReceip
 
   const isGave       = type === "gave";
   const txLabel      = isGave ? "You Gave" : "You Got";
-  const balanceColor = currentBalance > 0 ? "#ea580c" : currentBalance < 0 ? "#059669" : "#64748b";
+  const balanceColor = currentBalance > 0 ? "var(--brand-orange-600)" : currentBalance < 0 ? "var(--color-success)" : "var(--color-slate-500)";
   const balanceLabel = currentBalance > 0 ? "To Collect" : currentBalance < 0 ? "To Pay" : "Settled";
   const formattedDate = new Date(receipt.date + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
 
@@ -156,7 +156,7 @@ export function UdhariReceiptActions({ cardRef, receipt, pageUrl }: UdhariReceip
       <Button className="gap-2" style={{ background: "#25D366", color: "#fff" }} onClick={handleWhatsApp} disabled={sendingWa}>
         <WhatsAppIcon />{sendingWa ? "Preparing…" : "Share via WhatsApp"}
       </Button>
-      <Button className="gap-2" style={{ background: "#0b2c60" }} onClick={handleShare}>
+      <Button className="gap-2" style={{ background: "var(--brand-navy-800)" }} onClick={handleShare}>
         <Share2 size={15} />Share Link
       </Button>
     </div>

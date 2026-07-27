@@ -18,20 +18,20 @@ const HERO_BULLETS = [
 
 export function RegisterDesktopLayout({ children }: Props) {
   return (
-    <div className="min-h-screen flex" style={{ background: "#0B1340" }}>
+    <div className="min-h-screen flex" style={{ background: "var(--brand-navy)" }}>
       {/* Left: hero panel */}
       <div className="w-[45%] flex flex-col justify-center px-16 py-12">
         <div className="flex items-center gap-3 mb-10">
           <LoginLogo size={36} />
           <div>
             <span className="text-white font-black text-lg">SAHU </span>
-            <span className="font-black text-lg" style={{ color: "#F97316" }}>CSC</span>
+            <span className="font-black text-lg" style={{ color: "var(--brand-orange)" }}>CSC</span>
             <p className="text-white/40 text-xs -mt-0.5">Management Platform</p>
           </div>
         </div>
         <h1 className="text-4xl font-black leading-tight">
           <span className="text-white">Join the</span><br />
-          <span style={{ color: "#F97316" }}>CSC Network.</span>
+          <span style={{ color: "var(--brand-orange)" }}>CSC Network.</span>
         </h1>
         <p className="text-white/45 mt-4 max-w-sm leading-relaxed">
           Create your account to manage services, track transactions, and grow your CSC business.
@@ -39,7 +39,7 @@ export function RegisterDesktopLayout({ children }: Props) {
         <div className="mt-8 space-y-3">
           {HERO_BULLETS.map((item) => (
             <div key={item} className="flex items-center gap-3">
-              <CheckCircle2 className="w-5 h-5 flex-shrink-0" style={{ color: "#F97316" }} />
+              <CheckCircle2 className="w-5 h-5 flex-shrink-0" style={{ color: "var(--brand-orange)" }} />
               <span className="text-white/70 text-sm">{item}</span>
             </div>
           ))}
@@ -77,14 +77,14 @@ export function RegisterDesktopLayout({ children }: Props) {
           <Link href="/login">
             <div
               className="mt-3 flex items-center gap-3 px-4 py-3.5 rounded-2xl border-2 border-dashed cursor-pointer transition-colors hover:bg-blue-100"
-              style={{ borderColor: "#bfdbfe", background: "#eff6ff" }}
+              style={{ borderColor: "var(--surface-blue-tint-sm)", background: "var(--surface-toast-blue)" }}
             >
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "#dbeafe" }}>
-                <LogIn className="w-5 h-5" style={{ color: "#0b2c60" }} />
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "var(--surface-blue-tint)" }}>
+                <LogIn className="w-5 h-5" style={{ color: "var(--brand-navy-800)" }} />
               </div>
               <div className="flex-1">
                 <p className="text-sm text-gray-500">Already have an account?</p>
-                <p className="text-sm font-bold flex items-center gap-1 mt-0.5" style={{ color: "#0b2c60" }}>
+                <p className="text-sm font-bold flex items-center gap-1 mt-0.5" style={{ color: "var(--brand-navy-800)" }}>
                   Login here <ArrowRight className="w-3.5 h-3.5" />
                 </p>
               </div>

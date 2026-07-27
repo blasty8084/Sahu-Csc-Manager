@@ -65,7 +65,7 @@ export function ReceiptModal({
 
   const isCredit    = entry.credit > 0;
   const amount      = isCredit ? entry.credit : entry.debit;
-  const amountColor  = isCredit ? "#059669" : "#e11d48";
+  const amountColor  = isCredit ? "var(--color-success)" : "var(--color-error)";
   const amountPrefix = isCredit ? "+" : "−";
   const txType       = isCredit ? "Credit" : "Debit";
 

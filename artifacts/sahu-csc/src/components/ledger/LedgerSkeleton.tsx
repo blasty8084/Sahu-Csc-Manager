@@ -23,7 +23,7 @@ export function LedgerSkeleton() {
 export function LedgerBalanceSkeleton() {
   return (
     <div className="bg-card rounded-2xl overflow-hidden border border-border shadow-sm mb-4">
-      <Pulse className="h-1 w-full rounded-none" style={{ background: "rgba(11,44,96,0.1)" }} />
+      <Pulse className="h-1 w-full rounded-none" style={{ background: "var(--brand-navy-tint-md)" }} />
       <div className="px-4 py-4 flex items-center justify-between">
         <div className="space-y-1.5">
           <Pulse className="h-3 w-20" />

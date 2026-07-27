@@ -57,7 +57,7 @@ export function UdhariCustomerHeader({ customer, entries, isMobile, onBack, onGa
           <ArrowLeft size={15} />
         </button>
         <div className="flex-1 min-w-0">
-          <h1 className="font-black text-lg leading-tight truncate" style={{ color: "#0b2c60" }}>
+          <h1 className="font-black text-lg leading-tight truncate" style={{ color: "var(--brand-navy-800)" }}>
             {customer.name}
           </h1>
           {customer.mobile && (
@@ -96,18 +96,18 @@ export function UdhariCustomerHeader({ customer, entries, isMobile, onBack, onGa
       <div className="grid grid-cols-2 gap-3">
         <button onClick={onGave}
           className="rounded-2xl py-4 flex flex-col items-center gap-1.5 font-bold text-sm transition-transform active:scale-95"
-          style={{ background: "linear-gradient(135deg,#fff7ed,#fed7aa)", color: "#ea580c", boxShadow: "0 2px 12px rgba(249,115,22,0.15)" }}>
-          <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "rgba(249,115,22,0.15)" }}>
-            <ArrowUpRight size={20} style={{ color: "#ea580c" }} />
+          style={{ background: "linear-gradient(135deg,var(--surface-warn-bg),var(--color-orange-200))", color: "var(--brand-orange-600)", boxShadow: "0 2px 12px var(--brand-orange-tint-sm)" }}>
+          <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "var(--brand-orange-tint-sm)" }}>
+            <ArrowUpRight size={20} style={{ color: "var(--brand-orange-600)" }} />
           </div>
           You Gave
           <span className="text-[10px] font-normal opacity-70">Customer owes more</span>
         </button>
         <button onClick={onGot}
           className="rounded-2xl py-4 flex flex-col items-center gap-1.5 font-bold text-sm transition-transform active:scale-95"
-          style={{ background: "linear-gradient(135deg,#f0fdf4,#bbf7d0)", color: "#059669", boxShadow: "0 2px 12px rgba(16,185,129,0.15)" }}>
-          <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "rgba(16,185,129,0.15)" }}>
-            <ArrowDownLeft size={20} style={{ color: "#059669" }} />
+          style={{ background: "linear-gradient(135deg,#f0fdf4,#bbf7d0)", color: "var(--color-success)", boxShadow: "0 2px 12px var(--color-success-bg)" }}>
+          <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "var(--color-success-bg)" }}>
+            <ArrowDownLeft size={20} style={{ color: "var(--color-success)" }} />
           </div>
           You Got
           <span className="text-[10px] font-normal opacity-70">Customer paid back</span>

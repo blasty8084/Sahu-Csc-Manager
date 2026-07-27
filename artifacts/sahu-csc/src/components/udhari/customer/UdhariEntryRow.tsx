@@ -12,14 +12,14 @@ interface Props {
 export function UdhariEntryRow({ e, onEdit, onDelete, onReceipt }: Props) {
   const { t } = useTranslation();
   const isGave = e.type === "gave";
-  const color = isGave ? "#ea580c" : "#059669";
-  const bg    = isGave ? "rgba(249,115,22,0.08)" : "rgba(16,185,129,0.08)";
+  const color = isGave ? "var(--brand-orange-600)" : "var(--color-success)";
+  const bg    = isGave ? "var(--brand-orange-tint-xs)" : "var(--color-success-bg)";
   const label = isGave ? t("udhari.customer.you_gave") : t("udhari.customer.you_got");
 
   return (
     <div
       className="bg-white rounded-xl flex items-start gap-3 px-4 py-3"
-      style={{ boxShadow: "0 1px 6px rgba(11,44,96,0.06)" }}
+      style={{ boxShadow: "0 1px 6px var(--brand-navy-tint-md)" }}
     >
       <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: bg }}>
         {isGave

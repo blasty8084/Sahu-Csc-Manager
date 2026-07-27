@@ -28,7 +28,7 @@ export function NavLink({ item, active }: NavLinkProps) {
           flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer
           transition-colors duration-100
           ${active
-            ? "bg-[#f97316] text-white font-semibold shadow-md shadow-orange-900/30"
+            ? "bg-[var(--brand-orange)] text-white font-semibold shadow-md shadow-orange-900/30"
             : "text-white/65 hover:text-white hover:bg-white/8"}
         `}
         onMouseEnter={() => prefetch(item.href)}
@@ -42,7 +42,7 @@ export function NavLink({ item, active }: NavLinkProps) {
         {item.badge !== undefined && item.badge > 0 && (
           <span className={`
             text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none
-            ${active ? "bg-white/25 text-white" : "bg-[#f97316] text-white"}
+            ${active ? "bg-white/25 text-white" : "bg-[var(--brand-orange)] text-white"}
           `}>
             {item.badge > 99 ? "99+" : item.badge}
           </span>

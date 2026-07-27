@@ -73,8 +73,8 @@ export function MobileReceiptList({
     <>
       {/* Bulk bar */}
       {selected.size > 0 && (
-        <div className="bg-[#0b2c60]/5 border border-[#0b2c60]/20 rounded-2xl px-4 py-2.5 flex items-center gap-2">
-          <span className="flex-1 text-xs font-semibold text-[#0b2c60]">{selected.size} selected · ₹{selTotal.toLocaleString("en-IN")}</span>
+        <div className="bg-[var(--brand-navy-800)]/5 border border-[var(--brand-navy-800)]/20 rounded-2xl px-4 py-2.5 flex items-center gap-2">
+          <span className="flex-1 text-xs font-semibold text-[var(--brand-navy-800)]">{selected.size} selected · ₹{selTotal.toLocaleString("en-IN")}</span>
           <button onClick={() => setSelected(new Set())} className="p-1 text-slate-400">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
@@ -92,13 +92,13 @@ export function MobileReceiptList({
         {filteredEntries.map((e) => (
           <div key={e.receiptNumber}
             onClick={() => onEntryClick(e)}
-            className={`bg-white rounded-2xl border shadow-sm active:scale-[0.98] transition-transform cursor-pointer ${selected.has(e.receiptNumber) ? "border-[#0b2c60]/30" : "border-slate-200"}`}>
+            className={`bg-white rounded-2xl border shadow-sm active:scale-[0.98] transition-transform cursor-pointer ${selected.has(e.receiptNumber) ? "border-[var(--brand-navy-800)]/30" : "border-slate-200"}`}>
             <div className="p-4 flex items-center gap-3">
               <div onClick={ev => { ev.stopPropagation(); toggleEntry(e.receiptNumber); }} className="p-1">
                 <Checkbox checked={selected.has(e.receiptNumber)} onChange={() => toggleEntry(e.receiptNumber)} size={18} />
               </div>
               <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
-                style={{ background: `linear-gradient(135deg, ${NAVY}, #1a4a9e)` }}>
+                style={{ background: `linear-gradient(135deg, ${NAVY}, var(--brand-navy-600))` }}>
                 {e.customerName.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">

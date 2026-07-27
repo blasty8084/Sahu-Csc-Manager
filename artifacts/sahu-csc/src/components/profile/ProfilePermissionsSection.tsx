@@ -51,21 +51,21 @@ export function ProfilePermissionsSection() {
         className="flex items-center justify-between px-4 py-3 rounded-xl"
         style={{
           background: allGranted
-            ? "linear-gradient(90deg, rgba(16,185,129,0.1), rgba(16,185,129,0.04))"
-            : "linear-gradient(90deg, rgba(249,115,22,0.08), rgba(249,115,22,0.02))",
-          border: `1px solid ${allGranted ? "rgba(16,185,129,0.25)" : "rgba(249,115,22,0.20)"}`,
+            ? "linear-gradient(90deg, var(--color-success-bg), var(--color-success-bg))"
+            : "linear-gradient(90deg, var(--brand-orange-tint-xs), rgba(249,115,22,0.02))",
+          border: `1px solid ${allGranted ? "color-mix(in srgb, var(--color-success) 25%, transparent)" : "var(--brand-orange-tint-md)"}`,
         }}
       >
         <div className="flex items-center gap-2.5">
           <div
             className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
             style={{
-              background: allGranted ? "rgba(16,185,129,0.15)" : "rgba(249,115,22,0.12)",
+              background: allGranted ? "var(--color-success-bg)" : "var(--brand-orange-tint-sm)",
             }}
           >
             <ShieldCheck
               size={16}
-              style={{ color: allGranted ? "#10b981" : "#f97316" }}
+              style={{ color: allGranted ? "var(--color-success-light)" : "var(--brand-orange)" }}
             />
           </div>
           <div>
@@ -94,8 +94,8 @@ export function ProfilePermissionsSection() {
       <div className="border border-gray-100 rounded-xl px-3 bg-white dark:bg-card dark:border-border">
         <PermissionRow
           icon={MapPin}
-          iconBg="#DCFCE7"
-          iconColor="#16A34A"
+          iconBg="var(--color-success-bg)"
+          iconColor="var(--color-success-dim)"
           title="Location"
           description="Needed to check nearby services and availability."
           status={locationStatus}
@@ -105,8 +105,8 @@ export function ProfilePermissionsSection() {
         {!skipNotifications && (
           <PermissionRow
             icon={Bell}
-            iconBg="#EEF0FF"
-            iconColor="#4F46E5"
+            iconBg="var(--surface-permission-bg)"
+            iconColor="var(--color-indigo)"
             title="Notifications"
             description="Get important updates and transaction alerts."
             status={notifStatus}
@@ -116,8 +116,8 @@ export function ProfilePermissionsSection() {
         )}
         <PermissionRow
           icon={FolderOpen}
-          iconBg="#FEF3C7"
-          iconColor="#D97706"
+          iconBg="var(--color-warning-bg)"
+          iconColor="var(--color-warning)"
           title="File Manager"
           description="Access photos and files for receipts, uploads, and exports."
           status={fileStatus}

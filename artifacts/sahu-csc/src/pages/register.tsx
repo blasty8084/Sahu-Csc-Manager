@@ -29,8 +29,8 @@ function RegisterContent() {
         </div>
         <RegisterForm />
         <div className="mt-5 flex items-center gap-3 p-3 rounded-2xl border border-gray-100 bg-gray-50">
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "#e8eef8" }}>
-            <Shield className="w-4 h-4" style={{ color: "#0b2c60" }} />
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "var(--surface-blue-tint)" }}>
+            <Shield className="w-4 h-4" style={{ color: "var(--brand-navy-800)" }} />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-xs font-bold text-gray-800">Your data is 100% secure with us</p>
@@ -40,7 +40,7 @@ function RegisterContent() {
         <p className="text-center text-xs text-gray-500 mt-4">
           Already have an account?{" "}
           <Link href="/login">
-            <span className="font-bold cursor-pointer" style={{ color: "#0b2c60" }}>Login here →</span>
+            <span className="font-bold cursor-pointer" style={{ color: "var(--brand-navy-800)" }}>Login here →</span>
           </Link>
         </p>
       </RegisterMobileLayout>
@@ -61,13 +61,13 @@ export default function Register() {
     const isMobile = window.innerWidth < 768;
     if (isMobile) {
       return (
-        <div className="h-screen flex flex-col overflow-hidden" style={{ background: "#0B1340" }}>
+        <div className="h-screen flex flex-col overflow-hidden" style={{ background: "var(--brand-navy)" }}>
           <div className="flex-shrink-0 pt-6 px-6 pb-4 flex flex-col items-center text-center">
             <LoginLogo size={52} />
             <div className="mt-2.5">
               <h1 className="text-xl font-black">
                 <span className="text-white">SAHU </span>
-                <span style={{ color: "#F97316" }}>CSC</span>
+                <span style={{ color: "var(--brand-orange)" }}>CSC</span>
               </h1>
             </div>
           </div>
@@ -78,7 +78,7 @@ export default function Register() {
       );
     }
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "#0B1340" }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--brand-navy)" }}>
         <div className="bg-white rounded-3xl p-12"><LoadingScreen /></div>
       </div>
     );

@@ -50,17 +50,17 @@ export function UdhariReceiptModal({
   const receiptNumber = `UDH-${year}-${String(entry.id).padStart(4, "0")}`;
 
   const isGave = entry.type === "gave";
-  const accentColor = isGave ? "#ea580c" : "#059669";
+  const accentColor = isGave ? "var(--brand-orange-600)" : "var(--color-success)";
   const headerGrad = isGave
-    ? "linear-gradient(135deg, #7c2d12 0%, #c2410c 55%, #6b2400 100%)"
-    : "linear-gradient(135deg, #064e3b 0%, #059669 55%, #044032 100%)";
+    ? "linear-gradient(135deg, var(--color-orange-900) 0%, var(--brand-orange-700) 55%, #6b2400 100%)"
+    : "linear-gradient(135deg, #064e3b 0%, var(--color-success) 55%, #044032 100%)";
   const stripeGrad = isGave
-    ? "linear-gradient(90deg, #ea580c, #f97316 50%, #ea580c)"
-    : "linear-gradient(90deg, #059669, #34d399 50%, #059669)";
+    ? "linear-gradient(90deg, var(--brand-orange-600), var(--brand-orange) 50%, var(--brand-orange-600))"
+    : "linear-gradient(90deg, var(--color-success), var(--color-success-glow) 50%, var(--color-success))";
   const txLabel = isGave ? "You Gave" : "You Got";
   const amountPrefix = isGave ? "+" : "−";
 
-  const balanceColor = entry.currentBalance > 0 ? "#ea580c" : entry.currentBalance < 0 ? "#059669" : "#64748b";
+  const balanceColor = entry.currentBalance > 0 ? "var(--brand-orange-600)" : entry.currentBalance < 0 ? "var(--color-success)" : "var(--color-slate-500)";
   const balanceLabel = entry.currentBalance > 0 ? "To Collect" : entry.currentBalance < 0 ? "To Pay" : "Settled";
 
   const formattedDate = new Date(entry.date + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });

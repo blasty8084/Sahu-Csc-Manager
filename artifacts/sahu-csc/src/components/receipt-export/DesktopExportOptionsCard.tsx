@@ -29,7 +29,7 @@ export function DesktopExportOptionsCard({
           <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2">Format</p>
           <div className="grid grid-cols-2 gap-2">
             <button onClick={() => setExportFormat("pdf")}
-              className={`flex flex-col items-center gap-1.5 py-2.5 rounded-lg border-2 text-xs font-medium transition-all ${exportFormat === "pdf" ? "border-[#f97316] bg-[#f97316]/5 text-[#f97316]" : "border-slate-200 text-slate-500 hover:border-slate-300"}`}>
+              className={`flex flex-col items-center gap-1.5 py-2.5 rounded-lg border-2 text-xs font-medium transition-all ${exportFormat === "pdf" ? "border-[var(--brand-orange)] bg-[var(--brand-orange)]/5 text-[var(--brand-orange)]" : "border-slate-200 text-slate-500 hover:border-slate-300"}`}>
               <FileText size={18} />PDF
             </button>
             <button onClick={() => setExportFormat("excel")}
@@ -48,8 +48,8 @@ export function DesktopExportOptionsCard({
               { label: "Date Range",    sub: startDate && endDate ? `${fmtDate(startDate)} → ${fmtDate(endDate)}` : "Set dates above" },
             ].map((opt, i) => (
               <label key={opt.label} className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-slate-50 cursor-pointer">
-                <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 ${i === (selected.size > 0 ? 1 : 0) ? "border-[#0b2c60]" : "border-slate-300"}`}>
-                  {i === (selected.size > 0 ? 1 : 0) && <div className="w-1.5 h-1.5 rounded-full bg-[#0b2c60]" />}
+                <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 ${i === (selected.size > 0 ? 1 : 0) ? "border-[var(--brand-navy-800)]" : "border-slate-300"}`}>
+                  {i === (selected.size > 0 ? 1 : 0) && <div className="w-1.5 h-1.5 rounded-full bg-[var(--brand-navy-800)]" />}
                 </div>
                 <div>
                   <p className="text-xs font-medium text-slate-700">{opt.label}</p>
@@ -65,7 +65,7 @@ export function DesktopExportOptionsCard({
           <div className="space-y-1.5">
             {["QR Code", "Business Stamp", "Customer Signature Row"].map((opt, i) => (
               <label key={opt} className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
-                <div className={`w-3.5 h-3.5 rounded flex items-center justify-center ${i < 2 ? "bg-[#0b2c60]" : "border border-slate-300"}`}>
+                <div className={`w-3.5 h-3.5 rounded flex items-center justify-center ${i < 2 ? "bg-[var(--brand-navy-800)]" : "border border-slate-300"}`}>
                   {i < 2 && <Check size={9} className="text-white" />}
                 </div>
                 {opt}

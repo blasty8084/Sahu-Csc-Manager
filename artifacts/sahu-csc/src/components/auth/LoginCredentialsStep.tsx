@@ -95,7 +95,7 @@ export function LoginFormContent({
                   type="submit"
                   disabled={isSubmitting}
                   className="w-full h-12 font-bold text-base tracking-wide text-white shadow-lg border-0"
-                  style={{ background: "linear-gradient(135deg, #1a2560, #0f1a4a)" }}
+                  style={{ background: "linear-gradient(135deg, var(--brand-navy-650), #0f1a4a)" }}
                 >
                   {isSubmitting
                     ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />{t("common.loading")}</span>

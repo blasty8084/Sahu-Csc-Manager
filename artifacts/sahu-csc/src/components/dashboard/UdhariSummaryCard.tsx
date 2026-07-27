@@ -12,12 +12,12 @@ export function UdhariSummaryCard({ mobile = false }: { mobile?: boolean }) {
     <a href="/udhari" style={{ textDecoration: "none" }}>
       <div
         className={`rounded-2xl overflow-hidden ${mobile ? "" : "border border-border shadow-sm"}`}
-        style={mobile ? { boxShadow: "0 2px 12px rgba(11,44,96,0.08)" } : {}}
+        style={mobile ? { boxShadow: "0 2px 12px var(--brand-navy-tint-md)" } : {}}
       >
-        <div style={{ height: 3, background: "linear-gradient(90deg,#0b2c60,#f97316)" }} />
+        <div style={{ height: 3, background: "linear-gradient(90deg,var(--brand-navy-800),var(--brand-orange))" }} />
         <div className="bg-white px-4 py-3 flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: "linear-gradient(135deg,#0b2c60,#1a4a9e)" }}>
+            style={{ background: "linear-gradient(135deg,var(--brand-navy-800),var(--brand-navy-600))" }}>
             <HandCoins size={15} color="#fff" />
           </div>
           <div className="flex-1 min-w-0">
@@ -33,11 +33,11 @@ export function UdhariSummaryCard({ mobile = false }: { mobile?: boolean }) {
             <div className="flex gap-3 text-right">
               <div>
                 <p className="text-[9px] font-semibold text-muted-foreground uppercase">{t('dashboard.to_collect')}</p>
-                <p className="text-sm font-black" style={{ color: "#ea580c" }}>₹{toCollect.toLocaleString("en-IN")}</p>
+                <p className="text-sm font-black" style={{ color: "var(--brand-orange-600)" }}>₹{toCollect.toLocaleString("en-IN")}</p>
               </div>
               <div>
                 <p className="text-[9px] font-semibold text-muted-foreground uppercase">{t('dashboard.to_pay')}</p>
-                <p className="text-sm font-black" style={{ color: "#059669" }}>₹{toPay.toLocaleString("en-IN")}</p>
+                <p className="text-sm font-black" style={{ color: "var(--color-success)" }}>₹{toPay.toLocaleString("en-IN")}</p>
               </div>
             </div>
           )}

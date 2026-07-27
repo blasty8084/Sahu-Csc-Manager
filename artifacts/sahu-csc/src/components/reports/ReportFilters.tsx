@@ -11,8 +11,8 @@ export function MobileReportFilters({
   filters: FilterState;
 }) {
   return (
-    <div className="bg-white rounded-2xl p-4 space-y-3 border border-slate-100" style={{ boxShadow: "0 2px 12px rgba(11,44,96,0.08)" }}>
-      <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em" }}>Filter Options</p>
+    <div className="bg-white rounded-2xl p-4 space-y-3 border border-slate-100" style={{ boxShadow: "0 2px 12px var(--brand-navy-tint-md)" }}>
+      <p style={{ fontSize: 10, fontWeight: 700, color: "var(--color-slate-400)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Filter Options</p>
 
       {activeTab === "daily" && (
         <div>
@@ -88,20 +88,20 @@ export function DesktopReportFilters({
   exportUrl: string;
 }) {
   return (
-    <div style={{ padding: "0 16px", display: "flex", alignItems: "center", gap: 8, borderLeft: "1px solid #e2e8f0" }}>
+    <div style={{ padding: "0 16px", display: "flex", alignItems: "center", gap: 8, borderLeft: "1px solid var(--color-slate-200)" }}>
       {activeTab === "daily" && (
         <input
           type="date"
           value={filters.dailyDate}
           onChange={e => filters.setDailyDate(e.target.value)}
-          style={{ height: 32, borderRadius: 8, border: "1px solid #e2e8f0", padding: "0 10px", fontSize: 12, color: "#334155", outline: "none" }}
+          style={{ height: 32, borderRadius: 8, border: "1px solid var(--color-slate-200)", padding: "0 10px", fontSize: 12, color: "var(--color-slate-700)", outline: "none" }}
         />
       )}
 
       {activeTab === "monthly" && (
         <>
           <Select value={String(filters.reportMonth)} onValueChange={v => filters.setReportMonth(Number(v))}>
-            <SelectTrigger className="h-8 text-xs w-28" style={{ border: "1px solid #e2e8f0", borderRadius: 8 }}>
+            <SelectTrigger className="h-8 text-xs w-28" style={{ border: "1px solid var(--color-slate-200)", borderRadius: 8 }}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -112,7 +112,7 @@ export function DesktopReportFilters({
             type="number"
             value={filters.reportYear}
             onChange={e => filters.setReportYear(Number(e.target.value))}
-            style={{ height: 32, width: 72, borderRadius: 8, border: "1px solid #e2e8f0", padding: "0 10px", fontSize: 12, color: "#334155", outline: "none" }}
+            style={{ height: 32, width: 72, borderRadius: 8, border: "1px solid var(--color-slate-200)", padding: "0 10px", fontSize: 12, color: "var(--color-slate-700)", outline: "none" }}
           />
         </>
       )}
@@ -123,21 +123,21 @@ export function DesktopReportFilters({
             type="date"
             value={filters.aepsStart}
             onChange={e => filters.setAepsStart(e.target.value)}
-            style={{ height: 32, borderRadius: 8, border: "1px solid #e2e8f0", padding: "0 10px", fontSize: 12, color: "#334155", outline: "none" }}
+            style={{ height: 32, borderRadius: 8, border: "1px solid var(--color-slate-200)", padding: "0 10px", fontSize: 12, color: "var(--color-slate-700)", outline: "none" }}
           />
-          <span style={{ fontSize: 11, color: "#94a3b8" }}>→</span>
+          <span style={{ fontSize: 11, color: "var(--color-slate-400)" }}>→</span>
           <input
             type="date"
             value={filters.aepsEnd}
             onChange={e => filters.setAepsEnd(e.target.value)}
-            style={{ height: 32, borderRadius: 8, border: "1px solid #e2e8f0", padding: "0 10px", fontSize: 12, color: "#334155", outline: "none" }}
+            style={{ height: 32, borderRadius: 8, border: "1px solid var(--color-slate-200)", padding: "0 10px", fontSize: 12, color: "var(--color-slate-700)", outline: "none" }}
           />
         </>
       )}
 
       <button
         onClick={onPrint}
-        style={{ height: 32, borderRadius: 8, background: "white", border: "1px solid #e2e8f0", color: "#0b2c60", fontSize: 12, fontWeight: 700, padding: "0 14px", display: "flex", alignItems: "center", gap: 6, cursor: "pointer", flexShrink: 0 }}
+        style={{ height: 32, borderRadius: 8, background: "white", border: "1px solid var(--color-slate-200)", color: "var(--brand-navy-800)", fontSize: 12, fontWeight: 700, padding: "0 14px", display: "flex", alignItems: "center", gap: 6, cursor: "pointer", flexShrink: 0 }}
       >
         <Printer size={12} /> Print
       </button>
@@ -145,7 +145,7 @@ export function DesktopReportFilters({
       <a
         href={exportUrl}
         target="_blank"
-        style={{ height: 32, borderRadius: 8, background: "linear-gradient(135deg,#f97316,#fb923c)", color: "white", fontSize: 12, fontWeight: 700, padding: "0 14px", display: "flex", alignItems: "center", gap: 6, textDecoration: "none", flexShrink: 0 }}
+        style={{ height: 32, borderRadius: 8, background: "linear-gradient(135deg,var(--brand-orange),var(--brand-orange-400))", color: "white", fontSize: 12, fontWeight: 700, padding: "0 14px", display: "flex", alignItems: "center", gap: 6, textDecoration: "none", flexShrink: 0 }}
       >
         <Download size={12} /> Export
       </a>

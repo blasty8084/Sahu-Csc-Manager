@@ -49,7 +49,7 @@ export function LanguageSwitcher({ variant = "inline" }: LanguageSwitcherProps) 
               className={`
                 flex-1 py-1 rounded-lg text-[11px] font-bold transition-all duration-100
                 ${active
-                  ? "bg-[#f97316] text-white"
+                  ? "bg-[var(--brand-orange)] text-white"
                   : "text-white/40 hover:text-white/70 hover:bg-white/10"}
               `}
             >
@@ -72,7 +72,7 @@ export function LanguageSwitcher({ variant = "inline" }: LanguageSwitcherProps) 
             className={`
               px-3 py-1.5 rounded-md text-xs font-bold transition-all duration-100
               ${active
-                ? "bg-[#f97316] text-white shadow-sm"
+                ? "bg-[var(--brand-orange)] text-white shadow-sm"
                 : "text-muted-foreground hover:text-foreground hover:bg-background"}
             `}
           >

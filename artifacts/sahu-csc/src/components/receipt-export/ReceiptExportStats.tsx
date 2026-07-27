@@ -19,7 +19,7 @@ export function DesktopStatBar({ preview, totalAmount, displayedEntries, selecte
     {
       label: "Total Amount",
       value: preview ? `₹${totalAmount.toLocaleString("en-IN")}` : "—",
-      icon: IndianRupee, bg: "#059669", iconBg: "bg-white/15",
+      icon: IndianRupee, bg: "var(--color-success)", iconBg: "bg-white/15",
     },
     {
       label: "Credit Entries",
@@ -29,7 +29,7 @@ export function DesktopStatBar({ preview, totalAmount, displayedEntries, selecte
     {
       label: "Selected",
       value: String(selectedSize),
-      icon: ArrowDownToLine, bg: "#7c3aed", iconBg: "bg-white/15",
+      icon: ArrowDownToLine, bg: "var(--color-violet)", iconBg: "bg-white/15",
     },
   ];
   return (
@@ -96,9 +96,9 @@ export function MobileSummaryCards({ preview, totalAmount, displayedEntries }: M
   }
   const stats = [
     { label: "Total Receipts", value: String(preview.count),                                             icon: Receipt,         bg: NAVY      },
-    { label: "Total Amount",   value: `₹${totalAmount.toLocaleString("en-IN")}`,                        icon: IndianRupee,     bg: "#059669" },
+    { label: "Total Amount",   value: `₹${totalAmount.toLocaleString("en-IN")}`,                        icon: IndianRupee,     bg: "var(--color-success)" },
     { label: "Credit Entries", value: String(displayedEntries.filter(e => e.type === "credit").length), icon: TrendingUp,      bg: SAFFRON   },
-    { label: "Debit Entries",  value: String(displayedEntries.filter(e => e.type === "debit").length),  icon: ArrowDownToLine, bg: "#7c3aed" },
+    { label: "Debit Entries",  value: String(displayedEntries.filter(e => e.type === "debit").length),  icon: ArrowDownToLine, bg: "var(--color-violet)" },
   ];
   return (
     <div className="space-y-3">

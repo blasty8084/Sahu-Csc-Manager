@@ -45,21 +45,21 @@ export function RejectedPanel({ rejectedInfo, adminContact, onDismissStatus, get
           exit={{ opacity: 0, scale: 0.96 }}
           transition={{ duration: 0.25 }}
           className="rounded-2xl border-2 overflow-hidden"
-          style={{ borderColor: "#fed7aa", background: "#fff7ed" }}
+          style={{ borderColor: "var(--color-orange-200)", background: "var(--surface-warn-bg)" }}
         >
-          <div className="h-1.5 w-full" style={{ background: "linear-gradient(90deg, #f97316, #ea580c)" }} />
+          <div className="h-1.5 w-full" style={{ background: "linear-gradient(90deg, var(--brand-orange), var(--brand-orange-600))" }} />
           <div className="px-4 py-4">
             <div className="flex flex-col items-center text-center mb-3">
               <motion.div
                 animate={{ scale: [1, 1.08, 1] }}
                 transition={{ duration: 0.4, delay: 0.15 }}
                 className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3 shadow-sm"
-                style={{ background: "linear-gradient(135deg, #f97316, #c2410c)" }}
+                style={{ background: "linear-gradient(135deg, var(--brand-orange), var(--brand-orange-700))" }}
               >
                 <Ban className="w-7 h-7 text-white" />
               </motion.div>
-              <h3 className="text-base font-bold" style={{ color: "#c2410c" }}>Registration Declined</h3>
-              <p className="text-xs mt-1" style={{ color: "#9a3412" }}>
+              <h3 className="text-base font-bold" style={{ color: "var(--brand-orange-700)" }}>Registration Declined</h3>
+              <p className="text-xs mt-1" style={{ color: "var(--color-orange-800)" }}>
                 Your registration request was not approved by the administrator.
               </p>
             </div>
@@ -67,16 +67,16 @@ export function RejectedPanel({ rejectedInfo, adminContact, onDismissStatus, get
             {rejectedInfo.reason && (
               <div
                 className="rounded-xl px-3 py-2.5 mb-3 border"
-                style={{ background: "rgba(249,115,22,0.07)", borderColor: "#fed7aa" }}
+                style={{ background: "var(--brand-orange-tint-07)", borderColor: "var(--color-orange-200)" }}
               >
-                <p className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: "#ea580c" }}>Reason</p>
-                <p className="text-sm font-medium leading-relaxed" style={{ color: "#7c2d12" }}>{rejectedInfo.reason}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: "var(--brand-orange-600)" }}>Reason</p>
+                <p className="text-sm font-medium leading-relaxed" style={{ color: "var(--color-orange-900)" }}>{rejectedInfo.reason}</p>
               </div>
             )}
 
             {(adminContact?.phone || adminContact?.email) ? (
               <div className="space-y-2 mb-3">
-                <p className="text-[11px] text-center font-semibold" style={{ color: "#9a3412" }}>
+                <p className="text-[11px] text-center font-semibold" style={{ color: "var(--color-orange-800)" }}>
                   Contact the administrator to appeal:
                 </p>
                 <div className={`grid gap-2 ${adminContact.phone && adminContact.email ? "grid-cols-2" : "grid-cols-1"}`}>
@@ -117,7 +117,7 @@ export function RejectedPanel({ rejectedInfo, adminContact, onDismissStatus, get
                           if (allowed) window.location.href = `mailto:${adminContact!.email}?subject=${subject}&body=${body}`;
                         }}
                         className="flex items-center justify-center gap-1.5 h-9 rounded-xl text-xs font-semibold transition-opacity active:opacity-80"
-                        style={{ background: "#0b2c60", color: "#fff" }}
+                        style={{ background: "var(--brand-navy-800)", color: "#fff" }}
                       >
                         <Mail className="w-3.5 h-3.5" /> Email Admin
                       </button>
@@ -125,13 +125,13 @@ export function RejectedPanel({ rejectedInfo, adminContact, onDismissStatus, get
                   })()}
                 </div>
                 {appealCooldownMsg && (
-                  <p className="text-[11px] text-center font-medium mt-1" style={{ color: "#b45309" }}>
+                  <p className="text-[11px] text-center font-medium mt-1" style={{ color: "var(--color-amber-700)" }}>
                     ⏳ {appealCooldownMsg}
                   </p>
                 )}
               </div>
             ) : (
-              <p className="text-[11px] text-center mb-3" style={{ color: "#9a3412" }}>
+              <p className="text-[11px] text-center mb-3" style={{ color: "var(--color-orange-800)" }}>
                 For assistance, contact your administrator or register with a different account.
               </p>
             )}
@@ -140,7 +140,7 @@ export function RejectedPanel({ rejectedInfo, adminContact, onDismissStatus, get
               type="button"
               onClick={onDismissStatus}
               className="w-full h-10 rounded-xl font-semibold text-sm border-2 transition-colors"
-              style={{ borderColor: "#fed7aa", color: "#c2410c", background: "transparent" }}
+              style={{ borderColor: "var(--color-orange-200)", color: "var(--brand-orange-700)", background: "transparent" }}
             >
               Try a different account →
             </button>

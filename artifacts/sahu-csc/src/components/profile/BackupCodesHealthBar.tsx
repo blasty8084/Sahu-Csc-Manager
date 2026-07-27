@@ -1,7 +1,7 @@
 import { KeyRound, AlertTriangle, Check, RefreshCw } from "lucide-react";
 
-const NAVY  = "#0B1340";
-const GREEN = "#10b981";
+const NAVY  = "var(--brand-navy)";
+const GREEN = "var(--color-success-light)";
 const TOTAL_CODES = 8;
 
 interface BackupCodesHealthBarProps {
@@ -47,12 +47,12 @@ export function BackupCodesHealthBar({
       <div className="space-y-1.5">
         <div className="flex items-center justify-between text-xs">
           <span className="text-gray-500">{codesRemaining} of {TOTAL_CODES} remaining</span>
-          <span style={{ color: low ? "#ef4444" : GREEN }}>{pct}%</span>
+          <span style={{ color: low ? "var(--color-error-std)" : GREEN }}>{pct}%</span>
         </div>
         <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
           <div
             className="h-full rounded-full transition-all"
-            style={{ width: `${pct}%`, background: low ? "#ef4444" : GREEN }}
+            style={{ width: `${pct}%`, background: low ? "var(--color-error-std)" : GREEN }}
           />
         </div>
         {low && (
@@ -78,8 +78,8 @@ export function BackupCodesHealthBar({
                   key={i}
                   className="h-7 rounded-lg flex items-center justify-center"
                   style={{
-                    background: used ? "#f3f4f6" : "#d1fae5",
-                    border:     `1px solid ${used ? "#e5e7eb" : "#a7f3d0"}`,
+                    background: used ? "#f3f4f6" : "var(--color-success-bg-light)",
+                    border:     `1px solid ${used ? "var(--color-gray-200)" : "var(--color-success-glow)"}`,
                   }}
                 >
                   {used
@@ -98,7 +98,7 @@ export function BackupCodesHealthBar({
         type="button"
         onClick={onRegen}
         className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-dashed text-sm font-semibold transition-colors"
-        style={{ borderColor: "#e5e7eb", color: "#6b7280" }}
+        style={{ borderColor: "var(--color-gray-200)", color: "#6b7280" }}
       >
         <RefreshCw size={13} />
         Generate new backup codes

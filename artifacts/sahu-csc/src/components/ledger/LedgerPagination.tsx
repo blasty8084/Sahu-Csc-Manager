@@ -24,52 +24,52 @@ export function TableFooterPagination({
   }, [data?.entries]);
 
   return (
-    <div style={{ display: activeTab !== "transactions" ? "none" : "flex", flexDirection: "column", gap: 0, borderTop: "1px solid #f1f5f9", flexShrink: 0 }}>
+    <div style={{ display: activeTab !== "transactions" ? "none" : "flex", flexDirection: "column", gap: 0, borderTop: "1px solid var(--color-slate-100)", flexShrink: 0 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 20px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <p style={{ fontSize: 13, color: "#64748b", fontWeight: 500 }}>
+          <p style={{ fontSize: 13, color: "var(--color-slate-500)", fontWeight: 500 }}>
             {data?.total ? `Showing ${(page - 1) * 15 + 1}–${Math.min(page * 15, data.total)} of ${data.total} transactions` : "Showing 0 of 0 transactions"}
           </p>
           {pageSummary && (
             <span style={{ display: "flex", gap: 10, fontSize: 12, fontWeight: 600 }}>
-              <span style={{ color: "#059669" }}>Cr: ₹{pageSummary.pCr.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-              <span style={{ color: "#cbd5e1" }}>·</span>
-              <span style={{ color: "#e11d48" }}>Dr: ₹{pageSummary.pDb.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-              <span style={{ color: "#cbd5e1" }}>·</span>
-              <span style={{ color: "#0b2c60", fontWeight: 700 }}>Net: {pageSummary.net >= 0 ? "+" : ""}₹{pageSummary.net.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+              <span style={{ color: "var(--color-success)" }}>Cr: ₹{pageSummary.pCr.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+              <span style={{ color: "var(--color-slate-300)" }}>·</span>
+              <span style={{ color: "var(--color-error)" }}>Dr: ₹{pageSummary.pDb.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+              <span style={{ color: "var(--color-slate-300)" }}>·</span>
+              <span style={{ color: "var(--brand-navy-800)", fontWeight: 700 }}>Net: {pageSummary.net >= 0 ? "+" : ""}₹{pageSummary.net.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
             </span>
           )}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <button onClick={() => setPage(1)} disabled={page <= 1}
-            style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, border: "1px solid transparent", background: "transparent", color: page <= 1 ? "#cbd5e1" : "#94a3b8", cursor: page <= 1 ? "default" : "pointer" }}>
+            style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, border: "1px solid transparent", background: "transparent", color: page <= 1 ? "var(--color-slate-300)" : "var(--color-slate-400)", cursor: page <= 1 ? "default" : "pointer" }}>
             <ChevronsLeft size={15} />
           </button>
           <button onClick={() => setPage(p => p - 1)} disabled={page <= 1}
-            style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, border: "1px solid transparent", background: "transparent", color: page <= 1 ? "#cbd5e1" : "#94a3b8", cursor: page <= 1 ? "default" : "pointer" }}>
+            style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, border: "1px solid transparent", background: "transparent", color: page <= 1 ? "var(--color-slate-300)" : "var(--color-slate-400)", cursor: page <= 1 ? "default" : "pointer" }}>
             <ChevronLeft size={15} />
           </button>
           {Array.from({ length: Math.min(totalPages || 1, 5) }, (_, i) => {
             const p = (totalPages || 1) <= 5 ? i + 1 : page <= 3 ? i + 1 : page >= (totalPages || 1) - 2 ? (totalPages || 1) - 4 + i : page - 2 + i;
             return (
               <button key={p} onClick={() => setPage(p)}
-                style={{ width: 32, height: 32, borderRadius: 8, border: "1.5px solid", borderColor: p === page ? "#0b2c60" : "transparent", background: p === page ? "#0b2c60" : "transparent", color: p === page ? "#fff" : "#94a3b8", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                style={{ width: 32, height: 32, borderRadius: 8, border: "1.5px solid", borderColor: p === page ? "var(--brand-navy-800)" : "transparent", background: p === page ? "var(--brand-navy-800)" : "transparent", color: p === page ? "#fff" : "var(--color-slate-400)", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 {p}
               </button>
             );
           })}
           <button onClick={() => setPage(p => p + 1)} disabled={page >= (totalPages || 1)}
-            style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, border: "1px solid transparent", background: "transparent", color: page >= (totalPages || 1) ? "#cbd5e1" : "#94a3b8", cursor: page >= (totalPages || 1) ? "default" : "pointer" }}>
+            style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, border: "1px solid transparent", background: "transparent", color: page >= (totalPages || 1) ? "var(--color-slate-300)" : "var(--color-slate-400)", cursor: page >= (totalPages || 1) ? "default" : "pointer" }}>
             <ChevronRight size={15} />
           </button>
           <button onClick={() => setPage(totalPages || 1)} disabled={page >= (totalPages || 1)}
-            style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, border: "1px solid transparent", background: "transparent", color: page >= (totalPages || 1) ? "#cbd5e1" : "#94a3b8", cursor: page >= (totalPages || 1) ? "default" : "pointer" }}>
+            style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, border: "1px solid transparent", background: "transparent", color: page >= (totalPages || 1) ? "var(--color-slate-300)" : "var(--color-slate-400)", cursor: page >= (totalPages || 1) ? "default" : "pointer" }}>
             <ChevronsRight size={15} />
           </button>
         </div>
       </div>
       {/* Security footer */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, paddingBottom: 10, color: "#94a3b8", fontSize: 11, fontWeight: 500 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, paddingBottom: 10, color: "var(--color-slate-400)", fontSize: 11, fontWeight: 500 }}>
         <Lock size={11} />All your transactions are secure and encrypted
       </div>
     </div>

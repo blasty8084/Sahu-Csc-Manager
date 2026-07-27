@@ -9,12 +9,12 @@ export function UdhariCustomerStats({ balance }: Props) {
   const { t } = useTranslation();
   const isCollect = balance > 0;
   const isPay = balance < 0;
-  const color = isCollect ? "#ea580c" : isPay ? "#059669" : "#64748b";
+  const color = isCollect ? "var(--brand-orange-600)" : isPay ? "var(--color-success)" : "var(--color-slate-500)";
   const bg = isCollect
-    ? "linear-gradient(135deg,#fff7ed,#fed7aa)"
+    ? "linear-gradient(135deg,var(--surface-warn-bg),var(--color-orange-200))"
     : isPay
       ? "linear-gradient(135deg,#f0fdf4,#bbf7d0)"
-      : "linear-gradient(135deg,#f8fafc,#f1f5f9)";
+      : "linear-gradient(135deg,var(--color-slate-50),var(--color-slate-100))";
 
   return (
     <div className="rounded-2xl p-5 text-center" style={{ background: bg, boxShadow: `0 2px 16px ${color}22` }}>

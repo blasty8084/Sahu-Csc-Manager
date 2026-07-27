@@ -49,9 +49,9 @@ export function SetupWizardBanner() {
       className="border-b"
       style={{
         background: hasOnlyOptional
-          ? "linear-gradient(90deg, #fffbeb 0%, #fef3c7 100%)"
-          : "linear-gradient(90deg, #fff1f2 0%, #ffe4e6 100%)",
-        borderColor: hasOnlyOptional ? "#fbbf24" : "#fca5a5",
+          ? "linear-gradient(90deg, #fffbeb 0%, var(--color-warning-bg) 100%)"
+          : "linear-gradient(90deg, var(--color-error-bg-sm) 0%, #ffe4e6 100%)",
+        borderColor: hasOnlyOptional ? "var(--brand-orange-300)" : "var(--color-rose-300)",
       }}
     >
       {/* ── Main row ── */}
@@ -62,13 +62,13 @@ export function SetupWizardBanner() {
             className="h-7 w-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
             style={{
               background: hasOnlyOptional
-                ? "rgba(217,119,6,0.12)"
-                : "rgba(220,38,38,0.10)",
+                ? "var(--color-warning-tint)"
+                : "var(--color-error-bg)",
             }}
           >
             <AlertTriangle
               size={14}
-              color={hasOnlyOptional ? "#d97706" : "#dc2626"}
+              color={hasOnlyOptional ? "var(--color-warning)" : "var(--color-error-dim)"}
             />
           </div>
 
@@ -76,7 +76,7 @@ export function SetupWizardBanner() {
           <div className="min-w-0 flex-1">
             <p
               className="text-xs font-semibold leading-none mb-0.5"
-              style={{ color: hasOnlyOptional ? "#92400e" : "#991b1b" }}
+              style={{ color: hasOnlyOptional ? "var(--color-warning-dark)" : "var(--color-red-800)" }}
             >
               {hasOnlyOptional
                 ? "Setup Incomplete — Optional Secrets Missing"
@@ -84,7 +84,7 @@ export function SetupWizardBanner() {
             </p>
             <p
               className="text-[11px] leading-snug"
-              style={{ color: hasOnlyOptional ? "#a16207" : "#b91c1c" }}
+              style={{ color: hasOnlyOptional ? "var(--color-warning-text)" : "var(--color-error-deep)" }}
             >
               {status.missing.length} secret
               {status.missing.length !== 1 ? "s" : ""} need
@@ -93,7 +93,7 @@ export function SetupWizardBanner() {
               <button
                 onClick={() => setExpanded((v) => !v)}
                 className="font-semibold underline underline-offset-2 cursor-pointer inline-flex items-center gap-0.5"
-                style={{ color: hasOnlyOptional ? "#a16207" : "#b91c1c" }}
+                style={{ color: hasOnlyOptional ? "var(--color-warning-text)" : "var(--color-error-deep)" }}
               >
                 {expanded ? "Hide details" : "Show what's missing"}
                 {expanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
@@ -107,7 +107,7 @@ export function SetupWizardBanner() {
           onClick={handleDismiss}
           className="h-6 w-6 rounded flex items-center justify-center flex-shrink-0 mt-0.5 transition-opacity hover:opacity-70"
           aria-label="Dismiss"
-          style={{ color: hasOnlyOptional ? "#a16207" : "#b91c1c" }}
+          style={{ color: hasOnlyOptional ? "var(--color-warning-text)" : "var(--color-error-deep)" }}
         >
           <X size={13} />
         </button>
@@ -123,7 +123,7 @@ export function SetupWizardBanner() {
               style={{
                 background: "rgba(255,255,255,0.7)",
                 borderColor: hasOnlyOptional
-                  ? "rgba(251,191,36,0.4)"
+                  ? "var(--color-warning-amber-glow)"
                   : "rgba(252,165,165,0.5)",
               }}
             >
@@ -133,7 +133,7 @@ export function SetupWizardBanner() {
                   background: item.key === "VAPID"
                     ? "rgba(217,119,6,0.10)"
                     : "rgba(220,38,38,0.08)",
-                  color: item.key === "VAPID" ? "#b45309" : "#dc2626",
+                  color: item.key === "VAPID" ? "var(--color-amber-700)" : "var(--color-error-dim)",
                 }}
               >
                 {item.key === "VAPID" ? "OPTIONAL" : "REQUIRED"}
@@ -155,7 +155,7 @@ export function SetupWizardBanner() {
               size="sm"
               className="h-7 px-3 text-xs gap-1.5"
               style={{
-                background: hasOnlyOptional ? "#d97706" : "#dc2626",
+                background: hasOnlyOptional ? "var(--color-warning)" : "var(--color-error-dim)",
                 color: "#fff",
               }}
               onClick={() => {

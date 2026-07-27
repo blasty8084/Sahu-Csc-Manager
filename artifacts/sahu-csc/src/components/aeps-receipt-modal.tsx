@@ -44,15 +44,15 @@ export function AepsReceiptModal({
   if (!tx) return null;
 
   const isWithdrawal = tx.type === "withdrawal";
-  const amountColor = isWithdrawal ? "#e11d48" : "#059669";
+  const amountColor = isWithdrawal ? "var(--color-error)" : "var(--color-success)";
   const amountPrefix = isWithdrawal ? "−" : "+";
   const txLabel = isWithdrawal ? "Cash Withdrawal" : "Cash Deposit";
   const headerGrad = isWithdrawal
     ? "linear-gradient(135deg, #7f1d1d 0%, #be1240 55%, #6b1228 100%)"
-    : "linear-gradient(135deg, #064e3b 0%, #059669 55%, #044032 100%)";
+    : "linear-gradient(135deg, #064e3b 0%, var(--color-success) 55%, #044032 100%)";
   const stripeGrad = isWithdrawal
-    ? "linear-gradient(90deg, #e11d48, #f43f5e 50%, #e11d48)"
-    : "linear-gradient(90deg, #059669, #34d399 50%, #059669)";
+    ? "linear-gradient(90deg, var(--color-error), var(--color-error-soft) 50%, var(--color-error))"
+    : "linear-gradient(90deg, var(--color-success), var(--color-success-glow) 50%, var(--color-success))";
 
   const txDate = tx.date ? new Date(tx.date + "T00:00:00") : new Date(tx.createdAt);
   const year = txDate.getFullYear();

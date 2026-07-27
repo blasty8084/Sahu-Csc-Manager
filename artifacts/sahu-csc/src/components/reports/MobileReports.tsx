@@ -21,10 +21,10 @@ import {
 } from "@/components/reports/ReportsChart";
 
 const MOBILE_TABS = [
-  { id: "daily",    label: "Daily",    Icon: Calendar,    accent: "#0b2c60", grad: "linear-gradient(135deg,#0b2c60,#1a4a9e)" },
-  { id: "monthly",  label: "Monthly",  Icon: BarChart2,   accent: "#8b5cf6", grad: "linear-gradient(135deg,#8b5cf6,#7c3aed)" },
-  { id: "aeps",     label: "AePS",     Icon: Fingerprint, accent: "#f97316", grad: "linear-gradient(135deg,#f97316,#ea580c)" },
-  { id: "services", label: "Services", Icon: Layers,      accent: "#10b981", grad: "linear-gradient(135deg,#10b981,#059669)" },
+  { id: "daily",    label: "Daily",    Icon: Calendar,    accent: "var(--brand-navy-800)", grad: "linear-gradient(135deg,var(--brand-navy-800),var(--brand-navy-600))" },
+  { id: "monthly",  label: "Monthly",  Icon: BarChart2,   accent: "var(--color-violet-sm)", grad: "linear-gradient(135deg,var(--color-violet-sm),var(--color-violet))" },
+  { id: "aeps",     label: "AePS",     Icon: Fingerprint, accent: "var(--brand-orange)", grad: "linear-gradient(135deg,var(--brand-orange),var(--brand-orange-600))" },
+  { id: "services", label: "Services", Icon: Layers,      accent: "var(--color-success-light)", grad: "linear-gradient(135deg,var(--color-success-light),var(--color-success))" },
 ];
 
 export default function MobileReports() {
@@ -45,14 +45,14 @@ export default function MobileReports() {
       {/* ── Header ── */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 style={{ fontSize: 20, fontWeight: 900, color: "#0b2c60" }}>Reports</h1>
-          <p style={{ fontSize: 11, color: "#94a3b8", fontWeight: 500 }}>Business analytics & insights</p>
+          <h1 style={{ fontSize: 20, fontWeight: 900, color: "var(--brand-navy-800)" }}>Reports</h1>
+          <p style={{ fontSize: 11, color: "var(--color-slate-400)", fontWeight: 500 }}>Business analytics & insights</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowFilter(v => !v)}
             className="flex items-center gap-1.5 rounded-xl px-3 h-9 text-xs font-semibold border"
-            style={{ borderColor: showFilter ? "#0b2c60" : "#e2e8f0", color: showFilter ? "#0b2c60" : "#64748b", background: showFilter ? "rgba(11,44,96,0.06)" : "#fff" }}
+            style={{ borderColor: showFilter ? "var(--brand-navy-800)" : "var(--color-slate-200)", color: showFilter ? "var(--brand-navy-800)" : "var(--color-slate-500)", background: showFilter ? "var(--brand-navy-tint-md)" : "#fff" }}
           >
             <Filter size={13} />Filters
           </button>
@@ -60,7 +60,7 @@ export default function MobileReports() {
             href={exportUrl}
             target="_blank"
             className="flex items-center gap-1.5 rounded-xl px-3 h-9 text-xs font-bold text-white"
-            style={{ background: "linear-gradient(135deg,#0b2c60,#1a4a9e)" }}
+            style={{ background: "linear-gradient(135deg,var(--brand-navy-800),var(--brand-navy-600))" }}
           >
             <Download size={13} />Excel
           </a>
@@ -78,7 +78,7 @@ export default function MobileReports() {
               className="flex items-center gap-1.5 rounded-xl px-3 h-9 text-xs font-bold flex-shrink-0 transition-all"
               style={active
                 ? { background: t.grad, color: "#fff", boxShadow: `0 4px 12px ${t.accent}55` }
-                : { background: "#fff", color: "#64748b", border: "1.5px solid #e2e8f0" }
+                : { background: "#fff", color: "var(--color-slate-500)", border: "1.5px solid var(--color-slate-200)" }
               }
             >
               <t.Icon size={12} />
@@ -99,27 +99,27 @@ export default function MobileReports() {
           ) : daily.data ? (
             <>
               <div className="flex items-center gap-2">
-                <div className="w-1 h-4 rounded-full" style={{ background: "linear-gradient(180deg,#0b2c60,#1a4a9e)" }} />
-                <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em" }}>Ledger Summary</p>
+                <div className="w-1 h-4 rounded-full" style={{ background: "linear-gradient(180deg,var(--brand-navy-800),var(--brand-navy-600))" }} />
+                <p style={{ fontSize: 10, fontWeight: 700, color: "var(--color-slate-400)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Ledger Summary</p>
               </div>
               <div className="grid grid-cols-2 gap-2.5">
-                <MobileStatCard label="Transactions" value={daily.data.transactionCount} sub="Today" accentColor="#0b2c60" iconGrad="linear-gradient(135deg,#0b2c60,#1a4a9e)" Icon={Activity} />
-                <MobileStatCard label="Net Revenue" value={fmt(daily.data.netRevenue)} sub={daily.data.netRevenue >= 0 ? "Profit" : "Loss"} accentColor={daily.data.netRevenue >= 0 ? "#10b981" : "#ef4444"} iconGrad={daily.data.netRevenue >= 0 ? "linear-gradient(135deg,#10b981,#059669)" : "linear-gradient(135deg,#ef4444,#dc2626)"} Icon={daily.data.netRevenue >= 0 ? TrendingUp : TrendingDown} />
-                <MobileStatCard label="Credits" value={fmt(daily.data.totalCredits)} sub="Income" accentColor="#10b981" iconGrad="linear-gradient(135deg,#10b981,#059669)" Icon={ArrowDownLeft} />
-                <MobileStatCard label="Debits" value={fmt(daily.data.totalDebits)} sub="Expenses" accentColor="#f97316" iconGrad="linear-gradient(135deg,#f97316,#ea580c)" Icon={ArrowUpRight} />
+                <MobileStatCard label="Transactions" value={daily.data.transactionCount} sub="Today" accentColor="var(--brand-navy-800)" iconGrad="linear-gradient(135deg,var(--brand-navy-800),var(--brand-navy-600))" Icon={Activity} />
+                <MobileStatCard label="Net Revenue" value={fmt(daily.data.netRevenue)} sub={daily.data.netRevenue >= 0 ? "Profit" : "Loss"} accentColor={daily.data.netRevenue >= 0 ? "var(--color-success-light)" : "var(--color-error-std)"} iconGrad={daily.data.netRevenue >= 0 ? "linear-gradient(135deg,var(--color-success-light),var(--color-success))" : "linear-gradient(135deg,var(--color-error-std),var(--color-error-dim))"} Icon={daily.data.netRevenue >= 0 ? TrendingUp : TrendingDown} />
+                <MobileStatCard label="Credits" value={fmt(daily.data.totalCredits)} sub="Income" accentColor="var(--color-success-light)" iconGrad="linear-gradient(135deg,var(--color-success-light),var(--color-success))" Icon={ArrowDownLeft} />
+                <MobileStatCard label="Debits" value={fmt(daily.data.totalDebits)} sub="Expenses" accentColor="var(--brand-orange)" iconGrad="linear-gradient(135deg,var(--brand-orange),var(--brand-orange-600))" Icon={ArrowUpRight} />
               </div>
 
               {daily.data.aeps && (
                 <>
                   <div className="flex items-center gap-2">
-                    <div className="w-1 h-4 rounded-full" style={{ background: "linear-gradient(180deg,#f97316,#ea580c)" }} />
-                    <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em" }}>AePS Cash</p>
+                    <div className="w-1 h-4 rounded-full" style={{ background: "linear-gradient(180deg,var(--brand-orange),var(--brand-orange-600))" }} />
+                    <p style={{ fontSize: 10, fontWeight: 700, color: "var(--color-slate-400)", textTransform: "uppercase", letterSpacing: "0.08em" }}>AePS Cash</p>
                   </div>
                   <div className="grid grid-cols-2 gap-2.5">
-                    <MobileStatCard label="AePS Tx" value={daily.data.aeps.totalTransactions} sub="Transactions" accentColor="#f97316" iconGrad="linear-gradient(135deg,#f97316,#ea580c)" Icon={Fingerprint} />
-                    <MobileStatCard label="Net Flow" value={fmt(daily.data.aeps.netFlow)} sub={daily.data.aeps.netFlow >= 0 ? "Net in" : "Net out"} accentColor={daily.data.aeps.netFlow >= 0 ? "#10b981" : "#ef4444"} iconGrad={daily.data.aeps.netFlow >= 0 ? "linear-gradient(135deg,#10b981,#059669)" : "linear-gradient(135deg,#ef4444,#dc2626)"} Icon={daily.data.aeps.netFlow >= 0 ? TrendingUp : TrendingDown} />
-                    <MobileStatCard label="Withdrawals" value={fmt(daily.data.aeps.totalWithdrawals)} accentColor="#ef4444" iconGrad="linear-gradient(135deg,#ef4444,#dc2626)" Icon={ArrowUpRight} />
-                    <MobileStatCard label="Deposits" value={fmt(daily.data.aeps.totalDeposits)} accentColor="#10b981" iconGrad="linear-gradient(135deg,#10b981,#059669)" Icon={ArrowDownLeft} />
+                    <MobileStatCard label="AePS Tx" value={daily.data.aeps.totalTransactions} sub="Transactions" accentColor="var(--brand-orange)" iconGrad="linear-gradient(135deg,var(--brand-orange),var(--brand-orange-600))" Icon={Fingerprint} />
+                    <MobileStatCard label="Net Flow" value={fmt(daily.data.aeps.netFlow)} sub={daily.data.aeps.netFlow >= 0 ? "Net in" : "Net out"} accentColor={daily.data.aeps.netFlow >= 0 ? "var(--color-success-light)" : "var(--color-error-std)"} iconGrad={daily.data.aeps.netFlow >= 0 ? "linear-gradient(135deg,var(--color-success-light),var(--color-success))" : "linear-gradient(135deg,var(--color-error-std),var(--color-error-dim))"} Icon={daily.data.aeps.netFlow >= 0 ? TrendingUp : TrendingDown} />
+                    <MobileStatCard label="Withdrawals" value={fmt(daily.data.aeps.totalWithdrawals)} accentColor="var(--color-error-std)" iconGrad="linear-gradient(135deg,var(--color-error-std),var(--color-error-dim))" Icon={ArrowUpRight} />
+                    <MobileStatCard label="Deposits" value={fmt(daily.data.aeps.totalDeposits)} accentColor="var(--color-success-light)" iconGrad="linear-gradient(135deg,var(--color-success-light),var(--color-success))" Icon={ArrowDownLeft} />
                   </div>
                 </>
               )}
@@ -127,11 +127,11 @@ export default function MobileReports() {
               {daily.data.topServices?.length > 0 && (
                 <>
                   <div className="flex items-center gap-2">
-                    <div className="w-1 h-4 rounded-full" style={{ background: "linear-gradient(180deg,#8b5cf6,#7c3aed)" }} />
-                    <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em" }}>Services Used</p>
+                    <div className="w-1 h-4 rounded-full" style={{ background: "linear-gradient(180deg,var(--color-violet-sm),var(--color-violet))" }} />
+                    <p style={{ fontSize: 10, fontWeight: 700, color: "var(--color-slate-400)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Services Used</p>
                   </div>
-                  <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px rgba(11,44,96,0.08)" }}>
-                    <div style={{ height: 3, background: "linear-gradient(90deg,#8b5cf6,#7c3aed)" }} />
+                  <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px var(--brand-navy-tint-md)" }}>
+                    <div style={{ height: 3, background: "linear-gradient(90deg,var(--color-violet-sm),var(--color-violet))" }} />
                     <div className="p-4 space-y-3">
                       {daily.data.topServices.map((s: any, i: number) => (
                         <div key={s.serviceType} className="flex items-center gap-3">
@@ -141,7 +141,7 @@ export default function MobileReports() {
                           <p className="flex-1 text-xs font-semibold text-slate-700 truncate">{s.serviceType}</p>
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <span className="text-[10px] font-bold text-slate-400">{s.count}tx</span>
-                            <span className="text-xs font-black" style={{ color: "#0b2c60" }}>{fmt(s.revenue)}</span>
+                            <span className="text-xs font-black" style={{ color: "var(--brand-navy-800)" }}>{fmt(s.revenue)}</span>
                           </div>
                         </div>
                       ))}
@@ -164,14 +164,14 @@ export default function MobileReports() {
           ) : monthly.data ? (
             <>
               <div className="flex items-center gap-2">
-                <div className="w-1 h-4 rounded-full" style={{ background: "linear-gradient(180deg,#8b5cf6,#7c3aed)" }} />
-                <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em" }}>Ledger Summary</p>
+                <div className="w-1 h-4 rounded-full" style={{ background: "linear-gradient(180deg,var(--color-violet-sm),var(--color-violet))" }} />
+                <p style={{ fontSize: 10, fontWeight: 700, color: "var(--color-slate-400)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Ledger Summary</p>
               </div>
               <div className="grid grid-cols-2 gap-2.5">
-                <MobileStatCard label="Transactions" value={monthly.data.totalTransactions} accentColor="#0b2c60" iconGrad="linear-gradient(135deg,#0b2c60,#1a4a9e)" Icon={Activity} />
-                <MobileStatCard label="Net Profit" value={fmt(monthly.data.netProfit)} sub={monthly.data.netProfit >= 0 ? "Profit" : "Loss"} accentColor={monthly.data.netProfit >= 0 ? "#10b981" : "#ef4444"} iconGrad={monthly.data.netProfit >= 0 ? "linear-gradient(135deg,#10b981,#059669)" : "linear-gradient(135deg,#ef4444,#dc2626)"} Icon={monthly.data.netProfit >= 0 ? TrendingUp : TrendingDown} />
-                <MobileStatCard label="Total Credits" value={fmt(monthly.data.totalCredits)} accentColor="#10b981" iconGrad="linear-gradient(135deg,#10b981,#059669)" Icon={ArrowDownLeft} />
-                <MobileStatCard label="Total Debits" value={fmt(monthly.data.totalDebits)} accentColor="#f97316" iconGrad="linear-gradient(135deg,#f97316,#ea580c)" Icon={ArrowUpRight} />
+                <MobileStatCard label="Transactions" value={monthly.data.totalTransactions} accentColor="var(--brand-navy-800)" iconGrad="linear-gradient(135deg,var(--brand-navy-800),var(--brand-navy-600))" Icon={Activity} />
+                <MobileStatCard label="Net Profit" value={fmt(monthly.data.netProfit)} sub={monthly.data.netProfit >= 0 ? "Profit" : "Loss"} accentColor={monthly.data.netProfit >= 0 ? "var(--color-success-light)" : "var(--color-error-std)"} iconGrad={monthly.data.netProfit >= 0 ? "linear-gradient(135deg,var(--color-success-light),var(--color-success))" : "linear-gradient(135deg,var(--color-error-std),var(--color-error-dim))"} Icon={monthly.data.netProfit >= 0 ? TrendingUp : TrendingDown} />
+                <MobileStatCard label="Total Credits" value={fmt(monthly.data.totalCredits)} accentColor="var(--color-success-light)" iconGrad="linear-gradient(135deg,var(--color-success-light),var(--color-success))" Icon={ArrowDownLeft} />
+                <MobileStatCard label="Total Debits" value={fmt(monthly.data.totalDebits)} accentColor="var(--brand-orange)" iconGrad="linear-gradient(135deg,var(--brand-orange),var(--brand-orange-600))" Icon={ArrowUpRight} />
               </div>
 
               {monthly.data.dailyBreakdown?.length > 0 && (
@@ -181,12 +181,12 @@ export default function MobileReports() {
               {monthly.data.aeps && (
                 <>
                   <div className="flex items-center gap-2">
-                    <div className="w-1 h-4 rounded-full" style={{ background: "linear-gradient(180deg,#f97316,#ea580c)" }} />
-                    <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em" }}>AePS Cash</p>
+                    <div className="w-1 h-4 rounded-full" style={{ background: "linear-gradient(180deg,var(--brand-orange),var(--brand-orange-600))" }} />
+                    <p style={{ fontSize: 10, fontWeight: 700, color: "var(--color-slate-400)", textTransform: "uppercase", letterSpacing: "0.08em" }}>AePS Cash</p>
                   </div>
                   <div className="grid grid-cols-2 gap-2.5">
-                    <MobileStatCard label="AePS Tx" value={monthly.data.aeps.totalTransactions} accentColor="#f97316" iconGrad="linear-gradient(135deg,#f97316,#ea580c)" Icon={Fingerprint} />
-                    <MobileStatCard label="Net Flow" value={fmt(monthly.data.aeps.netFlow)} accentColor={monthly.data.aeps.netFlow >= 0 ? "#10b981" : "#ef4444"} iconGrad={monthly.data.aeps.netFlow >= 0 ? "linear-gradient(135deg,#10b981,#059669)" : "linear-gradient(135deg,#ef4444,#dc2626)"} Icon={monthly.data.aeps.netFlow >= 0 ? TrendingUp : TrendingDown} />
+                    <MobileStatCard label="AePS Tx" value={monthly.data.aeps.totalTransactions} accentColor="var(--brand-orange)" iconGrad="linear-gradient(135deg,var(--brand-orange),var(--brand-orange-600))" Icon={Fingerprint} />
+                    <MobileStatCard label="Net Flow" value={fmt(monthly.data.aeps.netFlow)} accentColor={monthly.data.aeps.netFlow >= 0 ? "var(--color-success-light)" : "var(--color-error-std)"} iconGrad={monthly.data.aeps.netFlow >= 0 ? "linear-gradient(135deg,var(--color-success-light),var(--color-success))" : "linear-gradient(135deg,var(--color-error-std),var(--color-error-dim))"} Icon={monthly.data.aeps.netFlow >= 0 ? TrendingUp : TrendingDown} />
                   </div>
                   {monthly.data.aeps.dailyBreakdown?.length > 0 && (
                     <MobileAepsDailyChart data={monthly.data.aeps.dailyBreakdown} height={140} />
@@ -208,38 +208,38 @@ export default function MobileReports() {
           ) : aepsReport.data ? (
             <>
               <div className="grid grid-cols-2 gap-2.5">
-                <MobileStatCard label="AePS Tx" value={aepsReport.data.totalTransactions} accentColor="#f97316" iconGrad="linear-gradient(135deg,#f97316,#ea580c)" Icon={Fingerprint} />
-                <MobileStatCard label="Net Flow" value={fmt(aepsReport.data.netFlow)} accentColor={aepsReport.data.netFlow >= 0 ? "#10b981" : "#ef4444"} iconGrad={aepsReport.data.netFlow >= 0 ? "linear-gradient(135deg,#10b981,#059669)" : "linear-gradient(135deg,#ef4444,#dc2626)"} Icon={aepsReport.data.netFlow >= 0 ? TrendingUp : TrendingDown} />
-                <MobileStatCard label="Withdrawals" value={fmt(aepsReport.data.totalWithdrawals)} accentColor="#ef4444" iconGrad="linear-gradient(135deg,#ef4444,#dc2626)" Icon={ArrowUpRight} />
-                <MobileStatCard label="Deposits" value={fmt(aepsReport.data.totalDeposits)} accentColor="#10b981" iconGrad="linear-gradient(135deg,#10b981,#059669)" Icon={ArrowDownLeft} />
+                <MobileStatCard label="AePS Tx" value={aepsReport.data.totalTransactions} accentColor="var(--brand-orange)" iconGrad="linear-gradient(135deg,var(--brand-orange),var(--brand-orange-600))" Icon={Fingerprint} />
+                <MobileStatCard label="Net Flow" value={fmt(aepsReport.data.netFlow)} accentColor={aepsReport.data.netFlow >= 0 ? "var(--color-success-light)" : "var(--color-error-std)"} iconGrad={aepsReport.data.netFlow >= 0 ? "linear-gradient(135deg,var(--color-success-light),var(--color-success))" : "linear-gradient(135deg,var(--color-error-std),var(--color-error-dim))"} Icon={aepsReport.data.netFlow >= 0 ? TrendingUp : TrendingDown} />
+                <MobileStatCard label="Withdrawals" value={fmt(aepsReport.data.totalWithdrawals)} accentColor="var(--color-error-std)" iconGrad="linear-gradient(135deg,var(--color-error-std),var(--color-error-dim))" Icon={ArrowUpRight} />
+                <MobileStatCard label="Deposits" value={fmt(aepsReport.data.totalDeposits)} accentColor="var(--color-success-light)" iconGrad="linear-gradient(135deg,var(--color-success-light),var(--color-success))" Icon={ArrowDownLeft} />
               </div>
 
               {aepsReport.data.dailyBreakdown?.length > 0 && (
                 <>
                   <MobileAepsDailyChart data={aepsReport.data.dailyBreakdown} height={150} />
 
-                  <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px rgba(11,44,96,0.08)" }}>
-                    <div style={{ height: 3, background: "linear-gradient(90deg,#f97316,#ea580c)" }} />
+                  <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px var(--brand-navy-tint-md)" }}>
+                    <div style={{ height: 3, background: "linear-gradient(90deg,var(--brand-orange),var(--brand-orange-600))" }} />
                     <div className="p-4">
                       <p className="text-xs font-bold text-slate-600 mb-3">Day-wise Detail</p>
                       <div className="space-y-2.5">
                         {aepsReport.data.dailyBreakdown.map((row: any) => (
-                          <div key={row.date} className="rounded-xl p-3 border border-slate-100" style={{ background: "#f8fafc" }}>
+                          <div key={row.date} className="rounded-xl p-3 border border-slate-100" style={{ background: "var(--color-slate-50)" }}>
                             <div className="flex items-center justify-between mb-2">
-                              <span className="text-xs font-black" style={{ color: "#0b2c60", fontVariantNumeric: "tabular-nums" }}>{row.date}</span>
-                              <span className="text-[10px] font-bold text-white px-2 py-0.5 rounded-full" style={{ background: "#f97316" }}>{row.transactions} tx</span>
+                              <span className="text-xs font-black" style={{ color: "var(--brand-navy-800)", fontVariantNumeric: "tabular-nums" }}>{row.date}</span>
+                              <span className="text-[10px] font-bold text-white px-2 py-0.5 rounded-full" style={{ background: "var(--brand-orange)" }}>{row.transactions} tx</span>
                             </div>
                             <div className="grid grid-cols-3 gap-2">
                               <div>
-                                <p style={{ fontSize: 9, color: "#94a3b8", fontWeight: 600 }}>Withdrawal</p>
+                                <p style={{ fontSize: 9, color: "var(--color-slate-400)", fontWeight: 600 }}>Withdrawal</p>
                                 <p className="text-xs font-bold text-red-600">{fmt(row.withdrawals)}</p>
                               </div>
                               <div>
-                                <p style={{ fontSize: 9, color: "#94a3b8", fontWeight: 600 }}>Deposit</p>
+                                <p style={{ fontSize: 9, color: "var(--color-slate-400)", fontWeight: 600 }}>Deposit</p>
                                 <p className="text-xs font-bold text-emerald-600">{fmt(row.deposits)}</p>
                               </div>
                               <div>
-                                <p style={{ fontSize: 9, color: "#94a3b8", fontWeight: 600 }}>Net Flow</p>
+                                <p style={{ fontSize: 9, color: "var(--color-slate-400)", fontWeight: 600 }}>Net Flow</p>
                                 <p className={`text-xs font-bold ${row.netFlow >= 0 ? "text-emerald-600" : "text-red-600"}`}>{fmt(row.netFlow)}</p>
                               </div>
                             </div>
@@ -266,8 +266,8 @@ export default function MobileReports() {
             <>
               <MobileServicesPieChart data={breakdown.data} />
 
-              <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px rgba(11,44,96,0.08)" }}>
-                <div style={{ height: 3, background: "linear-gradient(90deg,#10b981,#059669)" }} />
+              <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px var(--brand-navy-tint-md)" }}>
+                <div style={{ height: 3, background: "linear-gradient(90deg,var(--color-success-light),var(--color-success))" }} />
                 <div className="p-4 space-y-3">
                   <p className="text-xs font-bold text-slate-600">Service Details</p>
                   {breakdown.data?.map((s: any, i: number) => (
@@ -275,7 +275,7 @@ export default function MobileReports() {
                       <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
                       <p className="flex-1 text-xs font-semibold text-slate-700 truncate">{s.serviceType}</p>
                       <span className="text-[10px] font-bold text-slate-400 mr-2">{s.count}tx</span>
-                      <span className="text-xs font-black" style={{ color: "#0b2c60" }}>{fmt(s.revenue)}</span>
+                      <span className="text-xs font-black" style={{ color: "var(--brand-navy-800)" }}>{fmt(s.revenue)}</span>
                     </div>
                   ))}
                 </div>

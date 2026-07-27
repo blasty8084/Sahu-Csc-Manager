@@ -54,7 +54,7 @@ export function OtpVerifyForm({
       <div className="flex flex-col items-center mb-6">
         <div
           className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm mb-3"
-          style={{ background: "#dcfce7" }}
+          style={{ background: "var(--color-success-bg)" }}
         >
           <ShieldCheck className="w-6 h-6 text-emerald-600" />
         </div>
@@ -83,7 +83,7 @@ export function OtpVerifyForm({
             onChange={(e) => onInput(i, e.target.value)}
             onKeyDown={(e) => onKeyDown(i, e)}
             className="w-11 h-12 text-center text-xl font-bold border-2 rounded-xl bg-white outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 text-gray-900"
-            style={{ borderColor: serverError ? "rgb(239,68,68)" : digit ? "#0b2c60" : "#e5e7eb" }}
+            style={{ borderColor: serverError ? "rgb(239,68,68)" : digit ? "var(--brand-navy-800)" : "var(--color-gray-200)" }}
           />
         ))}
       </div>
@@ -99,7 +99,7 @@ export function OtpVerifyForm({
         onClick={onSubmit}
         disabled={submitting || !otpComplete}
         className="w-full h-11 font-bold text-white border-0 mb-4"
-        style={{ background: "linear-gradient(135deg, #1a2560, #0f1a4a)" }}
+        style={{ background: "linear-gradient(135deg, var(--brand-navy-650), #0f1a4a)" }}
       >
         {submitting ? (
           <span className="flex items-center gap-2">
@@ -119,10 +119,10 @@ export function OtpVerifyForm({
           <div className="flex items-center gap-2.5">
             <div className="relative w-8 h-8 flex-shrink-0">
               <svg width="32" height="32" viewBox="0 0 32 32" style={{ transform: "rotate(-90deg)" }}>
-                <circle cx="16" cy="16" r={R} fill="none" stroke="#e5e7eb" strokeWidth="2.5" />
+                <circle cx="16" cy="16" r={R} fill="none" stroke="var(--color-gray-200)" strokeWidth="2.5" />
                 <circle
                   cx="16" cy="16" r={R}
-                  fill="none" stroke="#0b2c60" strokeWidth="2.5"
+                  fill="none" stroke="var(--brand-navy-800)" strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeDasharray={CIRC}
                   strokeDashoffset={dashOffset}
@@ -131,7 +131,7 @@ export function OtpVerifyForm({
               </svg>
               <span
                 className="absolute inset-0 flex items-center justify-center font-bold leading-none"
-                style={{ fontSize: "9px", color: "#0b2c60" }}
+                style={{ fontSize: "9px", color: "var(--brand-navy-800)" }}
               >
                 {resendSeconds}
               </span>
@@ -144,7 +144,7 @@ export function OtpVerifyForm({
             onClick={onResend}
             disabled={submitting}
             className="flex items-center gap-1.5 text-sm font-semibold transition-colors"
-            style={{ color: "#0b2c60" }}
+            style={{ color: "var(--brand-navy-800)" }}
           >
             <RefreshCw className="w-3.5 h-3.5" />
             Resend OTP

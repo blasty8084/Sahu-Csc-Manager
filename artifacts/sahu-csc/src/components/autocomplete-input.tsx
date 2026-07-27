@@ -87,8 +87,8 @@ export const AutocompleteInput = forwardRef<HTMLInputElement, AutocompleteInputP
             style={{
               position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 200,
               background: "#fff", borderRadius: 14,
-              border: "1.5px solid rgba(11,44,96,0.12)",
-              boxShadow: "0 8px 28px rgba(11,44,96,0.14)",
+              border: "1.5px solid var(--brand-navy-border)",
+              boxShadow: "0 8px 28px var(--brand-navy-border-md)",
               overflow: "hidden",
             }}
           >
@@ -99,17 +99,17 @@ export const AutocompleteInput = forwardRef<HTMLInputElement, AutocompleteInputP
                 onMouseDown={(e) => { e.preventDefault(); select(name); }}
                 style={{
                   width: "100%", padding: "9px 14px", border: "none",
-                  background: i === activeIdx ? "rgba(11,44,96,0.06)" : "transparent",
+                  background: i === activeIdx ? "var(--brand-navy-tint-md)" : "transparent",
                   textAlign: "left", cursor: "pointer", fontSize: 13,
-                  fontWeight: i === activeIdx ? 700 : 500, color: "#0b2c60",
+                  fontWeight: i === activeIdx ? 700 : 500, color: "var(--brand-navy-800)",
                   display: "flex", alignItems: "center", gap: 9,
-                  borderBottom: i < filtered.length - 1 ? "1px solid rgba(11,44,96,0.05)" : "none",
+                  borderBottom: i < filtered.length - 1 ? "1px solid var(--brand-navy-tint-sm)" : "none",
                   transition: "background 0.1s",
                 }}
                 onMouseEnter={() => setActiveIdx(i)}
                 onMouseLeave={() => setActiveIdx(-1)}
               >
-                <User size={12} color="#94a3b8" style={{ flexShrink: 0 }} />
+                <User size={12} color="var(--color-slate-400)" style={{ flexShrink: 0 }} />
                 <span>{name}</span>
               </button>
             ))}

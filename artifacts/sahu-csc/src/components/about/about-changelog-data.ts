@@ -6,7 +6,7 @@ export const CHANGELOG = [
     version: "v4.7.1",
     title: "Security Score 100 & Login Code Display Fix",
     date: "2026-07-16",
-    accent: "#dc2626",
+    accent: "var(--color-error-dim)",
     changes: [
       "TOTP security score corrected to 100/100 — previously capped at 92 even when the authenticator app was fully active and protecting the account",
       "Security fix: the rotating 6-digit code is no longer displayed on the login verification page — showing it on the same screen as the entry field defeated the purpose of two-factor authentication",
@@ -17,7 +17,7 @@ export const CHANGELOG = [
     version: "v4.8.0",
     title: "2FA Security Upgrade — QR Codes, Replay Protection & Standard 30-Second TOTP",
     date: "2026-07-16",
-    accent: "#059669",
+    accent: "var(--color-success)",
     changes: [
       "TOTP period corrected to 30 seconds (RFC 6238 standard) — Google Authenticator, Authy, and Microsoft Authenticator all hardcode 30 s and silently ignored the previous 120-second period, making codes permanently invalid in those apps",
       "QR code export restored: scan with Google Authenticator, Authy, or any TOTP app via the QR image; manual-entry secret also available with reveal/copy",
@@ -33,7 +33,7 @@ export const CHANGELOG = [
     version: "v4.7.0",
     title: "Built-in Authenticator — Live Code, No QR, No External App",
     date: "2026-07-16",
-    accent: "#7c3aed",
+    accent: "var(--color-violet)",
     changes: [
       "Two-factor authentication no longer requires scanning a QR code or installing Google Authenticator or Authy — the app generates and displays your 6-digit code directly in a live card",
       "A rotating code card with a countdown ring appears on your profile and during login — read the code, type it in, done",
@@ -45,7 +45,7 @@ export const CHANGELOG = [
     version: "v4.6.0",
     title: "Login-Time 2FA Method Choice",
     date: "2026-07-15",
-    accent: "#0891b2",
+    accent: "var(--color-sky)",
     changes: [
       "The post-login verification screen now lets you choose your method — Email OTP or Authenticator App — at login time, not just at setup time",
       "Email OTP resend now has a 120-second cooldown to prevent accidental double-sends",
@@ -57,7 +57,7 @@ export const CHANGELOG = [
     version: "v4.5.1",
     title: "File Manager Permission — Real Granted/Denied Signal",
     date: "2026-07-15",
-    accent: "#d97706",
+    accent: "var(--color-warning)",
     changes: [
       "File Manager permission now behaves like Location and Notifications — picking a file counts as Allowed, cancelling the picker counts as Denied, instead of always showing as granted",
       "Uses the browser's File System Access API on Chrome/Edge/Opera to detect a real cancel; Safari/Firefox fall back to the previous any-interaction-counts-as-granted behavior since those browsers give no cancel signal",
@@ -68,7 +68,7 @@ export const CHANGELOG = [
     version: "v4.5.0",
     title: "Permission Card Redesign — File Manager Access & Continue Fix",
     date: "2026-07-15",
-    accent: "#4f46e5",
+    accent: "var(--color-indigo)",
     changes: [
       "The first-login permissions card was redesigned as a clean two-step modal — each permission now shows live status (Requesting… → Allowed/Denied) as it's requested",
       "Added a new File Manager permission step alongside Location and Notifications — opens the native photo/file picker so receipt uploads and exports have a clear, visible consent step",
@@ -79,7 +79,7 @@ export const CHANGELOG = [
     version: "v4.4.0",
     title: "First-Login Permissions, 2FA & Single-Device Enforcement",
     date: "2026-07-15",
-    accent: "#dc2626",
+    accent: "var(--color-error-dim)",
     changes: [
       "First-time login now walks new users through a one-time, non-skippable notification and file-access permission flow before reaching the dashboard",
       "Two-factor authentication is available for every account — choose an authenticator app (TOTP, with QR code) or email OTP, with 8 one-time backup codes if you lose access to both",
@@ -93,7 +93,7 @@ export const CHANGELOG = [
     version: "v4.3.2",
     title: "Optimization Audit & Measurements",
     date: "2026-07-14",
-    accent: "#7c3aed",
+    accent: "var(--color-violet)",
     changes: [
       "Measured real response times under load instead of estimating — dashboard and admin pages respond in ~150ms at 50 concurrent users",
       "Added two missing database indexes so login and service lookups stay fast as data grows",
@@ -104,7 +104,7 @@ export const CHANGELOG = [
     version: "v4.3.1",
     title: "Performance Pass: Bundle Size & Avatar Compression",
     date: "2026-07-14",
-    accent: "#16a34a",
+    accent: "var(--color-success-dim)",
     changes: [
       "Backend server bundle cut by 60% (6.5MB → 2.6MB) by trimming duplicated dependency code out of the build",
       "Profile photos are now automatically resized and compressed on upload — faster to load everywhere they appear, no visible quality loss at avatar size",
@@ -114,7 +114,7 @@ export const CHANGELOG = [
     version: "v4.3.1",
     title: "Config & Maintenance Fixes",
     date: "2026-07-14",
-    accent: "#0891b2",
+    accent: "var(--color-sky)",
     changes: [
       "/health now reports the real app version read from package.json, instead of a hardcoded string that had drifted stale",
       "Removed a hardcoded personal email fallback for the VAPID push contact — falls back to a generic placeholder; the real address comes from the VAPID_EMAIL setting",
@@ -125,7 +125,7 @@ export const CHANGELOG = [
     version: "v4.3.0",
     title: "Security Hardening, Input Validation & Database Integrity",
     date: "2026-07-14",
-    accent: "#dc2626",
+    accent: "var(--color-error-dim)",
     changes: [
       // Data integrity
       "Ledger POST now runs inside a single DB transaction — balance update, receipt counter increment, ledger insert, and receipt-token write-back are all atomic; no partial ledger rows possible on mid-write failure",
@@ -159,7 +159,7 @@ export const CHANGELOG = [
     version: "Infra",
     title: "Redis Connected, Rate-Limiter Fix & CORS Update",
     date: "2026-07-14",
-    accent: "#0b2c60",
+    accent: "var(--brand-navy-800)",
     changes: [
       "Upstash Redis fully connected — UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN / REDIS_URL added as secrets; CACHE_BACKEND switched back to redis; all three servers confirmed healthy",
       "Rate-limiter Redis bridge fixed — app.ts was supplying the @upstash/redis REST client to rate-limit-redis, which expects an ioredis-compatible sendCommand interface; swapped to ioredis (REDIS_URL) so all four rate limiters initialise cleanly",
@@ -171,7 +171,7 @@ export const CHANGELOG = [
     version: "v4.2.0",
     title: "Running Balance, CDN Headers & Test Coverage",
     date: "2026-07-14",
-    accent: "#6366f1",
+    accent: "var(--color-violet-sm)",
     changes: [
       "users.ledger_balance — new maintained NUMERIC column updated atomically on every ledger write; POST /ledger is now O(1) regardless of history length instead of doing a full SUM() scan",
       "Dashboard currentBalance now reads from users.ledger_balance (single primary-key lookup) instead of an all-time aggregate over every ledger row — sub-millisecond on any dataset",
@@ -184,7 +184,7 @@ export const CHANGELOG = [
     version: "v4.1.2",
     title: "Security & Type-Safety Hardening",
     date: "2026-07-13",
-    accent: "#10b981",
+    accent: "var(--color-success-light)",
     changes: [
       "asyncHandler utility wraps all 116 async route handlers across 32 files — unhandled promise rejections now reach Express's error handler instead of hanging the client connection",
       "req.session as any casts removed from admin.ts — replaced with direct req.session.userId using the existing SessionData augmentation",
@@ -196,7 +196,7 @@ export const CHANGELOG = [
     version: "v4.1.1",
     title: "Worker Server — Async Background Processing",
     date: "2026-07-13",
-    accent: "#10b981",
+    accent: "var(--color-success-light)",
     changes: [
       "New @workspace/worker-server (port 8081) — push notifications, email sending, PDF generation, and SMS now run as isolated BullMQ background jobs instead of blocking the main API",
       "API responses return instantly — the main server no longer waits on SMTP delivery or web-push round-trips before sending a response to the client",
@@ -209,7 +209,7 @@ export const CHANGELOG = [
     version: "v4.0.2",
     title: "Image & Loader Polish",
     date: "2026-07-13",
-    accent: "#f97316",
+    accent: "var(--brand-orange)",
     changes: [
       "loading=\"lazy\" added to remaining non-critical images: layout.tsx nav avatars (×2) and AppLogo in sidebar — splash screen, page-skeleton, and LoginLogo intentionally kept eager (first-paint-critical)",
       "GET /admin/users/appeals capped at .limit(500) — the last unbounded list query on the performance checklist",
@@ -221,7 +221,7 @@ export const CHANGELOG = [
     version: "v4.0.1",
     title: "Redis Rate Limiting & Multi-Instance Readiness",
     date: "2026-07-13",
-    accent: "#f97316",
+    accent: "var(--brand-orange)",
     changes: [
       "Installed rate-limit-redis — all 4 rate limiters (general, login, auth-write, otp-verify) now use a shared Upstash Redis store when CACHE_BACKEND=redis, so per-IP counters are enforced across all worker processes; falls back to in-process MemoryStore for single-instance/dev deployments",
       "Redis key prefixes namespaced (rl:general:, rl:login:, rl:auth-write:, rl:otp-verify:) — rate-limit keys never collide with query-cache or session-cache keys in the same Redis database",
@@ -233,7 +233,7 @@ export const CHANGELOG = [
     version: "v4.0.0",
     title: "Full-Stack Performance Audit",
     date: "2026-07-12",
-    accent: "#f97316",
+    accent: "var(--brand-orange)",
     changes: [
       "8 new API endpoints now cache-backed with 5s TTL + immediate write-invalidation: GET /aeps/session, /aeps/transactions, /admin/aeps-overview, /udhari/summary, /udhari/customers, /udhari/customers/:id, /udhari/customers/:id/entries, /users — previously all hit the database on every request",
       "6 new database indexes pushed: users.role, users.status, aeps_transactions.dailyId / type / createdAt, push_subscriptions.userId, password_reset_tokens.userId — fixes full-table scans on admin, AePS, push, and password-reset queries",
@@ -247,7 +247,7 @@ export const CHANGELOG = [
     version: "v3.5.10",
     title: "Navigation Performance — Instant Page Switching",
     date: "2026-07-12",
-    accent: "#f97316",
+    accent: "var(--brand-orange)",
     changes: [
       "Removed AnimatePresence mode=\"wait\" — pages now cross-fade simultaneously instead of waiting for the exit animation to complete before the enter animation starts; perceived navigation delay cut from ~440ms to ~150ms",
       "Extracted LiveClock as an isolated React.memo component — the 1-second clock tick now re-renders only a single <span>, not the entire Layout tree; eliminates up to 60 unnecessary Layout reconciliations per minute",
@@ -259,7 +259,7 @@ export const CHANGELOG = [
     version: "v3.5.9",
     title: "Redis Cache Live, i18n Fixes & Build Hardening",
     date: "2026-07-12",
-    accent: "#f97316",
+    accent: "var(--brand-orange)",
     changes: [
       "Upstash Redis activated as the live cache backend (CACHE_BACKEND=redis) — dashboard stats, session/role lookups, and report queries now survive server restarts and are shared across instances; fails open to a DB re-query if Redis is unavailable",
       "5 missing i18n keys added to all 3 locales (en/hi/or): common.platform (register pages), udhari.customer.settled, udhari.customer.edit_entry, udhari.customer.desc_gave, udhari.customer.desc_got — all Udhari customer and register page strings now translate correctly in Hindi and Odia",
@@ -271,7 +271,7 @@ export const CHANGELOG = [
     version: "v3.5.8",
     title: "Reports & Receipt Export Page Modularization",
     date: "2026-07-12",
-    accent: "#f97316",
+    accent: "var(--brand-orange)",
     changes: [
       "reports.tsx (1301 lines) split into hooks/useReports.ts (filter state, data hooks, derived values) and 3 components — ReportSummaryCards, ReportChart, ReportFilters — with the page kept as a thin orchestrator",
       "receipt-export.tsx (1219 lines) split into hooks/useReceiptExport.ts (all state + buildParams() shared by all 3 bulk-export endpoints), types.ts (interfaces + constants), ExportFilters.tsx, and ReceiptPreviewList.tsx",
@@ -282,7 +282,7 @@ export const CHANGELOG = [
     version: "v3.5.7",
     title: "Pluggable Cache Backend & Load-Test Baseline",
     date: "2026-07-12",
-    accent: "#f97316",
+    accent: "var(--brand-orange)",
     changes: [
       "Query cache and session/role cache now sit behind a swappable backend (process-local memory by default, optional Upstash Redis via CACHE_BACKEND=redis) — groundwork for running more than one API instance; default behavior and 5s TTLs are unchanged",
       "Documented read-replica routing guidance, correcting an earlier assumption — this app runs on Replit's built-in Postgres, which has no read-replica option today, so this is forward-looking guidance rather than an active feature",
@@ -293,7 +293,7 @@ export const CHANGELOG = [
     version: "v3.5.6",
     title: "Documentation Consolidation, i18n Completion & CDN Setup Guide",
     date: "2026-07-11",
-    accent: "#0b2c60",
+    accent: "var(--brand-navy-800)",
     changes: [
       "9 parallel documentation files consolidated into 4 canonical files plus short pointers — prevents future changelog drift",
       "Filled the one missing Hindi/Odia translation key (nav.admin) — all 793 keys now complete in all 3 languages",
@@ -304,7 +304,7 @@ export const CHANGELOG = [
     version: "v3.5.5",
     title: "Tests, Error Tracking & Bundle Audit",
     date: "2026-07-11",
-    accent: "#f97316",
+    accent: "var(--brand-orange)",
     changes: [
       "42 automated Vitest tests cover ledger balance math, receipt-number generation (CSC-YYYY-NNNN), and all auth/session middleware (requireAuth, requirePermission, requireRole, lockout, session durations)",
       "Sentry APM integrated server-side (@sentry/node) and client-side (@sentry/react) — no-ops when SENTRY_DSN / VITE_SENTRY_DSN env vars are absent; no PII reaches Sentry",
@@ -316,7 +316,7 @@ export const CHANGELOG = [
     version: "v3.5.4",
     title: "Ledger Page Modularization",
     date: "2026-07-11",
-    accent: "#0b2c60",
+    accent: "var(--brand-navy-800)",
     changes: [
       "Split the 1652-line ledger.tsx into a thin orchestrator plus hooks/useLedger.ts and 3 focused components",
       "No behavior change — routes, API calls, data-testids, and visual output are all unchanged",
@@ -327,7 +327,7 @@ export const CHANGELOG = [
     version: "v3.5.3",
     title: "Query Caching & Load Testing",
     date: "2026-07-10",
-    accent: "#0b2c60",
+    accent: "var(--brand-navy-800)",
     changes: [
       "5s TTL query cache in front of dashboard, admin overview, and daily/monthly reports — invalidated on every ledger write",
       "Lightweight APM surrogate: requests over 500ms now log at warn with a slowRequest flag",
@@ -338,7 +338,7 @@ export const CHANGELOG = [
     version: "v3.5.2",
     title: "Asset & Delivery Hardening",
     date: "2026-07-10",
-    accent: "#f97316",
+    accent: "var(--brand-orange)",
     changes: [
       "CSP enabled on the API server (default-src 'none') — was previously fully disabled",
       "Health/setup-status checks now skip the session-store DB lookup entirely",
@@ -350,7 +350,7 @@ export const CHANGELOG = [
     version: "v3.5.1",
     title: "Performance & Scale Hardening",
     date: "2026-07-10",
-    accent: "#0b2c60",
+    accent: "var(--brand-navy-800)",
     changes: [
       "Fixed N+1 queries on the admin overview page — one batched query instead of per-user queries",
       "Batched bulk writes: ledger balance recalculation, notification inserts, and settings upserts",
@@ -362,7 +362,7 @@ export const CHANGELOG = [
     version: "v3.4.0",
     title: "Receipt Export Layout Refactor",
     date: "2026-07-10",
-    accent: "#f97316",
+    accent: "var(--brand-orange)",
     changes: [
       "Receipt Export page migrated to shared <Layout> — no more duplicate custom header, sidebar, or bottom nav",
       "Desktop: 4-column KPI stat bar → filter row → two-column body (receipt table left, export panel + preview right)",
@@ -374,7 +374,7 @@ export const CHANGELOG = [
     version: "v3.3.0",
     title: "Email & Security Hardening",
     date: "2026-07-08",
-    accent: "#0b2c60",
+    accent: "var(--brand-navy-800)",
     changes: [
       "V2 dark premium email templates — all 7 types with dark gradient card, per-type accent colours, HTML-safe esc() on every dynamic field",
       "OTP email: digit boxes + copy strip; easy tap-to-copy on any email client",
@@ -387,7 +387,7 @@ export const CHANGELOG = [
     version: "v3.2.5",
     title: "Security Upgrade",
     date: "2026-07-06",
-    accent: "#0b2c60",
+    accent: "var(--brand-navy-800)",
     changes: [
       "Unified password policy applied across registration, reset, profile, and admin flows",
       "Tighter rate limiting on login, register, OTP, and password-reset endpoints",
@@ -398,7 +398,7 @@ export const CHANGELOG = [
     version: "v3.2.0–v3.2.4",
     title: "Performance, Skeletons & Diagnostics",
     date: "2026-07-04–06",
-    accent: "#0b2c60",
+    accent: "var(--brand-navy-800)",
     changes: [
       "Adaptive animation performance tier (High / Medium / Low) based on CPU, RAM, network, rAF benchmark",
       "All spinners replaced with content-shaped skeletons across every page",
@@ -410,7 +410,7 @@ export const CHANGELOG = [
     version: "v3.1.1",
     title: "Receipt Export Redesign",
     date: "2026-07-01",
-    accent: "#0b2c60",
+    accent: "var(--brand-navy-800)",
     changes: [
       "Receipt Export mobile UI redesigned — fits any screen with height: 100dvh",
       "4-tab bottom nav (Receipts / By Date / Summary / Export) always visible",
@@ -422,7 +422,7 @@ export const CHANGELOG = [
     version: "v3.1.0",
     title: "Backup & Restore",
     date: "2026-06-30",
-    accent: "#0b2c60",
+    accent: "var(--brand-navy-800)",
     changes: [
       "Backup page redesigned — Minimal Clean UI with 2-column desktop grid",
       "Backup download streams .sql file with Content-Disposition: attachment",
@@ -434,7 +434,7 @@ export const CHANGELOG = [
     version: "v3.0.0",
     title: "Setup Wizard & SMTP",
     date: "2026-06-25",
-    accent: "#0b2c60",
+    accent: "var(--brand-navy-800)",
     changes: [
       "Setup Wizard Banner — admin-only banner when secrets missing",
       "GET /api/setup-status public endpoint for secrets readiness check",
@@ -446,7 +446,7 @@ export const CHANGELOG = [
     version: "v2.4",
     title: "Udhari Khata",
     date: "2026-06-18",
-    accent: "#0b2c60",
+    accent: "var(--brand-navy-800)",
     changes: [
       "Full customer credit ledger: You Gave / You Got, WhatsApp reminder, PDF statement",
       "Dashboard Udhari summary card — To Collect / To Pay at a glance",
@@ -457,7 +457,7 @@ export const CHANGELOG = [
     version: "v2.0",
     title: "PWA & Multi-Device",
     date: "2026-06-13–17",
-    accent: "#0b2c60",
+    accent: "var(--brand-navy-800)",
     changes: [
       "PWA offline mode: ledger entries queue offline, sync on reconnect",
       "Push notifications via VAPID web-push",

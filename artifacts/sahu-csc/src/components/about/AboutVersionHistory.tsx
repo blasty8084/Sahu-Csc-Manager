@@ -13,7 +13,7 @@ export default function AboutVersionHistory() {
           <div
             className="flex items-center gap-3 px-4 py-2.5"
             style={{
-              background: idx === 0 ? "linear-gradient(90deg,rgba(249,115,22,0.08),transparent)" : undefined,
+              background: idx === 0 ? "linear-gradient(90deg,var(--brand-orange-tint-xs),transparent)" : undefined,
               borderBottom: "1px solid hsl(var(--border))",
             }}
           >
@@ -21,8 +21,8 @@ export default function AboutVersionHistory() {
               className="flex-shrink-0 flex items-center justify-center rounded-xl"
               style={{
                 width: 30, height: 30,
-                background: idx === 0 ? "linear-gradient(135deg,#f97316,#ea580c)" : "linear-gradient(135deg,#0b2c60,#1a4a9e)",
-                boxShadow: idx === 0 ? "0 2px 8px rgba(249,115,22,0.4)" : "0 2px 6px rgba(11,44,96,0.25)",
+                background: idx === 0 ? "linear-gradient(135deg,var(--brand-orange),var(--brand-orange-600))" : "linear-gradient(135deg,var(--brand-navy-800),var(--brand-navy-600))",
+                boxShadow: idx === 0 ? "0 2px 8px var(--brand-orange-glow)" : "0 2px 6px var(--brand-navy-shadow-sm)",
               }}
             >
               <Clock size={13} color="#fff" />
@@ -32,8 +32,8 @@ export default function AboutVersionHistory() {
                 <span
                   className="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
                   style={{
-                    background: idx === 0 ? "rgba(249,115,22,0.15)" : "rgba(11,44,96,0.08)",
-                    color: idx === 0 ? "#f97316" : "#1a4a9e",
+                    background: idx === 0 ? "var(--brand-orange-tint-sm)" : "var(--brand-navy-tint-md)",
+                    color: idx === 0 ? "var(--brand-orange)" : "var(--brand-navy-600)",
                   }}
                 >
                   {entry.version}

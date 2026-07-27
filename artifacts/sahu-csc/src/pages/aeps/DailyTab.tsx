@@ -28,19 +28,19 @@ export function DailyTab() {
       ) : !session ? (
 
         /* ── No session ── */
-        <div className="rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 14px rgba(11,44,96,0.09)" }}>
-          <div style={{ height: 4, background: "linear-gradient(90deg, #f59e0b, #fbbf24)" }} />
+        <div className="rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 14px var(--brand-navy-tint-md)" }}>
+          <div style={{ height: 4, background: "linear-gradient(90deg, #f59e0b, var(--brand-orange-300))" }} />
           <div className="bg-white px-6 py-10 flex flex-col items-center gap-4 text-center">
             <div style={{
               width: 64, height: 64, borderRadius: 18,
-              background: "linear-gradient(135deg, #f59e0b, #fbbf24)",
+              background: "linear-gradient(135deg, #f59e0b, var(--brand-orange-300))",
               boxShadow: "0 6px 20px rgba(245,158,11,0.30)",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
               <Wallet size={30} color="#fff" />
             </div>
             <div>
-              <p className="font-bold text-lg" style={{ color: "#0b2c60" }}>
+              <p className="font-bold text-lg" style={{ color: "var(--brand-navy-800)" }}>
                 {isToday ? "Today's session not opened" : `No session for ${fmtDate(selectedDate)}`}
               </p>
               <p className="text-sm text-muted-foreground mt-1 max-w-xs">
@@ -51,7 +51,7 @@ export function DailyTab() {
               type="button"
               onClick={() => setShowOpenDialog(true)}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-white text-sm transition-all active:scale-95"
-              style={{ background: "linear-gradient(135deg, #0b2c60, #1a4a9e)", boxShadow: "0 4px 14px rgba(11,44,96,0.35)" }}
+              style={{ background: "linear-gradient(135deg, var(--brand-navy-800), var(--brand-navy-600))", boxShadow: "0 4px 14px var(--brand-navy-shadow)" }}
             >
               <Plus size={16} /> Set Opening Balance
             </button>

@@ -27,10 +27,10 @@ export function MobileExportFilterToggle({
       <div className="relative flex-1">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         <input value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="Search receipts..."
-          className="w-full pl-9 pr-3 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0b2c60]/20 text-slate-700 placeholder:text-slate-400" />
+          className="w-full pl-9 pr-3 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--brand-navy-800)]/20 text-slate-700 placeholder:text-slate-400" />
       </div>
       <button onClick={() => setShowFilters(!showFilters)}
-        className={`w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 transition-colors ${showFilters ? "text-white border-[#0b2c60]" : "bg-white border-slate-200 text-slate-500"}`}
+        className={`w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 transition-colors ${showFilters ? "text-white border-[var(--brand-navy-800)]" : "bg-white border-slate-200 text-slate-500"}`}
         style={showFilters ? { background: NAVY } : undefined}>
         <SlidersHorizontal size={16} />
       </button>
@@ -79,7 +79,7 @@ export function MobileExportFilterPanel({
       </div>
       <button onClick={onPreviewAndClose} disabled={previewing || !startDate || !endDate}
         className="w-full py-2.5 text-white text-sm font-bold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50"
-        style={{ background: `linear-gradient(135deg, ${NAVY}, #1a4a9e)` }}>
+        style={{ background: `linear-gradient(135deg, ${NAVY}, var(--brand-navy-600))` }}>
         {previewing ? <><Loader2 size={14} className="animate-spin" /> Searching…</> : <><Search size={14} /> Preview Receipts</>}
       </button>
     </div>
@@ -131,7 +131,7 @@ export function MobileByDatePanel({
         </div>
         <button onClick={onPreviewAndSwitch} disabled={previewing || !startDate || !endDate}
           className="w-full py-3 text-white text-sm font-bold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50"
-          style={{ background: `linear-gradient(135deg, ${NAVY}, #1a4a9e)` }}>
+          style={{ background: `linear-gradient(135deg, ${NAVY}, var(--brand-navy-600))` }}>
           {previewing ? <><Loader2 size={14} className="animate-spin" /> Searching…</> : <><Search size={14} /> Preview Receipts</>}
         </button>
       </div>

@@ -32,8 +32,8 @@ export function OtpToggleCard({
   const title    = isDisable ? "Confirm to disable 2FA"   : "Enable Email OTP";
   const subtitle = isDisable ? "Your account will be less secure" : "Enter your password to confirm";
   const btnLabel = isDisable ? "Disable 2FA" : "Enable";
-  const btnColor = isDisable ? "#ef4444" : "#3b82f6";
-  const iconBg   = isDisable ? "#fef2f2"  : "#eff6ff";
+  const btnColor = isDisable ? "var(--color-error-std)" : "var(--color-blue)";
+  const iconBg   = isDisable ? "#fef2f2"  : "var(--surface-toast-blue)";
   const Icon     = isDisable ? ShieldOff   : Mail;
   const iconCls  = isDisable ? "text-red-500" : "text-blue-500";
 

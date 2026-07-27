@@ -53,7 +53,7 @@ export function StepVerifyOtp({ otpRateLimited, rateLimitSeconds, onRateLimitBac
       ) : (
         <>
           <div className="flex flex-col items-center mb-5">
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm mb-3" style={{ background: "#dcfce7" }}>
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm mb-3" style={{ background: "var(--color-success-bg)" }}>
               <ShieldCheck className="w-6 h-6 text-emerald-600" />
             </div>
             <h2 className="text-gray-900 font-bold text-lg">Enter OTP</h2>
@@ -73,7 +73,7 @@ export function StepVerifyOtp({ otpRateLimited, rateLimitSeconds, onRateLimitBac
                 onChange={(e) => handleOtpInput(i, e.target.value)}
                 onKeyDown={(e) => handleOtpKeyDown(i, e)}
                 className="w-11 h-12 text-center text-xl font-bold border-2 rounded-xl bg-white outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 text-gray-900"
-                style={{ borderColor: serverError ? "rgb(239,68,68)" : digit ? "#0b2c60" : "#e5e7eb" }}
+                style={{ borderColor: serverError ? "rgb(239,68,68)" : digit ? "var(--brand-navy-800)" : "var(--color-gray-200)" }}
               />
             ))}
           </div>
@@ -84,12 +84,12 @@ export function StepVerifyOtp({ otpRateLimited, rateLimitSeconds, onRateLimitBac
             </div>
           )}
 
-          <Button onClick={() => onVerifyOtp(otpDigits.join(""))} disabled={submitting || !otpComplete} className="w-full h-11 font-bold text-white border-0 mb-4" style={{ background: "linear-gradient(135deg, #1a2560, #0f1a4a)" }}>
+          <Button onClick={() => onVerifyOtp(otpDigits.join(""))} disabled={submitting || !otpComplete} className="w-full h-11 font-bold text-white border-0 mb-4" style={{ background: "linear-gradient(135deg, var(--brand-navy-650), #0f1a4a)" }}>
             {submitting ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Verifying…</span> : <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4" />Verify OTP</span>}
           </Button>
 
           <div className="flex flex-col items-center gap-3">
-            <button type="button" onClick={onResend} disabled={resendSeconds > 0 || submitting} className="flex items-center gap-1.5 text-sm transition-colors" style={{ color: resendSeconds > 0 ? "#9ca3af" : "#0b2c60" }}>
+            <button type="button" onClick={onResend} disabled={resendSeconds > 0 || submitting} className="flex items-center gap-1.5 text-sm transition-colors" style={{ color: resendSeconds > 0 ? "var(--color-gray-400)" : "var(--brand-navy-800)" }}>
               <RefreshCw className="w-3.5 h-3.5" />
               {resendSeconds > 0 ? `Resend OTP in ${resendSeconds}s` : "Resend OTP"}
             </button>

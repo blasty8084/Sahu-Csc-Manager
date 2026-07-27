@@ -7,7 +7,7 @@ import { MethodPicker } from "./twofa/MethodPicker";
 import { OtpEntry } from "./twofa/OtpEntry";
 import { TotpEntry } from "./twofa/TotpEntry";
 
-const NAVY = "#0B1340";
+const NAVY = "var(--brand-navy)";
 
 export interface TwoFactorStepProps {
   challenge: TwoFaChallenge;
@@ -63,7 +63,7 @@ export function TwoFactorStep({ challenge, onSuccess, onBack }: TwoFactorStepPro
       {/* ── Header ── */}
       <div className="flex flex-col items-center text-center mb-5">
         <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3 shadow-sm"
-          style={{ background: "linear-gradient(135deg, #0b2c60, #1d4ed8)" }}>
+          style={{ background: "linear-gradient(135deg, var(--brand-navy-800), var(--color-blue-700))" }}>
           {method === "totp" ? <ShieldCheck className="w-7 h-7 text-white" /> : <Mail className="w-7 h-7 text-white" />}
         </div>
         <h3 className="text-base font-bold text-gray-900">

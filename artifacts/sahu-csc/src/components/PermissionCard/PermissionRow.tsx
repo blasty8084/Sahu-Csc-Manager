@@ -33,7 +33,7 @@ export function PermissionRow({
       style={{
         // Highlight the row when granted
         background: isGranted
-          ? "linear-gradient(90deg, rgba(22,163,74,0.04) 0%, transparent 100%)"
+          ? "linear-gradient(90deg, var(--color-success-bg) 0%, transparent 100%)"
           : "transparent",
         transition: "background 0.4s ease",
         borderRadius: 8,
@@ -74,7 +74,7 @@ export function PermissionRow({
             type="button"
             onClick={onAllow}
             className="text-xs font-semibold px-3 py-1.5 rounded-full border active:opacity-70"
-            style={{ borderColor: "#1E293B", color: "#1E293B" }}
+            style={{ borderColor: "var(--color-slate-800)", color: "var(--color-slate-800)" }}
           >
             Allow
           </button>
@@ -84,7 +84,7 @@ export function PermissionRow({
         <span
           className="flex items-center gap-1 text-xs font-medium"
           style={{
-            color: "#4F46E5",
+            color: "var(--color-indigo)",
             position: "absolute",
             right: 0,
             top: "50%",
@@ -103,7 +103,7 @@ export function PermissionRow({
         <span
           className="flex items-center gap-1 text-xs font-medium"
           style={{
-            color: "#16A34A",
+            color: "var(--color-success-dim)",
             position: "absolute",
             right: 0,
             top: "50%",

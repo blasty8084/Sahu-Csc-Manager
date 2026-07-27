@@ -28,13 +28,13 @@ export function ReceiptQrCode({
         <div style={{ margin: "0 16px 14px", display: "flex", alignItems: "center", gap: 14 }}>
           <div style={{
             background: "#fff", padding: 8, borderRadius: 12,
-            border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.07)", flexShrink: 0,
+            border: "1px solid var(--color-slate-200)", boxShadow: "0 2px 8px rgba(0,0,0,0.07)", flexShrink: 0,
           }}>
-            <QRCode value={verifyUrl} size={72} fgColor="#0b2c60" bgColor="#fff" />
+            <QRCode value={verifyUrl} size={72} fgColor="var(--brand-navy-800)" bgColor="#fff" />
           </div>
           <div>
-            <p style={{ fontSize: 11, fontWeight: 700, color: "#0b2c60", marginBottom: 4 }}>Scan to open &amp; download</p>
-            <p style={{ fontSize: 9, color: "#94a3b8", lineHeight: 1.6 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: "var(--brand-navy-800)", marginBottom: 4 }}>Scan to open &amp; download</p>
+            <p style={{ fontSize: 9, color: "var(--color-slate-400)", lineHeight: 1.6 }}>
               Scan QR code to open receipt online. Download PDF or share via WhatsApp from there.
             </p>
           </div>
@@ -44,24 +44,24 @@ export function ReceiptQrCode({
       {/* ── Business contact ─────────────────────────────────────────────────── */}
       {hasContact && (
         <div style={{ margin: "0 16px 14px", textAlign: "center" }}>
-          <p style={{ fontSize: 11, fontWeight: 700, color: "#334155", marginBottom: 4 }}>{businessName}</p>
+          <p style={{ fontSize: 11, fontWeight: 700, color: "var(--color-slate-700)", marginBottom: 4 }}>{businessName}</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 3, alignItems: "center" }}>
             {businessAddress && (
               <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                <MapPin size={9} color="#94a3b8" />
-                <p style={{ fontSize: 9, color: "#64748b" }}>{businessAddress}</p>
+                <MapPin size={9} color="var(--color-slate-400)" />
+                <p style={{ fontSize: 9, color: "var(--color-slate-500)" }}>{businessAddress}</p>
               </div>
             )}
             {businessMobile && (
               <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                <Phone size={9} color="#94a3b8" />
-                <p style={{ fontSize: 9, color: "#64748b" }}>+91 {businessMobile.replace(/^(\+91|91)/, "").trim()}</p>
+                <Phone size={9} color="var(--color-slate-400)" />
+                <p style={{ fontSize: 9, color: "var(--color-slate-500)" }}>+91 {businessMobile.replace(/^(\+91|91)/, "").trim()}</p>
               </div>
             )}
             {businessWebsite && (
               <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                <Globe size={9} color="#94a3b8" />
-                <p style={{ fontSize: 9, color: "#64748b" }}>{businessWebsite}</p>
+                <Globe size={9} color="var(--color-slate-400)" />
+                <p style={{ fontSize: 9, color: "var(--color-slate-500)" }}>{businessWebsite}</p>
               </div>
             )}
           </div>
@@ -69,8 +69,8 @@ export function ReceiptQrCode({
       )}
 
       {/* ── Footer ───────────────────────────────────────────────────────────── */}
-      <div style={{ background: "#f8fafc", borderTop: "1px solid #f1f5f9", padding: "10px 22px", textAlign: "center" }}>
-        <p style={{ fontSize: 10, color: "#94a3b8", fontWeight: 600 }}>
+      <div style={{ background: "var(--color-slate-50)", borderTop: "1px solid var(--color-slate-100)", padding: "10px 22px", textAlign: "center" }}>
+        <p style={{ fontSize: 10, color: "var(--color-slate-400)", fontWeight: 600 }}>
           Computer generated receipt · No signature required
         </p>
       </div>

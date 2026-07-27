@@ -7,7 +7,7 @@ import {
   ShieldCheck, QrCode, Eye, EyeOff, Copy, Check,
 } from "lucide-react";
 
-const NAVY = "#0B1340";
+const NAVY = "var(--brand-navy)";
 
 interface TotpEntryProps {
   code: string;
@@ -101,7 +101,7 @@ export function TotpEntry({
             maxLength={useBackupCode ? 12 : 6} />
         </div>
 
-        {error && <p className="text-xs font-medium text-center" style={{ color: "#be123c" }}>{error}</p>}
+        {error && <p className="text-xs font-medium text-center" style={{ color: "var(--color-error-dark)" }}>{error}</p>}
 
         <label className="flex items-center gap-2 cursor-pointer select-none justify-center">
           <Checkbox checked={trustDevice} onCheckedChange={(v) => setTrustDevice(!!v)}
@@ -112,7 +112,7 @@ export function TotpEntry({
         <motion.div whileHover={{ scale: 1.015 }} whileTap={{ scale: 0.985 }}>
           <Button type="submit" disabled={isSubmitting || !code.trim()}
             className="w-full h-12 font-bold text-base tracking-wide text-white shadow-lg border-0"
-            style={{ background: "linear-gradient(135deg, #1a2560, #0f1a4a)" }}>
+            style={{ background: "linear-gradient(135deg, var(--brand-navy-650), #0f1a4a)" }}>
             {isSubmitting
               ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Verifying…</span>
               : "Verify & Continue →"}

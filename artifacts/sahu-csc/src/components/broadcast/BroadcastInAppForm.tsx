@@ -33,11 +33,11 @@ export function BroadcastInAppForm({
 }: BroadcastInAppFormProps) {
   return (
     <div className="rounded-2xl bg-white border border-slate-100 overflow-hidden"
-      style={{ boxShadow: "0 2px 12px rgba(11,44,96,0.07)" }}>
+      style={{ boxShadow: "0 2px 12px var(--brand-navy-tint-md)" }}>
       <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
         <BellRing size={16} className="text-emerald-600" />
         <span className="font-semibold text-slate-800 text-sm">Send In-App Notification</span>
-        <Badge className="ml-auto text-xs border-none" style={{ background: "#dcfce7", color: "#16a34a" }}>
+        <Badge className="ml-auto text-xs border-none" style={{ background: "var(--color-success-bg)", color: "var(--color-success-dim)" }}>
           {activeUsers} users
         </Badge>
       </div>
@@ -75,7 +75,7 @@ export function BroadcastInAppForm({
                   className="px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all"
                   style={inappType === value
                     ? { background: color, color: "#fff", borderColor: color }
-                    : { background: "#f8fafc", color: "#64748b", borderColor: "#e2e8f0" }}>
+                    : { background: "var(--color-slate-50)", color: "var(--color-slate-500)", borderColor: "var(--color-slate-200)" }}>
                   {label}
                 </button>
               ))}
@@ -89,8 +89,8 @@ export function BroadcastInAppForm({
                 <button key={value} onClick={() => setInappPriority(value)}
                   className="px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all"
                   style={inappPriority === value
-                    ? { background: "#0b2c60", color: "#fff", borderColor: "#0b2c60" }
-                    : { background: "#f8fafc", color: "#64748b", borderColor: "#e2e8f0" }}>
+                    ? { background: "var(--brand-navy-800)", color: "#fff", borderColor: "var(--brand-navy-800)" }
+                    : { background: "var(--color-slate-50)", color: "var(--color-slate-500)", borderColor: "var(--color-slate-200)" }}>
                   {label}
                 </button>
               ))}
@@ -107,7 +107,7 @@ export function BroadcastInAppForm({
         </div>
 
         <Button className="w-full font-bold text-sm h-11"
-          style={{ background: "linear-gradient(135deg,#16a34a,#22c55e)", color: "#fff" }}
+          style={{ background: "linear-gradient(135deg,var(--color-success-dim),var(--color-success-soft))", color: "#fff" }}
           disabled={!inappTitle.trim() || !inappBody.trim() || isPending}
           onClick={onSubmit}>
           {isPending

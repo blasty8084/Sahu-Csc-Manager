@@ -21,17 +21,17 @@ export default function AePS() {
         {/* ── Page Header ── */}
         <div
           className="rounded-2xl overflow-hidden"
-          style={{ boxShadow: "0 4px 20px rgba(11,44,96,0.18)" }}
+          style={{ boxShadow: "0 4px 20px var(--brand-navy-border-md)" }}
         >
           <div
             className="px-5 py-5 flex items-center gap-4"
-            style={{ background: "linear-gradient(135deg, #0b2c60 0%, #0f3872 60%, #1a4a9e 100%)" }}
+            style={{ background: "linear-gradient(135deg, var(--brand-navy-800) 0%, var(--brand-navy-700) 60%, var(--brand-navy-600) 100%)" }}
           >
             <div
               style={{
                 width: 48, height: 48, borderRadius: 15, flexShrink: 0,
-                background: "rgba(255,255,255,0.12)",
-                border: "1.5px solid rgba(255,255,255,0.2)",
+                background: "var(--brand-white-mid)",
+                border: "1.5px solid var(--brand-white-border)",
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}
             >
@@ -50,7 +50,7 @@ export default function AePS() {
           {/* Tab strip */}
           <div
             className="flex"
-            style={{ background: "rgba(11,44,96,0.04)", borderTop: "1px solid rgba(11,44,96,0.09)" }}
+            style={{ background: "var(--brand-navy-tint-sm)", borderTop: "1px solid var(--brand-navy-tint-md)" }}
           >
             {([
               { key: "daily" as Tab, label: "Daily Session", icon: CalendarDays },
@@ -62,9 +62,9 @@ export default function AePS() {
                 onClick={() => setTab(key)}
                 className="flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-all flex-1 justify-center"
                 style={{
-                  color: tab === key ? "#0b2c60" : "#94a3b8",
-                  borderBottom: tab === key ? "2.5px solid #0b2c60" : "2.5px solid transparent",
-                  background: tab === key ? "rgba(11,44,96,0.05)" : "transparent",
+                  color: tab === key ? "var(--brand-navy-800)" : "var(--color-slate-400)",
+                  borderBottom: tab === key ? "2.5px solid var(--brand-navy-800)" : "2.5px solid transparent",
+                  background: tab === key ? "var(--brand-navy-tint-sm)" : "transparent",
                 }}
               >
                 <Icon size={14} />

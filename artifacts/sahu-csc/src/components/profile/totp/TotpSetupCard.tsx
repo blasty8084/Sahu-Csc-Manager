@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Smartphone, Loader2, Copy, Check, KeyRound, Eye, EyeOff } from "lucide-react";
 import { TotpLiveCode } from "@/components/auth/TotpLiveCode";
 
-const ORANGE = "#F97316";
+const ORANGE = "var(--brand-orange)";
 
 interface TotpSetupCardProps {
   qrDataUrl: string | null;
@@ -39,7 +39,7 @@ export function TotpSetupCard({
   return (
     <div className="rounded-2xl border bg-white p-4 space-y-3 shadow-sm">
       <div className="flex items-center gap-2 mb-1">
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "#fff7ed" }}>
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "var(--surface-warn-bg)" }}>
           <Smartphone size={16} style={{ color: ORANGE }} />
         </div>
         <div>

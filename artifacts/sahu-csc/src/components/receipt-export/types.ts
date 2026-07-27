@@ -1,6 +1,6 @@
 // ── Brand tokens ──────────────────────────────────────────────────────────────
-export const NAVY    = "#0b2c60";
-export const SAFFRON = "#f97316";
+export const NAVY    = "var(--brand-navy-800)";
+export const SAFFRON = "var(--brand-orange)";
 
 export const MONTH_OPTIONS = [
   { v: 1,  l: "January" },  { v: 2,  l: "February" }, { v: 3,  l: "March" },

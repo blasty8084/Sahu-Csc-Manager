@@ -26,7 +26,7 @@ export function DepositSummaryRow({ isWd, accent, accentColor, amtNum, txCustome
   return (
     <div style={{ maxWidth: 560 }}>
       {/* Amount hero */}
-      <div style={{ borderRadius: 18, overflow: "hidden", boxShadow: "0 4px 14px rgba(11,44,96,0.09)", marginBottom: 20 }}>
+      <div style={{ borderRadius: 18, overflow: "hidden", boxShadow: "0 4px 14px var(--brand-navy-tint-md)", marginBottom: 20 }}>
         <div style={{ height: 4, background: accent }} />
         <div style={{ background: "#fff", padding: "20px 24px", textAlign: "center" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 10 }}>
@@ -40,25 +40,25 @@ export function DepositSummaryRow({ isWd, accent, accentColor, amtNum, txCustome
       </div>
 
       {/* Detail rows */}
-      <div style={{ background: "#fff", borderRadius: 18, padding: "18px 22px", boxShadow: "0 2px 12px rgba(11,44,96,0.07)", border: "1px solid rgba(11,44,96,0.06)", display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
-        <p style={{ fontSize: 10, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.09em", marginBottom: 4 }}>Customer Details</p>
+      <div style={{ background: "#fff", borderRadius: 18, padding: "18px 22px", boxShadow: "0 2px 12px var(--brand-navy-tint-md)", border: "1px solid var(--brand-navy-tint-md)", display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+        <p style={{ fontSize: 10, fontWeight: 800, color: "var(--color-slate-400)", textTransform: "uppercase", letterSpacing: "0.09em", marginBottom: 4 }}>Customer Details</p>
         {rows.map(({ icon: Icon, label, value }) => (
-          <div key={label} style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 0", borderBottom: "1px solid #f8fafc" }}>
-            <div style={{ width: 32, height: 32, borderRadius: 10, background: "rgba(11,44,96,0.06)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <Icon size={14} style={{ color: "#0b2c60" }} />
+          <div key={label} style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 0", borderBottom: "1px solid var(--color-slate-50)" }}>
+            <div style={{ width: 32, height: 32, borderRadius: 10, background: "var(--brand-navy-tint-md)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <Icon size={14} style={{ color: "var(--brand-navy-800)" }} />
             </div>
             <div style={{ flex: 1 }}>
-              <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</p>
-              <p style={{ fontSize: 13, fontWeight: 600, color: "#0b2c60", marginTop: 2 }}>{value}</p>
+              <p style={{ fontSize: 10, fontWeight: 700, color: "var(--color-slate-400)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</p>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "var(--brand-navy-800)", marginTop: 2 }}>{value}</p>
             </div>
           </div>
         ))}
       </div>
 
       {/* Caution */}
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 16px", borderRadius: 14, background: "rgba(245,158,11,0.07)", border: "1px solid rgba(245,158,11,0.20)" }}>
-        <AlertCircle size={15} style={{ color: "#d97706", flexShrink: 0, marginTop: 1 }} />
-        <p style={{ fontSize: 13, color: "#92400e", lineHeight: 1.6 }}>Confirm Aadhaar and amount with the customer before proceeding.</p>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 16px", borderRadius: 14, background: "var(--color-warning-tint)", border: "1px solid var(--color-warning-border)" }}>
+        <AlertCircle size={15} style={{ color: "var(--color-warning)", flexShrink: 0, marginTop: 1 }} />
+        <p style={{ fontSize: 13, color: "var(--color-warning-dark)", lineHeight: 1.6 }}>Confirm Aadhaar and amount with the customer before proceeding.</p>
       </div>
     </div>
   );

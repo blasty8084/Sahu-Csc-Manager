@@ -22,33 +22,33 @@ interface Feature {
 const FEATURES: Feature[] = [
   {
     icon: <ShieldCheck size={15} />,
-    color: "#059669",
+    color: "var(--color-success)",
     bg: "rgba(5,150,105,0.10)",
     title: "QR Code 2FA — Works with Google Authenticator",
     description:
       "Scan the QR code in Profile → Security with Google Authenticator, Authy, or any TOTP app to set up two-factor authentication. Or copy the secret key for manual entry.",
     tag: "Fixed",
-    tagColor: "#059669",
+    tagColor: "var(--color-success)",
   },
   {
     icon: <RefreshCw size={15} />,
-    color: "#0891b2",
+    color: "var(--color-sky)",
     bg: "rgba(8,145,178,0.10)",
     title: "Standard 30-Second Codes",
     description:
       "TOTP codes now use the universal 30-second window (RFC 6238) that all authenticator apps expect. Clock-drift tolerance of ±30 seconds is also applied automatically.",
     tag: "Security",
-    tagColor: "#0891b2",
+    tagColor: "var(--color-sky)",
   },
   {
     icon: <KeyRound size={15} />,
-    color: "#f97316",
-    bg: "rgba(249,115,22,0.10)",
+    color: "var(--brand-orange)",
+    bg: "var(--brand-orange-tint-xs)",
     title: "Regenerate Backup Codes Anytime",
     description:
       "Running low on backup codes? Generate a fresh set from Profile → Security with a password confirmation — no need to disable and re-enable two-factor authentication.",
     tag: "New",
-    tagColor: "#f97316",
+    tagColor: "var(--brand-orange)",
   },
 ];
 
@@ -81,18 +81,18 @@ export function WhatsNewModal() {
         {/* ── Gradient header ── */}
         <div
           className="relative px-6 pt-6 pb-5 overflow-hidden"
-          style={{ background: "linear-gradient(135deg, #0b2c60 0%, #1e4d9b 60%, #1e40af 100%)" }}
+          style={{ background: "linear-gradient(135deg, var(--brand-navy-800) 0%, #1e4d9b 60%, var(--brand-navy-500) 100%)" }}
         >
           {/* decorative circles */}
-          <div style={{ position: "absolute", top: -28, right: -20, width: 100, height: 100, borderRadius: "50%", background: "rgba(249,115,22,0.12)", pointerEvents: "none" }} />
-          <div style={{ position: "absolute", bottom: -20, left: -16, width: 70, height: 70, borderRadius: "50%", background: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
+          <div style={{ position: "absolute", top: -28, right: -20, width: 100, height: 100, borderRadius: "50%", background: "var(--brand-orange-tint-sm)", pointerEvents: "none" }} />
+          <div style={{ position: "absolute", bottom: -20, left: -16, width: 70, height: 70, borderRadius: "50%", background: "var(--brand-white-low)", pointerEvents: "none" }} />
 
           <div className="flex items-center gap-2.5 mb-2 relative z-10">
             <div
               className="h-9 w-9 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: "rgba(249,115,22,0.22)", border: "1px solid rgba(249,115,22,0.30)" }}
+              style={{ background: "var(--brand-orange-tint-md)", border: "1px solid var(--brand-orange-border)" }}
             >
-              <Sparkles size={17} color="#f97316" />
+              <Sparkles size={17} color="var(--brand-orange)" />
             </div>
             <DialogHeader className="p-0 space-y-0">
               <DialogTitle className="text-[15px] font-bold leading-tight" style={{ color: "#ffffff" }}>
@@ -115,7 +115,7 @@ export function WhatsNewModal() {
                   height: 4,
                   width: i === step ? 20 : 8,
                   borderRadius: 99,
-                  background: i === step ? "#f97316" : "rgba(255,255,255,0.28)",
+                  background: i === step ? "var(--brand-orange)" : "var(--brand-white-30)",
                   border: "none",
                   cursor: "pointer",
                   padding: 0,
@@ -202,7 +202,7 @@ export function WhatsNewModal() {
                 onClick={handleClose}
                 size="sm"
                 className="h-8 px-5 text-xs font-semibold"
-                style={{ background: "#f97316", color: "#fff" }}
+                style={{ background: "var(--brand-orange)", color: "#fff" }}
               >
                 Let's go!
               </Button>
@@ -211,7 +211,7 @@ export function WhatsNewModal() {
                 onClick={() => setStep(step + 1)}
                 size="sm"
                 className="h-8 px-4 text-xs font-semibold"
-                style={{ background: "#0b2c60", color: "#fff" }}
+                style={{ background: "var(--brand-navy-800)", color: "#fff" }}
               >
                 Next
               </Button>

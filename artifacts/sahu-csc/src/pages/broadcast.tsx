@@ -41,17 +41,17 @@ export default function BroadcastPage() {
       <div className="min-h-screen" style={{ background: "#f4f6fa" }}>
 
         {/* ── Page header ── */}
-        <div className="sticky top-0 z-10" style={{ background: "linear-gradient(135deg,#0b2c60,#0f3872)" }}>
+        <div className="sticky top-0 z-10" style={{ background: "linear-gradient(135deg,var(--brand-navy-800),var(--brand-navy-700))" }}>
           <div className="flex items-center gap-3 px-4 py-4">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: "rgba(249,115,22,0.18)", border: "1px solid rgba(249,115,22,0.3)" }}>
-              <Megaphone size={18} color="#f97316" />
+              style={{ background: "var(--brand-orange-tint-18)", border: "1px solid var(--brand-orange-border)" }}>
+              <Megaphone size={18} color="var(--brand-orange)" />
             </div>
             <div>
               <h1 className="text-base font-bold text-white leading-tight">{t("broadcast.title")}</h1>
               <p className="text-[11px] text-white/50 leading-tight">Push · Email · In-App notifications to all users</p>
             </div>
-            <button className="ml-auto p-2 rounded-lg" style={{ background: "rgba(255,255,255,0.08)" }}
+            <button className="ml-auto p-2 rounded-lg" style={{ background: "var(--brand-white-low)" }}
               onClick={() => { refetchStats(); if (tab === "history") refetchHistory(); }}>
               <RefreshCw size={15} color="rgba(255,255,255,0.6)" />
             </button>
@@ -63,8 +63,8 @@ export default function BroadcastPage() {
               <button key={id} onClick={() => setTab(id)}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold transition-all"
                 style={tab === id
-                  ? { background: "#f97316", color: "#fff" }
-                  : { background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.55)" }}>
+                  ? { background: "var(--brand-orange)", color: "#fff" }
+                  : { background: "var(--brand-white-low)", color: "rgba(255,255,255,0.55)" }}>
                 <Icon size={13} />
                 <span>{isMobile ? shortLabel : label}</span>
               </button>

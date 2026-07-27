@@ -15,9 +15,9 @@ import { OtpToggleCard } from "./otp/OtpToggleCard";
 import { BackupCodesHealthBar } from "./BackupCodesHealthBar";
 
 // ── Brand tokens ─────────────────────────────────────────────────────────────
-const NAVY   = "#0B1340";
-const ORANGE = "#F97316";
-const GREEN  = "#10b981";
+const NAVY   = "var(--brand-navy)";
+const ORANGE = "var(--brand-orange)";
+const GREEN  = "var(--color-success-light)";
 
 type Method = "otp" | "totp";
 type Stage  = "idle" | "otp-confirm" | "totp-setup" | "backup-codes" | "disable-confirm" | "regen-confirm";
@@ -26,10 +26,10 @@ type Stage  = "idle" | "otp-confirm" | "totp-setup" | "backup-codes" | "disable-
 function SecurityRing({ score }: { score: number }) {
   const r    = 38;
   const circ = 2 * Math.PI * r;
-  const ring = score > 70 ? GREEN : score > 40 ? ORANGE : "#ef4444";
+  const ring = score > 70 ? GREEN : score > 40 ? ORANGE : "var(--color-error-std)";
   return (
     <svg width="92" height="92" viewBox="0 0 96 96" className="flex-shrink-0">
-      <circle cx="48" cy="48" r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="8" />
+      <circle cx="48" cy="48" r={r} fill="none" stroke="var(--brand-white-low)" strokeWidth="8" />
       <circle
         cx="48" cy="48" r={r} fill="none"
         stroke={ring} strokeWidth="8" strokeLinecap="round"
@@ -243,7 +243,7 @@ export function TwoFactorSection() {
               <h3 className="text-base font-bold text-white leading-tight">
                 {twoFaEnabled ? "Account Secured" : "Account at Risk"}
               </h3>
-              <p className="text-xs mt-0.5" style={{ color: twoFaEnabled ? "#93c5fd" : "#fca5a5" }}>
+              <p className="text-xs mt-0.5" style={{ color: twoFaEnabled ? "#93c5fd" : "var(--color-rose-300)" }}>
                 {twoFaEnabled
                   ? `Protected by ${twoFaMethod === "totp" ? "Authenticator App" : "Email OTP"}`
                   : "Enable 2FA to protect your account"}
@@ -253,13 +253,13 @@ export function TwoFactorSection() {
           </div>
           <div className="flex flex-wrap gap-1.5">
             <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold"
-              style={{ background: twoFaEnabled ? "rgba(16,185,129,0.18)" : "rgba(239,68,68,0.18)", color: twoFaEnabled ? "#6ee7b7" : "#fca5a5" }}>
+              style={{ background: twoFaEnabled ? "var(--color-success-bg)" : "rgba(239,68,68,0.18)", color: twoFaEnabled ? "#6ee7b7" : "var(--color-rose-300)" }}>
               {twoFaEnabled ? <ShieldCheck size={10} /> : <ShieldOff size={10} />}
               {twoFaEnabled ? "2FA ON" : "2FA OFF"}
             </span>
             {twoFaEnabled && (
               <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold"
-                style={{ background: "rgba(249,115,22,0.18)", color: "#fdba74" }}>
+                style={{ background: "var(--brand-orange-tint-18)", color: "#fdba74" }}>
                 {twoFaMethod === "totp" ? <Smartphone size={10} /> : <Mail size={10} />}
                 {twoFaMethod === "totp" ? "TOTP" : "Email OTP"}
               </span>
@@ -297,15 +297,15 @@ export function TwoFactorSection() {
                 <button key={m} type="button" disabled={active || setupTotpMut.isPending}
                   onClick={() => initiateMethod(m)}
                   className="w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all disabled:cursor-default"
-                  style={{ borderColor: active ? ORANGE : "#f1f5f9", background: active ? "#fff7ed" : "#f9fafb" }}>
+                  style={{ borderColor: active ? ORANGE : "var(--color-slate-100)", background: active ? "var(--surface-warn-bg)" : "#f9fafb" }}>
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0"
-                    style={{ background: active ? `linear-gradient(135deg, ${ORANGE}, #ea580c)` : "#e5e7eb" }}>
+                    style={{ background: active ? `linear-gradient(135deg, ${ORANGE}, var(--brand-orange-600))` : "var(--color-gray-200)" }}>
                     {loading ? <Loader2 size={16} className="text-white animate-spin" />
                       : m === "totp" ? <Smartphone size={16} className={active ? "text-white" : "text-gray-400"} />
                       : <Mail size={16} className={active ? "text-white" : "text-gray-400"} />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold" style={{ color: active ? "#7c2d12" : "#374151" }}>
+                    <p className="text-sm font-bold" style={{ color: active ? "var(--color-orange-900)" : "#374151" }}>
                       {m === "totp" ? "Authenticator App" : "Email OTP"}
                     </p>
                     <p className="text-xs text-gray-400">
@@ -335,9 +335,9 @@ export function TwoFactorSection() {
               <button key={m} type="button" disabled={setupTotpMut.isPending}
                 onClick={() => initiateMethod(m)}
                 className="w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all"
-                style={{ borderColor: "#f1f5f9", background: "#fafafa" }}>
+                style={{ borderColor: "var(--color-slate-100)", background: "var(--surface-card-near-white)" }}>
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: m === "totp" ? "#fff7ed" : "#eff6ff" }}>
+                  style={{ background: m === "totp" ? "var(--surface-warn-bg)" : "var(--surface-toast-blue)" }}>
                   {setupTotpMut.isPending && m === "totp"
                     ? <Loader2 size={16} style={{ color: ORANGE }} className="animate-spin" />
                     : m === "totp" ? <Smartphone size={16} style={{ color: ORANGE }} />

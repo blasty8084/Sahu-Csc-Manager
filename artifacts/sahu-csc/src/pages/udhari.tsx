@@ -36,18 +36,18 @@ export default function Udhari() {
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: "linear-gradient(135deg,#0b2c60,#1a4a9e)" }}>
+              style={{ background: "linear-gradient(135deg,var(--brand-navy-800),var(--brand-navy-600))" }}>
               <BookOpen size={14} color="#fff" />
             </div>
             <div>
-              <h1 className="font-black text-lg leading-tight" style={{ color: "#0b2c60" }}>
+              <h1 className="font-black text-lg leading-tight" style={{ color: "var(--brand-navy-800)" }}>
                 {t("udhari.title")}
               </h1>
               <p className="text-[11px] text-muted-foreground leading-none">{t("udhari.subtitle")}</p>
             </div>
           </div>
           <Button size="sm" className="hidden sm:flex" onClick={() => setShowAdd(true)}
-            style={{ background: "linear-gradient(135deg,#0b2c60,#1a4a9e)", color: "#fff" }}>
+            style={{ background: "linear-gradient(135deg,var(--brand-navy-800),var(--brand-navy-600))", color: "#fff" }}>
             <Plus size={14} className="mr-1" /> {t("udhari.add_customer")}
           </Button>
         </div>
@@ -60,7 +60,7 @@ export default function Udhari() {
         <button
           onClick={() => setShowAdd(true)}
           className="sm:hidden fixed bottom-20 right-5 w-14 h-14 rounded-full flex items-center justify-center z-30 shadow-lg"
-          style={{ background: "linear-gradient(135deg,#0b2c60,#1a4a9e)", boxShadow: "0 4px 20px rgba(11,44,96,0.40)" }}>
+          style={{ background: "linear-gradient(135deg,var(--brand-navy-800),var(--brand-navy-600))", boxShadow: "0 4px 20px var(--brand-navy-shadow)" }}>
           <Plus size={24} color="#fff" />
         </button>
       </div>

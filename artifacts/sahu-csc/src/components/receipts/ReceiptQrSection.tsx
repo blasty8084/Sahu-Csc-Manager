@@ -114,16 +114,16 @@ export function ReceiptQrSection({ data, verifyUrl, cardRef, txType, amount, for
 
   return (
     <div className="no-print" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 16 }}>
-      <button onClick={handlePrint} style={{ ...btn, background: "rgba(255,255,255,0.15)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)" }}>
+      <button onClick={handlePrint} style={{ ...btn, background: "var(--brand-white-mid)", color: "#fff", border: "1px solid var(--brand-white-25)" }}>
         <Printer size={14} /> Print
       </button>
-      <button onClick={handleDownloadPdf} disabled={generatingPdf} style={{ ...btn, background: "rgba(255,255,255,0.15)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", opacity: generatingPdf ? 0.7 : 1, cursor: generatingPdf ? "not-allowed" : "pointer" }}>
+      <button onClick={handleDownloadPdf} disabled={generatingPdf} style={{ ...btn, background: "var(--brand-white-mid)", color: "#fff", border: "1px solid var(--brand-white-25)", opacity: generatingPdf ? 0.7 : 1, cursor: generatingPdf ? "not-allowed" : "pointer" }}>
         <Download size={14} /> {generatingPdf ? "Saving…" : "Download PDF"}
       </button>
       <button onClick={handleWhatsApp} disabled={sendingWa} style={{ ...btn, background: "#25D366", color: "#fff", opacity: sendingWa ? 0.7 : 1, cursor: sendingWa ? "not-allowed" : "pointer" }}>
         <WhatsAppIcon size={14} /> {sendingWa ? "Preparing…" : "WhatsApp PDF"}
       </button>
-      <button onClick={handleShare} style={{ ...btn, background: "#f97316", color: "#fff" }}>
+      <button onClick={handleShare} style={{ ...btn, background: "var(--brand-orange)", color: "#fff" }}>
         <Share2 size={14} /> Share Link
       </button>
     </div>

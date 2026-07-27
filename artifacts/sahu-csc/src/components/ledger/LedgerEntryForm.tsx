@@ -32,22 +32,22 @@ export function MobileEntryFormDialog({
     <Dialog open={showForm} onOpenChange={setShowForm}>
       <DialogContent className="w-[calc(100vw-2rem)] max-w-md rounded-2xl p-0 overflow-hidden gap-0">
         <div className="flex justify-center pt-3 pb-0">
-          <div style={{ width: 40, height: 4, borderRadius: 2, background: "#e2e8f0" }} />
+          <div style={{ width: 40, height: 4, borderRadius: 2, background: "var(--color-slate-200)" }} />
         </div>
         <div className="px-5 pt-4 pb-3 flex items-center justify-between">
           <h2 style={{ fontSize: 18, fontWeight: 900, color: accentColor }}>
             {editEntry ? "Edit Entry" : (entryType === "credit" ? "New Credit Entry" : "New Debit Entry")}
           </h2>
-          <button type="button" onClick={() => setShowForm(false)} className="bg-[#f1f5f9] dark:bg-zinc-700" style={{ width: 32, height: 32, borderRadius: 8, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-            <X size={15} color="#64748b" />
+          <button type="button" onClick={() => setShowForm(false)} className="bg-[var(--color-slate-100)] dark:bg-zinc-700" style={{ width: 32, height: 32, borderRadius: 8, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+            <X size={15} color="var(--color-slate-500)" />
           </button>
         </div>
         <form onSubmit={onSubmit} className="px-5 pb-6 space-y-3">
           {!editEntry && (
-            <div className="bg-[#f1f5f9] dark:bg-zinc-700" style={{ borderRadius: 14, padding: 4, display: "flex", gap: 4 }}>
+            <div className="bg-[var(--color-slate-100)] dark:bg-zinc-700" style={{ borderRadius: 14, padding: 4, display: "flex", gap: 4 }}>
               {(["credit", "debit"] as const).map(t => (
                 <button key={t} type="button" onClick={() => setEntryType(t)}
-                  style={{ flex: 1, height: 40, borderRadius: 11, border: "none", cursor: "pointer", fontWeight: 800, fontSize: 13, background: entryType === t ? (t === "credit" ? "#059669" : "#e11d48") : "transparent", color: entryType === t ? "#fff" : "#94a3b8", transition: "all 0.15s", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
+                  style={{ flex: 1, height: 40, borderRadius: 11, border: "none", cursor: "pointer", fontWeight: 800, fontSize: 13, background: entryType === t ? (t === "credit" ? "var(--color-success)" : "var(--color-error)") : "transparent", color: entryType === t ? "#fff" : "var(--color-slate-400)", transition: "all 0.15s", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
                   {t === "credit" ? "▲ Credit (Income)" : "▼ Debit (Expense)"}
                 </button>
               ))}
@@ -58,21 +58,21 @@ export function MobileEntryFormDialog({
               <IndianRupee size={18} color="#fff" strokeWidth={2.5} />
             </div>
             <div style={{ flex: 1 }}>
-              <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 2 }}>Amount (₹)</p>
+              <p style={{ fontSize: 10, fontWeight: 700, color: "var(--color-slate-400)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 2 }}>Amount (₹)</p>
               <input type="number" step="0.01" min="0" value={rawAmount} onChange={e => setRawAmount(e.target.value)}
                 data-testid="input-credit" placeholder="0.00"
                 style={{ width: "100%", fontSize: 28, fontWeight: 900, color: accentColor, background: "transparent", border: "none", outline: "none", padding: 0 }} />
             </div>
           </div>
           <div style={{ position: "relative" }}>
-            <User size={14} color="#94a3b8" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }} />
+            <User size={14} color="var(--color-slate-400)" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }} />
             <input {...form.register("customerName", { required: true })} placeholder="Customer name"
               list="ledger-customer-names" autoComplete="off" data-testid="input-customer"
-              className="bg-[#fafafa] dark:bg-zinc-700 text-[#0b2c60] dark:text-zinc-100 dark:placeholder:text-zinc-500"
-              style={{ width: "100%", height: 44, paddingLeft: 36, paddingRight: 12, borderRadius: 12, border: "1.5px solid #e2e8f0", fontSize: 14, outline: "none", boxSizing: "border-box", fontWeight: 600 }} />
+              className="bg-[var(--surface-card-near-white)] dark:bg-zinc-700 text-[var(--brand-navy-800)] dark:text-zinc-100 dark:placeholder:text-zinc-500"
+              style={{ width: "100%", height: 44, paddingLeft: 36, paddingRight: 12, borderRadius: 12, border: "1.5px solid var(--color-slate-200)", fontSize: 14, outline: "none", boxSizing: "border-box", fontWeight: 600 }} />
           </div>
           <Select value={form.watch("serviceType")} onValueChange={(v) => form.setValue("serviceType", v)}>
-            <SelectTrigger data-testid="select-service" className="h-11 rounded-xl border-[#e2e8f0] dark:border-zinc-600 bg-[#fafafa] dark:bg-zinc-700 text-sm font-semibold text-[#0b2c60] dark:text-zinc-100">
+            <SelectTrigger data-testid="select-service" className="h-11 rounded-xl border-[var(--color-slate-200)] dark:border-zinc-600 bg-[var(--surface-card-near-white)] dark:bg-zinc-700 text-sm font-semibold text-[var(--brand-navy-800)] dark:text-zinc-100">
               <SelectValue placeholder="Select service type" />
             </SelectTrigger>
             <SelectContent className="max-h-60 overflow-y-auto">
@@ -81,16 +81,16 @@ export function MobileEntryFormDialog({
             </SelectContent>
           </Select>
           <div style={{ position: "relative" }}>
-            <Calendar size={14} color="#94a3b8" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
+            <Calendar size={14} color="var(--color-slate-400)" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
             <input type="date" {...form.register("date", { required: true })} data-testid="input-date"
-              className="bg-[#fafafa] dark:bg-zinc-700 text-[#0b2c60] dark:text-zinc-100"
-              style={{ width: "100%", height: 44, paddingLeft: 36, paddingRight: 12, borderRadius: 12, border: "1.5px solid #e2e8f0", fontSize: 14, outline: "none", boxSizing: "border-box", fontWeight: 600 }} />
+              className="bg-[var(--surface-card-near-white)] dark:bg-zinc-700 text-[var(--brand-navy-800)] dark:text-zinc-100"
+              style={{ width: "100%", height: 44, paddingLeft: 36, paddingRight: 12, borderRadius: 12, border: "1.5px solid var(--color-slate-200)", fontSize: 14, outline: "none", boxSizing: "border-box", fontWeight: 600 }} />
           </div>
           <div style={{ position: "relative" }}>
-            <FileText size={14} color="#94a3b8" style={{ position: "absolute", left: 12, top: 13 }} />
+            <FileText size={14} color="var(--color-slate-400)" style={{ position: "absolute", left: 12, top: 13 }} />
             <textarea {...form.register("description")} rows={2} placeholder="Add a note (optional)" data-testid="input-description"
-              className="bg-[#fafafa] dark:bg-zinc-700 text-[#0b2c60] dark:text-zinc-100 dark:placeholder:text-zinc-500"
-              style={{ width: "100%", paddingLeft: 36, paddingRight: 12, paddingTop: 12, paddingBottom: 12, borderRadius: 12, border: "1.5px solid #e2e8f0", fontSize: 13, outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit" }} />
+              className="bg-[var(--surface-card-near-white)] dark:bg-zinc-700 text-[var(--brand-navy-800)] dark:text-zinc-100 dark:placeholder:text-zinc-500"
+              style={{ width: "100%", paddingLeft: 36, paddingRight: 12, paddingTop: 12, paddingBottom: 12, borderRadius: 12, border: "1.5px solid var(--color-slate-200)", fontSize: 13, outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit" }} />
           </div>
           <button type="submit" data-testid="button-save-entry" disabled={createMut.isPending || updateMut.isPending}
             style={{ width: "100%", height: 52, borderRadius: 16, border: "none", cursor: "pointer", background: accentGrad, color: "#fff", fontSize: 16, fontWeight: 900, letterSpacing: "0.02em", boxShadow: `0 6px 20px ${accentColor}35`, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, opacity: (createMut.isPending || updateMut.isPending) ? 0.7 : 1 }}>
@@ -112,19 +112,19 @@ export function DesktopEntryFormPanel({
   return (
     <>
       <div onClick={() => setShowForm(false)}
-        style={{ position: "fixed", inset: 0, background: "rgba(11,44,96,0.40)", backdropFilter: "blur(4px)", zIndex: 49 }} />
+        style={{ position: "fixed", inset: 0, background: "var(--brand-navy-shadow)", backdropFilter: "blur(4px)", zIndex: 49 }} />
       {/* V2 — Full-screen split layout */}
       <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex" }}>
 
         {/* ── LEFT INFO PANEL ── */}
-        <div style={{ width: 380, flexShrink: 0, background: "linear-gradient(160deg,#0b2c60 0%,#0f3872 55%,#1a4a9e 100%)", display: "flex", flexDirection: "column", padding: "40px 36px", position: "relative", overflow: "hidden" }}>
-          <div style={{ position: "absolute", top: -80, right: -80, width: 260, height: 260, borderRadius: "50%", background: "rgba(249,115,22,0.12)", pointerEvents: "none" }} />
-          <div style={{ position: "absolute", bottom: -60, left: -60, width: 200, height: 200, borderRadius: "50%", background: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
+        <div style={{ width: 380, flexShrink: 0, background: "linear-gradient(160deg,var(--brand-navy-800) 0%,var(--brand-navy-700) 55%,var(--brand-navy-600) 100%)", display: "flex", flexDirection: "column", padding: "40px 36px", position: "relative", overflow: "hidden" }}>
+          <div style={{ position: "absolute", top: -80, right: -80, width: 260, height: 260, borderRadius: "50%", background: "var(--brand-orange-tint-sm)", pointerEvents: "none" }} />
+          <div style={{ position: "absolute", bottom: -60, left: -60, width: 200, height: 200, borderRadius: "50%", background: "var(--brand-white-low)", pointerEvents: "none" }} />
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 48, position: "relative" }}>
-            <div style={{ width: 36, height: 36, borderRadius: 11, background: "linear-gradient(135deg,#f97316,#fb923c)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 14px rgba(249,115,22,0.40)" }}>
+            <div style={{ width: 36, height: 36, borderRadius: 11, background: "linear-gradient(135deg,var(--brand-orange),var(--brand-orange-400))", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 14px var(--brand-orange-glow)" }}>
               <span style={{ fontWeight: 900, fontSize: 13, color: "#fff" }}>SC</span>
             </div>
-            <div><span style={{ color: "#fff", fontWeight: 900, fontSize: 16 }}>SAHU </span><span style={{ color: "#f97316", fontWeight: 900, fontSize: 16 }}>CSC</span></div>
+            <div><span style={{ color: "#fff", fontWeight: 900, fontSize: 16 }}>SAHU </span><span style={{ color: "var(--brand-orange)", fontWeight: 900, fontSize: 16 }}>CSC</span></div>
           </div>
           <div style={{ position: "relative", marginBottom: 28 }}>
             <div style={{ width: 64, height: 64, borderRadius: 20, background: accentGrad, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 8px 28px ${accentColor}45`, marginBottom: 20 }}>
@@ -137,12 +137,12 @@ export function DesktopEntryFormPanel({
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: "auto", position: "relative" }}>
             {([
-              { label: "Running Balance", value: `₹${((balance as any)?.balance ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`, color: "#f97316", Icon: Wallet },
-              { label: "Total Credits", value: `₹${((balance as any)?.totalCredits ?? 0).toLocaleString("en-IN")}`, color: "#10b981", Icon: TrendingUp },
-              { label: "Total Debits", value: `₹${((balance as any)?.totalDebits ?? 0).toLocaleString("en-IN")}`, color: "#f43f5e", Icon: TrendingDown },
+              { label: "Running Balance", value: `₹${((balance as any)?.balance ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`, color: "var(--brand-orange)", Icon: Wallet },
+              { label: "Total Credits", value: `₹${((balance as any)?.totalCredits ?? 0).toLocaleString("en-IN")}`, color: "var(--color-success-light)", Icon: TrendingUp },
+              { label: "Total Debits", value: `₹${((balance as any)?.totalDebits ?? 0).toLocaleString("en-IN")}`, color: "var(--color-error-soft)", Icon: TrendingDown },
             ] as { label: string; value: string; color: string; Icon: React.ElementType }[]).map(({ label, value, color, Icon }) => (
-              <div key={label} style={{ display: "flex", alignItems: "center", gap: 14, background: "rgba(255,255,255,0.08)", borderRadius: 14, padding: "12px 16px", border: "1px solid rgba(255,255,255,0.08)" }}>
-                <div style={{ width: 36, height: 36, borderRadius: 11, background: "rgba(255,255,255,0.10)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <div key={label} style={{ display: "flex", alignItems: "center", gap: 14, background: "var(--brand-white-low)", borderRadius: 14, padding: "12px 16px", border: "1px solid var(--brand-white-low)" }}>
+                <div style={{ width: 36, height: 36, borderRadius: 11, background: "var(--brand-white-low)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <Icon size={16} color={color} />
                 </div>
                 <div>
@@ -155,28 +155,28 @@ export function DesktopEntryFormPanel({
         </div>
 
         {/* ── RIGHT FORM PANEL ── */}
-        <div className="bg-[#f8fafc] dark:bg-zinc-900" style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div className="bg-[var(--color-slate-50)] dark:bg-zinc-900" style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
           {/* Top bar */}
-          <div className="bg-white dark:bg-zinc-800 border-b border-[#f1f5f9] dark:border-zinc-700" style={{ padding: "20px 40px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+          <div className="bg-white dark:bg-zinc-800 border-b border-[var(--color-slate-100)] dark:border-zinc-700" style={{ padding: "20px 40px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
             <div>
-              <h2 style={{ fontSize: 18, fontWeight: 800, color: "#0b2c60", margin: 0 }}>{editEntry ? "Edit Entry" : "New Transaction"}</h2>
-              <p style={{ fontSize: 12, color: "#94a3b8", margin: 0, marginTop: 2 }}>Ledger · {new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</p>
+              <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--brand-navy-800)", margin: 0 }}>{editEntry ? "Edit Entry" : "New Transaction"}</h2>
+              <p style={{ fontSize: 12, color: "var(--color-slate-400)", margin: 0, marginTop: 2 }}>Ledger · {new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</p>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               {!editEntry && (
-                <div className="bg-[#f1f5f9] dark:bg-zinc-700" style={{ display: "flex", borderRadius: 14, padding: 4, gap: 4 }}>
+                <div className="bg-[var(--color-slate-100)] dark:bg-zinc-700" style={{ display: "flex", borderRadius: 14, padding: 4, gap: 4 }}>
                   {(["credit", "debit"] as const).map(t => (
                     <button key={t} type="button" onClick={() => setEntryType(t)}
-                      style={{ padding: "8px 18px", borderRadius: 11, border: "none", cursor: "pointer", background: entryType === t ? (t === "credit" ? "linear-gradient(135deg,#059669,#10b981)" : "linear-gradient(135deg,#e11d48,#f43f5e)") : "transparent", color: entryType === t ? "#fff" : "#64748b", fontWeight: 700, fontSize: 13, boxShadow: entryType === t ? `0 2px 10px ${t === "credit" ? "rgba(5,150,105,0.35)" : "rgba(225,29,72,0.35)"}` : "none", transition: "all 0.15s" }}>
+                      style={{ padding: "8px 18px", borderRadius: 11, border: "none", cursor: "pointer", background: entryType === t ? (t === "credit" ? "linear-gradient(135deg,var(--color-success),var(--color-success-light))" : "linear-gradient(135deg,var(--color-error),var(--color-error-soft))") : "transparent", color: entryType === t ? "#fff" : "var(--color-slate-500)", fontWeight: 700, fontSize: 13, boxShadow: entryType === t ? `0 2px 10px ${t === "credit" ? "color-mix(in srgb, var(--color-success) 35%, transparent)" : "rgba(225,29,72,0.35)"}` : "none", transition: "all 0.15s" }}>
                       {t === "credit" ? "Credit (+)" : "Debit (−)"}
                     </button>
                   ))}
                 </div>
               )}
               <button type="button" onClick={() => setShowForm(false)}
-                className="bg-[#f8fafc] dark:bg-zinc-700 border border-[#e2e8f0] dark:border-zinc-600"
+                className="bg-[var(--color-slate-50)] dark:bg-zinc-700 border border-[var(--color-slate-200)] dark:border-zinc-600"
                 style={{ width: 38, height: 38, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                <X size={16} color="#64748b" />
+                <X size={16} color="var(--color-slate-500)" />
               </button>
             </div>
           </div>
@@ -186,7 +186,7 @@ export function DesktopEntryFormPanel({
             <div style={{ padding: "32px 40px", display: "flex", flexDirection: "column", gap: 24, maxWidth: 640 }}>
 
               {/* Amount — hero */}
-              <div style={{ background: entryType === "credit" ? "linear-gradient(135deg,rgba(5,150,105,0.06),rgba(16,185,129,0.04))" : "linear-gradient(135deg,rgba(225,29,72,0.06),rgba(244,63,94,0.04))", border: `2px solid ${entryType === "credit" ? "rgba(5,150,105,0.22)" : "rgba(225,29,72,0.22)"}`, borderRadius: 20, padding: "20px 24px" }}>
+              <div style={{ background: entryType === "credit" ? "linear-gradient(135deg,rgba(5,150,105,0.06),var(--color-success-bg))" : "linear-gradient(135deg,rgba(225,29,72,0.06),var(--color-error-bg))", border: `2px solid ${entryType === "credit" ? "rgba(5,150,105,0.22)" : "rgba(225,29,72,0.22)"}`, borderRadius: 20, padding: "20px 24px" }}>
                 <label style={{ fontSize: 11, fontWeight: 700, color: accentColor, textTransform: "uppercase" as const, letterSpacing: "0.1em", display: "block", marginBottom: 12 }}>Amount (₹) *</label>
                 <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                   <div style={{ width: 48, height: 48, borderRadius: 15, background: accentGrad, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: `0 4px 14px ${accentColor}35` }}>
@@ -201,32 +201,32 @@ export function DesktopEntryFormPanel({
               {/* Customer + Date */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
                 <div>
-                  <label style={{ fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>Customer Name *</label>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: "var(--color-slate-600)", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>Customer Name *</label>
                   <div style={{ position: "relative" }}>
-                    <User size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+                    <User size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--color-slate-400)" }} />
                     <input {...form.register("customerName", { required: true })} placeholder="Customer name" list="ledger-customer-names" autoComplete="off" data-testid="input-customer"
-                      className="bg-white dark:bg-zinc-700 text-[#0b2c60] dark:text-zinc-100 dark:placeholder:text-zinc-500"
-                      style={{ width: "100%", height: 50, paddingLeft: 40, paddingRight: 14, borderRadius: 14, border: "1.5px solid #e2e8f0", fontSize: 14, fontWeight: 600, outline: "none", boxSizing: "border-box", boxShadow: "0 1px 4px rgba(11,44,96,0.06)" }}
-                      onFocus={e => (e.target.style.borderColor = accentColor)} onBlur={e => (e.target.style.borderColor = "#e2e8f0")} />
+                      className="bg-white dark:bg-zinc-700 text-[var(--brand-navy-800)] dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                      style={{ width: "100%", height: 50, paddingLeft: 40, paddingRight: 14, borderRadius: 14, border: "1.5px solid var(--color-slate-200)", fontSize: 14, fontWeight: 600, outline: "none", boxSizing: "border-box", boxShadow: "0 1px 4px var(--brand-navy-tint-md)" }}
+                      onFocus={e => (e.target.style.borderColor = accentColor)} onBlur={e => (e.target.style.borderColor = "var(--color-slate-200)")} />
                   </div>
                 </div>
                 <div>
-                  <label style={{ fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>Date *</label>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: "var(--color-slate-600)", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>Date *</label>
                   <div style={{ position: "relative" }}>
-                    <Calendar size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" }} />
+                    <Calendar size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--color-slate-400)", pointerEvents: "none" }} />
                     <input type="date" {...form.register("date", { required: true })} data-testid="input-date"
-                      className="bg-white dark:bg-zinc-700 text-[#0b2c60] dark:text-zinc-100"
-                      style={{ width: "100%", height: 50, paddingLeft: 40, paddingRight: 14, borderRadius: 14, border: "1.5px solid #e2e8f0", fontSize: 14, fontWeight: 600, outline: "none", boxSizing: "border-box", boxShadow: "0 1px 4px rgba(11,44,96,0.06)" }}
-                      onFocus={e => (e.target.style.borderColor = accentColor)} onBlur={e => (e.target.style.borderColor = "#e2e8f0")} />
+                      className="bg-white dark:bg-zinc-700 text-[var(--brand-navy-800)] dark:text-zinc-100"
+                      style={{ width: "100%", height: 50, paddingLeft: 40, paddingRight: 14, borderRadius: 14, border: "1.5px solid var(--color-slate-200)", fontSize: 14, fontWeight: 600, outline: "none", boxSizing: "border-box", boxShadow: "0 1px 4px var(--brand-navy-tint-md)" }}
+                      onFocus={e => (e.target.style.borderColor = accentColor)} onBlur={e => (e.target.style.borderColor = "var(--color-slate-200)")} />
                   </div>
                 </div>
               </div>
 
               {/* Service */}
               <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>Service Type</label>
+                <label style={{ fontSize: 11, fontWeight: 700, color: "var(--color-slate-600)", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>Service Type</label>
                 <Select value={form.watch("serviceType")} onValueChange={(v) => form.setValue("serviceType", v)}>
-                  <SelectTrigger data-testid="select-service" className="h-[50px] rounded-[14px] border-[#e2e8f0] dark:border-zinc-600 bg-white dark:bg-zinc-700 text-sm font-semibold text-[#0b2c60] dark:text-zinc-100 shadow-[0_1px_4px_rgba(11,44,96,0.06)]">
+                  <SelectTrigger data-testid="select-service" className="h-[50px] rounded-[14px] border-[var(--color-slate-200)] dark:border-zinc-600 bg-white dark:bg-zinc-700 text-sm font-semibold text-[var(--brand-navy-800)] dark:text-zinc-100 shadow-[0_1px_4px_var(--brand-navy-tint-md)]">
                     <SelectValue placeholder="Select service type" />
                   </SelectTrigger>
                   <SelectContent className="max-h-60 overflow-y-auto">
@@ -238,22 +238,22 @@ export function DesktopEntryFormPanel({
 
               {/* Note */}
               <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>Note <span style={{ fontWeight: 400, textTransform: "none" as const, color: "#94a3b8", letterSpacing: 0 }}>(optional)</span></label>
+                <label style={{ fontSize: 11, fontWeight: 700, color: "var(--color-slate-600)", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>Note <span style={{ fontWeight: 400, textTransform: "none" as const, color: "var(--color-slate-400)", letterSpacing: 0 }}>(optional)</span></label>
                 <div style={{ position: "relative" }}>
-                  <FileText size={15} style={{ position: "absolute", left: 14, top: 16, color: "#94a3b8" }} />
+                  <FileText size={15} style={{ position: "absolute", left: 14, top: 16, color: "var(--color-slate-400)" }} />
                   <textarea {...form.register("description")} rows={3} placeholder="Add a note about this transaction…" data-testid="input-description"
-                    className="bg-white dark:bg-zinc-700 text-[#0b2c60] dark:text-zinc-100 dark:placeholder:text-zinc-500"
-                    style={{ width: "100%", paddingLeft: 40, paddingRight: 14, paddingTop: 14, paddingBottom: 14, borderRadius: 14, border: "1.5px solid #e2e8f0", fontSize: 14, resize: "none", outline: "none", boxSizing: "border-box", fontFamily: "inherit", lineHeight: 1.6, boxShadow: "0 1px 4px rgba(11,44,96,0.06)" }}
-                    onFocus={e => (e.target.style.borderColor = accentColor)} onBlur={e => (e.target.style.borderColor = "#e2e8f0")} />
+                    className="bg-white dark:bg-zinc-700 text-[var(--brand-navy-800)] dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                    style={{ width: "100%", paddingLeft: 40, paddingRight: 14, paddingTop: 14, paddingBottom: 14, borderRadius: 14, border: "1.5px solid var(--color-slate-200)", fontSize: 14, resize: "none", outline: "none", boxSizing: "border-box", fontFamily: "inherit", lineHeight: 1.6, boxShadow: "0 1px 4px var(--brand-navy-tint-md)" }}
+                    onFocus={e => (e.target.style.borderColor = accentColor)} onBlur={e => (e.target.style.borderColor = "var(--color-slate-200)")} />
                 </div>
               </div>
 
               {/* Balance preview */}
               {(balance as any)?.balance !== undefined && (
-                <div style={{ background: "rgba(11,44,96,0.04)", border: "1px solid rgba(11,44,96,0.10)", borderRadius: 16, padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ background: "var(--brand-navy-tint-sm)", border: "1px solid var(--brand-navy-tint-md)", borderRadius: 16, padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div>
-                    <p style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>Balance after this entry</p>
-                    <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: "var(--color-slate-600)" }}>Balance after this entry</p>
+                    <p style={{ fontSize: 11, color: "var(--color-slate-400)", marginTop: 2 }}>
                       ₹{((balance as any)?.balance ?? 0).toLocaleString("en-IN")} {entryType === "credit" ? "+" : "−"} ₹{(parseFloat(rawAmount) || 0).toLocaleString("en-IN")}
                     </p>
                   </div>
@@ -268,10 +268,10 @@ export function DesktopEntryFormPanel({
             </div>
 
             {/* Footer */}
-            <div className="bg-white dark:bg-zinc-800 border-t border-[#f1f5f9] dark:border-zinc-700" style={{ padding: "20px 40px", flexShrink: 0, display: "flex", gap: 14, marginTop: "auto" }}>
+            <div className="bg-white dark:bg-zinc-800 border-t border-[var(--color-slate-100)] dark:border-zinc-700" style={{ padding: "20px 40px", flexShrink: 0, display: "flex", gap: 14, marginTop: "auto" }}>
               <button type="button" onClick={() => setShowForm(false)}
-                className="bg-[#f8fafc] dark:bg-zinc-700 border border-[#e2e8f0] dark:border-zinc-600"
-                style={{ height: 50, padding: "0 28px", borderRadius: 14, cursor: "pointer", fontWeight: 700, fontSize: 14, color: "#64748b" }}>Cancel</button>
+                className="bg-[var(--color-slate-50)] dark:bg-zinc-700 border border-[var(--color-slate-200)] dark:border-zinc-600"
+                style={{ height: 50, padding: "0 28px", borderRadius: 14, cursor: "pointer", fontWeight: 700, fontSize: 14, color: "var(--color-slate-500)" }}>Cancel</button>
               <button type="submit" data-testid="button-save-entry" disabled={createMut.isPending || updateMut.isPending}
                 style={{ flex: 1, height: 50, borderRadius: 14, border: "none", cursor: "pointer", background: accentGrad, color: "#fff", fontSize: 15, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: `0 6px 20px ${accentColor}35`, opacity: (createMut.isPending || updateMut.isPending) ? 0.7 : 1 }}>
                 <CheckCircle2 size={18} strokeWidth={2.5} />

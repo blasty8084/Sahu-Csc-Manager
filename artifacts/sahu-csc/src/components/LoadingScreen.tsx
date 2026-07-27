@@ -8,7 +8,7 @@ export function LoadingScreen({ phase = "loading" }: { phase?: LoadingPhase }) {
   return (
     <div
       className="fixed inset-0 z-50 flex flex-col items-center justify-center select-none"
-      style={{ background: "linear-gradient(160deg, #080f2e 0%, #0b2c60 60%, #0f1f4a 100%)" }}
+      style={{ background: "linear-gradient(160deg, var(--brand-navy-900) 0%, var(--brand-navy-800) 60%, var(--brand-navy-750) 100%)" }}
     >
       {/* Radial glow behind logo */}
       <div
@@ -16,7 +16,7 @@ export function LoadingScreen({ phase = "loading" }: { phase?: LoadingPhase }) {
         style={{
           width: 260, height: 260,
           borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(249,115,22,0.10) 0%, transparent 70%)",
+          background: "radial-gradient(circle, var(--brand-orange-tint-xs) 0%, transparent 70%)",
           pointerEvents: "none",
         }}
       />
@@ -36,37 +36,37 @@ export function LoadingScreen({ phase = "loading" }: { phase?: LoadingPhase }) {
             className="absolute w-32 h-32 rounded-full"
             style={{
               border: "2.5px solid transparent",
-              borderTopColor: "#F97316",
-              borderRightColor: "rgba(249,115,22,0.22)",
+              borderTopColor: "var(--brand-orange)",
+              borderRightColor: "var(--brand-orange-tint-md)",
               borderBottomColor: "transparent",
-              borderLeftColor: "rgba(249,115,22,0.08)",
+              borderLeftColor: "var(--brand-orange-tint-xs)",
               willChange: "transform",
             }}
           />
         ) : phase !== "timeout" ? (
           <div
             className="absolute w-32 h-32 rounded-full animate-pulse"
-            style={{ border: "2.5px solid rgba(249,115,22,0.30)" }}
+            style={{ border: "2.5px solid var(--brand-orange-border)" }}
           />
         ) : (
           <div
             className="absolute w-32 h-32 rounded-full"
-            style={{ border: "2.5px solid rgba(249,115,22,0.20)" }}
+            style={{ border: "2.5px solid var(--brand-orange-tint-md)" }}
           />
         )}
 
         {/* Inner glow ring */}
         <div
           className="absolute w-28 h-28 rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(249,115,22,0.09) 0%, transparent 70%)" }}
+          style={{ background: "radial-gradient(circle, var(--brand-orange-tint-xs) 0%, transparent 70%)" }}
         />
 
         {/* Logo */}
         <div
           className="w-24 h-24 rounded-full overflow-hidden"
           style={{
-            border: "3px solid rgba(255,255,255,0.15)",
-            boxShadow: "0 0 32px rgba(249,115,22,0.20), 0 8px 32px rgba(0,0,0,0.50)",
+            border: "3px solid var(--brand-white-mid)",
+            boxShadow: "0 0 32px var(--brand-orange-tint-md), 0 8px 32px var(--brand-black-overlay)",
           }}
         >
           <img src="/sahu-logo.png" alt="SAHU CSC" className="w-full h-full object-cover" />
@@ -82,7 +82,7 @@ export function LoadingScreen({ phase = "loading" }: { phase?: LoadingPhase }) {
       >
         <h1 className="text-2xl font-black tracking-wide">
           <span className="text-white">SAHU </span>
-          <span style={{ color: "#F97316" }}>CSC</span>
+          <span style={{ color: "var(--brand-orange)" }}>CSC</span>
         </h1>
         <p className="text-white/35 text-[10px] tracking-widest uppercase mt-0.5">
           Management Platform
@@ -96,7 +96,7 @@ export function LoadingScreen({ phase = "loading" }: { phase?: LoadingPhase }) {
                   <motion.div
                     key={i}
                     className="rounded-full"
-                    style={{ width: 5, height: 5, background: "rgba(249,115,22,0.7)" }}
+                    style={{ width: 5, height: 5, background: "var(--brand-orange-glow)" }}
                     animate={{ opacity: [0.3, 1, 0.3], scale: [0.8, 1.1, 0.8] }}
                     transition={{ duration: 1.1, repeat: Infinity, delay: i * 0.18 }}
                   />
@@ -108,7 +108,7 @@ export function LoadingScreen({ phase = "loading" }: { phase?: LoadingPhase }) {
                   <div
                     key={i}
                     className="rounded-full animate-pulse"
-                    style={{ width: 5, height: 5, background: "rgba(249,115,22,0.7)" }}
+                    style={{ width: 5, height: 5, background: "var(--brand-orange-glow)" }}
                   />
                 ))}
               </div>
@@ -128,7 +128,7 @@ export function LoadingScreen({ phase = "loading" }: { phase?: LoadingPhase }) {
               <button
                 onClick={() => window.location.reload()}
                 className="text-xs font-bold px-5 py-2 rounded-full"
-                style={{ background: "linear-gradient(90deg, #f97316, #fb923c)", color: "#fff", boxShadow: "0 4px 14px rgba(249,115,22,0.4)" }}
+                style={{ background: "linear-gradient(90deg, var(--brand-orange), var(--brand-orange-400))", color: "#fff", boxShadow: "0 4px 14px var(--brand-orange-glow)" }}
               >
                 Retry
               </button>
@@ -141,19 +141,19 @@ export function LoadingScreen({ phase = "loading" }: { phase?: LoadingPhase }) {
       {phase !== "timeout" && (
         <div
           className="absolute overflow-hidden rounded-full"
-          style={{ bottom: 56, width: 56, height: 2, background: "rgba(255,255,255,0.08)" }}
+          style={{ bottom: 56, width: 56, height: 2, background: "var(--brand-white-low)" }}
         >
           {richAnimations ? (
             <motion.div
               className="w-full h-full rounded-full"
-              style={{ background: "linear-gradient(90deg, #F97316, rgba(249,115,22,0.35))" }}
+              style={{ background: "linear-gradient(90deg, var(--brand-orange), var(--brand-orange-tint-soft))" }}
               animate={{ x: ["-100%", "0%", "100%"] }}
               transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
             />
           ) : (
             <div
               className="w-full h-full rounded-full animate-pulse"
-              style={{ background: "linear-gradient(90deg, #F97316, rgba(249,115,22,0.35))" }}
+              style={{ background: "linear-gradient(90deg, var(--brand-orange), var(--brand-orange-tint-soft))" }}
             />
           )}
         </div>

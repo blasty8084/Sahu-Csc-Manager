@@ -50,7 +50,7 @@ function PendingCard() {
       </div>
 
       <Link href="/login">
-        <Button className="w-full h-11 font-semibold" style={{ background: "linear-gradient(135deg, #1a2560, #0f1a4a)" }}>
+        <Button className="w-full h-11 font-semibold" style={{ background: "linear-gradient(135deg, var(--brand-navy-650), #0f1a4a)" }}>
           <ArrowLeft className="w-4 h-4 mr-2" />
           {t("auth.register.back_to_login")}
         </Button>
@@ -65,13 +65,13 @@ export default function RegisterPending() {
 
   if (isMobile) {
     return (
-      <div className="h-screen flex flex-col overflow-hidden" style={{ background: "#0B1340" }}>
+      <div className="h-screen flex flex-col overflow-hidden" style={{ background: "var(--brand-navy)" }}>
         <div className="flex-shrink-0 pt-6 px-6 pb-4 flex flex-col items-center text-center relative">
           <LoginLogo size={52} />
           <div className="mt-2.5">
             <h1 className="text-xl font-black">
               <span className="text-white">SAHU </span>
-              <span style={{ color: "#F97316" }}>CSC</span>
+              <span style={{ color: "var(--brand-orange)" }}>CSC</span>
             </h1>
             <p className="text-white/50 text-xs">{t("common.platform")}</p>
           </div>
@@ -91,13 +91,13 @@ export default function RegisterPending() {
   }
 
   return (
-    <div className="min-h-screen flex" style={{ background: "#0B1340" }}>
+    <div className="min-h-screen flex" style={{ background: "var(--brand-navy)" }}>
       <div className="w-[45%] flex flex-col justify-center px-16 py-12">
         <div className="flex items-center gap-3 mb-10">
           <LoginLogo size={36} />
           <div>
             <span className="text-white font-black text-lg">SAHU </span>
-            <span className="font-black text-lg" style={{ color: "#F97316" }}>CSC</span>
+            <span className="font-black text-lg" style={{ color: "var(--brand-orange)" }}>CSC</span>
             <p className="text-white/40 text-xs -mt-0.5">{t("common.platform")}</p>
           </div>
         </div>

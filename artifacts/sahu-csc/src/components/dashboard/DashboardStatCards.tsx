@@ -11,8 +11,8 @@ export function MobileStatCards({ data, isLoading }: { data: any; isLoading: boo
       value: isLoading ? null : `₹${(data?.currentBalance ?? 0).toLocaleString("en-IN")}`,
       change: data && data.currentBalance > 0 ? t('dashboard.running_balance') : t('dashboard.no_entries'),
       up: true,
-      accent: "linear-gradient(90deg, #0b2c60, #1a4a9e)",
-      iconGradient: "linear-gradient(135deg, #0b2c60 0%, #1a4a9e 100%)",
+      accent: "linear-gradient(90deg, var(--brand-navy-800), var(--brand-navy-600))",
+      iconGradient: "linear-gradient(135deg, var(--brand-navy-800) 0%, var(--brand-navy-600) 100%)",
       Icon: Wallet,
     },
     {
@@ -20,8 +20,8 @@ export function MobileStatCards({ data, isLoading }: { data: any; isLoading: boo
       value: isLoading ? null : `₹${(data?.todayCredits ?? 0).toLocaleString("en-IN")}`,
       change: `${data?.todayTransactions ?? 0} ${t('dashboard.transactions')}`,
       up: true,
-      accent: "linear-gradient(90deg, #10b981, #34d399)",
-      iconGradient: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+      accent: "linear-gradient(90deg, var(--color-success-light), var(--color-success-glow))",
+      iconGradient: "linear-gradient(135deg, var(--color-success-light) 0%, var(--color-success) 100%)",
       Icon: TrendingUp,
     },
     {
@@ -29,8 +29,8 @@ export function MobileStatCards({ data, isLoading }: { data: any; isLoading: boo
       value: isLoading ? null : `₹${(data?.todayDebits ?? 0).toLocaleString("en-IN")}`,
       change: `Month: ₹${(data?.monthDebits ?? 0).toLocaleString("en-IN")}`,
       up: false,
-      accent: "linear-gradient(90deg, #f97316, #fb923c)",
-      iconGradient: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
+      accent: "linear-gradient(90deg, var(--brand-orange), var(--brand-orange-400))",
+      iconGradient: "linear-gradient(135deg, var(--brand-orange) 0%, var(--brand-orange-600) 100%)",
       Icon: TrendingDown,
     },
     {
@@ -38,8 +38,8 @@ export function MobileStatCards({ data, isLoading }: { data: any; isLoading: boo
       value: isLoading ? null : String(data?.todayTransactions ?? 0),
       change: `${t('common.total')}: ₹${(data?.netProfitMonth ?? 0).toLocaleString("en-IN")} ${t('dashboard.net')}`,
       up: (data?.netProfitMonth ?? 0) >= 0,
-      accent: "linear-gradient(90deg, #8b5cf6, #a78bfa)",
-      iconGradient: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
+      accent: "linear-gradient(90deg, var(--color-violet-sm), #a78bfa)",
+      iconGradient: "linear-gradient(135deg, var(--color-violet-sm) 0%, var(--color-violet) 100%)",
       Icon: Activity,
     },
   ], [t, isLoading, data]);
@@ -48,20 +48,20 @@ export function MobileStatCards({ data, isLoading }: { data: any; isLoading: boo
     <div className="grid grid-cols-2 gap-3">
       {statCards.map((s) => (
         <div key={s.label} className="bg-white rounded-2xl overflow-hidden"
-          style={{ boxShadow: "0 2px 12px rgba(11,44,96,0.08), 0 1px 3px rgba(0,0,0,0.04)" }}>
+          style={{ boxShadow: "0 2px 12px var(--brand-navy-tint-md), 0 1px 3px rgba(0,0,0,0.04)" }}>
           <div style={{ height: 3, background: s.accent }} />
           <div className="p-3.5">
             <div className="flex items-start justify-between mb-2.5">
-              <p style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em" }}>{s.label}</p>
-              <div style={{ width: 30, height: 30, borderRadius: 9, background: s.iconGradient, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 3px 8px ${s.accent.includes("0b2c60") ? "rgba(11,44,96,0.30)" : s.accent.includes("10b981") ? "rgba(16,185,129,0.30)" : s.accent.includes("f97316") ? "rgba(249,115,22,0.30)" : "rgba(139,92,246,0.30)"}`, flexShrink: 0 }}>
+              <p style={{ fontSize: 10, fontWeight: 600, color: "var(--color-slate-400)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{s.label}</p>
+              <div style={{ width: 30, height: 30, borderRadius: 9, background: s.iconGradient, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 3px 8px ${s.accent.includes("0b2c60") ? "var(--brand-navy-shadow-md)" : s.accent.includes("10b981") ? "color-mix(in srgb, var(--color-success) 30%, transparent)" : s.accent.includes("f97316") ? "var(--brand-orange-border)" : "rgba(139,92,246,0.30)"}`, flexShrink: 0 }}>
                 <s.Icon size={14} color="#fff" />
               </div>
             </div>
             {isLoading
               ? <div className="h-6 w-20 mb-1 rounded bg-slate-100 animate-pulse" />
-              : <p style={{ fontSize: 19, fontWeight: 900, color: "#0b2c60", lineHeight: 1.1 }}>{s.value}</p>
+              : <p style={{ fontSize: 19, fontWeight: 900, color: "var(--brand-navy-800)", lineHeight: 1.1 }}>{s.value}</p>
             }
-            <p style={{ fontSize: 10, fontWeight: 600, marginTop: 5, color: s.up ? "#10b981" : "#f43f5e" }} className="truncate">
+            <p style={{ fontSize: 10, fontWeight: 600, marginTop: 5, color: s.up ? "var(--color-success-light)" : "var(--color-error-soft)" }} className="truncate">
               {s.change}
             </p>
           </div>

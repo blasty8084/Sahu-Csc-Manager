@@ -28,12 +28,12 @@ export function PageSkeleton() {
       `}</style>
 
       {/* Top animated progress bar */}
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: "rgba(11,44,96,0.08)", overflow: "hidden" }}>
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: "var(--brand-navy-tint-md)", overflow: "hidden" }}>
         <div
           style={{
             height: "100%",
             width: "45%",
-            background: "linear-gradient(90deg, #0b2c60, #1a4a9e, #f97316)",
+            background: "linear-gradient(90deg, var(--brand-navy-800), var(--brand-navy-600), var(--brand-orange))",
             animation: "govBar 1.8s ease-in-out infinite",
             borderRadius: "0 3px 3px 0",
           }}
@@ -47,7 +47,7 @@ export function PageSkeleton() {
             width: 100,
             height: 100,
             borderRadius: "50%",
-            border: "2px solid rgba(11,44,96,0.10)",
+            border: "2px solid var(--brand-navy-tint-md)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -59,8 +59,8 @@ export function PageSkeleton() {
               height: 80,
               borderRadius: "50%",
               border: "2.5px solid transparent",
-              borderTopColor: "#0b2c60",
-              borderRightColor: "rgba(11,44,96,0.3)",
+              borderTopColor: "var(--brand-navy-800)",
+              borderRightColor: "var(--brand-navy-shadow-md)",
               position: "absolute",
               animation: "govSpin 1s linear infinite",
             }}
@@ -85,20 +85,20 @@ export function PageSkeleton() {
         style={{
           fontSize: 22,
           fontWeight: 900,
-          color: "#0b2c60",
+          color: "var(--brand-navy-800)",
           letterSpacing: "0.05em",
           margin: 0,
           lineHeight: 1,
         }}
       >
-        SAHU <span style={{ color: "#f97316" }}>CSC</span>
+        SAHU <span style={{ color: "var(--brand-orange)" }}>CSC</span>
       </h1>
 
       {/* Subtitle */}
       <p
         style={{
           fontSize: 10,
-          color: "#94a3b8",
+          color: "var(--color-slate-400)",
           fontWeight: 600,
           letterSpacing: "0.14em",
           textTransform: "uppercase",
@@ -118,7 +118,7 @@ export function PageSkeleton() {
               width: 6,
               height: 6,
               borderRadius: "50%",
-              background: i === 0 ? "#0b2c60" : i === 1 ? "#1a4a9e" : "#f97316",
+              background: i === 0 ? "var(--brand-navy-800)" : i === 1 ? "var(--brand-navy-600)" : "var(--brand-orange)",
               animation: `govPulse 1.2s ease-in-out ${i * 0.2}s infinite`,
             }}
           />
@@ -137,7 +137,7 @@ export function PageSkeleton() {
           left: 0,
           right: 0,
           height: 3,
-          background: "linear-gradient(90deg, #0b2c60 0%, #1a4a9e 40%, #f97316 100%)",
+          background: "linear-gradient(90deg, var(--brand-navy-800) 0%, var(--brand-navy-600) 40%, var(--brand-orange) 100%)",
         }}
       />
 
@@ -146,7 +146,7 @@ export function PageSkeleton() {
         style={{
           position: "absolute",
           inset: 0,
-          backgroundImage: `radial-gradient(circle at 20% 80%, rgba(11,44,96,0.03) 0%, transparent 50%),
+          backgroundImage: `radial-gradient(circle at 20% 80%, var(--brand-navy-tint-sm) 0%, transparent 50%),
                             radial-gradient(circle at 80% 20%, rgba(249,115,22,0.03) 0%, transparent 50%)`,
           pointerEvents: "none",
           zIndex: 0,

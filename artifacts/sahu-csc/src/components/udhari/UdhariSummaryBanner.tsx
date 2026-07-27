@@ -9,14 +9,14 @@ export function UdhariSummaryBanner() {
   const cards = [
     {
       label: t("udhari.to_collect"), value: (data as any)?.toCollect ?? 0,
-      accent: "linear-gradient(135deg,#f97316,#ea580c)", color: "#ea580c",
-      light: "rgba(249,115,22,0.07)", border: "rgba(249,115,22,0.18)",
+      accent: "linear-gradient(135deg,var(--brand-orange),var(--brand-orange-600))", color: "var(--brand-orange-600)",
+      light: "var(--brand-orange-tint-07)", border: "var(--brand-orange-tint-18)",
       icon: ArrowUpRight, sub: t("udhari.customers_owe"),
     },
     {
       label: t("udhari.to_pay"), value: (data as any)?.toPay ?? 0,
-      accent: "linear-gradient(135deg,#10b981,#059669)", color: "#059669",
-      light: "rgba(16,185,129,0.07)", border: "rgba(16,185,129,0.18)",
+      accent: "linear-gradient(135deg,var(--color-success-light),var(--color-success))", color: "var(--color-success)",
+      light: "var(--color-success-bg)", border: "var(--color-success-bg)",
       icon: ArrowDownLeft, sub: t("udhari.you_owe"),
     },
   ];
@@ -28,11 +28,11 @@ export function UdhariSummaryBanner() {
           <div style={{ height: 3, background: c.accent }} />
           <div className="px-4 py-3 flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase" as const, letterSpacing: "0.07em" }}>{c.label}</p>
+              <p style={{ fontSize: 10, fontWeight: 700, color: "var(--color-slate-400)", textTransform: "uppercase" as const, letterSpacing: "0.07em" }}>{c.label}</p>
               {isLoading
                 ? <div className="h-6 w-24 mt-1 rounded bg-slate-100 animate-pulse" />
                 : <p style={{ fontSize: 18, fontWeight: 900, color: c.color, lineHeight: 1.1, marginTop: 3 }}>{fmt(c.value)}</p>}
-              <p style={{ fontSize: 10, color: "#94a3b8", marginTop: 3 }}>{c.sub}</p>
+              <p style={{ fontSize: 10, color: "var(--color-slate-400)", marginTop: 3 }}>{c.sub}</p>
             </div>
             <div style={{ width: 36, height: 36, borderRadius: 11, flexShrink: 0, background: c.accent, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 10px ${c.color}28` }}>
               <c.icon size={16} color="#fff" />

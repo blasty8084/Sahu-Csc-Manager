@@ -21,6 +21,7 @@
 - [archiver v8 breaking change](archiver-v8-esm.md) — archiver@8 is ESM-only, dropped the callable `archiver(format, opts)` factory; must use `new ZipArchive(opts)` from its named export instead
 - [Field-level encryption scope](field-encryption-scope.md) — only encrypt free-text PII not used in ILIKE search; searched fields (name/mobile/email) must stay plaintext or search breaks
 - [Auto-generated secrets pattern](field-encryption-scope.md) — persist generated crypto keys in the settings table (like VAPID keys) instead of requesting a secret from the user, when the key is purely internal
+- [Color token replacement](color-token-replacement.md) — scripts/replace-colors.mjs; rgba helper double-escape bug; what stays un-tokenized
 - [Doc sprawl in this project](doc-sprawl.md) — many parallel versioned .md files (replit.md, DOCS.md, CHANGELOG.md, CHANGELOG_V3.md, BUILD.md, WORKFLOWS.md, ReplitV3.md, architectureV3.md) must all be updated together on version bumps; v2 files are superseded and skipped
 - [Auto-generated secrets pattern](auto-generated-secrets.md) — encryption key + VAPID both eager-init at startup via ensureEncryptionKey/ensureVapidKeys; initPush after; settings table persists
 - [Query cache & load testing](query-cache-and-loadtest.md) — TTL cache scoping per-user vs global; rate-limiter loopback skip must be gated non-production since trust proxy makes req.ip spoofable

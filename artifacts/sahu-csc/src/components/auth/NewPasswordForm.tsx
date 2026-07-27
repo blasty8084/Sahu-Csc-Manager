@@ -46,7 +46,7 @@ export function NewPasswordForm({
       <div className="flex flex-col items-center mb-6">
         <div
           className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm mb-3"
-          style={{ background: "#fef3c7" }}
+          style={{ background: "var(--color-warning-bg)" }}
         >
           <KeyRound className="w-6 h-6 text-amber-500" />
         </div>
@@ -89,10 +89,10 @@ export function NewPasswordForm({
                       width: `${Math.min(100, (adminLinkSecondsLeft / 600) * 100)}%`,
                       background:
                         adminLinkSecondsLeft <= 60
-                          ? "#ef4444"
+                          ? "var(--color-error-std)"
                           : adminLinkSecondsLeft <= 120
-                          ? "#f97316"
-                          : "#2563eb",
+                          ? "var(--brand-orange)"
+                          : "var(--color-blue-600)",
                     }}
                   />
                 </div>
@@ -101,10 +101,10 @@ export function NewPasswordForm({
                   style={{
                     color:
                       adminLinkSecondsLeft <= 60
-                        ? "#dc2626"
+                        ? "var(--color-error-dim)"
                         : adminLinkSecondsLeft <= 120
-                        ? "#ea580c"
-                        : "#1d4ed8",
+                        ? "var(--brand-orange-600)"
+                        : "var(--color-blue-700)",
                   }}
                 >
                   {String(Math.floor(adminLinkSecondsLeft / 60)).padStart(2, "0")}:
@@ -146,9 +146,9 @@ export function NewPasswordForm({
               <div key={r.label} className="flex items-center gap-1.5 text-[11px]">
                 <div
                   className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                  style={{ background: r.test(password) ? "#22c55e" : "#d1d5db" }}
+                  style={{ background: r.test(password) ? "var(--color-success-soft)" : "var(--color-gray-300)" }}
                 />
-                <span style={{ color: r.test(password) ? "#16a34a" : "#9ca3af" }}>{r.label}</span>
+                <span style={{ color: r.test(password) ? "var(--color-success-dim)" : "var(--color-gray-400)" }}>{r.label}</span>
               </div>
             ))}
           </div>
@@ -192,7 +192,7 @@ export function NewPasswordForm({
           type="submit"
           disabled={submitting || !pwdRulesMet || !passwordsMatch || adminLinkExpired}
           className="w-full h-11 font-bold text-white border-0"
-          style={{ background: "linear-gradient(135deg, #1a2560, #0f1a4a)" }}
+          style={{ background: "linear-gradient(135deg, var(--brand-navy-650), #0f1a4a)" }}
         >
           {submitting ? (
             <span className="flex items-center gap-2">

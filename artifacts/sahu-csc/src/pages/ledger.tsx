@@ -130,9 +130,9 @@ export default function Ledger() {
     else { form.setValue("credit", 0); form.setValue("debit", amt); }
   }, [entryType, rawAmount]);
 
-  const accentColor = entryType === "credit" ? "#059669" : "#e11d48";
-  const accentGrad = entryType === "credit" ? "linear-gradient(135deg, #064e3b, #059669)" : "linear-gradient(135deg, #881337, #e11d48)";
-  const accentBg = entryType === "credit" ? "rgba(5,150,105,0.08)" : "rgba(225,29,72,0.08)";
+  const accentColor = entryType === "credit" ? "var(--color-success)" : "var(--color-error)";
+  const accentGrad = entryType === "credit" ? "linear-gradient(135deg, #064e3b, var(--color-success))" : "linear-gradient(135deg, #881337, var(--color-error))";
+  const accentBg = entryType === "credit" ? "var(--color-success-bg)" : "var(--color-error-bg)";
 
   return (
     <Layout>
@@ -153,7 +153,7 @@ export default function Ledger() {
             <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
               <DesktopSearchFilterBar customerName={customerName} setCustomerName={setCustomerName} setPage={setPage} showFilters={showFilters} setShowFilters={setShowFilters} hasFilters={hasFilters} startDate={startDate} endDate={endDate} serviceFilter={serviceFilter} clearFilters={clearFilters} />
               <DesktopFilterPanel showFilters={showFilters} t={t} startDate={startDate} setStartDate={setStartDate} endDate={endDate} setEndDate={setEndDate} setPage={setPage} serviceTypes={serviceTypes} serviceFilter={serviceFilter} setServiceFilter={setServiceFilter} getServiceColor={getServiceColor} />
-              <div style={{ background: "#fff", borderRadius: 20, overflow: "hidden", boxShadow: "0 2px 12px rgba(11,44,96,0.07)", border: "1px solid #e2e8f0", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+              <div style={{ background: "#fff", borderRadius: 20, overflow: "hidden", boxShadow: "0 2px 12px var(--brand-navy-tint-md)", border: "1px solid var(--color-slate-200)", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
                 <TableTabsHeader activeTab={activeTab} setActiveTab={setActiveTab} data={data} page={page} totalPages={totalPages} receiptEntries={receiptEntries} hasFilters={hasFilters} isOffline={isOffline} bgSyncCount={bgSyncCount} />
                 <PendingSyncBanners pendingEntries={pendingEntries} bgSyncCount={bgSyncCount} />
                 <DesktopReceiptsPanel activeTab={activeTab} receiptSearch={receiptSearch} setReceiptSearch={setReceiptSearch} receiptEntries={receiptEntries} getServiceColor={getServiceColor} setReceiptEntry={setReceiptEntry} setAutoDownloadReceipt={setAutoDownloadReceipt} />
@@ -174,7 +174,7 @@ export default function Ledger() {
       </div>
 
       {/* ── Floating action button (mobile) ── */}
-      {isMobile && <button onClick={openCreate} data-testid="button-new-entry" style={{ position: "fixed", bottom: 88, right: 20, width: 56, height: 56, borderRadius: 18, background: "linear-gradient(135deg,#f97316,#fb923c)", boxShadow: "0 8px 24px rgba(249,115,22,0.45)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 50 }}><Plus size={24} color="#fff" strokeWidth={2.5} /></button>}
+      {isMobile && <button onClick={openCreate} data-testid="button-new-entry" style={{ position: "fixed", bottom: 88, right: 20, width: 56, height: 56, borderRadius: 18, background: "linear-gradient(135deg,var(--brand-orange),var(--brand-orange-400))", boxShadow: "0 8px 24px rgba(249,115,22,0.45)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 50 }}><Plus size={24} color="#fff" strokeWidth={2.5} /></button>}
 
       {/* ── Entry form ── */}
       {isMobile && <MobileEntryFormDialog showForm={showForm} setShowForm={setShowForm} editEntry={editEntry} entryType={entryType} setEntryType={setEntryType} rawAmount={rawAmount} setRawAmount={setRawAmount} accentColor={accentColor} accentGrad={accentGrad} accentBg={accentBg} form={form} serviceTypes={serviceTypes} onSubmit={onSubmit} createMut={createMut} updateMut={updateMut} balance={balance} />}

@@ -41,7 +41,7 @@ export function DesktopExportFilters({
           const l = v === "today" ? "Today" : v === "week" ? "Week" : v === "month" ? "This Month" : "Last Month";
           return (
             <button key={v} onClick={() => { onQuickRange(v); setDateRange(v); }}
-              className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${dateRange === v ? "bg-[#0b2c60] text-white" : "text-slate-500 hover:text-slate-800"}`}>
+              className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${dateRange === v ? "bg-[var(--brand-navy-800)] text-white" : "text-slate-500 hover:text-slate-800"}`}>
               {l}
             </button>
           );
@@ -62,7 +62,7 @@ export function DesktopExportFilters({
       </div>
       <button onClick={onPreview} disabled={previewing || !startDate || !endDate}
         className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-lg transition-all disabled:opacity-50 h-9 ml-auto"
-        style={{ background: `linear-gradient(135deg, ${NAVY}, #1a4a9e)` }}>
+        style={{ background: `linear-gradient(135deg, ${NAVY}, var(--brand-navy-600))` }}>
         {previewing ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />}
         {previewing ? "Searching…" : "Preview Receipts"}
       </button>

@@ -208,14 +208,14 @@ export function ReceiptDownloadButton({
 
   // ── Action-panel buttons ──────────────────────────────────────────────────────
   const actions = [
-    { Icon: Printer,      label: "Print",                         onClick: handlePrint,       disabled: false,          color: "#475569" },
-    { Icon: Download,     label: generatingPdf ? "…" : "PDF",    onClick: handleDownloadPdf, disabled: generatingPdf,  color: "#0b2c60" },
-    { Icon: MessageCircle, label: sendingWa ? "…" : "WhatsApp",  onClick: handleWhatsApp,    disabled: sendingWa,      color: "#22c55e" },
-    { Icon: Share2,       label: "Share",                         onClick: handleShare,       disabled: false,          color: "#f97316" },
+    { Icon: Printer,      label: "Print",                         onClick: handlePrint,       disabled: false,          color: "var(--color-slate-600)" },
+    { Icon: Download,     label: generatingPdf ? "…" : "PDF",    onClick: handleDownloadPdf, disabled: generatingPdf,  color: "var(--brand-navy-800)" },
+    { Icon: MessageCircle, label: sendingWa ? "…" : "WhatsApp",  onClick: handleWhatsApp,    disabled: sendingWa,      color: "var(--color-success-soft)" },
+    { Icon: Share2,       label: "Share",                         onClick: handleShare,       disabled: false,          color: "var(--brand-orange)" },
   ];
 
   return (
-    <div style={{ background: "#fff", borderTop: "1px solid #f1f5f9", padding: "10px 16px 12px", display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 6, flexShrink: 0 }}>
+    <div style={{ background: "#fff", borderTop: "1px solid var(--color-slate-100)", padding: "10px 16px 12px", display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 6, flexShrink: 0 }}>
       {actions.map(({ Icon, label, onClick, disabled, color }) => (
         <button
           key={label}
@@ -223,19 +223,19 @@ export function ReceiptDownloadButton({
           disabled={disabled}
           style={{
             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-            gap: 5, padding: "8px 4px", borderRadius: 12, border: "none", background: "#f8fafc",
+            gap: 5, padding: "8px 4px", borderRadius: 12, border: "none", background: "var(--color-slate-50)",
             cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.6 : 1,
             transition: "all 0.15s",
           }}
         >
           <div style={{
             width: 36, height: 36, borderRadius: "50%", background: "#fff",
-            boxShadow: "0 1px 4px rgba(0,0,0,0.10)", border: "1px solid #e2e8f0",
+            boxShadow: "0 1px 4px rgba(0,0,0,0.10)", border: "1px solid var(--color-slate-200)",
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>
             <Icon size={16} color={color} />
           </div>
-          <span style={{ fontSize: 9, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</span>
+          <span style={{ fontSize: 9, fontWeight: 700, color: "var(--color-slate-500)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</span>
         </button>
       ))}
     </div>

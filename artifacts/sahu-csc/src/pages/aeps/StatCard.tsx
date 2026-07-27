@@ -12,7 +12,7 @@ export function StatCard({
   return (
     <div
       className={`bg-white rounded-2xl overflow-hidden ${wide ? "col-span-2 sm:col-span-1" : ""}`}
-      style={{ boxShadow: "0 2px 14px rgba(11,44,96,0.09), 0 1px 3px rgba(0,0,0,0.04)" }}
+      style={{ boxShadow: "0 2px 14px var(--brand-navy-tint-md), 0 1px 3px rgba(0,0,0,0.04)" }}
     >
       <div style={{ height: 3, background: accent }} />
       <div className="px-4 py-3.5 flex items-center gap-3">
@@ -26,7 +26,7 @@ export function StatCard({
           <Icon size={17} color="#fff" />
         </div>
         <div className="min-w-0">
-          <p style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 2 }}>
+          <p style={{ fontSize: 10, color: "var(--color-slate-400)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 2 }}>
             {label}
           </p>
           <p style={{ fontSize: 18, fontWeight: 900, color, lineHeight: 1.1 }}>

@@ -7,7 +7,7 @@ function StatCard({ icon: Icon, label, value, accent }: {
 }) {
   return (
     <div className="rounded-2xl bg-white border border-slate-100 p-4 flex items-center gap-3"
-      style={{ boxShadow: "0 2px 8px rgba(11,44,96,0.06)" }}>
+      style={{ boxShadow: "0 2px 8px var(--brand-navy-tint-md)" }}>
       <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
         style={{ background: accent }}>
         <Icon size={18} color="#fff" />
@@ -42,13 +42,13 @@ export function BroadcastStatsBar({ stats, statsLoading }: BroadcastStatsBarProp
         icon={Bell}
         label={t("broadcast.push_subscribers")}
         value={stats?.pushSubscribers ?? 0}
-        accent="linear-gradient(135deg,#7c3aed,#a855f7)"
+        accent="linear-gradient(135deg,var(--color-violet),#a855f7)"
       />
       <StatCard
         icon={Users}
         label={t("broadcast.active_users")}
         value={stats?.activeUsers ?? 0}
-        accent="linear-gradient(135deg,#0b2c60,#1e4da1)"
+        accent="linear-gradient(135deg,var(--brand-navy-800),#1e4da1)"
       />
     </div>
   );

@@ -38,7 +38,7 @@ export default function DesktopReports() {
         breakdown={breakdown}
       />
 
-      <div style={{ flex: 1, overflow: "auto", background: "#f1f5f9", padding: "20px 28px 28px" }}>
+      <div style={{ flex: 1, overflow: "auto", background: "var(--color-slate-100)", padding: "20px 28px 28px" }}>
         {activeTab === "daily"    && <DailyTabPanel    daily={daily}           filters={filters} />}
         {activeTab === "monthly"  && <MonthlyTabPanel  monthly={monthly}       filters={filters} />}
         {activeTab === "aeps"     && <AepsTabPanel     aepsReport={aepsReport} filters={filters} />}

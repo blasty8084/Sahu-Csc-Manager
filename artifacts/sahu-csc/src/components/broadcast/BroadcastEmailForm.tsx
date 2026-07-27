@@ -52,11 +52,11 @@ export function BroadcastEmailForm({
       )}
 
       <div className="rounded-2xl bg-white border border-slate-100 overflow-hidden"
-        style={{ boxShadow: "0 2px 12px rgba(11,44,96,0.07)" }}>
+        style={{ boxShadow: "0 2px 12px var(--brand-navy-tint-md)" }}>
         <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
-          <Mail size={16} className="text-[#0b2c60]" />
+          <Mail size={16} className="text-[var(--brand-navy-800)]" />
           <span className="font-semibold text-slate-800 text-sm">{t("broadcast.tab_email")}</span>
-          <Badge className="ml-auto text-xs border-none" style={{ background: "#0b2c6015", color: "#0b2c60" }}>
+          <Badge className="ml-auto text-xs border-none" style={{ background: "var(--brand-navy-800)15", color: "var(--brand-navy-800)" }}>
             {stats?.usersWithEmail ?? 0} with email
           </Badge>
         </div>
@@ -72,8 +72,8 @@ export function BroadcastEmailForm({
                 <button key={value} onClick={() => setRecipientFilter(value)}
                   className="flex flex-col items-start px-3 py-2.5 rounded-xl border text-left transition-all"
                   style={recipientFilter === value
-                    ? { background: "#eff6ff", borderColor: "#0b2c60", color: "#0b2c60" }
-                    : { background: "#fff", borderColor: "#e2e8f0", color: "#64748b" }}>
+                    ? { background: "var(--surface-toast-blue)", borderColor: "var(--brand-navy-800)", color: "var(--brand-navy-800)" }
+                    : { background: "#fff", borderColor: "var(--color-slate-200)", color: "var(--color-slate-500)" }}>
                   <span className="text-sm font-semibold">{count} users</span>
                   <span className="text-xs opacity-70">{label}</span>
                 </button>
@@ -111,7 +111,7 @@ export function BroadcastEmailForm({
           </div>
 
           <Button className="w-full font-bold text-sm h-11"
-            style={{ background: "linear-gradient(135deg,#0b2c60,#1e4da1)", color: "#fff" }}
+            style={{ background: "linear-gradient(135deg,var(--brand-navy-800),#1e4da1)", color: "#fff" }}
             disabled={!emailSubject.trim() || !emailBody.trim() || !stats?.smtpConfigured || isPending || emailRecipientCount === 0}
             onClick={onSubmit}>
             {isPending

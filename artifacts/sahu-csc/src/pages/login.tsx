@@ -33,13 +33,13 @@ function MobileLogin(props: Omit<LoginFormContentProps, "onForgotPassword"> & Tw
   const { challenge, onVerifySuccess, onBackFromChallenge } = props;
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden" style={{ background: "#0B1340" }}>
+    <div className="h-screen flex flex-col overflow-hidden" style={{ background: "var(--brand-navy)" }}>
       <div className="flex-shrink-0 pt-6 px-6 pb-4 flex flex-col items-center text-center">
         <LoginLogo size={52} />
         <div className="mt-2.5">
           <h1 className="text-xl font-black">
             <span className="text-white">SAHU </span>
-            <span style={{ color: "#F97316" }}>CSC</span>
+            <span style={{ color: "var(--brand-orange)" }}>CSC</span>
           </h1>
           <p className="text-white/50 text-xs">{t('nav.management_platform')}</p>
         </div>
@@ -90,13 +90,13 @@ function MobileLogin(props: Omit<LoginFormContentProps, "onForgotPassword"> & Tw
                 </div>
 
                 <Link href="/register">
-                  <div className="mt-3 flex items-center gap-3 px-4 py-3.5 rounded-2xl border-2 border-dashed cursor-pointer" style={{ borderColor: "#bfdbfe", background: "#eff6ff" }}>
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "#dbeafe" }}>
-                      <UserPlus className="w-5 h-5" style={{ color: "#0b2c60" }} />
+                  <div className="mt-3 flex items-center gap-3 px-4 py-3.5 rounded-2xl border-2 border-dashed cursor-pointer" style={{ borderColor: "var(--surface-blue-tint-sm)", background: "var(--surface-toast-blue)" }}>
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "var(--surface-blue-tint)" }}>
+                      <UserPlus className="w-5 h-5" style={{ color: "var(--brand-navy-800)" }} />
                     </div>
                     <div className="flex-1">
                       <p className="text-sm text-gray-500">{t('auth.login.no_account')}</p>
-                      <p className="text-sm font-bold flex items-center gap-1 mt-0.5" style={{ color: "#0b2c60" }}>
+                      <p className="text-sm font-bold flex items-center gap-1 mt-0.5" style={{ color: "var(--brand-navy-800)" }}>
                         {t('auth.login.register_cta')} <ArrowRight className="w-3.5 h-3.5" />
                       </p>
                     </div>
@@ -127,7 +127,7 @@ function DesktopLogin(props: Omit<LoginFormContentProps, "onForgotPassword"> & T
   const { challenge, onVerifySuccess, onBackFromChallenge } = props;
 
   return (
-    <div className="h-screen overflow-hidden flex flex-col" style={{ background: "#0B1340" }}>
+    <div className="h-screen overflow-hidden flex flex-col" style={{ background: "var(--brand-navy)" }}>
       <div className="flex flex-1 min-h-0">
         <DesktopHeroPanel />
 
@@ -158,13 +158,13 @@ function DesktopLogin(props: Omit<LoginFormContentProps, "onForgotPassword"> & T
                   </div>
 
                   <Link href="/register">
-                    <div className="mt-3 flex items-center gap-3 px-4 py-3.5 rounded-2xl border-2 border-dashed cursor-pointer transition-colors hover:bg-blue-100" style={{ borderColor: "#bfdbfe", background: "#eff6ff" }}>
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "#dbeafe" }}>
-                        <UserPlus className="w-5 h-5" style={{ color: "#0b2c60" }} />
+                    <div className="mt-3 flex items-center gap-3 px-4 py-3.5 rounded-2xl border-2 border-dashed cursor-pointer transition-colors hover:bg-blue-100" style={{ borderColor: "var(--surface-blue-tint-sm)", background: "var(--surface-toast-blue)" }}>
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "var(--surface-blue-tint)" }}>
+                        <UserPlus className="w-5 h-5" style={{ color: "var(--brand-navy-800)" }} />
                       </div>
                       <div className="flex-1">
                         <p className="text-sm text-gray-500">{t('auth.login.no_account')}</p>
-                        <p className="text-sm font-bold flex items-center gap-1 mt-0.5" style={{ color: "#0b2c60" }}>
+                        <p className="text-sm font-bold flex items-center gap-1 mt-0.5" style={{ color: "var(--brand-navy-800)" }}>
                           Register here <ArrowRight className="w-3.5 h-3.5" />
                         </p>
                       </div>

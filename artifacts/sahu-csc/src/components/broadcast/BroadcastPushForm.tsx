@@ -29,12 +29,12 @@ export function BroadcastPushForm({
 }: BroadcastPushFormProps) {
   return (
     <div className="rounded-2xl bg-white border border-slate-100 overflow-hidden"
-      style={{ boxShadow: "0 2px 12px rgba(11,44,96,0.07)" }}>
+      style={{ boxShadow: "0 2px 12px var(--brand-navy-tint-md)" }}>
       <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
         <Bell size={16} className="text-violet-600" />
         <span className="font-semibold text-slate-800 text-sm">Compose Push Notification</span>
         {pushSubscribers > 0
-          ? <Badge className="ml-auto text-xs border-none" style={{ background: "#7c3aed20", color: "#7c3aed" }}>{pushSubscribers} device{pushSubscribers !== 1 ? "s" : ""}</Badge>
+          ? <Badge className="ml-auto text-xs border-none" style={{ background: "var(--color-violet)20", color: "var(--color-violet)" }}>{pushSubscribers} device{pushSubscribers !== 1 ? "s" : ""}</Badge>
           : <Badge className="ml-auto text-xs bg-slate-100 text-slate-500 border-none">No subscribers</Badge>}
       </div>
 
@@ -75,7 +75,7 @@ export function BroadcastPushForm({
         </div>
 
         <Button className="w-full font-bold text-sm h-11"
-          style={{ background: "linear-gradient(135deg,#7c3aed,#a855f7)", color: "#fff" }}
+          style={{ background: "linear-gradient(135deg,var(--color-violet),#a855f7)", color: "#fff" }}
           disabled={!pushTitle.trim() || !pushBody.trim() || isPending || pushSubscribers === 0}
           onClick={onSubmit}>
           {isPending

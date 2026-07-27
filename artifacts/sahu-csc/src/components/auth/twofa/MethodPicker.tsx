@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Mail, Smartphone, ChevronRight, ArrowLeft, Loader2 } from "lucide-react";
 import type { Method } from "./useTwoFactorStep";
 
-const NAVY = "#0B1340";
+const NAVY = "var(--brand-navy)";
 
 interface MethodPickerProps {
   choosing: Method | null;
@@ -17,7 +17,7 @@ export function MethodPicker({ choosing, chooseError, maskedEmail, totpEnrolled,
   return (
     <motion.div key="picker" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} className="space-y-3">
       {chooseError && (
-        <p className="text-xs font-medium text-center rounded-lg bg-red-50 border border-red-200 px-3 py-2" style={{ color: "#be123c" }}>
+        <p className="text-xs font-medium text-center rounded-lg bg-red-50 border border-red-200 px-3 py-2" style={{ color: "var(--color-error-dark)" }}>
           {chooseError}
         </p>
       )}
@@ -25,9 +25,9 @@ export function MethodPicker({ choosing, chooseError, maskedEmail, totpEnrolled,
       {/* Email OTP card */}
       <button type="button" onClick={() => onChoose("otp")} disabled={!!choosing}
         className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl border-2 text-left transition-all disabled:opacity-60"
-        style={{ borderColor: "#dbeafe", background: "#eff6ff" }}>
+        style={{ borderColor: "var(--surface-blue-tint)", background: "var(--surface-toast-blue)" }}>
         <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-          style={{ background: "linear-gradient(135deg, #0b2c60, #1d4ed8)" }}>
+          style={{ background: "linear-gradient(135deg, var(--brand-navy-800), var(--color-blue-700))" }}>
           {choosing === "otp" ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <Mail className="w-5 h-5 text-white" />}
         </div>
         <div className="flex-1 min-w-0">
@@ -40,13 +40,13 @@ export function MethodPicker({ choosing, chooseError, maskedEmail, totpEnrolled,
       {/* Authenticator App card */}
       <button type="button" onClick={() => onChoose("totp")} disabled={!!choosing}
         className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl border-2 text-left transition-all disabled:opacity-60"
-        style={{ borderColor: "#fed7aa", background: "#fff7ed" }}>
+        style={{ borderColor: "var(--color-orange-200)", background: "var(--surface-warn-bg)" }}>
         <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-          style={{ background: "linear-gradient(135deg, #c2410c, #f97316)" }}>
+          style={{ background: "linear-gradient(135deg, var(--brand-orange-700), var(--brand-orange))" }}>
           {choosing === "totp" ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <Smartphone className="w-5 h-5 text-white" />}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold" style={{ color: "#7c2d12" }}>Authenticator App</p>
+          <p className="text-sm font-bold" style={{ color: "var(--color-orange-900)" }}>Authenticator App</p>
           <p className="text-xs text-gray-500 mt-0.5">
             {totpEnrolled
               ? "Use your Google Authenticator, Authy, or TOTP app"

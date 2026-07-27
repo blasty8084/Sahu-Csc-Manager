@@ -35,9 +35,9 @@ export function DesktopTransactionsTable({
     <div style={{ flex: 1, overflowX: "auto", overflowY: "auto", display: activeTab !== "transactions" ? "none" : undefined }}>
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
-          <tr style={{ background: "#f8fafc", borderBottom: "2px solid rgba(11,44,96,0.08)" }}>
+          <tr style={{ background: "var(--color-slate-50)", borderBottom: "2px solid var(--brand-navy-tint-md)" }}>
             {([{ label: "#", w: 44 }, { label: "Receipt No", w: 126 }, { label: "Date", w: 100 }, { label: "Customer" }, { label: "Service", w: 156 }, { label: "Credit", w: 108, right: true }, { label: "Debit", w: 108, right: true }, { label: "Balance", w: 118, right: true }, { label: "Note", w: 130 }, { label: "", w: 100 }] as any[]).map((col: any) => (
-              <th key={col.label} style={{ padding: "11px 14px", textAlign: col.right ? "right" : "left", fontSize: 10, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap", width: col.w }}>
+              <th key={col.label} style={{ padding: "11px 14px", textAlign: col.right ? "right" : "left", fontSize: 10, fontWeight: 800, color: "var(--color-slate-400)", textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap", width: col.w }}>
                 {col.label}
               </th>
             ))}
@@ -46,10 +46,10 @@ export function DesktopTransactionsTable({
         <tbody>
           {isLoading ? (
             [...Array(8)].map((_, i) => (
-              <tr key={i} style={{ borderBottom: "1px solid rgba(11,44,96,0.05)" }}>
+              <tr key={i} style={{ borderBottom: "1px solid var(--brand-navy-tint-sm)" }}>
                 {[44, 110, 90, 0, 130, 90, 90, 100, 110, 90].map((w, j) => (
                   <td key={j} style={{ padding: "13px 14px" }}>
-                    <div style={{ height: 12, borderRadius: 6, background: "#f1f5f9", width: w || "80%" }} />
+                    <div style={{ height: 12, borderRadius: 6, background: "var(--color-slate-100)", width: w || "80%" }} />
                   </td>
                 ))}
               </tr>
@@ -110,8 +110,8 @@ export function MobileTransactionsList({
         groupByDate(data.entries).map(([date, txns]) => (
           <div key={date}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 4px 6px" }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.08em", whiteSpace: "nowrap" }}>{fmtDateGroup(date, t)}</p>
-              <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
+              <p style={{ fontSize: 11, fontWeight: 700, color: "var(--color-slate-500)", textTransform: "uppercase", letterSpacing: "0.08em", whiteSpace: "nowrap" }}>{fmtDateGroup(date, t)}</p>
+              <div style={{ flex: 1, height: 1, background: "var(--color-slate-200)" }} />
             </div>
             {txns.map((entry: any) => (
               <MobileLedgerCard key={entry.id} entry={entry}

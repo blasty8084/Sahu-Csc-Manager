@@ -262,13 +262,24 @@ html.dark {
   --brand-navy-tint-xs:     rgba(11, 44, 96, 0.025);
   --brand-navy-tint-sm:     rgba(11, 44, 96, 0.03);
   --brand-navy-tint-md:     rgba(11, 44, 96, 0.06);
+  --brand-navy-border:      rgba(11, 44, 96, 0.12);  /* card borders, input rings   */
+  --brand-navy-border-md:   rgba(11, 44, 96, 0.18);  /* heavier borders / dividers  */
   --brand-navy-shadow:      rgba(11, 44, 96, 0.28);
   --brand-navy-shadow-sm:   rgba(11, 44, 96, 0.25);
+  --brand-navy-shadow-md:   rgba(11, 44, 96, 0.30);  /* dropdown / popover shadows  */
+  --brand-orange-tint-18:   rgba(249, 115, 22, 0.18); /* between tint-sm and tint-md */
+  --brand-orange-tint-07:   rgba(249, 115, 22, 0.07); /* very subtle orange wash     */
+  --brand-white-glass:      rgba(255, 255, 255, 0.07); /* near-invisible overlay      */
   --brand-white-low:        rgba(255, 255, 255, 0.08);
   --brand-white-mid:        rgba(255, 255, 255, 0.12);
   --brand-white-high:       rgba(255, 255, 255, 0.18);
   --brand-white-border:     rgba(255, 255, 255, 0.20);
+  --brand-white-25:         rgba(255, 255, 255, 0.25);
+  --brand-white-30:         rgba(255, 255, 255, 0.30);
   --brand-black-overlay:    rgba(0, 0, 0, 0.55);
+  --color-warning-tint:     rgba(245, 158, 11, 0.07);  /* amber bg wash   */
+  --color-warning-border:   rgba(245, 158, 11, 0.20);  /* amber border    */
+  --color-warning-amber-glow: rgba(251, 191, 36, 0.40); /* amber glow     */
 
   /* ── Slate / neutral scale ─ muted text, borders, card backgrounds ───────── */
   --color-slate-50:  #f8fafc;   /*  90 uses */
@@ -314,8 +325,21 @@ html.dark {
   --color-blue-600:  #2563eb;   /*              — blue medium          5 uses */
   --color-blue-700:  #1d4ed8;   /*              — blue dark           12 uses */
   --color-rose-400:  #f43f5e;
+  --color-rose-300:  #fca5a5;   /* red-300 — soft error fills      */
   --color-rose-200:  #fecdd3;
   --color-rose-100:  #fff1f2;
+  --color-orange-200: #fed7aa;  /* orange-200 — warn surfaces      */
+  --color-orange-50:  #fff7ed;  /* orange-50  — warn bg            */
+  --color-orange-800: #9a3412;  /* orange-800 — warn text dark     */
+  --color-orange-900: #7c2d12;  /* orange-900 — warn text darkest  */
+  --color-amber-700:  #b45309;  /* amber-700  — warn icon          */
+  --color-success-bg-light: #d1fae5; /* emerald-100                */
+  --color-gray-200:  #e5e7eb;   /* gray-200 — neutral borders      */
+  --color-gray-300:  #d1d5db;   /* gray-300 — neutral dividers     */
+  --color-gray-400:  #9ca3af;   /* gray-400 — muted text           */
+  --color-rose-800:  #9f1239;   /* rose-800 — error text darkest   */
+  --color-red-800:   #991b1b;   /* red-800  — error text dark      */
+  --surface-warn-bg: #fff7ed;   /* alias for orange-50 warn        */
 
   /* ── Special surface tokens ──────────────────────────────────────────────── */
   --surface-permission-bg:   #EEF0FF;

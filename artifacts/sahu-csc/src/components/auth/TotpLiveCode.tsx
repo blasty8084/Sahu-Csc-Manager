@@ -44,7 +44,7 @@ export function TotpLiveCode({ apiPath }: Props) {
   const pct   = step > 0 ? remaining / step : 0;
   const r     = 22;
   const circ  = 2 * Math.PI * r;
-  const color = pct > 0.6 ? "#10b981" : pct > 0.3 ? "#f97316" : "#ef4444";
+  const color = pct > 0.6 ? "var(--color-success-light)" : pct > 0.3 ? "var(--brand-orange)" : "var(--color-error-std)";
   const d1    = code ? code.slice(0, 3) : "• • •";
   const d2    = code ? code.slice(3)    : "• • •";
 
@@ -65,7 +65,7 @@ export function TotpLiveCode({ apiPath }: Props) {
 
         {/* Countdown ring */}
         <svg width="56" height="56" viewBox="0 0 56 56" className="flex-shrink-0">
-          <circle cx="28" cy="28" r={r} fill="none" stroke="#e5e7eb" strokeWidth="5" />
+          <circle cx="28" cy="28" r={r} fill="none" stroke="var(--color-gray-200)" strokeWidth="5" />
           <circle
             cx="28" cy="28" r={r} fill="none"
             stroke={color} strokeWidth="5" strokeLinecap="round"

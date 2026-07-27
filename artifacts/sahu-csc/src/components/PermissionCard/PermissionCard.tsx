@@ -92,15 +92,15 @@ export function PermissionCard() {
     // Backdrop — no backdrop-blur (GPU-heavy on mobile)
     <div
       className="fixed inset-0 z-[100] flex flex-col items-center justify-center px-5 pb-5"
-      style={{ backgroundColor: "rgba(0,0,0,0.55)", paddingTop: "40px" }}
+      style={{ backgroundColor: "var(--brand-black-overlay)", paddingTop: "40px" }}
     >
       {/* Shield icon floats above the card via negative bottom margin — outside
           the card's overflow:hidden so it's never clipped */}
       <div
         className="w-16 h-16 rounded-full flex items-center justify-center shadow-sm ring-4 ring-white relative z-10 shrink-0"
-        style={{ background: "#EEF0FF", marginBottom: "-32px" }}
+        style={{ background: "var(--surface-permission-bg)", marginBottom: "-32px" }}
       >
-        <ShieldCheck className="w-8 h-8" style={{ color: "#4F46E5" }} />
+        <ShieldCheck className="w-8 h-8" style={{ color: "var(--color-indigo)" }} />
       </div>
 
       {/* Card — max-height + flex column so content scrolls on small devices */}
@@ -112,7 +112,7 @@ export function PermissionCard() {
           maxHeight: "calc(100svh - 96px)",
           background: "#fff",
           borderRadius: 20,
-          boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
+          boxShadow: "0 20px 60px var(--brand-navy-shadow-sm)",
           animation: "perm-card-in 0.22s cubic-bezier(0.34,1.56,0.64,1) both",
           overflow: "hidden",
           position: "relative",
@@ -128,7 +128,7 @@ export function PermissionCard() {
             left: 0,
             height: 3,
             width: `${progressPct}%`,
-            background: "linear-gradient(90deg, #4F46E5, #818CF8)",
+            background: "linear-gradient(90deg, var(--color-indigo), #818CF8)",
             borderRadius: "0 2px 2px 0",
             transition: "width 0.5s cubic-bezier(0.4,0,0.2,1)",
             zIndex: 1,
@@ -185,8 +185,8 @@ export function PermissionCard() {
           <div className="mt-4 border border-gray-100 rounded-xl px-3">
             <PermissionRow
               icon={MapPin}
-              iconBg="#DCFCE7"
-              iconColor="#16A34A"
+              iconBg="var(--color-success-bg)"
+              iconColor="var(--color-success-dim)"
               title="Location"
               description="Needed to check nearby services and availability."
               status={locationStatus}
@@ -196,8 +196,8 @@ export function PermissionCard() {
             {!skipNotifications && (
               <PermissionRow
                 icon={Bell}
-                iconBg="#EEF0FF"
-                iconColor="#4F46E5"
+                iconBg="var(--surface-permission-bg)"
+                iconColor="var(--color-indigo)"
                 title="Notifications"
                 description="Get important updates and transaction alerts."
                 status={notifStatus}
@@ -207,8 +207,8 @@ export function PermissionCard() {
             )}
             <PermissionRow
               icon={FolderOpen}
-              iconBg="#FEF3C7"
-              iconColor="#D97706"
+              iconBg="var(--color-warning-bg)"
+              iconColor="var(--color-warning)"
               title="File Manager"
               description="Access photos and files for receipts, uploads, and exports."
               status={fileStatus}
@@ -230,7 +230,7 @@ export function PermissionCard() {
                 onClick={handleContinueStep1}
                 className="w-full h-11 mt-3 rounded-xl font-semibold text-sm text-white flex items-center justify-center gap-2 shadow-md active:opacity-90"
                 style={{
-                  background: "linear-gradient(135deg, #4F46E5, #4338CA)",
+                  background: "linear-gradient(135deg, var(--color-indigo), #4338CA)",
                   transition: "transform 0.1s ease",
                 }}
                 onPointerDown={e => (e.currentTarget.style.transform = "scale(0.97)")}
@@ -251,7 +251,7 @@ export function PermissionCard() {
             <div
               className="w-full h-11 mt-3 mb-1 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold text-white"
               style={{
-                background: "linear-gradient(135deg, #4F46E5, #4338CA)",
+                background: "linear-gradient(135deg, var(--color-indigo), #4338CA)",
                 opacity: canContinue ? 0.7 : 0.85,
                 transition: "opacity 0.3s ease",
               }}

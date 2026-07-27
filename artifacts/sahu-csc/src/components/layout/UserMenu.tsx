@@ -20,7 +20,7 @@ export function UserMenu({ open, onCancel, onConfirm }: UserMenuProps) {
           <div className="mx-auto w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center mb-3">
             <AlertTriangle size={22} className="text-amber-500" />
           </div>
-          <DialogTitle className="text-center text-[#0b2c60]">Sign out?</DialogTitle>
+          <DialogTitle className="text-center text-[var(--brand-navy-800)]">Sign out?</DialogTitle>
           <DialogDescription className="text-center text-sm text-slate-500 pt-1">
             You will be logged out of this session. Any unsaved changes may be lost.
           </DialogDescription>
@@ -29,7 +29,7 @@ export function UserMenu({ open, onCancel, onConfirm }: UserMenuProps) {
           <Button variant="outline" className="flex-1" onClick={onCancel}>
             Cancel
           </Button>
-          <Button className="flex-1 bg-[#0b2c60] hover:bg-[#0a2456] text-white" onClick={onConfirm}>
+          <Button className="flex-1 bg-[var(--brand-navy-800)] hover:bg-[#0a2456] text-white" onClick={onConfirm}>
             <LogOut size={14} className="mr-1.5" />
             Sign out
           </Button>

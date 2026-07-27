@@ -35,7 +35,7 @@ export function MobileExportTab({
   return (
     <div className="space-y-4 pb-4">
       {/* Scope summary */}
-      <div className="border rounded-2xl px-4 py-3.5 flex items-center gap-3" style={{ background: "#0b2c6010", borderColor: "#0b2c6026" }}>
+      <div className="border rounded-2xl px-4 py-3.5 flex items-center gap-3" style={{ background: "var(--brand-navy-800)10", borderColor: "var(--brand-navy-800)26" }}>
         <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: NAVY }}>
           <ArrowDownToLine size={18} className="text-white" />
         </div>
@@ -53,9 +53,9 @@ export function MobileExportTab({
         <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Format</p>
         <div className="grid grid-cols-2 gap-3">
           <button onClick={() => setExportFormat("pdf")}
-            className={`flex flex-col items-center gap-2 py-4 rounded-2xl border-2 transition-all ${exportFormat === "pdf" ? "border-[#f97316] bg-[#f97316]/5" : "border-slate-200"}`}>
-            <FileText size={24} className={exportFormat === "pdf" ? "text-[#f97316]" : "text-slate-400"} />
-            <span className={`text-sm font-semibold ${exportFormat === "pdf" ? "text-[#f97316]" : "text-slate-500"}`}>PDF</span>
+            className={`flex flex-col items-center gap-2 py-4 rounded-2xl border-2 transition-all ${exportFormat === "pdf" ? "border-[var(--brand-orange)] bg-[var(--brand-orange)]/5" : "border-slate-200"}`}>
+            <FileText size={24} className={exportFormat === "pdf" ? "text-[var(--brand-orange)]" : "text-slate-400"} />
+            <span className={`text-sm font-semibold ${exportFormat === "pdf" ? "text-[var(--brand-orange)]" : "text-slate-500"}`}>PDF</span>
             <span className="text-[10px] text-slate-400">Printable receipt</span>
           </button>
           <button onClick={() => setExportFormat("excel")}
@@ -74,9 +74,9 @@ export function MobileExportTab({
             { label: "All Receipts",  sub: preview ? `${preview.count} receipts · ₹${totalAmount.toLocaleString("en-IN")}` : "Preview first", active: selected.size === 0 && !!preview },
             { label: "Selected Only", sub: `${selected.size} selected · ₹${selTotal.toLocaleString("en-IN")}`, active: selected.size > 0 },
           ].map(opt => (
-            <div key={opt.label} className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${opt.active ? "bg-[#0b2c60]/5 border border-[#0b2c60]/20" : "bg-slate-50"}`}>
-              <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${opt.active ? "border-[#0b2c60]" : "border-slate-300"}`}>
-                {opt.active && <div className="w-2 h-2 rounded-full bg-[#0b2c60]" />}
+            <div key={opt.label} className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${opt.active ? "bg-[var(--brand-navy-800)]/5 border border-[var(--brand-navy-800)]/20" : "bg-slate-50"}`}>
+              <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${opt.active ? "border-[var(--brand-navy-800)]" : "border-slate-300"}`}>
+                {opt.active && <div className="w-2 h-2 rounded-full bg-[var(--brand-navy-800)]" />}
               </div>
               <div>
                 <p className="text-sm font-medium text-slate-800">{opt.label}</p>
@@ -97,7 +97,7 @@ export function MobileExportTab({
       {/* CTA */}
       <button onClick={handleDownload} disabled={downloading || !preview || preview.count === 0}
         className="w-full py-4 text-white text-base font-bold rounded-2xl flex items-center justify-center gap-2 transition-colors shadow-lg disabled:opacity-50"
-        style={{ background: SAFFRON, boxShadow: "0 4px 24px rgba(249,115,22,0.3)" }}>
+        style={{ background: SAFFRON, boxShadow: "0 4px 24px var(--brand-orange-border)" }}>
         {downloading
           ? <><Loader2 size={18} className="animate-spin" /> Generating ZIP…</>
           : exported

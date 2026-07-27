@@ -92,7 +92,7 @@ export function AepsOverviewTab() {
             </div>
 
             {/* AePS balance — highlighted */}
-            <div className="rounded-lg px-4 py-3 flex items-center justify-between" style={{ background: "linear-gradient(135deg,#0b2c60 0%,#0f3872 100%)" }}>
+            <div className="rounded-lg px-4 py-3 flex items-center justify-between" style={{ background: "linear-gradient(135deg,var(--brand-navy-800) 0%,var(--brand-navy-700) 100%)" }}>
               <div>
                 <p className="text-[11px] text-white/60 font-medium uppercase tracking-wide">AePS Balance</p>
                 <p className={`text-xl font-bold mt-0.5 ${s.latestBalance >= 0 ? "text-white" : "text-red-300"}`}>

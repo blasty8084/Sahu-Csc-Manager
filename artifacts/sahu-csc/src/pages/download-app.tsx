@@ -80,7 +80,7 @@ export default function DownloadApp() {
                 onClick={handleInstall}
                 disabled={installing}
                 className="bg-saffron-500 hover:bg-saffron-600 text-white gap-2"
-                style={{ backgroundColor: "#f97316" }}
+                style={{ backgroundColor: "var(--brand-orange)" }}
               >
                 <Download size={16} />
                 {installing ? "Installing…" : "Install App Now"}

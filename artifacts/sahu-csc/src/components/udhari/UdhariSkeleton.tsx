@@ -26,7 +26,7 @@ export function UdhariSummarySkeleton() {
     <div className="grid grid-cols-2 gap-3 mb-3">
       {[0, 1].map((i) => (
         <div key={i} className="bg-card rounded-2xl overflow-hidden border border-border shadow-sm">
-          <Pulse className="h-[3px] w-full rounded-none" style={{ background: "rgba(11,44,96,0.1)" }} />
+          <Pulse className="h-[3px] w-full rounded-none" style={{ background: "var(--brand-navy-tint-md)" }} />
           <div className="p-3 space-y-1.5">
             <Pulse className="h-2.5 w-16" />
             <Pulse className="h-6 w-20" />
@@ -41,7 +41,7 @@ export function UdhariCustomerHeaderSkeleton() {
   return (
     <div className="space-y-4" style={{ minHeight: "60vh" }}>
       <div className="bg-card rounded-2xl overflow-hidden border border-border shadow-sm">
-        <Pulse className="h-1 w-full rounded-none" style={{ background: "rgba(11,44,96,0.1)" }} />
+        <Pulse className="h-1 w-full rounded-none" style={{ background: "var(--brand-navy-tint-md)" }} />
         <div className="px-5 py-5 flex items-center gap-4">
           <Pulse className="w-12 h-12 rounded-full flex-shrink-0" />
           <div className="flex-1 space-y-1.5">

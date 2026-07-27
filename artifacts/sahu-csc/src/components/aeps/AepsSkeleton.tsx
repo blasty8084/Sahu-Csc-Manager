@@ -3,8 +3,8 @@ import { Pulse } from "../skeletons/Pulse";
 export function AepsSkeleton() {
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 14px rgba(11,44,96,0.09)" }}>
-        <Pulse className="h-1 w-full rounded-none" style={{ background: "rgba(249,115,22,0.15)" }} />
+      <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 14px var(--brand-navy-tint-md)" }}>
+        <Pulse className="h-1 w-full rounded-none" style={{ background: "var(--brand-orange-tint-sm)" }} />
         <div className="px-5 py-5 space-y-4">
           <div className="flex items-center justify-between">
             <div className="space-y-1.5">

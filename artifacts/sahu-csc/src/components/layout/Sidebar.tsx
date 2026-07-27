@@ -89,9 +89,9 @@ export function SidebarNav({
       {/* ── User footer ─────────────────────────────────────────── */}
       <div className="mx-3 mb-3 mt-0.5 p-2.5 rounded-2xl bg-white/8 border border-white/10 flex items-center gap-2.5">
         <Link href="/profile" className="flex-shrink-0 cursor-pointer">
-          <Avatar className="h-10 w-10 ring-2 ring-[#f97316]/60 shadow-sm">
+          <Avatar className="h-10 w-10 ring-2 ring-[var(--brand-orange)]/60 shadow-sm">
             {avatarSrc ? <AvatarImage src={avatarSrc} alt={displayName} className="object-cover" /> : null}
-            <AvatarFallback className="bg-[#f97316] text-white text-sm font-black">
+            <AvatarFallback className="bg-[var(--brand-orange)] text-white text-sm font-black">
               {initials}
             </AvatarFallback>
           </Avatar>

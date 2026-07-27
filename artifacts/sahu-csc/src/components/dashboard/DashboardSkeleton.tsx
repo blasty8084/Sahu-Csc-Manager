@@ -21,8 +21,8 @@ export function DashboardStatsSkeleton() {
   return (
     <div className="grid grid-cols-2 gap-3">
       {[0, 1, 2, 3].map((i) => (
-        <div key={i} className="bg-card rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px rgba(11,44,96,0.08)" }}>
-          <Pulse className="h-[3px] w-full rounded-none" style={{ background: "rgba(11,44,96,0.1)" }} />
+        <div key={i} className="bg-card rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px var(--brand-navy-tint-md)" }}>
+          <Pulse className="h-[3px] w-full rounded-none" style={{ background: "var(--brand-navy-tint-md)" }} />
           <div className="p-3.5 space-y-2.5">
             <div className="flex items-start justify-between">
               <Pulse className="h-2.5 w-20" />

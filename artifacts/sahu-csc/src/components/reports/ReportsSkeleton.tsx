@@ -6,7 +6,7 @@ export function ReportsSkeleton() {
       <div className="grid grid-cols-2 gap-2.5">
         {[0, 1, 2, 3].map((i) => (
           <div key={i} className="bg-white rounded-2xl overflow-hidden border border-border shadow-sm">
-            <Pulse className="h-[3px] w-full rounded-none" style={{ background: "rgba(11,44,96,0.1)" }} />
+            <Pulse className="h-[3px] w-full rounded-none" style={{ background: "var(--brand-navy-tint-md)" }} />
             <div className="p-3 space-y-2">
               <Pulse className="h-2.5 w-20" />
               <Pulse className="h-6 w-24" />

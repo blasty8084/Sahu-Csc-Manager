@@ -78,12 +78,12 @@ export function BiometricPrompt({ onSuccess, onError }: BiometricPromptProps) {
         disabled={status === "requesting"}
         aria-label="Sign in with biometrics"
         className="flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-colors active:opacity-70 disabled:opacity-50"
-        style={{ borderColor: "#e2e8f0", color: "#1e293b" }}
+        style={{ borderColor: "var(--color-slate-200)", color: "var(--color-slate-800)" }}
       >
         {status === "requesting" ? (
           <Loader2 className="w-4 h-4 animate-spin" />
         ) : (
-          <Fingerprint className="w-4 h-4" style={{ color: "#4F46E5" }} />
+          <Fingerprint className="w-4 h-4" style={{ color: "var(--color-indigo)" }} />
         )}
         {status === "requesting" ? "Verifying…" : "Use Fingerprint / Face ID"}
       </button>

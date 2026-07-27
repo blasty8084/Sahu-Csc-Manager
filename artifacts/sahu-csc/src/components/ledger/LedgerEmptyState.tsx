@@ -9,14 +9,14 @@ export function DesktopLedgerEmptyState({
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-      <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#ffedd5", outline: "6px solid #fff7ed", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <IndianRupee size={28} color="#f97316" strokeWidth={2.5} />
+      <div style={{ width: 64, height: 64, borderRadius: "50%", background: "var(--surface-warn-bg)", outline: "6px solid var(--surface-warn-bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <IndianRupee size={28} color="var(--brand-orange)" strokeWidth={2.5} />
       </div>
-      <p style={{ fontSize: 17, fontWeight: 700, color: "#1e293b", marginBottom: 2 }}>No transactions found</p>
-      <p style={{ fontSize: 13, color: "#94a3b8", fontWeight: 500 }}>{hasFilters ? "Try clearing the filters" : "Add your first entry to get started"}</p>
+      <p style={{ fontSize: 17, fontWeight: 700, color: "var(--color-slate-800)", marginBottom: 2 }}>No transactions found</p>
+      <p style={{ fontSize: 13, color: "var(--color-slate-400)", fontWeight: 500 }}>{hasFilters ? "Try clearing the filters" : "Add your first entry to get started"}</p>
       {!hasFilters && (
         <button onClick={openCreate}
-          style={{ background: "#f97316", color: "white", borderRadius: 12, padding: "10px 24px", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", marginTop: 4 }}>
+          style={{ background: "var(--brand-orange)", color: "white", borderRadius: 12, padding: "10px 24px", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", marginTop: 4 }}>
           + Add New Entry
         </button>
       )}

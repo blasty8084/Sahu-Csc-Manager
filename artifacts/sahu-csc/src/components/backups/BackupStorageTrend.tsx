@@ -27,11 +27,11 @@ export function BackupStorageTrend({ backups, chartData, totalSize }: BackupStor
       <div className="px-4 pb-5 pt-2">
         <div className="flex items-center gap-4 mb-4">
           <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-[#0b2c60] inline-block" />
+            <span className="w-3 h-3 rounded-full bg-[var(--brand-navy-800)] inline-block" />
             <span className="text-xs text-slate-500">Snapshot size (KB)</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-[#f97316] inline-block" />
+            <span className="w-3 h-3 rounded-full bg-[var(--brand-orange)] inline-block" />
             <span className="text-xs text-slate-500">Cumulative storage (KB)</span>
           </div>
         </div>
@@ -40,24 +40,24 @@ export function BackupStorageTrend({ backups, chartData, totalSize }: BackupStor
           <AreaChart data={chartData} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="gradTotal" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#f97316" stopOpacity={0.18} />
-                <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
+                <stop offset="5%" stopColor="var(--brand-orange)" stopOpacity={0.18} />
+                <stop offset="95%" stopColor="var(--brand-orange)" stopOpacity={0} />
               </linearGradient>
               <linearGradient id="gradSize" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#0b2c60" stopOpacity={0.15} />
-                <stop offset="95%" stopColor="#0b2c60" stopOpacity={0} />
+                <stop offset="5%" stopColor="var(--brand-navy-800)" stopOpacity={0.15} />
+                <stop offset="95%" stopColor="var(--brand-navy-800)" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-            <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-            <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v} KB`} width={62} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-slate-100)" vertical={false} />
+            <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--color-slate-400)" }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+            <YAxis tick={{ fontSize: 11, fill: "var(--color-slate-400)" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v} KB`} width={62} />
             <Tooltip
-              contentStyle={{ backgroundColor: "#fff", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "12px", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}
+              contentStyle={{ backgroundColor: "#fff", border: "1px solid var(--color-slate-200)", borderRadius: "8px", fontSize: "12px", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}
               formatter={(value: number, name: string) => [`${value} KB`, name === "sizeKB" ? "Snapshot size" : "Cumulative storage"]}
-              labelStyle={{ fontWeight: 600, color: "#0b2c60", marginBottom: 4 }}
+              labelStyle={{ fontWeight: 600, color: "var(--brand-navy-800)", marginBottom: 4 }}
             />
-            <Area type="monotone" dataKey="sizeKB" stroke="#0b2c60" strokeWidth={2} fill="url(#gradSize)" dot={{ r: 3, fill: "#0b2c60", strokeWidth: 0 }} activeDot={{ r: 5, fill: "#0b2c60" }} />
-            <Area type="monotone" dataKey="totalKB" stroke="#f97316" strokeWidth={2} fill="url(#gradTotal)" dot={{ r: 3, fill: "#f97316", strokeWidth: 0 }} activeDot={{ r: 5, fill: "#f97316" }} />
+            <Area type="monotone" dataKey="sizeKB" stroke="var(--brand-navy-800)" strokeWidth={2} fill="url(#gradSize)" dot={{ r: 3, fill: "var(--brand-navy-800)", strokeWidth: 0 }} activeDot={{ r: 5, fill: "var(--brand-navy-800)" }} />
+            <Area type="monotone" dataKey="totalKB" stroke="var(--brand-orange)" strokeWidth={2} fill="url(#gradTotal)" dot={{ r: 3, fill: "var(--brand-orange)", strokeWidth: 0 }} activeDot={{ r: 5, fill: "var(--brand-orange)" }} />
           </AreaChart>
         </ResponsiveContainer>
 
@@ -68,7 +68,7 @@ export function BackupStorageTrend({ backups, chartData, totalSize }: BackupStor
             {chartData.filter((d) => d.type === "auto").length} auto
           </span>
           <span className="inline-flex items-center gap-1 text-[11px] text-slate-600">
-            <span className="w-2 h-2 rounded-full bg-[#0b2c60] inline-block" />
+            <span className="w-2 h-2 rounded-full bg-[var(--brand-navy-800)] inline-block" />
             {chartData.filter((d) => d.type === "manual").length} manual
           </span>
           <span className="text-[11px] text-slate-400">·</span>

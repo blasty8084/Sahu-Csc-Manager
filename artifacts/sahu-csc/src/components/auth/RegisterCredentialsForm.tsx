@@ -93,7 +93,7 @@ export function RegisterCredentialsForm({
           type="submit"
           disabled={sendingOtp}
           className="w-full h-12 font-bold text-base text-white"
-          style={{ background: "linear-gradient(135deg, #1a2560, #0f1a4a)" }}
+          style={{ background: "linear-gradient(135deg, var(--brand-navy-650), #0f1a4a)" }}
         >
           {sendingOtp
             ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Sending OTP…</span>

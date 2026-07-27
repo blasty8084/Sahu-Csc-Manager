@@ -25,12 +25,12 @@ export default function ReceiptsVerify() {
 
   const verifyUrl = typeof window !== "undefined" ? window.location.href : "";
 
-  const bg = { minHeight: "100vh", background: "linear-gradient(135deg, #0b2c60 0%, #1a4a9e 100%)", display: "flex" as const };
+  const bg = { minHeight: "100vh", background: "linear-gradient(135deg, var(--brand-navy-800) 0%, var(--brand-navy-600) 100%)", display: "flex" as const };
 
   if (loading) return (
     <div style={{ ...bg, alignItems: "center", justifyContent: "center" }}>
       <div style={{ textAlign: "center" }}>
-        <div style={{ width: 40, height: 40, border: "3px solid rgba(255,255,255,0.2)", borderTopColor: "#f97316", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 12px" }} />
+        <div style={{ width: 40, height: 40, border: "3px solid var(--brand-white-border)", borderTopColor: "var(--brand-orange)", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 12px" }} />
         <p style={{ fontSize: 13, color: "rgba(255,255,255,0.7)" }}>Verifying receipt…</p>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
@@ -39,17 +39,17 @@ export default function ReceiptsVerify() {
 
   if (error || !data) return (
     <div style={{ ...bg, alignItems: "center", justifyContent: "center", padding: 24 }}>
-      <div style={{ background: "#fff", borderRadius: 20, padding: 32, textAlign: "center", maxWidth: 360, boxShadow: "0 20px 60px rgba(0,0,0,0.25)" }}>
+      <div style={{ background: "#fff", borderRadius: 20, padding: 32, textAlign: "center", maxWidth: 360, boxShadow: "0 20px 60px var(--brand-navy-shadow-sm)" }}>
         <div style={{ fontSize: 48, marginBottom: 12 }}>❌</div>
-        <h2 style={{ fontSize: 18, fontWeight: 700, color: "#0b2c60", marginBottom: 8 }}>Receipt Not Found</h2>
-        <p style={{ fontSize: 13, color: "#64748b" }}>This receipt link is invalid or the entry has been deleted.</p>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--brand-navy-800)", marginBottom: 8 }}>Receipt Not Found</h2>
+        <p style={{ fontSize: 13, color: "var(--color-slate-500)" }}>This receipt link is invalid or the entry has been deleted.</p>
       </div>
     </div>
   );
 
   const isCredit = data.credit > 0;
   const amount = isCredit ? data.credit : data.debit;
-  const amountColor = isCredit ? "#059669" : "#e11d48";
+  const amountColor = isCredit ? "var(--color-success)" : "var(--color-error)";
   const amountPrefix = isCredit ? "+" : "-";
   const txType = isCredit ? "Credit" : "Debit";
   const formattedDate = new Date(data.date).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });

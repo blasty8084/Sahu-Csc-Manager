@@ -29,7 +29,7 @@ export function BackupScheduleCard({
         right={
           <button
             onClick={() => setSchedule((s) => ({ ...s, enabled: !s.enabled }))}
-            className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${schedule.enabled ? "bg-[#f97316]" : "bg-slate-300"}`}
+            className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${schedule.enabled ? "bg-[var(--brand-orange)]" : "bg-slate-300"}`}
           >
             <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${schedule.enabled ? "translate-x-5" : "translate-x-0"}`} />
           </button>
@@ -64,7 +64,7 @@ export function BackupScheduleCard({
                     }))}
                     className={`py-1.5 rounded-lg border text-xs font-medium capitalize transition-colors ${
                       schedule.frequency === f
-                        ? "border-[#0b2c60] bg-[#0b2c60] text-white"
+                        ? "border-[var(--brand-navy-800)] bg-[var(--brand-navy-800)] text-white"
                         : "border-slate-200 hover:bg-slate-50 text-slate-600"
                     }`}
                   >
@@ -80,7 +80,7 @@ export function BackupScheduleCard({
                 type="time"
                 value={schedule.time}
                 onChange={(e) => setSchedule((s) => ({ ...s, time: e.target.value }))}
-                className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-slate-50 w-full focus:outline-none focus:ring-2 focus:ring-[#0b2c60]/20"
+                className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-slate-50 w-full focus:outline-none focus:ring-2 focus:ring-[var(--brand-navy-800)]/20"
               />
             </div>
 
@@ -103,7 +103,7 @@ export function BackupScheduleCard({
                           }
                         }}
                         className={`w-8 h-8 rounded-md flex items-center justify-center text-[11px] font-semibold transition-colors ${
-                          active ? "bg-[#0b2c60] text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                          active ? "bg-[var(--brand-navy-800)] text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
                         }`}
                       >
                         {d.label.slice(0, 2)}
@@ -122,7 +122,7 @@ export function BackupScheduleCard({
                 max={90}
                 value={schedule.retention}
                 onChange={(e) => setSchedule((s) => ({ ...s, retention: Math.max(1, parseInt(e.target.value) || 1) }))}
-                className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-slate-50 w-full focus:outline-none focus:ring-2 focus:ring-[#0b2c60]/20"
+                className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-slate-50 w-full focus:outline-none focus:ring-2 focus:ring-[var(--brand-navy-800)]/20"
               />
             </div>
 
@@ -130,7 +130,7 @@ export function BackupScheduleCard({
               size="sm"
               onClick={handleScheduleSave}
               disabled={scheduleSaving}
-              className="w-full bg-[#0b2c60] hover:bg-[#0a2456] text-white text-xs"
+              className="w-full bg-[var(--brand-navy-800)] hover:bg-[#0a2456] text-white text-xs"
             >
               {scheduleSaving
                 ? <><Loader2 size={12} className="mr-1.5 animate-spin" /> Saving…</>

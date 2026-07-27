@@ -30,9 +30,9 @@ export function DailyTabEntryList({ state }: DailyTabEntryListProps) {
           type="button"
           onClick={openWithdrawal}
           className="flex flex-col items-center justify-center gap-2 py-4 rounded-2xl font-bold text-white transition-all active:scale-95"
-          style={{ background: "linear-gradient(135deg, #f43f5e, #e11d48)", boxShadow: "0 4px 16px rgba(244,63,94,0.35)" }}
+          style={{ background: "linear-gradient(135deg, var(--color-error-soft), var(--color-error))", boxShadow: "0 4px 16px rgba(244,63,94,0.35)" }}
         >
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "rgba(255,255,255,0.18)" }}>
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "var(--brand-white-high)" }}>
             <ArrowDownLeft size={22} />
           </div>
           <span className="text-sm">AePS Withdrawal</span>
@@ -42,9 +42,9 @@ export function DailyTabEntryList({ state }: DailyTabEntryListProps) {
           type="button"
           onClick={openDeposit}
           className="flex flex-col items-center justify-center gap-2 py-4 rounded-2xl font-bold text-white transition-all active:scale-95"
-          style={{ background: "linear-gradient(135deg, #10b981, #059669)", boxShadow: "0 4px 16px rgba(16,185,129,0.35)" }}
+          style={{ background: "linear-gradient(135deg, var(--color-success-light), var(--color-success))", boxShadow: "0 4px 16px color-mix(in srgb, var(--color-success) 35%, transparent)" }}
         >
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "rgba(255,255,255,0.18)" }}>
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "var(--brand-white-high)" }}>
             <ArrowUpRight size={22} />
           </div>
           <span className="text-sm">AePS Deposit</span>

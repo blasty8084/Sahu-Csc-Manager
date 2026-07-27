@@ -111,7 +111,7 @@ export function BackupActions({
               {Array.from(selectedTables).map((name) => {
                 const tbl = analyzedTables.find((t) => t.name === name);
                 return (
-                  <span key={name} className="text-xs bg-[#0b2c60]/10 text-[#0b2c60] rounded-full px-2 py-0.5">
+                  <span key={name} className="text-xs bg-[var(--brand-navy-800)]/10 text-[var(--brand-navy-800)] rounded-full px-2 py-0.5">
                     {tbl?.label ?? name}
                   </span>
                 );
@@ -123,7 +123,7 @@ export function BackupActions({
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setConfirmOpen(false)} className="flex-1">Cancel</Button>
-            <Button onClick={handleSelectiveImport} className="flex-1 bg-[#f97316] hover:bg-[#ea580c] text-white">
+            <Button onClick={handleSelectiveImport} className="flex-1 bg-[var(--brand-orange)] hover:bg-[var(--brand-orange-600)] text-white">
               <Upload size={12} className="mr-1.5" /> Import Now
             </Button>
           </DialogFooter>

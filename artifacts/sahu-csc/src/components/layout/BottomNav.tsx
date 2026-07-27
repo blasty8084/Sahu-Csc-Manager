@@ -31,17 +31,17 @@ export function BottomNav() {
             <Link key={item.href} href={item.href} className="flex-1">
               <div
                 className={`flex flex-col items-center justify-center h-full gap-1 relative transition-colors duration-100 ${
-                  active ? "text-[#f97316]" : "text-muted-foreground"
+                  active ? "text-[var(--brand-orange)]" : "text-muted-foreground"
                 }`}
                 onMouseEnter={() => prefetch(item.href)}
                 onFocus={() => prefetch(item.href)}
                 onTouchStart={() => prefetch(item.href)}
               >
                 {active && (
-                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[#f97316] rounded-full" />
+                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[var(--brand-orange)] rounded-full" />
                 )}
                 <Icon size={20} strokeWidth={active ? 2.5 : 1.8} />
-                <span className={`text-[10px] font-semibold leading-none ${active ? "text-[#f97316]" : "text-muted-foreground"}`}>
+                <span className={`text-[10px] font-semibold leading-none ${active ? "text-[var(--brand-orange)]" : "text-muted-foreground"}`}>
                   {label}
                 </span>
               </div>

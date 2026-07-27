@@ -40,7 +40,7 @@ export function DailyTabPanel({
                 <ServiceMixPieChart services={daily.data.topServices} />
               ) : (
                 daily.data.aeps && (
-                  <div style={{ background: "linear-gradient(135deg,#0b2c60,#0f3872)", borderRadius: 16, padding: "20px 22px" }}>
+                  <div style={{ background: "linear-gradient(135deg,var(--brand-navy-800),var(--brand-navy-700))", borderRadius: 16, padding: "20px 22px" }}>
                     <p style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", marginBottom: 12 }}>AePS TODAY</p>
                     {[
                       { label: "Total Tx", value: daily.data.aeps.totalTransactions },
@@ -48,7 +48,7 @@ export function DailyTabPanel({
                       { label: "Deposits", value: fmt(daily.data.aeps.totalDeposits) },
                       { label: "Net Flow", value: fmt(daily.data.aeps.netFlow) },
                     ].map((row, i, arr) => (
-                      <div key={row.label} style={{ display: "flex", justifyContent: "space-between", padding: "7px 0", borderBottom: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
+                      <div key={row.label} style={{ display: "flex", justifyContent: "space-between", padding: "7px 0", borderBottom: i < arr.length - 1 ? "1px solid var(--brand-white-low)" : "none" }}>
                         <span style={{ fontSize: 11, color: "rgba(255,255,255,0.55)" }}>{row.label}</span>
                         <span style={{ fontSize: 13, fontWeight: 700, color: "white" }}>{row.value}</span>
                       </div>

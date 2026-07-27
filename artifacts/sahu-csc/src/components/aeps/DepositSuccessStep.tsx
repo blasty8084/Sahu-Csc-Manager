@@ -25,10 +25,10 @@ export function DepositSuccessStep({ isWd, accent, accentColor, accentLight, acc
         <CheckCircle2 size={40} color="#fff" />
       </div>
       <div style={{ textAlign: "center" }}>
-        <p style={{ fontSize: 24, fontWeight: 900, color: "#0b2c60" }}>{isWd ? "Withdrawal" : "Deposit"} Recorded!</p>
-        <p style={{ fontSize: 13, color: "#94a3b8", marginTop: 6 }}>AePS transaction saved successfully</p>
+        <p style={{ fontSize: 24, fontWeight: 900, color: "var(--brand-navy-800)" }}>{isWd ? "Withdrawal" : "Deposit"} Recorded!</p>
+        <p style={{ fontSize: 13, color: "var(--color-slate-400)", marginTop: 6 }}>AePS transaction saved successfully</p>
       </div>
-      <div style={{ width: "100%", maxWidth: 520, background: "#fff", borderRadius: 20, overflow: "hidden", boxShadow: "0 4px 18px rgba(11,44,96,0.09)", border: "1px solid rgba(11,44,96,0.07)" }}>
+      <div style={{ width: "100%", maxWidth: 520, background: "#fff", borderRadius: 20, overflow: "hidden", boxShadow: "0 4px 18px var(--brand-navy-tint-md)", border: "1px solid var(--brand-navy-tint-md)" }}>
         <div style={{ height: 4, background: accent }} />
         <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ textAlign: "center", padding: "14px 0", borderRadius: 14, marginBottom: 6, background: accentLight, border: `1px solid ${accentBorder}` }}>
@@ -42,9 +42,9 @@ export function DepositSuccessStep({ isWd, accent, accentColor, accentLight, acc
             ...(txAccountNo ? [{ label: "Account No", value: "XX" + txAccountNo.slice(-4) }] : []),
             ...(txNote ? [{ label: "Note", value: txNote }] : []),
           ].map(({ label, value }) => (
-            <div key={label} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "10px 0", borderBottom: "1px solid #f1f5f9" }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</span>
-              <span style={{ fontSize: 13, fontWeight: 600, color: "#0b2c60" }}>{value}</span>
+            <div key={label} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "10px 0", borderBottom: "1px solid var(--color-slate-100)" }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "var(--color-slate-400)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--brand-navy-800)" }}>{value}</span>
             </div>
           ))}
         </div>
@@ -55,7 +55,7 @@ export function DepositSuccessStep({ isWd, accent, accentColor, accentLight, acc
           + New {isWd ? "Withdrawal" : "Deposit"}
         </button>
         <button onClick={onClose}
-          style={{ flex: 1, height: 50, borderRadius: 14, fontWeight: 700, fontSize: 14, border: "none", color: "#fff", background: "linear-gradient(135deg,#0b2c60,#1a4a9e)", cursor: "pointer" }}>
+          style={{ flex: 1, height: 50, borderRadius: 14, fontWeight: 700, fontSize: 14, border: "none", color: "#fff", background: "linear-gradient(135deg,var(--brand-navy-800),var(--brand-navy-600))", cursor: "pointer" }}>
           Done
         </button>
       </div>

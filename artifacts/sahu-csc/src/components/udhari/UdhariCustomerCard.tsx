@@ -11,7 +11,7 @@ export function BalanceBadge({ balance }: { balance: number }) {
   if (balance > 0) {
     return (
       <span className="text-xs font-bold px-2 py-0.5 rounded-full"
-        style={{ background: "rgba(249,115,22,0.12)", color: "#ea580c" }}>
+        style={{ background: "var(--brand-orange-tint-sm)", color: "var(--brand-orange-600)" }}>
         {t("udhari.to_collect")} {fmt(balance)}
       </span>
     );
@@ -19,7 +19,7 @@ export function BalanceBadge({ balance }: { balance: number }) {
   if (balance < 0) {
     return (
       <span className="text-xs font-bold px-2 py-0.5 rounded-full"
-        style={{ background: "rgba(16,185,129,0.12)", color: "#059669" }}>
+        style={{ background: "var(--color-success-bg)", color: "var(--color-success)" }}>
         {t("udhari.to_pay")} {fmt(balance)}
       </span>
     );
@@ -34,17 +34,17 @@ export function BalanceBadge({ balance }: { balance: number }) {
 // ─── Mobile card ───────────────────────────────────────────────────────────────
 export function CustomerCard({ c, onClick }: { c: any; onClick: () => void }) {
   const initials = c.name.slice(0, 2).toUpperCase();
-  const color = c.balance > 0 ? "#ea580c" : c.balance < 0 ? "#059669" : "#94a3b8";
-  const bg    = c.balance > 0 ? "rgba(249,115,22,0.10)" : c.balance < 0 ? "rgba(16,185,129,0.10)" : "rgba(148,163,184,0.10)";
+  const color = c.balance > 0 ? "var(--brand-orange-600)" : c.balance < 0 ? "var(--color-success)" : "var(--color-slate-400)";
+  const bg    = c.balance > 0 ? "var(--brand-orange-tint-xs)" : c.balance < 0 ? "var(--color-success-bg)" : "rgba(148,163,184,0.10)";
   return (
     <button onClick={onClick} className="w-full text-left bg-white rounded-2xl overflow-hidden flex items-center gap-3 px-4 py-3"
-      style={{ boxShadow: "0 1px 8px rgba(11,44,96,0.07)" }}>
+      style={{ boxShadow: "0 1px 8px var(--brand-navy-tint-md)" }}>
       <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 font-black text-sm"
         style={{ background: bg, color }}>
         {initials}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-bold text-sm truncate" style={{ color: "#0b2c60" }}>{c.name}</p>
+        <p className="font-bold text-sm truncate" style={{ color: "var(--brand-navy-800)" }}>{c.name}</p>
         {c.mobile && (
           <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
             <Phone size={9} /> {c.mobile}
@@ -60,8 +60,8 @@ export function CustomerCard({ c, onClick }: { c: any; onClick: () => void }) {
 // ─── Desktop table row ─────────────────────────────────────────────────────────
 export function CustomerRow({ c, onClick }: { c: any; onClick: () => void }) {
   const initials = c.name.slice(0, 2).toUpperCase();
-  const color = c.balance > 0 ? "#ea580c" : c.balance < 0 ? "#059669" : "#94a3b8";
-  const bg    = c.balance > 0 ? "rgba(249,115,22,0.10)" : c.balance < 0 ? "rgba(16,185,129,0.10)" : "rgba(148,163,184,0.10)";
+  const color = c.balance > 0 ? "var(--brand-orange-600)" : c.balance < 0 ? "var(--color-success)" : "var(--color-slate-400)";
+  const bg    = c.balance > 0 ? "var(--brand-orange-tint-xs)" : c.balance < 0 ? "var(--color-success-bg)" : "rgba(148,163,184,0.10)";
   return (
     <tr className="hover:bg-muted/20 transition-colors cursor-pointer" onClick={onClick}>
       <td className="px-5 py-3">

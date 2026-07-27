@@ -11,20 +11,20 @@ import type { LucideIcon } from "lucide-react";
 // ── Data ─────────────────────────────────────────────────────────────────────
 
 const FEATURES: { icon: LucideIcon; color: string; label: string; desc: string }[] = [
-  { icon: BookOpen,    color: "#0b2c60", label: "Ledger Management",        desc: "Credits, debits, running balance, auto receipt numbers (CSC-YYYY-NNNN) with QR verification" },
-  { icon: Fingerprint, color: "#059669", label: "AePS Cash Management",     desc: "Daily AePS session with opening balance, withdrawals, deposits and running total" },
-  { icon: BarChart3,   color: "#7c3aed", label: "Reports & Excel Export",   desc: "Daily, monthly, service-wise reports with one-click .xlsx download" },
-  { icon: Users,       color: "#0b2c60", label: "Udhari Khata",             desc: "Customer credit ledger — track debts, send WhatsApp reminders, export PDF statements" },
-  { icon: Mail,        color: "#f97316", label: "Transactional Email",      desc: "V2 dark premium HTML emails for OTP, approval, rejection, broadcast, and password reset" },
-  { icon: Bell,        color: "#e11d48", label: "Push Notifications",       desc: "Real-time VAPID push alerts for transactions, approvals, and system events" },
-  { icon: WifiOff,     color: "#0369a1", label: "Offline Mode",             desc: "Create ledger entries offline; IndexedDB queue auto-syncs on reconnect" },
-  { icon: Shield,      color: "#059669", label: "Role-Based Access",        desc: "Admin, Operator, User roles with granular permissions and per-user data isolation" },
-  { icon: Lock,        color: "#dc2626", label: "Account Security",         desc: "3-attempt lockout (5 min), bcrypt-12 hashing, idle auto-logout, full audit + security-event trail" },
-  { icon: Key,         color: "#d97706", label: "Password Reset",           desc: "OTP-based 4-step reset flow; accepts username, email, or mobile as identifier" },
-  { icon: ShieldCheck, color: "#0891b2", label: "Two-Factor Authentication",desc: "Authenticator app (Google Authenticator, Authy, any TOTP app via QR) or email OTP — 30-second RFC 6238 codes, replay protection, backup code health bar, regenerate without disabling 2FA" },
-  { icon: Laptop2,     color: "#7c3aed", label: "Device & Session Control", desc: "New-device verification, single active session per account, trusted-device list with remote revoke" },
-  { icon: RefreshCw,   color: "#0b2c60", label: "Backup & Restore",         desc: "Scheduled pg_dump backups with selective-table import and configurable retention" },
-  { icon: Download,    color: "#7c3aed", label: "Install as App",           desc: "Install on Android, iOS, or desktop as a PWA — works like a native app offline" },
+  { icon: BookOpen,    color: "var(--brand-navy-800)", label: "Ledger Management",        desc: "Credits, debits, running balance, auto receipt numbers (CSC-YYYY-NNNN) with QR verification" },
+  { icon: Fingerprint, color: "var(--color-success)", label: "AePS Cash Management",     desc: "Daily AePS session with opening balance, withdrawals, deposits and running total" },
+  { icon: BarChart3,   color: "var(--color-violet)", label: "Reports & Excel Export",   desc: "Daily, monthly, service-wise reports with one-click .xlsx download" },
+  { icon: Users,       color: "var(--brand-navy-800)", label: "Udhari Khata",             desc: "Customer credit ledger — track debts, send WhatsApp reminders, export PDF statements" },
+  { icon: Mail,        color: "var(--brand-orange)", label: "Transactional Email",      desc: "V2 dark premium HTML emails for OTP, approval, rejection, broadcast, and password reset" },
+  { icon: Bell,        color: "var(--color-error)", label: "Push Notifications",       desc: "Real-time VAPID push alerts for transactions, approvals, and system events" },
+  { icon: WifiOff,     color: "var(--color-sky)", label: "Offline Mode",             desc: "Create ledger entries offline; IndexedDB queue auto-syncs on reconnect" },
+  { icon: Shield,      color: "var(--color-success)", label: "Role-Based Access",        desc: "Admin, Operator, User roles with granular permissions and per-user data isolation" },
+  { icon: Lock,        color: "var(--color-error-dim)", label: "Account Security",         desc: "3-attempt lockout (5 min), bcrypt-12 hashing, idle auto-logout, full audit + security-event trail" },
+  { icon: Key,         color: "var(--color-warning)", label: "Password Reset",           desc: "OTP-based 4-step reset flow; accepts username, email, or mobile as identifier" },
+  { icon: ShieldCheck, color: "var(--color-sky)", label: "Two-Factor Authentication",desc: "Authenticator app (Google Authenticator, Authy, any TOTP app via QR) or email OTP — 30-second RFC 6238 codes, replay protection, backup code health bar, regenerate without disabling 2FA" },
+  { icon: Laptop2,     color: "var(--color-violet)", label: "Device & Session Control", desc: "New-device verification, single active session per account, trusted-device list with remote revoke" },
+  { icon: RefreshCw,   color: "var(--brand-navy-800)", label: "Backup & Restore",         desc: "Scheduled pg_dump backups with selective-table import and configurable retention" },
+  { icon: Download,    color: "var(--color-violet)", label: "Install as App",           desc: "Install on Android, iOS, or desktop as a PWA — works like a native app offline" },
 ];
 
 const SYSTEM_REQUIREMENTS = [
@@ -63,7 +63,7 @@ const SYSTEM_REQUIREMENTS = [
   {
     platform: "Windows / Mac / Linux",
     icon: Monitor,
-    iconColor: "#0b2c60",
+    iconColor: "var(--brand-navy-800)",
     recommended: "Windows 10+, macOS 12+, Ubuntu 20.04+",
     minimum: "Any OS with a modern browser",
     browser: "Chrome 80+ or Edge 80+ (recommended for PWA install)",
@@ -79,7 +79,7 @@ const SYSTEM_REQUIREMENTS = [
   {
     platform: "Web Browser (No Install)",
     icon: Globe,
-    iconColor: "#f97316",
+    iconColor: "var(--brand-orange)",
     recommended: "Any modern browser",
     minimum: "Chrome 60+, Firefox 70+, Safari 13+",
     browser: "Just open the link — no installation needed",
@@ -164,7 +164,7 @@ export default function AboutFeatureCard() {
                         <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
                           <span
                             className="flex-shrink-0 flex items-center justify-center rounded-full font-bold text-white"
-                            style={{ width: 15, height: 15, background: "#0b2c60", fontSize: 8, marginTop: 1.5 }}
+                            style={{ width: 15, height: 15, background: "var(--brand-navy-800)", fontSize: 8, marginTop: 1.5 }}
                           >
                             {i + 1}
                           </span>
@@ -189,9 +189,9 @@ export default function AboutFeatureCard() {
         <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">{t("about.connectivity")}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
           {[
-            { icon: Wifi,    label: t("about.online_full"), desc: "All features — push, real-time sync, reports, Excel export.", color: "#059669" },
-            { icon: Cloud,   label: t("about.slow_2g"),     desc: "Basic features. Dashboard from cache. Ledger uses offline queue.", color: "#f97316" },
-            { icon: WifiOff, label: t("pwa.offline"),       desc: "Login from 24-hr cache. Entries saved locally, synced on reconnect.", color: "#e11d48" },
+            { icon: Wifi,    label: t("about.online_full"), desc: "All features — push, real-time sync, reports, Excel export.", color: "var(--color-success)" },
+            { icon: Cloud,   label: t("about.slow_2g"),     desc: "Basic features. Dashboard from cache. Ledger uses offline queue.", color: "var(--brand-orange)" },
+            { icon: WifiOff, label: t("pwa.offline"),       desc: "Login from 24-hr cache. Entries saved locally, synced on reconnect.", color: "var(--color-error)" },
           ].map((c) => {
             const Icon = c.icon;
             return (

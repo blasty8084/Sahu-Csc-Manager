@@ -29,19 +29,19 @@ export function AttemptCounter({ showCounter, attemptsLeft, usedAttempts, urgenc
             <div
               className="rounded-xl px-4 py-3 border"
               style={{
-                background: urgency === "critical" ? "#fff1f2" : urgency === "high" ? "#fff7ed" : "#fffbeb",
-                borderColor: urgency === "critical" ? "#fecdd3" : urgency === "high" ? "#fed7aa" : "#fde68a",
+                background: urgency === "critical" ? "var(--color-error-bg-sm)" : urgency === "high" ? "var(--surface-warn-bg)" : "#fffbeb",
+                borderColor: urgency === "critical" ? "var(--color-rose-200)" : urgency === "high" ? "var(--color-orange-200)" : "#fde68a",
               }}
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-1.5">
                   <AlertTriangle
                     className="w-3.5 h-3.5 flex-shrink-0"
-                    style={{ color: urgency === "critical" ? "#e11d48" : urgency === "high" ? "#ea580c" : "#d97706" }}
+                    style={{ color: urgency === "critical" ? "var(--color-error)" : urgency === "high" ? "var(--brand-orange-600)" : "var(--color-warning)" }}
                   />
                   <span
                     className="text-xs font-semibold"
-                    style={{ color: urgency === "critical" ? "#be123c" : urgency === "high" ? "#c2410c" : "#b45309" }}
+                    style={{ color: urgency === "critical" ? "var(--color-error-dark)" : urgency === "high" ? "var(--brand-orange-700)" : "var(--color-amber-700)" }}
                   >
                     {attemptsLeft === 1
                       ? "Last attempt before lockout!"
@@ -64,9 +64,9 @@ export function AttemptCounter({ showCounter, attemptsLeft, usedAttempts, urgenc
                       className="flex-1 h-1.5 rounded-full"
                       style={{
                         background: isUsed
-                          ? urgency === "critical" ? "#e11d48"
-                          : urgency === "high" ? "#ea580c"
-                          : "#d97706"
+                          ? urgency === "critical" ? "var(--color-error)"
+                          : urgency === "high" ? "var(--brand-orange-600)"
+                          : "var(--color-warning)"
                           : "rgba(0,0,0,0.08)",
                       }}
                     />
@@ -75,7 +75,7 @@ export function AttemptCounter({ showCounter, attemptsLeft, usedAttempts, urgenc
               </div>
 
               {attemptsLeft !== null && attemptsLeft <= 2 && (
-                <p className="text-[10px] mt-1.5" style={{ color: urgency === "critical" ? "#9f1239" : "#9a3412" }}>
+                <p className="text-[10px] mt-1.5" style={{ color: urgency === "critical" ? "var(--color-rose-800)" : "var(--color-orange-800)" }}>
                   Account locks for 15 min after {MAX_ATTEMPTS} failed attempts.
                 </p>
               )}
@@ -94,17 +94,17 @@ export function AttemptCounter({ showCounter, attemptsLeft, usedAttempts, urgenc
             exit={{ opacity: 0 }}
             className="flex items-center gap-2.5 rounded-xl px-4 py-2.5 border"
             style={{
-              background: urgency === "critical" ? "#fff1f2" : "#fff7ed",
-              borderColor: urgency === "critical" ? "#fecdd3" : "#fed7aa",
+              background: urgency === "critical" ? "var(--color-error-bg-sm)" : "var(--surface-warn-bg)",
+              borderColor: urgency === "critical" ? "var(--color-rose-200)" : "var(--color-orange-200)",
             }}
           >
             <Lock
               className="w-4 h-4 flex-shrink-0"
-              style={{ color: urgency === "critical" ? "#e11d48" : "#ea580c" }}
+              style={{ color: urgency === "critical" ? "var(--color-error)" : "var(--brand-orange-600)" }}
             />
             <span
               className="text-xs font-medium"
-              style={{ color: urgency === "critical" ? "#be123c" : "#c2410c" }}
+              style={{ color: urgency === "critical" ? "var(--color-error-dark)" : "var(--brand-orange-700)" }}
             >
               Wrong password? Use{" "}
               <button type="button" onClick={onForgotPassword} className="underline font-semibold">

@@ -21,7 +21,7 @@ export function ReceiptMonthlyPanel({
 }: ReceiptMonthlyPanelProps) {
   return (
     <div className="bg-white rounded-xl border border-orange-100 shadow-sm overflow-hidden">
-      <div className="px-4 py-3 flex items-center gap-2.5" style={{ background: `linear-gradient(135deg, ${SAFFRON}, #ea580c)` }}>
+      <div className="px-4 py-3 flex items-center gap-2.5" style={{ background: `linear-gradient(135deg, ${SAFFRON}, var(--brand-orange-600))` }}>
         <div className="w-7 h-7 bg-white/20 rounded-lg flex items-center justify-center shrink-0">
           <Clock size={14} className="text-white" />
         </div>
@@ -67,7 +67,7 @@ export function ReceiptMonthlyPanel({
           </button>
           <button onClick={handleMonthEmail} disabled={emailing}
             className="py-2 text-xs font-bold text-white rounded-lg flex items-center justify-center gap-1.5 disabled:opacity-50"
-            style={{ background: `linear-gradient(135deg, ${NAVY}, #1a4a9e)` }}>
+            style={{ background: `linear-gradient(135deg, ${NAVY}, var(--brand-navy-600))` }}>
             {emailing
               ? <><Loader2 size={11} className="animate-spin" /> Sending…</>
               : <><Mail size={11} /> Email Admins</>}

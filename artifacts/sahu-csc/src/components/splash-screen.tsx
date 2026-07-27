@@ -22,7 +22,7 @@ export function SplashScreen({ visible, onDone }: SplashScreenProps) {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
           className="fixed inset-0 z-[9999] flex flex-col items-center justify-center select-none"
-          style={{ background: "#0B1340" }}
+          style={{ background: "var(--brand-navy)" }}
         >
           <motion.div
             initial={{ scale: 0.75, opacity: 0 }}
@@ -37,10 +37,10 @@ export function SplashScreen({ visible, onDone }: SplashScreenProps) {
               className="absolute w-32 h-32 rounded-full"
               style={{
                 border: "2.5px solid transparent",
-                borderTopColor: "#F97316",
-                borderRightColor: "rgba(249,115,22,0.25)",
+                borderTopColor: "var(--brand-orange)",
+                borderRightColor: "var(--brand-orange-tint-md)",
                 borderBottomColor: "transparent",
-                borderLeftColor: "rgba(249,115,22,0.1)",
+                borderLeftColor: "var(--brand-orange-tint-xs)",
                 willChange: "transform",
               }}
             />
@@ -48,15 +48,15 @@ export function SplashScreen({ visible, onDone }: SplashScreenProps) {
             <div
               className="absolute w-28 h-28 rounded-full"
               style={{
-                background: "radial-gradient(circle, rgba(249,115,22,0.12) 0%, transparent 70%)",
+                background: "radial-gradient(circle, var(--brand-orange-tint-sm) 0%, transparent 70%)",
               }}
             />
             {/* Circular logo */}
             <div
               className="w-24 h-24 rounded-full overflow-hidden shadow-2xl"
               style={{
-                border: "3px solid rgba(255,255,255,0.18)",
-                boxShadow: "0 0 32px rgba(249,115,22,0.25), 0 8px 32px rgba(0,0,0,0.5)",
+                border: "3px solid var(--brand-white-high)",
+                boxShadow: "0 0 32px var(--brand-orange-tint-md), 0 8px 32px rgba(0,0,0,0.5)",
               }}
             >
               <img
@@ -77,7 +77,7 @@ export function SplashScreen({ visible, onDone }: SplashScreenProps) {
           >
             <h1 className="text-2xl font-black tracking-wide">
               <span className="text-white">SAHU </span>
-              <span style={{ color: "#F97316" }}>CSC</span>
+              <span style={{ color: "var(--brand-orange)" }}>CSC</span>
             </h1>
             <p className="text-white/40 text-xs mt-1 tracking-widest uppercase">
               Management Platform

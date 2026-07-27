@@ -7,7 +7,7 @@ function ChannelBadge({ channel }: { channel: string }) {
   if (channel === "push") {
     return (
       <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full"
-        style={{ background: "#ede9fe", color: "#7c3aed" }}>
+        style={{ background: "var(--surface-permission-bg)", color: "var(--color-violet)" }}>
         <Bell size={10} /> Push
       </span>
     );
@@ -15,14 +15,14 @@ function ChannelBadge({ channel }: { channel: string }) {
   if (channel === "inapp") {
     return (
       <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full"
-        style={{ background: "#dcfce7", color: "#16a34a" }}>
+        style={{ background: "var(--color-success-bg)", color: "var(--color-success-dim)" }}>
         <BellRing size={10} /> In-App
       </span>
     );
   }
   return (
     <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full"
-      style={{ background: "#dbeafe", color: "#1d4ed8" }}>
+      style={{ background: "var(--surface-blue-tint)", color: "var(--color-blue-700)" }}>
       <Mail size={10} /> Email
     </span>
   );
@@ -72,7 +72,7 @@ export function BroadcastHistoryTable({
         </div>
       ) : !history?.logs.length ? (
         <div className="rounded-2xl bg-white border border-slate-100 p-8 text-center"
-          style={{ boxShadow: "0 2px 8px rgba(11,44,96,0.04)" }}>
+          style={{ boxShadow: "0 2px 8px var(--brand-navy-tint-sm)" }}>
           <History size={28} className="text-slate-300 mx-auto mb-3" />
           <p className="text-sm font-semibold text-slate-500">{t("broadcast.no_broadcasts")}</p>
           <p className="text-xs text-slate-400 mt-1">Your sent push, email and in-app notifications will appear here.</p>
@@ -81,15 +81,15 @@ export function BroadcastHistoryTable({
         <>
           {history.logs.map((log) => (
             <div key={log.id} className="rounded-2xl bg-white border border-slate-100 overflow-hidden"
-              style={{ boxShadow: "0 2px 8px rgba(11,44,96,0.05)" }}>
+              style={{ boxShadow: "0 2px 8px var(--brand-navy-tint-sm)" }}>
               <div className="flex">
                 <div className="w-1 flex-shrink-0 rounded-l-2xl"
                   style={{
                     background: log.channel === "push"
-                      ? "linear-gradient(135deg,#7c3aed,#a855f7)"
+                      ? "linear-gradient(135deg,var(--color-violet),#a855f7)"
                       : log.channel === "inapp"
-                        ? "linear-gradient(135deg,#16a34a,#22c55e)"
-                        : "linear-gradient(135deg,#0b2c60,#1e4da1)",
+                        ? "linear-gradient(135deg,var(--color-success-dim),var(--color-success-soft))"
+                        : "linear-gradient(135deg,var(--brand-navy-800),#1e4da1)",
                   }} />
                 <div className="flex-1 px-4 py-3.5">
                   {/* Top row */}

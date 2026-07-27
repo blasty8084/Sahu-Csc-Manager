@@ -55,13 +55,13 @@ export function BackupList({ backups, isLoading, totalSize, onRestoreClick, onDe
                     <tr key={backup.id} className="hover:bg-slate-50/80 transition-colors" data-testid={`row-backup-${backup.id}`}>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2.5">
-                          <div className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${meta.type === "auto" ? "bg-emerald-50" : "bg-[#0b2c60]/10"}`}>
-                            <Database size={13} className={meta.type === "auto" ? "text-emerald-600" : "text-[#0b2c60]"} />
+                          <div className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${meta.type === "auto" ? "bg-emerald-50" : "bg-[var(--brand-navy-800)]/10"}`}>
+                            <Database size={13} className={meta.type === "auto" ? "text-emerald-600" : "text-[var(--brand-navy-800)]"} />
                           </div>
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="text-xs font-medium text-slate-800">{meta.label}</span>
-                              <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${meta.type === "auto" ? "bg-emerald-100 text-emerald-700" : "bg-[#0b2c60]/10 text-[#0b2c60]"}`}>
+                              <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${meta.type === "auto" ? "bg-emerald-100 text-emerald-700" : "bg-[var(--brand-navy-800)]/10 text-[var(--brand-navy-800)]"}`}>
                                 {meta.type === "auto" ? "Auto" : "Manual"}
                               </span>
                             </div>
@@ -86,7 +86,7 @@ export function BackupList({ backups, isLoading, totalSize, onRestoreClick, onDe
                             href={`/api/backups/${backup.id}/download`}
                             download={backup.filename}
                             title="Download .sql file"
-                            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-slate-200 text-xs font-medium text-slate-600 hover:bg-[#0b2c60] hover:text-white hover:border-[#0b2c60] transition-colors"
+                            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-slate-200 text-xs font-medium text-slate-600 hover:bg-[var(--brand-navy-800)] hover:text-white hover:border-[var(--brand-navy-800)] transition-colors"
                           >
                             <Download size={12} />
                             <span className="hidden sm:inline">Download</span>
@@ -94,7 +94,7 @@ export function BackupList({ backups, isLoading, totalSize, onRestoreClick, onDe
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-7 text-xs px-2.5 text-slate-600 hover:bg-[#f97316] hover:text-white hover:border-[#f97316] transition-colors"
+                            className="h-7 text-xs px-2.5 text-slate-600 hover:bg-[var(--brand-orange)] hover:text-white hover:border-[var(--brand-orange)] transition-colors"
                             onClick={() => onRestoreClick(backup.id, backup.filename)}
                             data-testid={`button-restore-${backup.id}`}
                           >

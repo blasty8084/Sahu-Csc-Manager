@@ -13,14 +13,14 @@ export function ForgotPasswordStepper({ stepIndex }: Props) {
           <div
             className="w-2 h-2 rounded-full transition-all duration-300"
             style={{
-              background: stepIndex >= i ? "#f97316" : "rgba(255,255,255,0.25)",
+              background: stepIndex >= i ? "var(--brand-orange)" : "var(--brand-white-25)",
               transform: stepIndex === i ? "scale(1.3)" : "scale(1)",
             }}
           />
           {i < 2 && (
             <div
               className="h-0.5 w-6 rounded-full transition-all duration-300"
-              style={{ background: stepIndex > i ? "#f97316" : "rgba(255,255,255,0.2)" }}
+              style={{ background: stepIndex > i ? "var(--brand-orange)" : "var(--brand-white-border)" }}
             />
           )}
         </React.Fragment>

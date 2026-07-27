@@ -73,8 +73,8 @@ export function MobileReceiptPreview({
       {/* Action buttons */}
       <div className="mt-4 grid grid-cols-3 gap-3">
         {([
-          { icon: "printer",  label: "Print",  color: "bg-[#0b2c60] text-white",                          action: "print"    as const },
-          { icon: "download", label: "PDF",    color: "bg-[#f97316] text-white",                          action: "download" as const },
+          { icon: "printer",  label: "Print",  color: "bg-[var(--brand-navy-800)] text-white",                          action: "print"    as const },
+          { icon: "download", label: "PDF",    color: "bg-[var(--brand-orange)] text-white",                          action: "download" as const },
           { icon: "share",    label: "Share",  color: "bg-white text-slate-700 border border-slate-200",  action: "share"    as const },
         ]).map(({ icon, label, color, action }) => (
           <button key={label}

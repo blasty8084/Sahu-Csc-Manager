@@ -5,7 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { KeyRound, Loader2, ArrowLeft } from "lucide-react";
 import type { Method } from "./useTwoFactorStep";
 
-const NAVY = "#0B1340";
+const NAVY = "var(--brand-navy)";
 
 interface OtpEntryProps {
   code: string;
@@ -41,13 +41,13 @@ export function OtpEntry({
             maxLength={useBackupCode ? 12 : 6} />
         </div>
 
-        {error && <p className="text-xs font-medium text-center" style={{ color: "#be123c" }}>{error}</p>}
+        {error && <p className="text-xs font-medium text-center" style={{ color: "var(--color-error-dark)" }}>{error}</p>}
 
         {!useBackupCode && (
           <div className="text-center">
             <button type="button" onClick={onResend} disabled={resendSeconds > 0 || !!choosing}
               className="text-xs font-semibold transition-colors"
-              style={{ color: resendSeconds > 0 ? "#9ca3af" : NAVY }}>
+              style={{ color: resendSeconds > 0 ? "var(--color-gray-400)" : NAVY }}>
               {resendSeconds > 0 ? `Resend code in ${resendSeconds}s` : "Resend code"}
             </button>
           </div>
@@ -62,7 +62,7 @@ export function OtpEntry({
         <motion.div whileHover={{ scale: 1.015 }} whileTap={{ scale: 0.985 }}>
           <Button type="submit" disabled={isSubmitting || !code.trim()}
             className="w-full h-12 font-bold text-base tracking-wide text-white shadow-lg border-0"
-            style={{ background: "linear-gradient(135deg, #1a2560, #0f1a4a)" }}>
+            style={{ background: "linear-gradient(135deg, var(--brand-navy-650), #0f1a4a)" }}>
             {isSubmitting
               ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Verifying…</span>
               : "Verify & Continue →"}

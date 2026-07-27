@@ -127,7 +127,7 @@ export function ResetLinkDialog({
             <Button
               onClick={generateResetLink}
               disabled={resetLinkLoading}
-              style={{ background: "#f97316", borderColor: "#f97316", color: "#fff" }}
+              style={{ background: "var(--brand-orange)", borderColor: "var(--brand-orange)", color: "#fff" }}
               className="hover:opacity-90"
             >
               {resetLinkLoading

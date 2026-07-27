@@ -55,7 +55,7 @@ export default function AboutStats() {
             <div key={i} className="px-4 py-3 flex items-start gap-3">
               <div
                 className="flex-shrink-0 flex items-center justify-center rounded-lg"
-                style={{ width: 30, height: 30, background: "linear-gradient(135deg, #0b2c60, #1a4a9e)", boxShadow: "0 2px 6px rgba(11,44,96,0.25)" }}
+                style={{ width: 30, height: 30, background: "linear-gradient(135deg, var(--brand-navy-800), var(--brand-navy-600))", boxShadow: "0 2px 6px var(--brand-navy-shadow-sm)" }}
               >
                 <Cpu size={13} color="#fff" />
               </div>
@@ -64,7 +64,7 @@ export default function AboutStats() {
                   <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide">{a.layer}</p>
                   <span
                     className="text-[10px] font-bold px-1.5 py-0.5 rounded"
-                    style={{ background: "rgba(249,115,22,0.12)", color: "#f97316" }}
+                    style={{ background: "var(--brand-orange-tint-sm)", color: "var(--brand-orange)" }}
                   >
                     {a.tech}
                   </span>

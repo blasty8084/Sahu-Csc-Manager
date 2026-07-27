@@ -3,21 +3,21 @@ const APP_VERSION = __APP_VERSION__;
 
 export default function AboutHeroSection() {
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ background: "linear-gradient(135deg, #0b2c60 0%, #1a4a9e 60%, #0f3872 100%)" }}>
-      <div style={{ height: 3, background: "linear-gradient(90deg, #f97316, #fb923c, #fbbf24)" }} />
+    <div className="rounded-2xl overflow-hidden" style={{ background: "linear-gradient(135deg, var(--brand-navy-800) 0%, var(--brand-navy-600) 60%, var(--brand-navy-700) 100%)" }}>
+      <div style={{ height: 3, background: "linear-gradient(90deg, var(--brand-orange), var(--brand-orange-400), var(--brand-orange-300))" }} />
       <div className="px-4 py-4 sm:px-6 sm:py-5 flex items-center gap-3 sm:gap-4">
         <div
           className="flex items-center justify-center rounded-2xl flex-shrink-0"
-          style={{ width: 52, height: 52, background: "rgba(255,255,255,0.12)", border: "2px solid rgba(255,255,255,0.18)" }}
+          style={{ width: 52, height: 52, background: "var(--brand-white-mid)", border: "2px solid var(--brand-white-high)" }}
         >
           <img src="/sahu-logo.png" alt="SAHU CSC" className="w-9 h-9 object-contain rounded-xl" loading="lazy" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-lg sm:text-xl font-black text-white">SAHU <span style={{ color: "#f97316" }}>CSC</span></h1>
+            <h1 className="text-lg sm:text-xl font-black text-white">SAHU <span style={{ color: "var(--brand-orange)" }}>CSC</span></h1>
             <span
               className="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
-              style={{ background: "rgba(249,115,22,0.25)", color: "#fb923c", border: "1px solid rgba(249,115,22,0.3)" }}
+              style={{ background: "var(--brand-orange-tint-md)", color: "var(--brand-orange-400)", border: "1px solid var(--brand-orange-border)" }}
             >
               v{APP_VERSION}
             </span>

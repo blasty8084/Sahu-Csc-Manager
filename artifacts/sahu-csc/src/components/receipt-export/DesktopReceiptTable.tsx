@@ -79,7 +79,7 @@ export function DesktopReceiptTable({
           <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input value={searchQ} onChange={e => setSearchQ(e.target.value)}
             placeholder="Search receipts…"
-            className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0b2c60]/20" />
+            className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-navy-800)]/20" />
         </div>
         <div className="flex items-center gap-3 ml-3">
           <span className="text-[10px] bg-slate-100 text-slate-500 font-medium px-2 py-0.5 rounded-full">{filteredEntries.length} receipts</span>
@@ -102,12 +102,12 @@ export function DesktopReceiptTable({
           {filteredEntries.map((e) => (
             <tr key={e.receiptNumber}
               onClick={() => setExpandedEntry(expandedEntry === e.receiptNumber ? null : e.receiptNumber)}
-              className={`cursor-pointer transition-colors ${expandedEntry === e.receiptNumber ? "bg-[#0b2c60]/5" : "hover:bg-slate-50"}`}>
+              className={`cursor-pointer transition-colors ${expandedEntry === e.receiptNumber ? "bg-[var(--brand-navy-800)]/5" : "hover:bg-slate-50"}`}>
               <td className="px-4 py-3" onClick={ev => { ev.stopPropagation(); toggleEntry(e.receiptNumber); }}>
                 <Checkbox checked={selected.has(e.receiptNumber)} onChange={() => toggleEntry(e.receiptNumber)} />
               </td>
               <td className="px-3 py-3">
-                <span className={`font-mono text-xs font-semibold px-2 py-0.5 rounded ${expandedEntry === e.receiptNumber ? "bg-[#0b2c60] text-white" : "bg-slate-100 text-slate-700"}`}>
+                <span className={`font-mono text-xs font-semibold px-2 py-0.5 rounded ${expandedEntry === e.receiptNumber ? "bg-[var(--brand-navy-800)] text-white" : "bg-slate-100 text-slate-700"}`}>
                   {e.receiptNumber}
                 </span>
               </td>
@@ -115,7 +115,7 @@ export function DesktopReceiptTable({
               <td className="px-3 py-3">
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] text-white font-bold shrink-0"
-                    style={{ background: `linear-gradient(135deg, ${NAVY}, #1a4a9e)` }}>
+                    style={{ background: `linear-gradient(135deg, ${NAVY}, var(--brand-navy-600))` }}>
                     {e.customerName.charAt(0).toUpperCase()}
                   </div>
                   <span className="text-xs font-medium text-slate-800 truncate max-w-[110px]">{e.customerName}</span>

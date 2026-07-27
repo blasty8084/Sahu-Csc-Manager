@@ -130,7 +130,7 @@ export function AepsReceiptActions({ cardRef, receipt, pageUrl }: AepsReceiptAct
       <Button className="gap-2" style={{ background: "#25D366", color: "#fff" }} onClick={handleWhatsApp} disabled={sendingWa}>
         <WhatsAppIcon />{sendingWa ? "Preparing…" : "Share via WhatsApp"}
       </Button>
-      <Button className="gap-2" style={{ background: "#0b2c60" }} onClick={handleShare}>
+      <Button className="gap-2" style={{ background: "var(--brand-navy-800)" }} onClick={handleShare}>
         <Share2 size={15} />Share Link
       </Button>
     </div>

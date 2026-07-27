@@ -37,8 +37,8 @@ export function SectionLoader({
         style={{
           width: spinnerSize,
           height: spinnerSize,
-          border: `${borderWidth}px solid rgba(11,44,96,0.10)`,
-          borderTopColor: "#0b2c60",
+          border: `${borderWidth}px solid var(--brand-navy-tint-md)`,
+          borderTopColor: "var(--brand-navy-800)",
           borderRadius: "50%",
           animation: "sectionSpin 0.85s linear infinite",
         }}
@@ -53,7 +53,7 @@ export function SectionLoader({
               width: size === "sm" ? 4 : 5,
               height: size === "sm" ? 4 : 5,
               borderRadius: "50%",
-              background: i === 1 ? "#f97316" : "#0b2c60",
+              background: i === 1 ? "var(--brand-orange)" : "var(--brand-navy-800)",
               opacity: 0.6,
               animation: `sectionPulse 1.1s ease-in-out ${i * 0.18}s infinite`,
             }}
@@ -64,7 +64,7 @@ export function SectionLoader({
       <p
         style={{
           fontSize,
-          color: "#94a3b8",
+          color: "var(--color-slate-400)",
           fontWeight: 500,
           margin: 0,
           letterSpacing: "0.02em",

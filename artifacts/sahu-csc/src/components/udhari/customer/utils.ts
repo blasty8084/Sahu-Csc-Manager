@@ -10,8 +10,8 @@ export function printLedger(customer: any, entries: any[]) {
   const rows = entries.map((e) => `
     <tr>
       <td>${e.date}</td>
-      <td style="color:${e.type === 'gave' ? '#ea580c' : '#059669'}">${e.type === 'gave' ? 'You Gave' : 'You Got'}</td>
-      <td style="text-align:right;font-weight:bold;color:${e.type === 'gave' ? '#ea580c' : '#059669'}">
+      <td style="color:${e.type === 'gave' ? 'var(--brand-orange-600)' : 'var(--color-success)'}">${e.type === 'gave' ? 'You Gave' : 'You Got'}</td>
+      <td style="text-align:right;font-weight:bold;color:${e.type === 'gave' ? 'var(--brand-orange-600)' : 'var(--color-success)'}">
         ${e.type === 'gave' ? '+' : '-'}₹${Math.abs(e.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
       </td>
       <td>${e.note || '—'}</td>
@@ -22,14 +22,14 @@ export function printLedger(customer: any, entries: any[]) {
   win.document.write(`<!DOCTYPE html><html><head>
     <title>Udhari Khata — ${customer.name}</title>
     <style>
-      body{font-family:sans-serif;padding:32px;color:#1e293b;max-width:700px;margin:0 auto}
-      h1{color:#0b2c60;font-size:22px;margin:0}
-      .sub{color:#64748b;font-size:12px;margin:4px 0 0}
+      body{font-family:sans-serif;padding:32px;color:var(--color-slate-800);max-width:700px;margin:0 auto}
+      h1{color:var(--brand-navy-800);font-size:22px;margin:0}
+      .sub{color:var(--color-slate-500);font-size:12px;margin:4px 0 0}
       .balance{font-size:28px;font-weight:900;margin:16px 0 8px}
-      .collect{color:#ea580c}.pay{color:#059669}.settled{color:#64748b}
+      .collect{color:var(--brand-orange-600)}.pay{color:var(--color-success)}.settled{color:var(--color-slate-500)}
       table{width:100%;border-collapse:collapse;margin-top:20px;font-size:13px}
-      th{background:#f1f5f9;padding:8px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#64748b}
-      td{padding:8px 12px;border-bottom:1px solid #f1f5f9}
+      th{background:var(--color-slate-100);padding:8px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--color-slate-500)}
+      td{padding:8px 12px;border-bottom:1px solid var(--color-slate-100)}
       @media print{button{display:none}}
     </style></head><body>
     <h1>Udhari Khata — ${customer.name}</h1>

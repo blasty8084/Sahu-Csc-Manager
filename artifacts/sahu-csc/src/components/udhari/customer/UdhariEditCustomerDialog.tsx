@@ -49,7 +49,7 @@ export function UdhariEditCustomerDialog({ customer, open, onClose }: Props) {
     <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle className="text-sm font-bold" style={{ color: "#0b2c60" }}>
+          <DialogTitle className="text-sm font-bold" style={{ color: "var(--brand-navy-800)" }}>
             {t("udhari.customer.edit_customer")}
           </DialogTitle>
         </DialogHeader>
@@ -73,7 +73,7 @@ export function UdhariEditCustomerDialog({ customer, open, onClose }: Props) {
         <DialogFooter className="gap-2">
           <Button variant="outline" size="sm" onClick={onClose}>{t("common.cancel")}</Button>
           <Button size="sm" disabled={update.isPending} onClick={handleSave}
-            style={{ background: "linear-gradient(135deg,#0b2c60,#1a4a9e)", color: "#fff" }}>
+            style={{ background: "linear-gradient(135deg,var(--brand-navy-800),var(--brand-navy-600))", color: "#fff" }}>
             {update.isPending ? t("common.saving") : t("common.save")}
           </Button>
         </DialogFooter>

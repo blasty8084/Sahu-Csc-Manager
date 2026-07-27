@@ -12,13 +12,13 @@ interface Props {
 
 export function RegisterMobileLayout({ children }: Props) {
   return (
-    <div className="h-screen flex flex-col overflow-hidden" style={{ background: "#0B1340" }}>
+    <div className="h-screen flex flex-col overflow-hidden" style={{ background: "var(--brand-navy)" }}>
       {/* Navy header */}
       <div className="flex-shrink-0 pt-6 px-6 pb-4 flex flex-col items-center text-center relative">
         <Link href="/login">
           <button
             className="absolute left-4 top-6 w-9 h-9 rounded-xl flex items-center justify-center transition-colors"
-            style={{ background: "rgba(255,255,255,0.15)" }}
+            style={{ background: "var(--brand-white-mid)" }}
           >
             <ArrowLeft className="w-4 h-4 text-white" />
           </button>
@@ -27,7 +27,7 @@ export function RegisterMobileLayout({ children }: Props) {
         <div className="mt-2.5 space-y-0">
           <h1 className="text-xl font-black">
             <span className="text-white">SAHU </span>
-            <span style={{ color: "#F97316" }}>CSC</span>
+            <span style={{ color: "var(--brand-orange)" }}>CSC</span>
           </h1>
           <p className="text-white/50 text-xs">Management Platform</p>
         </div>

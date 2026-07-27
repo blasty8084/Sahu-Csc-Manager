@@ -29,13 +29,13 @@ export interface HistoryResponse {
 }
 
 export const NOTIF_TYPES = [
-  { value: "info",     label: "Info",     color: "#0b2c60" },
-  { value: "success",  label: "Success",  color: "#16a34a" },
-  { value: "warning",  label: "Warning",  color: "#d97706" },
-  { value: "error",    label: "Error",    color: "#dc2626" },
-  { value: "system",   label: "System",   color: "#7c3aed" },
-  { value: "business", label: "Business", color: "#0891b2" },
-  { value: "security", label: "Security", color: "#ea580c" },
+  { value: "info",     label: "Info",     color: "var(--brand-navy-800)" },
+  { value: "success",  label: "Success",  color: "var(--color-success-dim)" },
+  { value: "warning",  label: "Warning",  color: "var(--color-warning)" },
+  { value: "error",    label: "Error",    color: "var(--color-error-dim)" },
+  { value: "system",   label: "System",   color: "var(--color-violet)" },
+  { value: "business", label: "Business", color: "var(--color-sky)" },
+  { value: "security", label: "Security", color: "var(--brand-orange-600)" },
 ] as const;
 
 export const NOTIF_PRIORITIES = [

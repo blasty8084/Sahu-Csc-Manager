@@ -17,24 +17,24 @@ export function DailyTabSummaryCard({ session }: DailyTabSummaryCardProps) {
       <StatCard
         label="Withdrawals"
         value={s.totalWithdrawals}
-        accent="linear-gradient(135deg, #f43f5e, #e11d48)"
-        color="#e11d48"
+        accent="linear-gradient(135deg, var(--color-error-soft), var(--color-error))"
+        color="var(--color-error)"
         icon={TrendingDown}
       />
       <StatCard
         label="Deposits"
         value={session.totalDeposits}
-        accent="linear-gradient(135deg, #10b981, #059669)"
-        color="#059669"
+        accent="linear-gradient(135deg, var(--color-success-light), var(--color-success))"
+        color="var(--color-success)"
         icon={TrendingUp}
       />
       <StatCard
         label="Current Balance"
         value={session.currentBalance}
         accent={session.currentBalance < 0
-          ? "linear-gradient(135deg, #f43f5e, #e11d48)"
-          : "linear-gradient(135deg, #10b981, #059669)"}
-        color={session.currentBalance < 0 ? "#e11d48" : "#059669"}
+          ? "linear-gradient(135deg, var(--color-error-soft), var(--color-error))"
+          : "linear-gradient(135deg, var(--color-success-light), var(--color-success))"}
+        color={session.currentBalance < 0 ? "var(--color-error)" : "var(--color-success)"}
         icon={IndianRupee}
         wide
       />

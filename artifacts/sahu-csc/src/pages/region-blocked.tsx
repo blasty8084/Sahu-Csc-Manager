@@ -8,7 +8,7 @@ export default function RegionBlocked() {
     <div
       className="fixed inset-0 z-[9999] flex flex-col items-center justify-center select-none"
       style={{
-        background: "linear-gradient(160deg, #080f2e 0%, #0b2c60 60%, #0f1f4a 100%)",
+        background: "linear-gradient(160deg, var(--brand-navy-900) 0%, var(--brand-navy-800) 60%, var(--brand-navy-750) 100%)",
       }}
     >
       {/* Subtle radial glow */}
@@ -19,7 +19,7 @@ export default function RegionBlocked() {
           height: 340,
           borderRadius: "50%",
           background:
-            "radial-gradient(circle, rgba(249,115,22,0.08) 0%, transparent 70%)",
+            "radial-gradient(circle, var(--brand-orange-tint-xs) 0%, transparent 70%)",
         }}
       />
 
@@ -28,8 +28,8 @@ export default function RegionBlocked() {
         className="relative z-10 flex flex-col items-center gap-5 rounded-3xl px-8 py-10 mx-4 text-center"
         style={{
           maxWidth: 440,
-          background: "rgba(255,255,255,0.05)",
-          border: "1px solid rgba(255,255,255,0.10)",
+          background: "var(--brand-white-low)",
+          border: "1px solid var(--brand-white-low)",
           backdropFilter: "blur(12px)",
         }}
       >
@@ -39,7 +39,7 @@ export default function RegionBlocked() {
         {/* Title */}
         <div>
           <h1 className="text-white text-2xl font-black tracking-tight">
-            SAHU <span style={{ color: "#f97316" }}>CSC</span>
+            SAHU <span style={{ color: "var(--brand-orange)" }}>CSC</span>
           </h1>
           <p className="text-white/50 text-xs mt-1 font-medium tracking-widest uppercase">
             India · Only
@@ -49,20 +49,20 @@ export default function RegionBlocked() {
         {/* Divider */}
         <div
           className="w-16 rounded-full"
-          style={{ height: 2, background: "linear-gradient(90deg, #f97316, #fbbf24)" }}
+          style={{ height: 2, background: "linear-gradient(90deg, var(--brand-orange), var(--brand-orange-300))" }}
         />
 
         {/* Messages in all three app languages */}
         <div className="space-y-3">
           <p className="text-white/90 text-sm leading-relaxed font-medium">
             This service is available to users in{" "}
-            <span style={{ color: "#f97316" }}>India only</span>.
+            <span style={{ color: "var(--brand-orange)" }}>India only</span>.
           </p>
           <p className="text-white/70 text-sm leading-relaxed">
-            यह सेवा केवल <span style={{ color: "#f97316" }}>भारत</span> में उपलब्ध है।
+            यह सेवा केवल <span style={{ color: "var(--brand-orange)" }}>भारत</span> में उपलब्ध है।
           </p>
           <p className="text-white/70 text-sm leading-relaxed">
-            ଏହି ସେବା କେବଳ <span style={{ color: "#f97316" }}>ଭାରତ</span>ରେ ଉପଲବ୍ଧ।
+            ଏହି ସେବା କେବଳ <span style={{ color: "var(--brand-orange)" }}>ଭାରତ</span>ରେ ଉପଲବ୍ଧ।
           </p>
         </div>
 

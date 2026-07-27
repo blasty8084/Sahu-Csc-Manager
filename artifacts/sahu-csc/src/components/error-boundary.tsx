@@ -51,10 +51,10 @@ export class ErrorBoundary extends React.Component<Props, State> {
     if (!this.state.hasError) return this.props.children;
 
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0b2c60] p-6">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--brand-navy-800)] p-6">
         <div className="bg-white rounded-2xl shadow-xl p-8 max-w-sm w-full text-center space-y-4">
           <div className="text-4xl">⚠️</div>
-          <h1 className="text-xl font-bold text-[#0b2c60]">Something went wrong</h1>
+          <h1 className="text-xl font-bold text-[var(--brand-navy-800)]">Something went wrong</h1>
           <p className="text-sm text-gray-500">
             An unexpected error occurred. Your data is safe — try refreshing the
             page or going back to the dashboard.
@@ -62,13 +62,13 @@ export class ErrorBoundary extends React.Component<Props, State> {
           <div className="flex gap-3 justify-center pt-2">
             <button
               onClick={this.handleReset}
-              className="px-4 py-2 rounded-lg border border-[#0b2c60] text-[#0b2c60] text-sm font-medium hover:bg-[#0b2c60]/5 transition-colors"
+              className="px-4 py-2 rounded-lg border border-[var(--brand-navy-800)] text-[var(--brand-navy-800)] text-sm font-medium hover:bg-[var(--brand-navy-800)]/5 transition-colors"
             >
               Try again
             </button>
             <button
               onClick={this.handleReload}
-              className="px-4 py-2 rounded-lg bg-[#0b2c60] text-white text-sm font-medium hover:bg-[#0b2c60]/90 transition-colors"
+              className="px-4 py-2 rounded-lg bg-[var(--brand-navy-800)] text-white text-sm font-medium hover:bg-[var(--brand-navy-800)]/90 transition-colors"
             >
               Reload page
             </button>

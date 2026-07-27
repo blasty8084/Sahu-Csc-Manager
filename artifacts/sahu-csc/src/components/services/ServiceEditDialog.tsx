@@ -109,24 +109,24 @@ export function ServiceEditDialog({ open, service, onClose, services, onSuccess 
   /* ── Desktop two-panel layout ────────────────────────────────────── */
   return (
     <>
-      <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(11,44,96,0.40)", backdropFilter: "blur(4px)", zIndex: 49 }} />
+      <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "var(--brand-navy-shadow)", backdropFilter: "blur(4px)", zIndex: 49 }} />
       <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex" }}>
 
         {/* LEFT INFO PANEL */}
-        <div style={{ width: 380, flexShrink: 0, background: "linear-gradient(160deg,#7c2d12 0%,#c2410c 50%,#f97316 100%)", display: "flex", flexDirection: "column", padding: "40px 36px", position: "relative", overflow: "hidden" }}>
-          <div style={{ position: "absolute", top: -80, right: -80, width: 260, height: 260, borderRadius: "50%", background: "rgba(255,255,255,0.10)", pointerEvents: "none" }} />
+        <div style={{ width: 380, flexShrink: 0, background: "linear-gradient(160deg,var(--color-orange-900) 0%,var(--brand-orange-700) 50%,var(--brand-orange) 100%)", display: "flex", flexDirection: "column", padding: "40px 36px", position: "relative", overflow: "hidden" }}>
+          <div style={{ position: "absolute", top: -80, right: -80, width: 260, height: 260, borderRadius: "50%", background: "var(--brand-white-low)", pointerEvents: "none" }} />
           <div style={{ position: "absolute", bottom: -60, left: -60, width: 200, height: 200, borderRadius: "50%", background: "rgba(0,0,0,0.10)", pointerEvents: "none" }} />
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 40, position: "relative" }}>
-            <div style={{ width: 36, height: 36, borderRadius: 11, background: "linear-gradient(135deg,#0b2c60,#1a4a9e)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 14px rgba(11,44,96,0.40)" }}>
+            <div style={{ width: 36, height: 36, borderRadius: 11, background: "linear-gradient(135deg,var(--brand-navy-800),var(--brand-navy-600))", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 14px var(--brand-navy-shadow)" }}>
               <span style={{ fontWeight: 900, fontSize: 13, color: "#fff" }}>SC</span>
             </div>
             <div><span style={{ color: "#fff", fontWeight: 900, fontSize: 16 }}>SAHU </span><span style={{ color: "rgba(255,255,255,0.70)", fontWeight: 900, fontSize: 16 }}>CSC</span></div>
           </div>
           <div style={{ position: "relative", marginBottom: 28 }}>
-            <div style={{ width: 64, height: 64, borderRadius: 20, background: "rgba(255,255,255,0.20)", border: "2px solid rgba(255,255,255,0.30)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
+            <div style={{ width: 64, height: 64, borderRadius: 20, background: "var(--brand-white-border)", border: "2px solid var(--brand-white-30)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
               <Tag size={30} color="#fff" />
             </div>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "4px 10px", marginBottom: 10 }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "var(--brand-white-mid)", border: "1px solid var(--brand-white-25)", borderRadius: 8, padding: "4px 10px", marginBottom: 10 }}>
               <Layers size={11} color="#fff" />
               <span style={{ color: "#fff", fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.1em" }}>Services Catalog</span>
             </div>
@@ -142,7 +142,7 @@ export function ServiceEditDialog({ open, service, onClose, services, onSuccess 
               { label: "Active", value: String(services.filter((s: any) => s.isActive).length) },
               { label: "Selected Category", value: form.watch("category") || "—" },
             ].map(({ label, value }) => (
-              <div key={label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(255,255,255,0.12)", borderRadius: 12, padding: "11px 16px", border: "1px solid rgba(255,255,255,0.12)" }}>
+              <div key={label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--brand-white-mid)", borderRadius: 12, padding: "11px 16px", border: "1px solid var(--brand-white-mid)" }}>
                 <span style={{ color: "rgba(255,255,255,0.60)", fontSize: 12, fontWeight: 500 }}>{label}</span>
                 <span style={{ color: "#fff", fontSize: 14, fontWeight: 800 }}>{value}</span>
               </div>
@@ -151,66 +151,66 @@ export function ServiceEditDialog({ open, service, onClose, services, onSuccess 
         </div>
 
         {/* RIGHT FORM PANEL */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "#f8fafc" }}>
-          <div style={{ background: "#fff", borderBottom: "1px solid #f1f5f9", padding: "20px 40px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "var(--color-slate-50)" }}>
+          <div style={{ background: "#fff", borderBottom: "1px solid var(--color-slate-100)", padding: "20px 40px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
             <div>
-              <h2 style={{ fontSize: 18, fontWeight: 800, color: "#0b2c60", margin: 0 }}>Edit Service</h2>
-              <p style={{ fontSize: 12, color: "#94a3b8", margin: 0, marginTop: 2 }}>Services Catalog · Update details</p>
+              <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--brand-navy-800)", margin: 0 }}>Edit Service</h2>
+              <p style={{ fontSize: 12, color: "var(--color-slate-400)", margin: 0, marginTop: 2 }}>Services Catalog · Update details</p>
             </div>
-            <button onClick={onClose} style={{ width: 38, height: 38, borderRadius: 12, border: "1.5px solid #e2e8f0", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-              <X size={16} color="#64748b" />
+            <button onClick={onClose} style={{ width: 38, height: 38, borderRadius: 12, border: "1.5px solid var(--color-slate-200)", background: "var(--color-slate-50)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+              <X size={16} color="var(--color-slate-500)" />
             </button>
           </div>
           <form onSubmit={onSubmit} style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
             <div style={{ flex: 1, overflowY: "auto", padding: "32px 40px", display: "flex", flexDirection: "column", gap: 22, maxWidth: 620 }}>
-              <div style={{ background: "linear-gradient(135deg,rgba(249,115,22,0.06),rgba(251,146,60,0.03))", border: "2px solid rgba(249,115,22,0.20)", borderRadius: 20, padding: "20px 24px" }}>
-                <label style={{ fontSize: 11, fontWeight: 700, color: "#c2410c", textTransform: "uppercase" as const, letterSpacing: "0.1em", display: "block", marginBottom: 12 }}>Service Name *</label>
+              <div style={{ background: "linear-gradient(135deg,var(--brand-orange-tint-07),var(--brand-orange-tint-07))", border: "2px solid var(--brand-orange-tint-md)", borderRadius: 20, padding: "20px 24px" }}>
+                <label style={{ fontSize: 11, fontWeight: 700, color: "var(--brand-orange-700)", textTransform: "uppercase" as const, letterSpacing: "0.1em", display: "block", marginBottom: 12 }}>Service Name *</label>
                 <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 14, background: "linear-gradient(135deg,#f97316,#fb923c)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 4px 14px rgba(249,115,22,0.35)" }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 14, background: "linear-gradient(135deg,var(--brand-orange),var(--brand-orange-400))", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 4px 14px var(--brand-orange-tint-soft)" }}>
                     <Tag size={20} color="#fff" />
                   </div>
                   <input {...form.register("name", { required: true })} placeholder="e.g. PAN Card Application" data-testid="input-service-name"
-                    style={{ flex: 1, fontSize: 20, fontWeight: 800, color: "#0b2c60", background: "transparent", border: "none", outline: "none" }} />
+                    style={{ flex: 1, fontSize: 20, fontWeight: 800, color: "var(--brand-navy-800)", background: "transparent", border: "none", outline: "none" }} />
                 </div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                 <div>
-                  <label style={{ fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>Category *</label>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: "var(--color-slate-600)", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>Category *</label>
                   <div style={{ position: "relative" }}>
-                    <Layers size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+                    <Layers size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--color-slate-400)" }} />
                     <input {...form.register("category", { required: true })} placeholder="e.g. Government" data-testid="input-service-category"
-                      style={{ width: "100%", height: 50, paddingLeft: 40, paddingRight: 14, borderRadius: 14, border: "1.5px solid #e2e8f0", background: "#fff", fontSize: 14, color: "#0b2c60", outline: "none", boxSizing: "border-box", fontWeight: 500, boxShadow: "0 1px 4px rgba(11,44,96,0.06)" }}
-                      onFocus={e => (e.target.style.borderColor = "#f97316")} onBlur={e => (e.target.style.borderColor = "#e2e8f0")} />
+                      style={{ width: "100%", height: 50, paddingLeft: 40, paddingRight: 14, borderRadius: 14, border: "1.5px solid var(--color-slate-200)", background: "#fff", fontSize: 14, color: "var(--brand-navy-800)", outline: "none", boxSizing: "border-box", fontWeight: 500, boxShadow: "0 1px 4px var(--brand-navy-tint-md)" }}
+                      onFocus={e => (e.target.style.borderColor = "var(--brand-orange)")} onBlur={e => (e.target.style.borderColor = "var(--color-slate-200)")} />
                   </div>
                 </div>
                 <div>
-                  <label style={{ fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>Price (₹)</label>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: "var(--color-slate-600)", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>Price (₹)</label>
                   <div style={{ position: "relative" }}>
-                    <IndianRupee size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+                    <IndianRupee size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--color-slate-400)" }} />
                     <input type="number" step="0.01" min="0" {...form.register("price", { valueAsNumber: true, min: 0 })} data-testid="input-service-price"
-                      style={{ width: "100%", height: 50, paddingLeft: 38, paddingRight: 14, borderRadius: 14, border: "1.5px solid #e2e8f0", background: "#fff", fontSize: 14, color: "#0b2c60", outline: "none", boxSizing: "border-box", fontWeight: 500, boxShadow: "0 1px 4px rgba(11,44,96,0.06)" }}
-                      onFocus={e => (e.target.style.borderColor = "#f97316")} onBlur={e => (e.target.style.borderColor = "#e2e8f0")} />
+                      style={{ width: "100%", height: 50, paddingLeft: 38, paddingRight: 14, borderRadius: 14, border: "1.5px solid var(--color-slate-200)", background: "#fff", fontSize: 14, color: "var(--brand-navy-800)", outline: "none", boxSizing: "border-box", fontWeight: 500, boxShadow: "0 1px 4px var(--brand-navy-tint-md)" }}
+                      onFocus={e => (e.target.style.borderColor = "var(--brand-orange)")} onBlur={e => (e.target.style.borderColor = "var(--color-slate-200)")} />
                   </div>
                 </div>
               </div>
               <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>Description <span style={{ fontWeight: 400, textTransform: "none" as const, color: "#94a3b8" }}>(optional)</span></label>
+                <label style={{ fontSize: 11, fontWeight: 700, color: "var(--color-slate-600)", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>Description <span style={{ fontWeight: 400, textTransform: "none" as const, color: "var(--color-slate-400)" }}>(optional)</span></label>
                 <input {...form.register("description")} placeholder="Brief description of the service..." data-testid="input-service-desc"
-                  style={{ width: "100%", height: 50, paddingLeft: 16, paddingRight: 14, borderRadius: 14, border: "1.5px solid #e2e8f0", background: "#fff", fontSize: 14, color: "#0b2c60", outline: "none", boxSizing: "border-box", fontWeight: 500, boxShadow: "0 1px 4px rgba(11,44,96,0.06)" }}
-                  onFocus={e => (e.target.style.borderColor = "#f97316")} onBlur={e => (e.target.style.borderColor = "#e2e8f0")} />
+                  style={{ width: "100%", height: 50, paddingLeft: 16, paddingRight: 14, borderRadius: 14, border: "1.5px solid var(--color-slate-200)", background: "#fff", fontSize: 14, color: "var(--brand-navy-800)", outline: "none", boxSizing: "border-box", fontWeight: 500, boxShadow: "0 1px 4px var(--brand-navy-tint-md)" }}
+                  onFocus={e => (e.target.style.borderColor = "var(--brand-orange)")} onBlur={e => (e.target.style.borderColor = "var(--color-slate-200)")} />
               </div>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#f8fafc", borderRadius: 14, padding: "16px 18px", border: "1.5px solid #e2e8f0" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--color-slate-50)", borderRadius: 14, padding: "16px 18px", border: "1.5px solid var(--color-slate-200)" }}>
                 <div>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: "#0b2c60", marginBottom: 2 }}>Service Active</p>
-                  <p style={{ fontSize: 12, color: "#94a3b8" }}>Inactive services won't appear in transaction forms</p>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: "var(--brand-navy-800)", marginBottom: 2 }}>Service Active</p>
+                  <p style={{ fontSize: 12, color: "var(--color-slate-400)" }}>Inactive services won't appear in transaction forms</p>
                 </div>
                 <Switch checked={form.watch("isActive")} onCheckedChange={(v) => form.setValue("isActive", v)} id="active-switch-desk" />
               </div>
             </div>
-            <div style={{ padding: "20px 40px", borderTop: "1px solid #f1f5f9", background: "#fff", flexShrink: 0, display: "flex", gap: 14 }}>
-              <button type="button" onClick={onClose} style={{ height: 50, padding: "0 28px", borderRadius: 14, border: "1.5px solid #e2e8f0", background: "#f8fafc", cursor: "pointer", fontWeight: 700, fontSize: 14, color: "#64748b" }}>Cancel</button>
+            <div style={{ padding: "20px 40px", borderTop: "1px solid var(--color-slate-100)", background: "#fff", flexShrink: 0, display: "flex", gap: 14 }}>
+              <button type="button" onClick={onClose} style={{ height: 50, padding: "0 28px", borderRadius: 14, border: "1.5px solid var(--color-slate-200)", background: "var(--color-slate-50)", cursor: "pointer", fontWeight: 700, fontSize: 14, color: "var(--color-slate-500)" }}>Cancel</button>
               <button type="submit" disabled={updateMut.isPending} data-testid="button-save-service"
-                style={{ flex: 1, height: 50, borderRadius: 14, border: "none", cursor: "pointer", background: "linear-gradient(135deg,#f97316,#fb923c)", color: "#fff", fontSize: 15, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "0 6px 20px rgba(249,115,22,0.40)", opacity: updateMut.isPending ? 0.7 : 1 }}>
+                style={{ flex: 1, height: 50, borderRadius: 14, border: "none", cursor: "pointer", background: "linear-gradient(135deg,var(--brand-orange),var(--brand-orange-400))", color: "#fff", fontSize: 15, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "0 6px 20px var(--brand-orange-glow)", opacity: updateMut.isPending ? 0.7 : 1 }}>
                 <CheckCircle2 size={18} />
                 {updateMut.isPending ? "Saving…" : "Save Changes"}
               </button>

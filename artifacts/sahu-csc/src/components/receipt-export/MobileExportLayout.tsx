@@ -43,7 +43,7 @@ export function MobileExportLayout({
             const active = mobileTab === tab;
             return (
               <button key={tab} onClick={() => setMobileTab(tab)}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${active ? "bg-white text-[#0b2c60] shadow-sm" : "text-slate-400"}`}>
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${active ? "bg-white text-[var(--brand-navy-800)] shadow-sm" : "text-slate-400"}`}>
                 <Icon size={13} />
                 <span className="hidden xs:inline">{label}</span>
               </button>
