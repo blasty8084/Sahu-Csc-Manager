@@ -27,13 +27,13 @@ export function LedgerSummaryCards({ balance, isLoading, data, t }: LedgerSummar
       </div>
 
       {/* Total Credits */}
-      <div style={{ background: "white", border: "1px solid var(--color-slate-200)", borderRadius: 20, padding: "18px 20px", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+      <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 20, padding: "18px 20px", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-          <span style={{ color: "var(--color-slate-500)", fontSize: 13, fontWeight: 600 }}>{t("ledger.credits")}</span>
+          <span style={{ color: "hsl(var(--muted-foreground))", fontSize: 13, fontWeight: 600 }}>{t("ledger.credits")}</span>
           <div style={{ background: "var(--color-success-bg-light)", border: "1px solid var(--color-success-glow)", borderRadius: 12, padding: 8 }}><ArrowUpRight size={15} color="var(--color-success)" strokeWidth={2.5} /></div>
         </div>
         {balance === undefined
-          ? <div style={{ height: 32, background: "var(--color-slate-100)", borderRadius: 8, marginBottom: 14, width: "65%" }} />
+          ? <div style={{ height: 32, background: "hsl(var(--muted))", borderRadius: 8, marginBottom: 14, width: "65%" }} />
           : <p style={{ fontSize: 24, fontWeight: 900, color: "var(--color-success)", marginBottom: 14, lineHeight: 1 }}>₹{(balance?.totalCredits ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p>}
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--brand-orange-400)" }} />
@@ -42,13 +42,13 @@ export function LedgerSummaryCards({ balance, isLoading, data, t }: LedgerSummar
       </div>
 
       {/* Total Debits */}
-      <div style={{ background: "white", border: "1px solid var(--color-slate-200)", borderRadius: 20, padding: "18px 20px", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+      <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 20, padding: "18px 20px", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-          <span style={{ color: "var(--color-slate-500)", fontSize: 13, fontWeight: 600 }}>{t("ledger.debits")}</span>
+          <span style={{ color: "hsl(var(--muted-foreground))", fontSize: 13, fontWeight: 600 }}>{t("ledger.debits")}</span>
           <div style={{ background: "var(--color-error-bg)", border: "1px solid var(--color-rose-300)", borderRadius: 12, padding: 8 }}><ArrowDownLeft size={15} color="var(--color-error-std)" strokeWidth={2.5} /></div>
         </div>
         {balance === undefined
-          ? <div style={{ height: 32, background: "var(--color-slate-100)", borderRadius: 8, marginBottom: 14, width: "65%" }} />
+          ? <div style={{ height: 32, background: "hsl(var(--muted))", borderRadius: 8, marginBottom: 14, width: "65%" }} />
           : <p style={{ fontSize: 24, fontWeight: 900, color: "var(--color-error-std)", marginBottom: 14, lineHeight: 1 }}>₹{(balance?.totalDebits ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p>}
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--brand-orange-400)" }} />
@@ -57,13 +57,13 @@ export function LedgerSummaryCards({ balance, isLoading, data, t }: LedgerSummar
       </div>
 
       {/* Total Transactions */}
-      <div style={{ background: "white", border: "1px solid var(--color-slate-200)", borderRadius: 20, padding: "18px 20px", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+      <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 20, padding: "18px 20px", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-          <span style={{ color: "var(--color-slate-500)", fontSize: 13, fontWeight: 600 }}>Total Transactions</span>
+          <span style={{ color: "hsl(var(--muted-foreground))", fontSize: 13, fontWeight: 600 }}>Total Transactions</span>
           <div style={{ background: "var(--surface-blue-tint)", border: "1px solid #93c5fd", borderRadius: 12, padding: 8 }}><FileText size={15} color="var(--color-blue-600)" strokeWidth={2.5} /></div>
         </div>
         {isLoading
-          ? <div style={{ height: 32, background: "var(--color-slate-100)", borderRadius: 8, marginBottom: 14, width: "40%" }} />
+          ? <div style={{ height: 32, background: "hsl(var(--muted))", borderRadius: 8, marginBottom: 14, width: "40%" }} />
           : <p style={{ fontSize: 24, fontWeight: 900, color: "var(--color-blue-600)", marginBottom: 14, lineHeight: 1 }}>{data?.total ?? 0}</p>}
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--brand-orange-400)" }} />

@@ -30,7 +30,7 @@ export function DailyTab() {
         /* ── No session ── */
         <div className="rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 14px var(--brand-navy-tint-md)" }}>
           <div style={{ height: 4, background: "linear-gradient(90deg, #f59e0b, var(--brand-orange-300))" }} />
-          <div className="bg-white px-6 py-10 flex flex-col items-center gap-4 text-center">
+          <div className="bg-card px-6 py-10 flex flex-col items-center gap-4 text-center">
             <div style={{
               width: 64, height: 64, borderRadius: 18,
               background: "linear-gradient(135deg, #f59e0b, var(--brand-orange-300))",

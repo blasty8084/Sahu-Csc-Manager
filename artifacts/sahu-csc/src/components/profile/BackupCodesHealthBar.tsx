@@ -27,7 +27,7 @@ export function BackupCodesHealthBar({
   const low = codesRemaining <= 2;
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-4 space-y-3 shadow-sm">
+    <div className="rounded-2xl border border-border bg-card p-4 space-y-3 shadow-sm">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <KeyRound size={14} style={{ color: NAVY }} />
@@ -46,10 +46,10 @@ export function BackupCodesHealthBar({
       {/* Progress bar */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between text-xs">
-          <span className="text-gray-500">{codesRemaining} of {TOTAL_CODES} remaining</span>
+          <span className="text-muted-foreground">{codesRemaining} of {TOTAL_CODES} remaining</span>
           <span style={{ color: low ? "var(--color-error-std)" : GREEN }}>{pct}%</span>
         </div>
-        <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+        <div className="h-2 rounded-full bg-muted overflow-hidden">
           <div
             className="h-full rounded-full transition-all"
             style={{ width: `${pct}%`, background: low ? "var(--color-error-std)" : GREEN }}
@@ -65,8 +65,8 @@ export function BackupCodesHealthBar({
 
       {/* Code-slot grid */}
       {showCodes && (
-        <div className="rounded-xl bg-gray-50 border border-gray-100 p-3">
-          <p className="text-[11px] text-gray-400 mb-2">
+        <div className="rounded-xl bg-muted border border-border p-3">
+          <p className="text-[11px] text-muted-foreground mb-2">
             Your actual codes are hidden for security. Use them only if you lose access to your{" "}
             {twoFaMethod === "totp" ? "authenticator app" : "email"}.
           </p>
@@ -78,8 +78,8 @@ export function BackupCodesHealthBar({
                   key={i}
                   className="h-7 rounded-lg flex items-center justify-center"
                   style={{
-                    background: used ? "#f3f4f6" : "var(--color-success-bg-light)",
-                    border:     `1px solid ${used ? "var(--color-gray-200)" : "var(--color-success-glow)"}`,
+                    background: used ? "hsl(var(--muted))" : "var(--color-success-bg-light)",
+                    border:     `1px solid ${used ? "hsl(var(--border))" : "var(--color-success-glow)"}`,
                   }}
                 >
                   {used
@@ -89,7 +89,7 @@ export function BackupCodesHealthBar({
               );
             })}
           </div>
-          <p className="text-[10px] text-gray-400 mt-2 text-center">Green = available · Grey = used</p>
+          <p className="text-[10px] text-muted-foreground mt-2 text-center">Green = available · Grey = used</p>
         </div>
       )}
 

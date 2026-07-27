@@ -18,7 +18,7 @@ export function DesktopExportOptionsCard({
   startDate, endDate, downloading, exported, handleDownload,
 }: DesktopExportOptionsCardProps) {
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+    <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
       <div className="px-4 py-3 flex items-center gap-2" style={{ background: NAVY }}>
         <ArrowDownToLine size={14} className="text-white/80" />
         <span className="text-sm font-semibold text-white">Export Options</span>
@@ -29,11 +29,11 @@ export function DesktopExportOptionsCard({
           <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2">Format</p>
           <div className="grid grid-cols-2 gap-2">
             <button onClick={() => setExportFormat("pdf")}
-              className={`flex flex-col items-center gap-1.5 py-2.5 rounded-lg border-2 text-xs font-medium transition-all ${exportFormat === "pdf" ? "border-[var(--brand-orange)] bg-[var(--brand-orange)]/5 text-[var(--brand-orange)]" : "border-slate-200 text-slate-500 hover:border-slate-300"}`}>
+              className={`flex flex-col items-center gap-1.5 py-2.5 rounded-lg border-2 text-xs font-medium transition-all ${exportFormat === "pdf" ? "border-[var(--brand-orange)] bg-[var(--brand-orange)]/5 text-[var(--brand-orange)]" : "border-border text-muted-foreground hover:border-border/80"}`}>
               <FileText size={18} />PDF
             </button>
             <button onClick={() => setExportFormat("excel")}
-              className={`flex flex-col items-center gap-1.5 py-2.5 rounded-lg border-2 text-xs font-medium transition-all ${exportFormat === "excel" ? "border-emerald-500 bg-emerald-50 text-emerald-600" : "border-slate-200 text-slate-500 hover:border-slate-300"}`}>
+              className={`flex flex-col items-center gap-1.5 py-2.5 rounded-lg border-2 text-xs font-medium transition-all ${exportFormat === "excel" ? "border-emerald-500 bg-emerald-50 text-emerald-600" : "border-border text-muted-foreground hover:border-border/80"}`}>
               <FileSpreadsheet size={18} />Excel
             </button>
           </div>
@@ -47,13 +47,13 @@ export function DesktopExportOptionsCard({
               { label: "Selected Only", sub: `${selected.size} selected` },
               { label: "Date Range",    sub: startDate && endDate ? `${fmtDate(startDate)} → ${fmtDate(endDate)}` : "Set dates above" },
             ].map((opt, i) => (
-              <label key={opt.label} className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-slate-50 cursor-pointer">
+              <label key={opt.label} className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-muted/60 cursor-pointer">
                 <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 ${i === (selected.size > 0 ? 1 : 0) ? "border-[var(--brand-navy-800)]" : "border-slate-300"}`}>
                   {i === (selected.size > 0 ? 1 : 0) && <div className="w-1.5 h-1.5 rounded-full bg-[var(--brand-navy-800)]" />}
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-slate-700">{opt.label}</p>
-                  <p className="text-[10px] text-slate-400">{opt.sub}</p>
+                  <p className="text-xs font-medium text-foreground">{opt.label}</p>
+                  <p className="text-[10px] text-muted-foreground">{opt.sub}</p>
                 </div>
               </label>
             ))}

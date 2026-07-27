@@ -163,7 +163,7 @@ export function UdhariAddCustomerDialog({ open, onClose }: { open: boolean; onCl
                   <FileText size={15} style={{ position: "absolute", left: 14, top: 16, color: "var(--color-slate-400)" }} />
                   <textarea value={form.address} onChange={e => setForm(p => ({ ...p, address: e.target.value }))}
                     rows={4} placeholder="Village, district, or any notes…"
-                    style={{ width: "100%", paddingLeft: 40, paddingRight: 14, paddingTop: 14, paddingBottom: 14, borderRadius: 14, border: "1.5px solid var(--color-slate-200)", fontSize: 14, color: "var(--brand-navy-800)", resize: "none", outline: "none", boxSizing: "border-box", fontFamily: "inherit", background: "#fff", lineHeight: 1.7, boxShadow: "0 1px 4px var(--brand-navy-tint-md)" }}
+                    style={{ width: "100%", paddingLeft: 40, paddingRight: 14, paddingTop: 14, paddingBottom: 14, borderRadius: 14, border: "1.5px solid hsl(var(--border))", fontSize: 14, color: "hsl(var(--foreground))", resize: "none", outline: "none", boxSizing: "border-box", fontFamily: "inherit", background: "hsl(var(--background))", lineHeight: 1.7, boxShadow: "0 1px 4px var(--brand-navy-tint-md)" }}
                     onFocus={e => (e.target.style.borderColor = "var(--brand-orange)")} onBlur={e => (e.target.style.borderColor = "var(--color-slate-200)")} />
                 </div>
               </div>
@@ -182,7 +182,7 @@ export function UdhariAddCustomerDialog({ open, onClose }: { open: boolean; onCl
           </div>
 
           {/* Footer */}
-          <div style={{ background: "#fff", borderTop: "1px solid var(--color-slate-100)", padding: "20px 40px", display: "flex", alignItems: "center", gap: 14, flexShrink: 0 }}>
+          <div style={{ background: "hsl(var(--card))", borderTop: "1px solid hsl(var(--border))", padding: "20px 40px", display: "flex", alignItems: "center", gap: 14, flexShrink: 0 }}>
             <button onClick={onClose} style={{ height: 50, padding: "0 28px", borderRadius: 14, border: "1.5px solid var(--color-slate-200)", background: "var(--color-slate-50)", cursor: "pointer", fontWeight: 700, fontSize: 14, color: "var(--color-slate-500)" }}>{t("common.cancel")}</button>
             <button onClick={handleSubmit} disabled={create.isPending}
               style={{ flex: 1, height: 50, borderRadius: 14, border: "none", cursor: "pointer", background: "linear-gradient(135deg,var(--color-orange-900),var(--brand-orange))", color: "#fff", fontSize: 15, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "0 6px 20px var(--brand-orange-tint-soft)", opacity: create.isPending ? 0.7 : 1 }}>

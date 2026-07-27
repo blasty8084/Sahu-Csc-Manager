@@ -66,7 +66,7 @@ export function AllTxFilterBar({
       {/* Filter Panel */}
       {showFilters && (
         <div
-          className="bg-white rounded-2xl p-4"
+          className="bg-card rounded-2xl p-4"
           style={{ boxShadow: "0 2px 10px var(--brand-navy-tint-md)", border: "1px solid var(--brand-navy-tint-md)" }}
         >
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

@@ -25,32 +25,32 @@ export function DesktopExportFilters({
   onPreview, onQuickRange, setDateRange,
 }: DesktopExportFiltersProps) {
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-3.5 flex items-center gap-3 flex-wrap">
+    <div className="bg-card rounded-xl border border-border shadow-sm p-3.5 flex items-center gap-3 flex-wrap">
       <div className="flex items-center gap-2">
         <Calendar size={13} className="text-slate-400" />
         <input type="date" value={startDate} max={endDate}
           onChange={e => { setStartDate(e.target.value); setPreview(null); }}
-          className="text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-slate-50 focus:outline-none text-slate-700 h-9" />
-        <span className="text-slate-300 text-xs">→</span>
+          className="text-xs border border-border rounded-lg px-2.5 py-2 bg-background focus:outline-none text-foreground h-9" />
+        <span className="text-muted-foreground text-xs">→</span>
         <input type="date" value={endDate} min={startDate} max={today}
           onChange={e => { setEndDate(e.target.value); setPreview(null); }}
-          className="text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-slate-50 focus:outline-none text-slate-700 h-9" />
+          className="text-xs border border-border rounded-lg px-2.5 py-2 bg-background focus:outline-none text-foreground h-9" />
       </div>
-      <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1">
+      <div className="flex items-center gap-1.5 bg-muted border border-border rounded-lg px-2 py-1">
         {(["today","week","month","lastMonth"] as const).map(v => {
           const l = v === "today" ? "Today" : v === "week" ? "Week" : v === "month" ? "This Month" : "Last Month";
           return (
             <button key={v} onClick={() => { onQuickRange(v); setDateRange(v); }}
-              className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${dateRange === v ? "bg-[var(--brand-navy-800)] text-white" : "text-slate-500 hover:text-slate-800"}`}>
+              className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${dateRange === v ? "bg-[var(--brand-navy-800)] text-white" : "text-muted-foreground hover:text-foreground"}`}>
               {l}
             </button>
           );
         })}
       </div>
-      <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-600">
-        <User size={12} className="text-slate-400" />
+      <div className="flex items-center gap-1.5 bg-muted border border-border rounded-lg px-3 py-2 text-xs text-muted-foreground">
+        <User size={12} className="text-muted-foreground" />
         <select value={userId} onChange={e => { setUserId(e.target.value); setPreview(null); }}
-          className="bg-transparent text-xs text-slate-600 focus:outline-none cursor-pointer">
+          className="bg-transparent text-xs text-foreground focus:outline-none cursor-pointer">
           <option value="all">All Operators</option>
           {usersOverview.map(u => (
             <option key={u.userId} value={String(u.userId)}>

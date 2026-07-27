@@ -95,7 +95,7 @@ export function AllTxTable({
 
       {/* Transaction list */}
       <div
-        className="bg-white rounded-2xl overflow-hidden"
+        className="bg-card rounded-2xl overflow-hidden"
         style={{ boxShadow: "0 2px 14px var(--brand-navy-tint-md)" }}
       >
         {isLoading ? (
@@ -128,7 +128,7 @@ export function AllTxTable({
               return (
                 <div
                   key={tx.id}
-                  className="flex items-center justify-between px-4 py-3 hover:bg-slate-50/80 transition-colors"
+                  className="flex items-center justify-between px-4 py-3 hover:bg-muted/60 transition-colors"
                   style={{ borderBottom: "1px solid var(--brand-navy-tint-sm)" }}
                 >
                   <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -141,7 +141,7 @@ export function AllTxTable({
                       {isWd ? <ArrowDownLeft size={15} color="#fff" /> : <ArrowUpRight size={15} color="#fff" />}
                     </div>
                     <div className="min-w-0">
-                      <p style={{ fontSize: 13, fontWeight: 600, color: "var(--brand-navy-800)" }} className="truncate max-w-[140px] sm:max-w-none">
+                      <p style={{ fontSize: 13, fontWeight: 600, color: "hsl(var(--foreground))" }} className="truncate max-w-[140px] sm:max-w-none">
                         {tx.customerName}
                       </p>
                       <div className="flex items-center gap-2 flex-wrap mt-0.5">

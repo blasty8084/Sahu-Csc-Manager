@@ -18,7 +18,7 @@ export function UdhariEntryRow({ e, onEdit, onDelete, onReceipt }: Props) {
 
   return (
     <div
-      className="bg-white rounded-xl flex items-start gap-3 px-4 py-3"
+      className="bg-card rounded-xl flex items-start gap-3 px-4 py-3"
       style={{ boxShadow: "0 1px 6px var(--brand-navy-tint-md)" }}
     >
       <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: bg }}>

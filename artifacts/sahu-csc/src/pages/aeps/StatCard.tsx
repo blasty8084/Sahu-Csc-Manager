@@ -11,7 +11,7 @@ export function StatCard({
 }) {
   return (
     <div
-      className={`bg-white rounded-2xl overflow-hidden ${wide ? "col-span-2 sm:col-span-1" : ""}`}
+      className={`bg-card rounded-2xl overflow-hidden ${wide ? "col-span-2 sm:col-span-1" : ""}`}
       style={{ boxShadow: "0 2px 14px var(--brand-navy-tint-md), 0 1px 3px rgba(0,0,0,0.04)" }}
     >
       <div style={{ height: 3, background: accent }} />

@@ -30,14 +30,14 @@ export function TotpRegenCard({
   onCancel,
 }: TotpRegenCardProps) {
   return (
-    <div className="rounded-2xl border bg-white p-4 space-y-3 shadow-sm">
+    <div className="rounded-2xl border bg-card p-4 space-y-3 shadow-sm">
       <div className="flex items-center gap-2 mb-1">
         <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "var(--surface-warn-bg)" }}>
           <RefreshCw size={16} style={{ color: ORANGE }} />
         </div>
         <div>
-          <p className="text-sm font-bold text-gray-900">Regenerate backup codes</p>
-          <p className="text-xs text-gray-400">Old codes will be permanently invalidated</p>
+          <p className="text-sm font-bold text-foreground">Regenerate backup codes</p>
+          <p className="text-xs text-muted-foreground">Old codes will be permanently invalidated</p>
         </div>
       </div>
 

@@ -92,7 +92,7 @@ export function MobileReceiptList({
         {filteredEntries.map((e) => (
           <div key={e.receiptNumber}
             onClick={() => onEntryClick(e)}
-            className={`bg-white rounded-2xl border shadow-sm active:scale-[0.98] transition-transform cursor-pointer ${selected.has(e.receiptNumber) ? "border-[var(--brand-navy-800)]/30" : "border-slate-200"}`}>
+            className={`bg-card rounded-2xl border shadow-sm active:scale-[0.98] transition-transform cursor-pointer ${selected.has(e.receiptNumber) ? "border-[var(--brand-navy-800)]/30" : "border-border"}`}>
             <div className="p-4 flex items-center gap-3">
               <div onClick={ev => { ev.stopPropagation(); toggleEntry(e.receiptNumber); }} className="p-1">
                 <Checkbox checked={selected.has(e.receiptNumber)} onChange={() => toggleEntry(e.receiptNumber)} size={18} />
@@ -103,14 +103,14 @@ export function MobileReceiptList({
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-semibold text-slate-800 truncate">{e.customerName}</p>
+                  <p className="text-sm font-semibold text-foreground truncate">{e.customerName}</p>
                   <span className={`text-sm font-bold shrink-0 ${e.type === "credit" ? "text-emerald-600" : "text-rose-500"}`}>
                     {e.type === "credit" ? "+" : "-"}₹{e.amount.toLocaleString("en-IN")}
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 truncate mt-0.5">{e.serviceType}</p>
                 <div className="flex items-center justify-between mt-1.5">
-                  <span className="font-mono text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{e.receiptNumber}</span>
+                  <span className="font-mono text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full">{e.receiptNumber}</span>
                   <span className="text-[10px] text-slate-400">{fmtDateShort(e.date)}</span>
                 </div>
               </div>

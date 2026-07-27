@@ -47,7 +47,7 @@ export function DesktopReceiptTable({
 }: DesktopTableProps) {
   if (!preview) {
     return (
-      <div className="bg-white rounded-xl border border-dashed border-slate-200 shadow-sm">
+      <div className="bg-card rounded-xl border border-dashed border-border shadow-sm">
         <div className="flex flex-col items-center text-center gap-3 py-16 px-6 text-slate-400">
           <FileArchive size={40} className="opacity-25" />
           <p className="text-sm font-semibold text-slate-500">How it works</p>
@@ -63,7 +63,7 @@ export function DesktopReceiptTable({
 
   if (preview.count === 0) {
     return (
-      <div className="bg-white rounded-xl border border-amber-200 shadow-sm p-8 text-center">
+      <div className="bg-card rounded-xl border border-amber-200 shadow-sm p-8 text-center">
         <AlertCircle size={32} className="text-amber-400 mx-auto mb-2" />
         <p className="text-sm font-semibold text-amber-700">No receipts found</p>
         <p className="text-xs text-amber-600 mt-1">Adjust dates and try again.</p>
@@ -72,29 +72,29 @@ export function DesktopReceiptTable({
   }
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+    <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
       {/* Table toolbar */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
         <div className="relative max-w-xs flex-1">
-          <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input value={searchQ} onChange={e => setSearchQ(e.target.value)}
             placeholder="Search receipts…"
-            className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-navy-800)]/20" />
+            className="w-full pl-8 pr-3 py-1.5 text-xs bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-navy-800)]/20 text-foreground" />
         </div>
         <div className="flex items-center gap-3 ml-3">
-          <span className="text-[10px] bg-slate-100 text-slate-500 font-medium px-2 py-0.5 rounded-full">{filteredEntries.length} receipts</span>
+          <span className="text-[10px] bg-muted text-muted-foreground font-medium px-2 py-0.5 rounded-full">{filteredEntries.length} receipts</span>
           <span className="text-xs font-bold text-emerald-600">₹{totalAmount.toLocaleString("en-IN")}</span>
         </div>
       </div>
 
       <table className="w-full text-sm">
-        <thead className="border-b border-slate-100 bg-slate-50">
+        <thead className="border-b border-border bg-muted/50">
           <tr>
             <th className="px-4 py-3 w-8">
               <Checkbox checked={allFilteredSelected} onChange={toggleAll} />
             </th>
             {["Receipt #", "Date", "Customer", "Service", "Amount", "Actions"].map((h, i) => (
-              <th key={h} className={`px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide ${i >= 4 ? "text-right" : "text-left"}`}>{h}</th>
+              <th key={h} className={`px-3 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide ${i >= 4 ? "text-right" : "text-left"}`}>{h}</th>
             ))}
           </tr>
         </thead>

@@ -23,14 +23,14 @@ export function UdhariSummaryBanner() {
   return (
     <div className="grid grid-cols-2 gap-3">
       {cards.map((c) => (
-        <div key={c.label} className="rounded-2xl overflow-hidden bg-white"
+        <div key={c.label} className="rounded-2xl overflow-hidden bg-card"
           style={{ boxShadow: `0 2px 12px ${c.color}18`, border: `1px solid ${c.border}` }}>
           <div style={{ height: 3, background: c.accent }} />
           <div className="px-4 py-3 flex items-start justify-between gap-2">
             <div className="min-w-0">
               <p style={{ fontSize: 10, fontWeight: 700, color: "var(--color-slate-400)", textTransform: "uppercase" as const, letterSpacing: "0.07em" }}>{c.label}</p>
               {isLoading
-                ? <div className="h-6 w-24 mt-1 rounded bg-slate-100 animate-pulse" />
+                ? <div className="h-6 w-24 mt-1 rounded bg-muted animate-pulse" />
                 : <p style={{ fontSize: 18, fontWeight: 900, color: c.color, lineHeight: 1.1, marginTop: 3 }}>{fmt(c.value)}</p>}
               <p style={{ fontSize: 10, color: "var(--color-slate-400)", marginTop: 3 }}>{c.sub}</p>
             </div>

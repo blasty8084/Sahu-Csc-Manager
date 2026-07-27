@@ -38,14 +38,14 @@ export function OtpToggleCard({
   const iconCls  = isDisable ? "text-red-500" : "text-blue-500";
 
   return (
-    <div className="rounded-2xl border bg-white p-4 space-y-3 shadow-sm">
+    <div className="rounded-2xl border bg-card p-4 space-y-3 shadow-sm">
       <div className="flex items-center gap-2 mb-1">
         <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: iconBg }}>
           <Icon size={16} className={iconCls} />
         </div>
         <div>
-          <p className="text-sm font-bold text-gray-900">{title}</p>
-          <p className="text-xs text-gray-400">{subtitle}</p>
+          <p className="text-sm font-bold text-foreground">{title}</p>
+          <p className="text-xs text-muted-foreground">{subtitle}</p>
         </div>
       </div>
 

@@ -37,7 +37,7 @@ export function DesktopHeader({
   })();
 
   return (
-    <header className="hidden md:block sticky top-0 z-20" style={{ position: "relative", overflow: "hidden", background: "white" }}>
+    <header className="hidden md:block sticky top-0 z-20 bg-card" style={{ position: "relative", overflow: "hidden" }}>
       {/* Top accent stripe */}
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "linear-gradient(90deg, var(--brand-navy-800) 0%, var(--brand-navy-500) 40%, var(--brand-orange) 75%, var(--brand-orange-600) 100%)", zIndex: 3 }} />
       {/* Hex mesh texture */}
@@ -53,12 +53,12 @@ export function DesktopHeader({
       <div style={{ position: "absolute", top: -30, right: 60, width: 130, height: 130, background: "radial-gradient(circle, var(--brand-orange-tint-xs) 0%, transparent 70%)", filter: "blur(24px)", pointerEvents: "none" }} />
       <div style={{ position: "absolute", top: -10, left: "42%", width: 100, height: 80, background: "radial-gradient(circle, var(--brand-navy-tint-md) 0%, transparent 70%)", filter: "blur(18px)", pointerEvents: "none" }} />
       {/* Bottom border */}
-      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 1, background: "linear-gradient(90deg,transparent,var(--color-slate-200),transparent)", zIndex: 2 }} />
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 1, background: "linear-gradient(90deg,transparent,hsl(var(--border)),transparent)", zIndex: 2 }} />
 
       <div className="flex items-center justify-between px-8" style={{ height: 64, position: "relative", zIndex: 2 }}>
         {/* Left: page title + animated greeting */}
         <div>
-          <h1 className="text-xl font-bold" style={{ color: "var(--brand-navy-800)" }}>{pageTitle}</h1>
+          <h1 className="text-xl font-bold text-foreground">{pageTitle}</h1>
           <div style={{ display: "flex", alignItems: "center", gap: 5, transition: "opacity 0.35s ease, transform 0.35s ease", opacity: greetingVisible ? 1 : 0, transform: greetingVisible ? "translateY(0)" : "translateY(3px)" }}>
             <span style={{ fontSize: 12, color: "var(--color-slate-500)", fontWeight: 500 }}>{greeting}, {firstName}</span>
             <span style={{ fontSize: 12, lineHeight: 1 }}>{greetingEmoji}</span>
@@ -76,9 +76,9 @@ export function DesktopHeader({
           <Link href="/notifications">
             <button
               className="relative flex items-center gap-2 rounded-xl px-3 h-8 text-sm font-medium transition-colors duration-100"
-              style={{ background: "var(--color-slate-50)", border: "1.5px solid var(--color-slate-200)", color: "var(--brand-navy-800)" }}
+              style={{ background: "hsl(var(--muted))", border: "1.5px solid hsl(var(--border))", color: "hsl(var(--foreground))" }}
             >
-              <Bell size={15} color="var(--brand-navy-800)" />
+              <Bell size={15} className="text-foreground" />
               <span>{t("nav.notifications")}</span>
               {unreadCount > 0 && (
                 <span style={{ background: "var(--brand-orange)", color: "white", borderRadius: 999, fontSize: 10, fontWeight: 700, padding: "0 5px", lineHeight: "18px", display: "inline-block" }}>
@@ -90,7 +90,7 @@ export function DesktopHeader({
           <Link href="/profile">
             <div
               className="flex items-center gap-2 rounded-xl cursor-pointer transition-opacity duration-100 hover:opacity-80"
-              style={{ padding: "4px 10px 4px 4px", background: "var(--color-slate-50)", border: "1.5px solid var(--color-slate-200)" }}
+              style={{ padding: "4px 10px 4px 4px", background: "hsl(var(--muted))", border: "1.5px solid hsl(var(--border))" }}
             >
               {avatarSrc ? (
                 <img src={avatarSrc} alt="Profile" className="object-cover rounded-lg" style={{ width: 28, height: 28 }} loading="lazy" />

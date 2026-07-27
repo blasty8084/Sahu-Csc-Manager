@@ -37,23 +37,23 @@ export function TotpSetupCard({
   onCancel,
 }: TotpSetupCardProps) {
   return (
-    <div className="rounded-2xl border bg-white p-4 space-y-3 shadow-sm">
+    <div className="rounded-2xl border bg-card p-4 space-y-3 shadow-sm">
       <div className="flex items-center gap-2 mb-1">
         <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "var(--surface-warn-bg)" }}>
           <Smartphone size={16} style={{ color: ORANGE }} />
         </div>
         <div>
-          <p className="text-sm font-bold text-gray-900">Connect Authenticator App</p>
-          <p className="text-xs text-gray-400">Google Authenticator, Authy, or any TOTP app</p>
+          <p className="text-sm font-bold text-foreground">Connect Authenticator App</p>
+          <p className="text-xs text-muted-foreground">Google Authenticator, Authy, or any TOTP app</p>
         </div>
       </div>
 
       {/* QR code */}
       {qrDataUrl && (
-        <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 flex flex-col items-center gap-2">
-          <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-widest">Scan with your app</p>
+        <div className="rounded-xl border border-border bg-muted p-3 flex flex-col items-center gap-2">
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Scan with your app</p>
           <img src={qrDataUrl} alt="TOTP QR code" className="w-44 h-44 rounded-lg" />
-          <p className="text-[11px] text-gray-400 text-center">
+          <p className="text-[11px] text-muted-foreground text-center">
             Open your authenticator app → Add account → Scan QR code
           </p>
         </div>
@@ -61,30 +61,30 @@ export function TotpSetupCard({
 
       {/* Manual entry fallback */}
       {totpSecret && (
-        <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-3 space-y-1.5">
-          <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
+        <div className="rounded-xl border border-dashed border-border bg-muted p-3 space-y-1.5">
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
             <KeyRound size={10} /> Can't scan? Enter manually
           </p>
           <div className="flex items-center gap-2">
-            <code className="flex-1 text-[11px] font-mono bg-white border border-gray-200 rounded-lg px-2.5 py-2 break-all text-gray-700 leading-relaxed">
+            <code className="flex-1 text-[11px] font-mono bg-background border border-border rounded-lg px-2.5 py-2 break-all text-foreground leading-relaxed">
               {showSecret ? totpSecret : totpSecret.replace(/./g, "•")}
             </code>
             <div className="flex flex-col gap-1">
               <button
                 type="button" onClick={onToggleSecret}
-                className="p-1.5 rounded-lg border border-gray-200 bg-white text-gray-400 hover:text-gray-600"
+                className="p-1.5 rounded-lg border border-border bg-background text-muted-foreground hover:text-foreground"
               >
                 {showSecret ? <EyeOff size={12} /> : <Eye size={12} />}
               </button>
               <button
                 type="button" onClick={onCopySecret}
-                className="p-1.5 rounded-lg border border-gray-200 bg-white text-gray-400 hover:text-gray-600"
+                className="p-1.5 rounded-lg border border-border bg-background text-muted-foreground hover:text-foreground"
               >
                 {copiedSecret ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
               </button>
             </div>
           </div>
-          <p className="text-[10px] text-gray-400">In your app: Time-based · 30-second codes</p>
+          <p className="text-[10px] text-muted-foreground">In your app: Time-based · 30-second codes</p>
         </div>
       )}
 

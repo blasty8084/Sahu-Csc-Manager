@@ -49,38 +49,38 @@ export function MobileExportTab({
         </div>
       </div>
       {/* Format */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
-        <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Format</p>
+      <div className="bg-card rounded-2xl border border-border shadow-sm p-4">
+        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Format</p>
         <div className="grid grid-cols-2 gap-3">
           <button onClick={() => setExportFormat("pdf")}
-            className={`flex flex-col items-center gap-2 py-4 rounded-2xl border-2 transition-all ${exportFormat === "pdf" ? "border-[var(--brand-orange)] bg-[var(--brand-orange)]/5" : "border-slate-200"}`}>
-            <FileText size={24} className={exportFormat === "pdf" ? "text-[var(--brand-orange)]" : "text-slate-400"} />
-            <span className={`text-sm font-semibold ${exportFormat === "pdf" ? "text-[var(--brand-orange)]" : "text-slate-500"}`}>PDF</span>
-            <span className="text-[10px] text-slate-400">Printable receipt</span>
+            className={`flex flex-col items-center gap-2 py-4 rounded-2xl border-2 transition-all ${exportFormat === "pdf" ? "border-[var(--brand-orange)] bg-[var(--brand-orange)]/5" : "border-border"}`}>
+            <FileText size={24} className={exportFormat === "pdf" ? "text-[var(--brand-orange)]" : "text-muted-foreground"} />
+            <span className={`text-sm font-semibold ${exportFormat === "pdf" ? "text-[var(--brand-orange)]" : "text-muted-foreground"}`}>PDF</span>
+            <span className="text-[10px] text-muted-foreground">Printable receipt</span>
           </button>
           <button onClick={() => setExportFormat("excel")}
-            className={`flex flex-col items-center gap-2 py-4 rounded-2xl border-2 transition-all ${exportFormat === "excel" ? "border-emerald-500 bg-emerald-50" : "border-slate-200"}`}>
-            <FileSpreadsheet size={24} className={exportFormat === "excel" ? "text-emerald-600" : "text-slate-400"} />
-            <span className={`text-sm font-semibold ${exportFormat === "excel" ? "text-emerald-600" : "text-slate-500"}`}>Excel</span>
-            <span className="text-[10px] text-slate-400">Spreadsheet report</span>
+            className={`flex flex-col items-center gap-2 py-4 rounded-2xl border-2 transition-all ${exportFormat === "excel" ? "border-emerald-500 bg-emerald-50" : "border-border"}`}>
+            <FileSpreadsheet size={24} className={exportFormat === "excel" ? "text-emerald-600" : "text-muted-foreground"} />
+            <span className={`text-sm font-semibold ${exportFormat === "excel" ? "text-emerald-600" : "text-muted-foreground"}`}>Excel</span>
+            <span className="text-[10px] text-muted-foreground">Spreadsheet report</span>
           </button>
         </div>
       </div>
       {/* Scope radios */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
-        <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Scope</p>
+      <div className="bg-card rounded-2xl border border-border shadow-sm p-4">
+        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Scope</p>
         <div className="space-y-2">
           {[
             { label: "All Receipts",  sub: preview ? `${preview.count} receipts · ₹${totalAmount.toLocaleString("en-IN")}` : "Preview first", active: selected.size === 0 && !!preview },
             { label: "Selected Only", sub: `${selected.size} selected · ₹${selTotal.toLocaleString("en-IN")}`, active: selected.size > 0 },
           ].map(opt => (
-            <div key={opt.label} className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${opt.active ? "bg-[var(--brand-navy-800)]/5 border border-[var(--brand-navy-800)]/20" : "bg-slate-50"}`}>
+            <div key={opt.label} className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${opt.active ? "bg-[var(--brand-navy-800)]/5 border border-[var(--brand-navy-800)]/20" : "bg-muted/50"}`}>
               <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${opt.active ? "border-[var(--brand-navy-800)]" : "border-slate-300"}`}>
                 {opt.active && <div className="w-2 h-2 rounded-full bg-[var(--brand-navy-800)]" />}
               </div>
               <div>
-                <p className="text-sm font-medium text-slate-800">{opt.label}</p>
-                <p className="text-xs text-slate-500">{opt.sub}</p>
+                <p className="text-sm font-medium text-foreground">{opt.label}</p>
+                <p className="text-xs text-muted-foreground">{opt.sub}</p>
               </div>
             </div>
           ))}

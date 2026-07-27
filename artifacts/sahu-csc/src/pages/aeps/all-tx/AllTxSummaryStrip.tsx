@@ -15,7 +15,7 @@ export function AllTxSummaryStrip({ pageWithdrawals, pageDeposits }: AllTxSummar
   return (
     <div className="grid grid-cols-2 gap-3">
       {items.map((item) => (
-        <div key={item.label} className="bg-white rounded-xl overflow-hidden" style={{ boxShadow: "0 2px 10px var(--brand-navy-tint-md)" }}>
+        <div key={item.label} className="bg-card rounded-xl overflow-hidden" style={{ boxShadow: "0 2px 10px var(--brand-navy-tint-md)" }}>
           <div style={{ height: 3, background: item.accent }} />
           <div className="px-3 py-2.5 flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 min-w-0">
