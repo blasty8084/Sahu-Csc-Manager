@@ -1,6 +1,6 @@
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
-import { Bell } from "lucide-react";
+import { Bell, Menu } from "lucide-react";
 import { Link } from "wouter";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AppLogo } from "@/components/app-logo";
@@ -86,7 +86,7 @@ export function TopHeader({
             </div>
           </div>
 
-          {/* Right: theme toggle + bell + avatar chip (opens sidebar Sheet) */}
+          {/* Right: theme toggle + bell + menu toggle (opens sidebar Sheet) */}
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <Link href="/notifications">
@@ -107,22 +107,11 @@ export function TopHeader({
             <Sheet>
               <SheetTrigger asChild>
                 <button
-                  className="flex items-center gap-2 rounded-xl"
-                  style={{ padding: "4px 10px 4px 4px", background: "var(--color-slate-50)", border: "1.5px solid var(--color-slate-200)", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}
+                  className="flex items-center justify-center rounded-xl"
+                  style={{ width: 38, height: 38, background: "var(--color-slate-50)", border: "1.5px solid var(--color-slate-200)", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}
+                  aria-label="Open menu"
                 >
-                  {avatarSrc ? (
-                    <img src={avatarSrc} alt={displayName} className="object-cover rounded-lg" style={{ width: 30, height: 30 }} loading="lazy" />
-                  ) : (
-                    <div
-                      className="flex items-center justify-center rounded-lg"
-                      style={{ width: 30, height: 30, background: "linear-gradient(135deg, var(--brand-navy-800) 0%, var(--brand-navy-500) 55%, var(--brand-orange) 100%)", boxShadow: "0 2px 6px var(--brand-navy-shadow-md)", color: "#fff", fontSize: 10, fontWeight: 900 }}
-                    >
-                      {initials}
-                    </div>
-                  )}
-                  <span style={{ fontSize: 12, fontWeight: 700, background: "linear-gradient(135deg, var(--brand-navy-800), var(--brand-orange))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-                    {firstName}
-                  </span>
+                  <Menu size={19} color="var(--brand-navy-800)" />
                 </button>
               </SheetTrigger>
               <SheetContent side="left" className="p-0 w-72 border-0">
