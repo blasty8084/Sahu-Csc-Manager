@@ -30,7 +30,7 @@ export function MobileStatCard({
   isLoading?: boolean;
 }) {
   return (
-    <div className="bg-white rounded-2xl overflow-hidden flex-1 min-w-0" style={{ boxShadow: "0 2px 12px var(--brand-navy-tint-md)" }}>
+    <div className="bg-white dark:bg-zinc-800 rounded-2xl overflow-hidden flex-1 min-w-0" style={{ boxShadow: "0 2px 12px var(--brand-navy-tint-md)" }}>
       <div style={{ height: 3, background: accentColor }} />
       <div className="p-3">
         <div className="flex items-start justify-between mb-2">
@@ -41,7 +41,7 @@ export function MobileStatCard({
         </div>
         {isLoading
           ? <div className="h-5 w-20 mb-1 rounded bg-slate-100 animate-pulse" />
-          : <p style={{ fontSize: 15, fontWeight: 900, color: "var(--brand-navy-800)", lineHeight: 1.1 }}>{value}</p>}
+          : <p style={{ fontSize: 15, fontWeight: 900, lineHeight: 1.1 }} className="text-[var(--brand-navy-800)] dark:text-zinc-100">{value}</p>}
         {sub && <p style={{ fontSize: 9, fontWeight: 600, color: "var(--color-slate-400)", marginTop: 3 }} className="truncate">{sub}</p>}
       </div>
     </div>
@@ -63,7 +63,7 @@ export function DesktopStatCard({
   sparkColor?: string;
 }) {
   return (
-    <div className="bg-white rounded-2xl overflow-hidden flex-1" style={{ boxShadow: "0 2px 20px var(--brand-navy-tint-md)", borderTop: `4px solid ${accentColor}` }}>
+    <div className="bg-white dark:bg-zinc-800 rounded-2xl overflow-hidden flex-1" style={{ boxShadow: "0 2px 20px var(--brand-navy-tint-md)", borderTop: `4px solid ${accentColor}` }}>
       <div className="p-5">
         <div className="flex items-start justify-between mb-3">
           <p style={{ fontSize: 10, fontWeight: 700, color: "var(--color-slate-400)", textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</p>
@@ -73,7 +73,7 @@ export function DesktopStatCard({
         </div>
         {isLoading
           ? <div className="h-8 w-28 mb-2 rounded-lg bg-slate-100 animate-pulse" />
-          : <p style={{ fontSize: 26, fontWeight: 900, color: "var(--brand-navy-800)", lineHeight: 1 }}>{value}</p>}
+          : <p style={{ fontSize: 26, fontWeight: 900, lineHeight: 1 }} className="text-[var(--brand-navy-800)] dark:text-zinc-100">{value}</p>}
         {sub && <p style={{ fontSize: 11, fontWeight: 600, color: "var(--color-slate-400)", marginTop: 6 }}>{sub}</p>}
         {sparkData && sparkData.length >= 2 && <Sparkline data={sparkData} color={sparkColor ?? accentColor} />}
       </div>

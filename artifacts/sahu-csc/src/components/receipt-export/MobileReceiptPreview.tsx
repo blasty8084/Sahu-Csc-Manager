@@ -16,7 +16,7 @@ export function MobileReceiptPreview({
       <button onClick={onBack} className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-slate-500">
         ← Back to list
       </button>
-      <div className="bg-white rounded-3xl shadow-lg overflow-hidden border border-slate-100">
+      <div className="bg-white dark:bg-zinc-800 rounded-3xl shadow-lg overflow-hidden border border-slate-100 dark:border-zinc-700">
         <div className="px-5 py-5 text-center" style={{ background: NAVY }}>
           <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-2">
             <Receipt size={22} className="text-white" />
@@ -25,9 +25,9 @@ export function MobileReceiptPreview({
           <p className="text-white/60 text-xs mt-0.5">Common Service Center, Odisha</p>
         </div>
         <div className="flex items-center">
-          <div className="w-4 h-4 rounded-full bg-slate-100 -ml-2 shrink-0" />
-          <div className="flex-1 border-t-2 border-dashed border-slate-200" />
-          <div className="w-4 h-4 rounded-full bg-slate-100 -mr-2 shrink-0" />
+          <div className="w-4 h-4 rounded-full bg-slate-100 dark:bg-zinc-700 -ml-2 shrink-0" />
+          <div className="flex-1 border-t-2 border-dashed border-slate-200 dark:border-zinc-600" />
+          <div className="w-4 h-4 rounded-full bg-slate-100 dark:bg-zinc-700 -mr-2 shrink-0" />
         </div>
         <div className="px-5 pb-5 space-y-3">
           {[
@@ -37,8 +37,8 @@ export function MobileReceiptPreview({
             { label: "Service",     value: entry.serviceType },
           ].map(row => (
             <div key={row.label} className="flex items-start justify-between gap-3">
-              <span className="text-xs text-slate-500 shrink-0 mt-0.5">{row.label}</span>
-              <span className={`text-sm font-medium text-slate-800 text-right ${row.mono ? "font-mono text-xs bg-slate-100 px-2 py-0.5 rounded-lg" : ""}`}>
+              <span className="text-xs text-slate-500 dark:text-zinc-400 shrink-0 mt-0.5">{row.label}</span>
+              <span className={`text-sm font-medium text-slate-800 dark:text-zinc-100 text-right ${row.mono ? "font-mono text-xs bg-slate-100 dark:bg-zinc-700 px-2 py-0.5 rounded-lg" : ""}`}>
                 {row.value}
               </span>
             </div>
@@ -49,7 +49,7 @@ export function MobileReceiptPreview({
             <div className="w-4 h-4 rounded-full bg-slate-100 -mr-9 shrink-0" />
           </div>
           <div className="flex items-center justify-between py-1">
-            <span className="text-base font-bold text-slate-800">Total Paid</span>
+            <span className="text-base font-bold text-slate-800 dark:text-zinc-100">Total Paid</span>
             <span className={`text-2xl font-bold ${entry.type === "credit" ? "text-emerald-600" : "text-rose-500"}`}>
               {entry.type === "credit" ? "+" : "-"}₹{entry.amount.toLocaleString("en-IN")}
             </span>
@@ -61,7 +61,7 @@ export function MobileReceiptPreview({
             </span>
           </div>
           <div className="flex flex-col items-center py-3">
-            <div className="w-24 h-24 bg-slate-100 border-2 border-dashed border-slate-200 rounded-2xl flex items-center justify-center">
+            <div className="w-24 h-24 bg-slate-100 dark:bg-zinc-700 border-2 border-dashed border-slate-200 dark:border-zinc-600 rounded-2xl flex items-center justify-center">
               <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
             </div>
             <p className="text-[10px] text-slate-400 mt-2">Scan to verify online</p>
@@ -75,7 +75,7 @@ export function MobileReceiptPreview({
         {([
           { icon: "printer",  label: "Print",  color: "bg-[var(--brand-navy-800)] text-white",                          action: "print"    as const },
           { icon: "download", label: "PDF",    color: "bg-[var(--brand-orange)] text-white",                          action: "download" as const },
-          { icon: "share",    label: "Share",  color: "bg-white text-slate-700 border border-slate-200",  action: "share"    as const },
+          { icon: "share",    label: "Share",  color: "bg-white dark:bg-zinc-700 text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-zinc-600",  action: "share"    as const },
         ]).map(({ icon, label, color, action }) => (
           <button key={label}
             onClick={() => openReceiptAction(entry.receiptNumber, action)}

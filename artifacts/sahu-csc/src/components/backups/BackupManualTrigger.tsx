@@ -12,7 +12,7 @@ interface BackupManualTriggerProps {
 export function BackupManualTrigger({ backupsCount, createIsPending, onCreate }: BackupManualTriggerProps) {
   const { t } = useTranslation();
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white rounded-xl border border-slate-200 shadow-sm px-5 py-4">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-zinc-800 rounded-xl border border-slate-200 dark:border-zinc-700 shadow-sm px-5 py-4">
       <div>
         <h2 className="text-xl font-bold text-[var(--brand-navy-800)]">{t("backups.title")}</h2>
         <p className="text-sm text-slate-500 mt-0.5">

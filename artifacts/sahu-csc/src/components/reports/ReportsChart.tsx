@@ -13,7 +13,7 @@ import { ChartTooltip } from "./ReportChart";
 // ── Mobile: Monthly daily-revenue bar chart ───────────────────────────────────
 export function MobileDailyRevenueChart({ data }: { data: any[] }) {
   return (
-    <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px var(--brand-navy-tint-md)" }}>
+    <div className="bg-white dark:bg-zinc-800 rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px var(--brand-navy-tint-md)" }}>
       <div style={{ height: 3, background: "linear-gradient(90deg,var(--color-violet-sm),var(--color-violet))" }} />
       <div className="p-4">
         <p className="text-xs font-bold text-slate-600 mb-3">Daily Revenue</p>
@@ -34,7 +34,7 @@ export function MobileDailyRevenueChart({ data }: { data: any[] }) {
 // ── Mobile: AePS daily-breakdown bar chart ────────────────────────────────────
 export function MobileAepsDailyChart({ data, height = 140 }: { data: any[]; height?: number }) {
   return (
-    <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px var(--brand-navy-tint-md)" }}>
+    <div className="bg-white dark:bg-zinc-800 rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px var(--brand-navy-tint-md)" }}>
       <div style={{ height: 3, background: "linear-gradient(90deg,var(--brand-orange),var(--brand-orange-600))" }} />
       <div className="p-4">
         <p className="text-xs font-bold text-slate-600 mb-3">
@@ -57,7 +57,7 @@ export function MobileAepsDailyChart({ data, height = 140 }: { data: any[]; heig
 // ── Mobile: Services pie chart ────────────────────────────────────────────────
 export function MobileServicesPieChart({ data }: { data: any[] }) {
   return (
-    <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px var(--brand-navy-tint-md)" }}>
+    <div className="bg-white dark:bg-zinc-800 rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px var(--brand-navy-tint-md)" }}>
       <div style={{ height: 3, background: "linear-gradient(90deg,var(--color-success-light),var(--color-success))" }} />
       <div className="p-4">
         <p className="text-xs font-bold text-slate-600 mb-3">Revenue by Service</p>
@@ -82,7 +82,7 @@ interface DailyCashflowChartProps {
 }
 export function DailyCashflowChart({ totalCredits, totalDebits, dailyDate }: DailyCashflowChartProps) {
   return (
-    <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "0 2px 16px var(--brand-navy-tint-md)" }}>
+    <div className="bg-white dark:bg-zinc-800 rounded-2xl p-5" style={{ boxShadow: "0 2px 16px var(--brand-navy-tint-md)" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <div>
           <p style={{ fontSize: 14, fontWeight: 700, color: "var(--brand-navy-800)" }}>Today's Cashflow</p>
@@ -114,7 +114,7 @@ export function DailyCashflowChart({ totalCredits, totalDebits, dailyDate }: Dai
 // ── Desktop: Service mix pie (daily) ──────────────────────────────────────────
 export function ServiceMixPieChart({ services }: { services: any[] }) {
   return (
-    <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "0 2px 16px var(--brand-navy-tint-md)" }}>
+    <div className="bg-white dark:bg-zinc-800 rounded-2xl p-5" style={{ boxShadow: "0 2px 16px var(--brand-navy-tint-md)" }}>
       <p style={{ fontSize: 14, fontWeight: 700, color: "var(--brand-navy-800)", marginBottom: 4 }}>Service Mix</p>
       <p style={{ fontSize: 11, color: "var(--color-slate-400)", marginBottom: 10 }}>By revenue share</p>
       <ResponsiveContainer width="100%" height={160}>
@@ -147,7 +147,7 @@ interface MonthlyRevenueChartProps {
 }
 export function MonthlyRevenueChart({ data, reportMonth, reportYear, months }: MonthlyRevenueChartProps) {
   return (
-    <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "0 2px 16px var(--brand-navy-tint-md)" }}>
+    <div className="bg-white dark:bg-zinc-800 rounded-2xl p-5" style={{ boxShadow: "0 2px 16px var(--brand-navy-tint-md)" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <div>
           <p style={{ fontSize: 14, fontWeight: 700, color: "var(--brand-navy-800)" }}>Daily Revenue Trend</p>
@@ -179,7 +179,7 @@ export function MonthlyRevenueChart({ data, reportMonth, reportYear, months }: M
 // ── Desktop: AePS float area chart (monthly) ──────────────────────────────────
 export function AepsFloatAreaChart({ data }: { data: any[] }) {
   return (
-    <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "0 2px 16px var(--brand-navy-tint-md)" }}>
+    <div className="bg-white dark:bg-zinc-800 rounded-2xl p-5" style={{ boxShadow: "0 2px 16px var(--brand-navy-tint-md)" }}>
       <div style={{ marginBottom: 16 }}>
         <p style={{ fontSize: 14, fontWeight: 700, color: "var(--brand-navy-800)" }}>AePS Float — This Month</p>
         <p style={{ fontSize: 11, color: "var(--color-slate-400)" }}>Withdrawals vs Deposits daily</p>
@@ -211,7 +211,7 @@ export function AepsFloatAreaChart({ data }: { data: any[] }) {
 // ── Desktop: AePS withdrawals vs deposits bar chart ───────────────────────────
 export function AepsBarChart({ data }: { data: any[] }) {
   return (
-    <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "0 2px 16px var(--brand-navy-tint-md)" }}>
+    <div className="bg-white dark:bg-zinc-800 rounded-2xl p-5" style={{ boxShadow: "0 2px 16px var(--brand-navy-tint-md)" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <div>
           <p style={{ fontSize: 14, fontWeight: 700, color: "var(--brand-navy-800)" }}>Withdrawals vs Deposits</p>
@@ -243,7 +243,7 @@ export function AepsBarChart({ data }: { data: any[] }) {
 // ── Desktop: Opening balance area chart (AePS) ────────────────────────────────
 export function OpeningBalanceAreaChart({ data }: { data: any[] }) {
   return (
-    <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "0 2px 16px var(--brand-navy-tint-md)" }}>
+    <div className="bg-white dark:bg-zinc-800 rounded-2xl p-5" style={{ boxShadow: "0 2px 16px var(--brand-navy-tint-md)" }}>
       <div style={{ marginBottom: 16 }}>
         <p style={{ fontSize: 14, fontWeight: 700, color: "var(--brand-navy-800)" }}>Opening Balance Trend</p>
         <p style={{ fontSize: 11, color: "var(--color-slate-400)" }}>Daily opening float over period</p>
@@ -270,7 +270,7 @@ export function OpeningBalanceAreaChart({ data }: { data: any[] }) {
 // ── Desktop: Services revenue pie chart ───────────────────────────────────────
 export function ServicesRevenuePieChart({ data }: { data: any[] }) {
   return (
-    <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "0 2px 16px var(--brand-navy-tint-md)" }}>
+    <div className="bg-white dark:bg-zinc-800 rounded-2xl p-5" style={{ boxShadow: "0 2px 16px var(--brand-navy-tint-md)" }}>
       <p style={{ fontSize: 14, fontWeight: 700, color: "var(--brand-navy-800)", marginBottom: 4 }}>Revenue by Service</p>
       <p style={{ fontSize: 11, color: "var(--color-slate-400)", marginBottom: 12 }}>All-time share</p>
       <ResponsiveContainer width="100%" height={260}>

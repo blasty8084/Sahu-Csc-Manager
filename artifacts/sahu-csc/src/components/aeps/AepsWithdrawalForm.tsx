@@ -103,7 +103,7 @@ export function AepsWithdrawalForm({
             <p style={{ fontSize: 18, fontWeight: 900, color: "var(--brand-navy-800)" }}>{isWd ? "Withdrawal" : "Deposit"} Recorded!</p>
             <p style={{ fontSize: 11, color: "var(--color-slate-400)", marginTop: 3 }}>AePS transaction saved successfully</p>
           </div>
-          <div className="w-full bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 4px 18px var(--brand-navy-tint-md)", border: "1px solid var(--brand-navy-tint-md)" }}>
+          <div className="w-full bg-white dark:bg-zinc-800 rounded-2xl overflow-hidden" style={{ boxShadow: "0 4px 18px var(--brand-navy-tint-md)", border: "1px solid var(--brand-navy-tint-md)" }}>
             <div style={{ height: 4, background: accent }} />
             <div className="px-4 py-4 space-y-2">
               <div className="text-center py-2 rounded-xl mb-1" style={{ background: accentLight, border: `1px solid ${accentBorder}` }}>
@@ -160,7 +160,7 @@ export function AepsWithdrawalForm({
         <div className="px-4 py-4 space-y-3">
           <div className="rounded-2xl overflow-hidden" style={{ boxShadow: "0 4px 14px var(--brand-navy-tint-md)" }}>
             <div style={{ height: 4, background: accent }} />
-            <div className="bg-white px-5 py-4 text-center">
+            <div className="bg-white dark:bg-zinc-800 px-5 py-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <div style={{ width: 28, height: 28, borderRadius: 8, background: accent, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {isWd ? <ArrowDownLeft size={13} color="#fff" /> : <ArrowUpRight size={13} color="#fff" />}
@@ -170,7 +170,7 @@ export function AepsWithdrawalForm({
               <p style={{ fontSize: 32, fontWeight: 900, color: accentColor, lineHeight: 1 }}>₹{fmt(amtNum)}</p>
             </div>
           </div>
-          <div className="bg-white rounded-2xl px-4 py-3 space-y-2" style={{ boxShadow: "0 2px 12px var(--brand-navy-tint-md)", border: "1px solid var(--brand-navy-tint-md)" }}>
+          <div className="bg-white dark:bg-zinc-800 rounded-2xl px-4 py-3 space-y-2" style={{ boxShadow: "0 2px 12px var(--brand-navy-tint-md)", border: "1px solid var(--brand-navy-tint-md)" }}>
             <p style={{ fontSize: 9, fontWeight: 800, color: "var(--color-slate-400)", textTransform: "uppercase", letterSpacing: "0.09em" }}>Customer Details</p>
             {[
               { icon: User, label: "Customer", value: txCustomerName },
@@ -251,7 +251,7 @@ export function AepsWithdrawalForm({
 
         <div className="overflow-y-auto space-y-3 p-4" style={{ maxHeight: "65vh" }}>
           {/* Amount */}
-          <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px var(--brand-navy-tint-md)", border: "1px solid var(--brand-navy-tint-md)" }}>
+          <div className="bg-white dark:bg-zinc-800 rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px var(--brand-navy-tint-md)", border: "1px solid var(--brand-navy-tint-md)" }}>
             <div style={{ height: 3, background: accent }} />
             <div className="px-4 py-3">
               <label style={{ fontSize: 10, fontWeight: 800, color: "var(--color-slate-400)", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>Amount *</label>
@@ -280,7 +280,7 @@ export function AepsWithdrawalForm({
           </div>
 
           {/* Customer details */}
-          <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px var(--brand-navy-tint-md)", border: "1px solid var(--brand-navy-tint-md)" }}>
+          <div className="bg-white dark:bg-zinc-800 rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px var(--brand-navy-tint-md)", border: "1px solid var(--brand-navy-tint-md)" }}>
             <div style={{ height: 3, background: "linear-gradient(90deg,var(--brand-navy-800),var(--brand-navy-600))" }} />
             <div className="px-4 py-3 space-y-3">
               <p style={{ fontSize: 10, fontWeight: 800, color: "var(--color-slate-400)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Customer Details</p>
@@ -347,7 +347,7 @@ export function AepsWithdrawalForm({
           </div>
 
           {/* Bank details */}
-          <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px var(--brand-navy-tint-md)", border: "1px solid var(--brand-navy-tint-md)" }}>
+          <div className="bg-white dark:bg-zinc-800 rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px var(--brand-navy-tint-md)", border: "1px solid var(--brand-navy-tint-md)" }}>
             <div style={{ height: 3, background: "linear-gradient(90deg,var(--color-violet-sm),var(--color-violet))" }} />
             <div className="px-4 py-3 space-y-3">
               <p style={{ fontSize: 10, fontWeight: 800, color: "var(--color-slate-400)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Bank Details</p>
@@ -377,7 +377,7 @@ export function AepsWithdrawalForm({
           </div>
 
           {/* Note */}
-          <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 10px var(--brand-navy-tint-sm)", border: "1px solid var(--brand-navy-tint-sm)" }}>
+          <div className="bg-white dark:bg-zinc-800 rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 10px var(--brand-navy-tint-sm)", border: "1px solid var(--brand-navy-tint-sm)" }}>
             <div className="px-4 py-3">
               <label style={{ fontSize: 11, fontWeight: 700, color: "var(--color-slate-600)", display: "block", marginBottom: 5 }}>Note <span style={{ fontSize: 10, color: "var(--color-slate-400)", fontWeight: 400 }}>(optional)</span></label>
               <div className="relative">

@@ -3,9 +3,9 @@ import { Bell, Mail, History, BellRing } from "lucide-react";
 /** Tips card shown below the form on push / email / inapp tabs. */
 export function BroadcastPreviewCard() {
   return (
-    <div className="rounded-2xl border border-slate-100 bg-white px-5 py-4 space-y-3"
+    <div className="rounded-2xl border border-slate-100 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-5 py-4 space-y-3"
       style={{ boxShadow: "0 2px 8px var(--brand-navy-tint-sm)" }}>
-      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Tips</p>
+      <p className="text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">Tips</p>
       <div className="space-y-2">
         {[
           { icon: Bell,    text: "Push notifications reach users even when the app is closed, if they've enabled it from the App & Offline page." },
@@ -18,7 +18,7 @@ export function BroadcastPreviewCard() {
               style={{ background: "linear-gradient(135deg,var(--brand-navy-800),#1e4da1)" }}>
               <Icon size={11} color="#fff" />
             </div>
-            <p className="text-xs text-slate-500 leading-relaxed">{text}</p>
+            <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">{text}</p>
           </div>
         ))}
       </div>

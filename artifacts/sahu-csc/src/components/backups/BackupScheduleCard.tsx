@@ -31,7 +31,7 @@ export function BackupScheduleCard({
             onClick={() => setSchedule((s) => ({ ...s, enabled: !s.enabled }))}
             className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${schedule.enabled ? "bg-[var(--brand-orange)]" : "bg-slate-300"}`}
           >
-            <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${schedule.enabled ? "translate-x-5" : "translate-x-0"}`} />
+            <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white dark:bg-zinc-200 shadow transition-transform ${schedule.enabled ? "translate-x-5" : "translate-x-0"}`} />
           </button>
         }
       />
@@ -80,7 +80,7 @@ export function BackupScheduleCard({
                 type="time"
                 value={schedule.time}
                 onChange={(e) => setSchedule((s) => ({ ...s, time: e.target.value }))}
-                className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-slate-50 w-full focus:outline-none focus:ring-2 focus:ring-[var(--brand-navy-800)]/20"
+                className="px-3 py-1.5 border border-slate-200 dark:border-zinc-600 rounded-lg text-sm bg-slate-50 dark:bg-zinc-700 dark:text-zinc-100 w-full focus:outline-none focus:ring-2 focus:ring-[var(--brand-navy-800)]/20"
               />
             </div>
 
@@ -122,7 +122,7 @@ export function BackupScheduleCard({
                 max={90}
                 value={schedule.retention}
                 onChange={(e) => setSchedule((s) => ({ ...s, retention: Math.max(1, parseInt(e.target.value) || 1) }))}
-                className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-slate-50 w-full focus:outline-none focus:ring-2 focus:ring-[var(--brand-navy-800)]/20"
+                className="px-3 py-1.5 border border-slate-200 dark:border-zinc-600 rounded-lg text-sm bg-slate-50 dark:bg-zinc-700 dark:text-zinc-100 w-full focus:outline-none focus:ring-2 focus:ring-[var(--brand-navy-800)]/20"
               />
             </div>
 

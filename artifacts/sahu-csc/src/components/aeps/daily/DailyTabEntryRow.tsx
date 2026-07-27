@@ -12,7 +12,7 @@ interface DailyTabEntryRowProps {
 export function DailyTabEntryRow({ selectedDate, setSelectedDate, isToday }: DailyTabEntryRowProps) {
   return (
     <div
-      className="bg-white rounded-2xl px-4 py-3 flex items-center gap-2"
+      className="bg-white dark:bg-zinc-800 rounded-2xl px-4 py-3 flex items-center gap-2"
       style={{ boxShadow: "0 2px 10px var(--brand-navy-tint-md)" }}
     >
       <button

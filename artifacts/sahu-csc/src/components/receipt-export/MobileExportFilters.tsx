@@ -27,10 +27,10 @@ export function MobileExportFilterToggle({
       <div className="relative flex-1">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         <input value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="Search receipts..."
-          className="w-full pl-9 pr-3 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--brand-navy-800)]/20 text-slate-700 placeholder:text-slate-400" />
+          className="w-full pl-9 pr-3 py-2.5 text-sm bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--brand-navy-800)]/20 text-slate-700 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500" />
       </div>
       <button onClick={() => setShowFilters(!showFilters)}
-        className={`w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 transition-colors ${showFilters ? "text-white border-[var(--brand-navy-800)]" : "bg-white border-slate-200 text-slate-500"}`}
+        className={`w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 transition-colors ${showFilters ? "text-white border-[var(--brand-navy-800)]" : "bg-white dark:bg-zinc-800 border-slate-200 dark:border-zinc-700 text-slate-500 dark:text-zinc-400"}`}
         style={showFilters ? { background: NAVY } : undefined}>
         <SlidersHorizontal size={16} />
       </button>
@@ -53,7 +53,7 @@ export function MobileExportFilterPanel({
   onPreviewAndClose,
 }: MobileExportFilterPanelProps) {
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-4 space-y-3">
+    <div className="bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-2xl p-4 space-y-3">
       <div className="flex gap-1.5 flex-wrap">
         {(["today","week","month","lastMonth"] as const).map(v => {
           const l = v === "today" ? "Today" : v === "week" ? "Week" : v === "month" ? "This Month" : "Last Month";
@@ -66,13 +66,13 @@ export function MobileExportFilterPanel({
       </div>
       <div className="grid grid-cols-2 gap-2">
         <input type="date" value={startDate} max={endDate} onChange={e => { setStartDate(e.target.value); setPreview(null); }}
-          className="text-xs border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 focus:outline-none text-slate-700" />
+          className="text-xs border border-slate-200 dark:border-zinc-600 rounded-xl px-3 py-2 bg-slate-50 dark:bg-zinc-700 dark:text-zinc-100 focus:outline-none text-slate-700" />
         <input type="date" value={endDate} min={startDate} max={today} onChange={e => { setEndDate(e.target.value); setPreview(null); }}
-          className="text-xs border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 focus:outline-none text-slate-700" />
+          className="text-xs border border-slate-200 dark:border-zinc-600 rounded-xl px-3 py-2 bg-slate-50 dark:bg-zinc-700 dark:text-zinc-100 focus:outline-none text-slate-700" />
       </div>
-      <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
-        <User size={12} className="text-slate-400 shrink-0" />
-        <select value={userId} onChange={e => { setUserId(e.target.value); setPreview(null); }} className="flex-1 bg-transparent text-xs text-slate-600 focus:outline-none">
+      <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-zinc-700 border border-slate-200 dark:border-zinc-600 rounded-xl px-3 py-2">
+        <User size={12} className="text-slate-400 dark:text-zinc-400 shrink-0" />
+        <select value={userId} onChange={e => { setUserId(e.target.value); setPreview(null); }} className="flex-1 bg-transparent text-xs text-slate-600 dark:text-zinc-200 focus:outline-none">
           <option value="all">All Operators</option>
           {usersOverview.map(u => <option key={u.userId} value={String(u.userId)}>{u.fullName ? `${u.fullName} (@${u.username})` : `@${u.username}`}</option>)}
         </select>
@@ -98,7 +98,7 @@ export function MobileByDatePanel({
 }: MobileByDatePanelProps) {
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3">
+      <div className="bg-white dark:bg-zinc-800 rounded-2xl border border-slate-200 dark:border-zinc-700 shadow-sm p-4 space-y-3">
         <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Quick Range</p>
         <div className="flex gap-2 flex-wrap">
           {(["today","week","month","lastMonth","year"] as const).map(v => {
@@ -114,17 +114,17 @@ export function MobileByDatePanel({
           <div>
             <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">From</label>
             <input type="date" value={startDate} max={endDate} onChange={e => { setStartDate(e.target.value); setPreview(null); }}
-              className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2.5 bg-slate-50 focus:outline-none text-slate-700" />
+              className="w-full text-sm border border-slate-200 dark:border-zinc-600 rounded-xl px-3 py-2.5 bg-slate-50 dark:bg-zinc-700 dark:text-zinc-100 focus:outline-none text-slate-700" />
           </div>
           <div>
-            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">To</label>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 block mb-1">To</label>
             <input type="date" value={endDate} min={startDate} max={today} onChange={e => { setEndDate(e.target.value); setPreview(null); }}
-              className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2.5 bg-slate-50 focus:outline-none text-slate-700" />
+              className="w-full text-sm border border-slate-200 dark:border-zinc-600 rounded-xl px-3 py-2.5 bg-slate-50 dark:bg-zinc-700 dark:text-zinc-100 focus:outline-none text-slate-700" />
           </div>
         </div>
-        <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5">
-          <User size={13} className="text-slate-400 shrink-0" />
-          <select value={userId} onChange={e => { setUserId(e.target.value); setPreview(null); }} className="flex-1 bg-transparent text-sm text-slate-600 focus:outline-none">
+        <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-zinc-700 border border-slate-200 dark:border-zinc-600 rounded-xl px-3 py-2.5">
+          <User size={13} className="text-slate-400 dark:text-zinc-400 shrink-0" />
+          <select value={userId} onChange={e => { setUserId(e.target.value); setPreview(null); }} className="flex-1 bg-transparent text-sm text-slate-600 dark:text-zinc-200 focus:outline-none">
             <option value="all">All Operators</option>
             {usersOverview.map(u => <option key={u.userId} value={String(u.userId)}>{u.fullName ? `${u.fullName} (@${u.username})` : `@${u.username}`}</option>)}
           </select>

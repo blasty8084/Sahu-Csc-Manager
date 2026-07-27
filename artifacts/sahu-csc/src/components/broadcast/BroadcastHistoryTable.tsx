@@ -68,19 +68,19 @@ export function BroadcastHistoryTable({
 
       {historyLoading ? (
         <div className="space-y-2">
-          {[0, 1, 2].map((i) => <div key={i} className="rounded-2xl bg-white h-20 animate-pulse" />)}
+          {[0, 1, 2].map((i) => <div key={i} className="rounded-2xl bg-white dark:bg-zinc-800 h-20 animate-pulse" />)}
         </div>
       ) : !history?.logs.length ? (
-        <div className="rounded-2xl bg-white border border-slate-100 p-8 text-center"
+        <div className="rounded-2xl bg-white dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 p-8 text-center"
           style={{ boxShadow: "0 2px 8px var(--brand-navy-tint-sm)" }}>
-          <History size={28} className="text-slate-300 mx-auto mb-3" />
-          <p className="text-sm font-semibold text-slate-500">{t("broadcast.no_broadcasts")}</p>
-          <p className="text-xs text-slate-400 mt-1">Your sent push, email and in-app notifications will appear here.</p>
+          <History size={28} className="text-slate-300 dark:text-zinc-600 mx-auto mb-3" />
+          <p className="text-sm font-semibold text-slate-500 dark:text-zinc-400">{t("broadcast.no_broadcasts")}</p>
+          <p className="text-xs text-slate-400 dark:text-zinc-500 mt-1">Your sent push, email and in-app notifications will appear here.</p>
         </div>
       ) : (
         <>
           {history.logs.map((log) => (
-            <div key={log.id} className="rounded-2xl bg-white border border-slate-100 overflow-hidden"
+            <div key={log.id} className="rounded-2xl bg-white dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 overflow-hidden"
               style={{ boxShadow: "0 2px 8px var(--brand-navy-tint-sm)" }}>
               <div className="flex">
                 <div className="w-1 flex-shrink-0 rounded-l-2xl"
@@ -96,7 +96,7 @@ export function BroadcastHistoryTable({
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div className="flex items-center gap-2 flex-wrap">
                       <ChannelBadge channel={log.channel} />
-                      <span className="text-sm font-bold text-slate-800 leading-snug">{log.subject}</span>
+                      <span className="text-sm font-bold text-slate-800 dark:text-zinc-100 leading-snug">{log.subject}</span>
                     </div>
                     <span className="text-[10px] text-slate-400 whitespace-nowrap flex-shrink-0 mt-0.5">
                       {fmtDate(log.createdAt)}
@@ -111,7 +111,7 @@ export function BroadcastHistoryTable({
                       {log.failedCount > 0 && <span className="text-red-500 ml-1">· {log.failedCount} failed</span>}
                     </span>
                     {log.recipientFilter && (
-                      <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 text-[10px] font-medium">
+                      <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-700 text-slate-500 dark:text-zinc-400 text-[10px] font-medium">
                         {log.recipientFilter === "active" ? "active users" : "all users"}
                       </span>
                     )}
@@ -129,8 +129,8 @@ export function BroadcastHistoryTable({
                   </button>
 
                   {expandedId === log.id && (
-                    <div className="mt-2 rounded-xl bg-slate-50 border border-slate-100 px-3 py-2.5">
-                      <p className="text-xs text-slate-600 whitespace-pre-wrap leading-relaxed">{log.body}</p>
+                    <div className="mt-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-zinc-700 px-3 py-2.5">
+                      <p className="text-xs text-slate-600 dark:text-zinc-300 whitespace-pre-wrap leading-relaxed">{log.body}</p>
                     </div>
                   )}
                 </div>

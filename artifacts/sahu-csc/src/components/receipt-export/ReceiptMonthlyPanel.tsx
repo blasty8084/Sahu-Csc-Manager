@@ -20,7 +20,7 @@ export function ReceiptMonthlyPanel({
   handleMonthDownload, handleMonthEmail,
 }: ReceiptMonthlyPanelProps) {
   return (
-    <div className="bg-white rounded-xl border border-orange-100 shadow-sm overflow-hidden">
+    <div className="bg-white dark:bg-zinc-800 rounded-xl border border-orange-100 dark:border-zinc-700 shadow-sm overflow-hidden">
       <div className="px-4 py-3 flex items-center gap-2.5" style={{ background: `linear-gradient(135deg, ${SAFFRON}, var(--brand-orange-600))` }}>
         <div className="w-7 h-7 bg-white/20 rounded-lg flex items-center justify-center shrink-0">
           <Clock size={14} className="text-white" />
@@ -44,14 +44,14 @@ export function ReceiptMonthlyPanel({
           <div>
             <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Month</label>
             <select value={trigMonth} onChange={e => setTrigMonth(Number(e.target.value))}
-              className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-slate-50 focus:outline-none text-slate-700">
+              className="w-full text-xs border border-slate-200 dark:border-zinc-600 rounded-lg px-2.5 py-2 bg-slate-50 dark:bg-zinc-700 dark:text-zinc-100 focus:outline-none text-slate-700">
               {MONTH_OPTIONS.map(m => <option key={m.v} value={m.v}>{m.l}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Year</label>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 block mb-1">Year</label>
             <select value={trigYear} onChange={e => setTrigYear(Number(e.target.value))}
-              className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-slate-50 focus:outline-none text-slate-700">
+              className="w-full text-xs border border-slate-200 dark:border-zinc-600 rounded-lg px-2.5 py-2 bg-slate-50 dark:bg-zinc-700 dark:text-zinc-100 focus:outline-none text-slate-700">
               {years.map(y => <option key={y} value={y}>{y}</option>)}
             </select>
           </div>

@@ -52,7 +52,8 @@ export default function MobileReports() {
           <button
             onClick={() => setShowFilter(v => !v)}
             className="flex items-center gap-1.5 rounded-xl px-3 h-9 text-xs font-semibold border"
-            style={{ borderColor: showFilter ? "var(--brand-navy-800)" : "var(--color-slate-200)", color: showFilter ? "var(--brand-navy-800)" : "var(--color-slate-500)", background: showFilter ? "var(--brand-navy-tint-md)" : "#fff" }}
+            className={showFilter ? "" : "bg-white dark:bg-zinc-800"}
+            style={{ borderColor: showFilter ? "var(--brand-navy-800)" : "var(--color-slate-200)", color: showFilter ? "var(--brand-navy-800)" : "var(--color-slate-500)", background: showFilter ? "var(--brand-navy-tint-md)" : undefined }}
           >
             <Filter size={13} />Filters
           </button>
@@ -75,10 +76,10 @@ export default function MobileReports() {
             <button
               key={t.id}
               onClick={() => setActiveTab(t.id)}
-              className="flex items-center gap-1.5 rounded-xl px-3 h-9 text-xs font-bold flex-shrink-0 transition-all"
+              className={`flex items-center gap-1.5 rounded-xl px-3 h-9 text-xs font-bold flex-shrink-0 transition-all ${!active ? "bg-white dark:bg-zinc-800" : ""}`}
               style={active
                 ? { background: t.grad, color: "#fff", boxShadow: `0 4px 12px ${t.accent}55` }
-                : { background: "#fff", color: "var(--color-slate-500)", border: "1.5px solid var(--color-slate-200)" }
+                : { color: "var(--color-slate-500)", border: "1.5px solid var(--color-slate-200)" }
               }
             >
               <t.Icon size={12} />
@@ -130,7 +131,7 @@ export default function MobileReports() {
                     <div className="w-1 h-4 rounded-full" style={{ background: "linear-gradient(180deg,var(--color-violet-sm),var(--color-violet))" }} />
                     <p style={{ fontSize: 10, fontWeight: 700, color: "var(--color-slate-400)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Services Used</p>
                   </div>
-                  <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px var(--brand-navy-tint-md)" }}>
+                  <div className="bg-white dark:bg-zinc-800 rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px var(--brand-navy-tint-md)" }}>
                     <div style={{ height: 3, background: "linear-gradient(90deg,var(--color-violet-sm),var(--color-violet))" }} />
                     <div className="p-4 space-y-3">
                       {daily.data.topServices.map((s: any, i: number) => (
@@ -218,7 +219,7 @@ export default function MobileReports() {
                 <>
                   <MobileAepsDailyChart data={aepsReport.data.dailyBreakdown} height={150} />
 
-                  <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px var(--brand-navy-tint-md)" }}>
+                  <div className="bg-white dark:bg-zinc-800 rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px var(--brand-navy-tint-md)" }}>
                     <div style={{ height: 3, background: "linear-gradient(90deg,var(--brand-orange),var(--brand-orange-600))" }} />
                     <div className="p-4">
                       <p className="text-xs font-bold text-slate-600 mb-3">Day-wise Detail</p>
@@ -266,7 +267,7 @@ export default function MobileReports() {
             <>
               <MobileServicesPieChart data={breakdown.data} />
 
-              <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px var(--brand-navy-tint-md)" }}>
+              <div className="bg-white dark:bg-zinc-800 rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px var(--brand-navy-tint-md)" }}>
                 <div style={{ height: 3, background: "linear-gradient(90deg,var(--color-success-light),var(--color-success))" }} />
                 <div className="p-4 space-y-3">
                   <p className="text-xs font-bold text-slate-600">Service Details</p>

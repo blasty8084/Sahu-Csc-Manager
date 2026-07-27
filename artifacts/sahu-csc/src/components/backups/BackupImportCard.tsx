@@ -37,7 +37,7 @@ export function BackupImportCard({
               <div className={`border-2 border-dashed rounded-xl p-5 flex flex-col items-center justify-center text-center transition-colors ${
                 importFile ? "border-[var(--brand-navy-800)]/30 bg-[var(--brand-navy-800)]/5" : "border-slate-200 bg-slate-50 hover:bg-slate-100"
               }`}>
-                <div className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center mb-2.5">
+                <div className="w-10 h-10 rounded-full bg-white dark:bg-zinc-700 shadow-sm flex items-center justify-center mb-2.5">
                   <UploadCloud size={18} className="text-[var(--brand-orange)]" />
                 </div>
                 {importFile ? (

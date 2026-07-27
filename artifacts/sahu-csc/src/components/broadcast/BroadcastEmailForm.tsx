@@ -51,11 +51,11 @@ export function BroadcastEmailForm({
         </div>
       )}
 
-      <div className="rounded-2xl bg-white border border-slate-100 overflow-hidden"
+      <div className="rounded-2xl bg-white dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 overflow-hidden"
         style={{ boxShadow: "0 2px 12px var(--brand-navy-tint-md)" }}>
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
+        <div className="px-5 py-4 border-b border-slate-100 dark:border-zinc-700 flex items-center gap-2">
           <Mail size={16} className="text-[var(--brand-navy-800)]" />
-          <span className="font-semibold text-slate-800 text-sm">{t("broadcast.tab_email")}</span>
+          <span className="font-semibold text-slate-800 dark:text-zinc-100 text-sm">{t("broadcast.tab_email")}</span>
           <Badge className="ml-auto text-xs border-none" style={{ background: "var(--brand-navy-800)15", color: "var(--brand-navy-800)" }}>
             {stats?.usersWithEmail ?? 0} with email
           </Badge>
@@ -73,7 +73,8 @@ export function BroadcastEmailForm({
                   className="flex flex-col items-start px-3 py-2.5 rounded-xl border text-left transition-all"
                   style={recipientFilter === value
                     ? { background: "var(--surface-toast-blue)", borderColor: "var(--brand-navy-800)", color: "var(--brand-navy-800)" }
-                    : { background: "#fff", borderColor: "var(--color-slate-200)", color: "var(--color-slate-500)" }}>
+                    : { borderColor: "var(--color-slate-200)", color: "var(--color-slate-500)" }}
+                  className="dark:border-zinc-600 dark:bg-zinc-700">
                   <span className="text-sm font-semibold">{count} users</span>
                   <span className="text-xs opacity-70">{label}</span>
                 </button>
@@ -82,13 +83,13 @@ export function BroadcastEmailForm({
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Subject *</Label>
+            <Label className="text-xs font-semibold text-slate-600 dark:text-zinc-400 uppercase tracking-wide">Subject *</Label>
             <Input placeholder="e.g. Important announcement from SAHU CSC" value={emailSubject}
               onChange={(e) => setEmailSubject(e.target.value)} maxLength={200} className="text-sm" />
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Message Body *</Label>
+            <Label className="text-xs font-semibold text-slate-600 dark:text-zinc-400 uppercase tracking-wide">Message Body *</Label>
             <Textarea placeholder="Write your email message here. Line breaks are preserved." value={emailBody}
               onChange={(e) => setEmailBody(e.target.value)} rows={8} className="text-sm resize-none font-mono" />
           </div>
@@ -96,7 +97,7 @@ export function BroadcastEmailForm({
           <label className="flex items-center gap-2.5 cursor-pointer select-none">
             <input type="checkbox" checked={createInAppWithEmail} onChange={(e) => setCreateInAppWithEmail(e.target.checked)}
               className="w-4 h-4 accent-blue-700" />
-            <span className="text-sm text-slate-700">Also create in-app notification (bell icon)</span>
+            <span className="text-sm text-slate-700 dark:text-zinc-300">Also create in-app notification (bell icon)</span>
           </label>
 
           <div className={`rounded-xl border p-3 flex items-start gap-2 ${stats?.smtpConfigured ? "bg-green-50 border-green-100" : "bg-amber-50 border-amber-100"}`}>

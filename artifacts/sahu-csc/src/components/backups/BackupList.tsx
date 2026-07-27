@@ -31,28 +31,28 @@ export function BackupList({ backups, isLoading, totalSize, onRestoreClick, onDe
           <BackupHistorySkeleton />
         ) : !backups?.length ? (
           <div className="text-center py-16">
-            <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
-              <Database size={24} className="text-slate-400" />
+            <div className="w-14 h-14 rounded-full bg-slate-100 dark:bg-zinc-700 flex items-center justify-center mx-auto mb-3">
+              <Database size={24} className="text-slate-400 dark:text-zinc-400" />
             </div>
-            <p className="text-slate-500 text-sm">{t("backups.no_backups")}</p>
-            <p className="text-slate-400 text-xs mt-1">Create your first backup using the button above</p>
+            <p className="text-slate-500 dark:text-zinc-400 text-sm">{t("backups.no_backups")}</p>
+            <p className="text-slate-400 dark:text-zinc-500 text-xs mt-1">Create your first backup using the button above</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[480px]">
-              <thead className="border-b border-slate-100 bg-slate-50/70">
+              <thead className="border-b border-slate-100 dark:border-zinc-700 bg-slate-50/70 dark:bg-zinc-800/70">
                 <tr className="text-left">
-                  <th className="px-4 py-3 font-medium text-slate-500 text-xs uppercase tracking-wide">Backup</th>
-                  <th className="px-4 py-3 font-medium text-slate-500 text-xs uppercase tracking-wide">Size</th>
-                  <th className="px-4 py-3 font-medium text-slate-500 text-xs uppercase tracking-wide">Date</th>
-                  <th className="px-4 py-3 font-medium text-slate-500 text-xs uppercase tracking-wide text-right">Actions</th>
+                  <th className="px-4 py-3 font-medium text-slate-500 dark:text-zinc-400 text-xs uppercase tracking-wide">Backup</th>
+                  <th className="px-4 py-3 font-medium text-slate-500 dark:text-zinc-400 text-xs uppercase tracking-wide">Size</th>
+                  <th className="px-4 py-3 font-medium text-slate-500 dark:text-zinc-400 text-xs uppercase tracking-wide">Date</th>
+                  <th className="px-4 py-3 font-medium text-slate-500 dark:text-zinc-400 text-xs uppercase tracking-wide text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
+              <tbody className="divide-y divide-slate-50 dark:divide-zinc-700">
                 {backups?.map((backup: any) => {
                   const meta = parseBackupMeta(backup.filename);
                   return (
-                    <tr key={backup.id} className="hover:bg-slate-50/80 transition-colors" data-testid={`row-backup-${backup.id}`}>
+                    <tr key={backup.id} className="hover:bg-slate-50/80 dark:hover:bg-zinc-700/50 transition-colors" data-testid={`row-backup-${backup.id}`}>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2.5">
                           <div className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${meta.type === "auto" ? "bg-emerald-50" : "bg-[var(--brand-navy-800)]/10"}`}>
@@ -60,24 +60,24 @@ export function BackupList({ backups, isLoading, totalSize, onRestoreClick, onDe
                           </div>
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="text-xs font-medium text-slate-800">{meta.label}</span>
+                              <span className="text-xs font-medium text-slate-800 dark:text-zinc-100">{meta.label}</span>
                               <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${meta.type === "auto" ? "bg-emerald-100 text-emerald-700" : "bg-[var(--brand-navy-800)]/10 text-[var(--brand-navy-800)]"}`}>
                                 {meta.type === "auto" ? "Auto" : "Manual"}
                               </span>
                             </div>
-                            <p className="font-mono text-[10px] text-slate-400 truncate max-w-[220px] mt-0.5">{backup.filename}</p>
+                            <p className="font-mono text-[10px] text-slate-400 dark:text-zinc-500 truncate max-w-[220px] mt-0.5">{backup.filename}</p>
                           </div>
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <Badge variant="secondary" className="bg-slate-100 text-slate-600 font-normal text-xs">
+                        <Badge variant="secondary" className="bg-slate-100 dark:bg-zinc-700 text-slate-600 dark:text-zinc-300 font-normal text-xs">
                           {formatSize(backup.size)}
                         </Badge>
                       </td>
                       <td className="px-4 py-3">
                         <div title={new Date(backup.createdAt).toLocaleString("en-IN")}>
-                          <p className="text-xs font-medium text-slate-700">{relativeTime(backup.createdAt)}</p>
-                          <p className="text-[10px] text-slate-400 mt-0.5">{new Date(backup.createdAt).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true })}</p>
+                          <p className="text-xs font-medium text-slate-700 dark:text-zinc-200">{relativeTime(backup.createdAt)}</p>
+                          <p className="text-[10px] text-slate-400 dark:text-zinc-500 mt-0.5">{new Date(backup.createdAt).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true })}</p>
                         </div>
                       </td>
                       <td className="px-4 py-3">
