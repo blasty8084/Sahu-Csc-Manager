@@ -37,13 +37,13 @@ export function DashboardQuickActions() {
         {quickActions.map((a) => (
           <Link key={a.label} href={a.href}>
             <div
-              className="flex flex-col items-center gap-2.5 py-4 px-1 rounded-2xl cursor-pointer active:scale-95 transition-transform bg-white"
+              className="flex flex-col items-center gap-2.5 py-4 px-1 rounded-2xl cursor-pointer active:scale-95 transition-transform bg-card"
               style={{ boxShadow: "0 2px 10px var(--brand-navy-tint-md), 0 1px 3px rgba(0,0,0,0.04)" }}
             >
               <div style={{ width: 42, height: 42, borderRadius: 13, background: a.iconGradient, boxShadow: `0 4px 12px ${a.iconShadow}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <a.Icon size={18} color="#fff" />
               </div>
-              <span style={{ fontSize: 10, fontWeight: 700, color: "var(--brand-navy-800)", textAlign: "center", lineHeight: 1.2 }}>
+              <span className="text-foreground" style={{ fontSize: 10, fontWeight: 700, textAlign: "center", lineHeight: 1.2 }}>
                 {a.label}
               </span>
             </div>

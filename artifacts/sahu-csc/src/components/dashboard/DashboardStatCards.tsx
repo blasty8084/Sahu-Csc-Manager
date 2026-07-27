@@ -47,7 +47,7 @@ export function MobileStatCards({ data, isLoading }: { data: any; isLoading: boo
   return (
     <div className="grid grid-cols-2 gap-3">
       {statCards.map((s) => (
-        <div key={s.label} className="bg-white rounded-2xl overflow-hidden"
+        <div key={s.label} className="bg-card rounded-2xl overflow-hidden"
           style={{ boxShadow: "0 2px 12px var(--brand-navy-tint-md), 0 1px 3px rgba(0,0,0,0.04)" }}>
           <div style={{ height: 3, background: s.accent }} />
           <div className="p-3.5">
@@ -59,7 +59,7 @@ export function MobileStatCards({ data, isLoading }: { data: any; isLoading: boo
             </div>
             {isLoading
               ? <div className="h-6 w-20 mb-1 rounded bg-slate-100 animate-pulse" />
-              : <p style={{ fontSize: 19, fontWeight: 900, color: "var(--brand-navy-800)", lineHeight: 1.1 }}>{s.value}</p>
+              : <p className="text-foreground" style={{ fontSize: 19, fontWeight: 900, lineHeight: 1.1 }}>{s.value}</p>
             }
             <p style={{ fontSize: 10, fontWeight: 600, marginTop: 5, color: s.up ? "var(--color-success-light)" : "var(--color-error-soft)" }} className="truncate">
               {s.change}

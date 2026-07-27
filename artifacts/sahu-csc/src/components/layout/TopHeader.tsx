@@ -48,7 +48,7 @@ export function TopHeader({
   return (
     <header className="sticky top-0 z-20 md:hidden">
       {/* ── White main bar ─────────────────────────────────────── */}
-      <div style={{ position: "relative", overflow: "hidden", background: "white" }}>
+      <div className="bg-card" style={{ position: "relative", overflow: "hidden" }}>
         {/* Top accent stripe: navy → blue → saffron */}
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "linear-gradient(90deg, var(--brand-navy-800) 0%, var(--brand-navy-500) 40%, var(--brand-orange) 75%, var(--brand-orange-600) 100%)", zIndex: 3 }} />
 
@@ -67,7 +67,7 @@ export function TopHeader({
         <div style={{ position: "absolute", top: -10, left: "38%", width: 80, height: 80, background: "radial-gradient(circle, var(--brand-navy-tint-md) 0%, transparent 70%)", filter: "blur(16px)", pointerEvents: "none" }} />
 
         {/* Bottom shadow line */}
-        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 1, background: "linear-gradient(90deg,transparent,var(--color-slate-200),transparent)", zIndex: 2 }} />
+        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 1, background: "linear-gradient(90deg,transparent,hsl(var(--border)),transparent)", zIndex: 2 }} />
 
         <div className="flex items-center justify-between px-4" style={{ height: 60, position: "relative", zIndex: 2 }}>
           {/* Left: logo + brand */}
@@ -92,9 +92,9 @@ export function TopHeader({
             <Link href="/notifications">
               <button
                 className="relative flex items-center justify-center rounded-xl"
-                style={{ width: 38, height: 38, background: "var(--color-slate-50)", border: "1.5px solid var(--color-slate-200)", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}
+                style={{ width: 38, height: 38, background: "hsl(var(--muted))", border: "1.5px solid hsl(var(--border))", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}
               >
-                <Bell size={17} color="var(--brand-navy-800)" />
+                <Bell size={17} className="text-foreground" />
                 {unreadCount > 0 && (
                   <span
                     className="absolute"
@@ -108,10 +108,10 @@ export function TopHeader({
               <SheetTrigger asChild>
                 <button
                   className="flex items-center justify-center rounded-xl"
-                  style={{ width: 38, height: 38, background: "var(--color-slate-50)", border: "1.5px solid var(--color-slate-200)", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}
+                  style={{ width: 38, height: 38, background: "hsl(var(--muted))", border: "1.5px solid hsl(var(--border))", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}
                   aria-label="Open menu"
                 >
-                  <Menu size={19} color="var(--brand-navy-800)" />
+                  <Menu size={19} className="text-foreground" />
                 </button>
               </SheetTrigger>
               <SheetContent side="left" className="p-0 w-72 border-0">

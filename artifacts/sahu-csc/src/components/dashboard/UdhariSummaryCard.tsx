@@ -15,7 +15,7 @@ export function UdhariSummaryCard({ mobile = false }: { mobile?: boolean }) {
         style={mobile ? { boxShadow: "0 2px 12px var(--brand-navy-tint-md)" } : {}}
       >
         <div style={{ height: 3, background: "linear-gradient(90deg,var(--brand-navy-800),var(--brand-orange))" }} />
-        <div className="bg-white px-4 py-3 flex items-center gap-3">
+        <div className="bg-card px-4 py-3 flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
             style={{ background: "linear-gradient(135deg,var(--brand-navy-800),var(--brand-navy-600))" }}>
             <HandCoins size={15} color="#fff" />
