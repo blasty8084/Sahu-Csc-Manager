@@ -3,6 +3,34 @@
 
 export const CHANGELOG = [
   {
+    version: "v4.10.0",
+    title: "Full CSS Variable Tokenization — Dark-Mode Ready",
+    date: "2026-07-27",
+    accent: "var(--brand-navy-600)",
+    changes: [
+      "All hardcoded hex and rgba color literals across 355+ component and page files replaced with CSS custom property references (e.g. var(--brand-navy-800), var(--brand-orange-tint-18))",
+      "19 new CSS primitive tokens added to index.css covering brand tints, alpha overlays, warning/success/error surfaces, rose, gray, and amber scale values",
+      "Dark-mode theme isolation verified: zero layout shift on toggle, ThemeProvider applies class before React renders, no-flash inline script confirmed in index.html",
+      "Data-heavy components (Dashboard, Ledger, Notifications, Layout) confirmed non-subscribing to theme store — only 4 toggle/preference components subscribe",
+      "Automatic replacement script (scripts/replace-colors.mjs) written and validated — idempotent, can be re-run after adding new components",
+    ],
+  },
+  {
+    version: "v4.9.5",
+    title: "Dark Mode — Theme Provider, No-Flash Script & System Mode",
+    date: "2026-07-27",
+    accent: "var(--brand-navy-800)",
+    changes: [
+      "ThemeProvider added: canonical light/dark/system theme state; single classList.toggle('dark') on <html> applied before React renders",
+      "No-flash inline script injected in index.html — reads saved preference from localStorage before first paint, eliminating white flash on reload in dark mode",
+      "System mode: automatically follows OS dark/light preference via matchMedia('prefers-color-scheme: dark') listener",
+      "ThemeToggle component: standalone Sun/Moon icon toggle, zero prop-drilling, connects directly to theme store",
+      "CSS color-scheme declared in index.css so native form controls and scrollbars follow the selected theme",
+      "Profile page duplicate Theme/Language controls removed — now only surfaced in the Sidebar settings entry",
+      "Brand color token audit: 142 CSS custom properties consolidated in index.css (:root) covering navy, orange, success, error, warning, slate, and surface layers",
+    ],
+  },
+  {
     version: "v4.7.1",
     title: "Security Score 100 & Login Code Display Fix",
     date: "2026-07-16",

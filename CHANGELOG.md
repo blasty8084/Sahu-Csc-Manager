@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Changelog
-**Current version: 4.9.5 — July 27, 2026**
+**Current version: 4.10.0 — July 27, 2026**
 
 > Single authoritative changelog covering all versions from v1.x through v4.x.
 > - **v3.x / v4.x entries** (current) — listed first, newest at top
@@ -9,6 +9,7 @@
 
 ## Table of Contents
 
+0. [Refactor — Full CSS variable tokenization across 355+ files (July 27, 2026)](#0-refactor--full-css-variable-tokenization-across-355-files-july-27-2026)
 0. [Performance — Dark mode visual-state isolation & verification (July 27, 2026)](#0-performance--dark-mode-visual-state-isolation--verification-july-27-2026)
 0. [Feature — ThemeToggle component: standalone Sun/Moon toggle, prop-drilling removed (July 26, 2026)](#0-feature--themetoggle-component-standalone-sunmoon-toggle-prop-drilling-removed-july-26-2026)
 0. [Feature — ThemeProvider setup: canonical provider, no-flash script, system mode (July 26, 2026)](#0-feature--themeprovider-setup-canonical-provider-no-flash-script-system-mode-july-26-2026)
@@ -65,6 +66,55 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## 0. Refactor — Full CSS variable tokenization across 355+ files (July 27, 2026)
+
+**Version bump: 4.9.5 → 4.10.0**
+
+### What changed
+
+All hardcoded hex and `rgba()` color literals across `src/components/` and `src/pages/` replaced with CSS custom property references. This is the foundational step that makes dark-mode palette swaps possible through CSS alone, without JavaScript re-renders.
+
+### Scope
+
+- **355+ files modified** across three passes of `scripts/replace-colors.mjs`
+- **19 new CSS primitive tokens added** to `src/index.css` (`:root`)
+- Build verified clean: 3855 modules, zero errors, all three passes idempotent
+
+### New tokens (index.css additions)
+
+| Token | Value | Usage |
+|---|---|---|
+| `--brand-navy-border` | `rgba(11,44,96,0.12)` | Subtle navy borders on cards |
+| `--brand-navy-border-md` | `rgba(11,44,96,0.18)` | Medium-weight navy borders |
+| `--brand-navy-shadow-md` | `rgba(11,44,96,0.30)` | Mid-depth card shadows |
+| `--brand-orange-tint-18` | `rgba(249,115,22,0.18)` | Orange badge/pill backgrounds |
+| `--brand-orange-tint-07` | `rgba(249,115,22,0.07)` | Faint orange hover/focus tints |
+| `--brand-orange-tint-xs` | `rgba(249,115,22,0.10)` | Extra-subtle orange overlays |
+| `--brand-white-glass` | `rgba(255,255,255,0.07)` | Glassy card sheen on dark surfaces |
+| `--brand-white-25` | `rgba(255,255,255,0.25)` | Translucent icon badge fills |
+| `--brand-white-30` | `rgba(255,255,255,0.30)` | Hover ring on dark buttons |
+| `--color-warning-tint` | `rgba(245,158,11,0.07)` | Warning panel backgrounds |
+| `--color-warning-border` | `rgba(245,158,11,0.20)` | Warning card borders |
+| `--color-warning-amber-glow` | `rgba(251,191,36,0.40)` | Amber glow ring |
+| `--color-rose-200/300` | `#fecdd3 / #fca5a5` | Soft error chip fills |
+| `--color-orange-200/800/900` | TW orange scale | Rejection panel surfaces |
+| `--color-amber-700` | `#b45309` | Warning text |
+| `--color-success-bg-light` | `#d1fae5` | Success panel backgrounds |
+| `--color-gray-200/300/400` | TW gray scale | Neutral dividers and placeholders |
+| `--color-rose-800 / --color-red-800` | `#9f1239 / #991b1b` | Dark error text |
+| `--surface-warn-bg` | `#fff7ed` | Orange-tinted warning surface |
+
+### What was intentionally NOT tokenized
+
+- `rgba(255,255,255,0.45+)` — high-opacity white *text* on dark navy panels. These are contrast values; the panel background adapts, the text opacity does not need to.
+- `rgba(0,0,0,0.04–0.28)` — universal box-shadow blacks. Correct in all themes.
+
+### Tooling
+
+`scripts/replace-colors.mjs` — Node.js script that walks component/page directories and applies regex substitutions. Idempotent (already-replaced `var(--...)` values are not touched). Re-run after adding new components.
 
 ---
 
