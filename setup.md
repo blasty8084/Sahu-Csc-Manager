@@ -1,20 +1,22 @@
 # SAHU CSC — Setup Guide
 
-> Step-by-step instructions for running the app in Replit after importing from GitHub.  
-> Takes about 10–15 minutes on a fresh import.
+> Step-by-step instructions for running the app in **Replit** after importing from GitHub.  
+> Takes about 5–10 minutes on a fresh import.
+>
+> **Deployment (Vercel + Render) ke liye:** `DEVELOPMENT_WORKFLOW.md` dekho.
 
 ---
 
-## Before You Start — Required Accounts
+## Before You Start
 
-You need accounts for three external services before the API server will start.
-Create them now (all have free tiers):
+Replit development ke liye sirf **Replit Secrets** tab mein passwords set karne hain.
+Neon / Upstash / B2 accounts optional hain — app inke bina bhi dev mein kaam karta hai:
 
-| Service | Purpose | Free tier |
+| Service | Purpose | Required for dev? |
 |---------|---------|-----------|
-| [neon.tech](https://neon.tech) | PostgreSQL database | 0.5 GB, 1 project |
-| [upstash.com](https://upstash.com) | Redis (cache + job queue) | 10 000 commands/day |
-| [backblaze.com/b2](https://www.backblaze.com/b2/cloud-storage.html) | File storage (avatars, backups) | 10 GB free |
+| [neon.tech](https://neon.tech) | Production PostgreSQL | ❌ (Replit's own DB used) |
+| [upstash.com](https://upstash.com) | Redis (cache + job queue) | ❌ (memory fallback) |
+| [backblaze.com/b2](https://www.backblaze.com/b2/cloud-storage.html) | File storage (avatars, backups) | ❌ (local fallback) |
 
 ---
 

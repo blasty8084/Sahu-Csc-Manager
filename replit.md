@@ -1058,45 +1058,61 @@ Design exploration in `artifacts/mockup-sandbox/`. Preview server on port 8081 �
 
 ## Getting Started on Replit
 
-After importing or forking this project, run through these steps once to get the app running:
+> **Full deployment guide (Replit → GitHub → Vercel + Render):** see `DEVELOPMENT_WORKFLOW.md`
+
+After importing or forking this project, run through these steps once to get the app running locally in Replit:
 
 ### 1. Install dependencies
-```
+```bash
 pnpm install
 ```
 
 ### 2. Push the database schema
-The project uses Replit's provisioned PostgreSQL database. `DATABASE_URL` is injected automatically:
-```
-pnpm --filter @workspace/db run push
+Replit's PostgreSQL database (`DATABASE_URL`) is injected automatically — no manual setup needed:
+```bash
+cd lib/db && pnpm exec drizzle-kit push --force
 ```
 
 ### 3. Set required secrets
-Add the following in Replit Secrets:
-| Secret | Description |
-|--------|-------------|
-| `SESSION_SECRET` | Random string for Express session signing |
-| `ADMIN_PASSWORD` | Password for the default admin account |
-| `OPERATOR_PASSWORD` | Password for the default operator account |
-| `SMTP_PASSWORD` | Gmail App Password for email OTP / notifications (optional) |
+In Replit's **Secrets** tab (left sidebar 🔒):
 
-Optional secrets (features degrade gracefully without them):
 | Secret | Description |
 |--------|-------------|
-| `REDIS_URL` | Redis connection URL — enables background job queue and worker server |
-| `B2_KEY_ID`, `B2_APP_KEY`, `B2_BUCKET_NAME`, `B2_BUCKET_ENDPOINT` | Backblaze B2 avatar and backup storage |
+| `SESSION_SECRET` | Auto-set on first boot — leave it as-is |
+| `ADMIN_PASSWORD` | Password for the `admin` login account |
+| `OPERATOR_PASSWORD` | Password for the `operator` login account |
+| `SMTP_PASSWORD` | Gmail App Password — optional, needed for email OTP |
+
+Optional secrets (app works without them, with graceful fallback):
+
+| Secret | Description |
+|--------|-------------|
+| `REDIS_URL` | Upstash Redis TCP URL — enables BullMQ queue + Worker Server |
+| `B2_KEY_ID`, `B2_APP_KEY`, `B2_BUCKET_NAME`, `B2_BUCKET_ENDPOINT` | Backblaze B2 file storage |
 
 ### 4. Seed the database
-Run the **Seed Database** workflow once. This creates the admin and operator accounts using the passwords from Secrets.
+Run the **Seed Database** workflow (Replit sidebar). Creates `admin` and `operator` accounts with services and settings.
 
 ### 5. Start the app
-Run the **API Server** workflow (port 8080) and the **Start application** workflow (port 5000, serving the built frontend). The preview pane shows the frontend; it proxies `/api` requests to port 8080. Run **Build Production** first after frontend or API changes.
+- **API Server** workflow → builds and starts Express on port 8080
+- **artifacts/sahu-csc: web** workflow → starts Vite dev server on port 5000 (auto-proxies `/api/*` to 8080)
+- Preview pane shows the login page at port 5000
 
-### CORS
-`CORS_ORIGIN` only needs to list `http://localhost:5000`. The API server automatically appends the current `REPLIT_DEV_DOMAIN` and any `REPLIT_DOMAINS` at startup — no manual update needed after repl renames or forks.
+> After every re-import: always re-run steps 1 → 2 → 4 → 5 in order.
+
+### CORS (Replit dev)
+`CORS_ORIGIN` shared env var is updated automatically on each import to the current `REPLIT_DEV_DOMAIN`. No manual update needed.
 
 ### Worker Server
-The Worker Server (BullMQ, port 8081) skips silently when `REDIS_URL` is not set — the app works without it, but background jobs (email queuing, PDF exports) won't run. Set `REDIS_URL` to enable it.
+Skips silently when `REDIS_URL` is not set — the app works fully without it. Email and push notifications fall back to direct (synchronous) sends. Set `REDIS_URL` to enable the async BullMQ queue.
+
+### Deployment to Vercel + Render
+See **`DEVELOPMENT_WORKFLOW.md`** for the full guide:
+- GitHub repo setup and push workflow
+- Render Web Service config (backend API)
+- Vercel project config (frontend PWA)
+- Environment variables for each platform
+- CORS setup between Vercel and Render
 
 ---
 

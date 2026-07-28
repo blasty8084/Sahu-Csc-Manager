@@ -1,8 +1,12 @@
 # SAHU CSC — Complete Platform Documentation
-**Version 4.9.5** — last updated 2026-07-27
+**Version 4.10.0** — last updated 2026-07-28
 
 > Common Service Center (CSC) Business Management Platform for Odisha / India rural service centers.
 > Full-stack · PWA · Offline-capable · Multilingual (English / Hindi / Odia)
+
+> **Development & Deployment workflow:** `DEVELOPMENT_WORKFLOW.md`
+> **First-time Replit setup:** `setup.md`
+> **All secrets & env vars:** `secrets.md`
 
 ---
 
