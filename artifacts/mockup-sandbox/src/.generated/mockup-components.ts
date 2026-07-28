@@ -4,8 +4,8 @@ export const modules: ModuleMap = {
   "./components/mockups/clock-picker/MinimalLight.tsx": () => import("../components/mockups/clock-picker/MinimalLight.tsx"),
   "./components/mockups/clock-picker/NavyBrand.tsx": () => import("../components/mockups/clock-picker/NavyBrand.tsx"),
   "./components/mockups/clock-picker/ScrollDrum.tsx": () => import("../components/mockups/clock-picker/ScrollDrum.tsx"),
+  "./components/mockups/ledger-desktop/LedgerPage.tsx": () => import("../components/mockups/ledger-desktop/LedgerPage.tsx"),
   "./components/mockups/twofa/CommandCard.tsx": () => import("../components/mockups/twofa/CommandCard.tsx"),
   "./components/mockups/twofa/SecurityHub.tsx": () => import("../components/mockups/twofa/SecurityHub.tsx"),
-  "./components/mockups/twofa/StepGuide.tsx": () => import("../components/mockups/twofa/StepGuide.tsx"),
-  "./components/mockups/ledger-desktop/LedgerPage.tsx": () => import("../components/mockups/ledger-desktop/LedgerPage.tsx")
+  "./components/mockups/twofa/StepGuide.tsx": () => import("../components/mockups/twofa/StepGuide.tsx")
 };
