@@ -188,12 +188,21 @@ git push origin main
 
 Render pe Express API server (`artifacts/api-server`) deploy hota hai.
 
-### One-time setup
+### One-time setup — Option A: Blueprint (easiest)
+
+`render.yaml` already exists in this repo. Render ise auto-read karega:
 
 1. **render.com** → "Get Started for Free" → GitHub se login
-2. Dashboard → **"New +"** → **"Web Service"**
-3. `sahu-csc-manager` repo connect karo
-4. Fill in settings:
+2. Dashboard → **"New +"** → **"Blueprint"**
+3. `sahu-csc-manager` repo select karo
+4. Render `render.yaml` read karega aur service auto-configure karega
+5. `sync: false` wale variables manually enter karo (DB URL, passwords etc.)
+
+### One-time setup — Option B: Manual Web Service
+
+1. Dashboard → **"New +"** → **"Web Service"**
+2. `sahu-csc-manager` repo connect karo
+3. Fill in settings:
 
 | Field | Value |
 |-------|-------|
@@ -202,7 +211,7 @@ Render pe Express API server (`artifacts/api-server`) deploy hota hai.
 | **Branch** | `main` |
 | **Root Directory** | `artifacts/api-server` |
 | **Runtime** | Node |
-| **Build Command** | `cd ../.. && npm install -g pnpm && pnpm install --frozen-lockfile && pnpm --filter @workspace/api-server run build` |
+| **Build Command** | `cd ../.. && npm install -g pnpm@10 && pnpm install --frozen-lockfile && pnpm --filter @workspace/api-server run build` |
 | **Start Command** | `node --enable-source-maps ./dist/index.mjs` |
 | **Instance Type** | Free |
 
