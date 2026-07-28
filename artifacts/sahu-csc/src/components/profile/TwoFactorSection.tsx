@@ -167,7 +167,7 @@ export function TwoFactorSection() {
           {newCodes.map((code, i) => (
             <button
               key={code} type="button" onClick={() => copyCode(code, i)}
-              className="flex items-center justify-between gap-1.5 font-mono text-xs bg-white border border-amber-200 rounded-xl px-2.5 py-2 text-gray-800"
+              className="flex items-center justify-between gap-1.5 font-mono text-xs bg-white dark:bg-zinc-800 border border-amber-200 dark:border-amber-900/60 rounded-xl px-2.5 py-2 text-gray-800 dark:text-zinc-100"
             >
               {code}
               {copiedIdx === i
@@ -284,10 +284,10 @@ export function TwoFactorSection() {
 
       {/* Method switcher (when enabled) */}
       {twoFaEnabled && (
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 space-y-3 shadow-sm">
+        <div className="rounded-2xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-4 space-y-3 shadow-sm">
           <div className="flex items-center justify-between">
             <p className="text-sm font-bold" style={{ color: NAVY }}>Verification Method</p>
-            <span className="text-xs text-gray-400">Tap to switch</span>
+            <span className="text-xs text-gray-400 dark:text-zinc-500">Tap to switch</span>
           </div>
           <div className="space-y-2">
             {(["totp", "otp"] as const).map((m) => {
@@ -297,6 +297,7 @@ export function TwoFactorSection() {
                 <button key={m} type="button" disabled={active || setupTotpMut.isPending}
                   onClick={() => initiateMethod(m)}
                   className="w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all disabled:cursor-default"
+                  className={!active ? "dark:!bg-zinc-700/50 dark:!border-zinc-600" : ""}
                   style={{ borderColor: active ? ORANGE : "var(--color-slate-100)", background: active ? "var(--surface-warn-bg)" : "#f9fafb" }}>
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0"
                     style={{ background: active ? `linear-gradient(135deg, ${ORANGE}, var(--brand-orange-600))` : "var(--color-gray-200)" }}>
@@ -305,10 +306,10 @@ export function TwoFactorSection() {
                       : <Mail size={16} className={active ? "text-white" : "text-gray-400"} />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold" style={{ color: active ? "var(--color-orange-900)" : "#374151" }}>
+                    <p className="text-sm font-bold dark:text-zinc-100" style={{ color: active ? "var(--color-orange-900)" : "#374151" }}>
                       {m === "totp" ? "Authenticator App" : "Email OTP"}
                     </p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-gray-400 dark:text-zinc-500">
                       {m === "totp" ? "Google Authenticator, Authy, any TOTP app" : "Code via email on sign-in"}
                     </p>
                   </div>
@@ -327,14 +328,14 @@ export function TwoFactorSection() {
 
       {/* Enable CTA (when disabled) */}
       {!twoFaEnabled && (
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 space-y-3 shadow-sm">
+        <div className="rounded-2xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-4 space-y-3 shadow-sm">
           <p className="text-sm font-bold" style={{ color: NAVY }}>Enable Two-Factor Authentication</p>
-          <p className="text-xs text-gray-500">Choose your verification method to add an extra layer of protection.</p>
+          <p className="text-xs text-gray-500 dark:text-zinc-400">Choose your verification method to add an extra layer of protection.</p>
           <div className="space-y-2">
             {(["totp", "otp"] as const).map((m) => (
               <button key={m} type="button" disabled={setupTotpMut.isPending}
                 onClick={() => initiateMethod(m)}
-                className="w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all"
+                className="w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all dark:border-zinc-600 dark:bg-zinc-700/50"
                 style={{ borderColor: "var(--color-slate-100)", background: "var(--surface-card-near-white)" }}>
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{ background: m === "totp" ? "var(--surface-warn-bg)" : "var(--surface-toast-blue)" }}>
@@ -344,15 +345,15 @@ export function TwoFactorSection() {
                     : <Mail size={16} className="text-blue-500" />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-800">
+                  <p className="text-sm font-semibold text-gray-800 dark:text-zinc-100">
                     {m === "totp" ? "Authenticator App" : "Email OTP"}
                   </p>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-gray-400 dark:text-zinc-500">
                     {m === "totp" ? "Google Authenticator, Authy, any TOTP app" : "Code sent to your email"}
                   </p>
                 </div>
-                {m === "totp" ? <QrCode size={14} className="text-gray-300 flex-shrink-0" />
-                  : <Zap size={14} className="text-gray-300 flex-shrink-0" />}
+                {m === "totp" ? <QrCode size={14} className="text-gray-300 dark:text-zinc-600 flex-shrink-0" />
+                  : <Zap size={14} className="text-gray-300 dark:text-zinc-600 flex-shrink-0" />}
               </button>
             ))}
           </div>
@@ -373,7 +374,7 @@ export function TwoFactorSection() {
       {/* Disable 2FA button */}
       {twoFaEnabled && (
         <button type="button" onClick={() => setStage("disable-confirm")}
-          className="w-full py-3 rounded-2xl border-2 border-red-100 text-sm font-semibold text-red-400 bg-white flex items-center justify-center gap-2 transition-colors hover:border-red-200 hover:text-red-500">
+          className="w-full py-3 rounded-2xl border-2 border-red-100 dark:border-red-900/40 text-sm font-semibold text-red-400 dark:text-red-400 bg-white dark:bg-zinc-800 flex items-center justify-center gap-2 transition-colors hover:border-red-200 dark:hover:border-red-800 hover:text-red-500">
           <ShieldOff size={15} />Disable Two-Factor Authentication
         </button>
       )}

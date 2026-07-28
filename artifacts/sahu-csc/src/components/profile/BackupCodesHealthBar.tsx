@@ -83,7 +83,7 @@ export function BackupCodesHealthBar({
                   }}
                 >
                   {used
-                    ? <div className="w-3 h-0.5 rounded bg-gray-300" />
+                    ? <div className="w-3 h-0.5 rounded bg-gray-300 dark:bg-zinc-600" />
                     : <Check size={10} className="text-emerald-600" />}
                 </div>
               );
