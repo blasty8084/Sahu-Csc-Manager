@@ -1,5 +1,4 @@
 import crypto from "node:crypto";
-import { getB2SignedUrl, isB2Configured } from "../../lib/b2";
 
 /** Generate a 6-digit numeric OTP. */
 export function generateNumericOtp(): string {
@@ -22,21 +21,11 @@ export function maskEmail(email: string): string {
 
 /** Formats a user DB row into the public-safe shape returned by auth endpoints. */
 export async function fmtUser(user: any) {
-  let profilePicture = user.profilePicture ?? null;
-  // B2 keys are database storage references, not browser image URLs. Resolve
-  // them here because /auth/me and login responses feed the global header,
-  // sidebar, and other screens directly (the profile route already did this).
-  if (profilePicture?.startsWith("b2:")) {
-    if (!isB2Configured()) {
-      profilePicture = null;
-    } else {
-      try {
-        profilePicture = await getB2SignedUrl(profilePicture.slice(3), 3600);
-      } catch {
-        profilePicture = null;
-      }
-    }
-  }
+  // b2: prefixed keys are legacy storage references; treat them as null since
+  // B2 has been removed — the user will need to re-upload their avatar.
+  const profilePicture = user.profilePicture?.startsWith("b2:")
+    ? null
+    : (user.profilePicture ?? null);
 
   return {
     id: user.id,

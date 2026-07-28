@@ -6,7 +6,6 @@ import multer from "multer";
 import { db, backupsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { logger } from "../lib/logger";
-import { uploadToB2, downloadFromB2, deleteFromB2, isB2Configured } from "../lib/b2";
 
 export const BACKUP_DIR = path.resolve(process.cwd(), "backups");
 mkdirSync(BACKUP_DIR, { recursive: true });
@@ -77,16 +76,6 @@ export async function createBackup(): Promise<BackupRecord> {
   execSync(`pg_dump "${dbUrl}" -f "${filepath}"`);
   const size = statSync(filepath).size;
 
-  // B2 is a redundant copy. A storage outage must not make the local backup fail.
-  if (isB2Configured()) {
-    try {
-      await uploadToB2(`backups/${filename}`, createReadStream(filepath), "application/octet-stream");
-      logger.info({ filename }, "Backup uploaded to B2");
-    } catch (err) {
-      logger.warn({ err, filename }, "B2 upload failed — backup saved locally only");
-    }
-  }
-
   const [backup] = await db.insert(backupsTable).values({ filename, size }).returning();
   return fmt(backup);
 }
@@ -96,13 +85,8 @@ export async function getBackupForDownload(id: number) {
   const [backup] = await db.select().from(backupsTable).where(eq(backupsTable.id, id));
   if (!backup) throw Object.assign(new Error("Backup not found"), { status: 404 });
   const filepath = path.join(BACKUP_DIR, backup.filename);
-  if (!existsSync(filepath) && isB2Configured()) {
-    mkdirSync(BACKUP_DIR, { recursive: true });
-    const stream = await downloadFromB2(`backups/${backup.filename}`);
-    await pipeline(stream, createWriteStream(filepath));
-  }
   if (!existsSync(filepath)) {
-    throw Object.assign(new Error("Backup file not found on disk or B2"), { status: 404 });
+    throw Object.assign(new Error("Backup file not found on disk"), { status: 404 });
   }
   return { filepath, filename: backup.filename, size: statSync(filepath).size };
 }

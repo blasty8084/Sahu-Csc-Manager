@@ -7,8 +7,6 @@ import ConnectPgSimple from "connect-pg-simple";
 import helmet from "helmet";
 import hpp from "hpp";
 import rateLimit from "express-rate-limit";
-import { RedisStore, type RedisReply } from "rate-limit-redis";
-import IORedis from "ioredis";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import router from "./routes";
@@ -18,7 +16,7 @@ import { logger } from "./lib/logger";
 import { pool } from "@workspace/db";
 import { initSentry, setupSentryErrorHandler } from "./lib/sentry";
 import { geoBlock } from "./lib/geo-block";
-import { env } from "./lib/env";
+import "./lib/env";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,32 +27,6 @@ initSentry();
 
 const PgSession = ConnectPgSimple(session);
 
-// ── Redis client for shared rate-limit counters (optional) ───────────────────
-// When REDIS_URL is absent the rate limiters fall back to in-memory counters,
-// which is fine for a single-instance dev/staging setup.
-let _rlRedis: IORedis | null = null;
-if (env.REDIS_URL) {
-  _rlRedis = new IORedis(env.REDIS_URL, {
-    maxRetriesPerRequest: null,
-    enableReadyCheck: false,
-    lazyConnect: true,
-  });
-  _rlRedis.on("error", (err) => logger.warn({ err: err.message }, "Rate-limit Redis error"));
-  logger.info("Rate limiter: using shared Redis store (cross-instance counters)");
-} else {
-  logger.info("Rate limiter: REDIS_URL not set — using in-memory store (single-instance only)");
-}
-
-// Returns a RedisStore when Redis is available, otherwise undefined (falls back
-// to express-rate-limit's default in-memory store).
-const makeRlStore = (prefix: string): RedisStore | undefined =>
-  _rlRedis
-    ? new RedisStore({
-        sendCommand: (...args: string[]) =>
-          (_rlRedis as any).call(args[0], ...args.slice(1)) as Promise<RedisReply>,
-        prefix: `rl:${prefix}:`,
-      })
-    : undefined;
 
 const app: Express = express();
 
@@ -122,7 +94,6 @@ const limiter = rateLimit({
   max: 500,
   standardHeaders: true,
   legacyHeaders: false,
-  store: makeRlStore("general"),
   // Loopback-only bypass so `pnpm run loadtest` (run from inside this same
   // container, hitting 127.0.0.1 directly) can generate realistic concurrent
   // traffic without tripping the per-IP limiter meant for external abuse.
@@ -145,7 +116,6 @@ const loginLimiter = rateLimit({
   max: 8,
   standardHeaders: true,
   legacyHeaders: false,
-  store: makeRlStore("login"),
   message: { error: "Too many login attempts, please try again later" },
 });
 
@@ -156,7 +126,6 @@ const authWriteLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  store: makeRlStore("auth-write"),
   message: { error: "Too many requests, please try again later" },
 });
 
@@ -167,7 +136,6 @@ const otpVerifyLimiter = rateLimit({
   max: 8,
   standardHeaders: true,
   legacyHeaders: false,
-  store: makeRlStore("otp-verify"),
   message: { error: "Too many attempts, please try again later" },
 });
 
@@ -179,7 +147,6 @@ const twoFaVerifyLimiter = rateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  store: makeRlStore("2fa-verify"),
   message: { error: "Too many verification attempts, please try again later" },
 });
 
@@ -190,7 +157,6 @@ const geoLimiter = rateLimit({
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
-  store: makeRlStore("geo"),
   message: { error: "Too many geo requests, please try again later" },
 });
 

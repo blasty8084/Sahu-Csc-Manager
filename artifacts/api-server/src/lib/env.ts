@@ -7,9 +7,7 @@
  */
 
 const REQUIRED: [key: string, description: string][] = [
-  ["SESSION_SECRET",           "Session signing secret (long random string)"],
-  // ── Redis / Upstash and Backblaze B2 are optional; the server falls back
-  //    to in-memory cache and local storage respectively when absent.
+  ["SESSION_SECRET", "Session signing secret (long random string)"],
 ];
 
 const missing = REQUIRED
@@ -33,13 +31,5 @@ if (missing.length > 0) {
 
 /** Required environment variables (non-nullable). */
 export const env = {
-  SESSION_SECRET:           process.env["SESSION_SECRET"]!,
-  // Optional — fall back to in-memory / local storage when absent
-  REDIS_URL:                process.env["REDIS_URL"],
-  UPSTASH_REDIS_REST_URL:   process.env["UPSTASH_REDIS_REST_URL"],
-  UPSTASH_REDIS_REST_TOKEN: process.env["UPSTASH_REDIS_REST_TOKEN"],
-  B2_KEY_ID:                process.env["B2_KEY_ID"],
-  B2_APP_KEY:               process.env["B2_APP_KEY"],
-  B2_BUCKET_NAME:           process.env["B2_BUCKET_NAME"],
-  B2_BUCKET_ENDPOINT:       process.env["B2_BUCKET_ENDPOINT"],
+  SESSION_SECRET: process.env["SESSION_SECRET"]!,
 } as const;

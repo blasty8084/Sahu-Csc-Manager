@@ -1,5 +1,4 @@
 import { Router, type IRouter } from "express";
-import { isSmtpConfigured } from "../lib/mailer";
 
 const router: IRouter = Router();
 
@@ -11,19 +10,6 @@ router.get("/setup-status", (_req, res) => {
       key: "SESSION_SECRET",
       label: "Session Secret",
       description: "Required for secure login sessions. Set any long random string.",
-    });
-  }
-
-  if (!isSmtpConfigured()) {
-    const smtpMissing: string[] = [];
-    if (!process.env.SMTP_HOST) smtpMissing.push("SMTP_HOST");
-    if (!process.env.SMTP_USER) smtpMissing.push("SMTP_USER");
-    if (!process.env.SMTP_PASSWORD && !process.env.SMTP_PASS) smtpMissing.push("SMTP_PASSWORD");
-
-    missing.push({
-      key: "SMTP",
-      label: "Email / SMTP",
-      description: `Required for OTP login and email notifications. Missing: ${smtpMissing.join(", ")}. Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM_EMAIL in Secrets.`,
     });
   }
 

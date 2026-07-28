@@ -9,7 +9,6 @@ import { encryptField, decryptField } from "../lib/encryption";
 import { sanitize } from "../lib/sanitize";
 import { passwordPolicySchema } from "../lib/password-policy";
 import { asyncHandler } from "../lib/async-handler";
-import { uploadToB2, deleteFromB2, getB2SignedUrl, isB2Configured } from "../lib/b2";
 
 const router: IRouter = Router();
 
@@ -28,17 +27,10 @@ const UpdateAvatarBody = z.object({
 });
 
 async function fmtProfile(user: any) {
-  let profilePicture = user.profilePicture ?? null;
-
-  // Resolve B2 keys to a 1-hour pre-signed URL. Legacy base64 values pass
-  // through unchanged so existing avatars remain compatible.
-  if (profilePicture?.startsWith("b2:") && isB2Configured()) {
-    try {
-      profilePicture = await getB2SignedUrl(profilePicture.slice(3), 3600);
-    } catch {
-      profilePicture = null;
-    }
-  }
+  // b2: prefixed keys are legacy — B2 has been removed; treat as null.
+  const profilePicture = user.profilePicture?.startsWith("b2:")
+    ? null
+    : (user.profilePicture ?? null);
 
   return {
     id: user.id,
@@ -160,23 +152,7 @@ router.post("/profile/avatar", requireAuth, asyncHandler(async (req, res) => {
     res.status(400).json({ error: "Could not process image. Please upload a valid image file." }); return;
   }
 
-  let profilePicture: string;
-
-  if (isB2Configured()) {
-    const [existing] = await db
-      .select({ profilePicture: usersTable.profilePicture })
-      .from(usersTable)
-      .where(eq(usersTable.id, userId));
-    if (existing?.profilePicture?.startsWith("b2:")) {
-      try { await deleteFromB2(existing.profilePicture.slice(3)); } catch {}
-    }
-
-    const key = `avatars/user_${userId}_${Date.now()}.webp`;
-    await uploadToB2(key, outputBuffer, "image/webp");
-    profilePicture = `b2:${key}`;
-  } else {
-    profilePicture = `data:image/webp;base64,${outputBuffer.toString("base64")}`;
-  }
+  const profilePicture = `data:image/webp;base64,${outputBuffer.toString("base64")}`;
 
   const [updated] = await db
     .update(usersTable)
@@ -190,16 +166,6 @@ router.post("/profile/avatar", requireAuth, asyncHandler(async (req, res) => {
 
 router.delete("/profile/avatar", requireAuth, asyncHandler(async (req, res) => {
   const userId = req.session.userId!;
-  if (isB2Configured()) {
-    const [existing] = await db
-      .select({ profilePicture: usersTable.profilePicture })
-      .from(usersTable)
-      .where(eq(usersTable.id, userId));
-    if (existing?.profilePicture?.startsWith("b2:")) {
-      try { await deleteFromB2(existing.profilePicture.slice(3)); } catch {}
-    }
-  }
-
   await db.update(usersTable).set({ profilePicture: null }).where(eq(usersTable.id, userId));
   await auditLog(userId, "profile.avatar_delete", "User removed profile picture", getClientIp(req));
   res.json({ message: "Profile picture removed" });

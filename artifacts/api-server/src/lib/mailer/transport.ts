@@ -1,4 +1,8 @@
-import nodemailer from "nodemailer";
+/**
+ * SMTP transport — removed. nodemailer is no longer a dependency.
+ * isSmtpConfigured always returns false; createTransporter always throws.
+ * esc() and buildV2Html() are kept as pure utility functions used by templates.
+ */
 
 /** Escape user-controlled strings before interpolating into HTML email templates. */
 export function esc(str: string | null | undefined): string {
@@ -11,37 +15,16 @@ export function esc(str: string | null | undefined): string {
     .replace(/'/g, "&#39;");
 }
 
-export function createTransporter() {
-  const host = process.env.SMTP_HOST;
-  const port = parseInt(process.env.SMTP_PORT ?? "587", 10);
-  const user = process.env.SMTP_USER;
-  // Accept both SMTP_PASSWORD (new canonical name) and SMTP_PASS (legacy alias).
-  const pass = process.env.SMTP_PASSWORD ?? process.env.SMTP_PASS;
-
-  if (!host || !user || !pass) {
-    throw new Error(
-      "SMTP configuration incomplete. Set SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASSWORD in Secrets."
-    );
-  }
-
-  return nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465,
-    auth: { user, pass },
-  });
+export function createTransporter(): never {
+  throw new Error("SMTP has been removed. Email sending is not available.");
 }
 
 export function isSmtpConfigured(): boolean {
-  return Boolean(
-    process.env.SMTP_HOST &&
-      process.env.SMTP_USER &&
-      (process.env.SMTP_PASSWORD ?? process.env.SMTP_PASS)
-  );
+  return false;
 }
 
 export function getFromEmail(): string {
-  return process.env.SMTP_FROM_EMAIL ?? process.env.SMTP_USER ?? "noreply@sahucsc.in";
+  return "noreply@sahucsc.in";
 }
 
 // ── V2 Dark Premium HTML helpers ───────────────────────────────────────────────
