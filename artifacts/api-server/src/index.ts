@@ -1,3 +1,4 @@
+import "./lib/env"; // ← validates all required env vars before anything else runs
 import app from "./app";
 import { logger } from "./lib/logger";
 import { startOtpCleanup } from "./lib/otp-cleanup";

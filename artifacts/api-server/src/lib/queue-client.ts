@@ -2,18 +2,14 @@
  * Queue client — thin wrapper around BullMQ that the api-server uses to push
  * background jobs (push notifications, emails) to the worker-server.
  *
- * If REDIS_URL is not set, every enqueue* call falls back to executing the work
- * directly in-process so the api-server stays fully functional without Redis.
- *
- * Connection string: set REDIS_URL to a TCP Redis URL (e.g. rediss://... from
- * Upstash dashboard).  This is DIFFERENT from UPSTASH_REDIS_REST_URL which is
- * the HTTP REST endpoint and cannot be used here.
+ * REDIS_URL (TCP rediss://... from Upstash dashboard → ioredis) is required.
+ * env.ts enforces this at startup — no silent fallback.
  */
 
 import { Queue } from "bullmq";
 import IORedis from "ioredis";
 import { logger } from "./logger";
-import { sendPushToUser, sendPushToAll } from "./push";
+import { env } from "./env";
 import {
   buildApprovalMailOptions,
   buildRejectionMailOptions,
@@ -53,36 +49,27 @@ let _notifQ: Queue<NotificationJobData> | null = null;
 let _emailQ: Queue<EmailJobData> | null = null;
 let _initialised = false;
 
-function getQueues(): { notifQ: Queue<NotificationJobData> | null; emailQ: Queue<EmailJobData> | null } {
-  if (_initialised) return { notifQ: _notifQ, emailQ: _emailQ };
+function getQueues(): { notifQ: Queue<NotificationJobData>; emailQ: Queue<EmailJobData> } {
+  if (_initialised) return { notifQ: _notifQ!, emailQ: _emailQ! };
   _initialised = true;
 
-  const redisUrl = process.env.REDIS_URL;
-  if (!redisUrl) {
-    logger.info("REDIS_URL not set — queue-client in direct-call mode (no async offloading)");
-    return { notifQ: null, emailQ: null };
-  }
+  // REDIS_URL is guaranteed by env.ts — no silent fallback.
+  _conn = new IORedis(env.REDIS_URL, {
+    maxRetriesPerRequest: null,
+    enableReadyCheck: false,
+    tls: env.REDIS_URL.startsWith("rediss://") ? { rejectUnauthorized: false } : undefined,
+    lazyConnect: true,
+  });
+  _conn.on("error", (err) => logger.warn({ err: err.message }, "Queue client Redis error"));
 
-  try {
-    _conn = new IORedis(redisUrl, {
-      maxRetriesPerRequest: null,
-      enableReadyCheck: false,
-      tls: redisUrl.startsWith("rediss://") ? { rejectUnauthorized: false } : undefined,
-      lazyConnect: true,
-    });
-    _conn.on("error", (err) => logger.warn({ err: err.message }, "Queue client Redis error"));
+  const qOpts = {
+    connection: _conn as never,
+    defaultJobOptions: { attempts: 3, backoff: { type: "exponential" as const, delay: 2000 } },
+  };
+  _notifQ = new Queue<NotificationJobData>("notifications", qOpts);
+  _emailQ = new Queue<EmailJobData>("emails", qOpts);
 
-    const qOpts = { connection: _conn as never, defaultJobOptions: { attempts: 3, backoff: { type: "exponential" as const, delay: 2000 } } };
-    _notifQ = new Queue<NotificationJobData>("notifications", qOpts);
-    _emailQ = new Queue<EmailJobData>("emails", qOpts);
-
-    logger.info("Queue client initialised (Redis-backed)");
-  } catch (err) {
-    logger.error({ err }, "Queue client failed to initialise — falling back to direct-call mode");
-    _notifQ = null;
-    _emailQ = null;
-  }
-
+  logger.info("Queue client initialised (Redis-backed)");
   return { notifQ: _notifQ, emailQ: _emailQ };
 }
 
@@ -93,16 +80,7 @@ function getQueues(): { notifQ: Queue<NotificationJobData> | null; emailQ: Queue
  */
 export async function enqueueNotification(data: NotificationJobData): Promise<void> {
   const { notifQ } = getQueues();
-  if (notifQ) {
-    await notifQ.add("notify", data);
-    return;
-  }
-  // Direct fallback
-  if (data.kind === "send-to-user") {
-    await sendPushToUser(data.userId, data.payload);
-  } else {
-    await sendPushToAll(data.payload);
-  }
+  await notifQ.add("notify", data);
 }
 
 /**
@@ -111,14 +89,7 @@ export async function enqueueNotification(data: NotificationJobData): Promise<vo
  */
 export async function enqueueEmail(data: EmailJobData): Promise<void> {
   const { emailQ } = getQueues();
-  if (emailQ) {
-    await emailQ.add("send", data);
-    return;
-  }
-  // Direct fallback — re-use nodemailer transport from transport.ts
-  const { createTransporter } = await import("./mailer/transport");
-  const transporter = createTransporter();
-  await transporter.sendMail(data);
+  await emailQ.add("send", data);
 }
 
 // ── Re-export builder helpers so call sites only need one import ──────────────

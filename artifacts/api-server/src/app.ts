@@ -18,6 +18,7 @@ import { logger } from "./lib/logger";
 import { pool } from "@workspace/db";
 import { initSentry, setupSentryErrorHandler } from "./lib/sentry";
 import { geoBlock } from "./lib/geo-block";
+import { env } from "./lib/env";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,35 +30,26 @@ initSentry();
 const PgSession = ConnectPgSimple(session);
 
 // ── Redis client for shared rate-limit counters ───────────────────────────────
-// Uses ioredis (direct TCP via REDIS_URL) when available — rate-limit-redis
-// requires an ioredis-compatible sendCommand interface, not the Upstash REST
-// client. Falls back to the default per-process MemoryStore when absent —
-// safe for single-instance dev, but counters are not shared across instances.
-const _rlRedis = process.env.REDIS_URL
-  ? new IORedis(process.env.REDIS_URL, {
-      maxRetriesPerRequest: null,
-      enableReadyCheck: false,
-      lazyConnect: true,
-    })
-  : null;
+// REDIS_URL is required — env.ts enforces this before app.ts is evaluated.
+// rate-limit-redis requires an ioredis-compatible sendCommand interface, not
+// the Upstash REST client, so we use ioredis directly.
+const _rlRedis = new IORedis(env.REDIS_URL, {
+  maxRetriesPerRequest: null,
+  enableReadyCheck: false,
+  lazyConnect: true,
+});
+_rlRedis.on("error", (err) => logger.warn({ err: err.message }, "Rate-limit Redis error"));
+logger.info("Rate limiter: using shared Redis store (cross-instance counters)");
 
-if (_rlRedis) {
-  logger.info("Rate limiter: using shared Redis store (cross-instance counters)");
-} else {
-  logger.info("Rate limiter: using in-process MemoryStore (single-instance only)");
-}
-
-// Returns a RedisStore for the given key prefix, or undefined (→ MemoryStore).
+// Returns a RedisStore for the given key prefix.
 // ioredis exposes `call(command, ...args)` which satisfies rate-limit-redis's
 // sendCommand contract.
 const makeRlStore = (prefix: string) =>
-  _rlRedis
-    ? new RedisStore({
-        sendCommand: (...args: string[]) =>
-          (_rlRedis as any).call(args[0], ...args.slice(1)) as Promise<RedisReply>,
-        prefix: `rl:${prefix}:`,
-      })
-    : undefined;
+  new RedisStore({
+    sendCommand: (...args: string[]) =>
+      (_rlRedis as any).call(args[0], ...args.slice(1)) as Promise<RedisReply>,
+    prefix: `rl:${prefix}:`,
+  });
 
 const app: Express = express();
 
