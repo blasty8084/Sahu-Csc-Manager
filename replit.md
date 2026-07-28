@@ -297,41 +297,63 @@ Continuing from the 8.5/10 baseline (N+1 fixes, batched writes, pooled connectio
 
 ## Replit Setup
 
+> **Full step-by-step setup guide (first import):** see **[setup.md](./setup.md)**
+
 ### How to run
-- **Frontend** (port 5000): `Frontend` workflow — `PORT=5000 pnpm --filter @workspace/sahu-csc run dev`
+- **Frontend** (port 5000): `artifacts/sahu-csc: web` workflow — Vite dev server
 - **API Server** (port 8080): `API Server` workflow — builds then runs `artifacts/api-server/dist/index.mjs`
-- **Seed DB**: Run the `Seed Database` workflow (requires `ADMIN_PASSWORD` and `OPERATOR_PASSWORD` secrets)
-- **Rebuild API**: restart `API Server` workflow (it rebuilds on every start)
-- **Worker Server** (port 8081, optional): `Worker Server` workflow — only starts when `REDIS_URL` secret is set
+- **Worker Server** (port 8081): `Worker Server` workflow — BullMQ background jobs (requires `REDIS_URL`)
+- **Seed DB**: Run the `Seed Database` workflow (requires `ADMIN_PASSWORD` + `OPERATOR_PASSWORD` secrets)
+- **Rebuild API**: restart `API Server` workflow (rebuilds automatically on every start)
 
 ### First-time setup on a new Replit import
 1. `pnpm install` from workspace root
-2. Set secrets: `NEON_DATABASE_URL`, `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD` (required); `SMTP_PASSWORD` (optional — email/OTP)
-3. Run the `Seed Database` workflow to create admin/operator accounts
-4. Restart `API Server` and `artifacts/sahu-csc: web` workflows
-5. ~~Update `CORS_ORIGIN`~~ — no longer needed; `REPLIT_DEV_DOMAIN` and `REPLIT_DOMAINS` are auto-included at startup (v4.9.0+)
+2. Set all required secrets (see table below)
+3. `pnpm --filter @workspace/db run push` — push schema to Neon
+4. Run the **Seed Database** workflow to create admin/operator accounts
+5. Restart **API Server** and **artifacts/sahu-csc: web** workflows
 
-#### Secrets required
+#### Required secrets (all mandatory — API server refuses to start if any are missing)
+| Secret | Purpose | Where to get it |
+|--------|---------|----------------|
+| `NEON_DATABASE_URL` | Neon PostgreSQL connection string | neon.tech → Connection Details |
+| `SESSION_SECRET` | Express session signing key | `openssl rand -base64 48` |
+| `ADMIN_PASSWORD` | Default admin account password | You choose (min 8 chars) |
+| `OPERATOR_PASSWORD` | Default operator account password | You choose (min 8 chars) |
+| `REDIS_URL` | Upstash Redis TCP URL (`rediss://...`) | upstash.com → Connect → ioredis |
+| `UPSTASH_REDIS_REST_URL` | Upstash Redis REST URL | upstash.com → Connect → @upstash/redis |
+| `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST token | upstash.com → Connect → @upstash/redis |
+| `B2_KEY_ID` | Backblaze B2 key ID | backblaze.com → App Keys |
+| `B2_APP_KEY` | Backblaze B2 application key | backblaze.com → App Keys |
+| `B2_BUCKET_NAME` | Backblaze B2 bucket name | backblaze.com → Buckets |
+| `B2_BUCKET_ENDPOINT` | B2 S3-compatible endpoint hostname | backblaze.com → Bucket details |
+
+#### Optional secrets
 | Secret | Purpose |
 |--------|---------|
-| `NEON_DATABASE_URL` | Neon PostgreSQL connection string (`postgresql://...?sslmode=require`) |
-| `SESSION_SECRET` | Express session signing key |
-| `ADMIN_PASSWORD` | Seed admin account password (login: username `admin`) |
-| `OPERATOR_PASSWORD` | Seed operator account password (login: username `operator`) |
-| `SMTP_PASSWORD` | Gmail App Password for OTP / password-reset emails (optional) |
-| `UPSTASH_REDIS_REST_URL` | Upstash Redis REST endpoint — enables shared cache (optional) |
-| `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST token (optional) |
-| `REDIS_URL` | Upstash direct TCP URL (`rediss://...`) — required for Worker Server / BullMQ (optional) |
+| `SMTP_PASSWORD` | Gmail App Password for OTP / password-reset emails |
 
-#### Env vars to check after each re-import
-- `CORS_ORIGIN` — **no longer required to update after re-imports** (v4.9.0+). `REPLIT_DEV_DOMAIN` and `REPLIT_DOMAINS` are now auto-included at startup. This var is only needed if you have a custom non-Replit origin to allow.
-- `CACHE_BACKEND` — set to `redis` only if Upstash Redis secrets are configured; default `memory` works for single-instance dev
+#### Env vars set automatically
+- `DATABASE_URL` — Replit's built-in Postgres (runtime-managed; app prefers `NEON_DATABASE_URL` when both are present)
+- `CORS_ORIGIN` — `REPLIT_DEV_DOMAIN` and `REPLIT_DOMAINS` are auto-included at startup (v4.9.0+); no manual update needed after re-imports
+- `CACHE_BACKEND` — set to `redis` (Upstash REST cache backend active)
+
+### Startup validation
+`artifacts/api-server/src/lib/env.ts` validates all required secrets at boot.  
+If any are missing the server exits immediately and prints the exact list:
+```
+❌  STARTUP FAILED — 2 required environment variables are not set:
+
+  • REDIS_URL  —  Upstash Redis TCP URL
+  • B2_KEY_ID  —  Backblaze B2 key ID
+```
 
 ### Login credentials
 - Admin: `admin` / value of `ADMIN_PASSWORD` secret
 - Operator: `operator` / value of `OPERATOR_PASSWORD` secret
 
-> Full platform documentation: **[DOCS.md](./DOCS.md)**
+> Full platform documentation: **[DOCS.md](./DOCS.md)**  
+> Step-by-step first-import setup: **[setup.md](./setup.md)**
 
 A full-stack CSC (Common Service Center) business management platform for tracking services, ledger accounting, AePS cash management, Udhari Khata (customer credit ledger), and reporting. Built for Odisha / India rural service centers. Supports PWA installation, offline operation, Android TWA packaging, and full multilingual UI (English / Hindi / Odia).
 
