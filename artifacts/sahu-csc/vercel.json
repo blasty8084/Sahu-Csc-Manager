@@ -2,11 +2,26 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://YOUR-APP.onrender.com/api/:path*"
+      "destination": "https://sahu-csc-api.onrender.com/api/:path*"
     },
     {
       "source": "/(.*)",
       "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/sw.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache" },
+        { "key": "Service-Worker-Allowed", "value": "/" }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
     }
   ]
 }

@@ -16,10 +16,13 @@ function GeoGate({ children }: { children: React.ReactNode }) {
   const [geoState, setGeoState] = useState<"loading" | "allowed" | "blocked">("loading");
 
   useEffect(() => {
-    fetch("/api/geo", { credentials: "omit" })
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 3000); // 3 s timeout — fail open
+    fetch("/api/geo", { credentials: "omit", signal: controller.signal })
       .then((r) => r.json())
       .then((data) => setGeoState(data.allowed ? "allowed" : "blocked"))
-      .catch(() => setGeoState("allowed")); // fail open — don't block on network error
+      .catch(() => setGeoState("allowed")) // fail open on error or timeout
+      .finally(() => clearTimeout(timer));
   }, []);
 
   if (geoState === "blocked") return <RegionBlocked />;

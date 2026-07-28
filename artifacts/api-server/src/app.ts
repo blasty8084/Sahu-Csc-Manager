@@ -29,27 +29,32 @@ initSentry();
 
 const PgSession = ConnectPgSimple(session);
 
-// ── Redis client for shared rate-limit counters ───────────────────────────────
-// REDIS_URL is required — env.ts enforces this before app.ts is evaluated.
-// rate-limit-redis requires an ioredis-compatible sendCommand interface, not
-// the Upstash REST client, so we use ioredis directly.
-const _rlRedis = new IORedis(env.REDIS_URL, {
-  maxRetriesPerRequest: null,
-  enableReadyCheck: false,
-  lazyConnect: true,
-});
-_rlRedis.on("error", (err) => logger.warn({ err: err.message }, "Rate-limit Redis error"));
-logger.info("Rate limiter: using shared Redis store (cross-instance counters)");
-
-// Returns a RedisStore for the given key prefix.
-// ioredis exposes `call(command, ...args)` which satisfies rate-limit-redis's
-// sendCommand contract.
-const makeRlStore = (prefix: string) =>
-  new RedisStore({
-    sendCommand: (...args: string[]) =>
-      (_rlRedis as any).call(args[0], ...args.slice(1)) as Promise<RedisReply>,
-    prefix: `rl:${prefix}:`,
+// ── Redis client for shared rate-limit counters (optional) ───────────────────
+// When REDIS_URL is absent the rate limiters fall back to in-memory counters,
+// which is fine for a single-instance dev/staging setup.
+let _rlRedis: IORedis | null = null;
+if (env.REDIS_URL) {
+  _rlRedis = new IORedis(env.REDIS_URL, {
+    maxRetriesPerRequest: null,
+    enableReadyCheck: false,
+    lazyConnect: true,
   });
+  _rlRedis.on("error", (err) => logger.warn({ err: err.message }, "Rate-limit Redis error"));
+  logger.info("Rate limiter: using shared Redis store (cross-instance counters)");
+} else {
+  logger.info("Rate limiter: REDIS_URL not set — using in-memory store (single-instance only)");
+}
+
+// Returns a RedisStore when Redis is available, otherwise undefined (falls back
+// to express-rate-limit's default in-memory store).
+const makeRlStore = (prefix: string): RedisStore | undefined =>
+  _rlRedis
+    ? new RedisStore({
+        sendCommand: (...args: string[]) =>
+          (_rlRedis as any).call(args[0], ...args.slice(1)) as Promise<RedisReply>,
+        prefix: `rl:${prefix}:`,
+      })
+    : undefined;
 
 const app: Express = express();
 

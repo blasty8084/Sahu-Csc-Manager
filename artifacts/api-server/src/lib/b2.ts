@@ -8,26 +8,32 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import type { Readable } from "stream";
 import { env } from "./env";
 
-const rawEndpoint = env.B2_BUCKET_ENDPOINT.trim();
-const B2_ENDPOINT = /^https?:\/\//i.test(rawEndpoint)
-  ? rawEndpoint
-  : `https://${rawEndpoint}`;
+const b2Configured =
+  !!env.B2_KEY_ID && !!env.B2_APP_KEY && !!env.B2_BUCKET_NAME && !!env.B2_BUCKET_ENDPOINT;
 
-export const B2_BUCKET = env.B2_BUCKET_NAME;
+export const B2_BUCKET = env.B2_BUCKET_NAME ?? "";
 
-// B2 is always configured — env.ts guarantees the required vars are present.
-export const b2Client = new S3Client({
-  endpoint: B2_ENDPOINT,
-  region: "auto",
-  credentials: {
-    accessKeyId: env.B2_KEY_ID,
-    secretAccessKey: env.B2_APP_KEY,
-  },
-});
+const rawEndpoint = env.B2_BUCKET_ENDPOINT?.trim() ?? "";
+const B2_ENDPOINT = rawEndpoint
+  ? /^https?:\/\//i.test(rawEndpoint)
+    ? rawEndpoint
+    : `https://${rawEndpoint}`
+  : "";
 
-/** Always true — kept for call-site compatibility. */
+export const b2Client: S3Client | null = b2Configured
+  ? new S3Client({
+      endpoint: B2_ENDPOINT,
+      region: "auto",
+      credentials: {
+        accessKeyId: env.B2_KEY_ID!,
+        secretAccessKey: env.B2_APP_KEY!,
+      },
+    })
+  : null;
+
+/** Returns true only when all B2 environment variables are set. */
 export function isB2Configured(): boolean {
-  return true;
+  return b2Configured;
 }
 
 /** Upload a Buffer or Readable stream to B2 */

@@ -2,8 +2,10 @@
  * Queue client — thin wrapper around BullMQ that the api-server uses to push
  * background jobs (push notifications, emails) to the worker-server.
  *
- * REDIS_URL (TCP rediss://... from Upstash dashboard → ioredis) is required.
- * env.ts enforces this at startup — no silent fallback.
+ * When REDIS_URL is set, jobs are enqueued via BullMQ for the worker-server to
+ * process asynchronously.  When REDIS_URL is absent (dev / no-Redis setup),
+ * the helpers fall back to direct, synchronous sends so the feature still works
+ * — just without the retry/backoff guarantees that the queue provides.
  */
 
 import { Queue } from "bullmq";
@@ -18,6 +20,7 @@ import {
   sendRejectionEmail,
   sendOtpEmail,
 } from "./mailer";
+import { sendPushToUser, sendPushToAll } from "./push";
 
 // ── Job-data types (keep in sync with worker-server/src/queues/types.ts) ─────
 
@@ -42,22 +45,27 @@ export interface EmailJobData {
   text: string;
 }
 
-// ── Lazy queue initialisation ─────────────────────────────────────────────────
+// ── Lazy queue initialisation (only when Redis is configured) ─────────────────
 
 let _conn: IORedis | null = null;
 let _notifQ: Queue<NotificationJobData> | null = null;
 let _emailQ: Queue<EmailJobData> | null = null;
 let _initialised = false;
 
-function getQueues(): { notifQ: Queue<NotificationJobData>; emailQ: Queue<EmailJobData> } {
-  if (_initialised) return { notifQ: _notifQ!, emailQ: _emailQ! };
+function getQueues(): { notifQ: Queue<NotificationJobData>; emailQ: Queue<EmailJobData> } | null {
+  if (_initialised) return _notifQ && _emailQ ? { notifQ: _notifQ, emailQ: _emailQ } : null;
   _initialised = true;
 
-  // REDIS_URL is guaranteed by env.ts — no silent fallback.
-  _conn = new IORedis(env.REDIS_URL, {
+  if (!env.REDIS_URL) {
+    logger.info("Queue client: REDIS_URL not set — falling back to direct (synchronous) sends");
+    return null;
+  }
+
+  const redisUrl = env.REDIS_URL;
+  _conn = new IORedis(redisUrl, {
     maxRetriesPerRequest: null,
     enableReadyCheck: false,
-    tls: env.REDIS_URL.startsWith("rediss://") ? { rejectUnauthorized: false } : undefined,
+    tls: redisUrl.startsWith("rediss://") ? { rejectUnauthorized: false } : undefined,
     lazyConnect: true,
   });
   _conn.on("error", (err) => logger.warn({ err: err.message }, "Queue client Redis error"));
@@ -76,20 +84,54 @@ function getQueues(): { notifQ: Queue<NotificationJobData>; emailQ: Queue<EmailJ
 // ── Public helpers ────────────────────────────────────────────────────────────
 
 /**
- * Send a push notification, either via the worker queue (Redis) or directly.
+ * Send a push notification via the worker queue when Redis is available,
+ * or directly (fire-and-forget) when it is not.
  */
 export async function enqueueNotification(data: NotificationJobData): Promise<void> {
-  const { notifQ } = getQueues();
-  await notifQ.add("notify", data);
+  const queues = getQueues();
+  if (queues) {
+    await queues.notifQ.add("notify", data);
+    return;
+  }
+  // Direct fallback — no queue, send synchronously
+  try {
+    if (data.kind === "send-to-user") {
+      await sendPushToUser(data.userId, data.payload);
+    } else {
+      await sendPushToAll(data.payload);
+    }
+  } catch (err: any) {
+    logger.warn({ err: err.message }, "enqueueNotification direct-send failed");
+  }
 }
 
 /**
- * Send a pre-rendered email, either via the worker queue (Redis) or directly.
+ * Send a pre-rendered email via the worker queue when Redis is available,
+ * or directly (fire-and-forget) when it is not.
  * Call one of the build*MailOptions helpers first to obtain the job data.
  */
 export async function enqueueEmail(data: EmailJobData): Promise<void> {
-  const { emailQ } = getQueues();
-  await emailQ.add("send", data);
+  const queues = getQueues();
+  if (queues) {
+    await queues.emailQ.add("send", data);
+    return;
+  }
+  // Direct fallback — no queue, send synchronously via nodemailer
+  const nodemailer = await import("nodemailer");
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT ?? 587),
+    secure: false,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS ?? process.env.SMTP_PASSWORD,
+    },
+  });
+  try {
+    await transporter.sendMail(data);
+  } catch (err: any) {
+    logger.warn({ err: err.message }, "enqueueEmail direct-send failed");
+  }
 }
 
 // ── Re-export builder helpers so call sites only need one import ──────────────
