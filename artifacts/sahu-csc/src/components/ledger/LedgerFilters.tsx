@@ -26,7 +26,8 @@ export function MobileSearchBar({
         onChange={(val) => { setCustomerName(val); setPage(1); }}
         suggestions={customerNameSuggestions}
         placeholder={t("ledger.search_placeholder")}
-        style={{ width: "100%", height: 44, paddingLeft: 34, paddingRight: 46, borderRadius: 14, border: "1.5px solid var(--color-slate-200)", background: "#fff", fontSize: 13, color: "var(--brand-navy-800)", outline: "none", boxSizing: "border-box", fontWeight: 500, boxShadow: "0 1px 6px var(--brand-navy-tint-md)" }}
+        className="bg-white dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:border-zinc-600"
+        style={{ width: "100%", height: 44, paddingLeft: 34, paddingRight: 46, borderRadius: 14, border: "1.5px solid var(--color-slate-200)", fontSize: 13, color: "var(--brand-navy-800)", outline: "none", boxSizing: "border-box", fontWeight: 500, boxShadow: "0 1px 6px var(--brand-navy-tint-md)" }}
       />
       <button onClick={() => setShowFilters(!showFilters)} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", width: 30, height: 30, borderRadius: 8, background: hasFilters ? "var(--brand-navy-800)" : "var(--color-slate-100)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", outline: "none" }}>
         <Filter size={13} color={hasFilters ? "#fff" : "var(--color-slate-500)"} />
@@ -86,12 +87,13 @@ export function DesktopSearchFilterBar({
   clearFilters: () => void;
 }) {
   return (
-    <div style={{ background: "#fff", border: "1px solid var(--color-slate-200)", borderRadius: 20, padding: "10px 14px", display: "flex", gap: 10, alignItems: "center", flexShrink: 0, boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+    <div className="bg-white dark:bg-zinc-800 dark:border-zinc-700" style={{ border: "1px solid var(--color-slate-200)", borderRadius: 20, padding: "10px 14px", display: "flex", gap: 10, alignItems: "center", flexShrink: 0, boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
       <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8 }}>
         <Search size={17} color="var(--color-slate-400)" />
         <input value={customerName} onChange={e => { setCustomerName(e.target.value); setPage(1); }}
           list="ledger-customer-names" placeholder="Search transactions…"
-          style={{ flex: 1, outline: "none", fontSize: 13, color: "var(--color-slate-700)", fontWeight: 500, background: "transparent", border: "none" }} />
+          className="dark:text-zinc-100 dark:placeholder:text-zinc-500"
+         style={{ flex: 1, outline: "none", fontSize: 13, color: "var(--color-slate-700)", fontWeight: 500, background: "transparent", border: "none" }} />
       </div>
       <div style={{ width: 1, height: 24, background: "var(--color-slate-200)" }} />
       <button onClick={() => setShowFilters(!showFilters)}
@@ -133,7 +135,7 @@ export function DesktopFilterPanel({
 }) {
   if (!showFilters) return null;
   return (
-    <div style={{ background: "#fff", border: "1px solid var(--color-slate-200)", borderRadius: 16, padding: "14px 16px", display: "flex", gap: 12, alignItems: "flex-start", flexShrink: 0, flexWrap: "wrap", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+    <div className="bg-white dark:bg-zinc-800 dark:border-zinc-700" style={{ border: "1px solid var(--color-slate-200)", borderRadius: 16, padding: "14px 16px", display: "flex", gap: 12, alignItems: "flex-start", flexShrink: 0, flexWrap: "wrap", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
       <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
         <span style={{ fontSize: 10, fontWeight: 700, color: "var(--color-slate-400)", textTransform: "uppercase", letterSpacing: "0.08em", marginRight: 4 }}>Date</span>
         {([
@@ -145,16 +147,18 @@ export function DesktopFilterPanel({
           const wk = (() => { const d = new Date(); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.toISOString().split("T")[0]; })();
           const mo = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split("T")[0];
           const isActive = key === "today" ? (startDate === td && endDate === td) : key === "week" ? (startDate === wk && endDate === td) : (startDate === mo && endDate === td);
-          return <button key={key} onClick={action} style={{ padding: "4px 10px", borderRadius: 20, border: `1px solid ${isActive ? "var(--brand-orange)" : "var(--color-slate-200)"}`, background: isActive ? "var(--brand-orange)" : "var(--color-slate-50)", color: isActive ? "#fff" : "var(--color-slate-700)", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{label}</button>;
+          return <button key={key} onClick={action} className={isActive ? "" : "bg-slate-50 dark:bg-zinc-700 dark:border-zinc-600 dark:text-zinc-300"} style={{ padding: "4px 10px", borderRadius: 20, border: `1px solid ${isActive ? "var(--brand-orange)" : "var(--color-slate-200)"}`, background: isActive ? "var(--brand-orange)" : undefined, color: isActive ? "#fff" : "var(--color-slate-700)", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{label}</button>;
         })}
       </div>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <span style={{ fontSize: 10, fontWeight: 700, color: "var(--color-slate-400)", textTransform: "uppercase", letterSpacing: "0.08em" }}>From</span>
         <input type="date" value={startDate} onChange={e => { setStartDate(e.target.value); setPage(1); }}
-          style={{ height: 32, paddingInline: 8, borderRadius: 8, border: "1.5px solid var(--color-slate-200)", fontSize: 12, color: "var(--brand-navy-800)", outline: "none", background: "var(--color-slate-50)", boxSizing: "border-box" }} />
+          className="bg-slate-50 dark:bg-zinc-700 dark:text-zinc-100 dark:border-zinc-600"
+          style={{ height: 32, paddingInline: 8, borderRadius: 8, border: "1.5px solid var(--color-slate-200)", fontSize: 12, color: "var(--brand-navy-800)", outline: "none", boxSizing: "border-box" }} />
         <span style={{ fontSize: 10, fontWeight: 700, color: "var(--color-slate-400)", textTransform: "uppercase", letterSpacing: "0.08em" }}>To</span>
         <input type="date" value={endDate} onChange={e => { setEndDate(e.target.value); setPage(1); }}
-          style={{ height: 32, paddingInline: 8, borderRadius: 8, border: "1.5px solid var(--color-slate-200)", fontSize: 12, color: "var(--brand-navy-800)", outline: "none", background: "var(--color-slate-50)", boxSizing: "border-box" }} />
+          className="bg-slate-50 dark:bg-zinc-700 dark:text-zinc-100 dark:border-zinc-600"
+          style={{ height: 32, paddingInline: 8, borderRadius: 8, border: "1.5px solid var(--color-slate-200)", fontSize: 12, color: "var(--brand-navy-800)", outline: "none", boxSizing: "border-box" }} />
       </div>
       {serviceTypes.length > 0 && (
         <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
@@ -162,7 +166,7 @@ export function DesktopFilterPanel({
           {serviceTypes.slice(0, 8).map((s: string) => {
             const color = getServiceColor(s);
             const active = serviceFilter === s;
-            return <button key={s} onClick={() => { setServiceFilter(active ? "" : s); setPage(1); }} style={{ padding: "4px 10px", borderRadius: 20, border: `1px solid ${active ? color + "80" : "var(--color-slate-200)"}`, background: active ? color + "18" : "var(--color-slate-50)", color: active ? color : "var(--color-slate-700)", fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
+            return <button key={s} onClick={() => { setServiceFilter(active ? "" : s); setPage(1); }} className={active ? "" : "bg-slate-50 dark:bg-zinc-700 dark:border-zinc-600 dark:text-zinc-300"} style={{ padding: "4px 10px", borderRadius: 20, border: `1px solid ${active ? color + "80" : "var(--color-slate-200)"}`, background: active ? color + "18" : undefined, color: active ? color : "var(--color-slate-700)", fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: color, flexShrink: 0 }} />{s}
             </button>;
           })}

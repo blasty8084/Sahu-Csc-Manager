@@ -54,14 +54,14 @@ export function LedgerMobileHeader({ balance, t, activeTab, setActiveTab, onDele
       </div>
 
       {/* ── MOBILE: Tab switcher ── */}
-      <div className="md:hidden" style={{ display: "flex", background: "var(--color-slate-100)", borderRadius: 14, padding: 4, gap: 4 }}>
+      <div className="md:hidden bg-slate-100 dark:bg-zinc-800" style={{ display: "flex", borderRadius: 14, padding: 4, gap: 4 }}>
         {(["transactions", "receipts"] as const).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
+            className={activeTab === tab ? "bg-white dark:bg-zinc-700" : ""}
             style={{
               flex: 1, height: 38, borderRadius: 11, border: "none", cursor: "pointer",
-              background: activeTab === tab ? "#fff" : "transparent",
               color: activeTab === tab ? "var(--brand-navy-800)" : "var(--color-slate-500)",
               fontWeight: activeTab === tab ? 800 : 600,
               fontSize: 13,

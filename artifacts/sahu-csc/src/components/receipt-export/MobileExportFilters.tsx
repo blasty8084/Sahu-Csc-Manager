@@ -59,7 +59,7 @@ export function MobileExportFilterPanel({
           const l = v === "today" ? "Today" : v === "week" ? "Week" : v === "month" ? "This Month" : "Last Month";
           return (
             <button key={v} onClick={() => { onQuickRange(v); setDateRange(v); }}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${dateRange === v ? "text-white" : "bg-slate-100 text-slate-600"}`}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${dateRange === v ? "text-white" : "bg-slate-100 dark:bg-zinc-700 text-slate-600 dark:text-zinc-300"}`}
               style={dateRange === v ? { background: NAVY } : undefined}>{l}</button>
           );
         })}
@@ -105,7 +105,7 @@ export function MobileByDatePanel({
             const l = v === "today" ? "Today" : v === "week" ? "This Week" : v === "month" ? "This Month" : v === "lastMonth" ? "Last Month" : "This Year";
             return (
               <button key={v} onClick={() => { onQuickRange(v); setDateRange(v); }}
-                className={`px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${dateRange === v ? "text-white" : "bg-slate-100 text-slate-600"}`}
+                className={`px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${dateRange === v ? "text-white" : "bg-slate-100 dark:bg-zinc-700 text-slate-600 dark:text-zinc-300"}`}
                 style={dateRange === v ? { background: NAVY } : undefined}>{l}</button>
             );
           })}

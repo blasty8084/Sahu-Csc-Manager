@@ -41,12 +41,12 @@ export function MobileReceiptList({
   if (!preview) {
     return (
       <div className="flex flex-col items-center justify-center text-center px-8 py-12">
-        <FileArchive size={52} className="text-slate-300 mx-auto mb-3" />
-        <h3 className="text-base font-bold text-slate-700 mb-3">How it works</h3>
+        <FileArchive size={52} className="text-slate-300 dark:text-zinc-600 mx-auto mb-3" />
+        <h3 className="text-base font-bold text-slate-700 dark:text-zinc-200 mb-3">How it works</h3>
         <ol className="text-sm text-left space-y-3 mb-6 w-full max-w-xs">
-          <li className="flex gap-3"><span className="font-bold shrink-0" style={{ color: SAFFRON }}>1.</span><span className="text-slate-500">Tap the filter icon to set a date range</span></li>
-          <li className="flex gap-3"><span className="font-bold shrink-0" style={{ color: SAFFRON }}>2.</span><span className="text-slate-500">Preview to see matching receipts</span></li>
-          <li className="flex gap-3"><span className="font-bold shrink-0" style={{ color: SAFFRON }}>3.</span><span className="text-slate-500">Download as ZIP — each receipt is a PDF</span></li>
+          <li className="flex gap-3"><span className="font-bold shrink-0" style={{ color: SAFFRON }}>1.</span><span className="text-slate-500 dark:text-zinc-400">Tap the filter icon to set a date range</span></li>
+          <li className="flex gap-3"><span className="font-bold shrink-0" style={{ color: SAFFRON }}>2.</span><span className="text-slate-500 dark:text-zinc-400">Preview to see matching receipts</span></li>
+          <li className="flex gap-3"><span className="font-bold shrink-0" style={{ color: SAFFRON }}>3.</span><span className="text-slate-500 dark:text-zinc-400">Download as ZIP — each receipt is a PDF</span></li>
         </ol>
         {!showFilters && (
           <button onClick={() => setShowFilters(true)}
@@ -108,13 +108,13 @@ export function MobileReceiptList({
                     {e.type === "credit" ? "+" : "-"}₹{e.amount.toLocaleString("en-IN")}
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 truncate mt-0.5">{e.serviceType}</p>
+                <p className="text-xs text-slate-500 dark:text-zinc-400 truncate mt-0.5">{e.serviceType}</p>
                 <div className="flex items-center justify-between mt-1.5">
                   <span className="font-mono text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full">{e.receiptNumber}</span>
-                  <span className="text-[10px] text-slate-400">{fmtDateShort(e.date)}</span>
+                  <span className="text-[10px] text-slate-400 dark:text-zinc-500">{fmtDateShort(e.date)}</span>
                 </div>
               </div>
-              <ChevronRight size={14} className="text-slate-300 shrink-0" />
+              <ChevronRight size={14} className="text-slate-300 dark:text-zinc-600 shrink-0" />
             </div>
           </div>
         ))}

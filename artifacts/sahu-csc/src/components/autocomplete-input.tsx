@@ -84,9 +84,10 @@ export const AutocompleteInput = forwardRef<HTMLInputElement, AutocompleteInputP
         />
         {showDropdown && (
           <div
-            style={{
+            className="bg-white dark:bg-zinc-800 dark:border-zinc-600"
+          style={{
               position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 200,
-              background: "#fff", borderRadius: 14,
+              borderRadius: 14,
               border: "1.5px solid var(--brand-navy-border)",
               boxShadow: "0 8px 28px var(--brand-navy-border-md)",
               overflow: "hidden",

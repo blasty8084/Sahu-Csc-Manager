@@ -35,7 +35,7 @@ export function DesktopTransactionsTable({
     <div style={{ flex: 1, overflowX: "auto", overflowY: "auto", display: activeTab !== "transactions" ? "none" : undefined }}>
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
-          <tr style={{ background: "var(--color-slate-50)", borderBottom: "2px solid var(--brand-navy-tint-md)" }}>
+          <tr className="bg-slate-50 dark:bg-zinc-800/80" style={{ borderBottom: "2px solid var(--brand-navy-tint-md)" }}>
             {([{ label: "#", w: 44 }, { label: "Receipt No", w: 126 }, { label: "Date", w: 100 }, { label: "Customer" }, { label: "Service", w: 156 }, { label: "Credit", w: 108, right: true }, { label: "Debit", w: 108, right: true }, { label: "Balance", w: 118, right: true }, { label: "Note", w: 130 }, { label: "", w: 100 }] as any[]).map((col: any) => (
               <th key={col.label} style={{ padding: "11px 14px", textAlign: col.right ? "right" : "left", fontSize: 10, fontWeight: 800, color: "var(--color-slate-400)", textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap", width: col.w }}>
                 {col.label}

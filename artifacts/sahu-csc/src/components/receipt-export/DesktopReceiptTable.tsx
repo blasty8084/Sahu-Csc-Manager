@@ -98,30 +98,30 @@ export function DesktopReceiptTable({
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-50">
+        <tbody className="divide-y divide-slate-50 dark:divide-zinc-700/50">
           {filteredEntries.map((e) => (
             <tr key={e.receiptNumber}
               onClick={() => setExpandedEntry(expandedEntry === e.receiptNumber ? null : e.receiptNumber)}
-              className={`cursor-pointer transition-colors ${expandedEntry === e.receiptNumber ? "bg-[var(--brand-navy-800)]/5" : "hover:bg-slate-50"}`}>
+              className={`cursor-pointer transition-colors ${expandedEntry === e.receiptNumber ? "bg-[var(--brand-navy-800)]/5 dark:bg-[var(--brand-navy-800)]/10" : "hover:bg-slate-50 dark:hover:bg-zinc-700/50"}`}>
               <td className="px-4 py-3" onClick={ev => { ev.stopPropagation(); toggleEntry(e.receiptNumber); }}>
                 <Checkbox checked={selected.has(e.receiptNumber)} onChange={() => toggleEntry(e.receiptNumber)} />
               </td>
               <td className="px-3 py-3">
-                <span className={`font-mono text-xs font-semibold px-2 py-0.5 rounded ${expandedEntry === e.receiptNumber ? "bg-[var(--brand-navy-800)] text-white" : "bg-slate-100 text-slate-700"}`}>
+                <span className={`font-mono text-xs font-semibold px-2 py-0.5 rounded ${expandedEntry === e.receiptNumber ? "bg-[var(--brand-navy-800)] text-white" : "bg-slate-100 dark:bg-zinc-700 text-slate-700 dark:text-zinc-200"}`}>
                   {e.receiptNumber}
                 </span>
               </td>
-              <td className="px-3 py-3 text-xs text-slate-500 whitespace-nowrap">{fmtDateShort(e.date)}</td>
+              <td className="px-3 py-3 text-xs text-slate-500 dark:text-zinc-400 whitespace-nowrap">{fmtDateShort(e.date)}</td>
               <td className="px-3 py-3">
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] text-white font-bold shrink-0"
                     style={{ background: `linear-gradient(135deg, ${NAVY}, var(--brand-navy-600))` }}>
                     {e.customerName.charAt(0).toUpperCase()}
                   </div>
-                  <span className="text-xs font-medium text-slate-800 truncate max-w-[110px]">{e.customerName}</span>
+                  <span className="text-xs font-medium text-slate-800 dark:text-zinc-100 truncate max-w-[110px]">{e.customerName}</span>
                 </div>
               </td>
-              <td className="px-3 py-3 text-xs text-slate-500 max-w-[130px] truncate">{e.serviceType}</td>
+              <td className="px-3 py-3 text-xs text-slate-500 dark:text-zinc-400 max-w-[130px] truncate">{e.serviceType}</td>
               <td className="px-3 py-3 text-right whitespace-nowrap">
                 <span className={`text-sm font-bold ${e.type === "credit" ? "text-emerald-600" : "text-rose-500"}`}>
                   {e.type === "credit" ? "+" : "-"}₹{e.amount.toLocaleString("en-IN")}
@@ -137,7 +137,7 @@ export function DesktopReceiptTable({
                     <button key={i}
                       onClick={() => openReceiptAction(e.receiptNumber, action)}
                       disabled={modalLoadingFor === e.receiptNumber}
-                      className="w-6 h-6 rounded hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-700 transition-colors disabled:opacity-40">
+                      className="w-6 h-6 rounded hover:bg-slate-100 dark:hover:bg-zinc-700 flex items-center justify-center text-slate-400 dark:text-zinc-500 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors disabled:opacity-40">
                       {modalLoadingFor === e.receiptNumber ? <Loader2 size={12} className="animate-spin" /> : <Icon size={12} />}
                     </button>
                   ))}
@@ -147,8 +147,8 @@ export function DesktopReceiptTable({
           ))}
         </tbody>
       </table>
-      <div className="px-4 py-3 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
-        <span className="text-xs text-slate-500">{filteredEntries.length} receipts · {fmtDate(startDate)} → {fmtDate(endDate)}</span>
+      <div className="px-4 py-3 border-t border-slate-100 dark:border-zinc-700 bg-slate-50/50 dark:bg-zinc-800/50 flex items-center justify-between">
+        <span className="text-xs text-slate-500 dark:text-zinc-400">{filteredEntries.length} receipts · {fmtDate(startDate)} → {fmtDate(endDate)}</span>
         <span className="text-sm font-bold text-emerald-600">₹{totalAmount.toLocaleString("en-IN")}</span>
       </div>
     </div>

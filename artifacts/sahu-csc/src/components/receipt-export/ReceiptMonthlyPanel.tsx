@@ -56,12 +56,12 @@ export function ReceiptMonthlyPanel({
             </select>
           </div>
         </div>
-        <p className="text-[10px] text-center text-slate-500">
-          Selected: <strong className="text-slate-700">{MONTH_OPTIONS.find(m => m.v === trigMonth)?.l} {trigYear}</strong>
+        <p className="text-[10px] text-center text-slate-500 dark:text-zinc-400">
+          Selected: <strong className="text-slate-700 dark:text-zinc-200">{MONTH_OPTIONS.find(m => m.v === trigMonth)?.l} {trigYear}</strong>
         </p>
         <div className="grid grid-cols-2 gap-2">
           <button onClick={handleMonthDownload} disabled={monthDownloading}
-            className="py-2 text-xs font-semibold rounded-lg border border-slate-200 text-slate-600 hover:border-slate-300 flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50">
+            className="py-2 text-xs font-semibold rounded-lg border border-slate-200 dark:border-zinc-600 text-slate-600 dark:text-zinc-300 hover:border-slate-300 dark:hover:border-zinc-500 flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50">
             {monthDownloading ? <Loader2 size={11} className="animate-spin" /> : <Download size={11} />}
             Download
           </button>
@@ -73,9 +73,9 @@ export function ReceiptMonthlyPanel({
               : <><Mail size={11} /> Email Admins</>}
           </button>
         </div>
-        <div className="flex items-center gap-2 rounded-lg bg-slate-50 border border-slate-100 px-3 py-2">
-          <TrendingUp size={11} className="text-slate-400 shrink-0" />
-          <p className="text-[10px] text-slate-500">Next auto-run: <strong className="text-slate-700">{nextExport}</strong></p>
+        <div className="flex items-center gap-2 rounded-lg bg-slate-50 dark:bg-zinc-700 border border-slate-100 dark:border-zinc-600 px-3 py-2">
+          <TrendingUp size={11} className="text-slate-400 dark:text-zinc-400 shrink-0" />
+          <p className="text-[10px] text-slate-500 dark:text-zinc-400">Next auto-run: <strong className="text-slate-700 dark:text-zinc-200">{nextExport}</strong></p>
         </div>
       </div>
     </div>
