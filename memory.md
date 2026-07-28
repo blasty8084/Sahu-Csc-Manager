@@ -150,8 +150,8 @@ New two-phase flow:
 
 | Task | Status |
 |------|--------|
-| Email notifications fully configured | ✅ Done (SMTP live, OTP emails working) |
-| Redis / BullMQ worker server | ⏳ Pending — needs `REDIS_URL` secret |
+| Email notifications | ❌ Removed — SMTP/nodemailer removed in v4.10.1 |
+| Redis / BullMQ worker server | ❌ Removed — Redis/BullMQ removed in v4.10.1 |
 | Publish to stable URL | ⏳ Pending — deploy workflow not run |
 | CORS_ORIGIN includes current dev domain | ✅ In env vars |
 
@@ -176,8 +176,8 @@ New two-phase flow:
 |------|-------|
 | API Server | Running, port 8080 |
 | Frontend | Running, port 5000 (Vite dev) |
-| Worker Server | Not running (no REDIS_URL) |
-| Database | Schema applied, seeded |
-| SMTP | ✅ Working (Gmail, verified) |
+| Worker Server | Skips cleanly (Redis removed) |
+| Database | Replit built-in PostgreSQL, schema applied, seeded |
+| SMTP | Removed in v4.10.1 — email is a no-op |
 | 2FA | ✅ Fixed + redesigned |
-| Secrets set | SESSION_SECRET, ADMIN_PASSWORD, OPERATOR_PASSWORD, SMTP_PASS |
+| Secrets set | SESSION_SECRET, ADMIN_PASSWORD, OPERATOR_PASSWORD |

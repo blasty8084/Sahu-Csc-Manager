@@ -34,8 +34,7 @@ Target users: rural Odisha CSC operators. UI languages: English, Hindi, Odia (`i
 │   │   │   └── services/    # notificationTemplates, monthly-export
 │   │   └── build.mjs        # esbuild bundler (outputs dist/index.mjs)
 │   │
-│   ├── worker-server/       # BullMQ consumers — port 8081 (optional, needs REDIS_URL)
-│   │   └── src/queues/      # notification.worker, email.worker, pdf.worker, sms.worker
+│   ├── worker-server/       # BullMQ skeleton — port 8081 (skips cleanly; REDIS_URL not configured)
 │   │
 │   ├── sahu-csc/            # React 19 + Vite PWA frontend — port 5000
 │   │   └── src/
@@ -75,13 +74,10 @@ Target users: rural Odisha CSC operators. UI languages: English, Hindi, Odia (`i
 | Backend framework | Express 5.2 |
 | ORM | Drizzle ORM + drizzle-kit |
 | Database | PostgreSQL (Neon · user-managed via `NEON_DATABASE_URL`; falls back to Replit-managed `DATABASE_URL`) |
-| File storage | Backblaze B2 S3-compatible storage (optional; local/base64 fallbacks remain available) |
 | Session | express-session + connect-pg-simple (`session` table) |
-| Cache | In-process TTL map (default) or Upstash Redis (`CACHE_BACKEND=redis`) |
-| Queue | BullMQ + ioredis (optional, needs `REDIS_URL`) |
+| Cache | In-process TTL map (per-process; resets on restart) |
 | Auth | bcryptjs (cost 12), express-session, TOTP via `otplib`, QR via `qrcode` |
 | Encryption | AES-256-GCM (`lib/encryption.ts`), key persisted in `settings` table |
-| Email | Nodemailer → Gmail SMTP (`smtp.gmail.com:587`) |
 | Push notifications | web-push, VAPID keys auto-generated + persisted in `settings` table |
 | Logging | Pino |
 | Observability | Sentry (optional, `SENTRY_DSN`) |
@@ -113,37 +109,19 @@ Target users: rural Odisha CSC operators. UI languages: English, Hindi, Odia (`i
 | `PORT` | `5000` | Frontend Vite port |
 | `API_PORT` | `8080` | Backend Express port |
 | `BASE_PATH` | `/` | URL base path |
-| `CACHE_BACKEND` | `memory` or `redis` | Cache driver |
 | `DB_POOL_MAX` | `5` | Max pg pool connections (prevents exhaustion) |
 | `CORS_ORIGIN` | comma-separated URLs (optional) | Extra allowed origins — `REPLIT_DEV_DOMAIN` and `REPLIT_DOMAINS` are now included automatically; this var is only needed for non-Replit origins |
-
-SMTP variables are optional and only needed for email OTP, password reset, and email notifications:
-`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, and `SMTP_FROM_EMAIL` are shared variables; `SMTP_PASSWORD`
-is a secret (legacy alias: `SMTP_PASS`).
 
 ### Optional Secrets
 | Key | Purpose |
 |-----|---------|
-| `SMTP_PASSWORD` | Gmail app password for email OTP/notifications (legacy alias: `SMTP_PASS` also accepted); email features remain disabled when absent |
-| `REDIS_URL` | Upstash direct TCP URL (`rediss://...`) — enables BullMQ Worker Server |
-| `UPSTASH_REDIS_REST_URL` | Upstash REST endpoint for shared cache |
-| `UPSTASH_REDIS_REST_TOKEN` | Upstash REST token |
-| `B2_KEY_ID` | Backblaze B2 application key ID for optional avatar and backup storage |
-| `B2_APP_KEY` | Backblaze B2 application key for optional avatar and backup storage |
-| `B2_BUCKET_NAME` | Private B2 bucket name |
-| `B2_BUCKET_ENDPOINT` | B2 S3-compatible endpoint; accepts a full URL or hostname |
 | `ENCRYPTION_KEY` | 32-byte base64 AES key (auto-generated if absent) |
 | `MAXMIND_LICENSE_KEY` | Weekly GeoIP database updates |
 | `SENTRY_DSN` | Server-side error tracking |
 | `VITE_SENTRY_DSN` | Client-side error tracking |
 
-### Database connection secret
-| Key | Purpose |
-|-----|---------|
-| `NEON_DATABASE_URL` | Neon PostgreSQL connection string — set as a Replit Secret. This is the active database connection; `lib/db` falls back to `DATABASE_URL` only when it is absent. |
-
 ### Runtime-managed (never set manually)
-`DATABASE_URL` (Replit-managed PostgreSQL fallback), `PGDATABASE`, `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `REPLIT_DOMAINS`, `REPLIT_DEV_DOMAIN`, `REPL_ID`
+`DATABASE_URL` (Replit-managed PostgreSQL), `PGDATABASE`, `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `REPLIT_DOMAINS`, `REPLIT_DEV_DOMAIN`, `REPL_ID`
 
 ### Auto-generated (stored in `settings` table)
 `ENCRYPTION_KEY` equivalent, VAPID public/private key pair, JWT secret
@@ -170,7 +148,7 @@ Primary user table. Roles: `admin`, `operator`, `user`.
 | `role` | enum | `admin` / `operator` / `user` |
 | `status` | enum | `ACTIVE` / `PENDING` / `LOCKED` / `SUSPENDED` / `DELETED` / `INACTIVE` |
 | `fullName` | text nullable | |
-| `profilePicture` | text nullable | WebP base64 fallback or `b2:<object-key>` when B2 is configured; resized to 512×512 server-side |
+| `profilePicture` | text nullable | WebP base64 data URL; resized to 512×512 and re-encoded server-side |
 | `bio` | text nullable | AES-256-GCM encrypted |
 | `address` | text nullable | AES-256-GCM encrypted |
 | `isActive` | boolean | |
@@ -445,8 +423,7 @@ All routes mount under `/api/`. Auth middleware: `requireAuth` (session), `requi
 | PATCH | `/admin/settings/registration` | requireRole("admin") | Toggle registration open/closed. |
 | GET | `/settings` | requireAuth | App settings. |
 | PATCH | `/settings` | requireRole("admin") | Update settings. |
-| GET/PATCH | `/settings/smtp` | requireRole("admin") | SMTP config. |
-| POST | `/settings/smtp/test` | requireRole("admin") | Send SMTP test email. |
+| GET/PATCH | `/settings/smtp` | requireRole("admin") | SMTP config (returns 501 — email removed). |
 | GET | `/settings/vapid` | requireRole("admin") | VAPID public key. |
 | POST | `/settings/vapid/rotate` | requireRole("admin") | Rotate VAPID keys. |
 | GET | `/settings/contact` | — | Public contact info. |
@@ -654,19 +631,12 @@ pnpm --filter @workspace/db run push-force
 | Job | Schedule | Description |
 |-----|----------|-------------|
 | OTP cleanup | Every 1 hour | Delete expired `email_otps` rows |
-| Monthly receipt export | `5 0 1 * *` (1st of month, midnight IST) | PDF/ZIP → email to admins |
+| Monthly receipt export | `5 0 1 * *` (1st of month, midnight IST) | PDF/ZIP built locally (email disabled) |
 | GeoIP update | `0 3 * * 0` (Sunday 3am) | MaxMind DB update via `geoip-lite` (needs `MAXMIND_LICENSE_KEY`) |
 | Auto-backup | Disabled by default | Configurable in settings |
 
-### BullMQ Queues (when REDIS_URL set)
-| Queue | Workers |
-|-------|---------|
-| `notifications` | Web push send |
-| `emails` | Nodemailer send |
-| `pdf-generation` | Receipt PDF (stub → real) |
-| `sms` | SMS (stub) |
-
-Without `REDIS_URL`: all queues fall back to direct in-process execution.
+### Notification delivery
+Push notifications are sent directly (fire-and-forget) via `enqueueNotification`. No queue or Redis required. Email sending is a no-op (SMTP removed).
 
 ---
 
@@ -682,11 +652,9 @@ Without `REDIS_URL`: all queues fall back to direct in-process execution.
 
 4. **`position: fixed` bottom nav breaks with `willChange: transform` on parent** — the page-transition `motion.div` must NOT set `willChange: transform`; it creates a new CSS containing block.
 
-5. **drizzle-orm dual-peer variant** — adding any optional peer of drizzle-orm (e.g. `@upstash/redis`, `@opentelemetry/api`) only to one workspace triggers a second drizzle-orm resolution. Fix: add the dep to both `api-server` AND `lib/db`.
+5. **drizzle-orm dual-peer variant** — adding any optional peer of drizzle-orm (e.g. `@opentelemetry/api`) only to one workspace triggers a second drizzle-orm resolution. Fix: add the dep to both `api-server` AND `lib/db`.
 
-6. **`REDIS_URL` must be direct TCP (`rediss://...`)** — not the Upstash REST URL. BullMQ/ioredis cannot use the HTTP REST endpoint.
-
-7. **AES-256-GCM encrypted fields** — only encrypt fields NOT used in `ILIKE` search. `name`, `mobile`, `email` must stay plaintext. Encrypted: `address`, `bio`, `notes`, `totpSecret`, `backupCodes`.
+6. **AES-256-GCM encrypted fields** — only encrypt fields NOT used in `ILIKE` search. `name`, `mobile`, `email` must stay plaintext. Encrypted: `address`, `bio`, `notes`, `totpSecret`, `backupCodes`.
 
 8. **`archiver@8` is ESM-only** — use `new ZipArchive(opts)` named export, NOT the legacy callable `archiver(format, opts)` factory.
 
@@ -704,9 +672,8 @@ Without `REDIS_URL`: all queues fall back to direct in-process execution.
 
 15. **`finalizeLogin` is the single codepath** for all successful logins (direct + OTP + TOTP). If you add post-login logic, put it there.
 
-16. **SMTP is optional for boot** — `isSmtpConfigured()` checks `SMTP_HOST + SMTP_USER + (SMTP_PASSWORD ?? SMTP_PASS)`. If unconfigured, email OTP/password reset/notifications are unavailable, but password login and TOTP/backup-code flows still work.
-17. **B2 is optional and local-first** — avatars use base64 PostgreSQL storage and backups use `./backups/` when B2 is absent; configured B2 mirrors avatar/backup objects and provides download/restore fallback.
-18. **B2 endpoints are normalized** — `B2_BUCKET_ENDPOINT` receives an `https://` prefix when supplied as a hostname only.
+16. **Email is permanently disabled** — `isSmtpConfigured()` always returns `false`; all `send*Email` functions are no-ops. Password/TOTP/backup-code login still works. OTP 2FA on login is token-only (no email delivery).
+17. **Avatars are always base64** — stored as WebP data URLs in the `users.profilePicture` column. Legacy `b2:` prefixed values are treated as null (user must re-upload).
 
 ---
 

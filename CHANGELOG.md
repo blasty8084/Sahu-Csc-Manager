@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Changelog
-**Current version: 4.10.0 — July 27, 2026**
+**Current version: 4.10.1 — July 28, 2026**
 
 > Single authoritative changelog covering all versions from v1.x through v4.x.
 > - **v3.x / v4.x entries** (current) — listed first, newest at top
@@ -66,6 +66,39 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## v4.10.1 — Remove optional external services (July 28, 2026)
+
+**Redis, Backblaze B2, and SMTP/email removed from the codebase.**
+
+### What was removed
+
+| Service | What it did | What replaced it |
+|---------|------------|-----------------|
+| **Redis** (`ioredis`, `bullmq`, `rate-limit-redis`, `@upstash/redis`) | Background job queue, shared rate-limit counters, pluggable cache | Rate limiters use in-memory store; notifications sent directly; cache always in-memory |
+| **Backblaze B2** (`@aws-sdk/client-s3`, `@aws-sdk/s3-request-presigner`) | Avatar and backup file storage | Avatars stored as base64 WebP data URLs in the database; backups local-only |
+| **SMTP / Email** (`nodemailer`) | OTP delivery, approval emails, broadcast emails, monthly export emails | All email functions are no-ops; app boots and operates without email |
+
+### Files changed
+- `artifacts/api-server/src/app.ts` — removed ioredis + RedisStore, rate limiters now always in-memory
+- `artifacts/api-server/src/lib/env.ts` — removed REDIS_URL, UPSTASH_*, B2_* from env object
+- `artifacts/api-server/src/lib/b2.ts` — replaced with stub (isB2Configured always false)
+- `artifacts/api-server/src/lib/queue-client.ts` — removed BullMQ/ioredis; enqueueNotification is direct; enqueueEmail is no-op
+- `artifacts/api-server/src/lib/cache/backend.ts` — always uses memory backend; redisBackend.ts deleted
+- `artifacts/api-server/src/lib/mailer/index.ts` — replaced with no-op stubs
+- `artifacts/api-server/src/lib/mailer/transport.ts` — removed nodemailer; isSmtpConfigured returns false
+- `artifacts/api-server/src/lib/monthly-export/email.ts` — replaced with no-op
+- `artifacts/api-server/src/routes/profile.ts` — avatar always stored as base64
+- `artifacts/api-server/src/routes/auth/helpers.ts` — removed B2 signed URL resolution
+- `artifacts/api-server/src/services/backupCore.ts` — removed B2 upload/download
+- `artifacts/api-server/src/routes/setup-status.ts` — removed SMTP check from missing list
+- `artifacts/api-server/src/routes/settings/smtp.ts` — returns 501 (not available)
+- `artifacts/api-server/package.json` — removed 7 packages; `-29 packages` total after pnpm prune
+
+### Docs updated
+`setup.md`, `secrets.md`, `MULTI_INSTANCE_SETUP.md`, `AGENT.md`, this changelog
 
 ---
 

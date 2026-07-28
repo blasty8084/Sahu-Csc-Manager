@@ -20,22 +20,17 @@
 - [Manual vendor chunking](vite-bundle-chunking.md) — split every heavy/independent npm lib (radix, i18n, forms, date, icons) into its own manualChunks entry to keep the app's main JS chunk under Vite's 500KB warning threshold
 - [archiver v8 breaking change](archiver-v8-esm.md) — archiver@8 is ESM-only, dropped the callable `archiver(format, opts)` factory; must use `new ZipArchive(opts)` from its named export instead
 - [Field-level encryption scope](field-encryption-scope.md) — only encrypt free-text PII not used in ILIKE search; searched fields (name/mobile/email) must stay plaintext or search breaks
-- [Auto-generated secrets pattern](field-encryption-scope.md) — persist generated crypto keys in the settings table (like VAPID keys) instead of requesting a secret from the user, when the key is purely internal
-- [Color token replacement](color-token-replacement.md) — scripts/replace-colors.mjs; rgba helper double-escape bug; what stays un-tokenized
-- [Doc sprawl in this project](doc-sprawl.md) — many parallel versioned .md files (replit.md, DOCS.md, CHANGELOG.md, CHANGELOG_V3.md, BUILD.md, WORKFLOWS.md, ReplitV3.md, architectureV3.md) must all be updated together on version bumps; v2 files are superseded and skipped
 - [Auto-generated secrets pattern](auto-generated-secrets.md) — encryption key + VAPID both eager-init at startup via ensureEncryptionKey/ensureVapidKeys; initPush after; settings table persists
-- [Query cache & load testing](query-cache-and-loadtest.md) — TTL cache scoping per-user vs global; rate-limiter loopback skip must be gated non-production since trust proxy makes req.ip spoofable
+- [Color token replacement](color-token-replacement.md) — scripts/replace-colors.mjs; rgba helper double-escape bug; what stays un-tokenized
+- [Doc sprawl in this project](doc-sprawl.md) — many parallel versioned .md files (replit.md, DOCS.md, CHANGELOG.md, AGENT.md, ARCHITECTURE.md, setup.md, secrets.md) must all be updated together on service/version changes
+- [Query cache & load testing](query-cache-and-loadtest.md) — TTL cache scoping per-user vs global; cache is always in-memory (Redis backend removed); rate-limiter loopback skip must be gated non-production
 - [Large page file split pattern](page-split-pattern.md) — recipe for splitting huge pages/*.tsx into components/<page>/ + hooks/use<Page>.ts without behavior changes; verify via authenticated curl, not Screenshot
 - [Sentry + drizzle-orm dual-peer fix](sentry-drizzle-peer.md) — @sentry/node adds @opentelemetry/api → second drizzle-orm peer variant → TS type conflicts; fix: add @opentelemetry/api to both api-server AND lib/db
-- [Pluggable cache backend](pluggable-cache-backend.md) — CACHE_BACKEND env picks memory (default) vs Redis; same drizzle-orm dual-peer bug recurs with any new optional-peer dep; user delete leaves orphaned rows in tables with no FK
-- [Worker server architecture](worker-server-architecture.md) — BullMQ on port 8081; REDIS_URL must be direct TCP (not REST URL); graceful fallback to direct calls when absent; build.mjs needs globalThis.require polyfill
 - [receipt_counters per-user schema](receipt-counters-schema.md) — composite PK (user_id, year); drizzle-kit push fails on NOT NULL column add; must DROP and recreate table (counters only, actual numbers stored in ledger)
 - [Login-time 2FA method choice](login-2fa-method-choice.md) — mid-login OTP/TOTP switch + inline TOTP enrollment; pendingUserId-only endpoints, pendingTotpEnrolling flag, mirror DB updates onto in-memory user objects
 - [Explicit 2FA method picker](login-2fa-method-choice.md) — login NO LONGER auto-sends OTP; returns requires2fa with no method field; TwoFactorStep shows card picker first; switch-method triggers OTP send or TOTP entry; TwoFaChallenge type has no method/otpError
 - [TOTP standard 30-second period](totp-standard-period.md) — step must stay 30 s; major apps ignore period param; replay protection in-memory; timing-safe compare; QR export required for external apps
-- [Pre-existing TS errors in this project](preexisting-ts-errors.md) — AepsTransactionTable.tsx has session-possibly-null errors; queue-client.ts has ioredis/BullMQ type conflicts; both pre-date all L-series work and are not introduced by refactors
-- [Backblaze B2 integration](b2-integration.md) — optional S3-compatible avatar/backup storage; normalize hostname-only endpoints and preserve local/base64 fallback
-- [B2 avatar response contract](b2-avatar-response.md) — never expose `b2:` storage keys to the browser; auth and profile responses must return signed image URLs
+- [External services removed](external-services-removed.md) — Redis/BullMQ, Backblaze B2, and SMTP/nodemailer all removed in v4.10.1; avatars always base64; emails always no-op; cache always in-memory
 - [Shared health probing](shared-health-probing.md) — use one browser-global network probe; lazy chunks can otherwise create duplicate `/api/health` timers
 - [Theme visual store](theme-visual-store.md) — keep theme outside the React tree; only controls/renderers subscribe, while pages use CSS variables and dark selectors
 - [serve.mjs API proxy](serve-api-proxy.md) — production serve script must proxy /api/* to port 8080; without it sirv SPA-fallback returns index.html as a string → runtime crash
