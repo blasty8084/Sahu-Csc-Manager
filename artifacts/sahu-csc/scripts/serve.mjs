@@ -46,6 +46,27 @@ const assets = sirv(dir, {
   },
 });
 
+// Proxy /__mockup/* to the mockup sandbox dev server (port 5173).
+const mockupPort = 5173;
+function proxyToMockup(req, res) {
+  const options = {
+    hostname: "127.0.0.1",
+    port: mockupPort,
+    path: req.url,
+    method: req.method,
+    headers: { ...req.headers, host: `127.0.0.1:${mockupPort}` },
+  };
+  const proxy = httpRequest(options, (apiRes) => {
+    res.writeHead(apiRes.statusCode, apiRes.headers);
+    apiRes.pipe(res, { end: true });
+  });
+  proxy.on("error", (err) => {
+    if (!res.headersSent) res.writeHead(502, { "Content-Type": "text/plain" });
+    res.end(`Mockup sandbox unavailable: ${err.message}`);
+  });
+  req.pipe(proxy, { end: true });
+}
+
 // Proxy /api/* and /socket.io/* requests to the API server on apiPort.
 function proxyToApi(req, res) {
   const options = {
@@ -76,6 +97,11 @@ createServer((req, res) => {
   // Forward API and WebSocket upgrade paths to the API server.
   if (req.url.startsWith("/api/") || req.url.startsWith("/socket.io/")) {
     return proxyToApi(req, res);
+  }
+
+  // Forward mockup sandbox requests to the vite dev server.
+  if (req.url.startsWith("/__mockup")) {
+    return proxyToMockup(req, res);
   }
 
   // Everything else: serve static files with SPA fallback.
