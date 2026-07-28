@@ -4,6 +4,7 @@ import { BackupScheduleSkeleton } from "@/components/skeletons";
 import { NavyCard, CardHead } from "@/components/backups/BackupCards";
 import { DAYS } from "@/hooks/useBackups";
 import type { ScheduleConfig } from "@/hooks/useBackups";
+import { ClockTimePicker } from "@/components/backups/ClockTimePicker";
 
 interface BackupScheduleCardProps {
   schedule: ScheduleConfig;
@@ -76,11 +77,9 @@ export function BackupScheduleCard({
 
             <div className="space-y-1.5">
               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Time (24h)</p>
-              <input
-                type="time"
+              <ClockTimePicker
                 value={schedule.time}
-                onChange={(e) => setSchedule((s) => ({ ...s, time: e.target.value }))}
-                className="px-3 py-1.5 border border-slate-200 dark:border-zinc-600 rounded-lg text-sm bg-slate-50 dark:bg-zinc-700 dark:text-zinc-100 w-full focus:outline-none focus:ring-2 focus:ring-[var(--brand-navy-800)]/20"
+                onChange={(t) => setSchedule((s) => ({ ...s, time: t }))}
               />
             </div>
 
