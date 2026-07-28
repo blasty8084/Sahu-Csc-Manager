@@ -1,50 +1,135 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Clock } from "lucide-react";
 
-interface ClockTimePickerProps {
-  value: string; // "HH:MM" 24h
-  onChange: (value: string) => void;
-}
-
+// ── helpers ────────────────────────────────────────────────────────────────────
 function to12(h24: number): { h: number; period: "AM" | "PM" } {
   const period: "AM" | "PM" = h24 < 12 ? "AM" : "PM";
   const h = h24 === 0 ? 12 : h24 > 12 ? h24 - 12 : h24;
   return { h, period };
 }
-
 function to24(h12: number, period: "AM" | "PM"): number {
   if (period === "AM") return h12 === 12 ? 0 : h12;
   return h12 === 12 ? 12 : h12 + 12;
 }
 
+// ── DrumColumn ─────────────────────────────────────────────────────────────────
+const ITEM_H = 48;
+
+function DrumColumn({
+  items,
+  selectedIndex,
+  onChange,
+}: {
+  items: string[];
+  selectedIndex: number;
+  onChange: (idx: number) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const dragStartY = useRef<number | null>(null);
+  const dragStartIdx = useRef<number>(selectedIndex);
+  const isDragging = useRef(false);
+
+  function onPointerDown(e: React.PointerEvent) {
+    isDragging.current = false;
+    dragStartY.current = e.clientY;
+    dragStartIdx.current = selectedIndex;
+    containerRef.current?.setPointerCapture(e.pointerId);
+  }
+  function onPointerMove(e: React.PointerEvent) {
+    if (dragStartY.current === null) return;
+    const delta = e.clientY - dragStartY.current;
+    if (Math.abs(delta) > 3) isDragging.current = true;
+    const shifted = Math.round(-delta / ITEM_H);
+    const next = Math.max(0, Math.min(items.length - 1, dragStartIdx.current + shifted));
+    if (next !== selectedIndex) onChange(next);
+  }
+  function onPointerUp(e: React.PointerEvent) {
+    dragStartY.current = null;
+    containerRef.current?.releasePointerCapture(e.pointerId);
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative w-full h-[144px] overflow-hidden select-none touch-none cursor-grab active:cursor-grabbing rounded-xl"
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+    >
+      {/* scrolling strip */}
+      <div
+        className="absolute w-full transition-transform duration-200 ease-out"
+        style={{ transform: `translateY(${ITEM_H - selectedIndex * ITEM_H}px)` }}
+      >
+        {items.map((item, idx) => (
+          <div
+            key={idx}
+            onClick={() => { if (!isDragging.current) onChange(idx); }}
+            className={`flex items-center justify-center h-[48px] transition-all duration-200 ${
+              idx === selectedIndex
+                ? "text-gray-900 font-bold text-2xl tracking-tight"
+                : Math.abs(idx - selectedIndex) === 1
+                ? "text-gray-400 font-medium text-lg"
+                : "text-gray-300 font-medium text-base opacity-40"
+            }`}
+          >
+            {item}
+          </div>
+        ))}
+      </div>
+
+      {/* selection band */}
+      <div className="absolute inset-y-[48px] left-1 right-1 border-y-2 border-indigo-100/80 bg-indigo-50/40 pointer-events-none rounded-lg" />
+      {/* top fade */}
+      <div className="absolute top-0 left-0 right-0 h-[48px] bg-gradient-to-b from-white via-white/80 to-transparent pointer-events-none" />
+      {/* bottom fade */}
+      <div className="absolute bottom-0 left-0 right-0 h-[48px] bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none" />
+    </div>
+  );
+}
+
+// ── ClockTimePicker ────────────────────────────────────────────────────────────
+interface ClockTimePickerProps {
+  value: string; // "HH:MM" 24-hour
+  onChange: (value: string) => void;
+}
+
+const HOURS   = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));
+const MINUTES = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, "0"));
+const PERIODS = ["AM", "PM"];
+
 export function ClockTimePicker({ value, onChange }: ClockTimePickerProps) {
   const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState<"hour" | "minute">("hour");
 
-  const [h24, m] = value.split(":").map(Number);
-  const { h: initH, period: initPeriod } = to12(h24 || 0);
+  // Derive initial drum indices from the 24h value
+  function indicesFrom(v: string) {
+    const [h24, m] = v.split(":").map(Number);
+    const { h, period } = to12(h24 || 0);
+    return {
+      hourIdx:   Math.max(0, HOURS.indexOf(String(h).padStart(2, "0"))),
+      minIdx:    Math.max(0, MINUTES.indexOf(String(Math.round((m || 0) / 5) * 5).padStart(2, "0"))),
+      periodIdx: period === "AM" ? 0 : 1,
+    };
+  }
 
-  const [hour, setHour] = useState(initH || 12);
-  const [minute, setMinute] = useState(m || 0);
-  const [period, setPeriod] = useState<"AM" | "PM">(initPeriod);
-
-  // Sync state when value changes externally
-  useEffect(() => {
-    const [h, mn] = value.split(":").map(Number);
-    const { h: h12, period: p } = to12(h || 0);
-    setHour(h12);
-    setMinute(mn || 0);
-    setPeriod(p);
-  }, [value]);
+  const init = indicesFrom(value);
+  const [hourIdx,   setHourIdx]   = useState(init.hourIdx);
+  const [minIdx,    setMinIdx]    = useState(init.minIdx);
+  const [periodIdx, setPeriodIdx] = useState(init.periodIdx);
 
   function openPicker() {
-    setMode("hour");
+    // Sync drum positions to the current value each time the picker opens
+    const { hourIdx: h, minIdx: m, periodIdx: p } = indicesFrom(value);
+    setHourIdx(h);
+    setMinIdx(m);
+    setPeriodIdx(p);
     setOpen(true);
   }
 
   function handleSet() {
-    const h = to24(hour, period);
-    onChange(`${String(h).padStart(2, "0")}:${String(minute).padStart(2, "0")}`);
+    const h24 = to24(Number(HOURS[hourIdx]), PERIODS[periodIdx] as "AM" | "PM");
+    onChange(`${String(h24).padStart(2, "0")}:${MINUTES[minIdx]}`);
     setOpen(false);
   }
 
@@ -53,287 +138,90 @@ export function ClockTimePicker({ value, onChange }: ClockTimePickerProps) {
     setOpen(false);
   }
 
-  // Clock face interactions
-  const clockRef = useRef<SVGSVGElement>(null);
-
-  function angleFromEvent(e: React.PointerEvent | React.TouchEvent) {
-    const svg = clockRef.current;
-    if (!svg) return 0;
-    const rect = svg.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    let clientX: number, clientY: number;
-    if ("touches" in e) {
-      clientX = e.touches[0].clientX;
-      clientY = e.touches[0].clientY;
-    } else {
-      clientX = e.clientX;
-      clientY = e.clientY;
-    }
-    const angle = Math.atan2(clientY - cy, clientX - cx) * (180 / Math.PI) + 90;
-    return ((angle % 360) + 360) % 360;
-  }
-
-  function pickFromAngle(angle: number) {
-    if (mode === "hour") {
-      const h = Math.round(angle / 30) % 12 || 12;
-      setHour(h);
-    } else {
-      const mn = Math.round(angle / 6) % 60;
-      setMinute(mn);
-    }
-  }
-
-  const isDragging = useRef(false);
-
-  function onPointerDown(e: React.PointerEvent) {
-    isDragging.current = true;
-    (e.target as Element).setPointerCapture?.(e.pointerId);
-    pickFromAngle(angleFromEvent(e));
-  }
-  function onPointerMove(e: React.PointerEvent) {
-    if (!isDragging.current) return;
-    pickFromAngle(angleFromEvent(e));
-  }
-  function onPointerUp(e: React.PointerEvent) {
-    if (!isDragging.current) return;
-    isDragging.current = false;
-    pickFromAngle(angleFromEvent(e));
-    if (mode === "hour") setMode("minute");
-  }
-
-  // Clock geometry
-  const SIZE = 240;
-  const CX = SIZE / 2;
-  const CY = SIZE / 2;
-  const R = 95;
-
-  const handAngle =
-    mode === "hour"
-      ? ((hour % 12) / 12) * 360 - 90
-      : (minute / 60) * 360 - 90;
-
-  const handRad = (handAngle * Math.PI) / 180;
-  const handX = CX + R * 0.78 * Math.cos(handRad);
-  const handY = CY + R * 0.78 * Math.sin(handRad);
-
-  const ticks = mode === "hour"
-    ? Array.from({ length: 12 }, (_, i) => i + 1)
-    : Array.from({ length: 12 }, (_, i) => i * 5);
-
-  const displayHour = String(hour).padStart(2, "0");
-  const displayMin = String(minute).padStart(2, "0");
-  const displayValue = value
-    ? `${String(h24).padStart(2, "0")}:${String(m).padStart(2, "0")}`
+  // Friendly display on the trigger button
+  const [h24raw, mraw] = value.split(":").map(Number);
+  const display = value
+    ? `${String(h24raw).padStart(2, "0")}:${String(mraw).padStart(2, "0")}`
     : "--:--";
 
   return (
     <>
-      {/* Trigger */}
+      {/* ── Trigger ── */}
       <button
         type="button"
         onClick={openPicker}
         className="w-full flex items-center gap-2.5 px-3 py-2 border border-slate-200 dark:border-zinc-600 rounded-lg bg-slate-50 dark:bg-zinc-700 hover:bg-white dark:hover:bg-zinc-600 transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--brand-navy-800)]/30"
       >
-        <Clock size={15} className="text-[var(--brand-navy-800)] dark:text-blue-300 shrink-0" />
+        <Clock size={15} className="text-indigo-500 shrink-0" />
         <span className="text-sm font-mono font-semibold text-slate-700 dark:text-zinc-100 tracking-wide">
-          {displayValue}
+          {display}
         </span>
         <span className="ml-auto text-[10px] font-medium text-slate-400 dark:text-zinc-400 uppercase tracking-wider">
           24h
         </span>
       </button>
 
-      {/* Overlay */}
+      {/* ── Dialog ── */}
       {open && (
         <div
           className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
-          style={{ background: "rgba(0,0,0,0.55)" }}
+          style={{ background: "rgba(0,0,0,0.45)" }}
           onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}
         >
-          <div className="w-full max-w-xs mx-4 mb-4 sm:mb-0 rounded-2xl overflow-hidden shadow-2xl"
-            style={{ background: "linear-gradient(160deg, #0f1f3d 0%, #1a2e52 100%)" }}>
+          <div className="w-full max-w-[390px] mx-4 mb-4 sm:mb-0 bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col">
 
-            {/* Time display */}
-            <div className="px-6 pt-5 pb-3">
-              <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-blue-300/60 mb-2">
-                Select time
-              </p>
-              <div className="flex items-baseline gap-1">
-                <button
-                  onClick={() => setMode("hour")}
-                  className={`text-5xl font-bold tabular-nums tracking-tight transition-colors rounded px-1 -mx-1 ${
-                    mode === "hour"
-                      ? "text-white"
-                      : "text-blue-300/50 hover:text-blue-200/70"
-                  }`}
-                >
-                  {displayHour}
-                </button>
-                <span className="text-4xl font-bold text-white/40 select-none">:</span>
-                <button
-                  onClick={() => setMode("minute")}
-                  className={`text-5xl font-bold tabular-nums tracking-tight transition-colors rounded px-1 -mx-1 ${
-                    mode === "minute"
-                      ? "text-white"
-                      : "text-blue-300/50 hover:text-blue-200/70"
-                  }`}
-                >
-                  {displayMin}
-                </button>
+            {/* header */}
+            <div className="px-6 py-5 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shadow-sm">
+                <Clock className="w-6 h-6 text-indigo-600" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 tracking-tight">Select Time</h2>
+                <p className="text-sm text-gray-500 font-medium">Schedule backup</p>
+              </div>
+            </div>
 
-                {/* AM/PM */}
-                <div className="ml-3 flex flex-col gap-1">
-                  {(["AM", "PM"] as const).map((p) => (
-                    <button
-                      key={p}
-                      onClick={() => setPeriod(p)}
-                      className={`text-xs font-bold px-2 py-0.5 rounded transition-colors ${
-                        period === p
-                          ? "bg-[var(--brand-orange)] text-white"
-                          : "text-blue-200/50 hover:text-blue-200/80"
-                      }`}
-                    >
-                      {p}
-                    </button>
-                  ))}
+            {/* drums */}
+            <div className="px-6 py-6 bg-slate-50/50 flex flex-col items-center border-y border-gray-100">
+              <div className="flex items-center justify-center bg-white rounded-[24px] shadow-sm border border-gray-100 p-3 w-full">
+                <div className="flex-1 max-w-[80px]">
+                  <DrumColumn items={HOURS}   selectedIndex={hourIdx}   onChange={setHourIdx}   />
+                </div>
+                <div className="text-3xl font-bold text-gray-300 px-1 flex flex-col justify-center h-[144px]">:</div>
+                <div className="flex-1 max-w-[80px]">
+                  <DrumColumn items={MINUTES} selectedIndex={minIdx}    onChange={setMinIdx}    />
+                </div>
+                <div className="w-3" />
+                <div className="flex-1 max-w-[80px]">
+                  <DrumColumn items={PERIODS} selectedIndex={periodIdx} onChange={setPeriodIdx} />
                 </div>
               </div>
-
-              {/* Mode indicator */}
-              <div className="flex gap-3 mt-3">
-                {(["hour", "minute"] as const).map((md) => (
-                  <button
-                    key={md}
-                    onClick={() => setMode(md)}
-                    className={`text-[10px] font-semibold uppercase tracking-wider pb-1 border-b-2 transition-colors ${
-                      mode === md
-                        ? "border-[var(--brand-orange)] text-white"
-                        : "border-transparent text-blue-300/40 hover:text-blue-300/60"
-                    }`}
-                  >
-                    {md}
-                  </button>
-                ))}
-              </div>
             </div>
 
-            {/* Clock face */}
-            <div className="flex justify-center px-4 pb-3">
-              <div
-                className="rounded-full"
-                style={{
-                  background: "radial-gradient(circle, #162444 60%, #0d1a33 100%)",
-                  padding: 4,
-                  boxShadow: "inset 0 2px 12px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.06)",
-                }}
-              >
-                <svg
-                  ref={clockRef}
-                  width={SIZE}
-                  height={SIZE}
-                  viewBox={`0 0 ${SIZE} ${SIZE}`}
-                  onPointerDown={onPointerDown}
-                  onPointerMove={onPointerMove}
-                  onPointerUp={onPointerUp}
-                  style={{ touchAction: "none", cursor: "pointer", borderRadius: "50%", display: "block" }}
-                >
-                  {/* Clock ring */}
-                  <circle cx={CX} cy={CY} r={R + 6} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
-
-                  {/* Tick marks */}
-                  {Array.from({ length: 60 }, (_, i) => {
-                    const a = (i / 60) * 2 * Math.PI - Math.PI / 2;
-                    const isMajor = i % 5 === 0;
-                    const r1 = R - (isMajor ? 10 : 5);
-                    const r2 = R - 2;
-                    return (
-                      <line
-                        key={i}
-                        x1={CX + r1 * Math.cos(a)} y1={CY + r1 * Math.sin(a)}
-                        x2={CX + r2 * Math.cos(a)} y2={CY + r2 * Math.sin(a)}
-                        stroke={isMajor ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.07)"}
-                        strokeWidth={isMajor ? 1.5 : 1}
-                      />
-                    );
-                  })}
-
-                  {/* Hour/minute labels */}
-                  {ticks.map((val, i) => {
-                    const a = ((i + 1) / 12) * 2 * Math.PI - Math.PI / 2;
-                    const lr = R - 22;
-                    const tx = CX + lr * Math.cos(a);
-                    const ty = CY + lr * Math.sin(a);
-                    const isSelected =
-                      mode === "hour" ? val === hour : val === minute;
-                    return (
-                      <text
-                        key={val}
-                        x={tx}
-                        y={ty}
-                        textAnchor="middle"
-                        dominantBaseline="central"
-                        fontSize={isSelected ? 13 : 11}
-                        fontWeight={isSelected ? "700" : "500"}
-                        fill={isSelected ? "#fff" : "rgba(255,255,255,0.45)"}
-                      >
-                        {String(val).padStart(2, "0")}
-                      </text>
-                    );
-                  })}
-
-                  {/* Hand */}
-                  <line
-                    x1={CX}
-                    y1={CY}
-                    x2={handX}
-                    y2={handY}
-                    stroke="var(--brand-orange)"
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                  />
-
-                  {/* Center dot */}
-                  <circle cx={CX} cy={CY} r={4} fill="var(--brand-orange)" />
-
-                  {/* Selection circle */}
-                  <circle
-                    cx={handX}
-                    cy={handY}
-                    r={14}
-                    fill="var(--brand-orange)"
-                    opacity={0.9}
-                  />
-                </svg>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center justify-between px-5 pb-5 pt-1 gap-2">
+            {/* actions */}
+            <div className="px-5 py-5 bg-white flex items-center justify-between gap-2">
               <button
                 onClick={handleClear}
-                className="text-xs font-semibold text-blue-300/60 hover:text-blue-200 transition-colors px-2 py-1.5"
+                className="px-4 py-3.5 text-sm font-semibold text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all active:scale-95"
               >
                 Clear
               </button>
-              <div className="flex gap-2 ml-auto">
+              <div className="flex gap-2">
                 <button
                   onClick={() => setOpen(false)}
-                  className="text-xs font-semibold text-blue-200/70 hover:text-white transition-colors px-3 py-1.5 rounded-lg border border-white/10 hover:border-white/20"
+                  className="px-5 py-3.5 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-all active:scale-95"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSet}
-                  className="text-xs font-bold text-white px-4 py-1.5 rounded-lg transition-colors"
-                  style={{ background: "var(--brand-navy-800)" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "#0a2456")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "var(--brand-navy-800)")}
+                  className="px-7 py-3.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-md shadow-indigo-600/20 active:scale-95"
                 >
-                  Set
+                  Set Time
                 </button>
               </div>
             </div>
+
           </div>
         </div>
       )}
