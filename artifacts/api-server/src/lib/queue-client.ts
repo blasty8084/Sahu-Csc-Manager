@@ -1,6 +1,6 @@
 /**
  * Queue client — Redis/BullMQ removed. Notifications are sent directly
- * (fire-and-forget). Email sending is a no-op.
+ * (fire-and-forget). Emails are sent directly via nodemailer when SMTP is configured.
  */
 
 import { logger } from "./logger";
@@ -11,6 +11,8 @@ import {
   sendApprovalEmail,
   sendRejectionEmail,
   sendOtpEmail,
+  sendBroadcastEmail,
+  type EmailJobData,
 } from "./mailer";
 import { sendPushToUser, sendPushToAll } from "./push";
 
@@ -29,13 +31,7 @@ export type NotificationJobData =
   | { kind: "send-to-user"; userId: number; payload: PushPayload }
   | { kind: "send-to-all"; payload: PushPayload };
 
-export interface EmailJobData {
-  to: string;
-  from: string;
-  subject: string;
-  html: string;
-  text: string;
-}
+export type { EmailJobData };
 
 // ── Public helpers ────────────────────────────────────────────────────────────
 
@@ -55,10 +51,15 @@ export async function enqueueNotification(data: NotificationJobData): Promise<vo
 }
 
 /**
- * Email sending is disabled (SMTP removed). This is a no-op.
+ * Send an email directly via nodemailer (fire-and-forget).
+ * No-op if SMTP is not configured.
  */
-export async function enqueueEmail(_data: EmailJobData): Promise<void> {
-  // SMTP removed — emails are not sent
+export async function enqueueEmail(data: EmailJobData): Promise<void> {
+  try {
+    await sendBroadcastEmail(data.to, data.subject, data.html, data.text);
+  } catch (err: any) {
+    logger.warn({ err: err.message, to: data.to }, "enqueueEmail send failed");
+  }
 }
 
 // ── Re-export builder helpers so call sites only need one import ──────────────

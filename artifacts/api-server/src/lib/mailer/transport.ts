@@ -1,8 +1,48 @@
 /**
- * SMTP transport — removed. nodemailer is no longer a dependency.
- * isSmtpConfigured always returns false; createTransporter always throws.
- * esc() and buildV2Html() are kept as pure utility functions used by templates.
+ * SMTP transport — nodemailer-based.
+ * Reads config from environment variables:
+ *   SMTP_HOST, SMTP_PORT (default 587), SMTP_USER, SMTP_PASS (or SMTP_PASSWORD)
+ *   SMTP_FROM_EMAIL (optional display name + address)
+ *
+ * isSmtpConfigured() returns false when any required var is absent,
+ * so all call sites stay no-ops in dev / Replit when SMTP is not set up.
  */
+
+import nodemailer, { type Transporter } from "nodemailer";
+
+export function isSmtpConfigured(): boolean {
+  return !!(
+    process.env.SMTP_HOST &&
+    process.env.SMTP_USER &&
+    (process.env.SMTP_PASS || process.env.SMTP_PASSWORD)
+  );
+}
+
+export function createTransporter(): Transporter {
+  if (!isSmtpConfigured()) {
+    throw new Error(
+      "SMTP is not configured. Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS in environment secrets.",
+    );
+  }
+  const port = Number(process.env.SMTP_PORT ?? 587);
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port,
+    secure: port === 465,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS ?? process.env.SMTP_PASSWORD,
+    },
+  });
+}
+
+export function getFromEmail(): string {
+  return (
+    process.env.SMTP_FROM_EMAIL ??
+    process.env.SMTP_USER ??
+    "noreply@sahucsc.in"
+  );
+}
 
 /** Escape user-controlled strings before interpolating into HTML email templates. */
 export function esc(str: string | null | undefined): string {
@@ -15,19 +55,7 @@ export function esc(str: string | null | undefined): string {
     .replace(/'/g, "&#39;");
 }
 
-export function createTransporter(): never {
-  throw new Error("SMTP has been removed. Email sending is not available.");
-}
-
-export function isSmtpConfigured(): boolean {
-  return false;
-}
-
-export function getFromEmail(): string {
-  return "noreply@sahucsc.in";
-}
-
-// ── V2 Dark Premium HTML helpers ───────────────────────────────────────────────
+// ── V2 Dark Premium HTML helpers ──────────────────────────────────────────────
 
 /**
  * Shared dark-card email wrapper.

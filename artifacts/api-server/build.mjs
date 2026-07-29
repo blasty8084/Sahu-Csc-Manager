@@ -153,6 +153,7 @@ async function buildAll() {
       "mongodb-client-encryption",
       "pdfkit",
       "archiver",
+      "nodemailer",
       "exceljs",
       "handlebars",
       "knex",
