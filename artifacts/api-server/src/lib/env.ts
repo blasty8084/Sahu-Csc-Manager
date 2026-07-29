@@ -10,6 +10,14 @@ const REQUIRED: [key: string, description: string][] = [
   ["SESSION_SECRET", "Session signing secret (long random string)"],
 ];
 
+// Soft-warn for optional but strongly recommended vars
+const RECOMMENDED: [key: string, description: string][] = [
+  ["NEON_DATABASE_URL", "Neon PostgreSQL connection string (falls back to DATABASE_URL)"],
+  ["B2_KEY_ID",         "Backblaze B2 key ID for file storage"],
+  ["SMTP_USER",         "Gmail address for sending emails"],
+  ["UPSTASH_REDIS_REST_URL", "Upstash Redis REST URL for shared cache"],
+];
+
 const missing = REQUIRED
   .filter(([key]) => !process.env[key]?.trim())
   .map(([key, desc]) => `  • ${key}  —  ${desc}`);
@@ -22,11 +30,23 @@ if (missing.length > 0) {
       "",
       ...missing,
       "",
-      "Set them in Replit Secrets / Render Environment Variables, then restart.",
+      "Set them in Render / Vercel / Replit environment variables, then restart.",
       "",
     ].join("\n"),
   );
   process.exit(1);
+}
+
+const missingRec = RECOMMENDED.filter(([key]) => !process.env[key]?.trim());
+if (missingRec.length > 0) {
+  console.warn(
+    [
+      "",
+      `⚠️  Optional services not configured (${missingRec.length}):`,
+      ...missingRec.map(([key, desc]) => `  • ${key}  —  ${desc}`),
+      "",
+    ].join("\n"),
+  );
 }
 
 /** Required environment variables (non-nullable). */

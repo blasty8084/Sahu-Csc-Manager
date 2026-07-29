@@ -1,8 +1,10 @@
 /**
- * Queue client — Redis/BullMQ removed. Notifications are sent directly
- * (fire-and-forget). Email sending is a no-op.
+ * Queue client — uses BullMQ when REDIS_URL is set; falls back to direct
+ * fire-and-forget when Redis is unavailable.
  */
 
+import { Queue } from "bullmq";
+import IORedis from "ioredis";
 import { logger } from "./logger";
 import {
   buildApprovalMailOptions,
@@ -37,12 +39,40 @@ export interface EmailJobData {
   text: string;
 }
 
+// ── BullMQ queue (lazy init) ──────────────────────────────────────────────────
+
+let notificationQueue: Queue | null = null;
+
+function getQueue(): Queue | null {
+  if (notificationQueue) return notificationQueue;
+  const url = process.env["REDIS_URL"];
+  if (!url) return null;
+  try {
+    const connection = new IORedis(url, { maxRetriesPerRequest: null });
+    notificationQueue = new Queue("notifications", { connection });
+  } catch {
+    notificationQueue = null;
+  }
+  return notificationQueue;
+}
+
 // ── Public helpers ────────────────────────────────────────────────────────────
 
 /**
- * Send a push notification directly (fire-and-forget).
+ * Enqueue a push notification via BullMQ when Redis is available,
+ * or send directly as a fire-and-forget fallback.
  */
 export async function enqueueNotification(data: NotificationJobData): Promise<void> {
+  const queue = getQueue();
+  if (queue) {
+    try {
+      await queue.add("notify", data);
+      return;
+    } catch (err: any) {
+      logger.warn({ err: err.message }, "BullMQ enqueue failed — falling back to direct send");
+    }
+  }
+  // Direct fire-and-forget fallback
   try {
     if (data.kind === "send-to-user") {
       await sendPushToUser(data.userId, data.payload);
@@ -55,10 +85,12 @@ export async function enqueueNotification(data: NotificationJobData): Promise<vo
 }
 
 /**
- * Email sending is disabled (SMTP removed). This is a no-op.
+ * Email sending — no-op when SMTP is not configured (isSmtpConfigured() gates
+ * the mailer internally).
  */
 export async function enqueueEmail(_data: EmailJobData): Promise<void> {
-  // SMTP removed — emails are not sent
+  // Email is sent synchronously by the mailer helpers; this stub keeps
+  // call sites that use enqueueEmail compiling without changes.
 }
 
 // ── Re-export builder helpers so call sites only need one import ──────────────

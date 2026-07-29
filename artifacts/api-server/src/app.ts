@@ -7,6 +7,8 @@ import ConnectPgSimple from "connect-pg-simple";
 import helmet from "helmet";
 import hpp from "hpp";
 import rateLimit from "express-rate-limit";
+import { RedisStore } from "rate-limit-redis";
+import { Redis } from "@upstash/redis";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import router from "./routes";
@@ -89,11 +91,30 @@ app.use(
 app.use(hpp());
 app.use(compression());
 
+function makeRedisStore(prefix: string) {
+  if (
+    !process.env["UPSTASH_REDIS_REST_URL"] ||
+    !process.env["UPSTASH_REDIS_REST_TOKEN"]
+  ) {
+    return undefined; // use default in-memory store
+  }
+  const redis = new Redis({
+    url: process.env["UPSTASH_REDIS_REST_URL"]!,
+    token: process.env["UPSTASH_REDIS_REST_TOKEN"]!,
+  });
+  return new RedisStore({
+    prefix,
+    // rate-limit-redis expects sendCommand(command, ...args)
+    sendCommand: (...args: string[]) => redis.sendCommand(args as Parameters<typeof redis.sendCommand>[0]),
+  });
+}
+
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 500,
   standardHeaders: true,
   legacyHeaders: false,
+  store: makeRedisStore("rl:global"),
   // Loopback-only bypass so `pnpm run loadtest` (run from inside this same
   // container, hitting 127.0.0.1 directly) can generate realistic concurrent
   // traffic without tripping the per-IP limiter meant for external abuse.
@@ -116,6 +137,7 @@ const loginLimiter = rateLimit({
   max: 8,
   standardHeaders: true,
   legacyHeaders: false,
+  store: makeRedisStore("rl:login"),
   message: { error: "Too many login attempts, please try again later" },
 });
 
@@ -126,6 +148,7 @@ const authWriteLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  store: makeRedisStore("rl:auth-write"),
   message: { error: "Too many requests, please try again later" },
 });
 
@@ -136,6 +159,7 @@ const otpVerifyLimiter = rateLimit({
   max: 8,
   standardHeaders: true,
   legacyHeaders: false,
+  store: makeRedisStore("rl:otp"),
   message: { error: "Too many attempts, please try again later" },
 });
 
@@ -147,6 +171,7 @@ const twoFaVerifyLimiter = rateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
+  store: makeRedisStore("rl:2fa"),
   message: { error: "Too many verification attempts, please try again later" },
 });
 
@@ -157,6 +182,7 @@ const geoLimiter = rateLimit({
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
+  store: makeRedisStore("rl:geo"),
   message: { error: "Too many geo requests, please try again later" },
 });
 
