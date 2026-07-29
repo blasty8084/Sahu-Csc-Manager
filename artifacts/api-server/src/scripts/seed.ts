@@ -39,7 +39,13 @@ async function seed() {
     })
     .onConflictDoUpdate({
       target: usersTable.username,
-      set: { passwordHash, isActive: true },
+      set: {
+        email: adminEmail,
+        mobile: adminMobile,
+        fullName: "SAHU Admin",
+        passwordHash,
+        isActive: true,
+      },
     });
   console.log("✅ Admin user created/reset (username: admin, password: from ADMIN_PASSWORD secret)");
 
@@ -57,7 +63,13 @@ async function seed() {
     })
     .onConflictDoUpdate({
       target: usersTable.username,
-      set: { passwordHash: opHash, isActive: true },
+      set: {
+        email: operatorEmail,
+        mobile: operatorMobile,
+        fullName: "CSC Operator",
+        passwordHash: opHash,
+        isActive: true,
+      },
     });
   console.log("✅ Operator user created/reset (username: operator, password: from OPERATOR_PASSWORD secret)");
 
