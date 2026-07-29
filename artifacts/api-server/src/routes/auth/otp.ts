@@ -4,7 +4,7 @@ import { eq, or, and, gt, count, desc, isNull, sql } from "drizzle-orm";
 import { randomUUID, timingSafeEqual } from "node:crypto";
 import { getClientIp } from "../../lib/auth";
 import { isSmtpConfigured } from "../../lib/mailer";
-import { enqueueEmail, buildOtpMailOptions } from "../../lib/queue-client";
+import { sendOtpEmail } from "../../lib/queue-client";
 import { logger } from "../../lib/logger";
 import { generateNumericOtp, hashOtp, maskEmail } from "./helpers";
 import { asyncHandler } from "../../lib/async-handler";
@@ -99,9 +99,9 @@ router.post("/auth/send-otp", asyncHandler(async (req, res) => {
   await db.insert(emailOtpsTable).values({ email: resolvedEmail, purpose, otpHash, expiresAt, ipAddress: clientIp });
 
   try {
-    await enqueueEmail(buildOtpMailOptions(resolvedEmail, otp, purpose as "registration" | "password_reset", expiresAt));
+    await sendOtpEmail(resolvedEmail, otp);
   } catch (err) {
-    logger.error({ err, purpose, email: maskEmail(resolvedEmail) }, "Failed to enqueue OTP email");
+    logger.error({ err, purpose, email: maskEmail(resolvedEmail) }, "Failed to send OTP email");
     res.status(502).json({ error: "Failed to send email. Please check SMTP configuration or try again." });
     return;
   }
