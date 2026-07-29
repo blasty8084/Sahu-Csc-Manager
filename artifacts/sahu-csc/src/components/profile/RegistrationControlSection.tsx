@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Lock, UserPlus } from "lucide-react";
+import { getApiBase } from "@/lib/api-base";
 import { useQueryClient } from "@tanstack/react-query";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
@@ -16,7 +17,7 @@ export function RegistrationControlSection() {
   const toggle = async (open: boolean) => {
     setToggling(true);
     try {
-      const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+      const base = getApiBase();
       const res = await fetch(`${base}/api/admin/settings/registration`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },

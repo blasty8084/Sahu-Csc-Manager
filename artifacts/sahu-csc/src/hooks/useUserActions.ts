@@ -1,8 +1,9 @@
 import { getListUsersQueryKey, UserInputRole } from "@workspace/api-client-react";
 import type { UsersPageState } from "./useUsersPage";
 import { useResetLinkActions } from "./useResetLinkActions";
+import { getApiBase } from "@/lib/api-base";
 
-const b = () => import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+const b = () => getApiBase();
 
 export function useUserActions(s: UsersPageState) {
   const resetLink = useResetLinkActions(s);

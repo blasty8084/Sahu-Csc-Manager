@@ -2,7 +2,8 @@
 // AePS — shared types, constants, and formatting helpers
 // ─────────────────────────────────────────────────────────
 
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+import { getApiBase } from "@/lib/api-base";
+const BASE = getApiBase();
 
 export async function apiFetch(path: string, opts?: RequestInit) {
   const res = await fetch(`${BASE}${path}`, {

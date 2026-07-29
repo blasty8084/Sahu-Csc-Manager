@@ -5,7 +5,8 @@ import { ReceiptVerifyCard } from "@/components/receipts/ReceiptVerifyCard";
 import { ReceiptQrSection } from "@/components/receipts/ReceiptQrSection";
 import type { ReceiptData } from "@/components/receipts/ReceiptVerifyCard";
 
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+import { getApiBase } from "@/lib/api-base";
+const BASE = getApiBase();
 
 export default function ReceiptsVerify() {
   const params = useParams<{ token: string }>();

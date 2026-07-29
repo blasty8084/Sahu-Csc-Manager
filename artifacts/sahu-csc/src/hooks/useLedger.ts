@@ -7,7 +7,8 @@ import {
 } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+import { getApiBase } from "@/lib/api-base";
+const BASE = getApiBase();
 
 export interface EntryForm {
   date: string;

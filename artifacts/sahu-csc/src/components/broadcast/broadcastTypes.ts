@@ -1,4 +1,5 @@
-export const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+import { getApiBase } from "@/lib/api-base";
+export const BASE = getApiBase();
 
 export interface BroadcastStats {
   pushSubscribers: number;

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { getApiBase } from "@/lib/api-base";
 import { Bell, FolderOpen, Loader2, MapPin, ShieldCheck, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQueryClient } from "@tanstack/react-query";
@@ -11,7 +12,7 @@ import { usePermissions } from "./usePermissions";
 // Auto-finishes once all permissions are attempted. Continue is never needed.
 
 async function apiPatch(path: string) {
-  const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+  const base = getApiBase();
   const res = await fetch(`${base}/api${path}`, {
     method: "PATCH",
     credentials: "include",

@@ -1,6 +1,7 @@
 import type { UsersPageState } from "./useUsersPage";
+import { getApiBase } from "@/lib/api-base";
 
-const b = () => import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+const b = () => getApiBase();
 
 export function useResetLinkActions(s: UsersPageState) {
   const openResetLink = (user: any) => {

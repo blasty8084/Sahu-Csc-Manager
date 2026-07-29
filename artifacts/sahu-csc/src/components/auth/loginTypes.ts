@@ -17,7 +17,8 @@ export type LoginFormValues = z.infer<typeof loginSchema>;
 export type ResetStep = "identifier" | "otp" | "password" | "success";
 
 // ── API helper ────────────────────────────────────────────────────────────────
-const BASE = () => import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+import { getApiBase } from "@/lib/api-base";
+const BASE = () => getApiBase();
 export function apiPost(path: string, body: unknown) {
   return fetch(`${BASE()}/api/auth/${path}`, {
     method: "POST",

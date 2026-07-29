@@ -3,6 +3,7 @@
  * Re-exports RESEND_COOLDOWN and OTP_RATE_LIMIT from loginTypes to avoid duplication.
  */
 import { z } from "zod";
+import { getApiBase } from "@/lib/api-base";
 import { useQuery } from "@tanstack/react-query";
 
 export { RESEND_COOLDOWN, OTP_RATE_LIMIT } from "./loginTypes";
@@ -54,7 +55,7 @@ export function useTwoFaDisabled() {
   const { data } = useQuery<{ twoFaDisabled?: boolean }>({
     queryKey: ["setup-status-2fa"],
     queryFn: async () => {
-      const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+      const base = getApiBase();
       const res = await fetch(`${base}/api/setup-status`, { credentials: "include" });
       if (!res.ok) return {};
       return res.json();

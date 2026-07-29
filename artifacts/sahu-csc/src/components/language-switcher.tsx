@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { getApiBase } from "@/lib/api-base";
 import { setLanguage } from "@/lib/i18n";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -12,7 +13,7 @@ type LangCode = (typeof LANGS)[number]["code"];
 
 async function patchLanguagePref(lang: string) {
   try {
-    const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+    const base = getApiBase();
     await fetch(`${base}/api/preferences`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
