@@ -1,16 +1,6 @@
 # SAHU CSC — Common Service Center Management Platform
 **Version 4.10.2** — last updated 2026-07-29
 
-> **2026-07-29 (re-import setup #2)**: Re-imported from GitHub. Steps completed:
-> 1. `pnpm install` — all workspace dependencies restored (1164 packages).
-> 2. `drizzle-kit push --force` from `lib/db/` — full schema pushed to Replit-managed PostgreSQL (`DATABASE_URL`; `NEON_DATABASE_URL` not required since Replit injects `DATABASE_URL` automatically).
-> 3. Secrets added via Replit Secrets: `ADMIN_PASSWORD`, `OPERATOR_PASSWORD` (existing `SESSION_SECRET` carried over).
-> 4. `Seed Database` workflow — admin/operator accounts created, services and settings seeded successfully.
-> 5. `CORS_ORIGIN` shared env var updated to current dev domain (`a0037be0-ef7d-421c-b00c-d4bf109565e6-00-2xwxrjd6udl0h.pike.replit.dev`).
-> 6. `Start application` workflow updated to use Vite dev server (`pnpm --filter @workspace/sahu-csc run dev`) instead of `serve` — `serve` requires a pre-built `dist/` which isn't present after a fresh import; dev server has no such requirement.
-> 7. `API Server` running on port 8080 (Express, built with esbuild); `Start application` (Vite dev) running on port 5000. `Worker Server` skips cleanly (`REDIS_URL` not set).
-> Verified: splash screen and login page render correctly in preview. `/api/*` proxied via Vite to port 8080.
->
 > **2026-07-29 (re-import setup)**: Re-imported from GitHub. Ran `pnpm install` (dependencies restored). Secrets added: `NEON_DATABASE_URL`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. Applied DB schema via `drizzle-kit push --force` from `lib/db/`. Built frontend (`pnpm --filter @workspace/sahu-csc run build`). Ran `Seed Database` workflow — admin/operator accounts created, services and settings seeded. Updated `CORS_ORIGIN` to current dev domain (`pike.replit.dev`). `API Server` running on port 8080; `Start application` (sirv + /api proxy) running on port 5000. `Worker Server` skips cleanly (`REDIS_URL` not set). Verified: login page renders correctly in preview.
 >
 > **2026-07-28 (re-import setup #3)**: Re-imported from GitHub. Ran `pnpm install` (dependencies restored). Secrets added: `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. Applied DB schema via `drizzle-kit push --force` from `lib/db/`. Ran `Seed Database` workflow — admin/operator accounts created, services and settings seeded. Updated `CORS_ORIGIN` to current dev domain. `API Server` running on port 8080; `artifacts/sahu-csc: web` (Vite dev) running on port 5000. `Worker Server` skips cleanly (`REDIS_URL` not set). Verified: login page renders correctly in preview.

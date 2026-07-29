@@ -93,13 +93,13 @@ args = "[ -z \"$REDIS_URL\" ] && echo 'REDIS_URL not set — worker server skipp
 name = "Start application"
 author = "agent"
 
-[workflows.workflow.metadata]
-outputType = "webview"
-
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "PORT=5000 pnpm --filter @workspace/sahu-csc run dev"
+args = "PORT=5000 pnpm --filter @workspace/sahu-csc run serve"
 waitForPort = 5000
+
+[workflows.workflow.metadata]
+outputType = "webview"
 
 [[workflows.workflow]]
 name = "artifacts/mockup-sandbox: Component Preview Server"
@@ -141,4 +141,3 @@ OPERATOR_EMAIL = "operator@sahucsc.in"
 OPERATOR_MOBILE = "9876543211"
 DISABLE_2FA = "true"
 ALLOW_NON_INDIA = "true"
-ADMIN_EMAIL = "sahuuttam690@gmail.com"

@@ -11,13 +11,10 @@
 import nodemailer, { type Transporter } from "nodemailer";
 
 export function isSmtpConfigured(): boolean {
-  const host = process.env.SMTP_HOST?.trim();
-  const user = process.env.SMTP_USER?.trim();
-  const password = (process.env.SMTP_PASS ?? process.env.SMTP_PASSWORD)?.trim();
   return !!(
-    host &&
-    user &&
-    password
+    process.env.SMTP_HOST &&
+    process.env.SMTP_USER &&
+    (process.env.SMTP_PASS || process.env.SMTP_PASSWORD)
   );
 }
 
@@ -28,24 +25,21 @@ export function createTransporter(): Transporter {
     );
   }
   const port = Number(process.env.SMTP_PORT ?? 587);
-  if (!Number.isInteger(port) || port < 1 || port > 65535) {
-    throw new Error(`Invalid SMTP_PORT value: "${process.env.SMTP_PORT}"`);
-  }
   return nodemailer.createTransport({
-    host: process.env.SMTP_HOST!.trim(),
+    host: process.env.SMTP_HOST,
     port,
     secure: port === 465,
     auth: {
-      user: process.env.SMTP_USER!.trim(),
-      pass: (process.env.SMTP_PASS ?? process.env.SMTP_PASSWORD)!.trim(),
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS ?? process.env.SMTP_PASSWORD,
     },
   });
 }
 
 export function getFromEmail(): string {
   return (
-    process.env.SMTP_FROM_EMAIL?.trim() ||
-    process.env.SMTP_USER?.trim() ||
+    process.env.SMTP_FROM_EMAIL ??
+    process.env.SMTP_USER ??
     "noreply@sahucsc.in"
   );
 }
