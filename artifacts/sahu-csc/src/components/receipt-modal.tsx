@@ -1,5 +1,4 @@
 import { useRef } from "react";
-import { getApiBase } from "@/lib/api-base";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ReceiptHeader } from "./receipt/ReceiptHeader";
 import { ReceiptLineItems } from "./receipt/ReceiptLineItems";
@@ -59,7 +58,7 @@ export function ReceiptModal({
   const isCryptoVerified = !!receiptToken && /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(receiptToken);
 
   const origin   = typeof window !== "undefined" ? window.location.origin : "";
-  const basePath = getApiBase();
+  const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
   const verifyUrl = receiptToken
     ? `${origin}${basePath}/receipts/verify/${receiptToken}`
     : `${origin}${basePath}/ledger`;

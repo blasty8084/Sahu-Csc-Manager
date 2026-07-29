@@ -1,7 +1,6 @@
 import { useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { getApiBase } from "@/lib/api-base";
 import { UdhariReceiptDetails } from "./receipt/UdhariReceiptDetails";
 import { UdhariReceiptFooter } from "./receipt/UdhariReceiptFooter";
 import { UdhariReceiptActions } from "./receipt/UdhariReceiptActions";
@@ -72,7 +71,7 @@ export function UdhariReceiptModal({
   const hasToken = !!entry.receiptToken;
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const basePath = getApiBase();
+  const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
   const verifyUrl = hasToken ? `${origin}${basePath}/receipts/verify/udhari/${entry.receiptToken}` : null;
 
   const qrValue = verifyUrl ?? [

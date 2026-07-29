@@ -1,5 +1,4 @@
 import { Trash2, MapPin, Clock, Globe, Monitor, Smartphone, Tablet } from "lucide-react";
-import { getApiBase } from "@/lib/api-base";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -20,7 +19,7 @@ export interface SessionEntry {
 
 // ─── Shared API utility ───────────────────────────────────────────────────────
 export async function apiFetch(path: string, options?: RequestInit) {
-  const base = getApiBase();
+  const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
   const res = await fetch(`${base}/api${path}`, {
     credentials: "include",
     headers: { "Content-Type": "application/json" },

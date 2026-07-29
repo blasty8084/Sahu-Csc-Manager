@@ -1,12 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { customFetch } from "@workspace/api-client-react";
-import { getApiBase } from "@/lib/api-base";
 
 export function useAdminSessions() {
   return useQuery<any[]>({
     queryKey: ["admin-sessions"],
     queryFn: async () => {
-      const base = getApiBase();
+      const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
       const res = await fetch(`${base}/api/admin/sessions`, { credentials: "include" });
       if (!res.ok) return [];
       return res.json();
@@ -21,7 +20,7 @@ export function usePendingUsers() {
   return useQuery<any[]>({
     queryKey: ["admin-pending-users"],
     queryFn: async () => {
-      const base = getApiBase();
+      const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
       const res = await fetch(`${base}/api/admin/users/pending`, { credentials: "include" });
       if (!res.ok) return [];
       return res.json();
@@ -36,7 +35,7 @@ export function useAppealUsers() {
   return useQuery<any[]>({
     queryKey: ["admin-appeal-users"],
     queryFn: async () => {
-      const base = getApiBase();
+      const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
       const res = await fetch(`${base}/api/admin/users/appeals`, { credentials: "include" });
       if (!res.ok) return [];
       return res.json();
@@ -80,7 +79,7 @@ export function useAepsOverview() {
   return useQuery<any[]>({
     queryKey: ["admin", "aeps-overview"],
     queryFn: async () => {
-      const base = getApiBase();
+      const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
       const res = await fetch(`${base}/api/admin/aeps-overview`, { credentials: "include" });
       if (!res.ok) return [];
       return res.json();

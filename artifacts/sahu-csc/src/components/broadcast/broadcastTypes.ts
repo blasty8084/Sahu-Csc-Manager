@@ -1,5 +1,4 @@
-import { getApiBase } from "@/lib/api-base";
-export const BASE = getApiBase();
+export const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
 
 export interface BroadcastStats {
   pushSubscribers: number;

@@ -12,8 +12,7 @@ import {
   XCircle, Shield, Cpu, TrendingUp, Search, Filter,
 } from "lucide-react";
 
-import { getApiBase } from "@/lib/api-base";
-const BASE = getApiBase();
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 async function fetchNotifications(tab: string, search: string, page: number) {
   const params = new URLSearchParams({ tab, page: String(page), limit: "20" });

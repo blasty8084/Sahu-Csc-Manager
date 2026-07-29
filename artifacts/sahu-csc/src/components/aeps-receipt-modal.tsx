@@ -1,7 +1,6 @@
 import { useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { getApiBase } from "@/lib/api-base";
 import { AepsReceiptDetails } from "@/components/receipt/AepsReceiptDetails";
 import { AepsReceiptFooter } from "@/components/receipt/AepsReceiptFooter";
 import { AepsReceiptActions } from "@/components/receipt/AepsReceiptActions";
@@ -65,7 +64,7 @@ export function AepsReceiptModal({
   const hasContact = !!(businessAddress || businessMobile || businessWebsite);
   const hasToken = !!tx.receiptToken;
   const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const basePath = getApiBase();
+  const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
   const verifyUrl = hasToken ? `${origin}${basePath}/receipts/verify/aeps/${tx.receiptToken}` : null;
 
   const qrValue = verifyUrl ?? [

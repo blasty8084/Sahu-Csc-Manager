@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useEffect, ReactNode } from "react";
-import { getApiBase } from "@/lib/api-base";
 import { useGetMe, useLogout } from "@workspace/api-client-react";
 import type { AuthUser, LoginInput } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
@@ -151,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void queryClient.prefetchQuery(getGetPreferencesQueryOptions());
   };
 
-  const apiBase = () => getApiBase();
+  const apiBase = () => import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
 
   const handleLogin = async (data: LoginData): Promise<TwoFaChallenge | void> => {
     const deviceFingerprint = await getDeviceFingerprint();

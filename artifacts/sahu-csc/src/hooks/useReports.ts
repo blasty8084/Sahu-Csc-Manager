@@ -2,8 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useGetDailyReport, useGetMonthlyReport, useGetServiceBreakdown } from "@workspace/api-client-react";
 
-import { getApiBase } from "@/lib/api-base";
-export const BASE = getApiBase();
+export const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export const MONTHS = [
   "January", "February", "March", "April", "May", "June",

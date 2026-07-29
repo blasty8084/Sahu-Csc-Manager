@@ -1,5 +1,4 @@
 import { Monitor, Smartphone, Tablet } from "lucide-react";
-import { getApiBase } from "@/lib/api-base";
 import type { LucideIcon } from "lucide-react";
 
 export function deviceIcon(os: string): LucideIcon {
@@ -27,7 +26,7 @@ export function formatExpiry(iso: string): string {
 }
 
 export async function apiFetch(path: string, options?: RequestInit): Promise<any> {
-  const base = getApiBase();
+  const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
   const res = await fetch(`${base}/api${path}`, {
     credentials: "include",
     headers: { "Content-Type": "application/json" },

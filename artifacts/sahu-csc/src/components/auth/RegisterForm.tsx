@@ -3,7 +3,6 @@
  * Owns all form state, timers, and API calls. Renders via focused sub-components.
  */
 import React, { useState, useRef, useCallback, useEffect } from "react";
-import { getApiBase } from "@/lib/api-base";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -76,7 +75,7 @@ export function RegisterForm() {
   }, []);
 
   // ── API helpers ─────────────────────────────────────────────────────────────
-  const base = () => getApiBase();
+  const base = () => import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
 
   const sendOtp = async (email: string): Promise<boolean> => {
     const res = await fetch(`${base()}/api/auth/send-otp`, {

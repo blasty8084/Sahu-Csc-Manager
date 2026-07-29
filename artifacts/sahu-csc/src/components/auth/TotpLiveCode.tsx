@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { getApiBase } from "@/lib/api-base";
 
 interface Props {
   /** Full API path, e.g. "/api/auth/2fa/totp-code-pending" */
@@ -16,7 +15,7 @@ export function TotpLiveCode({ apiPath }: Props) {
     let ticker:      ReturnType<typeof setInterval>;
     let alive = true;
 
-    const base = getApiBase();
+    const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
 
     const load = async () => {
       try {

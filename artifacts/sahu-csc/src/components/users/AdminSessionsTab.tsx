@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { getApiBase } from "@/lib/api-base";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { AdminSessionsSkeleton } from "@/components/skeletons";
@@ -20,7 +19,7 @@ export function AdminSessionsTab() {
   const revokeSession = async (id: number) => {
     setRevoking((p) => new Set([...p, id]));
     try {
-      const base = getApiBase();
+      const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
       const res = await fetch(`${base}/api/admin/sessions/${id}`, { method: "DELETE", credentials: "include" });
       if (!res.ok) throw new Error();
       toast({ title: "Session revoked" });
@@ -35,7 +34,7 @@ export function AdminSessionsTab() {
   const revokeAllForUser = async (userId: number, username: string) => {
     setRevokingUser((p) => new Set([...p, userId]));
     try {
-      const base = getApiBase();
+      const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
       const res = await fetch(`${base}/api/admin/sessions/user/${userId}`, { method: "DELETE", credentials: "include" });
       if (!res.ok) throw new Error();
       const data = await res.json();
