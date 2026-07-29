@@ -1,5 +1,5 @@
 # SAHU CSC — Agent Reference Document
-**Version 4.9.0** · Last updated 2026-07-23
+**Version 4.10.2** · Last updated 2026-07-29
 
 This file is the single authoritative reference for any AI agent working on this codebase. Read it first before touching any code.
 

@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Changelog
-**Current version: 4.10.1 — July 28, 2026**
+**Current version: 4.10.2 — July 29, 2026**
 
 > Single authoritative changelog covering all versions from v1.x through v4.x.
 > - **v3.x / v4.x entries** (current) — listed first, newest at top
@@ -9,6 +9,7 @@
 
 ## Table of Contents
 
+0. [v4.10.2 — Fix duplicate className attributes causing Vercel/esbuild build failure (July 29, 2026)](#0-v4102--fix-duplicate-classname-attributes-causing-vercelesbuildbuild-failure-july-29-2026)
 0. [Refactor — Full CSS variable tokenization across 355+ files (July 27, 2026)](#0-refactor--full-css-variable-tokenization-across-355-files-july-27-2026)
 0. [Performance — Dark mode visual-state isolation & verification (July 27, 2026)](#0-performance--dark-mode-visual-state-isolation--verification-july-27-2026)
 0. [Feature — ThemeToggle component: standalone Sun/Moon toggle, prop-drilling removed (July 26, 2026)](#0-feature--themetoggle-component-standalone-sunmoon-toggle-prop-drilling-removed-july-26-2026)
@@ -66,6 +67,35 @@
 0. [Refactor — Server Health page split into focused components (July 18, 2026)](#0-refactor--server-health-page-split-into-focused-components-july-18-2026)
 0. [Refactor — Ledger page split into focused components (July 18, 2026)](#0-refactor--ledger-page-split-into-focused-components-july-18-2026)
 0. [v4.9.0 — Platform Optimization & Setup Hardening (July 16, 2026)](#0-v490--platform-optimization--setup-hardening-july-16-2026)
+
+---
+
+## v4.10.2 — Fix duplicate className attributes causing Vercel/esbuild build failure (July 29, 2026)
+
+**Patch — build fix only, no behaviour change.**
+
+esbuild (used by Vercel's build pipeline) rejects JSX elements that carry two separate `className` attributes on the same element. Three components introduced this pattern, blocking production builds.
+
+### Root cause
+
+Each affected element had a static `className="..."` attribute and a second conditional `className={...}` attribute added as a separate prop instead of being merged into the first.
+
+### Files changed
+
+| File | Fix |
+|------|-----|
+| `artifacts/sahu-csc/src/components/broadcast/BroadcastEmailForm.tsx` | Merged `className="flex flex-col … transition-all"` + `className="dark:border-zinc-600 dark:bg-zinc-700"` → single string literal on the recipient-filter `<button>` |
+| `artifacts/sahu-csc/src/components/reports/MobileReports.tsx` | Merged static string + `className={showFilter ? "" : "bg-white dark:bg-zinc-800"}` → template literal on the filter toggle `<button>` |
+| `artifacts/sahu-csc/src/components/profile/TwoFactorSection.tsx` | Merged static string + `className={!active ? "dark:!bg-zinc-700/50 dark:!border-zinc-600" : ""}` → template literal on the 2FA method-picker `<button>` |
+
+### Merge strategy
+
+- Two string literals → concatenated into one `className="A B"` string.
+- String + conditional expression → `className={\`A \${expr}\`}` template literal.
+- Verified via a full Vite production build (`✓ 3856 modules transformed`) — no remaining `Duplicate className` errors.
+
+### Docs updated
+`CHANGELOG.md`, `DOCS.md`, `PROJECT.md`, `AGENT.md`, `replit.md`
 
 ---
 

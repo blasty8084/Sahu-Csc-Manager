@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Platform Documentation
-**Version 4.10.0** — last updated 2026-07-28
+**Version 4.10.2** — last updated 2026-07-29
 
 > Common Service Center (CSC) Business Management Platform for Odisha / India rural service centers.
 > Full-stack · PWA · Offline-capable · Multilingual (English / Hindi / Odia)
@@ -60,6 +60,16 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 ---
 
 ## 2. Version History
+
+### v4.10.2 — Build fix: duplicate className attributes (2026-07-29)
+
+- Fixed three JSX components (`BroadcastEmailForm`, `MobileReports`, `TwoFactorSection`) that had two separate `className` attributes on the same element — a syntax esbuild/Vercel rejects at build time.
+- Static strings merged into one string literal; string + conditional expression merged into a template literal.
+- No behaviour or visual change; patch unblocks Vercel production builds.
+
+### v4.10.1 — Remove optional external services (2026-07-28)
+
+- Redis, Backblaze B2, and SMTP/nodemailer removed; app runs fully without these services (in-memory cache, base64 avatars, email no-ops).
 
 ### v4.9.5 — Dark Mode Performance & Verification (2026-07-27)
 

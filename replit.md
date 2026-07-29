@@ -1,5 +1,5 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 4.10.0** — last updated 2026-07-29
+**Version 4.10.2** — last updated 2026-07-29
 
 > **2026-07-29 (re-import setup)**: Re-imported from GitHub. Ran `pnpm install` (dependencies restored). Secrets added: `NEON_DATABASE_URL`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. Applied DB schema via `drizzle-kit push --force` from `lib/db/`. Built frontend (`pnpm --filter @workspace/sahu-csc run build`). Ran `Seed Database` workflow — admin/operator accounts created, services and settings seeded. Updated `CORS_ORIGIN` to current dev domain (`pike.replit.dev`). `API Server` running on port 8080; `Start application` (sirv + /api proxy) running on port 5000. `Worker Server` skips cleanly (`REDIS_URL` not set). Verified: login page renders correctly in preview.
 >
