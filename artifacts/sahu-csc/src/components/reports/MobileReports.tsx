@@ -51,8 +51,7 @@ export default function MobileReports() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowFilter(v => !v)}
-            className="flex items-center gap-1.5 rounded-xl px-3 h-9 text-xs font-semibold border"
-            className={showFilter ? "" : "bg-white dark:bg-zinc-800"}
+            className={`flex items-center gap-1.5 rounded-xl px-3 h-9 text-xs font-semibold border ${showFilter ? "" : "bg-white dark:bg-zinc-800"}`}
             style={{ borderColor: showFilter ? "var(--brand-navy-800)" : "var(--color-slate-200)", color: showFilter ? "var(--brand-navy-800)" : "var(--color-slate-500)", background: showFilter ? "var(--brand-navy-tint-md)" : undefined }}
           >
             <Filter size={13} />Filters

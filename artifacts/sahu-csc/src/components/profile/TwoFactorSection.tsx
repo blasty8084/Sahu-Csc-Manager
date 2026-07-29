@@ -296,8 +296,7 @@ export function TwoFactorSection() {
               return (
                 <button key={m} type="button" disabled={active || setupTotpMut.isPending}
                   onClick={() => initiateMethod(m)}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all disabled:cursor-default"
-                  className={!active ? "dark:!bg-zinc-700/50 dark:!border-zinc-600" : ""}
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all disabled:cursor-default ${!active ? "dark:!bg-zinc-700/50 dark:!border-zinc-600" : ""}`}
                   style={{ borderColor: active ? ORANGE : "var(--color-slate-100)", background: active ? "var(--surface-warn-bg)" : "#f9fafb" }}>
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0"
                     style={{ background: active ? `linear-gradient(135deg, ${ORANGE}, var(--brand-orange-600))` : "var(--color-gray-200)" }}>

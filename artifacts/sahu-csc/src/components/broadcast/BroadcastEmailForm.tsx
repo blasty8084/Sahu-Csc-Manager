@@ -70,11 +70,10 @@ export function BroadcastEmailForm({
                 { value: "active" as const, label: "Active users only", count: stats?.activeUsers ?? 0 },
               ]).map(({ value, label, count }) => (
                 <button key={value} onClick={() => setRecipientFilter(value)}
-                  className="flex flex-col items-start px-3 py-2.5 rounded-xl border text-left transition-all"
+                  className="flex flex-col items-start px-3 py-2.5 rounded-xl border text-left transition-all dark:border-zinc-600 dark:bg-zinc-700"
                   style={recipientFilter === value
                     ? { background: "var(--surface-toast-blue)", borderColor: "var(--brand-navy-800)", color: "var(--brand-navy-800)" }
-                    : { borderColor: "var(--color-slate-200)", color: "var(--color-slate-500)" }}
-                  className="dark:border-zinc-600 dark:bg-zinc-700">
+                    : { borderColor: "var(--color-slate-200)", color: "var(--color-slate-500)" }}>
                   <span className="text-sm font-semibold">{count} users</span>
                   <span className="text-xs opacity-70">{label}</span>
                 </button>
