@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Platform Documentation
-**Version 4.10.0** — last updated 2026-07-28
+**Version 4.10.2** — last updated 2026-07-30
 
 > Common Service Center (CSC) Business Management Platform for Odisha / India rural service centers.
 > Full-stack · PWA · Offline-capable · Multilingual (English / Hindi / Odia)
@@ -60,6 +60,14 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 ---
 
 ## 2. Version History
+
+### v4.10.2 — Email OTP Fix + 2FA Hardened (2026-07-30)
+
+- **Email OTP delivery fixed** — `enqueueEmail` was a no-op stub and `buildOtpMailOptions` returned `null`; OTP codes were saved to DB but never emailed. Both call sites (`login-helpers.ts`, `otp.ts`) now call `sendOtpEmail` directly from the mailer.
+- **HTML email templates restored** — `templates/otp.ts` imported `createTransporter`, `getFromEmail`, `esc`, and `buildV2Html` from `transport.ts`, but those functions didn't exist. Added all four to `transport.ts`; `mailer/index.ts` now re-exports `sendOtpEmail` from `templates/otp.ts`. OTP emails render the full dark-navy branded HTML design.
+- **2FA permanently ON** — Removed `DISABLE_2FA` env var bypass from `login.ts`, `register.ts`, and `setup-status.ts`. 2FA cannot be disabled via environment variable.
+- **SMTP fully configured** — `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM_EMAIL` all set. Outgoing emails active.
+- **Seed account emails** — `ADMIN_EMAIL` and `OPERATOR_EMAIL` env vars set; propagated to DB accounts via Seed Database workflow.
 
 ### v4.9.5 — Dark Mode Performance & Verification (2026-07-27)
 

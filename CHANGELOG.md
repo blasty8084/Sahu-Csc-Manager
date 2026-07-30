@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Changelog
-**Current version: 4.10.1 — July 30, 2026**
+**Current version: 4.10.2 — July 30, 2026**
 
 > Single authoritative changelog covering all versions from v1.x through v4.x.
 > - **v3.x / v4.x entries** (current) — listed first, newest at top
@@ -9,7 +9,57 @@
 
 ## Table of Contents
 
+0. [Fix — Email OTP never sent + HTML template restored (July 30, 2026)](#0-fix--email-otp-never-sent--html-template-restored-july-30-2026)
+0. [Infra — 2FA permanently hardcoded ON; SMTP fully configured (July 30, 2026)](#0-infra--2fa-permanently-hardcoded-on-smtp-fully-configured-july-30-2026)
 0. [Refactor — Full CSS variable tokenization across 355+ files (July 27, 2026)](#0-refactor--full-css-variable-tokenization-across-355-files-july-27-2026)
+
+---
+
+## 0. Fix — Email OTP never sent + HTML template restored (July 30, 2026)
+
+**Root cause 1 — OTP email silently dropped:**
+`login-helpers.ts` and `otp.ts` called `enqueueEmail(buildOtpMailOptions(...))` from `queue-client.ts`. Both functions were no-op stubs: `buildOtpMailOptions` returned `null` and `enqueueEmail` discarded its argument without sending. OTP codes were correctly generated and saved to the database but were never emailed to the user.
+
+**Fix:** Both call sites now call `sendOtpEmail(to, otp, purpose, expiresAt)` directly from `lib/mailer`, bypassing the stub queue path entirely.
+
+**Root cause 2 — Template helpers missing from transport.ts:**
+All three template files (`templates/otp.ts`, `templates/approval.ts`, `templates/adminAlerts.ts`, `templates/rejection.ts`) import `createTransporter`, `getFromEmail`, `esc`, and `buildV2Html` from `../transport`, but `transport.ts` only exported `isSmtpConfigured` and `getTransporter`. Any call into a template function would throw `TypeError: createTransporter is not a function` at runtime.
+
+**Fix:** Added four functions to `transport.ts`:
+- `createTransporter()` — alias for `getTransporter()` (lazy singleton nodemailer transport)
+- `getFromEmail()` — reads `SMTP_FROM_EMAIL` env var with `SMTP_USER` fallback
+- `esc(str)` — HTML-escapes a string for safe inline template use
+- `buildV2Html(opts)` — dark-navy branded email shell (header, body slot, footer)
+
+**Fix:** `mailer/index.ts` now re-exports `sendOtpEmail` and `buildOtpMailOptions` from `templates/otp.ts` instead of its own bare stubs. All OTP emails now use the full branded HTML design: dark navy wrapper, per-digit boxes, expiry pill, colour-coded by purpose (green = registration, blue = 2FA login, amber = password reset).
+
+**Files changed:**
+- `artifacts/api-server/src/lib/mailer/transport.ts` — added `createTransporter`, `getFromEmail`, `esc`, `buildV2Html`
+- `artifacts/api-server/src/lib/mailer/index.ts` — re-exports from templates; removed inline stubs
+- `artifacts/api-server/src/routes/auth/login-helpers.ts` — `sendOtpEmail(email, otp, "2fa_login", expiresAt)`
+- `artifacts/api-server/src/routes/auth/otp.ts` — `sendOtpEmail(email, otp, purpose, expiresAt)`
+
+---
+
+## 0. Infra — 2FA permanently hardcoded ON; SMTP fully configured (July 30, 2026)
+
+**2FA always-on hardcoding:**
+The `DISABLE_2FA=true` env var previously bypassed all 2FA and device challenges globally. The bypass was removed from three files so 2FA can never be turned off via environment variable:
+- `routes/auth/login.ts` — `if (needsChallenge && !twoFaGloballyDisabled)` → `if (needsChallenge)`
+- `routes/auth/register.ts` — schema always `RegisterBody` (never `RegisterBodyNo2FA`); OTP verification always required
+- `routes/setup-status.ts` — `twoFaDisabled` field hardcoded to `false`
+
+**SMTP configuration:**
+- `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587` (already set)
+- `SMTP_USER` — Gmail address (set via env vars)
+- `SMTP_PASSWORD` — Gmail App Password (set via Replit Secrets)
+- `SMTP_FROM_EMAIL=SAHU CSC Support <sahuuttam690@gmail.com>` (set via env vars)
+
+**Seed account emails:**
+- `ADMIN_EMAIL` env var — sets admin account email on next seed
+- `OPERATOR_EMAIL` env var — sets operator account email on next seed
+
+---
 0. [Performance — Dark mode visual-state isolation & verification (July 27, 2026)](#0-performance--dark-mode-visual-state-isolation--verification-july-27-2026)
 0. [Feature — ThemeToggle component: standalone Sun/Moon toggle, prop-drilling removed (July 26, 2026)](#0-feature--themetoggle-component-standalone-sunmoon-toggle-prop-drilling-removed-july-26-2026)
 0. [Feature — ThemeProvider setup: canonical provider, no-flash script, system mode (July 26, 2026)](#0-feature--themeprovider-setup-canonical-provider-no-flash-script-system-mode-july-26-2026)

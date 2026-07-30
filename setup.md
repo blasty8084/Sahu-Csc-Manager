@@ -33,11 +33,23 @@ In Replit → **Secrets** tab, add:
 | `SESSION_SECRET` | Any long random string | Generate: `openssl rand -base64 48` |
 | `ADMIN_PASSWORD` | Your admin account password | Min 8 chars, upper+lower+number+symbol |
 | `OPERATOR_PASSWORD` | Your operator account password | Min 8 chars, upper+lower+number+symbol |
+| `SMTP_PASSWORD` | Gmail App Password | Google Account → Security → 2-Step → App Passwords |
 
 > **`SESSION_SECRET`** — you can generate one in the Shell:
 > ```bash
 > node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"
 > ```
+
+In Replit → **Env Vars** tab → Shared, also add:
+
+| Key | Value | Notes |
+|-----|-------|-------|
+| `SMTP_HOST` | `smtp.gmail.com` | Already set by default |
+| `SMTP_PORT` | `587` | Already set by default |
+| `SMTP_USER` | `youraddress@gmail.com` | Gmail address used to send emails |
+| `SMTP_FROM_EMAIL` | `SAHU CSC Support <youraddress@gmail.com>` | Display name in From header |
+| `ADMIN_EMAIL` | admin's email address | Saved to admin account at seed time |
+| `OPERATOR_EMAIL` | operator's email address | Saved to operator account at seed time |
 
 ---
 

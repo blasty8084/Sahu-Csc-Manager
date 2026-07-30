@@ -1,5 +1,5 @@
 # SAHU CSC — Agent Reference Document
-**Version 4.9.0** · Last updated 2026-07-23
+**Version 4.10.2** · Last updated 2026-07-30
 
 This file is the single authoritative reference for any AI agent working on this codebase. Read it first before touching any code.
 
@@ -99,9 +99,10 @@ Target users: rural Odisha CSC operators. UI languages: English, Hindi, Odia (`i
 ### Required Secrets (Replit Secrets)
 | Key | Purpose |
 |-----|---------|
-| `SESSION_SECRET` | Express session signing — auto-generated is fine |
+| `SESSION_SECRET` | Express session signing |
 | `ADMIN_PASSWORD` | Seed: admin account password |
 | `OPERATOR_PASSWORD` | Seed: operator account password |
+| `SMTP_PASSWORD` | Gmail App Password for outgoing email (OTP, notifications) |
 
 ### Core Env Vars (shared)
 | Key | Value | Purpose |
@@ -109,8 +110,15 @@ Target users: rural Odisha CSC operators. UI languages: English, Hindi, Odia (`i
 | `PORT` | `5000` | Frontend Vite port |
 | `API_PORT` | `8080` | Backend Express port |
 | `BASE_PATH` | `/` | URL base path |
-| `DB_POOL_MAX` | `5` | Max pg pool connections (prevents exhaustion) |
-| `CORS_ORIGIN` | comma-separated URLs (optional) | Extra allowed origins — `REPLIT_DEV_DOMAIN` and `REPLIT_DOMAINS` are now included automatically; this var is only needed for non-Replit origins |
+| `DB_POOL_MAX` | `5` | Max pg pool connections |
+| `CORS_ORIGIN` | comma-separated URLs (optional) | Extra allowed origins — `REPLIT_DEV_DOMAIN` / `REPLIT_DOMAINS` auto-included |
+| `SMTP_HOST` | `smtp.gmail.com` | SMTP server |
+| `SMTP_PORT` | `587` | SMTP STARTTLS port |
+| `SMTP_USER` | Gmail address | Sender address + admin email fallback |
+| `SMTP_FROM_EMAIL` | `SAHU CSC Support <addr>` | Display name in From header |
+| `ADMIN_EMAIL` | admin email | Set on admin account at seed time |
+| `OPERATOR_EMAIL` | operator email | Set on operator account at seed time |
+| `ALLOW_NON_INDIA` | `true` | Bypasses geo-block for Replit dev (not for production) |
 
 ### Optional Secrets
 | Key | Purpose |
@@ -119,6 +127,9 @@ Target users: rural Odisha CSC operators. UI languages: English, Hindi, Odia (`i
 | `MAXMIND_LICENSE_KEY` | Weekly GeoIP database updates |
 | `SENTRY_DSN` | Server-side error tracking |
 | `VITE_SENTRY_DSN` | Client-side error tracking |
+
+### 2FA
+2FA is **permanently hardcoded ON** as of 2026-07-30. The `DISABLE_2FA` env var no longer has any effect — it was removed from `login.ts`, `register.ts`, and `setup-status.ts`. Every login and registration always requires OTP or TOTP verification.
 
 ### Runtime-managed (never set manually)
 `DATABASE_URL` (Replit-managed PostgreSQL), `PGDATABASE`, `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `REPLIT_DOMAINS`, `REPLIT_DEV_DOMAIN`, `REPL_ID`

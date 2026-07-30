@@ -1,5 +1,5 @@
 # SAHU CSC — Secrets & Environment Variables Reference
-**Version 4.10.1** · Last updated 2026-07-30
+**Version 4.10.2** · Last updated 2026-07-30
 
 > Complete reference for every secret and environment variable in this project.
 >
