@@ -462,7 +462,7 @@ workspace/
 | `failed_login_attempts` | integer | Reset on success; 5 failures → lock 15 min |
 | `locked_until` | timestamptz NULL | |
 | `active_session_token` | text NULL | V1 backward-compat |
-| `profile_picture` | text NULL | base64 data URL |
+| `profile_picture` | text NULL | `data:image/webp;base64,...` (default) or `b2:<key>` when B2 configured |
 | `bio` | text NULL | Max 500 chars |
 | `address` | text NULL | Max 500 chars |
 | `ledger_balance` | numeric(15,2) NOT NULL DEFAULT 0 | Maintained running total of ledger credits − debits; updated atomically on every ledger write (O(1) alternative to full `SUM()` scan) |

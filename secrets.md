@@ -1,5 +1,5 @@
 # SAHU CSC — Secrets & Environment Variables Reference
-**Version 4.10.1** · Last updated 2026-07-28
+**Version 4.10.1** · Last updated 2026-07-30
 
 > Complete reference for every secret and environment variable in this project.
 >
@@ -16,15 +16,18 @@
 
 1. [Critical Secrets — App will not boot without these](#1-critical-secrets--app-will-not-boot-without-these)
 2. [Optional Secrets — Enable additional features](#2-optional-secrets--enable-additional-features)
-3. [Core Environment Variables](#3-core-environment-variables)
-4. [Database & Performance](#4-database--performance)
-5. [Push Notifications (VAPID)](#5-push-notifications-vapid)
-6. [Geo & Feature Flags](#6-geo--feature-flags)
-7. [CORS](#7-cors)
-8. [Seed Data](#8-seed-data)
-9. [Observability](#9-observability)
-10. [Runtime-Managed (Never Set Manually)](#10-runtime-managed-never-set-manually)
-11. [Quick-Start Checklist](#11-quick-start-checklist)
+3. [SMTP / Email](#3-smtp--email)
+4. [Backblaze B2 File Storage](#4-backblaze-b2-file-storage)
+5. [Upstash Redis (Cache + Rate Limiting + Queue)](#5-upstash-redis-cache--rate-limiting--queue)
+6. [Core Environment Variables](#6-core-environment-variables)
+7. [Database & Performance](#7-database--performance)
+8. [Push Notifications (VAPID)](#8-push-notifications-vapid)
+9. [Geo & Feature Flags](#9-geo--feature-flags)
+10. [CORS](#10-cors)
+11. [Seed Data](#11-seed-data)
+12. [Observability](#12-observability)
+13. [Runtime-Managed (Never Set Manually)](#13-runtime-managed-never-set-manually)
+14. [Quick-Start Checklist](#14-quick-start-checklist)
 
 ---
 
@@ -54,7 +57,59 @@ Set in **Replit → Secrets tab**.
 
 ---
 
-## 3. Core Environment Variables
+## 3. SMTP / Email
+
+Enables transactional emails: OTP delivery, account approval/rejection, admin alerts, broadcast emails, and password reset links. All send functions are graceful no-ops when SMTP is not configured.
+
+**Secrets** (Replit → Secrets tab):
+
+| Secret | Status | Explanation |
+|--------|--------|-------------|
+| `SMTP_USER` | ✅ Set | Gmail address used to send emails (e.g. `sahuuttam690@gmail.com`). Also used as the admin account email when re-seeding. |
+| `SMTP_PASSWORD` | ✅ Set | **Gmail App Password** (16 chars, no spaces) — NOT your regular Gmail login password. Generate at: Google Account → Security → 2-Step Verification → App Passwords. |
+| `SMTP_FROM_EMAIL` | ✅ Set | Display name + address in the `From:` header (e.g. `SAHU CSC Support <sahuuttam690@gmail.com>`). |
+
+**Environment Variables** (Replit → Env Vars → Shared):
+
+| Variable | Status | Value | Explanation |
+|----------|--------|-------|-------------|
+| `SMTP_HOST` | ✅ Set | `smtp.gmail.com` | SMTP server hostname. |
+| `SMTP_PORT` | ✅ Set | `587` | SMTP port — 587 = STARTTLS (recommended for Gmail). |
+
+> **Test endpoint**: `POST /api/settings/smtp/test` (admin auth required) verifies the connection and sends a real test email to `SMTP_USER`. Confirmed working as of 2026-07-30.
+
+---
+
+## 4. Backblaze B2 File Storage
+
+When configured, profile avatars are stored as compressed WebP objects in B2 (instead of base64 in the DB), and database backups are mirrored to B2 for redundancy. Bucket `SAHUCSCV2` (region `us-west-004`) is already created.
+
+| Secret / Var | Type | Status | Explanation |
+|---|---|---|---|
+| `B2_KEY_ID` | Secret | ⬜ Not set | Application Key ID from Backblaze → App Keys page. |
+| `B2_APP_KEY` | Secret | ⬜ Not set | Application Key (shown only once at creation). |
+| `B2_BUCKET_NAME` | Env Var | — | `SAHUCSCV2` (set in `.env.example`; add to Render env vars). |
+| `B2_BUCKET_ENDPOINT` | Env Var | — | `https://s3.us-west-004.backblazeb2.com` |
+
+> Without these vars `isB2Configured()` returns false — avatars fall back to base64 in DB, backups stay local only.
+
+---
+
+## 5. Upstash Redis (Cache + Rate Limiting + Queue)
+
+When configured, cache and rate-limit counters are shared across all server instances (required for Render multi-instance deployments). BullMQ uses the TCP Redis URL for background jobs.
+
+| Secret / Var | Type | Status | Explanation |
+|---|---|---|---|
+| `UPSTASH_REDIS_REST_URL` | Secret | ⬜ Not set | REST URL from Upstash dashboard → REST API tab (e.g. `https://xxx.upstash.io`). Used by the cache backend and rate limiters. |
+| `UPSTASH_REDIS_REST_TOKEN` | Secret | ⬜ Not set | REST token from the same tab. |
+| `REDIS_URL` | Secret | ⬜ Not set | TCP connection URL from Upstash → Redis tab (e.g. `rediss://default:xxx@xxx.upstash.io:6379`). Used by BullMQ/ioredis for background notification jobs. |
+
+> Free tier: 10,000 requests/day, 256 MB. Without these vars the app falls back to in-memory rate limiting and cache (fine for single-instance; not safe for multi-instance).
+
+---
+
+## 6. Core Environment Variables
 
 Set in **Replit → Env Vars → Shared**.
 
@@ -67,7 +122,7 @@ Set in **Replit → Env Vars → Shared**.
 
 ---
 
-## 4. Database & Performance
+## 7. Database & Performance
 
 | Variable | Status | Value | Explanation |
 |----------|--------|-------|-------------|
@@ -77,7 +132,7 @@ Set in **Replit → Env Vars → Shared**.
 
 ---
 
-## 5. Push Notifications (VAPID)
+## 8. Push Notifications (VAPID)
 
 VAPID (Voluntary Application Server Identification) is the Web Push standard for identifying your server to browser push services.
 
@@ -90,7 +145,7 @@ VAPID (Voluntary Application Server Identification) is the Web Push standard for
 
 ---
 
-## 6. Geo & Feature Flags
+## 9. Geo & Feature Flags
 
 | Variable | Status | Value | Explanation |
 |----------|--------|-------|-------------|
@@ -99,7 +154,7 @@ VAPID (Voluntary Application Server Identification) is the Web Push standard for
 
 ---
 
-## 7. CORS
+## 10. CORS
 
 Cross-Origin Resource Sharing controls which domains the API will accept requests from.
 
@@ -111,7 +166,7 @@ Cross-Origin Resource Sharing controls which domains the API will accept request
 
 ---
 
-## 8. Seed Data
+## 11. Seed Data
 
 Used **only** by the `Seed Database` workflow. These set the default values for accounts and business info on first setup. After seeding, all values can be changed from the app UI (Admin → Settings, Profile page).
 
@@ -126,7 +181,7 @@ Used **only** by the `Seed Database` workflow. These set the default values for 
 
 ---
 
-## 9. Observability
+## 12. Observability
 
 | Variable | Status | Default | Explanation |
 |----------|--------|---------|-------------|
@@ -135,7 +190,7 @@ Used **only** by the `Seed Database` workflow. These set the default values for 
 
 ---
 
-## 10. Runtime-Managed (Never Set Manually)
+## 13. Runtime-Managed (Never Set Manually)
 
 Replit injects these automatically. Adding them to Secrets or Env Vars will cause conflicts.
 
@@ -154,15 +209,25 @@ Replit injects these automatically. Adding them to Secrets or Env Vars will caus
 
 ---
 
-## 11. Quick-Start Checklist
+## 14. Quick-Start Checklist
 
 Minimum required after importing the project fresh from GitHub:
 
 ### Secrets Tab (🔒)
 ```
-☐ SESSION_SECRET      — 32+ character random string (e.g. openssl rand -base64 32)
-☐ ADMIN_PASSWORD      — strong password for admin account
-☐ OPERATOR_PASSWORD   — strong password for operator account
+☑ SESSION_SECRET      — 32+ character random string (e.g. openssl rand -base64 32)
+☑ ADMIN_PASSWORD      — strong password for admin account
+☑ OPERATOR_PASSWORD   — strong password for operator account
+☑ SMTP_USER           — Gmail address (sahuuttam690@gmail.com)
+☑ SMTP_PASSWORD       — Gmail App Password (16 chars)
+☑ SMTP_FROM_EMAIL     — Display name + address for From: header
+```
+
+### Optional Secrets (enable extra services)
+```
+☐ B2_KEY_ID / B2_APP_KEY           — Backblaze B2 for avatar/backup storage
+☐ UPSTASH_REDIS_REST_URL / TOKEN   — Shared cache + rate limiting
+☐ REDIS_URL                        — BullMQ background jobs
 ```
 
 ### Setup Steps (run in order)

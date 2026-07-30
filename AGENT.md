@@ -423,7 +423,9 @@ All routes mount under `/api/`. Auth middleware: `requireAuth` (session), `requi
 | PATCH | `/admin/settings/registration` | requireRole("admin") | Toggle registration open/closed. |
 | GET | `/settings` | requireAuth | App settings. |
 | PATCH | `/settings` | requireRole("admin") | Update settings. |
-| GET/PATCH | `/settings/smtp` | requireRole("admin") | SMTP config (returns 501 — email removed). |
+| GET | `/settings/smtp` | requireRole("admin") | SMTP config status — returns `configured`, `host`, `port`, `user`, `fromEmail`, `passwordSaved`. |
+| PATCH | `/settings/smtp` | requireRole("admin") | Returns 501 — configure SMTP via env vars, not the API. |
+| POST | `/settings/smtp/test` | requireRole("admin") | Verify SMTP connection and send a test email to the admin address. |
 | GET | `/settings/vapid` | requireRole("admin") | VAPID public key. |
 | POST | `/settings/vapid/rotate` | requireRole("admin") | Rotate VAPID keys. |
 | GET | `/settings/contact` | — | Public contact info. |
@@ -631,12 +633,12 @@ pnpm --filter @workspace/db run push-force
 | Job | Schedule | Description |
 |-----|----------|-------------|
 | OTP cleanup | Every 1 hour | Delete expired `email_otps` rows |
-| Monthly receipt export | `5 0 1 * *` (1st of month, midnight IST) | PDF/ZIP built locally (email disabled) |
+| Monthly receipt export | `5 0 1 * *` (1st of month, midnight IST) | PDF/ZIP built locally; emailed to admin if SMTP configured |
 | GeoIP update | `0 3 * * 0` (Sunday 3am) | MaxMind DB update via `geoip-lite` (needs `MAXMIND_LICENSE_KEY`) |
 | Auto-backup | Disabled by default | Configurable in settings |
 
 ### Notification delivery
-Push notifications are sent directly (fire-and-forget) via `enqueueNotification`. No queue or Redis required. Email sending is a no-op (SMTP removed).
+Push notifications go through `enqueueNotification` in `lib/queue-client.ts` — uses BullMQ when `REDIS_URL` is set, direct fire-and-forget otherwise. Email is sent via nodemailer (`lib/mailer/`) when `SMTP_HOST` + `SMTP_USER` + `SMTP_PASSWORD` are set; graceful no-op if absent. Gmail confirmed working (`smtp.gmail.com:587`) with an App Password.
 
 ---
 
@@ -672,8 +674,8 @@ Push notifications are sent directly (fire-and-forget) via `enqueueNotification`
 
 15. **`finalizeLogin` is the single codepath** for all successful logins (direct + OTP + TOTP). If you add post-login logic, put it there.
 
-16. **Email is permanently disabled** — `isSmtpConfigured()` always returns `false`; all `send*Email` functions are no-ops. Password/TOTP/backup-code login still works. OTP 2FA on login is token-only (no email delivery).
-17. **Avatars are always base64** — stored as WebP data URLs in the `users.profilePicture` column. Legacy `b2:` prefixed values are treated as null (user must re-upload).
+16. **SMTP is optional, not removed** — `isSmtpConfigured()` checks `SMTP_HOST` + `SMTP_USER` + `SMTP_PASSWORD` at runtime. When set (Gmail App Password confirmed working), all `send*Email` helpers deliver real email. When absent, they silently no-op — OTP/approval/broadcast flows degrade gracefully.
+17. **Avatars: B2 when configured, base64 otherwise** — `fmtProfile` resolves `b2:<key>` to a 1-hour pre-signed URL when `B2_KEY_ID` is set; treats the key as null if B2 is not configured. Legacy `data:image/...` base64 rows pass through unchanged.
 
 ---
 
