@@ -1,6 +1,8 @@
 # SAHU CSC — Common Service Center Management Platform
 **Version 4.10.2** — last updated 2026-07-30
 
+> **2026-07-30 (re-import setup #3)**: Re-imported from GitHub. Ran `pnpm install --frozen-lockfile`. Applied DB schema via `pnpm --filter @workspace/db run push-force`. Created `session` table + index via raw SQL. Ran `Seed Database` workflow — admin/operator accounts created. Secrets set: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. `API Server` running on port 8080; `Start application` (Vite dev) running on port 5000. `Worker Server` skips cleanly — `REDIS_URL` not set. Verified: splash screen renders correctly in preview.
+>
 > **2026-07-30 (Render free-tier deploy prep)**: Updated `render-build.sh` — added `drizzle-kit push --force` step during build so Neon schema is auto-applied without any shell access. Updated `RENDER_DEPLOY.md` — full step-by-step guide for free tier (Blueprint + manual method, troubleshooting table). Session table auto-created by `connect-pg-simple` (`createTableIfMissing: true`). Admin/operator accounts auto-seeded on first boot via `startup-init.ts`. No manual shell commands needed at any step.
 >
 > **2026-07-30 (re-import setup #2)**: Re-imported from GitHub. Ran `pnpm install`. Applied DB schema via `pnpm --filter @workspace/db run push`. Created `session` table + index via raw SQL. Ran `Seed Database` workflow — admin/operator accounts created. Secrets set: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. `API Server` running on port 8080; `Start application` (Vite dev) running on port 5000. `Worker Server` skips cleanly — `REDIS_URL` not set. Verified: splash screen renders correctly in preview.
