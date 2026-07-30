@@ -13,7 +13,13 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import type { Readable } from "stream";
 
-const B2_ENDPOINT = process.env["B2_BUCKET_ENDPOINT"];
+// Normalise: accept plain hostname or full URL — always produce https://
+const _rawEndpoint = process.env["B2_BUCKET_ENDPOINT"];
+const B2_ENDPOINT = _rawEndpoint
+  ? _rawEndpoint.startsWith("http")
+    ? _rawEndpoint
+    : `https://${_rawEndpoint}`
+  : undefined;
 const B2_KEY_ID   = process.env["B2_KEY_ID"];
 const B2_APP_KEY  = process.env["B2_APP_KEY"];
 

@@ -8,7 +8,6 @@ import helmet from "helmet";
 import hpp from "hpp";
 import rateLimit from "express-rate-limit";
 import { RedisStore } from "rate-limit-redis";
-import { Redis } from "@upstash/redis";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import router from "./routes";
@@ -92,20 +91,28 @@ app.use(hpp());
 app.use(compression());
 
 function makeRedisStore(prefix: string) {
-  if (
-    !process.env["UPSTASH_REDIS_REST_URL"] ||
-    !process.env["UPSTASH_REDIS_REST_TOKEN"]
-  ) {
-    return undefined; // use default in-memory store
-  }
-  const redis = new Redis({
-    url: process.env["UPSTASH_REDIS_REST_URL"]!,
-    token: process.env["UPSTASH_REDIS_REST_TOKEN"]!,
-  });
+  const url   = process.env["UPSTASH_REDIS_REST_URL"];
+  const token = process.env["UPSTASH_REDIS_REST_TOKEN"];
+  if (!url || !token) return undefined; // use default in-memory store
+
   return new RedisStore({
     prefix,
-    // rate-limit-redis expects sendCommand(command, ...args)
-    sendCommand: (...args: string[]) => redis.sendCommand(args as Parameters<typeof redis.sendCommand>[0]),
+    // rate-limit-redis calls sendCommand(command, ...args).
+    // @upstash/redis is an HTTP client with no sendCommand method, so we
+    // talk to the Upstash REST API directly: POST <url> with body = [cmd, ...args].
+    sendCommand: async (...args: string[]): Promise<unknown> => {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(args),
+      });
+      const json = (await res.json()) as { result: unknown; error?: string };
+      if (json.error) throw new Error(`Upstash error: ${json.error}`);
+      return json.result;
+    },
   });
 }
 
