@@ -28,6 +28,11 @@ async function testSmtp() {
       host,
       port: Number(process.env.SMTP_PORT ?? 587),
       secure: false,
+      family: 4,
+      requireTLS: true,
+      connectionTimeout: 15_000,
+      greetingTimeout: 15_000,
+      socketTimeout: 30_000,
       auth: { user, pass },
     });
 

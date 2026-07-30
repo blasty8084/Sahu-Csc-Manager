@@ -36,3 +36,4 @@
 - [Shared health probing](shared-health-probing.md) — use one browser-global network probe; lazy chunks can otherwise create duplicate `/api/health` timers
 - [Theme visual store](theme-visual-store.md) — keep theme outside the React tree; only controls/renderers subscribe, while pages use CSS variables and dark selectors
 - [serve.mjs API proxy](serve-api-proxy.md) — production serve script must proxy /api/* to port 8080; without it sirv SPA-fallback returns index.html as a string → runtime crash
+- [Render SMTP IPv4](render-smtp-ipv4.md) — force Nodemailer SMTP to IPv4 on Render; Gmail IPv6 resolution can cause ENETUNREACH and break 2FA OTP delivery
