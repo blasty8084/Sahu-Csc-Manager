@@ -13,7 +13,8 @@ services:
       cd ../.. &&
       npm install -g pnpm@10 &&
       pnpm install --frozen-lockfile &&
-      pnpm --filter @workspace/api-server run build
+      pnpm --filter @workspace/api-server run build &&
+      node scripts/render-deploy.mjs
 
     startCommand: node --enable-source-maps ./dist/index.mjs
 
