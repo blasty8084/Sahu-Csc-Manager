@@ -1,0 +1,10 @@
+# Ignore server-side artifacts — Vercel only serves the frontend
+artifacts/api-server
+artifacts/worker-server
+
+# Dev / test files
+node_modules
+.cache
+attached_assets
+*.log
+*.md
