@@ -49,11 +49,7 @@ router.post("/auth/register", asyncHandler(async (req, res) => {
     return;
   }
 
-  // ── DISABLE_2FA flag — skips email OTP requirement at registration ─────────
-  const twoFaGloballyDisabled = process.env.DISABLE_2FA === "true";
-  const schema = twoFaGloballyDisabled ? RegisterBodyNo2FA : RegisterBody;
-
-  const parsed = schema.safeParse(req.body);
+  const parsed = RegisterBody.safeParse(req.body);
   if (!parsed.success) {
     const firstIssue = parsed.error.issues?.[0];
     res.status(400).json({ error: firstIssue?.message ?? "Validation failed" });
@@ -62,7 +58,7 @@ router.post("/auth/register", asyncHandler(async (req, res) => {
   const data = parsed.data;
 
   // ── Verify email OTP before doing anything else ───────────────────────────
-  if (!twoFaGloballyDisabled) {
+  if (true) {
     const otpHash = hashOtp(data.emailOtp);
     const [otpRecord] = await db
       .select()
