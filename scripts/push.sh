@@ -17,5 +17,5 @@ git push origin main
 
 echo ""
 echo "✅  Pushed! Render + Vercel will auto-deploy in 2-5 minutes."
-echo "   Render API:      https://sahu-csc-api.onrender.com/api/health"
-echo "   Vercel Frontend: https://sahu-csc.vercel.app"
+echo "   Render API:      https://sahu-csc-api-02wn.onrender.com/api/health"
+echo "   Vercel Frontend: https://sahu-csc-manager-sahu-csc.vercel.app"

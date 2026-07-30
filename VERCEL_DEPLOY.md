@@ -8,7 +8,7 @@
 
 | Part | Platform | URL / location |
 |---|---|---|
-| Frontend | Vercel | `https://sahu-csc.vercel.app` (expected project URL) |
+| Frontend | Vercel | `https://sahu-csc-manager-sahu-csc.vercel.app` (verified live) |
 | Backend API | Render | `https://sahu-csc-api-02wn.onrender.com` |
 | Database | Neon PostgreSQL | Configured through Render environment variables |
 
@@ -112,10 +112,10 @@ Ye backend/Render environment ke secrets hain.
 3. Build complete hone ka wait karo.
 4. Deployment URL open karo.
 
-Expected project URL:
+Verified production URL:
 
 ```text
-https://sahu-csc.vercel.app
+https://sahu-csc-manager-sahu-csc.vercel.app
 ```
 
 ## Step 7 — API rewrite verify karo
@@ -139,7 +139,7 @@ Vercel deploy ke baad Render dashboard mein:
 3. `CORS_ORIGIN` ko exact Vercel URL par set karo:
 
 ```text
-https://sahu-csc.vercel.app
+https://sahu-csc-manager-sahu-csc.vercel.app
 ```
 
 4. **Save Changes** karo.
@@ -149,7 +149,7 @@ Trailing slash mat lagao. Agar Replit preview bhi allow karna ho, to comma
 separate karke origins add kar sakte ho:
 
 ```text
-https://sahu-csc.vercel.app,https://your-replit-preview.replit.dev
+https://sahu-csc-manager-sahu-csc.vercel.app,https://your-replit-preview.replit.dev
 ```
 
 ## Step 9 — Production verification
@@ -164,6 +164,12 @@ Vercel URL par ye checks karo:
 - Browser console mein CORS error nahi hai.
 - Dashboard refresh karne par 404 nahi aata.
 - Direct deep link, jaise `/ledger`, refresh ke baad bhi open hota hai.
+
+Verified live URL:
+
+```text
+https://sahu-csc-manager-sahu-csc.vercel.app/
+```
 
 Render API health check:
 

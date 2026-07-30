@@ -80,7 +80,7 @@ services:
       # ── CORS ─────────────────────────────────────────────────────────────
       # Set to your Vercel (or custom) frontend URL after deploying the frontend.
       - key: CORS_ORIGIN
-        sync: false             # e.g. https://sahu-csc.vercel.app
+        sync: false             # https://sahu-csc-manager-sahu-csc.vercel.app
 
       # ── Business info ─────────────────────────────────────────────────────
       - key: BUSINESS_NAME

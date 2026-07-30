@@ -71,8 +71,8 @@
 |----------|------|-----|
 | **Replit** | Code likhna, locally test karna | replit.com |
 | **GitHub** | Code store + auto-deploy bridge | github.com |
-| **Vercel** | Frontend (React PWA) host karna | vercel.com → sahu-csc.vercel.app |
-| **Render** | Backend API host karna | render.com → sahu-csc-api.onrender.com |
+| **Vercel** | Frontend (React PWA) host karna | https://sahu-csc-manager-sahu-csc.vercel.app |
+| **Render** | Backend API host karna | https://sahu-csc-api-02wn.onrender.com |
 | **Neon** | Production PostgreSQL database | neon.tech |
 | **Upstash** | Redis (optional, background jobs) | upstash.com |
 | **Backblaze B2** | File storage for avatars/backups | backblaze.com |
@@ -226,7 +226,7 @@ DATABASE_URL          = <neon connection string>
 SESSION_SECRET        = <node -e "console.log(require('crypto').randomBytes(32).toString('hex'))">
 ADMIN_PASSWORD        = <strong password>
 OPERATOR_PASSWORD     = <strong password>
-CORS_ORIGIN           = https://sahu-csc.vercel.app
+CORS_ORIGIN           = https://sahu-csc-manager-sahu-csc.vercel.app
 SMTP_HOST             = smtp.gmail.com
 SMTP_PORT             = 587
 SMTP_USER             = <gmail>
@@ -270,7 +270,7 @@ pool.query(\`
 
 ### Render API URL
 
-Deploy hone ke baad: `https://sahu-csc-api.onrender.com`
+Deploy hone ke baad: `https://sahu-csc-api-02wn.onrender.com`
 
 > ⚠️ **Free tier cold start:** Render free tier pe 15 min inactivity ke baad server "sleep" ho jaata hai.
 > First request aane par 30-60 sec ka cold start hoga. Paid tier pe ye nahi hota.
@@ -302,7 +302,7 @@ Vercel pe React frontend (`artifacts/sahu-csc`) deploy hota hai.
 Vercel → Project → **"Settings"** → **"Environment Variables"**:
 
 ```
-VITE_API_URL = https://sahu-csc-api.onrender.com
+VITE_API_URL = https://sahu-csc-api-02wn.onrender.com
 NODE_ENV     = production
 BASE_PATH    = /
 ```
@@ -315,7 +315,7 @@ BASE_PATH    = /
 {
   "rewrites": [
     { "source": "/api/:path*",
-      "destination": "https://sahu-csc-api.onrender.com/api/:path*" },
+      "destination": "https://sahu-csc-api-02wn.onrender.com/api/:path*" },
     { "source": "/(.*)",
       "destination": "/index.html" }
   ]
@@ -327,7 +327,7 @@ React Router ke routes bhi is file ki wajah se 404 se bachte hain.
 
 ### Vercel Frontend URL
 
-Deploy hone ke baad: `https://sahu-csc.vercel.app`
+Deploy hone ke baad: `https://sahu-csc-manager-sahu-csc.vercel.app`
 
 ---
 
@@ -351,7 +351,7 @@ Deploy hone ke baad: `https://sahu-csc.vercel.app`
 ### CORS — Kahan se kahan request allowed hai
 
 ```
-CORS_ORIGIN in Render = https://sahu-csc.vercel.app
+CORS_ORIGIN in Render = https://sahu-csc-manager-sahu-csc.vercel.app
 ```
 
 Ye set karo render pe, nahi toh browser "CORS error" dikhayega jab Vercel frontend,
@@ -379,7 +379,7 @@ Render API ko call karta hai.
    → Render: 3-5 min mein live
 
 4. Live URL pe verify karo:
-   → https://sahu-csc.vercel.app
+   → https://sahu-csc-manager-sahu-csc.vercel.app
 ```
 
 ### Naya feature banana
@@ -419,7 +419,7 @@ Fix:
 ### "CORS error" in browser console
 ```
 Cause: Render pe CORS_ORIGIN sahi set nahi hai
-Fix: Render → Environment → CORS_ORIGIN = https://sahu-csc.vercel.app
+Fix: Render → Environment → CORS_ORIGIN = https://sahu-csc-manager-sahu-csc.vercel.app
      Phir service restart karo
 ```
 
@@ -488,8 +488,8 @@ Fix:
 │              SAHU CSC — Quick Reference              │
 ├─────────────────┬───────────────────────────────────┤
 │ Dev URL         │ Replit preview (port 5000)         │
-│ Prod Frontend   │ https://sahu-csc.vercel.app        │
-│ Prod API        │ https://sahu-csc-api.onrender.com  │
+│ Prod Frontend   │ https://sahu-csc-manager-sahu-csc.vercel.app │
+│ Prod API        │ https://sahu-csc-api-02wn.onrender.com       │
 │ API Health      │ /api/health                        │
 ├─────────────────┼───────────────────────────────────┤
 │ Code push       │ git push origin main               │
@@ -544,9 +544,9 @@ Fix:
 3. Build Command: `cd ../.. && npm install -g pnpm && pnpm install --frozen-lockfile && pnpm --filter @workspace/sahu-csc run build`
 4. Output Directory: `dist/public`
 5. Add env var: `VITE_API_URL = https://your-service.onrender.com` (not needed — vercel.json handles it)
-6. Deploy → verify https://sahu-csc.vercel.app
+6. Deploy → verify https://sahu-csc-manager-sahu-csc.vercel.app
 
 ### Step 6 — Cross-link platforms
-- Render → CORS_ORIGIN = `https://sahu-csc.vercel.app`
+- Render → CORS_ORIGIN = `https://sahu-csc-manager-sahu-csc.vercel.app`
 - `vercel.json` destination = `https://your-service.onrender.com/api/:path*`
 - Push updated `vercel.json` → `./scripts/push.sh "fix: update API URL"`

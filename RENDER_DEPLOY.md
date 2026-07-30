@@ -29,7 +29,7 @@
 | `NEON_DATABASE_URL` | Connection string from Neon (Step 1) |
 | `ADMIN_PASSWORD` | Strong password for the admin account |
 | `OPERATOR_PASSWORD` | Strong password for the operator account |
-| `CORS_ORIGIN` | `https://sahu-csc.vercel.app` (set after frontend deploy; use your exact Vercel URL) |
+| `CORS_ORIGIN` | `https://sahu-csc-manager-sahu-csc.vercel.app` (verified frontend origin) |
 | `SMTP_USER` | Your Gmail address |
 | `SMTP_PASS` | Gmail App Password — **not** your account password (Google → Security → 2-Step → App Passwords → create) |
 | `SMTP_FROM_EMAIL` | e.g. `SAHU CSC Support <you@gmail.com>` |
