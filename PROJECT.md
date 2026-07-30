@@ -3,6 +3,11 @@
 
 Complete structural guide for anyone importing or onboarding to this project.
 
+Deployment guides:
+
+- Render API: [`RENDER_DEPLOY.md`](RENDER_DEPLOY.md)
+- Vercel frontend: [`VERCEL_DEPLOY.md`](VERCEL_DEPLOY.md)
+
 ---
 
 ## Table of Contents

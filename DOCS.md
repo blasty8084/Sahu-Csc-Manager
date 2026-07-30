@@ -7,6 +7,8 @@
 > **Development & Deployment workflow:** `DEVELOPMENT_WORKFLOW.md`
 > **First-time Replit setup:** `setup.md`
 > **All secrets & env vars:** `secrets.md`
+> **Render API deployment:** `RENDER_DEPLOY.md`
+> **Vercel frontend deployment:** `VERCEL_DEPLOY.md`
 
 ---
 

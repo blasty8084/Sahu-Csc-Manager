@@ -2,6 +2,9 @@
 
 > **Free tier compatible** — no SSH shell needed at any step.
 > Everything (schema, admin account, session table) runs automatically on first boot.
+>
+> **Current confirmed deployment:** `https://sahu-csc-api-02wn.onrender.com`
+> Frontend deployment guide: [`VERCEL_DEPLOY.md`](VERCEL_DEPLOY.md)
 
 ---
 
@@ -26,7 +29,7 @@
 | `NEON_DATABASE_URL` | Connection string from Neon (Step 1) |
 | `ADMIN_PASSWORD` | Strong password for the admin account |
 | `OPERATOR_PASSWORD` | Strong password for the operator account |
-| `CORS_ORIGIN` | Your Vercel frontend URL, e.g. `https://sahu-csc.vercel.app` (set after frontend deploy) |
+| `CORS_ORIGIN` | `https://sahu-csc.vercel.app` (set after frontend deploy; use your exact Vercel URL) |
 | `SMTP_USER` | Your Gmail address |
 | `SMTP_PASS` | Gmail App Password — **not** your account password (Google → Security → 2-Step → App Passwords → create) |
 | `SMTP_FROM_EMAIL` | e.g. `SAHU CSC Support <you@gmail.com>` |
@@ -94,11 +97,11 @@ Optional (skip if not using):
 
 ## After deploy
 
-1. Copy your Render service URL (e.g. `https://sahu-csc-api.onrender.com`)
-2. Test health check: `curl https://sahu-csc-api.onrender.com/api/health`
+1. Copy your Render service URL: `https://sahu-csc-api-02wn.onrender.com`
+2. Test health check: `curl https://sahu-csc-api-02wn.onrender.com/api/health`
    - Should return: `{"status":"ok",...}`
 3. Set `CORS_ORIGIN` in Render env to your Vercel frontend URL
-4. Update your frontend's API base URL to point at the Render service URL
+4. Deploy the frontend using [`VERCEL_DEPLOY.md`](VERCEL_DEPLOY.md). The Vercel rewrite forwards `/api/*` to this Render service URL.
 
 ---
 
