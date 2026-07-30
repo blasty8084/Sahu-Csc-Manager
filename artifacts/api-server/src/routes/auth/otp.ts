@@ -5,6 +5,7 @@ import { randomUUID, timingSafeEqual } from "node:crypto";
 import { getClientIp } from "../../lib/auth";
 import { isSmtpConfigured } from "../../lib/mailer";
 import { sendOtpEmail } from "../../lib/mailer";
+import type { OtpPurpose } from "../../lib/mailer/templates/otp";
 import { logger } from "../../lib/logger";
 import { generateNumericOtp, hashOtp, maskEmail } from "./helpers";
 import { asyncHandler } from "../../lib/async-handler";
@@ -99,7 +100,7 @@ router.post("/auth/send-otp", asyncHandler(async (req, res) => {
   await db.insert(emailOtpsTable).values({ email: resolvedEmail, purpose, otpHash, expiresAt, ipAddress: clientIp });
 
   try {
-    await sendOtpEmail(resolvedEmail, otp);
+    await sendOtpEmail(resolvedEmail, otp, purpose as OtpPurpose, expiresAt);
   } catch (err) {
     logger.error({ err, purpose, email: maskEmail(resolvedEmail) }, "Failed to enqueue OTP email");
     res.status(502).json({ error: "Failed to send email. Please check SMTP configuration or try again." });

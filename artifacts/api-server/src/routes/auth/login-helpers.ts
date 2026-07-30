@@ -33,7 +33,7 @@ export async function sendLoginOtp(
   const expiresAt = new Date(Date.now() + OTP_EXPIRY_MS);
   await db.insert(emailOtpsTable).values({ email: user.email, purpose: "2fa_login", otpHash: hashOtp(otp), expiresAt, ipAddress: clientIp });
   try {
-    await sendOtpEmail(user.email, otp);
+    await sendOtpEmail(user.email, otp, "2fa_login", expiresAt);
   } catch (err) {
     logger.error({ err }, "Failed to enqueue 2FA login OTP email");
     const e: any = new Error("Failed to send verification code. Please try again.");
