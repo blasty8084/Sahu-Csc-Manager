@@ -1,25 +1,14 @@
 # Render Blueprint — SAHU CSC Backend API
-# Docs: https://render.com/docs/blueprint-spec
-#
-# How to use:
-#   1. GitHub pe repo push karo
-#   2. Render Dashboard → "New +" → "Blueprint"
-#   3. Is repo ko connect karo — Render is file ko auto-read karega
-#   4. "sync: false" wale variables manually enter karo (passwords, DB URL etc.)
-#
-# Ya manually setup karo:
-#   Dashboard → "New +" → "Web Service" → sahu-csc-manager repo
-#   (DEVELOPMENT_WORKFLOW.md → Section 5 dekho)
+# Usage: render.com → New → Blueprint → connect sahu-csc-manager repo
 
 services:
   - type: web
     name: sahu-csc-api
     runtime: node
-    region: singapore          # India ke sabse paas
+    region: singapore
     plan: free
     rootDir: artifacts/api-server
 
-    # pnpm workspace root se install, phir api-server build karo
     buildCommand: >-
       cd ../.. &&
       npm install -g pnpm@10 &&
@@ -28,90 +17,101 @@ services:
 
     startCommand: node --enable-source-maps ./dist/index.mjs
 
-    # Health check — Render waits for this before marking deploy as live
     healthCheckPath: /api/health
 
     envVars:
-      # ── Core ──────────────────────────────────────────────────────────────
+      # ── Core ──────────────────────────────────────────────────
       - key: NODE_ENV
         value: production
 
       - key: PORT
-        value: 10000            # Render free tier default port
-
-      - key: CACHE_BACKEND
-        value: memory           # Redis nahi hai → in-memory fallback
+        value: 10000
 
       - key: ALLOW_NON_INDIA
-        value: "true"           # Render servers US/Singapore mein hain
+        value: "true"
 
-      - key: DISABLE_2FA
-        value: "false"
+      - key: CACHE_BACKEND
+        value: memory
 
-      # ── Database (Neon) — manually enter in Render dashboard ───────────
-      - key: DATABASE_URL
-        sync: false             # Neon dashboard se copy karo: postgresql://...
+      # ── Database ───────────────────────────────────────────────
+      - key: NEON_DATABASE_URL
+        sync: false         # neon.tech → Connection String → postgresql://...
 
-      # ── Session secret — auto-generate karo ───────────────────────────
+      - key: DB_POOL_MAX
+        value: "5"          # Neon free tier: max 5 connections
+
+      # ── Session ───────────────────────────────────────────────
       - key: SESSION_SECRET
-        generateValue: true     # Render ek strong random string generate karega
+        generateValue: true
 
-      # ── Admin accounts — manually enter ────────────────────────────────
+      # ── Auth & Accounts ────────────────────────────────────────
       - key: ADMIN_PASSWORD
-        sync: false             # Strong password set karo
+        sync: false
 
       - key: OPERATOR_PASSWORD
-        sync: false             # Strong password set karo
+        sync: false
 
-      # ── CORS — Vercel frontend ka URL ──────────────────────────────────
+      # ── CORS (Vercel frontend URL) ─────────────────────────────
       - key: CORS_ORIGIN
         value: https://sahu-csc.vercel.app
-        # Note: Apna actual Vercel URL yahan update karo after first deploy
+        # Update after Vercel deploy if URL is different
 
-      # ── SMTP / Email (Gmail) — manually enter ─────────────────────────
+      # ── Email (Gmail SMTP) ─────────────────────────────────────
       - key: SMTP_HOST
         value: smtp.gmail.com
 
       - key: SMTP_PORT
-        value: 587
+        value: "587"
 
       - key: SMTP_USER
-        sync: false             # Gmail address: yourname@gmail.com
+        sync: false         # your Gmail address
 
       - key: SMTP_PASS
-        sync: false             # Gmail App Password (2FA → App passwords)
+        sync: false         # Gmail App Password (16 chars)
 
       - key: SMTP_FROM_EMAIL
-        sync: false             # "SAHU CSC <yourname@gmail.com>"
+        sync: false         # "SAHU CSC Support <your@gmail.com>"
 
       - key: VAPID_EMAIL
-        sync: false             # "mailto:yourname@gmail.com"
+        sync: false         # "mailto:your@gmail.com"
 
-      # ── Business info (optional, shown in receipts) ────────────────────
+      # ── Business Info ──────────────────────────────────────────
       - key: BUSINESS_NAME
         value: SAHU CSC Center
 
       - key: BUSINESS_ADDRESS
         value: "Main Road, Bargarh, Odisha"
 
-      # ── Optional: Backblaze B2 (avatar + backup storage) ──────────────
-      # Uncomment karo jab B2 setup karo:
-      # - key: B2_KEY_ID
-      #   sync: false
-      # - key: B2_APP_KEY
-      #   sync: false
-      # - key: B2_BUCKET_NAME
-      #   value: SAHUCSCV2
-      # - key: B2_BUCKET_ENDPOINT
-      #   value: https://s3.us-west-004.backblazeb2.com
+      # ── Logging ────────────────────────────────────────────────
+      - key: LOG_LEVEL
+        value: info
 
-      # ── Optional: Upstash Redis (background jobs + cache) ─────────────
-      # Uncomment karo jab Redis setup karo:
-      # - key: REDIS_URL
-      #   sync: false            # rediss://... (Upstash → Connect → ioredis)
-      # - key: UPSTASH_REDIS_REST_URL
-      #   sync: false            # https://... (Upstash → Connect → @upstash/redis)
-      # - key: UPSTASH_REDIS_REST_TOKEN
-      #   sync: false
-      # - key: CACHE_BACKEND
-      #   value: redis           # (memory se override karo)
+      # ── Optional: Backblaze B2 ─────────────────────────────────
+      - key: B2_KEY_ID
+        sync: false
+
+      - key: B2_APP_KEY
+        sync: false
+
+      - key: B2_BUCKET_NAME
+        value: SAHUCSCV2
+
+      - key: B2_BUCKET_ENDPOINT
+        value: https://s3.us-west-004.backblazeb2.com
+
+      # ── Optional: Upstash Redis ────────────────────────────────
+      - key: REDIS_URL
+        sync: false         # rediss://... (Upstash → Connect → ioredis/node-redis)
+
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false         # https://... (Upstash → Connect → @upstash/redis)
+
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false
+
+      # ── Optional: Error Tracking ───────────────────────────────
+      - key: SENTRY_DSN
+        sync: false
+
+      - key: MAXMIND_LICENSE_KEY
+        sync: false

@@ -47,3 +47,29 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+.replit.nix
+.config/
+
+# Build outputs
+artifacts/*/dist/
+artifacts/api-server/dist/
+.pnpm-store/
+
+# Environment files — NEVER commit these
+.env
+.env.local
+.env.production
+
+# Sensitive docs
+secrets.md
+
+# Database dumps
+*.sql
+backups/
+
+# Logs
+*.log
+logs/
+
+# Editor
+.idea/

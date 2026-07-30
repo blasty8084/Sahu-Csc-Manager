@@ -509,3 +509,44 @@ Fix:
 - `ARCHITECTURE.md` — Technical architecture deep-dive
 - `DOCS.md` — Full platform documentation
 - `attached_assets/DEPLOYMENT_GUIDE_1785233608587.md` — Original deployment guide
+
+---
+
+## 11. First Deploy Checklist
+
+### Step 1 — Neon Database Setup
+1. neon.tech → Sign up (GitHub login, free, no card)
+2. Create project → copy Connection String (postgresql://...)
+3. Go to Render Shell after deploy → `node scripts/setup-neon.mjs`
+4. Run drizzle-kit push: `pnpm --filter @workspace/db run push-force`
+5. Run seed: `node scripts/seed.mjs` (or Seed workflow from Render shell)
+
+### Step 2 — Backblaze B2 (optional but recommended)
+1. backblaze.com → Sign up (no card needed for private bucket)
+2. B2 Cloud Storage → Create Bucket: `SAHUCSCV2`, Private
+3. App Keys → Add New Key → `sahu-csc-key` → bucket: SAHUCSCV2 → Read+Write
+4. **COPY applicationKey NOW** — it is only shown once
+5. Add to Render env: B2_KEY_ID, B2_APP_KEY, B2_BUCKET_NAME, B2_BUCKET_ENDPOINT
+
+### Step 3 — GitHub Push
+1. github.com → New Repository → `sahu-csc-manager` → Private
+2. Replit Shell: `bash scripts/git-init.sh`
+
+### Step 4 — Render (Backend)
+1. render.com → New → Blueprint → connect `sahu-csc-manager`
+2. Fill `sync: false` vars: NEON_DATABASE_URL, ADMIN_PASSWORD, OPERATOR_PASSWORD, SMTP_PASS, SMTP_USER, B2 keys
+3. Wait for deploy → check https://your-service.onrender.com/api/health
+4. Open Shell tab → `node scripts/setup-neon.mjs`
+
+### Step 5 — Vercel (Frontend)
+1. vercel.com → Add New Project → import `sahu-csc-manager`
+2. Root Directory: `artifacts/sahu-csc`
+3. Build Command: `cd ../.. && npm install -g pnpm && pnpm install --frozen-lockfile && pnpm --filter @workspace/sahu-csc run build`
+4. Output Directory: `dist/public`
+5. Add env var: `VITE_API_URL = https://your-service.onrender.com` (not needed — vercel.json handles it)
+6. Deploy → verify https://sahu-csc.vercel.app
+
+### Step 6 — Cross-link platforms
+- Render → CORS_ORIGIN = `https://sahu-csc.vercel.app`
+- `vercel.json` destination = `https://your-service.onrender.com/api/:path*`
+- Push updated `vercel.json` → `./scripts/push.sh "fix: update API URL"`

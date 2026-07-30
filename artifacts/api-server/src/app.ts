@@ -245,7 +245,10 @@ app.use(
       // 30 days for "remember me"), so this value only affects sessions created
       // before login (e.g. pre-auth CSRF state).  Keep them in sync.
       maxAge: 8 * 60 * 60 * 1000, // 8 hours — matches login.ts non-remember-me
-      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      // "none" required for cross-origin cookies (Vercel frontend → Render API)
+      // "lax" in dev (Replit: same-origin via Vite proxy)
+      // NOTE: sameSite "none" only works when secure: true (enforced above)
     },
   }),
 );

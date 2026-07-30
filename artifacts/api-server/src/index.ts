@@ -13,13 +13,10 @@ import { initGeoipUpdater } from "./lib/geoip-updater";
 import { db, settingsTable } from "@workspace/db";
 import { sql, eq } from "drizzle-orm";
 
-const rawPort = process.env["PORT"];
-
-if (!rawPort) {
-  throw new Error(
-    "PORT environment variable is required but was not provided.",
-  );
-}
+const rawPort = process.env["PORT"] ?? "8080";
+// Fallback to 8080 so Replit workflow (which sets PORT via the command prefix)
+// and local runs both work without explicitly setting PORT.
+// Render free tier always sets PORT=10000 in its env.
 
 const port = Number(rawPort);
 
