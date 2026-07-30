@@ -40,6 +40,7 @@ onlyBuiltDependencies:
   - '@swc/core'
   - esbuild
   - msw
+  - sharp        # downloads pre-built Linux binary during pnpm install
   - unrs-resolver
 
 overrides:

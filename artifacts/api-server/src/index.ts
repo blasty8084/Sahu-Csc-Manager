@@ -1,5 +1,6 @@
 import "./lib/env"; // ← validates all required env vars before anything else runs
 import app from "./app";
+import { runStartupInit } from "./lib/startup-init";
 import { logger } from "./lib/logger";
 import { startOtpCleanup } from "./lib/otp-cleanup";
 import { scheduleMonthlyExport } from "./lib/monthly-export";
@@ -23,6 +24,10 @@ const port = Number(rawPort);
 if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
+
+// First-boot: create admin/operator accounts if they don't exist yet.
+// On Render free tier (no SSH), this is the only way to seed accounts.
+await runStartupInit();
 
 // Ensure VAPID keys exist (loads from DB or auto-generates + persists) before
 // initialising push so setVapidDetails is called with valid, stable keys.
