@@ -6,7 +6,7 @@ import { auditLog, securityLog, getClientIp } from "../../lib/auth";
 import { invalidateSessionCache } from "../../lib/auth/sessionCache";
 import { notifyLoginSuccess, notifyNewDeviceLogin, notifyDeviceTrusted, notifyOtherSessionsSignedOut } from "../../services/notificationTemplates";
 import { isSmtpConfigured } from "../../lib/mailer";
-import { enqueueEmail, buildOtpMailOptions } from "../../lib/queue-client";
+import { sendOtpEmail } from "../../lib/mailer";
 import { logger } from "../../lib/logger";
 import { generateNumericOtp, hashOtp, maskEmail, fmtUser } from "./helpers";
 
@@ -33,7 +33,7 @@ export async function sendLoginOtp(
   const expiresAt = new Date(Date.now() + OTP_EXPIRY_MS);
   await db.insert(emailOtpsTable).values({ email: user.email, purpose: "2fa_login", otpHash: hashOtp(otp), expiresAt, ipAddress: clientIp });
   try {
-    await enqueueEmail(buildOtpMailOptions(user.email, otp, "2fa_login", expiresAt));
+    await sendOtpEmail(user.email, otp);
   } catch (err) {
     logger.error({ err }, "Failed to enqueue 2FA login OTP email");
     const e: any = new Error("Failed to send verification code. Please try again.");
