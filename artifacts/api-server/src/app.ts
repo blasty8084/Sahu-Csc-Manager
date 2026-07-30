@@ -8,7 +8,7 @@ import helmet from "helmet";
 import hpp from "hpp";
 import rateLimit from "express-rate-limit";
 import { RedisStore } from "rate-limit-redis";
-import { Redis } from "@upstash/redis";
+import IORedis from "ioredis";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import router from "./routes";
@@ -92,20 +92,26 @@ app.use(hpp());
 app.use(compression());
 
 function makeRedisStore(prefix: string) {
-  if (
-    !process.env["UPSTASH_REDIS_REST_URL"] ||
-    !process.env["UPSTASH_REDIS_REST_TOKEN"]
-  ) {
-    return undefined; // use default in-memory store
+  if (!process.env["REDIS_URL"]) {
+    return undefined; // no Redis configured — use in-memory store (fine for single instance)
   }
-  const redis = new Redis({
-    url: process.env["UPSTASH_REDIS_REST_URL"]!,
-    token: process.env["UPSTASH_REDIS_REST_TOKEN"]!,
+  // Use ioredis (TCP client) — it supports the raw sendCommand/call interface
+  // required by rate-limit-redis v6 Lua scripts.
+  // @upstash/redis REST client does NOT support sendCommand and must not be used here.
+  const client = new IORedis(process.env["REDIS_URL"], {
+    enableOfflineQueue: false,
+    maxRetriesPerRequest: 1,
+    lazyConnect: false,
+    tls: process.env["REDIS_URL"].startsWith("rediss://") ? {} : undefined,
+  });
+  client.on("error", (err: Error) => {
+    logger.warn({ err }, "Rate-limiter Redis connection error — falling back silently");
   });
   return new RedisStore({
     prefix,
-    // rate-limit-redis expects sendCommand(command, ...args)
-    sendCommand: (...args: string[]) => redis.sendCommand(args as Parameters<typeof redis.sendCommand>[0]),
+    // ioredis exposes raw command execution via .call()
+    sendCommand: (...args: string[]) =>
+      client.call(...(args as [string, ...string[]])) as Promise<unknown>,
   });
 }
 
