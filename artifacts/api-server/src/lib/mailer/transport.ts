@@ -1,80 +1,117 @@
-import nodemailer from "nodemailer";
-import type { Transporter } from "nodemailer";
-import { resolve4 } from "node:dns/promises";
+/**
+ * Email transport — Resend HTTP API.
+ *
+ * Why Resend instead of Nodemailer SMTP:
+ *   Render free tier blocks outbound TCP port 587 (SMTP) entirely.
+ *   Resend uses HTTPS port 443 which is always open everywhere.
+ *
+ * All existing callers (sendOtpEmail, sendApprovalEmail, etc.) continue to work
+ * unchanged — only this file changes.
+ *
+ * Env vars:
+ *   RESEND_API_KEY  — from resend.com → API Keys (required for email to work)
+ *   RESEND_FROM     — sender address, must be a verified domain or
+ *                     onboarding@resend.dev (Resend's free sandbox domain)
+ */
 
-let _transporter: Transporter | null = null;
-let _transporterPromise: Promise<Transporter> | null = null;
+import { Resend } from "resend";
+import { logger } from "../logger";
 
-export function isSmtpConfigured(): boolean {
-  return !!(
-    process.env["SMTP_HOST"] &&
-    process.env["SMTP_USER"] &&
-    (process.env["SMTP_PASSWORD"] ?? process.env["SMTP_PASS"])
-  );
-}
+// ── Config ────────────────────────────────────────────────────────────────────
+
+const RESEND_API_KEY = process.env["RESEND_API_KEY"];
 
 /**
- * Returns (and lazily creates) the singleton Nodemailer transporter.
+ * Default from address.
  *
- * Nodemailer 9 explicitly resolves both IPv4 and IPv6 addresses and then
- * chooses one, so Node's `ipv4first` DNS preference is not sufficient.
- * Resolve the hostname to a concrete IPv4 address before handing it to
- * Nodemailer. Keep the original hostname as TLS servername for certificate
- * validation.
+ * IMPORTANT: Until you verify your own domain on resend.com, use:
+ *   "SAHU CSC <onboarding@resend.dev>"
+ *
+ * After verifying your domain (e.g. sahucsc.in), change to:
+ *   "SAHU CSC <noreply@sahucsc.in>"
  */
-export async function getTransporter(): Promise<Transporter> {
-  if (_transporter) return _transporter;
-  if (!isSmtpConfigured()) throw new Error("SMTP not configured");
+const DEFAULT_FROM = "SAHU CSC <onboarding@resend.dev>";
 
-  if (_transporterPromise) return _transporterPromise;
+// ── Client (lazy singleton) ───────────────────────────────────────────────────
 
-  _transporterPromise = (async () => {
-    const smtpHost = process.env["SMTP_HOST"]!;
-    let smtpIpv4 = smtpHost;
-    try {
-      smtpIpv4 = (await resolve4(smtpHost))[0] ?? smtpHost;
-    } catch {
-      // If SMTP_HOST is already an IP, or DNS is temporarily unavailable,
-      // let Nodemailer report the connection error with its normal diagnostics.
-    }
+let _resend: Resend | null = null;
 
-    const transporter = nodemailer.createTransport({
-      host: smtpIpv4,
-      port: Number(process.env["SMTP_PORT"] ?? 587),
-      secure: false,
-      requireTLS: true,
-      connectionTimeout: 15_000,
-      greetingTimeout: 15_000,
-      socketTimeout: 30_000,
-      tls: { servername: smtpHost },
-      auth: {
-        user: process.env["SMTP_USER"]!,
-        pass: (process.env["SMTP_PASSWORD"] ?? process.env["SMTP_PASS"])!,
-      },
-    });
-    _transporter = transporter;
-    return transporter;
-  })();
-
-  try {
-    return await _transporterPromise;
-  } finally {
-    _transporterPromise = null;
-  }
+function getResend(): Resend {
+  if (_resend) return _resend;
+  if (!RESEND_API_KEY) throw new Error("RESEND_API_KEY is not set");
+  _resend = new Resend(RESEND_API_KEY);
+  return _resend;
 }
 
-/** Alias used by template files */
-export async function createTransporter(): Promise<Transporter> {
-  return getTransporter();
+// ── Public API ────────────────────────────────────────────────────────────────
+
+/** Returns true when Resend is configured and ready to send emails */
+export function isSmtpConfigured(): boolean {
+  return !!RESEND_API_KEY;
 }
 
 /** Returns the configured From address */
 export function getFromEmail(): string {
-  return (
-    process.env["SMTP_FROM_EMAIL"] ??
-    `SAHU CSC <${process.env["SMTP_USER"] ?? "noreply@sahucsc.in"}>`
-  );
+  return process.env["RESEND_FROM"] ?? process.env["SMTP_FROM_EMAIL"] ?? DEFAULT_FROM;
 }
+
+/**
+ * Send an email via Resend.
+ * Matches the nodemailer sendMail() call signature used by all templates.
+ */
+export async function sendMail(opts: {
+  from?: string;
+  to: string | string[];
+  subject: string;
+  html: string;
+  text: string;
+}): Promise<void> {
+  const resend = getResend();
+  const from = opts.from ?? getFromEmail();
+  const to = Array.isArray(opts.to) ? opts.to : [opts.to];
+
+  const { error } = await resend.emails.send({
+    from,
+    to,
+    subject: opts.subject,
+    html: opts.html,
+    text: opts.text,
+  });
+
+  if (error) {
+    throw new Error(`Resend error: ${error.message}`);
+  }
+}
+
+/**
+ * Compatibility shim — templates call createTransporter().sendMail(opts).
+ * Returns an object with a sendMail method that delegates to Resend.
+ */
+export function createTransporter() {
+  return {
+    sendMail: async (opts: {
+      from?: string;
+      to: string | string[];
+      subject: string;
+      html: string;
+      text: string;
+    }) => sendMail(opts),
+
+    /** Verify — used by the SMTP test endpoint. With Resend, just check API key. */
+    verify: async () => {
+      if (!RESEND_API_KEY) throw new Error("RESEND_API_KEY not set");
+      // Resend has no verify endpoint — key presence is sufficient
+      return true;
+    },
+  };
+}
+
+/** Alias — same as createTransporter() */
+export function getTransporter() {
+  return createTransporter();
+}
+
+// ── HTML builder (unchanged from original) ────────────────────────────────────
 
 /** HTML-escape a string for safe inline use */
 export function esc(str: string): string {

@@ -161,6 +161,7 @@ async function buildAll() {
       "onnxruntime-node",
       "geoip-lite",
       "nodemailer",
+      "resend",
       "rate-limit-redis",
       "ioredis",
       "bullmq",
