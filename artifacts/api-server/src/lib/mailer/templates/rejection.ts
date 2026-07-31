@@ -69,6 +69,6 @@ export function buildRejectionMailOptions(to: string, name: string, reason: stri
 
 export async function sendRejectionEmail(to: string, name: string, reason: string | null): Promise<void> {
   const opts = buildRejectionMailOptions(to, name, reason);
-  const transporter = createTransporter();
+  const transporter = await createTransporter();
   await transporter.sendMail(opts);
 }

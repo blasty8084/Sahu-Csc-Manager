@@ -10,7 +10,7 @@ export async function sendNewRegistrationAdminEmail(opts: {
   applicantEmail: string;
   submittedAt: Date;
 }): Promise<void> {
-  const transporter = createTransporter();
+  const transporter = await createTransporter();
   const fromEmail = getFromEmail();
   const { adminEmail, adminName, applicantUsername, applicantFullName, applicantEmail, submittedAt } = opts;
 
@@ -120,7 +120,7 @@ export async function sendBroadcastEmail(opts: {
   recipients: Array<{ email: string; fullName: string | null; username: string }>;
 }): Promise<{ sent: number; failed: number }> {
   const { subject, body, recipients } = opts;
-  const transporter = createTransporter();
+  const transporter = await createTransporter();
   const fromEmail = getFromEmail();
 
   const bodyHtml = `
@@ -200,7 +200,7 @@ export async function sendAdminResetLinkEmail(opts: {
   expiresAt: Date;
 }): Promise<void> {
   const { to, displayName, username, resetUrl, expiresAt } = opts;
-  const transporter = createTransporter();
+  const transporter = await createTransporter();
   const fromEmail = getFromEmail();
 
   const expiryTime = expiresAt.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });

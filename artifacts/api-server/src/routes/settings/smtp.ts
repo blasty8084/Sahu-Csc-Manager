@@ -29,7 +29,7 @@ router.post("/settings/smtp/test", requireRole("admin"), asyncHandler(async (req
   const to: string = (req.body?.to as string) || process.env["SMTP_USER"]!;
 
   try {
-    const transporter = getTransporter();
+    const transporter = await getTransporter();
     // Verify the connection first
     await transporter.verify();
     // Send a real test email

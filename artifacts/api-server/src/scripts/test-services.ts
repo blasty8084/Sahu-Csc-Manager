@@ -4,7 +4,7 @@
  */
 
 import nodemailer from "nodemailer";
-import { resolve4Sync } from "node:dns";
+import { resolve4 } from "node:dns/promises";
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { Redis } from "@upstash/redis";
 
@@ -25,7 +25,7 @@ async function testSmtp() {
 
   console.log(`\n── SMTP (${host}) ──────────────────────`);
   try {
-    const smtpIpv4 = resolve4Sync(host)[0] ?? host;
+    const smtpIpv4 = (await resolve4(host))[0] ?? host;
     const transporter = nodemailer.createTransport({
       host: smtpIpv4,
       port: Number(process.env.SMTP_PORT ?? 587),

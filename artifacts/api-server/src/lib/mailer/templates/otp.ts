@@ -182,6 +182,6 @@ export async function sendOtpEmail(
   expiresAt: Date
 ): Promise<void> {
   const opts = buildOtpMailOptions(to, otp, purpose, expiresAt);
-  const transporter = createTransporter();
+  const transporter = await createTransporter();
   await transporter.sendMail(opts);
 }

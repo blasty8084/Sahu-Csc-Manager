@@ -1,8 +1,9 @@
 import nodemailer from "nodemailer";
 import type { Transporter } from "nodemailer";
-import { resolve4Sync } from "node:dns";
+import { resolve4 } from "node:dns/promises";
 
 let _transporter: Transporter | null = null;
+let _transporterPromise: Promise<Transporter> | null = null;
 
 export function isSmtpConfigured(): boolean {
   return !!(
@@ -21,38 +22,49 @@ export function isSmtpConfigured(): boolean {
  * Nodemailer. Keep the original hostname as TLS servername for certificate
  * validation.
  */
-export function getTransporter(): Transporter {
+export async function getTransporter(): Promise<Transporter> {
   if (_transporter) return _transporter;
   if (!isSmtpConfigured()) throw new Error("SMTP not configured");
 
-  const smtpHost = process.env["SMTP_HOST"]!;
-  let smtpIpv4 = smtpHost;
-  try {
-    smtpIpv4 = resolve4Sync(smtpHost)[0] ?? smtpHost;
-  } catch {
-    // If SMTP_HOST is already an IP, or DNS is temporarily unavailable,
-    // let Nodemailer report the connection error with its normal diagnostics.
-  }
+  if (_transporterPromise) return _transporterPromise;
 
-  _transporter = nodemailer.createTransport({
-    host: smtpIpv4,
-    port: Number(process.env["SMTP_PORT"] ?? 587),
-    secure: false,
-    requireTLS: true,
-    connectionTimeout: 15_000,
-    greetingTimeout: 15_000,
-    socketTimeout: 30_000,
-    tls: { servername: smtpHost },
-    auth: {
-      user: process.env["SMTP_USER"]!,
-      pass: (process.env["SMTP_PASSWORD"] ?? process.env["SMTP_PASS"])!,
-    },
-  });
-  return _transporter;
+  _transporterPromise = (async () => {
+    const smtpHost = process.env["SMTP_HOST"]!;
+    let smtpIpv4 = smtpHost;
+    try {
+      smtpIpv4 = (await resolve4(smtpHost))[0] ?? smtpHost;
+    } catch {
+      // If SMTP_HOST is already an IP, or DNS is temporarily unavailable,
+      // let Nodemailer report the connection error with its normal diagnostics.
+    }
+
+    const transporter = nodemailer.createTransport({
+      host: smtpIpv4,
+      port: Number(process.env["SMTP_PORT"] ?? 587),
+      secure: false,
+      requireTLS: true,
+      connectionTimeout: 15_000,
+      greetingTimeout: 15_000,
+      socketTimeout: 30_000,
+      tls: { servername: smtpHost },
+      auth: {
+        user: process.env["SMTP_USER"]!,
+        pass: (process.env["SMTP_PASSWORD"] ?? process.env["SMTP_PASS"])!,
+      },
+    });
+    _transporter = transporter;
+    return transporter;
+  })();
+
+  try {
+    return await _transporterPromise;
+  } finally {
+    _transporterPromise = null;
+  }
 }
 
 /** Alias used by template files */
-export function createTransporter(): Transporter {
+export async function createTransporter(): Promise<Transporter> {
   return getTransporter();
 }
 

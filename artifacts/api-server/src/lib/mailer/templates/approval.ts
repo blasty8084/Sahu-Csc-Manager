@@ -76,6 +76,6 @@ export function buildApprovalMailOptions(to: string, name: string): {
 
 export async function sendApprovalEmail(to: string, name: string): Promise<void> {
   const opts = buildApprovalMailOptions(to, name);
-  const transporter = createTransporter();
+  const transporter = await createTransporter();
   await transporter.sendMail(opts);
 }
