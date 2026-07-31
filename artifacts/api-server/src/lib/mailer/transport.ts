@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import type { Transporter } from "nodemailer";
+import { resolve4Sync } from "node:dns";
 
 let _transporter: Transporter | null = null;
 
@@ -14,23 +15,34 @@ export function isSmtpConfigured(): boolean {
 /**
  * Returns (and lazily creates) the singleton Nodemailer transporter.
  *
- * IPv4 is guaranteed at the process level: env.ts calls
- * dns.setDefaultResultOrder("ipv4first") before any network code runs, so
- * Nodemailer's internal DNS lookup for smtp.gmail.com always resolves to an
- * IPv4 address even on Render where outbound IPv6 is blocked.
+ * Nodemailer 9 explicitly resolves both IPv4 and IPv6 addresses and then
+ * chooses one, so Node's `ipv4first` DNS preference is not sufficient.
+ * Resolve the hostname to a concrete IPv4 address before handing it to
+ * Nodemailer. Keep the original hostname as TLS servername for certificate
+ * validation.
  */
 export function getTransporter(): Transporter {
   if (_transporter) return _transporter;
   if (!isSmtpConfigured()) throw new Error("SMTP not configured");
 
+  const smtpHost = process.env["SMTP_HOST"]!;
+  let smtpIpv4 = smtpHost;
+  try {
+    smtpIpv4 = resolve4Sync(smtpHost)[0] ?? smtpHost;
+  } catch {
+    // If SMTP_HOST is already an IP, or DNS is temporarily unavailable,
+    // let Nodemailer report the connection error with its normal diagnostics.
+  }
+
   _transporter = nodemailer.createTransport({
-    host: process.env["SMTP_HOST"]!,
+    host: smtpIpv4,
     port: Number(process.env["SMTP_PORT"] ?? 587),
     secure: false,
     requireTLS: true,
     connectionTimeout: 15_000,
     greetingTimeout: 15_000,
     socketTimeout: 30_000,
+    tls: { servername: smtpHost },
     auth: {
       user: process.env["SMTP_USER"]!,
       pass: (process.env["SMTP_PASSWORD"] ?? process.env["SMTP_PASS"])!,
