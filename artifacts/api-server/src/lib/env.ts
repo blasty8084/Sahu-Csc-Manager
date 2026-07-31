@@ -6,6 +6,13 @@
  * Add any new required variable here; optional ones stay in process.env.
  */
 
+// Force Node.js DNS resolver to prefer IPv4 addresses process-wide.
+// Render's DNS can resolve smtp.gmail.com to an IPv6 address that Render
+// cannot route outbound (causing ENETUNREACH on port 587). Setting this
+// before any network code runs guarantees all DNS lookups return IPv4 first.
+import { setDefaultResultOrder } from "node:dns";
+setDefaultResultOrder("ipv4first");
+
 const REQUIRED: [key: string, description: string][] = [
   ["SESSION_SECRET", "Session signing secret (long random string)"],
 ];

@@ -11,16 +11,22 @@ export function isSmtpConfigured(): boolean {
   );
 }
 
+/**
+ * Returns (and lazily creates) the singleton Nodemailer transporter.
+ *
+ * IPv4 is guaranteed at the process level: env.ts calls
+ * dns.setDefaultResultOrder("ipv4first") before any network code runs, so
+ * Nodemailer's internal DNS lookup for smtp.gmail.com always resolves to an
+ * IPv4 address even on Render where outbound IPv6 is blocked.
+ */
 export function getTransporter(): Transporter {
   if (_transporter) return _transporter;
   if (!isSmtpConfigured()) throw new Error("SMTP not configured");
+
   _transporter = nodemailer.createTransport({
     host: process.env["SMTP_HOST"]!,
     port: Number(process.env["SMTP_PORT"] ?? 587),
     secure: false,
-    // Render can resolve smtp.gmail.com to IPv6 even though the service
-    // cannot route IPv6 outbound. Force IPv4 to avoid ENETUNREACH on port 587.
-    family: 4,
     requireTLS: true,
     connectionTimeout: 15_000,
     greetingTimeout: 15_000,
