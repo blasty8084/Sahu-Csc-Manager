@@ -1,5 +1,5 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 4.10.2** — last updated 2026-07-31
+**Version 4.10.2** — last updated 2026-07-31 (Resend integration)
 
 > **2026-07-31 (re-import setup)**: Re-imported from GitHub. Ran `pnpm install --frozen-lockfile`. Applied DB schema via `pnpm --filter @workspace/db run push-force`. Ran `Seed Database` workflow — admin/operator accounts created. Secrets set: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. `CORS_ORIGIN` updated to include current `pike.replit.dev` dev domain. `API Server` running on port 8080; `Start application` (Vite dev) running on port 5000. `Worker Server` skips cleanly — `REDIS_URL` not set. `SMTP_PASS` not configured — OTP emails are no-ops (add `SMTP_PASS` secret to enable). Verified: splash screen renders correctly in preview. Note: Replit is used as dev/test environment; production runs on Vercel (frontend) + Render (backend/Neon DB).
 >
