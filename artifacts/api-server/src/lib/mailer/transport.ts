@@ -50,9 +50,24 @@ export function isSmtpConfigured(): boolean {
   return !!RESEND_API_KEY;
 }
 
-/** Returns the configured From address */
-export function getFromEmail(): string {
+/**
+ * Returns the full "Name <email>" from address for direct use in sendMail().
+ * Internal helper — not exported.
+ */
+function getFullFrom(): string {
   return process.env["RESEND_FROM"] ?? process.env["SMTP_FROM_EMAIL"] ?? DEFAULT_FROM;
+}
+
+/**
+ * Returns ONLY the plain email address (e.g. noreply@sahucsc.dpdns.org).
+ * Templates use this to build their own "Name <email>" from field:
+ *   `"SAHU CSC" <${getFromEmail()}>`
+ * If RESEND_FROM is already in "Name <email>" format, the address is extracted.
+ */
+export function getFromEmail(): string {
+  const full = getFullFrom();
+  const match = full.match(/<([^>]+)>/);
+  return match ? match[1] : full;
 }
 
 /**
@@ -67,7 +82,7 @@ export async function sendMail(opts: {
   text: string;
 }): Promise<void> {
   const resend = getResend();
-  const from = opts.from ?? getFromEmail();
+  const from = opts.from ?? getFullFrom();
   const to = Array.isArray(opts.to) ? opts.to : [opts.to];
 
   const { error } = await resend.emails.send({

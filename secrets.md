@@ -1,5 +1,5 @@
 # SAHU CSC — Secrets & Environment Variables Reference
-**Version 4.10.2** · Last updated 2026-07-30
+**Version 4.10.2** · Last updated 2026-07-31
 
 > Complete reference for every secret and environment variable in this project.
 >
@@ -16,7 +16,7 @@
 
 1. [Critical Secrets — App will not boot without these](#1-critical-secrets--app-will-not-boot-without-these)
 2. [Optional Secrets — Enable additional features](#2-optional-secrets--enable-additional-features)
-3. [SMTP / Email](#3-smtp--email)
+3. [Resend / Email](#3-resend--email)
 4. [Backblaze B2 File Storage](#4-backblaze-b2-file-storage)
 5. [Upstash Redis (Cache + Rate Limiting + Queue)](#5-upstash-redis-cache--rate-limiting--queue)
 6. [Core Environment Variables](#6-core-environment-variables)
@@ -57,26 +57,27 @@ Set in **Replit → Secrets tab**.
 
 ---
 
-## 3. SMTP / Email
+## 3. Resend / Email
 
-Enables transactional emails: OTP delivery, account approval/rejection, admin alerts, broadcast emails, and password reset links. All send functions are graceful no-ops when SMTP is not configured.
+Enables transactional emails: OTP delivery, account approval/rejection, admin alerts, broadcast emails, and password reset links. All send functions are graceful no-ops when `RESEND_API_KEY` is not configured.
+
+Email is sent via **Resend HTTP API** (HTTPS port 443) — replaces Nodemailer SMTP which was blocked on Render free tier (port 587). Verified domain: `sahucsc.dpdns.org`.
 
 **Secrets** (Replit → Secrets tab):
 
 | Secret | Status | Explanation |
 |--------|--------|-------------|
-| `SMTP_USER` | ✅ Set | Gmail address used to send emails (e.g. `sahuuttam690@gmail.com`). Also used as the admin account email when re-seeding. |
-| `SMTP_PASSWORD` | ✅ Set | **Gmail App Password** (16 chars, no spaces) — NOT your regular Gmail login password. Generate at: Google Account → Security → 2-Step Verification → App Passwords. |
-| `SMTP_FROM_EMAIL` | ✅ Set | Display name + address in the `From:` header (e.g. `SAHU CSC Support <sahuuttam690@gmail.com>`). |
+| `RESEND_API_KEY` | ✅ Set | API key from resend.com → API Keys. Format: `re_xxxxxxxxxxxxxxxxxxxx`. Required for all email delivery. |
 
 **Environment Variables** (Replit → Env Vars → Shared):
 
 | Variable | Status | Value | Explanation |
 |----------|--------|-------|-------------|
-| `SMTP_HOST` | ✅ Set | `smtp.gmail.com` | SMTP server hostname. |
-| `SMTP_PORT` | ✅ Set | `587` | SMTP port — 587 = STARTTLS (recommended for Gmail). |
+| `RESEND_FROM` | ✅ Set | `SAHU CSC <noreply@sahucsc.dpdns.org>` | Sender address shown in From header. Must be from a verified Resend domain. |
 
-> **Test endpoint**: `POST /api/settings/smtp/test` (admin auth required) verifies the connection and sends a real test email to `SMTP_USER`. Confirmed working as of 2026-07-30.
+> **Test endpoint**: `POST /api/settings/smtp/test` (admin auth required) sends a real test email via Resend. Confirmed working as of 2026-07-31.
+>
+> **Domain**: `sahucsc.dpdns.org` is verified on resend.com — all user email addresses receive OTP and notification emails.
 
 ---
 

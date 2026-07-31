@@ -491,15 +491,12 @@ All secrets are managed in the Replit Secrets tab (🔒 icon in left sidebar). N
 
 ### Required for email / OTP
 
-| Variable | Purpose |
+| Variable / Secret | Purpose |
 |----------|---------|
-| `SMTP_HOST` | SMTP server hostname (e.g. `smtp.gmail.com`) |
-| `SMTP_PORT` | SMTP port (`587` for TLS, `465` for SSL) |
-| `SMTP_USER` | SMTP username / email address |
-| `SMTP_PASSWORD` | SMTP password or app password (**new canonical name**; `SMTP_PASS` still accepted as alias) |
-| `SMTP_FROM_EMAIL` | From address in sent emails (defaults to `SMTP_USER`) |
+| `RESEND_API_KEY` *(Secret)* | Resend HTTP API key — resend.com → API Keys → Create API Key |
+| `RESEND_FROM` *(Env var)* | Sender address, e.g. `SAHU CSC <noreply@sahucsc.dpdns.org>` — must be from a verified Resend domain |
 
-> Without SMTP, OTP login, password reset, and admin email broadcast are disabled. Username + password login still works.
+> Without `RESEND_API_KEY`, OTP login, password reset, and admin email broadcast are disabled. Username + password login still works. Verified domain `sahucsc.dpdns.org` is configured — all recipient email addresses are supported.
 
 ### Required for Redis cache & background jobs
 
@@ -538,7 +535,7 @@ All secrets are managed in the Replit Secrets tab (🔒 icon in left sidebar). N
 | Secret(s) | Banner severity |
 |-----------|----------------|
 | `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD` | 🔴 REQUIRED (red) |
-| `SMTP_*` | 🟡 OPTIONAL (email features only) |
+| `RESEND_API_KEY` | 🟡 OPTIONAL (email features only) |
 | `VAPID_*` | 🟡 OPTIONAL (yellow) |
 
 ---
@@ -558,7 +555,7 @@ All secrets are managed in the Replit Secrets tab (🔒 icon in left sidebar). N
 | HTTP client | @tanstack/react-query v5 + custom fetch wrapper |
 | PWA | vite-plugin-pwa + Workbox (injectManifest mode) |
 | Push notifications | web-push (VAPID) |
-| Email | nodemailer (SMTP) |
+| Email | Resend HTTP API (`resend` npm package) |
 | Logging | Pino (structured JSON) |
 | i18n | i18next + react-i18next (EN / HI / OR) |
 | PDF / receipts | html2canvas + jsPDF (client-side) |
@@ -877,7 +874,7 @@ sahu-csc/                          ← monorepo root
 │   │       ├── lib/
 │   │       │   ├── auth.ts        ← requireAuth / requireRole / requirePermission
 │   │       │   ├── logger.ts      ← Pino structured logger
-│   │       │   ├── mailer.ts      ← nodemailer: sendOtpEmail, sendApprovalEmail
+│   │       │   ├── mailer/        ← Resend: sendOtpEmail, sendApprovalEmail (transport.ts + templates/)
 │   │       │   ├── notify.ts      ← createNotification helper
 │   │       │   ├── push.ts        ← sendPushToUser, sendPushToAll
 │   │       │   ├── vapid.ts       ← VAPID key auto-generation on startup

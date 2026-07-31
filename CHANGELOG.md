@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Changelog
-**Current version: 4.10.2 — July 30, 2026**
+**Current version: 4.10.2 — July 31, 2026**
 
 > Single authoritative changelog covering all versions from v1.x through v4.x.
 > - **v3.x / v4.x entries** (current) — listed first, newest at top
@@ -9,9 +9,32 @@
 
 ## Table of Contents
 
+0. [Infra — Replace Nodemailer SMTP with Resend HTTP API (July 31, 2026)](#0-infra--replace-nodemailer-smtp-with-resend-http-api-july-31-2026)
 0. [Fix — Email OTP never sent + HTML template restored (July 30, 2026)](#0-fix--email-otp-never-sent--html-template-restored-july-30-2026)
 0. [Infra — 2FA permanently hardcoded ON; SMTP fully configured (July 30, 2026)](#0-infra--2fa-permanently-hardcoded-on-smtp-fully-configured-july-30-2026)
 0. [Refactor — Full CSS variable tokenization across 355+ files (July 27, 2026)](#0-refactor--full-css-variable-tokenization-across-355-files-july-27-2026)
+
+---
+
+## 0. Infra — Replace Nodemailer SMTP with Resend HTTP API (July 31, 2026)
+
+**Why:** Render free tier blocks outbound TCP port 587 (SMTP). Nodemailer with Gmail timed out with `ETIMEDOUT CONN`. Resend uses HTTPS port 443 — always open on every platform.
+
+**What changed:**
+- `artifacts/api-server/src/lib/mailer/transport.ts` — full replacement: Resend lazy singleton, `sendMail()`, `createTransporter()` / `getTransporter()` sync shims, `isSmtpConfigured()` now checks `RESEND_API_KEY`
+- `artifacts/api-server/src/routes/settings/smtp.ts` — updated: GET returns `provider: "resend"` + `apiKeySaved`; POST test sends via Resend
+- `artifacts/api-server/build.mjs` — `"resend"` added to `external` array (near `"nodemailer"`)
+- `render.yaml` — SMTP section replaced with `RESEND_API_KEY` + `RESEND_FROM`
+- `.env.example` — SMTP section replaced with Resend equivalents
+- `render.env` — SMTP section replaced with Resend equivalents
+
+**No template files changed** — `otp.ts`, `approval.ts`, `rejection.ts`, `adminAlerts.ts`, `mailer/index.ts` all untouched.
+
+**Env vars:**
+- `RESEND_API_KEY` (Secret) — Resend API key (`re_xxx…`)
+- `RESEND_FROM` (Shared env var) — `SAHU CSC <noreply@sahucsc.dpdns.org>`
+
+**Domain:** `sahucsc.dpdns.org` verified on resend.com — all recipient email addresses supported (not sandbox-limited).
 
 ---
 

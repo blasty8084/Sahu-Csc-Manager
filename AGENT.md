@@ -102,7 +102,7 @@ Target users: rural Odisha CSC operators. UI languages: English, Hindi, Odia (`i
 | `SESSION_SECRET` | Express session signing |
 | `ADMIN_PASSWORD` | Seed: admin account password |
 | `OPERATOR_PASSWORD` | Seed: operator account password |
-| `SMTP_PASSWORD` | Gmail App Password for outgoing email (OTP, notifications) |
+| `RESEND_API_KEY` | Resend HTTP API key for outgoing email (OTP, notifications) — resend.com → API Keys |
 
 ### Core Env Vars (shared)
 | Key | Value | Purpose |
@@ -112,10 +112,7 @@ Target users: rural Odisha CSC operators. UI languages: English, Hindi, Odia (`i
 | `BASE_PATH` | `/` | URL base path |
 | `DB_POOL_MAX` | `5` | Max pg pool connections |
 | `CORS_ORIGIN` | comma-separated URLs (optional) | Extra allowed origins — `REPLIT_DEV_DOMAIN` / `REPLIT_DOMAINS` auto-included |
-| `SMTP_HOST` | `smtp.gmail.com` | SMTP server |
-| `SMTP_PORT` | `587` | SMTP STARTTLS port |
-| `SMTP_USER` | Gmail address | Sender address + admin email fallback |
-| `SMTP_FROM_EMAIL` | `SAHU CSC Support <addr>` | Display name in From header |
+| `RESEND_FROM` | `SAHU CSC <noreply@sahucsc.dpdns.org>` | Sender address — verified domain `sahucsc.dpdns.org` on resend.com |
 | `ADMIN_EMAIL` | admin email | Set on admin account at seed time |
 | `OPERATOR_EMAIL` | operator email | Set on operator account at seed time |
 | `ALLOW_NON_INDIA` | `true` | Bypasses geo-block for Replit dev (not for production) |
@@ -434,9 +431,9 @@ All routes mount under `/api/`. Auth middleware: `requireAuth` (session), `requi
 | PATCH | `/admin/settings/registration` | requireRole("admin") | Toggle registration open/closed. |
 | GET | `/settings` | requireAuth | App settings. |
 | PATCH | `/settings` | requireRole("admin") | Update settings. |
-| GET | `/settings/smtp` | requireRole("admin") | SMTP config status — returns `configured`, `host`, `port`, `user`, `fromEmail`, `passwordSaved`. |
-| PATCH | `/settings/smtp` | requireRole("admin") | Returns 501 — configure SMTP via env vars, not the API. |
-| POST | `/settings/smtp/test` | requireRole("admin") | Verify SMTP connection and send a test email to the admin address. |
+| GET | `/settings/smtp` | requireRole("admin") | Email config status — returns `configured`, `provider` (`resend`), `fromEmail`, `apiKeySaved`. |
+| PATCH | `/settings/smtp` | requireRole("admin") | Returns 501 — configure email via env vars, not the API. |
+| POST | `/settings/smtp/test` | requireRole("admin") | Send a test email via Resend to verify configuration. |
 | GET | `/settings/vapid` | requireRole("admin") | VAPID public key. |
 | POST | `/settings/vapid/rotate` | requireRole("admin") | Rotate VAPID keys. |
 | GET | `/settings/contact` | — | Public contact info. |
@@ -649,7 +646,7 @@ pnpm --filter @workspace/db run push-force
 | Auto-backup | Disabled by default | Configurable in settings |
 
 ### Notification delivery
-Push notifications go through `enqueueNotification` in `lib/queue-client.ts` — uses BullMQ when `REDIS_URL` is set, direct fire-and-forget otherwise. Email is sent via nodemailer (`lib/mailer/`) when `SMTP_HOST` + `SMTP_USER` + `SMTP_PASSWORD` are set; graceful no-op if absent. Gmail confirmed working (`smtp.gmail.com:587`) with an App Password.
+Push notifications go through `enqueueNotification` in `lib/queue-client.ts` — uses BullMQ when `REDIS_URL` is set, direct fire-and-forget otherwise. Email is sent via Resend HTTP API (`lib/mailer/transport.ts`) when `RESEND_API_KEY` is set; graceful no-op if absent. Verified domain: `sahucsc.dpdns.org`. Uses HTTPS port 443 — works on Render free tier (port 587 SMTP is blocked).
 
 ---
 
@@ -685,7 +682,7 @@ Push notifications go through `enqueueNotification` in `lib/queue-client.ts` —
 
 15. **`finalizeLogin` is the single codepath** for all successful logins (direct + OTP + TOTP). If you add post-login logic, put it there.
 
-16. **SMTP is optional, not removed** — `isSmtpConfigured()` checks `SMTP_HOST` + `SMTP_USER` + `SMTP_PASSWORD` at runtime. When set (Gmail App Password confirmed working), all `send*Email` helpers deliver real email. When absent, they silently no-op — OTP/approval/broadcast flows degrade gracefully.
+16. **Email via Resend (not SMTP)** — `isSmtpConfigured()` checks `RESEND_API_KEY` at runtime. When set, all `send*Email` helpers deliver real email via Resend HTTP API. When absent, they silently no-op — OTP/approval/broadcast flows degrade gracefully. Verified domain `sahucsc.dpdns.org` means all user emails are delivered (not sandbox-limited).
 17. **Avatars: B2 when configured, base64 otherwise** — `fmtProfile` resolves `b2:<key>` to a 1-hour pre-signed URL when `B2_KEY_ID` is set; treats the key as null if B2 is not configured. Legacy `data:image/...` base64 rows pass through unchanged.
 
 ---
