@@ -94,9 +94,9 @@ services:
       - key: RESEND_API_KEY
         sync: false             # re_xxxxxxxxxxxxxxxxxxxx
 
-      # From address — use onboarding@resend.dev until you verify your domain
+      # From address — verified domain sahucsc.dpdns.org
       - key: RESEND_FROM
-        value: "SAHU CSC <onboarding@resend.dev>"
+        value: "SAHU CSC <noreply@sahucsc.dpdns.org>"
 
       # Kept as fallback recipient for test emails
       # - key: SMTP_USER
