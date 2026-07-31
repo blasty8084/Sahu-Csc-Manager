@@ -1,3 +1,9 @@
+// Force IPv4 for all DNS lookups — Render free tier blocks IPv6 outbound connections.
+// Gmail SMTP resolves to an IPv6 address by default, causing ENETUNREACH on Render.
+// This must be the very first line before any network code or imports.
+import { setDefaultResultOrder } from "dns";
+setDefaultResultOrder("ipv4first");
+
 import "./lib/env"; // ← validates all required env vars before anything else runs
 import app from "./app";
 import { runStartupInit } from "./lib/startup-init";
