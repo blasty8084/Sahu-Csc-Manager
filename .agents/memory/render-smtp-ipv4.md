@@ -1,12 +1,21 @@
 ---
 name: Render SMTP IPv4
-description: Render outbound SMTP can resolve Gmail to unreachable IPv6; Nodemailer must force IPv4.
+description: Render outbound SMTP resolves Gmail to unreachable IPv6; correct fix is process-wide DNS order, not a Nodemailer option.
 ---
 
 # Render SMTP IPv4
 
-When SMTP is used from Render, configure the Nodemailer transport with `family: 4` plus explicit connection, greeting, and socket timeouts. Render may resolve `smtp.gmail.com` to IPv6 even when the service cannot route IPv6, producing `ENETUNREACH` and breaking 2FA OTP delivery.
+**The problem:** On Render, `smtp.gmail.com` can resolve to an IPv6 address that Render cannot route outbound, producing `ENETUNREACH` on port 587 and breaking 2FA OTP delivery (502 from the switch-method endpoint).
 
-**Why:** The login-time OTP endpoint failed with a 502 because the SMTP socket attempted an unreachable IPv6 address; the OTP generation and database flow were otherwise working.
+**Wrong fix:** Adding `family: 4` as a top-level key to `nodemailer.createTransport()` config — it is silently ignored by Nodemailer.
 
-**How to apply:** Keep the production mailer and any SMTP diagnostic/test transporter on the same IPv4-forced settings. Verify the Render deployment logs after redeploy, then test the login-time resend flow.
+**Correct fix (confirmed working):** Call `dns.setDefaultResultOrder("ipv4first")` once at process startup, before any network code runs. In this project it goes at the top of `artifacts/api-server/src/lib/env.ts` (which is the first import in `index.ts`). This forces every DNS lookup in the process — including Nodemailer's internal resolution of `smtp.gmail.com` — to return IPv4 addresses first.
+
+**Why:** `setDefaultResultOrder` is a process-wide Node.js setting that affects the built-in resolver for all sockets, not just a single transporter instance. Placing it in `env.ts` guarantees it runs before any module that opens a network connection.
+
+**How to apply:** Add to the very top of the first-imported server file:
+```ts
+import { setDefaultResultOrder } from "node:dns";
+setDefaultResultOrder("ipv4first");
+```
+No changes to Nodemailer transport config are needed beyond normal timeouts.
