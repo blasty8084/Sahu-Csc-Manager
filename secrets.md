@@ -104,8 +104,6 @@ When configured, cache and rate-limit counters are shared across all server inst
 |---|---|---|---|
 | `UPSTASH_REDIS_REST_URL` | Secret | ⬜ Not set | REST URL from Upstash dashboard → REST API tab (e.g. `https://xxx.upstash.io`). Used by the cache backend and rate limiters. |
 | `UPSTASH_REDIS_REST_TOKEN` | Secret | ⬜ Not set | REST token from the same tab. |
-| `REDIS_URL` | Secret | ⬜ Not set | TCP connection URL from Upstash → Redis tab (e.g. `rediss://default:xxx@xxx.upstash.io:6379`). Used by BullMQ/ioredis for background notification jobs. |
-
 > Free tier: 10,000 requests/day, 256 MB. Without these vars the app falls back to in-memory rate limiting and cache (fine for single-instance; not safe for multi-instance).
 
 ---
@@ -151,7 +149,7 @@ VAPID (Voluntary Application Server Identification) is the Web Push standard for
 | Variable | Status | Value | Explanation |
 |----------|--------|-------|-------------|
 | `ALLOW_NON_INDIA` | ✅ Set | `true` | Set to `true` to bypass the India-only GeoIP block. The app rejects visitors whose IP resolves to a country other than India. This is set to `true` in the Replit development environment since Replit servers are outside India. Set to `false` or remove in production. |
-| `DISABLE_2FA` | ✅ Set | `true` | When `true`, all 2FA/OTP challenges are bypassed globally. Useful for development. Remove or set to `false` in production. |
+| `DISABLE_2FA` | ~~Removed~~ | — | This bypass was removed in v4.10.2 — 2FA is permanently on and cannot be disabled via env var. |
 
 ---
 
@@ -217,18 +215,15 @@ Minimum required after importing the project fresh from GitHub:
 ### Secrets Tab (🔒)
 ```
 ☑ SESSION_SECRET      — 32+ character random string (e.g. openssl rand -base64 32)
-☑ ADMIN_PASSWORD      — strong password for admin account
-☑ OPERATOR_PASSWORD   — strong password for operator account
-☑ SMTP_USER           — Gmail address (sahuuttam690@gmail.com)
-☑ SMTP_PASSWORD       — Gmail App Password (16 chars)
-☑ SMTP_FROM_EMAIL     — Display name + address for From: header
+☑ ADMIN_PASSWORD      — strong password: 8+ chars, upper+lower+number+symbol
+☑ OPERATOR_PASSWORD   — strong password: same policy
+☐ RESEND_API_KEY      — re_xxx… from resend.com (optional — email is no-op without it)
 ```
 
 ### Optional Secrets (enable extra services)
 ```
 ☐ B2_KEY_ID / B2_APP_KEY           — Backblaze B2 for avatar/backup storage
-☐ UPSTASH_REDIS_REST_URL / TOKEN   — Shared cache + rate limiting
-☐ REDIS_URL                        — BullMQ background jobs
+☐ UPSTASH_REDIS_REST_URL / TOKEN   — Shared cache + rate limiting (multi-instance)
 ```
 
 ### Setup Steps (run in order)

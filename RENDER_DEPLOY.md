@@ -27,13 +27,13 @@
 | Secret | Value |
 |---|---|
 | `NEON_DATABASE_URL` | Connection string from Neon (Step 1) |
-| `ADMIN_PASSWORD` | Strong password for the admin account |
-| `OPERATOR_PASSWORD` | Strong password for the operator account |
-| `CORS_ORIGIN` | `https://sahu-csc-manager-sahu-csc.vercel.app` (verified frontend origin) |
-| `SMTP_USER` | Your Gmail address |
-| `SMTP_PASS` | Gmail App Password — **not** your account password (Google → Security → 2-Step → App Passwords → create) |
-| `SMTP_FROM_EMAIL` | e.g. `SAHU CSC Support <you@gmail.com>` |
+| `ADMIN_PASSWORD` | Strong password for the admin account (8+ chars, upper+lower+number+symbol) |
+| `OPERATOR_PASSWORD` | Strong password for the operator account (same policy) |
+| `CORS_ORIGIN` | Your Vercel frontend URL, e.g. `https://sahu-csc-manager-sahu-csc.vercel.app` |
+| `RESEND_API_KEY` | API key from resend.com → API Keys (format: `re_xxx…`) — required for OTP email |
 | `VAPID_EMAIL` | e.g. `mailto:you@gmail.com` |
+
+> ⚠️ **Do NOT wrap values in quotes.** Render stores whatever you type literally — if you type `"Admin@2024"` the password becomes `"Admin@2024"` with the quote characters, which will break login.
 
 Optional (skip if not using):
 
@@ -41,12 +41,12 @@ Optional (skip if not using):
 |---|---|
 | `B2_KEY_ID` | Backblaze B2 Application Key ID |
 | `B2_APP_KEY` | Backblaze B2 Application Key |
-| `UPSTASH_REDIS_REST_URL` | From Upstash → Connect tab |
-| `UPSTASH_REDIS_REST_TOKEN` | From Upstash → Connect tab |
-| `ADMIN_EMAIL` | Email for admin account (defaults to SMTP_USER) |
-| `ADMIN_MOBILE` | Mobile number for admin account |
+| `UPSTASH_REDIS_REST_URL` | From Upstash → REST API tab (e.g. `https://xxx.upstash.io`) |
+| `UPSTASH_REDIS_REST_TOKEN` | From Upstash → REST API tab |
+| `ADMIN_EMAIL` | Email for admin account |
+| `ADMIN_MOBILE` | Mobile number for admin account (10 digits) |
 | `OPERATOR_EMAIL` | Email for operator account |
-| `OPERATOR_MOBILE` | Mobile number for operator account |
+| `OPERATOR_MOBILE` | Mobile number for operator account (10 digits) |
 | `SENTRY_DSN` | Sentry error tracking DSN |
 
 5. Click **Apply** → Render builds and deploys automatically.
@@ -120,6 +120,7 @@ Every push to the connected GitHub branch triggers a redeploy automatically.
 |---|---|
 | Build fails with "No database URL found" | Set `NEON_DATABASE_URL` in Render → Environment before deploying |
 | Server starts but login fails | Check `ADMIN_PASSWORD` / `OPERATOR_PASSWORD` are set correctly |
-| OTP emails not sending | Set `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM_EMAIL` env vars |
+| OTP emails not sending | Set `RESEND_API_KEY` secret and `RESEND_FROM` env var in Render → Environment |
+| Env var shows literal quotes | Remove surrounding `"..."` from values in Render → Environment — Render stores them literally |
 | CORS errors from frontend | Set `CORS_ORIGIN` to your exact frontend URL (no trailing slash) |
 | Cold start timeout | Normal on free tier — first request after 15 min idle takes ~30 s |
