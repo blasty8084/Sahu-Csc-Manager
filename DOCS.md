@@ -494,7 +494,7 @@ All secrets are managed in the Replit Secrets tab (🔒 icon in left sidebar). N
 | Variable / Secret | Purpose |
 |----------|---------|
 | `RESEND_API_KEY` *(Secret)* | Resend HTTP API key — resend.com → API Keys → Create API Key |
-| `RESEND_FROM` *(Env var)* | Sender address, e.g. `SAHU CSC <noreply@sahucsc.dpdns.org>` — must be from a verified Resend domain |
+| `RESEND_FROM` *(Env var)* | Sender address, e.g. `SAHU CSC <info@sahucsc.dpdns.org>` — must be from a verified Resend domain. **Do NOT use `noreply@`** — Gmail bounces emails from noreply senders on free dynamic DNS domains. |
 
 > Without `RESEND_API_KEY`, OTP login, password reset, and admin email broadcast are disabled. Username + password login still works. Verified domain `sahucsc.dpdns.org` is configured — all recipient email addresses are supported.
 

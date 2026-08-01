@@ -44,7 +44,7 @@ In Replit → **Env Vars** tab → Shared, also add:
 
 | Key | Value | Notes |
 |-----|-------|-------|
-| `RESEND_FROM` | `SAHU CSC <noreply@sahucsc.dpdns.org>` | Sender address — must be from verified Resend domain |
+| `RESEND_FROM` | `SAHU CSC <info@sahucsc.dpdns.org>` | Sender address — must be from verified Resend domain. Do NOT use `noreply@` (Gmail bounces it from dpdns.org domains). |
 | `ADMIN_EMAIL` | admin's email address | Saved to admin account at seed time |
 | `OPERATOR_EMAIL` | operator's email address | Saved to operator account at seed time |
 

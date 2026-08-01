@@ -73,7 +73,7 @@ Email is sent via **Resend HTTP API** (HTTPS port 443) — replaces Nodemailer S
 
 | Variable | Status | Value | Explanation |
 |----------|--------|-------|-------------|
-| `RESEND_FROM` | ✅ Set | `SAHU CSC <noreply@sahucsc.dpdns.org>` | Sender address shown in From header. Must be from a verified Resend domain. |
+| `RESEND_FROM` | ✅ Set | `SAHU CSC <info@sahucsc.dpdns.org>` | Sender address shown in From header. Must be from a verified Resend domain. **Do NOT use `noreply@`** — Gmail bounces emails from noreply senders on free dynamic-DNS domains (confirmed bounce Aug 1, 2026). |
 
 > **Test endpoint**: `POST /api/settings/smtp/test` (admin auth required) sends a real test email via Resend. Confirmed working as of 2026-07-31.
 >

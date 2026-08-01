@@ -112,7 +112,7 @@ Target users: rural Odisha CSC operators. UI languages: English, Hindi, Odia (`i
 | `BASE_PATH` | `/` | URL base path |
 | `DB_POOL_MAX` | `5` | Max pg pool connections |
 | `CORS_ORIGIN` | comma-separated URLs (optional) | Extra allowed origins — `REPLIT_DEV_DOMAIN` / `REPLIT_DOMAINS` auto-included |
-| `RESEND_FROM` | `SAHU CSC <noreply@sahucsc.dpdns.org>` | Sender address — verified domain `sahucsc.dpdns.org` on resend.com |
+| `RESEND_FROM` | `SAHU CSC <info@sahucsc.dpdns.org>` | Sender address — verified domain `sahucsc.dpdns.org` on resend.com. **Must NOT use `noreply@`** — Gmail bounces those from dpdns.org. |
 | `ADMIN_EMAIL` | admin email | Set on admin account at seed time |
 | `OPERATOR_EMAIL` | operator email | Set on operator account at seed time |
 | `ALLOW_NON_INDIA` | `true` | Bypasses geo-block for Replit dev (not for production) |

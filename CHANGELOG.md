@@ -32,9 +32,27 @@
 
 **Env vars:**
 - `RESEND_API_KEY` (Secret) — Resend API key (`re_xxx…`)
-- `RESEND_FROM` (Shared env var) — `SAHU CSC <noreply@sahucsc.dpdns.org>`
+- `RESEND_FROM` (Shared env var) — `SAHU CSC <info@sahucsc.dpdns.org>` *(changed from `noreply@` — see fix below)*
+- `ADMIN_EMAIL` (Shared env var) — admin account email set at seed time (falls back to `admin@example.com` if unset — always set this!)
+- `OPERATOR_EMAIL` (Shared env var) — operator account email set at seed time (falls back to `operator@example.com` if unset)
 
 **Domain:** `sahucsc.dpdns.org` verified on resend.com — all recipient email addresses supported (not sandbox-limited).
+
+---
+
+## 0. Fix — RESEND_FROM noreply→info + seed email addresses (August 1, 2026)
+
+**Problem 1 — OTP emails bounced by Gmail:**
+Emails from `noreply@sahucsc.dpdns.org` were accepted by Resend (200) but bounced at Gmail with "Blocked due to content: the message was rejected because it contained content that the recipient's server doesn't allow." Root cause: Gmail rejects `noreply@` senders from free dynamic DNS domains (`dpdns.org`) as untrusted/spammy.
+
+**Fix:** Changed `RESEND_FROM` from `SAHU CSC <noreply@sahucsc.dpdns.org>` → `SAHU CSC <info@sahucsc.dpdns.org>`. Updated in: Replit env vars, `render.yaml`, `render.env`, `.env.example`.
+
+**Problem 2 — OTP sent to fake `admin@example.com`:**
+Seed script derives admin/operator email from `ADMIN_EMAIL` → `SMTP_USER` → `"admin@example.com"` fallback. `SMTP_USER` was removed when switching to Resend, so fallback kicked in. OTP was sent to `admin@example.com` (non-existent address) — Resend accepted it (200) but it never arrived anywhere real.
+
+**Fix:** Set `ADMIN_EMAIL=sahuuttam690@gmail.com` and `OPERATOR_EMAIL=minecraftbot.org@gmail.com` as Replit shared env vars. Re-ran `Seed Database` workflow to update account emails in DB.
+
+**Rule going forward:** Always set `ADMIN_EMAIL` and `OPERATOR_EMAIL` before seeding. These are non-secret env vars (not passwords), set via Replit → Env Vars → Shared.
 
 ---
 
