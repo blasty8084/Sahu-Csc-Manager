@@ -59,7 +59,7 @@ function DrumColumn({
     >
       {/* scrolling strip */}
       <div
-        className="absolute w-full transition-transform duration-200 ease-out"
+        className="flex flex-col w-full transition-transform duration-200 ease-out"
         style={{ transform: `translateY(${ITEM_H - selectedIndex * ITEM_H}px)` }}
       >
         {items.map((item, idx) => (

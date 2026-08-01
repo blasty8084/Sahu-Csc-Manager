@@ -30,9 +30,9 @@ export function BackupScheduleCard({
         right={
           <button
             onClick={() => setSchedule((s) => ({ ...s, enabled: !s.enabled }))}
-            className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${schedule.enabled ? "bg-[var(--brand-orange)]" : "bg-slate-300"}`}
+            className={`relative w-10 h-5 rounded-full transition-colors duration-300 shrink-0 ${schedule.enabled ? "bg-[var(--brand-orange)]" : "bg-slate-300"}`}
           >
-            <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white dark:bg-zinc-200 shadow transition-transform ${schedule.enabled ? "translate-x-5" : "translate-x-0"}`} />
+            <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white dark:bg-zinc-200 shadow transition-transform duration-300 ease-in-out ${schedule.enabled ? "translate-x-5" : "translate-x-0"}`} />
           </button>
         }
       />
