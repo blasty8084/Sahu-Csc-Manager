@@ -4,6 +4,7 @@ import { eq, isNotNull, count, desc } from "drizzle-orm";
 import { requireRole } from "../lib/auth";
 import { enqueueNotification, enqueueEmail } from "../lib/queue-client";
 import { isSmtpConfigured } from "../lib/mailer";
+import { getFromEmail } from "../lib/mailer/transport";
 import { createSystemNotification } from "../services/notificationService";
 import { z } from "zod/v4";
 import { logger } from "../lib/logger";
@@ -179,7 +180,7 @@ router.post("/admin/broadcast/email", requireRole("admin"), async (req: any, res
   }
 
   if (!isSmtpConfigured()) {
-    res.status(503).json({ error: "SMTP is not configured. Set SMTP_HOST, SMTP_USER, SMTP_PASS in Secrets." });
+    res.status(503).json({ error: "Email service is not configured. Set RESEND_API_KEY in Secrets." });
     return;
   }
 
@@ -206,8 +207,7 @@ router.post("/admin/broadcast/email", requireRole("admin"), async (req: any, res
       return;
     }
 
-    const fromEmail =
-      process.env.SMTP_FROM_EMAIL ?? process.env.SMTP_USER ?? "noreply@sahucsc.in";
+    const fromEmail = getFromEmail();
 
     const bodyText = `SAHU CSC — Management Platform\n\n${subject}\n\n${body}\n\nThis message was sent to all platform users by an administrator.`;
     const bodyHtml = `<p style="font-family:sans-serif;font-size:15px;line-height:1.7;">${body.replace(/\n/g, "<br/>")}</p><p style="font-family:sans-serif;font-size:12px;color:#888;">Sent by your administrator to all active platform users.</p>`;

@@ -7,9 +7,9 @@
  */
 
 // Force Node.js DNS resolver to prefer IPv4 addresses process-wide.
-// Render's DNS can resolve smtp.gmail.com to an IPv6 address that Render
-// cannot route outbound (causing ENETUNREACH on port 587). Setting this
-// before any network code runs guarantees all DNS lookups return IPv4 first.
+// Render's DNS can sometimes resolve hostnames to IPv6 addresses that
+// Render cannot route outbound. Setting ipv4first guarantees all DNS
+// lookups return IPv4 first.
 import { setDefaultResultOrder } from "node:dns";
 setDefaultResultOrder("ipv4first");
 
@@ -19,9 +19,9 @@ const REQUIRED: [key: string, description: string][] = [
 
 // Soft-warn for optional but strongly recommended vars
 const RECOMMENDED: [key: string, description: string][] = [
-  ["NEON_DATABASE_URL", "Neon PostgreSQL connection string (falls back to DATABASE_URL)"],
-  ["B2_KEY_ID",         "Backblaze B2 key ID for file storage"],
-  ["SMTP_USER",         "Gmail address for sending emails"],
+  ["NEON_DATABASE_URL",      "Neon PostgreSQL connection string (falls back to DATABASE_URL)"],
+  ["B2_KEY_ID",              "Backblaze B2 key ID for file storage"],
+  ["RESEND_API_KEY",         "Resend API key for sending emails (OTP, approvals, broadcasts)"],
   ["UPSTASH_REDIS_REST_URL", "Upstash Redis REST URL for shared cache"],
 ];
 

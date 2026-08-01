@@ -73,7 +73,7 @@ router.post("/settings/vapid/rotate", requireRole("admin"), asyncHandler(async (
   // the instance that handled this request.  webPush.setVapidDetails() is
   // the correct in-process update; other instances will pick up the new keys
   // from the DB on their next restart (or when they next read the settings table).
-  const subject = process.env.VAPID_SUBJECT ?? `mailto:${process.env.SMTP_FROM_EMAIL ?? "admin@sahucsc.in"}`;
+  const subject = process.env.VAPID_SUBJECT ?? `mailto:${process.env.ADMIN_EMAIL ?? "admin@sahucsc.in"}`;
   webPush.setVapidDetails(subject, publicKey, privateKey);
 
   await auditLog(req.session.userId!, "settings.vapid.rotate", "VAPID keypair rotated", getClientIp(req));

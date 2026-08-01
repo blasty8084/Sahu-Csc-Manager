@@ -31,7 +31,7 @@ const RATE_LIMIT_MAX = 3;
 router.post("/auth/send-otp", asyncHandler(async (req, res) => {
   if (!isSmtpConfigured()) {
     res.status(503).json({
-      error: "Email service not configured. Please set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS in Secrets.",
+      error: "Email service not configured. Please set RESEND_API_KEY in Secrets.",
     });
     return;
   }
@@ -103,7 +103,7 @@ router.post("/auth/send-otp", asyncHandler(async (req, res) => {
     await sendOtpEmail(resolvedEmail, otp, purpose as OtpPurpose, expiresAt);
   } catch (err) {
     logger.error({ err, purpose, email: maskEmail(resolvedEmail) }, "Failed to enqueue OTP email");
-    res.status(502).json({ error: "Failed to send email. Please check SMTP configuration or try again." });
+    res.status(502).json({ error: "Failed to send email. Please check RESEND_API_KEY configuration or try again." });
     return;
   }
 

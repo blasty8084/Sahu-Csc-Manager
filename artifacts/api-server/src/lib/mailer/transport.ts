@@ -55,7 +55,7 @@ export function isSmtpConfigured(): boolean {
  * Internal helper — not exported.
  */
 function getFullFrom(): string {
-  return process.env["RESEND_FROM"] ?? process.env["SMTP_FROM_EMAIL"] ?? DEFAULT_FROM;
+  return process.env["RESEND_FROM"] ?? DEFAULT_FROM;
 }
 
 /**
