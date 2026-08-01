@@ -10,8 +10,9 @@ export { buildApprovalMailOptions, buildRejectionMailOptions } from "./templates
 async function send(to: string, subject: string, html: string, text: string): Promise<void> {
   if (!isSmtpConfigured()) return;
   try {
-    const transporter = await getTransporter();
-    await transporter.sendMail({ from: getFromEmail(), to, subject, html, text });
+    const transporter = getTransporter();
+    // No `from` passed — sendMail() defaults to RESEND_FROM (full "Name <email>" format)
+    await transporter.sendMail({ to, subject, html, text });
   } catch (err) {
     logger.warn({ err, to, subject }, "Email send failed");
   }

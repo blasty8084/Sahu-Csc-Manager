@@ -2,9 +2,8 @@ import { Router, type IRouter } from "express";
 import { db, pushSubscriptionsTable, usersTable, broadcastLogsTable } from "@workspace/db";
 import { eq, isNotNull, count, desc } from "drizzle-orm";
 import { requireRole } from "../lib/auth";
-import { enqueueNotification, enqueueEmail } from "../lib/queue-client";
-import { isSmtpConfigured } from "../lib/mailer";
-import { getFromEmail } from "../lib/mailer/transport";
+import { enqueueNotification } from "../lib/queue-client";
+import { isSmtpConfigured, sendBroadcastEmail } from "../lib/mailer";
 import { createSystemNotification } from "../services/notificationService";
 import { z } from "zod/v4";
 import { logger } from "../lib/logger";
@@ -207,22 +206,13 @@ router.post("/admin/broadcast/email", requireRole("admin"), async (req: any, res
       return;
     }
 
-    const fromEmail = getFromEmail();
-
     const bodyText = `SAHU CSC — Management Platform\n\n${subject}\n\n${body}\n\nThis message was sent to all platform users by an administrator.`;
     const bodyHtml = `<p style="font-family:sans-serif;font-size:15px;line-height:1.7;">${body.replace(/\n/g, "<br/>")}</p><p style="font-family:sans-serif;font-size:12px;color:#888;">Sent by your administrator to all active platform users.</p>`;
 
-    // Enqueue one job per recipient so the HTTP response returns immediately
-    // and SMTP round-trips happen asynchronously in the worker.
+    // Send directly via Resend — enqueueEmail is a no-op stub (Redis/BullMQ removed)
     await Promise.all(
       withEmail.map((u) =>
-        enqueueEmail({
-          to: u.email!,
-          from: fromEmail,
-          subject,
-          html: bodyHtml,
-          text: bodyText,
-        }),
+        sendBroadcastEmail(u.email!, subject, bodyHtml, bodyText),
       ),
     );
 
