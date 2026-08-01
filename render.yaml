@@ -96,7 +96,7 @@ services:
 
       # From address — verified domain sahucsc.dpdns.org
       - key: RESEND_FROM
-        value: "SAHU CSC <noreply@sahucsc.dpdns.org>"
+        value: "SAHU CSC <info@sahucsc.dpdns.org>"
 
       # Kept as fallback recipient for test emails
       # - key: SMTP_USER
