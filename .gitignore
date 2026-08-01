@@ -63,9 +63,9 @@ artifacts/api-server/dist/
 # Sensitive docs
 secrets.md
 
-# Database dumps
+# Database dumps (root-level only — does NOT exclude src/components/backups/)
 *.sql
-backups/
+/backups/
 
 # Logs
 *.log
