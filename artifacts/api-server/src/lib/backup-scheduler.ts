@@ -1,11 +1,11 @@
 import cron, { ScheduledTask } from "node-cron";
-import { execSync } from "child_process";
-import { mkdirSync, statSync, readdirSync, unlinkSync } from "fs";
+import { mkdirSync, statSync, unlinkSync } from "fs";
 import path from "path";
 import { db, backupsTable } from "@workspace/db";
 import { asc } from "drizzle-orm";
 import { logger } from "./logger";
 import { createNotification } from "./notify";
+import { nodeDump } from "./node-dump";
 
 const BACKUP_DIR = path.resolve(process.cwd(), "backups");
 
@@ -40,16 +40,23 @@ function buildCronExpr(cfg: BackupScheduleConfig): string {
   return `${min} ${hour} * * ${dayList}`;
 }
 
-async function runBackup(): Promise<void> {
-  const dbUrl = process.env["DATABASE_URL"];
-  if (!dbUrl) { logger.error("Auto-backup: DATABASE_URL not set"); return; }
+/**
+ * Exported so the /api/internal/backup endpoint can trigger a backup
+ * from an external cron service (needed on Render free tier which sleeps
+ * the process and prevents node-cron from firing).
+ */
+export async function runScheduledBackup(): Promise<void> {
+  return runBackup();
+}
 
+async function runBackup(): Promise<void> {
   try {
     mkdirSync(BACKUP_DIR, { recursive: true });
     const filename = `auto_backup_${new Date().toISOString().replace(/[:.]/g, "-")}.sql`;
     const filepath = path.join(BACKUP_DIR, filename);
 
-    execSync(`pg_dump "${dbUrl}" -f "${filepath}"`, { stdio: "pipe" });
+    // Use pure Node.js dump — no pg_dump binary required (works on Render)
+    await nodeDump(filepath);
     const size = statSync(filepath).size;
 
     await db.insert(backupsTable).values({ filename, size });

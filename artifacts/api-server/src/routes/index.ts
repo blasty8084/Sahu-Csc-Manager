@@ -23,6 +23,7 @@ import receiptsRouter from "./receipts";
 import broadcastRouter from "./broadcast";
 import adminReceiptExportRouter from "./admin-receipt-export";
 import adminTestB2Router from "./admin-test-b2";
+import internalRouter from "./internal";
 
 const router: IRouter = Router();
 
@@ -49,6 +50,7 @@ router.use(receiptsRouter);
 router.use(broadcastRouter);
 router.use(adminReceiptExportRouter);
 router.use(adminTestB2Router);
+router.use(internalRouter);
 router.use(setupStatusRouter);
 
 export default router;

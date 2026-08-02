@@ -126,6 +126,15 @@ services:
       - key: UPSTASH_REDIS_REST_TOKEN
         sync: false
 
+      # ── Auto-backup external trigger (Render free tier workaround) ──────────
+      # Render free tier sleeps after 15 min inactivity — node-cron never fires.
+      # Fix: set this token and configure a free external cron (cron-job.org):
+      #   URL:     POST https://<your-render-url>/api/internal/backup
+      #   Header:  x-backup-token: <this value>
+      #   Schedule: every hour — the endpoint checks if backup is due and skips if not.
+      - key: BACKUP_TRIGGER_TOKEN
+        sync: false             # any long random string, e.g. openssl rand -hex 32
+
       # ── Optional ──────────────────────────────────────────────────────────
       - key: SENTRY_DSN
         sync: false

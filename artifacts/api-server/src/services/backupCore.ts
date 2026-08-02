@@ -7,6 +7,7 @@ import { db, backupsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { uploadToB2, downloadFromB2, deleteFromB2, isB2Configured } from "../lib/b2";
+import { nodeDump } from "../lib/node-dump";
 
 export const BACKUP_DIR = path.resolve(process.cwd(), "backups");
 mkdirSync(BACKUP_DIR, { recursive: true });
@@ -67,14 +68,13 @@ export async function listBackups(): Promise<BackupRecord[]> {
   return backups.map(fmt);
 }
 
-// ── create (pg_dump) ──────────────────────────────────────────────────────────
+// ── create backup (pure Node.js — no pg_dump binary required) ─────────────────
 export async function createBackup(): Promise<BackupRecord> {
-  const dbUrl = process.env["DATABASE_URL"] ?? process.env["NEON_DATABASE_URL"];
-  if (!dbUrl) throw new Error("DATABASE_URL not configured");
   mkdirSync(BACKUP_DIR, { recursive: true });
   const filename = `backup_${new Date().toISOString().replace(/[:.]/g, "-")}.sql`;
   const filepath = path.join(BACKUP_DIR, filename);
-  execSync(`pg_dump "${dbUrl}" -f "${filepath}"`);
+  // nodeDump uses the shared pg pool — no pg_dump binary needed (works on Render)
+  await nodeDump(filepath);
   const size = statSync(filepath).size;
 
   // Upload to B2 — failure is logged but does not abort the backup
