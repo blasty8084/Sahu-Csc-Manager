@@ -107,14 +107,23 @@ export function applySchedule(cfg: BackupScheduleConfig): void {
     return;
   }
 
-  activeTask = cron.schedule(expr, async () => {
-    logger.info({ expr }, "Auto-backup triggered");
-    await runBackup();
-    await trimOldBackups(cfg.retention);
-  });
+  activeTask = cron.schedule(
+    expr,
+    async () => {
+      logger.info({ expr }, "Auto-backup triggered");
+      await runBackup();
+      await trimOldBackups(cfg.retention);
+    },
+    {
+      timezone: "Asia/Kolkata",   // user-set times are always IST
+      noOverlap: true,            // skip a run if previous pg_dump is still going
+    },
+  );
 
-  logger.info({ expr, frequency: cfg.frequency, time: cfg.time, days: cfg.days, retention: cfg.retention },
-    "Auto-backup scheduler started");
+  logger.info(
+    { expr, timezone: "Asia/Kolkata", frequency: cfg.frequency, time: cfg.time, days: cfg.days, retention: cfg.retention },
+    "Auto-backup scheduler started (times are IST)",
+  );
 }
 
 export async function initBackupScheduler(): Promise<void> {

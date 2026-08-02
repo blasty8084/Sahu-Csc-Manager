@@ -19,7 +19,7 @@ export async function getSchedule() {
     enabled: s["backupEnabled"] === "true",
     frequency: s["backupFrequency"] ?? "daily",
     time: s["backupTime"] ?? "02:00",
-    days: s["backupDays"] ? s["backupDays"].split(",").map(Number) : [1],
+    days: s["backupDays"] ? s["backupDays"].split(",").map(Number) : [0],
     retention: parseInt(s["backupRetention"] ?? "7", 10),
   };
 }

@@ -45,9 +45,9 @@ export function useBackupSchedule() {
   const nextRunLabel = (() => {
     if (!schedule.enabled) return null;
     const dayName = DAYS.find((d) => d.value === schedule.days[0])?.label;
-    if (schedule.frequency === "daily")  return `Daily at ${schedule.time}`;
-    if (schedule.frequency === "weekly") return `${dayName} at ${schedule.time}`;
-    return `${schedule.days.map((d) => DAYS.find((x) => x.value === d)?.label).join(", ")} at ${schedule.time}`;
+    if (schedule.frequency === "daily")  return `Daily at ${schedule.time} IST`;
+    if (schedule.frequency === "weekly") return `${dayName} at ${schedule.time} IST`;
+    return `${schedule.days.map((d) => DAYS.find((x) => x.value === d)?.label).join(", ")} at ${schedule.time} IST`;
   })();
 
   return {
