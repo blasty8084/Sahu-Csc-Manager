@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Changelog
-**Current version: 4.10.3 — August 2, 2026**
+**Current version: 4.10.4 — August 2, 2026**
 
 > Single authoritative changelog covering all versions from v1.x through v4.x.
 > - **v3.x / v4.x entries** (current) — listed first, newest at top
@@ -9,11 +9,88 @@
 
 ## Table of Contents
 
+0. [Fix — Auto-Backup route, B2 upload, dedup, email fallbacks (August 2, 2026)](#0-fix--auto-backup-route-b2-upload-dedup-email-fallbacks-august-2-2026)
 0. [UX — Analog Dial Picker v2 + Gitignore fix (August 2, 2026)](#0-ux--analog-dial-picker-v2--gitignore-fix-august-2-2026)
 0. [Infra — Replace Nodemailer SMTP with Resend HTTP API (July 31, 2026)](#0-infra--replace-nodemailer-smtp-with-resend-http-api-july-31-2026)
 0. [Fix — Email OTP never sent + HTML template restored (July 30, 2026)](#0-fix--email-otp-never-sent--html-template-restored-july-30-2026)
 0. [Infra — 2FA permanently hardcoded ON; SMTP fully configured (July 30, 2026)](#0-infra--2fa-permanently-hardcoded-on-smtp-fully-configured-july-30-2026)
 0. [Refactor — Full CSS variable tokenization across 355+ files (July 27, 2026)](#0-refactor--full-css-variable-tokenization-across-355-files-july-27-2026)
+
+---
+
+## 0. Fix — Auto-Backup route, B2 upload, dedup, email fallbacks (August 2, 2026)
+
+**Version: 4.10.4**
+
+Five confirmed bugs found by code analysis, all fixed in one commit.
+
+### Bug 1 — CRITICAL: Internal route double `/api` prefix (`routes/internal.ts`)
+
+**Problem:** Route was defined as `router.post("/api/internal/backup", ...)` but the router is mounted under `app.use("/api", router)` in `app.ts`. Actual URL became `/api/api/internal/backup` — UptimeRobot POST returned 404, backup never triggered.
+
+**Fix:** Changed route path to `router.post("/internal/backup", ...)`. The correct public URL is `https://<render-url>/api/internal/backup`.
+
+---
+
+### Bug 2 — Time window too narrow + no dedup check (`routes/internal.ts`)
+
+**Problem:** 30-minute window missed UptimeRobot calls that fire slightly early/late. No check prevented duplicate backups if UptimeRobot fired twice in the same hour.
+
+**Fix:**
+- Time window widened from 30 → **55 minutes** — safe for hourly callers
+- Added dedup check: queries `backupsTable` for the most recent backup; if one ran within the last 60 minutes, responds `{ skipped: true, reason: "Backup already ran N minutes ago." }` and returns without triggering another backup
+
+---
+
+### Bug 3 — Auto-backup missing B2 upload (`lib/backup-scheduler.ts`)
+
+**Problem:** `runBackup()` created a `.sql` file on local disk but never uploaded to B2. Render disk is ephemeral — restarts wipe local backups. Manual backup (`backupCore.ts`) had B2 upload; scheduled backup did not.
+
+**Fix:**
+- Added `import { createReadStream } from "fs"` and `import { uploadToB2, isB2Configured } from "./b2"` at top of file
+- After `nodeDump()` succeeds, calls `uploadToB2("backups/<filename>", createReadStream(filepath), "application/octet-stream")` when `isB2Configured()` is true
+- B2 upload failure is a warning (not fatal) — backup record still written to DB and notification sent
+- Success notification now includes file size: `"(12.3 KB) completed successfully."`
+
+---
+
+### Bug 4 — `seed.ts` admin email missing RESEND fallback (`scripts/seed.ts`)
+
+**Problem:** `adminEmail` fell back to `SMTP_USER ?? "admin@example.com"`. `SMTP_USER` is no longer the primary email var (Resend replaced SMTP). Admin account was seeded with `admin@example.com` placeholder on Render when `SMTP_USER` and `ADMIN_EMAIL` were not set.
+
+**Fix:** Both `adminEmail` and `businessEmail` now read:
+```
+ADMIN_EMAIL ?? SMTP_USER ?? RESEND_FROM (extract address from "Name <addr>") ?? "admin@example.com"
+```
+
+---
+
+### Bug 5 — `startup-init.ts` admin email missing RESEND fallback (`lib/startup-init.ts`)
+
+**Problem:** Same `SMTP_USER` fallback issue as seed.ts — first-boot account seeding on Render used `admin@example.com` placeholder.
+
+**Fix:** `adminEmail` now reads:
+```
+ADMIN_EMAIL ?? SMTP_USER ?? RESEND_FROM (extract address) ?? "admin@example.com"
+```
+
+---
+
+### UptimeRobot setup (run after redeploy)
+
+| Field | Value |
+|---|---|
+| Monitor Type | `HTTP(s)` |
+| URL | `https://sahu-csc-api-02wn.onrender.com/api/internal/backup` |
+| Interval | 60 minutes |
+| HTTP Method | POST |
+| Custom Header | `x-backup-token: <BACKUP_TRIGGER_TOKEN>` |
+
+Test command:
+```bash
+curl -X POST https://sahu-csc-api-02wn.onrender.com/api/internal/backup \
+  -H "x-backup-token: YOUR_TOKEN"
+```
 
 ---
 

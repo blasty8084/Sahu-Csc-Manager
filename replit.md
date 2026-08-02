@@ -1,5 +1,5 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 4.10.3** — last updated 2026-08-02 (Analog Dial Picker v2)
+**Version 4.10.4** — last updated 2026-08-02
 
 > **Latest setup**: After re-import run in order: `pnpm install --frozen-lockfile` → `pnpm --filter @workspace/db run push-force` → `Seed Database` workflow → update `CORS_ORIGIN` to current dev domain. Secrets needed: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. `API Server` port 8080 · Vite dev port 5000 · Worker Server skips (`REDIS_URL` not set) · OTP emails active when `RESEND_API_KEY` is set. Production: Vercel (frontend) + Render (backend/Neon DB).
 
