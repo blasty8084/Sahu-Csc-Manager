@@ -1,0 +1,792 @@
+From 407b71f08e0a3cc8352e940ed26bedfa3bda6ce0 Mon Sep 17 00:00:00 2001
+From: blasty8084 <230334219+blasty8084@users.noreply.github.com>
+Date: Sun, 2 Aug 2026 12:15:02 +0000
+Subject: [PATCH 1/4] docs: remove old session notes from replit.md, keep only
+ latest setup line
+
+---
+ replit.md | 90 +------------------------------------------------------
+ 1 file changed, 1 insertion(+), 89 deletions(-)
+
+diff --git a/replit.md b/replit.md
+index 1f13692..81eca09 100644
+--- a/replit.md
++++ b/replit.md
+@@ -1,95 +1,7 @@
+ # SAHU CSC — Common Service Center Management Platform
+ **Version 4.10.3** — last updated 2026-08-02 (Analog Dial Picker v2)
+ 
+-> **2026-08-01 (re-import setup)**: Re-imported from GitHub. Ran `pnpm install --frozen-lockfile`. Applied DB schema via `pnpm --filter @workspace/db run push-force`. Ran `Seed Database` workflow — admin/operator accounts created. Secrets set: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. `CORS_ORIGIN` updated to include current `pike.replit.dev` dev domain. `API Server` running on port 8080; `Start application` (Vite dev) running on port 5000. `Worker Server` skips cleanly — `REDIS_URL` not set. OTP emails are no-ops (`RESEND_API_KEY` not set). Verified: splash screen renders correctly in preview. Note: Replit is used as dev/test environment; production runs on Vercel (frontend) + Render (backend/Neon DB).
+->
+-> **2026-07-31 (re-import setup)**: Re-imported from GitHub. Ran `pnpm install --frozen-lockfile`. Applied DB schema via `pnpm --filter @workspace/db run push-force`. Ran `Seed Database` workflow — admin/operator accounts created. Secrets set: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. `CORS_ORIGIN` updated to include current `pike.replit.dev` dev domain. `API Server` running on port 8080; `Start application` (Vite dev) running on port 5000. `Worker Server` skips cleanly — `REDIS_URL` not set. `SMTP_PASS` not configured — OTP emails are no-ops (add `SMTP_PASS` secret to enable). Verified: splash screen renders correctly in preview. Note: Replit is used as dev/test environment; production runs on Vercel (frontend) + Render (backend/Neon DB).
+->
+-> **2026-07-30 (re-import setup #3)**: Re-imported from GitHub. Ran `pnpm install --frozen-lockfile`. Applied DB schema via `pnpm --filter @workspace/db run push-force`. Created `session` table + index via raw SQL. Ran `Seed Database` workflow — admin/operator accounts created. Secrets set: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. `API Server` running on port 8080; `Start application` (Vite dev) running on port 5000. `Worker Server` skips cleanly — `REDIS_URL` not set. Verified: splash screen renders correctly in preview.
+->
+-> **2026-07-30 (Render free-tier deploy prep)**: Updated `render-build.sh` — added `drizzle-kit push --force` step during build so Neon schema is auto-applied without any shell access. Updated `RENDER_DEPLOY.md` — full step-by-step guide for free tier (Blueprint + manual method, troubleshooting table). Session table auto-created by `connect-pg-simple` (`createTableIfMissing: true`). Admin/operator accounts auto-seeded on first boot via `startup-init.ts`. No manual shell commands needed at any step.
+->
+-> **2026-07-30 (re-import setup #2)**: Re-imported from GitHub. Ran `pnpm install`. Applied DB schema via `pnpm --filter @workspace/db run push`. Created `session` table + index via raw SQL. Ran `Seed Database` workflow — admin/operator accounts created. Secrets set: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. `API Server` running on port 8080; `Start application` (Vite dev) running on port 5000. `Worker Server` skips cleanly — `REDIS_URL` not set. Verified: splash screen renders correctly in preview.
+->
+-> **2026-07-30 (re-import + 2FA hardened + email OTP fixed)**: Re-imported from GitHub. Ran `pnpm install`. Applied DB schema via `pnpm --filter @workspace/db run push`. Ran `Seed Database` workflow — admin/operator accounts created. Set `ADMIN_EMAIL`, `OPERATOR_EMAIL` env vars for seed accounts. Set `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM_EMAIL` — SMTP fully configured. **2FA permanently hardcoded ON** — removed `DISABLE_2FA` env var bypass from `routes/auth/login.ts`, `routes/auth/register.ts`, `routes/setup-status.ts`; 2FA can no longer be disabled via env var. **Fixed email OTP never sending**: `enqueueEmail` in `queue-client.ts` was a no-op stub and `buildOtpMailOptions` in `mailer/index.ts` returned `null`; OTP was generated and saved to DB but never emailed. Fixed by calling `sendOtpEmail` directly from `login-helpers.ts` and `otp.ts`. **Fixed HTML email templates not rendering**: `mailer/templates/otp.ts` (and all template files) imported `createTransporter`, `getFromEmail`, `esc`, `buildV2Html` from `transport.ts`, but those functions did not exist — added them to `transport.ts`. `mailer/index.ts` now re-exports `sendOtpEmail` and `buildOtpMailOptions` from `templates/otp.ts` so all OTP emails use the branded dark-navy HTML design. `API Server` running on port 8080; `Start application` on port 5000. Verified: login page renders, OTP emails send with full HTML template.
+->
+-> **2026-07-30 (production infrastructure + SMTP live)**: Implemented four optional production services from `PRODUCTION_INFRA_PROMPT.md`: (1) **Backblaze B2** — replaced stub `b2.ts` with real `@aws-sdk/client-s3` client; `profile.ts` now uploads avatars to B2 and resolves `b2:<key>` to signed URLs; `backupCore.ts` mirrors backups to B2 and falls back to B2 on download/restore. (2) **Upstash Redis** — new `cache/redisBackend.ts`; `cache/backend.ts` auto-selects Redis when `UPSTASH_REDIS_REST_URL` set; all 5 rate limiters in `app.ts` use shared `RedisStore` via `makeRedisStore()`. (3) **BullMQ queue** — `queue-client.ts` rewritten to use BullMQ when `REDIS_URL` set, direct fire-and-forget fallback. (4) **nodemailer SMTP** — new `mailer/transport.ts`; `mailer/index.ts` replaced stub with real send functions. Fixed `settings/smtp.ts` route (was returning 501; now returns real status + working `/test` endpoint). Set `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587` env vars; `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM_EMAIL` secrets set. Gmail App Password confirmed — test email delivered to `sahuuttam690@gmail.com`. Admin account email updated to `sahuuttam690@gmail.com` via re-seed; seed script fixed to update `email` + `mobile` on conflict (not only `passwordHash`). `build.mjs` externals updated. All services degrade gracefully when env vars absent — only `SESSION_SECRET` is required. Updated `AGENT.md`, `secrets.md` to reflect live SMTP, B2, Redis state.
+->
+-> **2026-07-29 (re-import setup)**: Re-imported from GitHub. Ran `pnpm install`. Secrets added: `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. Applied DB schema via `drizzle-kit push --force`. Ran `Seed Database` workflow. `Start application` workflow fixed to use `dev` mode (was trying to serve a non-existent `dist/`). `API Server` running on port 8080; Vite dev server on port 5000.
+->
+-> **2026-07-28 (re-import setup #3)**: Re-imported from GitHub. Ran `pnpm install` (dependencies restored). Secrets added: `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. Applied DB schema via `drizzle-kit push --force` from `lib/db/`. Ran `Seed Database` workflow — admin/operator accounts created, services and settings seeded. Updated `CORS_ORIGIN` to current dev domain. `API Server` running on port 8080; `artifacts/sahu-csc: web` (Vite dev) running on port 5000. `Worker Server` skips cleanly (`REDIS_URL` not set). Verified: login page renders correctly in preview.
+->
+-> **2026-07-28 (re-import setup #2)**: Re-imported from GitHub. Ran `pnpm install` (dependencies restored). Secrets added: `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. Applied DB schema via `drizzle-kit push --force` from `lib/db/`. Built frontend (`pnpm --filter @workspace/sahu-csc run build`). Ran `Seed Database` workflow — admin/operator accounts created, services and settings seeded. Updated `CORS_ORIGIN` to current dev domain. `API Server` running on port 8080; `Start application` (sirv + /api proxy) running on port 5000. `Worker Server` skips cleanly (`REDIS_URL` not set). Verified: login page renders correctly in preview.
+->
+-> **2026-07-28 (re-import setup)**: Re-imported from GitHub. Ran `pnpm install` (dependencies restored). Secrets added: `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. Applied DB schema via `drizzle-kit push --force` from `lib/db/`. Ran `Seed Database` workflow — admin/operator accounts created, services and settings seeded. Updated `CORS_ORIGIN` and set `CACHE_BACKEND=memory` (Redis not configured). **Fixed two startup blockers introduced in v4.10.0**: (1) `artifacts/api-server/src/lib/env.ts` — moved Redis/B2 vars from `REQUIRED` to optional (server falls back to in-memory cache and local storage); (2) `artifacts/api-server/src/lib/b2.ts` — made `b2Client` nullable when B2 env vars absent. **Fixed blank preview screen**: rate-limiter in `app.ts` was unconditionally connecting to Redis (ECONNREFUSED), which blocked every request including `/api/geo`; made the IORedis client conditional on `REDIS_URL` presence; added 3s AbortController timeout to `GeoGate` fetch in `App.tsx` as a safety net. `API Server` running on port 8080; `artifacts/sahu-csc: web` (Vite dev) running on port 5000. `Worker Server` skips cleanly (`REDIS_URL` not set). Verified: login page renders correctly in preview, `/api/health` → 200, `/api/geo` → `{"allowed":true}`. **Deployment**: `artifacts/sahu-csc/vercel.json` created for Vercel → Render production setup (see DEPLOYMENT_GUIDE in attached_assets/).
+->
+-> **2026-07-27 (re-import setup #2)**: Re-imported from GitHub. Ran `pnpm install` (1164 packages). Secrets added: `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. Applied DB schema via `drizzle-kit push` from `lib/db/`. Ran `Seed Database` workflow — admin and operator accounts created, services and settings seeded. Built frontend (`pnpm --filter @workspace/sahu-csc run build`). Updated `CORS_ORIGIN` env var to include current dev domain. `API Server` running on port 8080; `Start application` serving on port 5000 (proxies `/api/*` to 8080). `Worker Server` skips cleanly (`REDIS_URL` not set). Verified: login page renders correctly in preview.
+->
+-> **2026-07-27 (re-import setup)**: Re-imported from GitHub. Ran `pnpm install` (dependencies restored). Secrets added: `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. Applied DB schema via `drizzle-kit push` (used Replit built-in `DATABASE_URL`; `NEON_DATABASE_URL` not set). Ran `Seed Database` workflow — admin and operator accounts created, services and settings seeded. Built frontend (`pnpm --filter @workspace/sahu-csc run build`). `API Server` running on port 8080; `Start application` serving on port 5000 (proxies `/api/*` to 8080). `Worker Server` skips cleanly (`REDIS_URL` not set). CORS auto-includes `REPLIT_DEV_DOMAIN`/`REPLIT_DOMAINS`. Verified: login page renders, `/api/health` → 200.
+->
+-> **2026-07-27 (current session — Navigation & Header fixes)**: Fixed duplicate UI elements reported after re-import. (1) **Profile removed from sidebar nav list** (`use-nav-items.ts`) — profile is already accessible via the avatar chip in the desktop header and the avatar in the sidebar footer; removing it from the nav list eliminates the triple-occurrence on desktop. (2) **ThemeToggle placement consolidated** — added `showThemeToggle?: boolean` prop to `SidebarNav`; the mobile `TopHeader` Sheet passes `showThemeToggle={false}` so the toggle inside the sheet is hidden (the `TopHeader` white bar already shows it); the desktop sidebar footer retains its own toggle. ThemeToggle is present in `DesktopHeader` for quick desktop access. (3) **Mobile TopHeader menu button** — replaced the avatar/name chip `SheetTrigger` with a clean `☰` hamburger icon button (same 38×38 size as the bell button, `Menu` icon from lucide-react) that opens the sidebar Sheet; the `firstName` label and avatar image are removed from the trigger, decluttering the mobile header. **Files changed:** `src/hooks/use-nav-items.ts`, `src/components/layout/Sidebar.tsx`, `src/components/layout/TopHeader.tsx`, `src/components/layout/DesktopHeader.tsx`.
+->
+-> **2026-07-27 (current session — Re-import setup)**: Re-imported from GitHub. Ran `pnpm install` (1164 packages). Secrets added: `NEON_DATABASE_URL`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`, `SMTP_PASSWORD`. Started `API Server` (port 8080, builds then runs `dist/index.mjs`) and `artifacts/sahu-csc: web` (port 5000, Vite dev). Ran `Seed Database` workflow — admin and operator accounts created/reset, services and settings seeded. `Worker Server` skips cleanly (`REDIS_URL` not set). CORS auto-includes `REPLIT_DEV_DOMAIN`/`REPLIT_DOMAINS` (v4.9.0+). Verified: login page renders correctly in preview, `/api/health` returns 200.
+->
+-> **2026-07-27 — Dark Mode Performance & Verification v4.9.5**: Theme changes now use an external visual-state store with `useSyncExternalStore`. The `<html>` class and CSS variables update synchronously, while only theme-aware controls and the toast renderer subscribe to React updates; dashboard, Ledger/Udhari Khata, notifications, and mobile navigation remain outside the theme subscription boundary. Added `color-scheme` declarations and `aria-pressed` state to both theme-toggle variants. Corrected the toast renderer to use the project's canonical `ThemeProvider` instead of the unused `next-themes` provider. Verified the login/auth shell, dashboard, ledger, Udhari Khata, notifications, and mobile navigation paths; no Framer Motion, GSAP, or Lottie dependency/import was added by this dark-mode pass. Existing Framer Motion usage remains in pre-existing auth, splash, page-transition, and toast interactions.
+-
+-> **2026-07-27 (current session — Dark Mode Component Fixes v4.9.4)**: Component-level dark mode pass across shadcn/ui and custom components. (1) `Pulse.tsx` — added `dark:bg-zinc-700` so all skeleton pulse animations render correctly on dark backgrounds (was `bg-slate-100` only). (2) `skeleton.tsx` — switched from `bg-primary/10` to `bg-muted` for proper dark-mode contrast. (3) `toaster.tsx` — fixed toast card: `bg-white → dark:bg-zinc-900`, title `dark:text-zinc-100`, description `dark:text-zinc-400`, close button `dark:text-zinc-500 dark:hover:bg-zinc-800`, progress rail `dark:bg-zinc-800`. (4) All skeleton wrappers (`LedgerSkeleton`, `DashboardSkeleton`, `UdhariSkeleton`, `skeletons/shared` → `NotificationsSkeleton`, `ProfilePageSkeleton`, `UdhariEntryList` empty state) — `bg-white → bg-card` so they inherit the CSS-variable-backed card surface. (5) `AepsTransactionTable` — main list card, export card, and dropdown all `bg-white → bg-card`; all hover states (`hover:bg-slate-50/80`, `hover:bg-slate-100`, `hover:bg-red-50`, `hover:bg-slate-50`) received `dark:` counterparts; dropdown wrapped with `border border-border`. (6) `LedgerEntryForm` — desktop right panel, top-bar, and footer: `background`/`borderTop`/`borderBottom` removed from inline styles and re-expressed as Tailwind `className` with `dark:bg-zinc-900/800` and `dark:border-zinc-700`; all desktop and mobile `<input>`, `<textarea>`, and `<SelectTrigger>` form fields: `background`/`color` removed from inline styles and expressed as `bg-white dark:bg-zinc-700 text-[#0b2c60] dark:text-zinc-100`; close buttons and type-switcher pill similarly updated. Print/thermal receipt output intentionally untouched. Build verified clean (3855 modules). **Rule: always use `bg-card` for card/list-item skeleton wrappers; never `bg-white`. Inline styles win over Tailwind dark: variants — always split background/color out of inline style into className when dark mode support is needed.**
+->
+-> **2026-07-26 (current session — ThemeToggle)**: Created standalone `ThemeToggle` component at `artifacts/sahu-csc/src/components/theme-toggle.tsx`. Two variants: `"icon"` (shadcn/ui `Button` ghost + `border-border bg-muted/60` for white header bars) and `"sidebar"` (native `<button>` with `bg-white/5 border-white/15` for dark sidebar footer). Both call `useTheme()` directly — eliminated all prop-drilling of `isDark` + `onToggleTheme` through Layout → TopHeader / DesktopHeader / SidebarNav. ThemeToggle added to mobile TopHeader white bar (previously only accessible inside the sidebar sheet — now always visible next to the bell button). Both variants have `aria-label`, `title`, and `focus-visible:ring-2` keyboard ring. Build verified clean.
+->
+-> **2026-07-26 (current session — ThemeProvider)**: Created canonical `artifacts/sahu-csc/src/providers/ThemeProvider.tsx` — supports `light | dark | system` modes, persists in `localStorage` key `sahu-theme` (migrates legacy `sahu-csc-theme` on first load), syncs `<html class="dark">` on every change, adds live `matchMedia` listener for system mode OS-preference changes. Added no-flash inline `<script>` as the very first element in `<head>` in `index.html` that reads `sahu-theme`/`sahu-csc-theme` synchronously before any paint and applies `class="dark"` when needed — eliminates light-flash on dark-mode page load. Moved `<ThemeProvider>` wrap from `App.tsx` into `main.tsx` (root-level), removed API coupling (`useGetSettings`) from the provider (moved server→local theme sync into `useProfileData.ts`). Old `components/theme-provider.tsx` is now a re-export shim — no import changes needed in consumers. Build verified clean.
+->
+-> **2026-07-26 (current session)**: Set `ALLOW_NON_INDIA=true` shared env var — Replit preview servers are outside India so the `GeoGate` frontend component was showing the region-blocked screen; this env var bypasses the check for development. Ran brand color token audit across 170 TSX/TS files (2271 hex occurrences, 825 Tailwind hardcoded-color occurrences); consolidated all unique values into 142 new CSS custom properties in `artifacts/sahu-csc/src/index.css` under `:root` (light) and `.dark` (dark) selectors — navy family (`--brand-navy*`), orange/saffron family (`--brand-orange*`), slate scale (`--color-slate-*`), semantic success/error/warning tokens, surface tokens, and alpha tints. No visual change; this is the token-definition phase ahead of a replacement pass. Artifact workflows auto-registered by Replit: `artifacts/sahu-csc: web` (port 5000 dev), `artifacts/api-server: API Server` (dev), `artifacts/mockup-sandbox: Component Preview Server` — these now coexist with the canonical `API Server` (port 8080 prod build) + `Start application` (port 5000 prod serve) workflows. Set `ALLOW_NON_INDIA=true` shared env var — Replit preview servers are outside India so the `GeoGate` frontend component was showing the region-blocked screen; this env var bypasses the check for development. Ran brand color token audit across 170 TSX/TS files (2271 hex occurrences, 825 Tailwind hardcoded-color occurrences); consolidated all unique values into 142 new CSS custom properties in `artifacts/sahu-csc/src/index.css` under `:root` (light) and `.dark` (dark) selectors — navy family (`--brand-navy*`), orange/saffron family (`--brand-orange*`), slate scale (`--color-slate-*`), semantic success/error/warning tokens, surface tokens, and alpha tints. No visual change; this is the token-definition phase ahead of a replacement pass. Artifact workflows auto-registered by Replit: `artifacts/sahu-csc: web` (port 5000 dev), `artifacts/api-server: API Server` (dev), `artifacts/mockup-sandbox: Component Preview Server` — these now coexist with the canonical `API Server` (port 8080 prod build) + `Start application` (port 5000 prod serve) workflows.
+->
+-> **Set up on Replit 2026-07-26 (latest)**: Ran `pnpm install` (node_modules missing after import), pushed DB schema via `pnpm --filter @workspace/db run push-force`, created `session` table + index via raw SQL, built API server and frontend (`PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run build`), seeded DB via `Seed Database` workflow. `API Server` (port 8080) and `Start application` (port 5000) running. `Worker Server` skips cleanly — `REDIS_URL` not set. Secrets set: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`, `B2_KEY_ID`, `B2_APP_KEY`, `B2_BUCKET_NAME`, `B2_BUCKET_ENDPOINT`. CORS auto-includes `REPLIT_DEV_DOMAIN`/`REPLIT_DOMAINS`. Backblaze B2 upload/signed-URL/download/delete lifecycle verified (bucket: SAHUCSCV2, endpoint: s3.us-west-004.backblazeb2.com). SMTP missing `SMTP_PASSWORD` — email OTP/notifications unavailable until configured. Verified: login page renders in preview, `/api/health` returns 200, admin/operator accounts seeded successfully.
+->
+-> **Set up on Replit 2026-07-24 (previous)**: Ran `pnpm install` (node_modules missing after import), pushed DB schema via `pnpm --filter @workspace/db run push-force`, created `session` table + index via raw SQL, built API server and frontend (`PORT=5000 BASE_PATH=/ pnpm --filter @workspace/sahu-csc run build`), seeded DB via `Seed Database` workflow. `API Server` (port 8080) and `Start application` (port 5000) running. `Worker Server` skips cleanly — `REDIS_URL` not set. Secrets set: `SESSION_SECRET`, `NEON_DATABASE_URL`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`, `B2_BUCKET_ENDPOINT`, `B2_BUCKET_NAME`, `B2_KEY_ID`, `B2_APP_KEY`. Backblaze B2 storage configured and verified (upload/signed-URL/delete lifecycle passed). CORS auto-includes `REPLIT_DEV_DOMAIN`/`REPLIT_DOMAINS` (v4.9.0+). SMTP missing `SMTP_PASSWORD` — email OTP/notifications unavailable until configured. Verified: dashboard renders in preview, `/api/healthz` returns 200.
+->
+-> **Set up on Replit 2026-07-23 (previous)**: Connected the imported project to the user's external Neon PostgreSQL database via the `NEON_DATABASE_URL` secret. Dependencies were installed, the API and frontend production builds succeeded, the database connection returned healthy PostgreSQL 18.4, and the admin/operator accounts were seeded. Optional Backblaze B2 storage is configured for avatar and backup copies, with local/base64 fallbacks retained. `API Server` (port 8080) and `Start application` (port 5000) are running. `Worker Server` skips cleanly because `REDIS_URL` is not set. SMTP remains optional and is currently missing `SMTP_PASSWORD`, so email OTP/notifications are unavailable until configured. Verified: frontend renders in preview, `/api/healthz` returns 200, and the B2 upload/download/delete lifecycle passed.
+->
+-> **Set up on Replit 2026-07-22**: Ran `pnpm install` (node_modules missing after import), pushed DB schema via `pnpm --filter @workspace/db run push-force` (lib/db/), created session table + index via raw SQL, seeded DB via `Seed Database` workflow. `API Server` (port 8080) and `artifacts/sahu-csc: web` (port 5000) running. `Worker Server` skips cleanly — `REDIS_URL` not set. Secrets set: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. CORS auto-includes `REPLIT_DEV_DOMAIN`/`REPLIT_DOMAINS` (v4.9.0+). Both `dev` and `main` branches are at the same commit (v4.9.0). Verified: login page renders correctly in preview.
+->
+-> **Re-imported and set up on Replit 2026-07-21 (fourth import)**: Ran `scripts/post-merge.sh` (pnpm install + schema push + session table), built API server and frontend, seeded DB via `Seed Database` workflow. `API Server` (port 8080) and `Start application` (port 5000) running. `Worker Server` skips cleanly — `REDIS_URL` not set. Secrets set: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. CORS auto-includes `REPLIT_DEV_DOMAIN`/`REPLIT_DOMAINS` (v4.9.0+). Verified: dashboard renders correctly in preview.
+->
+-> **Re-imported and set up on Replit 2026-07-21 (third import)**: Ran `pnpm install` + per-package installs (artifacts and lib/db), pushed DB schema via `pnpm --filter @workspace/db run push-force`, created `session` table + index via raw SQL, built API server and frontend, seeded DB via `Seed Database` workflow. `API Server` (port 8080) and `Start application` (port 5000) running. `Worker Server` skips cleanly — `REDIS_URL` not set. Secrets set: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. CORS auto-includes `REPLIT_DEV_DOMAIN`/`REPLIT_DOMAINS` (v4.9.0+). Verified: dashboard renders correctly in preview.
+->
+-> **Re-imported and set up on Replit 2026-07-21 (second import)**: Ran `pnpm install` + per-package installs (artifacts and lib/db), pushed DB schema via `pnpm --filter @workspace/db run push-force`, created `session` table + index via raw SQL, built API server and frontend, seeded DB via `Seed Database` workflow. `API Server` (port 8080) and `Start application` (port 5000) running. `Worker Server` skips cleanly — `REDIS_URL` not set. Secrets set: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. CORS auto-includes `REPLIT_DEV_DOMAIN`/`REPLIT_DOMAINS` (v4.9.0+). Verified: dashboard renders correctly in preview.
+->
+-> **Re-imported and set up on Replit 2026-07-21**: Ran `pnpm install`, pushed DB schema via `pnpm --filter @workspace/db run push-force`, created `session` table + indexes via raw SQL, built API server (`pnpm --filter @workspace/api-server run build`) and frontend (`pnpm --filter @workspace/sahu-csc run build`), seeded DB via `Seed Database` workflow. `API Server` (port 8080) and `Start application` (port 5000) running. `Worker Server` skips cleanly — `REDIS_URL` not set. Secrets set: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. CORS auto-includes `REPLIT_DEV_DOMAIN`/`REPLIT_DOMAINS` (v4.9.0+). Verified: login page and dashboard render correctly in preview.
+->
+-> **Re-imported and set up on Replit 2026-07-20**: Ran `pnpm install` (fresh import — no node_modules), pushed DB schema via `drizzle-kit push --force` (from `lib/db/`), created the `session` table and `session_expire_idx` index via raw SQL, built the frontend (`pnpm --filter @workspace/sahu-csc run build`), and seeded the database with admin/operator accounts. Restored `postgresql-16` to `.replit` modules (the import had stripped it). `API Server` (port 8080) and `Start application` (port 5000) workflows are running. `Worker Server` skips cleanly — `REDIS_URL` not set, BullMQ falls back to direct/no-op, `CACHE_BACKEND` stays `memory`. Secrets set: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. SMTP secrets (`SMTP_PASSWORD`) were already present from prior runs. CORS auto-includes `REPLIT_DEV_DOMAIN`/`REPLIT_DOMAINS` since v4.9.0 — no manual `CORS_ORIGIN` update needed.
+->
+-> **Re-imported and set up on Replit 2026-07-18**: Ran `pnpm install`, pushed DB schema via `pnpm --filter @workspace/db run push-force`, created the `session` table, built both the API server and frontend, and seeded the database with admin/operator accounts. `API Server` (port 8080) and `Start application` (port 5000) workflows are running. `Worker Server` skips cleanly — `REDIS_URL` not set, BullMQ falls back to direct/no-op, `CACHE_BACKEND` stays `memory`. All secrets set: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. The `scripts/post-merge.sh` automates install + schema push + session table for future merges/imports.
+->
+-> **v4.6.0 — Login-time method choice: Email OTP vs Authenticator App (2026-07-15)**: The post-login "New Device Detected" / 2FA verification screen now lets the user pick their verification method instead of it being fixed by the account's stored `twoFaMethod` — a navy/orange tab toggle between "Email OTP" (default, matches prior behavior) and "Authenticator App (TOTP)". Email OTP gained a 120s resend cooldown (reusing the `RESEND_COOLDOWN` pattern from register/forgot-password). Picking TOTP for an account with no authenticator enrolled yet shows a "Set up Authenticator" CTA → QR code + manual key → 6-digit confirm, all without a full session (mid-login, `pendingUserId`-only). Backend: new `POST /auth/2fa/switch-method` (mid-login method switch; doubles as OTP resend) and `POST /auth/2fa/setup-totp-pending` (mid-login TOTP enrollment start) in `2fa.ts`; `login.ts`'s challenge response now always defaults to `method: "otp"` and includes `totpEnrolled`; a new session flag `pendingTotpEnrolling` tells `verify-totp`'s existing mid-login branch to also flip `twoFaEnabled`/`twoFaMethod` and mint backup codes on first successful code, mirroring the settings-page enrollment flow. Backup codes generated this way are shown once on the login screen (held via a `completeLogin()` split from `verifyTwoFactor()`) before the session is actually applied and the user is redirected in. "Trust this device for 30 days" and Verify & Continue behavior unchanged.
+->
+-> **v4.5.1 — File Manager permission: real granted/denied signal (2026-07-15)**: File Manager permission no longer always resolves to "granted". On browsers with the File System Access API (Chrome/Edge/Opera), `requestFileManager()` in `usePermissions.ts` now calls `showOpenFilePicker()` — picking a file resolves "granted", and cancelling/dismissing the picker throws an `AbortError` that's caught and mapped to "denied", giving a real signal just like Location/Notifications. Browsers without that API (Safari, Firefox, most mobile) keep the previous hidden-`<input type="file">` fallback where any interaction (pick or cancel) still counts as granted, since those browsers give no reliable cancel event to distinguish the two cases. The 10-second safety-net timeout still applies on both paths so Continue can never get stuck.
+->
+-> **v4.5.0 — Permission Card redesign: File Manager access + Continue-button fix (2026-07-15)**: Replaced the first-login `FirstLoginOverlay` (Notifications + Files acknowledgement) with a new `PermissionCard` component system (`src/components/PermissionCard/{PermissionCard.tsx, PermissionRow.tsx, usePermissions.ts, index.ts}`) matching an exact visual/behavior spec: a centered modal with backdrop, two-step flow ("Permissions Required" → "Setting up Permissions"), and three permissions — Location, Notifications, and a new **File Manager** row — each with live per-row status (Requesting… → Allowed/Denied) and an individual "Allow" button. Backend is unchanged: still uses the existing `PATCH /users/first-login-completed` contract; no new columns needed since per-permission results are stored client-side in `localStorage`, matching the spec. File Manager has no browser Permissions API for generic file access, so "Allow" opens a hidden native file/photo picker — any interaction with it (pick or cancel) counts as granted. **Root-caused and fixed a real Continue-button bug**: permission requests (especially `navigator.geolocation.getCurrentPosition`) could hang indefinitely in some browser/embed contexts without ever calling either callback, leaving `canContinue` permanently false. Added a 10-second `Promise.race` safety-net timeout to every permission request (location, notifications, file picker) in `usePermissions.ts` so onboarding can never get stuck again regardless of how the underlying browser API behaves. iOS Safari still skips the Notifications step silently (no `Notification` API). Updated `about.tsx` changelog and `whats-new-modal.tsx` to reflect the new version.
+->
+-> **v4.4.0 — Security features: first-login permissions, 2FA (OTP + TOTP), single-device login enforcement (2026-07-15)**: Audited against a written feature spec and found the backend/schema/frontend for all three features already existed from an earlier session (not previously reflected in `replit.md`): `users.first_login_completed` + `FirstLoginOverlay.tsx` (notifications + file-access permission steps, non-skippable, PATCH `/users/first-login-completed`); `users.two_fa_enabled/two_fa_method/totp_secret/backup_codes` + `/api/auth/2fa/*` routes (TOTP via `otplib`/`qrcode`, AES-256-GCM-encrypted secret, 8 bcrypt-hashed backup codes) + `TwoFactorSection.tsx`/`TwoFactorStep.tsx`; `device_sessions` table + device-fingerprint-based new-device challenge + single-active-session enforcement (`finalizeLogin` revokes all other `user_sessions` rows on every login) + "trust this device for 30 days" + `DevicesSection.tsx` device management UI. Rate limiting on 2FA verification is 5 attempts/15 min (`twoFaVerifyLimiter` in `app.ts`), matching the spec.
+->
+-> Found and fixed one real gap: the `security_logs` table existed in the schema but nothing ever wrote to it — failed/successful auth events only went to `audit_logs`. Added a `securityLog()` helper (`lib/auth/utils.ts`) and wired it into every failed/successful login, 2FA challenge, 2FA verify, and 2FA enable/disable code path in `routes/auth/login.ts` and `routes/auth/2fa.ts`. Verified live: a wrong-password login attempt now produces a `security_logs` row (`event: login.failed_password, success: false`).
+->
+-> **Re-imported and re-set-up on Replit 2026-07-15 (second pass)**: same recovery recipe again — `pnpm install` (node_modules was missing), `pnpm add -Dw drizzle-kit` + `pnpm exec drizzle-kit push --config=lib/db/drizzle.config.ts` (DB was empty, schema applied cleanly), `Seed Database` script (admin/operator/services/settings). `ADMIN_PASSWORD`/`OPERATOR_PASSWORD` were missing this import; requested and added by the user. Appended the new dev domain to the existing `CORS_ORIGIN` list and restarted `API Server`. `REDIS_URL` still not set, so `Worker Server` skips cleanly (expected, no action needed). Verified: login page renders, CORS preflight returns the correct `Access-Control-Allow-Origin` for the new domain, and `POST /api/auth/login` returns 200 with the real `ADMIN_PASSWORD`. Note: the platform also auto-registers separate `artifacts/sahu-csc: web`, `artifacts/mockup-sandbox: ...`, and `artifacts/api-server: API Server` workflows on every import that are unrelated to this project's real setup (no `artifact.toml` backs them) — the first two fail with `vite: not found`; ignore them and use `API Server` + `SAHU CSC` (+ `Worker Server` when Redis is configured), which are the ones that actually serve the app.
+->
+-> **Re-imported and re-set-up on Replit 2026-07-15 (first pass)**: followed the standard recovery recipe — `pnpm install` (node_modules was missing), `drizzle-kit push` (schema applied cleanly, DB was empty), `Seed Database` script (admin/operator/services/settings). `ADMIN_PASSWORD`/`OPERATOR_PASSWORD` were missing this import; requested and added by the user. Appended the new dev domain to the existing `CORS_ORIGIN` list and restarted `API Server`. `REDIS_URL` still not set, so `Worker Server` skips cleanly (expected, no action needed). Verified: login page renders, `POST /api/auth/login` returns 200 for `admin`. Note: the platform also auto-registered separate `artifacts/sahu-csc: web`, `artifacts/mockup-sandbox: ...`, and `artifacts/api-server: API Server` workflows on this import that are unrelated to this project's real setup (no `artifact.toml` backs them) — the first two fail with `vite: not found` because they run outside the actual `SAHU CSC`/`API Server` workflows; ignore them and use `API Server` + `SAHU CSC` (+ `Worker Server` when Redis is configured), which are the ones that actually serve the app.
+->
+-> **Re-imported and fully set up on Replit 2026-07-14**: ran `pnpm install`, pushed schema via `drizzle-kit push`, seeded admin/operator via the `Seed Database` workflow. All three secrets (`SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`) confirmed. Connected Upstash Redis: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, and `REDIS_URL` added as Replit Secrets; `CACHE_BACKEND` set back to `redis`. Fixed rate-limiter Redis bridge: `app.ts` was passing the Upstash REST client (`@upstash/redis`) to `rate-limit-redis`, which expects an ioredis-compatible `sendCommand` interface — swapped to `ioredis` (already a dependency) using `REDIS_URL`; all four rate limiters now initialize without errors. Worker Server started cleanly with all four BullMQ workers (notifications, emails, PDF, SMS). Updated `CORS_ORIGIN` env var to the current Replit dev domain (`sisko.replit.dev`); verified via OPTIONS preflight that the API returns the correct `Access-Control-Allow-Origin` header.
+->
+-> **Re-imported again and re-set-up on Replit 2026-07-14**: `node_modules` was missing after import (fresh clone). Ran `pnpm install` (1111 packages), `drizzle-kit push` (schema applied cleanly against the existing Postgres `DATABASE_URL`), then the `Seed Database` workflow (admin/operator/services/settings seeded). `ADMIN_PASSWORD` and `OPERATOR_PASSWORD` secrets were missing this time — requested and added by the user. Appended the new dev domain (`pike.replit.dev`) to the existing `CORS_ORIGIN` list (kept the old `sisko.replit.dev` entry rather than replacing it, since dev domains can change between sessions) and restarted `API Server`; confirmed via OPTIONS preflight that `Access-Control-Allow-Origin` now matches. `REDIS_URL`/Upstash secrets were NOT present this import, so `Worker Server` skipped (BullMQ jobs fall back to direct/no-op) and `CACHE_BACKEND` is on its default (memory) — functionally fine, just not distributed cache/queue. `API Server`, `SAHU CSC` both verified running; login page renders correctly in preview.
+->
+-> Note: re-importing this project always resets the database to empty. After every import, re-run in order: `pnpm install` → `drizzle-kit push` (from `lib/db/`) → `Seed Database` workflow → start `API Server` + `SAHU CSC` + `Worker Server` workflows. Also update `CORS_ORIGIN` in shared env vars to the new `$REPLIT_DEV_DOMAIN` value.
+->
+-> **Fixed a workflow bug (2026-07-11)**: the `API Server` workflow ran `PORT=8080 ... pnpm run build && node index.mjs` — in bash, a `VAR=val` prefix only applies to the command immediately before `&&`, so `node index.mjs` was inheriting the reserved `PORT=5000` (set in `.replit` `[userenv.shared]`) instead of 8080, colliding with the frontend's port. Fixed by prefixing `node` with its own `PORT=8080` too.
+->
+-> **Fixed a fresh-`node_modules` build failure (2026-07-11)**: after a clean `pnpm install`, the API Server build failed at runtime with `ERR_MODULE_NOT_FOUND` for `@opentelemetry/instrumentation`, then `@opentelemetry/core`, then `@opentelemetry/sdk-trace-base` in turn. `build.mjs` externalizes `@opentelemetry/*` (to dodge the drizzle-orm dual-peer conflict — see Sentry note below), so esbuild doesn't bundle it, but pnpm only hoists *direct* dependencies into `artifacts/api-server/node_modules`; these three are transitive deps of `@sentry/node`/`@sentry/opentelemetry`/`@sentry/node-core` that were never hoisted. Fixed by adding all three as explicit `dependencies` in `artifacts/api-server/package.json` (alongside the existing `@opentelemetry/api`) so pnpm hoists them. If a future Sentry upgrade throws the same `ERR_MODULE_NOT_FOUND` for a new `@opentelemetry/*` subpackage, add it the same way.
+-
+-> **v4.3.1 config/maintenance fixes (2026-07-14)**: `/health` now reads its version dynamically from `package.json` via `lib/version.ts` instead of a hardcoded stale string (was `"4.1.2"` while the app was at 4.3.0) — mirrors how the frontend derives `__APP_VERSION__` at build time. Removed the hardcoded personal email fallback for VAPID contact (`health.ts`, `push.ts`) — now falls back to a generic placeholder; the real address is supplied via the `VAPID_EMAIL` env var. Added `lib/geoip-updater.ts`: a weekly (`node-cron`, Sun 03:00) job that refreshes the bundled `geoip-lite` MaxMind database via its own `updatedb` script and hot-reloads it with `geoip.reloadDataSync()` — gated on an optional `MAXMIND_LICENSE_KEY` secret (skips with a warning if absent; geo-blocking keeps working off the bundled snapshot either way; user provided the key and the first live update completed successfully). Added a minimal `src/types/geoip-lite.d.ts` shim since the package ships no types. Full detail in `CHANGELOG.md`.
+->
+-> **v4.3.1 performance pass (2026-07-14)**: Backend bundle (`dist/index.mjs`) cut from 6.5MB → 2.6MB by externalizing 14 more pure-JS dependencies (express + its middleware stack, zod, web-push, bcryptjs, ioredis, bullmq, rate-limit-redis) in `build.mjs` instead of bundling them — pnpm already hoists them as direct deps, so nothing changes at runtime, just less duplicate code shipped in the single-file bundle. Deliberately left `drizzle-orm` and `@sentry/node` bundled — externalizing either reopens known risk (drizzle-orm dual-peer TS conflict; Sentry's un-hoisted transitive `@opentelemetry/*` deps), not worth it for this pass. Profile avatars are now resized to 512×512 and re-encoded as WebP (quality 80) server-side via `sharp` before storage, instead of storing the raw uploaded base64 as-is — verified end-to-end with a synthetic upload that a multi-KB photo now stores as a much smaller WebP blob. Full detail in `CHANGELOG.md`.
+->
+-> **v4.3.2 optimization audit & measurements (2026-07-14)**: Ran a real load test (`loadtest.ts`, 50 connections/20s against a logged-in session) to get measured numbers instead of estimates: `/api/dashboard` p50=143ms p95=345ms p99=476ms (302 req/s), `/api/admin/users-overview` p50=150ms p95=351ms (296 req/s), `/healthz` p50=45ms (1052 req/s) — all 0 errors at 50 concurrent connections. Added two missing DB indexes found by a schema audit: `users_mobile_idx` (mobile is used in direct `eq()` lookups on every login/OTP/reset-password request, alongside username/email which already had unique-constraint indexes) and `services_category_idx` (used in `ORDER BY`/filter on the services list). Applied directly via `CREATE INDEX IF NOT EXISTS` rather than `drizzle-kit push`, per this project's convention of avoiding push-triggered data loss. Audited every other upload path in the API for the same raw-base64 issue the avatar fix addressed — none found; profile pictures were the only user-uploaded images. Audited static asset caching — already solid: `serve.mjs` sets `Cache-Control: public, max-age=31536000, immutable` on Vite's content-hashed JS/CSS/asset files and `no-store` on the HTML shell, so a real CDN in front of the domain would mostly help with edge latency, not caching correctness — noted as an infra decision (DNS/Cloudflare) rather than a code change. A Postgres read replica was investigated and intentionally not implemented: the DB connects via a single `pg` `Pool` with no replica-aware read/write split, and setting one up requires provisioning a second database endpoint, which is an infrastructure decision for the user rather than something to wire up unprompted.
++> **Latest setup**: After re-import run in order: `pnpm install --frozen-lockfile` → `pnpm --filter @workspace/db run push-force` → `Seed Database` workflow → update `CORS_ORIGIN` to current dev domain. Secrets needed: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. `API Server` port 8080 · Vite dev port 5000 · Worker Server skips (`REDIS_URL` not set) · OTP emails active when `RESEND_API_KEY` is set. Production: Vercel (frontend) + Render (backend/Neon DB).
+ 
+ ## Fixes & Refactors — July 20, 2026
+ 
+-- 
+2.50.1
+
+
+From 34d97c72d254940b3c49a29c35a0000960ba8107 Mon Sep 17 00:00:00 2001
+From: blasty8084 <230334219+blasty8084@users.noreply.github.com>
+Date: Sun, 2 Aug 2026 12:17:28 +0000
+Subject: [PATCH 2/4] fix: backup scheduler route path, B2 upload, time window,
+ dedup, email fallbacks
+
+---
+ .../api-server/src/lib/backup-scheduler.ts    | 21 +++++++--
+ artifacts/api-server/src/lib/startup-init.ts  |  2 +-
+ artifacts/api-server/src/routes/internal.ts   | 44 ++++++++++++++-----
+ artifacts/api-server/src/scripts/seed.ts      |  4 +-
+ 4 files changed, 54 insertions(+), 17 deletions(-)
+
+diff --git a/artifacts/api-server/src/lib/backup-scheduler.ts b/artifacts/api-server/src/lib/backup-scheduler.ts
+index 204e8ac..00554db 100644
+--- a/artifacts/api-server/src/lib/backup-scheduler.ts
++++ b/artifacts/api-server/src/lib/backup-scheduler.ts
+@@ -1,6 +1,7 @@
+ import cron, { ScheduledTask } from "node-cron";
+-import { mkdirSync, statSync, unlinkSync } from "fs";
++import { mkdirSync, statSync, unlinkSync, createReadStream } from "fs";
+ import path from "path";
++import { uploadToB2, isB2Configured } from "./b2";
+ import { db, backupsTable } from "@workspace/db";
+ import { asc } from "drizzle-orm";
+ import { logger } from "./logger";
+@@ -55,15 +56,29 @@ async function runBackup(): Promise<void> {
+     const filename = `auto_backup_${new Date().toISOString().replace(/[:.]/g, "-")}.sql`;
+     const filepath = path.join(BACKUP_DIR, filename);
+ 
+-    // Use pure Node.js dump — no pg_dump binary required (works on Render)
+     await nodeDump(filepath);
+     const size = statSync(filepath).size;
+ 
++    // Upload to B2 — Render disk is ephemeral, B2 is permanent
++    if (isB2Configured()) {
++      try {
++        await uploadToB2(
++          `backups/${filename}`,
++          createReadStream(filepath),
++          "application/octet-stream",
++        );
++        logger.info({ filename }, "Auto-backup uploaded to B2");
++      } catch (err: any) {
++        logger.warn({ err, filename }, "B2 upload failed — backup saved locally only");
++      }
++    }
++
+     await db.insert(backupsTable).values({ filename, size });
+     logger.info({ filename, size }, "Auto-backup created");
++
+     await createNotification(
+       "Auto-Backup Created",
+-      `Scheduled backup "${filename}" completed successfully.`,
++      `Scheduled backup "${filename}" (${(size / 1024).toFixed(1)} KB) completed successfully.`,
+       "success",
+       null as any,
+     );
+diff --git a/artifacts/api-server/src/lib/startup-init.ts b/artifacts/api-server/src/lib/startup-init.ts
+index 4044b72..4f7a512 100644
+--- a/artifacts/api-server/src/lib/startup-init.ts
++++ b/artifacts/api-server/src/lib/startup-init.ts
+@@ -54,7 +54,7 @@ async function seedDefaultUsers(): Promise<void> {
+       : "startup-init: first boot — creating admin and operator accounts",
+   );
+ 
+-  const adminEmail     = process.env["ADMIN_EMAIL"]    ?? "admin@example.com";
++  const adminEmail     = process.env["ADMIN_EMAIL"]    ?? process.env["SMTP_USER"]    ?? process.env["RESEND_FROM"]?.match(/<([^>]+)>/)?.[1] ?? "admin@example.com";
+   const adminMobile    = process.env["ADMIN_MOBILE"]   ?? "0000000000";
+   const operatorEmail  = process.env["OPERATOR_EMAIL"] ?? "operator@example.com";
+   const operatorMobile = process.env["OPERATOR_MOBILE"] ?? "0000000001";
+diff --git a/artifacts/api-server/src/routes/internal.ts b/artifacts/api-server/src/routes/internal.ts
+index bae574d..88e8cfc 100644
+--- a/artifacts/api-server/src/routes/internal.ts
++++ b/artifacts/api-server/src/routes/internal.ts
+@@ -14,6 +14,7 @@
+  *  1. Set BACKUP_TRIGGER_TOKEN to any long random string in Render Secrets.
+  *  2. Go to cron-job.org (free), create a job:
+  *       URL:    https://<your-render-url>/api/internal/backup
++ *       (The /api prefix is added by app.use("/api", router) in app.ts)
+  *       Method: POST
+  *       Header: x-backup-token: <your token>
+  *       Schedule: every hour  (the endpoint checks whether backup is due)
+@@ -32,7 +33,7 @@ const router: IRouter = Router();
+ // Called by an external cron service every hour.
+ // Checks the user-configured schedule and runs the backup only when due.
+ //
+-router.post("/api/internal/backup", asyncHandler(async (req, res) => {
++router.post("/internal/backup", asyncHandler(async (req, res) => {
+   // ── Auth: static token header ──────────────────────────────────────────────
+   const token = process.env["BACKUP_TRIGGER_TOKEN"];
+   if (!token) {
+@@ -53,10 +54,9 @@ router.post("/api/internal/backup", asyncHandler(async (req, res) => {
+     return;
+   }
+ 
+-  // Check if current time (IST) matches configured day + hour
++  // Convert current time to IST (UTC+5:30)
+   const now = new Date();
+-  // Convert to IST (UTC+5:30)
+-  const istOffset = 5 * 60 + 30; // minutes
++  const istOffset = 5 * 60 + 30;
+   const istDate = new Date(now.getTime() + istOffset * 60_000);
+   const istHour = istDate.getUTCHours();
+   const istMin  = istDate.getUTCMinutes();
+@@ -64,12 +64,10 @@ router.post("/api/internal/backup", asyncHandler(async (req, res) => {
+ 
+   const [cfgHour, cfgMin] = schedule.time.split(":").map(Number);
+ 
+-  // Allow a 30-minute window around the configured time so a job that runs
+-  // every hour doesn't miss the target if it fires slightly early or late.
++  // 55-minute window — safe for hourly UptimeRobot/cron-job.org calls
+   const minutesDiff = Math.abs((istHour * 60 + istMin) - (cfgHour * 60 + cfgMin));
+-  const isCorrectTime = minutesDiff <= 30;
++  const isCorrectTime = minutesDiff <= 55;
+ 
+-  // For weekly/custom: check if today is a configured day
+   const isCorrectDay =
+     schedule.frequency === "daily" ||
+     schedule.days.includes(istDay);
+@@ -77,18 +75,42 @@ router.post("/api/internal/backup", asyncHandler(async (req, res) => {
+   if (!isCorrectTime || !isCorrectDay) {
+     res.json({
+       skipped: true,
+-      reason: `Not scheduled now. Configured: ${schedule.time} IST on days ${schedule.days.join(",")}. Current IST: ${String(istHour).padStart(2,"0")}:${String(istMin).padStart(2,"0")} day=${istDay}.`,
++      reason: `Not scheduled now. Configured: ${schedule.time} IST on days [${schedule.days.join(",")}]. Current IST: ${String(istHour).padStart(2,"0")}:${String(istMin).padStart(2,"0")} day=${istDay}.`,
+     });
+     return;
+   }
+ 
++  // ── Dedup: skip if backup already ran within last 60 minutes ───────────────
++  try {
++    const { db: dbInst, backupsTable: bt } = await import("@workspace/db");
++    const { desc } = await import("drizzle-orm");
++    const [lastBackup] = await dbInst
++      .select({ createdAt: bt.createdAt })
++      .from(bt)
++      .orderBy(desc(bt.createdAt))
++      .limit(1);
++    if (lastBackup?.createdAt) {
++      const lastTime = lastBackup.createdAt instanceof Date
++        ? lastBackup.createdAt
++        : new Date(lastBackup.createdAt as string);
++      const msSinceLast = now.getTime() - lastTime.getTime();
++      if (msSinceLast < 60 * 60 * 1000) {
++        res.json({
++          skipped: true,
++          reason: `Backup already ran ${Math.round(msSinceLast / 60_000)} minutes ago. Skipping duplicate.`,
++        });
++        return;
++      }
++    }
++  } catch {
++    // If dedup check fails, proceed with backup anyway
++  }
++
+   // ── Run backup ─────────────────────────────────────────────────────────────
+   logger.info({ trigger: "external-cron" }, "Internal backup trigger: running backup");
+-  // Fire and forget — respond immediately so the cron service doesn't time out
+   runScheduledBackup().catch((err: Error) =>
+     logger.error({ err }, "Internal backup trigger: backup failed"),
+   );
+-
+   res.json({ started: true, message: "Backup started. Check notifications for result." });
+ }));
+ 
+diff --git a/artifacts/api-server/src/scripts/seed.ts b/artifacts/api-server/src/scripts/seed.ts
+index 4ba67cb..8ac1403 100644
+--- a/artifacts/api-server/src/scripts/seed.ts
++++ b/artifacts/api-server/src/scripts/seed.ts
+@@ -20,7 +20,7 @@ async function seed() {
+ 
+   // Seed contact details — read from env vars so no personal data is hard-coded.
+   // ADMIN_EMAIL falls back to SMTP_USER (the configured Gmail), then to a generic placeholder.
+-  const adminEmail    = process.env.ADMIN_EMAIL    ?? "admin@example.com";
++  const adminEmail    = process.env.ADMIN_EMAIL    ?? process.env.SMTP_USER    ?? process.env.RESEND_FROM?.match(/<([^>]+)>/)?.[1] ?? "admin@example.com";
+   const adminMobile   = process.env.ADMIN_MOBILE   ?? "0000000000";
+   const operatorEmail = process.env.OPERATOR_EMAIL ?? "operator@example.com";
+   const operatorMobile = process.env.OPERATOR_MOBILE ?? "0000000001";
+@@ -98,7 +98,7 @@ async function seed() {
+     businessName:         process.env.BUSINESS_NAME    ?? "SAHU CSC Center",
+     businessAddress:      process.env.BUSINESS_ADDRESS ?? "Odisha, India",
+     businessMobile:       process.env.ADMIN_MOBILE     ?? process.env.BUSINESS_MOBILE ?? "0000000000",
+-    businessEmail:        process.env.ADMIN_EMAIL      ?? "admin@example.com",
++    businessEmail:        process.env.ADMIN_EMAIL      ?? process.env.SMTP_USER        ?? process.env.RESEND_FROM?.match(/<([^>]+)>/)?.[1] ?? "admin@example.com",
+     language: "en",
+     theme: "light",
+     currency: "INR",
+-- 
+2.50.1
+
+
+From 968c5644f4612f259dfb6cbdcd06174afd969d61 Mon Sep 17 00:00:00 2001
+From: blasty8084 <230334219+blasty8084@users.noreply.github.com>
+Date: Sun, 2 Aug 2026 12:17:32 +0000
+Subject: [PATCH 3/4] fix: backup scheduler route path, B2 upload, time window,
+ dedup, email fallbacks
+
+---
+ .../FIX_ALL_ISSUES_PROMPT_1785672943406.md    | 314 ++++++++++++++++++
+ 1 file changed, 314 insertions(+)
+ create mode 100644 attached_assets/FIX_ALL_ISSUES_PROMPT_1785672943406.md
+
+diff --git a/attached_assets/FIX_ALL_ISSUES_PROMPT_1785672943406.md b/attached_assets/FIX_ALL_ISSUES_PROMPT_1785672943406.md
+new file mode 100644
+index 0000000..f84e0f7
+--- /dev/null
++++ b/attached_assets/FIX_ALL_ISSUES_PROMPT_1785672943406.md
+@@ -0,0 +1,314 @@
++# Task: Fix All Issues — Auto-Backup + Email + Env
++
++Read `AGENT.md` fully before starting. This prompt fixes 5 confirmed bugs found
++by code analysis. Make ONLY the changes listed — nothing else.
++
++---
++
++## Bug 1 — CRITICAL: Internal Route Double `/api` Prefix
++
++**File:** `artifacts/api-server/src/routes/internal.ts`
++
++**Problem:**
++Route defined as `/api/internal/backup` but this router is mounted under
++`app.use("/api", router)` in `app.ts`. So actual URL becomes `/api/api/internal/backup`
++— UptimeRobot POST returns 404, backup never triggers.
++
++**Fix:** Change the route path — remove the `/api` prefix:
++
++Find:
++```typescript
++router.post("/api/internal/backup", asyncHandler(async (req, res) => {
++```
++
++Replace with:
++```typescript
++router.post("/internal/backup", asyncHandler(async (req, res) => {
++```
++
++Also update the comment at top of file:
++Find:
++```
++ *       URL:    https://<your-render-url>/api/internal/backup
++```
++Replace with:
++```
++ *       URL:    https://<your-render-url>/api/internal/backup
++ *       (The /api prefix is added by app.use("/api", router) in app.ts)
++```
++
++---
++
++## Bug 2 — Time Window Too Narrow + No Dedup Check
++
++**File:** `artifacts/api-server/src/routes/internal.ts`
++
++**Problem:**
++30-minute window misses UptimeRobot calls that fire slightly early/late.
++No check prevents duplicate backups if UptimeRobot fires twice in same hour.
++
++**Fix:** Replace the schedule check + run section (from `// ── Check schedule` to
++end of file before `export default router`) with:
++
++```typescript
++  // ── Check schedule ─────────────────────────────────────────────────────────
++  const schedule = await getSchedule();
++  if (!schedule.enabled) {
++    res.json({ skipped: true, reason: "Auto-backup is disabled in settings." });
++    return;
++  }
++
++  // Convert current time to IST (UTC+5:30)
++  const now = new Date();
++  const istOffset = 5 * 60 + 30;
++  const istDate = new Date(now.getTime() + istOffset * 60_000);
++  const istHour = istDate.getUTCHours();
++  const istMin  = istDate.getUTCMinutes();
++  const istDay  = istDate.getUTCDay(); // 0=Sun
++
++  const [cfgHour, cfgMin] = schedule.time.split(":").map(Number);
++
++  // 55-minute window — safe for hourly UptimeRobot/cron-job.org calls
++  const minutesDiff = Math.abs((istHour * 60 + istMin) - (cfgHour * 60 + cfgMin));
++  const isCorrectTime = minutesDiff <= 55;
++
++  const isCorrectDay =
++    schedule.frequency === "daily" ||
++    schedule.days.includes(istDay);
++
++  if (!isCorrectTime || !isCorrectDay) {
++    res.json({
++      skipped: true,
++      reason: `Not scheduled now. Configured: ${schedule.time} IST on days [${schedule.days.join(",")}]. Current IST: ${String(istHour).padStart(2,"0")}:${String(istMin).padStart(2,"0")} day=${istDay}.`,
++    });
++    return;
++  }
++
++  // ── Dedup: skip if backup already ran within last 60 minutes ───────────────
++  try {
++    const { db: dbInst, backupsTable: bt } = await import("@workspace/db");
++    const { desc } = await import("drizzle-orm");
++    const [lastBackup] = await dbInst
++      .select({ createdAt: bt.createdAt })
++      .from(bt)
++      .orderBy(desc(bt.createdAt))
++      .limit(1);
++    if (lastBackup?.createdAt) {
++      const lastTime = lastBackup.createdAt instanceof Date
++        ? lastBackup.createdAt
++        : new Date(lastBackup.createdAt as string);
++      const msSinceLast = now.getTime() - lastTime.getTime();
++      if (msSinceLast < 60 * 60 * 1000) {
++        res.json({
++          skipped: true,
++          reason: `Backup already ran ${Math.round(msSinceLast / 60_000)} minutes ago. Skipping duplicate.`,
++        });
++        return;
++      }
++    }
++  } catch {
++    // If dedup check fails, proceed with backup anyway
++  }
++
++  // ── Run backup ─────────────────────────────────────────────────────────────
++  logger.info({ trigger: "external-cron" }, "Internal backup trigger: running backup");
++  runScheduledBackup().catch((err: Error) =>
++    logger.error({ err }, "Internal backup trigger: backup failed"),
++  );
++  res.json({ started: true, message: "Backup started. Check notifications for result." });
++```
++
++---
++
++## Bug 3 — Auto-Backup Missing B2 Upload
++
++**File:** `artifacts/api-server/src/lib/backup-scheduler.ts`
++
++**Problem:**
++`runBackup()` uses `nodeDump()` to create `.sql` on local disk but never uploads
++to B2. Render disk is ephemeral — restarts wipe local backups. Manual backup
++(`backupCore.ts`) has B2 upload but scheduled backup does not.
++
++**Fix:**
++
++Add imports at top of file (after existing imports):
++```typescript
++import { createReadStream } from "fs";
++import { uploadToB2, isB2Configured } from "./b2";
++```
++
++Replace the entire `runBackup()` function:
++```typescript
++async function runBackup(): Promise<void> {
++  try {
++    mkdirSync(BACKUP_DIR, { recursive: true });
++    const filename = `auto_backup_${new Date().toISOString().replace(/[:.]/g, "-")}.sql`;
++    const filepath = path.join(BACKUP_DIR, filename);
++
++    await nodeDump(filepath);
++    const size = statSync(filepath).size;
++
++    // Upload to B2 — Render disk is ephemeral, B2 is permanent
++    if (isB2Configured()) {
++      try {
++        await uploadToB2(
++          `backups/${filename}`,
++          createReadStream(filepath),
++          "application/octet-stream",
++        );
++        logger.info({ filename }, "Auto-backup uploaded to B2");
++      } catch (err: any) {
++        logger.warn({ err, filename }, "B2 upload failed — backup saved locally only");
++      }
++    }
++
++    await db.insert(backupsTable).values({ filename, size });
++    logger.info({ filename, size }, "Auto-backup created");
++
++    await createNotification(
++      "Auto-Backup Created",
++      `Scheduled backup "${filename}" (${(size / 1024).toFixed(1)} KB) completed successfully.`,
++      "success",
++      null as any,
++    );
++  } catch (err: any) {
++    logger.error({ err }, "Auto-backup failed");
++    await createNotification(
++      "Auto-Backup Failed",
++      `Scheduled backup failed: ${err.message}`,
++      "error",
++      null as any,
++    ).catch(() => {});
++  }
++}
++```
++
++---
++
++## Bug 4 — seed.ts ADMIN_EMAIL Missing RESEND Fallback
++
++**File:** `artifacts/api-server/src/scripts/seed.ts`
++
++**Problem:**
++`adminEmail` falls back to `process.env.SMTP_USER ?? "admin@example.com"`.
++`SMTP_USER` is no longer primary email var — `RESEND_API_KEY` is used now.
++Admin account gets seeded with `admin@example.com` placeholder when `SMTP_USER`
++is not set on Render.
++
++**Fix:** Find:
++```typescript
++const adminEmail    = process.env.ADMIN_EMAIL    ?? process.env.SMTP_USER    ?? "admin@example.com";
++```
++Replace with:
++```typescript
++const adminEmail    = process.env.ADMIN_EMAIL    ?? process.env.SMTP_USER    ?? process.env.RESEND_FROM?.match(/<([^>]+)>/)?.[1] ?? "admin@example.com";
++```
++
++Also find (further down in seed.ts):
++```typescript
++businessEmail:        process.env.ADMIN_EMAIL      ?? process.env.SMTP_USER        ?? "admin@example.com",
++```
++Replace with:
++```typescript
++businessEmail:        process.env.ADMIN_EMAIL      ?? process.env.SMTP_USER        ?? process.env.RESEND_FROM?.match(/<([^>]+)>/)?.[1] ?? "admin@example.com",
++```
++
++---
++
++## Bug 5 — startup-init.ts SMTP_USER Fallback
++
++**File:** `artifacts/api-server/src/lib/startup-init.ts`
++
++**Problem:**
++`adminEmail` reads `SMTP_USER` as fallback — same issue as seed.ts.
++
++**Fix:** Find:
++```typescript
++const adminEmail     = process.env["ADMIN_EMAIL"]    ?? process.env["SMTP_USER"]    ?? "admin@example.com";
++```
++Replace with:
++```typescript
++const adminEmail     = process.env["ADMIN_EMAIL"]    ?? process.env["SMTP_USER"]    ?? process.env["RESEND_FROM"]?.match(/<([^>]+)>/)?.[1] ?? "admin@example.com";
++```
++
++---
++
++## Step — Build and Push
++
++```bash
++pnpm --filter @workspace/api-server run build
++bash scripts/push.sh "fix: backup scheduler route path, B2 upload, time window, dedup, email fallbacks"
++```
++
++---
++
++## Render Environment — Add If Missing
++
++Render Dashboard → `sahu-csc-api` → Environment → check these exist:
++
++| Key | Value |
++|---|---|
++| `BACKUP_TRIGGER_TOKEN` | Any long random string (min 32 chars) |
++| `RESEND_API_KEY` | `re_xxxxxxxxxxxx` from resend.com |
++| `RESEND_FROM` | `SAHU CSC <noreply@sahucsc.dpdns.org>` |
++| `ADMIN_EMAIL` | `sahuuttam690@gmail.com` |
++
++---
++
++## UptimeRobot Setup (After Redeploy)
++
++Add a new monitor in UptimeRobot:
++
++| Field | Value |
++|---|---|
++| Monitor Type | `HTTP(s)` |
++| Friendly Name | `SAHU CSC Auto Backup` |
++| URL | `https://sahu-csc-api-02wn.onrender.com/api/internal/backup` |
++| Interval | `60 minutes` |
++| HTTP Method | `POST` |
++| Custom Header | `x-backup-token: <your BACKUP_TRIGGER_TOKEN value>` |
++
++---
++
++## Verify After Deploy
++
++### Test backup endpoint:
++```bash
++curl -X POST https://sahu-csc-api-02wn.onrender.com/api/internal/backup \
++  -H "x-backup-token: YOUR_TOKEN_HERE"
++```
++
++Expected responses:
++```json
++// Schedule not yet due:
++{ "skipped": true, "reason": "Not scheduled now. Configured: 02:00 IST..." }
++
++// Backup triggered:
++{ "started": true, "message": "Backup started. Check notifications for result." }
++
++// Wrong token:
++{ "error": "Invalid or missing x-backup-token header." }
++
++// Token not set on server:
++{ "error": "BACKUP_TRIGGER_TOKEN not configured on this server." }
++```
++
++### Test email:
++```bash
++curl -X POST https://sahu-csc-api-02wn.onrender.com/api/settings/smtp/test \
++  -H "Content-Type: application/json" \
++  -b "your-session-cookie" \
++  -d '{"to":"sahuuttam690@gmail.com"}'
++```
++
++---
++
++## What NOT to Do
++
++- **Do NOT** change `backupCore.ts` — manual backup already correct
++- **Do NOT** remove `node-cron` from `backup-scheduler.ts` — works in Replit dev
++- **Do NOT** use `execSync("pg_dump ...")` — no pg_dump binary on Render
++- **Do NOT** change any mailer template files
++- **Do NOT** change `mailer/index.ts`
++- **Do NOT** change the token auth logic in `internal.ts`
++- **Do NOT** add session auth to `/internal/backup` — UptimeRobot has no session
+-- 
+2.50.1
+
+
+From 1fc47401aa663847621ebfd648a5a57f5b6e2089 Mon Sep 17 00:00:00 2001
+From: blasty8084 <230334219+blasty8084@users.noreply.github.com>
+Date: Sun, 2 Aug 2026 12:22:15 +0000
+Subject: [PATCH 4/4] =?UTF-8?q?docs:=20v4.10.4=20=E2=80=94=20document=20ba?=
+ =?UTF-8?q?ckup=20route=20fix,=20B2=20upload,=20dedup,=20email=20fallbacks?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ AGENT.md     |  3 +-
+ CHANGELOG.md | 79 +++++++++++++++++++++++++++++++++++++++++++++++++++-
+ replit.md    |  2 +-
+ 3 files changed, 81 insertions(+), 3 deletions(-)
+
+diff --git a/AGENT.md b/AGENT.md
+index a679e36..43949db 100644
+--- a/AGENT.md
++++ b/AGENT.md
+@@ -1,5 +1,5 @@
+ # SAHU CSC — Agent Reference Document
+-**Version 4.10.3** · Last updated 2026-08-02
++**Version 4.10.4** · Last updated 2026-08-02
+ 
+ This file is the single authoritative reference for any AI agent working on this codebase. Read it first before touching any code.
+ 
+@@ -719,6 +719,7 @@ Frontend main chunk: ~438KB (under 500KB Vite warning).
+ 
+ | Version | Date | Key Change |
+ |---------|------|-----------|
++| 4.10.4 | 2026-08-02 | Bug fixes: internal backup route double `/api` prefix, 30→55 min window + dedup, B2 upload in auto-backup, RESEND_FROM email fallbacks in seed + startup-init |
+ | 4.10.3 | 2026-08-02 | Analog Dial Picker v2 (spring hand, 60-dot ring, pulse animation, mode crossfade); .gitignore /backups/ root-anchor fix |
+ | 4.10.2 | 2026-07-31 | Email OTP fix, HTML templates restored, 2FA permanently ON, Resend replaces SMTP |
+ | 4.10.1 | 2026-08-01 | Resend FROM noreply→info (Gmail bounce fix); ADMIN_EMAIL/OPERATOR_EMAIL seed fix |
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 36a0e60..92f25bb 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -1,5 +1,5 @@
+ # SAHU CSC — Complete Changelog
+-**Current version: 4.10.3 — August 2, 2026**
++**Current version: 4.10.4 — August 2, 2026**
+ 
+ > Single authoritative changelog covering all versions from v1.x through v4.x.
+ > - **v3.x / v4.x entries** (current) — listed first, newest at top
+@@ -9,6 +9,7 @@
+ 
+ ## Table of Contents
+ 
++0. [Fix — Auto-Backup route, B2 upload, dedup, email fallbacks (August 2, 2026)](#0-fix--auto-backup-route-b2-upload-dedup-email-fallbacks-august-2-2026)
+ 0. [UX — Analog Dial Picker v2 + Gitignore fix (August 2, 2026)](#0-ux--analog-dial-picker-v2--gitignore-fix-august-2-2026)
+ 0. [Infra — Replace Nodemailer SMTP with Resend HTTP API (July 31, 2026)](#0-infra--replace-nodemailer-smtp-with-resend-http-api-july-31-2026)
+ 0. [Fix — Email OTP never sent + HTML template restored (July 30, 2026)](#0-fix--email-otp-never-sent--html-template-restored-july-30-2026)
+@@ -17,6 +18,82 @@
+ 
+ ---
+ 
++## 0. Fix — Auto-Backup route, B2 upload, dedup, email fallbacks (August 2, 2026)
++
++**Version: 4.10.4**
++
++Five confirmed bugs found by code analysis, all fixed in one commit.
++
++### Bug 1 — CRITICAL: Internal route double `/api` prefix (`routes/internal.ts`)
++
++**Problem:** Route was defined as `router.post("/api/internal/backup", ...)` but the router is mounted under `app.use("/api", router)` in `app.ts`. Actual URL became `/api/api/internal/backup` — UptimeRobot POST returned 404, backup never triggered.
++
++**Fix:** Changed route path to `router.post("/internal/backup", ...)`. The correct public URL is `https://<render-url>/api/internal/backup`.
++
++---
++
++### Bug 2 — Time window too narrow + no dedup check (`routes/internal.ts`)
++
++**Problem:** 30-minute window missed UptimeRobot calls that fire slightly early/late. No check prevented duplicate backups if UptimeRobot fired twice in the same hour.
++
++**Fix:**
++- Time window widened from 30 → **55 minutes** — safe for hourly callers
++- Added dedup check: queries `backupsTable` for the most recent backup; if one ran within the last 60 minutes, responds `{ skipped: true, reason: "Backup already ran N minutes ago." }` and returns without triggering another backup
++
++---
++
++### Bug 3 — Auto-backup missing B2 upload (`lib/backup-scheduler.ts`)
++
++**Problem:** `runBackup()` created a `.sql` file on local disk but never uploaded to B2. Render disk is ephemeral — restarts wipe local backups. Manual backup (`backupCore.ts`) had B2 upload; scheduled backup did not.
++
++**Fix:**
++- Added `import { createReadStream } from "fs"` and `import { uploadToB2, isB2Configured } from "./b2"` at top of file
++- After `nodeDump()` succeeds, calls `uploadToB2("backups/<filename>", createReadStream(filepath), "application/octet-stream")` when `isB2Configured()` is true
++- B2 upload failure is a warning (not fatal) — backup record still written to DB and notification sent
++- Success notification now includes file size: `"(12.3 KB) completed successfully."`
++
++---
++
++### Bug 4 — `seed.ts` admin email missing RESEND fallback (`scripts/seed.ts`)
++
++**Problem:** `adminEmail` fell back to `SMTP_USER ?? "admin@example.com"`. `SMTP_USER` is no longer the primary email var (Resend replaced SMTP). Admin account was seeded with `admin@example.com` placeholder on Render when `SMTP_USER` and `ADMIN_EMAIL` were not set.
++
++**Fix:** Both `adminEmail` and `businessEmail` now read:
++```
++ADMIN_EMAIL ?? SMTP_USER ?? RESEND_FROM (extract address from "Name <addr>") ?? "admin@example.com"
++```
++
++---
++
++### Bug 5 — `startup-init.ts` admin email missing RESEND fallback (`lib/startup-init.ts`)
++
++**Problem:** Same `SMTP_USER` fallback issue as seed.ts — first-boot account seeding on Render used `admin@example.com` placeholder.
++
++**Fix:** `adminEmail` now reads:
++```
++ADMIN_EMAIL ?? SMTP_USER ?? RESEND_FROM (extract address) ?? "admin@example.com"
++```
++
++---
++
++### UptimeRobot setup (run after redeploy)
++
++| Field | Value |
++|---|---|
++| Monitor Type | `HTTP(s)` |
++| URL | `https://sahu-csc-api-02wn.onrender.com/api/internal/backup` |
++| Interval | 60 minutes |
++| HTTP Method | POST |
++| Custom Header | `x-backup-token: <BACKUP_TRIGGER_TOKEN>` |
++
++Test command:
++```bash
++curl -X POST https://sahu-csc-api-02wn.onrender.com/api/internal/backup \
++  -H "x-backup-token: YOUR_TOKEN"
++```
++
++---
++
+ ## 0. UX — Analog Dial Picker v2 + Gitignore fix (August 2, 2026)
+ 
+ **Version: 4.10.3**
+diff --git a/replit.md b/replit.md
+index 81eca09..4d4f15d 100644
+--- a/replit.md
++++ b/replit.md
+@@ -1,5 +1,5 @@
+ # SAHU CSC — Common Service Center Management Platform
+-**Version 4.10.3** — last updated 2026-08-02 (Analog Dial Picker v2)
++**Version 4.10.4** — last updated 2026-08-02
+ 
+ > **Latest setup**: After re-import run in order: `pnpm install --frozen-lockfile` → `pnpm --filter @workspace/db run push-force` → `Seed Database` workflow → update `CORS_ORIGIN` to current dev domain. Secrets needed: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. `API Server` port 8080 · Vite dev port 5000 · Worker Server skips (`REDIS_URL` not set) · OTP emails active when `RESEND_API_KEY` is set. Production: Vercel (frontend) + Render (backend/Neon DB).
+ 
+-- 
+2.50.1
+
