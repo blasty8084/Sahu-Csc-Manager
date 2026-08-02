@@ -14,6 +14,7 @@
  *  1. Set BACKUP_TRIGGER_TOKEN to any long random string in Render Secrets.
  *  2. Go to cron-job.org (free), create a job:
  *       URL:    https://<your-render-url>/api/internal/backup
+ *       (The /api prefix is added by app.use("/api", router) in app.ts)
  *       Method: POST
  *       Header: x-backup-token: <your token>
  *       Schedule: every hour  (the endpoint checks whether backup is due)
@@ -32,7 +33,7 @@ const router: IRouter = Router();
 // Called by an external cron service every hour.
 // Checks the user-configured schedule and runs the backup only when due.
 //
-router.post("/api/internal/backup", asyncHandler(async (req, res) => {
+router.post("/internal/backup", asyncHandler(async (req, res) => {
   // ── Auth: static token header ──────────────────────────────────────────────
   const token = process.env["BACKUP_TRIGGER_TOKEN"];
   if (!token) {
@@ -53,10 +54,9 @@ router.post("/api/internal/backup", asyncHandler(async (req, res) => {
     return;
   }
 
-  // Check if current time (IST) matches configured day + hour
+  // Convert current time to IST (UTC+5:30)
   const now = new Date();
-  // Convert to IST (UTC+5:30)
-  const istOffset = 5 * 60 + 30; // minutes
+  const istOffset = 5 * 60 + 30;
   const istDate = new Date(now.getTime() + istOffset * 60_000);
   const istHour = istDate.getUTCHours();
   const istMin  = istDate.getUTCMinutes();
@@ -64,12 +64,10 @@ router.post("/api/internal/backup", asyncHandler(async (req, res) => {
 
   const [cfgHour, cfgMin] = schedule.time.split(":").map(Number);
 
-  // Allow a 30-minute window around the configured time so a job that runs
-  // every hour doesn't miss the target if it fires slightly early or late.
+  // 55-minute window — safe for hourly UptimeRobot/cron-job.org calls
   const minutesDiff = Math.abs((istHour * 60 + istMin) - (cfgHour * 60 + cfgMin));
-  const isCorrectTime = minutesDiff <= 30;
+  const isCorrectTime = minutesDiff <= 55;
 
-  // For weekly/custom: check if today is a configured day
   const isCorrectDay =
     schedule.frequency === "daily" ||
     schedule.days.includes(istDay);
@@ -77,18 +75,42 @@ router.post("/api/internal/backup", asyncHandler(async (req, res) => {
   if (!isCorrectTime || !isCorrectDay) {
     res.json({
       skipped: true,
-      reason: `Not scheduled now. Configured: ${schedule.time} IST on days ${schedule.days.join(",")}. Current IST: ${String(istHour).padStart(2,"0")}:${String(istMin).padStart(2,"0")} day=${istDay}.`,
+      reason: `Not scheduled now. Configured: ${schedule.time} IST on days [${schedule.days.join(",")}]. Current IST: ${String(istHour).padStart(2,"0")}:${String(istMin).padStart(2,"0")} day=${istDay}.`,
     });
     return;
   }
 
+  // ── Dedup: skip if backup already ran within last 60 minutes ───────────────
+  try {
+    const { db: dbInst, backupsTable: bt } = await import("@workspace/db");
+    const { desc } = await import("drizzle-orm");
+    const [lastBackup] = await dbInst
+      .select({ createdAt: bt.createdAt })
+      .from(bt)
+      .orderBy(desc(bt.createdAt))
+      .limit(1);
+    if (lastBackup?.createdAt) {
+      const lastTime = lastBackup.createdAt instanceof Date
+        ? lastBackup.createdAt
+        : new Date(lastBackup.createdAt as string);
+      const msSinceLast = now.getTime() - lastTime.getTime();
+      if (msSinceLast < 60 * 60 * 1000) {
+        res.json({
+          skipped: true,
+          reason: `Backup already ran ${Math.round(msSinceLast / 60_000)} minutes ago. Skipping duplicate.`,
+        });
+        return;
+      }
+    }
+  } catch {
+    // If dedup check fails, proceed with backup anyway
+  }
+
   // ── Run backup ─────────────────────────────────────────────────────────────
   logger.info({ trigger: "external-cron" }, "Internal backup trigger: running backup");
-  // Fire and forget — respond immediately so the cron service doesn't time out
   runScheduledBackup().catch((err: Error) =>
     logger.error({ err }, "Internal backup trigger: backup failed"),
   );
-
   res.json({ started: true, message: "Backup started. Check notifications for result." });
 }));
 

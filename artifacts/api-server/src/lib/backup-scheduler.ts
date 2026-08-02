@@ -1,6 +1,7 @@
 import cron, { ScheduledTask } from "node-cron";
-import { mkdirSync, statSync, unlinkSync } from "fs";
+import { mkdirSync, statSync, unlinkSync, createReadStream } from "fs";
 import path from "path";
+import { uploadToB2, isB2Configured } from "./b2";
 import { db, backupsTable } from "@workspace/db";
 import { asc } from "drizzle-orm";
 import { logger } from "./logger";
@@ -55,15 +56,29 @@ async function runBackup(): Promise<void> {
     const filename = `auto_backup_${new Date().toISOString().replace(/[:.]/g, "-")}.sql`;
     const filepath = path.join(BACKUP_DIR, filename);
 
-    // Use pure Node.js dump — no pg_dump binary required (works on Render)
     await nodeDump(filepath);
     const size = statSync(filepath).size;
 
+    // Upload to B2 — Render disk is ephemeral, B2 is permanent
+    if (isB2Configured()) {
+      try {
+        await uploadToB2(
+          `backups/${filename}`,
+          createReadStream(filepath),
+          "application/octet-stream",
+        );
+        logger.info({ filename }, "Auto-backup uploaded to B2");
+      } catch (err: any) {
+        logger.warn({ err, filename }, "B2 upload failed — backup saved locally only");
+      }
+    }
+
     await db.insert(backupsTable).values({ filename, size });
     logger.info({ filename, size }, "Auto-backup created");
+
     await createNotification(
       "Auto-Backup Created",
-      `Scheduled backup "${filename}" completed successfully.`,
+      `Scheduled backup "${filename}" (${(size / 1024).toFixed(1)} KB) completed successfully.`,
       "success",
       null as any,
     );
