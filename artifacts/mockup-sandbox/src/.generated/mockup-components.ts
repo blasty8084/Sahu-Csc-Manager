@@ -7,8 +7,8 @@ export const modules: ModuleMap = {
   "./components/mockups/clock-variants/AnalogDial.tsx": () => import("../components/mockups/clock-variants/AnalogDial.tsx"),
   "./components/mockups/clock-variants/DrumScroll.tsx": () => import("../components/mockups/clock-variants/DrumScroll.tsx"),
   "./components/mockups/clock-variants/NumpadEntry.tsx": () => import("../components/mockups/clock-variants/NumpadEntry.tsx"),
-  "./components/mockups/ledger-desktop/LedgerPage.tsx": () => import("../components/mockups/ledger-desktop/LedgerPage.tsx"),
   "./components/mockups/twofa/CommandCard.tsx": () => import("../components/mockups/twofa/CommandCard.tsx"),
   "./components/mockups/twofa/SecurityHub.tsx": () => import("../components/mockups/twofa/SecurityHub.tsx"),
-  "./components/mockups/twofa/StepGuide.tsx": () => import("../components/mockups/twofa/StepGuide.tsx")
+  "./components/mockups/twofa/StepGuide.tsx": () => import("../components/mockups/twofa/StepGuide.tsx"),
+  "./components/mockups/ledger-desktop/LedgerPage.tsx": () => import("../components/mockups/ledger-desktop/LedgerPage.tsx")
 };
