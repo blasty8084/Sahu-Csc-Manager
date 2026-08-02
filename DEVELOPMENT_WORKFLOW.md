@@ -1,5 +1,5 @@
 # SAHU CSC — Development & Deployment Workflow
-**Version 4.10.0 · Updated 2026-07-28**
+**Version 4.10.3 · Updated 2026-08-02**
 
 > **TL;DR — Teen platform, ek kaam:**
 > - **Replit** = Code likhna + test karna (development)
@@ -212,7 +212,7 @@ Render pe Express API server (`artifacts/api-server`) deploy hota hai.
 | **Root Directory** | `artifacts/api-server` |
 | **Runtime** | Node |
 | **Build Command** | `cd ../.. && npm install -g pnpm@10 && pnpm install --frozen-lockfile && pnpm --filter @workspace/api-server run build` |
-| **Start Command** | `node --enable-source-maps ./dist/index.mjs` |
+| **Start Command** | `node --dns-result-order=ipv4first --enable-source-maps ./dist/index.mjs` |
 | **Instance Type** | Free |
 
 ### Render Environment Variables
@@ -503,12 +503,30 @@ Fix:
 
 ---
 
+### OTP email nahi aa raha (`ENETUNREACH` / IPv6 error)
+```
+Cause: Render free tier Gmail SMTP ko IPv6 resolve karta hai (outbound blocked)
+Fix (baked in v4.10.3):
+  - src/index.ts → setDefaultResultOrder("ipv4first") is the very first line
+  - render.yaml  → --dns-result-order=ipv4first flag in startCommand
+  - transport.ts → resolve4() se direct IPv4 address pin karo
+Verify: Latest commit push + Render redeploy karo.
+        SMTP_PASS must be a Gmail App Password (not your Gmail login password).
+```
+
+### Health check (sabhi 3 environments at once)
+```bash
+bash scripts/health-check.sh
+# Checks: Render API + Vercel frontend + Vercel→Render proxy
+# All should return HTTP 200
+```
+
 *Related files:*
 - `setup.md` — Replit first-time setup (detailed)
 - `secrets.md` — All environment variables reference
 - `ARCHITECTURE.md` — Technical architecture deep-dive
 - `DOCS.md` — Full platform documentation
-- `attached_assets/DEPLOYMENT_GUIDE_1785233608587.md` — Original deployment guide
+- `RENDER_DEPLOY.md` — Render-specific guide (includes SMTP IPv4 fix section)
 
 ---
 

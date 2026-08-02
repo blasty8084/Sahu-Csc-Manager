@@ -77,7 +77,7 @@ Optional (skip if not using):
 2. Set these in the service settings:
    - **Root Directory**: `.`
    - **Build Command**: `bash render-build.sh`
-   - **Start Command**: `node --enable-source-maps artifacts/api-server/dist/index.mjs`
+   - **Start Command**: `node --dns-result-order=ipv4first --enable-source-maps artifacts/api-server/dist/index.mjs`
    - **Health Check Path**: `/api/health`
 3. Add all environment variables from `render.env` (reference file)
 
