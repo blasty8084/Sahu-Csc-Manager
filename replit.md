@@ -1,5 +1,5 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 4.10.2** — last updated 2026-07-31 (Resend integration)
+**Version 4.10.3** — last updated 2026-08-02 (Analog Dial Picker v2)
 
 > **2026-08-01 (re-import setup)**: Re-imported from GitHub. Ran `pnpm install --frozen-lockfile`. Applied DB schema via `pnpm --filter @workspace/db run push-force`. Ran `Seed Database` workflow — admin/operator accounts created. Secrets set: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. `CORS_ORIGIN` updated to include current `pike.replit.dev` dev domain. `API Server` running on port 8080; `Start application` (Vite dev) running on port 5000. `Worker Server` skips cleanly — `REDIS_URL` not set. OTP emails are no-ops (`RESEND_API_KEY` not set). Verified: splash screen renders correctly in preview. Note: Replit is used as dev/test environment; production runs on Vercel (frontend) + Render (backend/Neon DB).
 >
@@ -113,6 +113,25 @@
 - **Receipts-verify page split** — `pages/receipts-verify.tsx` reduced from 407 → 88 lines by extracting into `components/receipts/`: `ReceiptVerifyBadge.tsx` (verified/legacy pill banner), `ReceiptVerifyCard.tsx` (full printable receipt card — navy header, amount, detail rows, inline QR, business contact, footer; exports `ReceiptData` type), `ReceiptQrSection.tsx` (PDF generation, WhatsApp share, download, print action buttons). All files ≤ 200 lines. TypeScript clean.
 - **Backups page split** — `pages/backups.tsx` reduced from 411 → 85 lines by extracting into `components/backups/`: `BackupManualTrigger.tsx` (page header + create button), `BackupScheduleCard.tsx` (auto-backup enable toggle, frequency, time, day picker, retention), `BackupImportCard.tsx` (SQL file picker, table analysis, selective import), `BackupStorageTrend.tsx` (recharts area chart). Existing `BackupList`, `BackupActions`, `BackupCards` unchanged. All files ≤149 lines. TypeScript clean.
 - **Udhari page split** — `pages/udhari.tsx` reduced from 464 → 71 lines by extracting into `components/udhari/`: `UdhariCustomerCard.tsx` (`fmt` helper + `BalanceBadge` + mobile `CustomerCard` + desktop `CustomerRow`), `UdhariAddCustomerDialog.tsx` (mobile dialog + desktop split-panel form), `UdhariSearchBar.tsx` (search input + sort select), `UdhariCustomerList.tsx` (mobile card list + desktop table), `UdhariSummaryBanner.tsx` (to-collect / to-pay summary grid). No behaviour change. All files ≤197 lines. TypeScript clean.
+
+## What's New in v4.10.3 (August 2, 2026) — Analog Dial Picker v2
+
+- **Analog dial hand** — smooth spring animation (`cubic-bezier(0.34,1.3,0.64,1)`); transition stripped during drag, restored on pointer-up — no rubber-band lag while scrubbing the dial.
+- **Outer ring redesigned** — hour mode shows 12 major tick marks; minute mode shows 60 dot markers with major dots at every 5th position and a filled highlight at the selected minute.
+- **Selected value indicator** — orange filled circle + white text at the chosen position; spring-pulse animation fires on every value change via `key={value}` remount.
+- **Mode crossfade** — switching HOUR↔MIN increments `dialKey`, remounting the dial with a scale+fade CSS animation for a clean visual transition.
+- **Drag feedback** — dashed track guide ring turns orange while dragging; two-tone center pivot; radial glow + inner shine on hand tip.
+- **Step indicator** — HOUR / MIN pill tabs replace the two blank dots; active time unit gets an orange underline in the header.
+- **Confirm button** — gradient orange pill button replaces the plain button.
+- **`.gitignore` fix** — `backups/` pattern anchored to repo root (`/backups/`) — the `src/components/backups/` source directory is no longer accidentally excluded; `git add -f` no longer needed.
+
+## What's New in v4.10.2 (July 31, 2026) — Resend Email + 2FA Hardened
+
+- **Email transport replaced** — Nodemailer + SMTP removed; Resend HTTP API (`RESEND_API_KEY`) replaces it. Render free tier blocks port 587 — Resend uses HTTPS port 443, always open.
+- **Email OTP delivery fixed** — `enqueueEmail` was a no-op stub; `buildOtpMailOptions` returned `null`. OTP was saved to DB but never sent. Both call sites now call `sendOtpEmail` directly.
+- **HTML email templates restored** — `createTransporter`, `getFromEmail`, `esc`, `buildV2Html` added to `transport.ts`; all OTP emails now render full dark-navy branded HTML.
+- **2FA permanently ON** — `DISABLE_2FA` env-var bypass removed from `login.ts`, `register.ts`, and `setup-status.ts`. 2FA cannot be disabled via environment variable.
+- **Resend FROM fix** — `noreply@sahucsc.dpdns.org` → `info@sahucsc.dpdns.org` to avoid Gmail bounce; `ADMIN_EMAIL`/`OPERATOR_EMAIL` env vars set for seed accounts.
 
 ## What's New in v4.9.0 (July 16, 2026) — Platform Optimization & Setup Hardening
 

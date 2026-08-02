@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Changelog
-**Current version: 4.10.2 — July 31, 2026**
+**Current version: 4.10.3 — August 2, 2026**
 
 > Single authoritative changelog covering all versions from v1.x through v4.x.
 > - **v3.x / v4.x entries** (current) — listed first, newest at top
@@ -9,10 +9,56 @@
 
 ## Table of Contents
 
+0. [UX — Analog Dial Picker v2 + Gitignore fix (August 2, 2026)](#0-ux--analog-dial-picker-v2--gitignore-fix-august-2-2026)
 0. [Infra — Replace Nodemailer SMTP with Resend HTTP API (July 31, 2026)](#0-infra--replace-nodemailer-smtp-with-resend-http-api-july-31-2026)
 0. [Fix — Email OTP never sent + HTML template restored (July 30, 2026)](#0-fix--email-otp-never-sent--html-template-restored-july-30-2026)
 0. [Infra — 2FA permanently hardcoded ON; SMTP fully configured (July 30, 2026)](#0-infra--2fa-permanently-hardcoded-on-smtp-fully-configured-july-30-2026)
 0. [Refactor — Full CSS variable tokenization across 355+ files (July 27, 2026)](#0-refactor--full-css-variable-tokenization-across-355-files-july-27-2026)
+
+---
+
+## 0. UX — Analog Dial Picker v2 + Gitignore fix (August 2, 2026)
+
+**Version: 4.10.3**
+
+### Analog Clock Dial Picker — Full Visual Rewrite
+
+**File:** `artifacts/sahu-csc/src/components/backups/ClockTimePicker.tsx` — `DialFace` + `AnalogDialSheet` sections only; `DrumScrollSheet` unchanged.
+
+**What changed:**
+
+**Hand & animation**
+- Hand uses `rotate(deg, R, R)` CSS transform on a `<g>` group — smooth spring animation (`cubic-bezier(0.34,1.3,0.64,1)`)
+- Transition is stripped during drag (via `isDragging` state) and restored on `pointerup` — no rubber-band lag while scrubbing
+
+**Outer decorative ring**
+- Hour mode: 12 major tick marks at every 30°
+- Minute mode: 60 dot markers — minor dots, major dots at every 5th position, highlighted/filled dot at selected minute
+
+**Selected number indicator**
+- Orange filled circle + white text at selected position
+- Spring-pulse animation (`dialPulse` keyframe) keyed to value changes via `key={value}` remount
+
+**Mode crossfade**
+- `dialKey` counter increments on HOUR↔MIN switch
+- Dial wrapper remounts with `dialFadeIn` CSS animation (scale+fade) — clean visual transition between modes
+
+**Drag feedback**
+- Dashed track guide ring turns orange while dragging (`isDragging` state)
+- Two-tone center pivot; radial glow + inner shine on hand tip
+
+**Step indicator**
+- HOUR / MIN pill tabs replace the two blank dots; active time unit gets orange underline in the header
+- Confirm button uses gradient orange
+
+**Styles**
+- `ensureDialStyles()` injects `@keyframes dialFadeIn` and `dialPulse` once into `document.head` on first mount
+
+### Gitignore fix
+
+- `.gitignore` `backups/` pattern changed to `/backups/` — now anchored to repo root only
+- Previously caught `artifacts/sahu-csc/src/components/backups/` (source files), requiring `git add -f` for every edit there
+- Root-level `backups/` directory (database dump files) still excluded correctly
 
 ---
 

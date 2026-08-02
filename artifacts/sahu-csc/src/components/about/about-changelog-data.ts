@@ -3,6 +3,46 @@
 
 export const CHANGELOG = [
   {
+    version: "v4.10.3",
+    title: "Analog Dial Picker v2 — Spring Animation & Visual Polish",
+    date: "2026-08-02",
+    accent: "var(--brand-orange)",
+    changes: [
+      "Clock dial hand now uses a spring animation (cubic-bezier 0.34,1.3,0.64,1) — transition strips during drag and restores on pointer-up, eliminating rubber-band lag",
+      "Hour mode: outer ring shows 12 major tick marks at every 30°",
+      "Minute mode: outer ring shows 60 dot markers — minor dots, major dots at ×5 positions, filled highlight at the selected value",
+      "Selected number: orange filled circle + white text; spring-pulse animation fires on every value change",
+      "HOUR↔MIN mode switch triggers a scale+fade crossfade animation on the entire dial face",
+      "Dashed track guide ring turns orange while dragging; two-tone center pivot; radial glow + inner shine on the hand tip",
+      "HOUR / MIN pill tabs replace blank dots in the step indicator; active unit gets orange underline in the time header",
+      "Confirm button redesigned with gradient orange pill styling",
+    ],
+  },
+  {
+    version: "v4.10.2",
+    title: "Resend Email Transport + 2FA Permanently ON",
+    date: "2026-07-31",
+    accent: "var(--brand-navy-600)",
+    changes: [
+      "Nodemailer + SMTP removed; Resend HTTP API replaces it — Render free tier blocks port 587; Resend uses HTTPS port 443 which is always open",
+      "Email OTP delivery fixed — OTP was being saved to DB but never emailed due to a no-op stub; now calls sendOtpEmail directly",
+      "Full dark-navy branded HTML email templates restored for OTP and all transactional emails",
+      "2FA permanently hardcoded ON — DISABLE_2FA env-var bypass removed; two-factor auth can no longer be disabled",
+      "Resend FROM address fixed: noreply@sahucsc.dpdns.org → info@sahucsc.dpdns.org to avoid Gmail bounce",
+    ],
+  },
+  {
+    version: "v4.10.1",
+    title: "Email FROM Fix & Seed Account Emails",
+    date: "2026-08-01",
+    accent: "var(--color-warning)",
+    changes: [
+      "RESEND_FROM changed from noreply@ to info@sahucsc.dpdns.org — Gmail was rejecting noreply@ from free dynamic DNS domains as untrusted",
+      "ADMIN_EMAIL and OPERATOR_EMAIL env vars added so seed accounts use real addresses instead of fallback example.com addresses",
+      "RENDER_DEPLOY.md and secrets.md updated: SMTP secrets replaced with RESEND_API_KEY; quoting-warning callout added for Render dashboard",
+    ],
+  },
+  {
     version: "v4.10.0",
     title: "Full CSS Variable Tokenization — Dark-Mode Ready",
     date: "2026-07-27",

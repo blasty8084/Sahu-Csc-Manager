@@ -1,5 +1,5 @@
 # SAHU CSC — Agent Reference Document
-**Version 4.10.2** · Last updated 2026-07-30
+**Version 4.10.3** · Last updated 2026-08-02
 
 This file is the single authoritative reference for any AI agent working on this codebase. Read it first before touching any code.
 
@@ -719,6 +719,10 @@ Frontend main chunk: ~438KB (under 500KB Vite warning).
 
 | Version | Date | Key Change |
 |---------|------|-----------|
+| 4.10.3 | 2026-08-02 | Analog Dial Picker v2 (spring hand, 60-dot ring, pulse animation, mode crossfade); .gitignore /backups/ root-anchor fix |
+| 4.10.2 | 2026-07-31 | Email OTP fix, HTML templates restored, 2FA permanently ON, Resend replaces SMTP |
+| 4.10.1 | 2026-08-01 | Resend FROM noreply→info (Gmail bounce fix); ADMIN_EMAIL/OPERATOR_EMAIL seed fix |
+| 4.10.0 | 2026-07-27 | Full CSS variable tokenization across 355+ files, dark-mode ready |
 | 4.9.0 | 2026-07-16 | Optimization pass: CORS auto-detects domain, SMTP_PASSWORD, 60 s polling, precache −985 KB, session index, 90-day export cap |
 | Setup | 2026-07-23 | Imported project connected to Neon; optional B2 avatar/backup storage configured and verified; API/frontend workflows running |
 | 4.8.0 | 2026-07-16 | 2FA: QR codes, replay protection, standard 30 s TOTP, regenerate backup codes |

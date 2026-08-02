@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Platform Documentation
-**Version 4.10.2** — last updated 2026-07-30
+**Version 4.10.3** — last updated 2026-08-02
 
 > Common Service Center (CSC) Business Management Platform for Odisha / India rural service centers.
 > Full-stack · PWA · Offline-capable · Multilingual (English / Hindi / Odia)
@@ -62,6 +62,14 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 ---
 
 ## 2. Version History
+
+### v4.10.3 — Analog Dial Picker v2 + Gitignore Scope Fix (2026-08-02)
+
+- **Analog Clock Dial Picker fully rewritten** — `ClockTimePicker` dial face rebuilt with smooth spring-animated hand (`cubic-bezier(0.34,1.3,0.64,1)`), transition stripped during drag and restored on pointer-up for zero rubber-band lag; outer decorative ring shows 12 major ticks (hour mode) or 60 dot markers with selected-position highlight (minute mode); orange filled circle + white text marks the chosen value with a spring-pulse animation on each change.
+- **Mode crossfade** — switching HOUR↔MIN remounts the dial with a scale+fade animation via `dialKey` counter; no abrupt snap.
+- **Drag feedback** — dashed track guide ring turns orange while dragging; two-tone center pivot; radial glow + inner shine on hand tip.
+- **Step indicator redesigned** — HOUR / MIN pill tabs replace blank dots; active unit gets orange underline in the time header; confirm button uses gradient orange.
+- **`.gitignore` fix** — `backups/` pattern anchored to repo root (`/backups/`) so the source directory `src/components/backups/` is no longer accidentally excluded; `git add -f` no longer needed for edits to `ClockTimePicker.tsx`.
 
 ### v4.10.2 — Email OTP Fix + 2FA Hardened (2026-07-30)
 
