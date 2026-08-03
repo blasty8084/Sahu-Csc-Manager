@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Changelog
-**Current version: 4.10.6 — August 3, 2026**
+**Current version: 4.10.7 — August 3, 2026**
 
 > Single authoritative changelog covering all versions from v1.x through v4.x.
 > - **v3.x / v4.x entries** (current) — listed first, newest at top
@@ -9,6 +9,7 @@
 
 ## Table of Contents
 
+0. [Fix — Remove remaining SMTP references; activate monthly export email via Resend (August 3, 2026)](#0-fix--remove-remaining-smtp-references-activate-monthly-export-email-via-resend-august-3-2026)
 0. [Fix — Sidebar avatar shows profile picture instead of initials (August 3, 2026)](#0-fix--sidebar-avatar-shows-profile-picture-instead-of-initials-august-3-2026)
 0. [Fix — Backup time picker 24h → 12h display (August 3, 2026)](#0-fix--backup-time-picker-24h--12h-display-august-3-2026)
 0. [Fix — Auto-Backup route, B2 upload, dedup, email fallbacks (August 2, 2026)](#0-fix--auto-backup-route-b2-upload-dedup-email-fallbacks-august-2-2026)
@@ -17,6 +18,23 @@
 0. [Fix — Email OTP never sent + HTML template restored (July 30, 2026)](#0-fix--email-otp-never-sent--html-template-restored-july-30-2026)
 0. [Infra — 2FA permanently hardcoded ON; SMTP fully configured (July 30, 2026)](#0-infra--2fa-permanently-hardcoded-on-smtp-fully-configured-july-30-2026)
 0. [Refactor — Full CSS variable tokenization across 355+ files (July 27, 2026)](#0-refactor--full-css-variable-tokenization-across-355-files-july-27-2026)
+
+---
+
+## 0. Fix — Remove remaining SMTP references; activate monthly export email via Resend (August 3, 2026)
+
+**Version: 4.10.7**
+
+Resend was already the active email transport. These files still carried dead SMTP code or stale comments.
+
+| File | Change |
+|------|--------|
+| `artifacts/api-server/src/scripts/test-services.ts` | Replaced `testSmtp()` (nodemailer + `resolve4`) with `testResend()` (Resend HTTP API); updated header comment from "SMTP" to "Resend"; updated run section to call `testResend()` |
+| `artifacts/api-server/src/lib/monthly-export/email.ts` | Upgraded from a silent no-op stub to a real send via `sendMail()` + `isSmtpConfigured()` guard; adds optional `recipientEmail` param, falls back to `ADMIN_EMAIL` / `SMTP_USER` |
+| `artifacts/api-server/src/index.ts` | Comment "Gmail SMTP resolves to IPv6" → "Some external services resolve to IPv6" |
+| `artifacts/api-server/src/scripts/seed.ts` | Comment clarified: `ADMIN_EMAIL — set this in Render env vars …` |
+
+No API changes. No schema changes. No migration needed.
 
 ---
 

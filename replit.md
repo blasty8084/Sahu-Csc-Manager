@@ -1,10 +1,11 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 4.10.6** — last updated 2026-08-03
+**Version 4.10.7** — last updated 2026-08-03
 
 > **Latest setup**: After re-import run in order: `pnpm install --frozen-lockfile` → `pnpm --filter @workspace/db run push-force` → `Seed Database` workflow → Secrets needed: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. `API Server` port 8080 · Vite dev port 5000 · Worker Server skips (`REDIS_URL` not set) · OTP emails active when `RESEND_API_KEY` is set. CORS auto-configured from `REPLIT_DEV_DOMAIN` at startup (no manual update needed). Production: Vercel (frontend) + Render (backend/Neon DB).
 
 ## Fixes — August 3, 2026
 
+- **SMTP references removed; monthly export email activated** — `scripts/test-services.ts` replaces `testSmtp()` (nodemailer) with `testResend()` (Resend HTTP API). `lib/monthly-export/email.ts` upgraded from a no-op stub to a real Resend send via `sendMail()`, gated on `isSmtpConfigured()`. Stale Gmail SMTP comment removed from `index.ts`; `seed.ts` comment clarified. Files: `scripts/test-services.ts`, `lib/monthly-export/email.ts`, `index.ts`, `scripts/seed.ts`.
 - **Sidebar avatar now shows profile picture** — `fmtUser()` in `routes/auth/helpers.ts` (used by `GET /api/auth/me` → sidebar) was nulling out all `b2:`-prefixed profile picture keys; it now resolves them to 1-hour signed URLs exactly like `fmtProfile()` does. Also: `POST /profile/avatar` and `DELETE /profile/avatar` now call `invalidateUserCache` after the DB update, and the frontend immediately writes the new URL into the `auth/me` TanStack Query cache after upload to eliminate any flash of initials. Files: `routes/auth/helpers.ts`, `routes/profile.ts`, `components/profile/useProfileData.ts`.
 - **Backup time picker: 24h → 12h display** — `ClockTimePicker` trigger button now shows time in 12-hour format (e.g. `07:30 AM`) with an `AM`/`PM` badge instead of `07:30 24H`. The section label in `BackupScheduleCard` updated from `TIME (24H)` → `TIME (12H)`. The picker modal (analog dial on mobile, drum scroll on desktop) was already 12h — the display is now consistent end-to-end. Files: `components/backups/ClockTimePicker.tsx`, `components/backups/BackupScheduleCard.tsx`.
 

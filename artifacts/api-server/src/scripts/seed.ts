@@ -19,7 +19,8 @@ async function seed() {
   }
 
   // Seed contact details — read from env vars so no personal data is hard-coded.
-  // ADMIN_EMAIL falls back to SMTP_USER (the configured Gmail), then to a generic placeholder.
+  // ADMIN_EMAIL — set this in Render env vars to your actual email address.
+  // Falls back to SMTP_USER (legacy), then a generic placeholder.
   const adminEmail    = process.env.ADMIN_EMAIL    ?? process.env.SMTP_USER    ?? process.env.RESEND_FROM?.match(/<([^>]+)>/)?.[1] ?? "admin@example.com";
   const adminMobile   = process.env.ADMIN_MOBILE   ?? "0000000000";
   const operatorEmail = process.env.OPERATOR_EMAIL ?? "operator@example.com";

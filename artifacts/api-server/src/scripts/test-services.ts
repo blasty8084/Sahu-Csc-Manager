@@ -1,10 +1,8 @@
 /**
- * Service integration test — SMTP · Backblaze B2 · Upstash Redis
+ * Service integration test — Resend · Backblaze B2 · Upstash Redis
  * Run: pnpm --filter @workspace/api-server exec tsx src/scripts/test-services.ts
  */
 
-import nodemailer from "nodemailer";
-import { resolve4 } from "node:dns/promises";
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { Redis } from "@upstash/redis";
 
@@ -12,47 +10,41 @@ const PASS  = "✅";
 const FAIL  = "❌";
 const SKIP  = "⏭️ ";
 
-// ─── SMTP ──────────────────────────────────────────────────────────────────────
-async function testSmtp() {
-  const host = process.env.SMTP_HOST;
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS ?? process.env.SMTP_PASSWORD;
+// ─── Resend ────────────────────────────────────────────────────────────────────
+async function testResend() {
+  const apiKey = process.env.RESEND_API_KEY;
 
-  if (!host || !user || !pass) {
-    console.log(`${SKIP} SMTP — not configured (SMTP_HOST / SMTP_USER / SMTP_PASS missing)`);
+  if (!apiKey) {
+    console.log(`${SKIP} Resend — not configured (RESEND_API_KEY missing)`);
     return;
   }
 
-  console.log(`\n── SMTP (${host}) ──────────────────────`);
+  console.log(`\n── Resend Email ─────────────────────────`);
   try {
-    const smtpIpv4 = (await resolve4(host))[0] ?? host;
-    const transporter = nodemailer.createTransport({
-      host: smtpIpv4,
-      port: Number(process.env.SMTP_PORT ?? 587),
-      secure: false,
-      requireTLS: true,
-      connectionTimeout: 15_000,
-      greetingTimeout: 15_000,
-      socketTimeout: 30_000,
-      tls: { servername: host },
-      auth: { user, pass },
-    });
+    const { Resend } = await import("resend");
+    const resend = new Resend(apiKey);
 
-    await transporter.verify();
-    console.log(`${PASS} Connection verified`);
+    const from  = process.env.RESEND_FROM ?? "SAHU CSC <onboarding@resend.dev>";
+    const to    = process.env.SMTP_USER   ?? process.env.ADMIN_EMAIL ?? "";
 
-    const from = process.env.SMTP_FROM_EMAIL ?? `SAHU CSC <${user}>`;
-    const info = await transporter.sendMail({
+    if (!to) {
+      console.log(`${SKIP} Resend — no recipient (set SMTP_USER or ADMIN_EMAIL)`);
+      return;
+    }
+
+    const { error } = await resend.emails.send({
       from,
-      to: user,
-      subject: "SAHU CSC — SMTP integration test",
-      text: "SMTP is working correctly. This is an automated test from SAHU CSC.",
-      html: "<p>SMTP is working correctly. ✅</p><p>This is an automated test from <strong>SAHU CSC</strong>.</p>",
+      to: [to],
+      subject: "SAHU CSC — Resend integration test",
+      text: "Resend is working correctly. This is an automated test from SAHU CSC.",
+      html: "<p>✅ Resend is working correctly.</p><p>This is an automated test from <strong>SAHU CSC</strong>.</p>",
     });
-    console.log(`${PASS} Test email sent → ${user}`);
-    console.log(`     Message-ID: ${info.messageId}`);
+
+    if (error) throw new Error(error.message);
+    console.log(`${PASS} Test email sent → ${to}`);
+    console.log(`     From: ${from}`);
   } catch (err: any) {
-    console.log(`${FAIL} SMTP failed: ${err.message}`);
+    console.log(`${FAIL} Resend failed: ${err.message}`);
   }
 }
 
@@ -165,7 +157,7 @@ console.log("══════════════════════�
 console.log("  SAHU CSC — Integration Service Tests");
 console.log("═══════════════════════════════════════════");
 
-await testSmtp();
+await testResend();
 await testB2();
 await testRedis();
 
