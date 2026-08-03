@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Changelog
-**Current version: 4.10.5 — August 3, 2026**
+**Current version: 4.10.6 — August 3, 2026**
 
 > Single authoritative changelog covering all versions from v1.x through v4.x.
 > - **v3.x / v4.x entries** (current) — listed first, newest at top
@@ -9,6 +9,7 @@
 
 ## Table of Contents
 
+0. [Fix — Sidebar avatar shows profile picture instead of initials (August 3, 2026)](#0-fix--sidebar-avatar-shows-profile-picture-instead-of-initials-august-3-2026)
 0. [Fix — Backup time picker 24h → 12h display (August 3, 2026)](#0-fix--backup-time-picker-24h--12h-display-august-3-2026)
 0. [Fix — Auto-Backup route, B2 upload, dedup, email fallbacks (August 2, 2026)](#0-fix--auto-backup-route-b2-upload-dedup-email-fallbacks-august-2-2026)
 0. [UX — Analog Dial Picker v2 + Gitignore fix (August 2, 2026)](#0-ux--analog-dial-picker-v2--gitignore-fix-august-2-2026)
@@ -16,6 +17,70 @@
 0. [Fix — Email OTP never sent + HTML template restored (July 30, 2026)](#0-fix--email-otp-never-sent--html-template-restored-july-30-2026)
 0. [Infra — 2FA permanently hardcoded ON; SMTP fully configured (July 30, 2026)](#0-infra--2fa-permanently-hardcoded-on-smtp-fully-configured-july-30-2026)
 0. [Refactor — Full CSS variable tokenization across 355+ files (July 27, 2026)](#0-refactor--full-css-variable-tokenization-across-355-files-july-27-2026)
+
+---
+
+## 0. Fix — Sidebar avatar shows profile picture instead of initials (August 3, 2026)
+
+**Version: 4.10.6**
+
+Profile picture uploaded successfully and displayed correctly on the Profile page, but the sidebar/bottom-nav avatar circle always showed initials ("SA") instead of the photo.
+
+### Root cause
+
+`fmtUser()` in `routes/auth/helpers.ts` — used by `GET /api/auth/me`, which powers `useAuth()` and the sidebar — was nulling out **all** `b2:`-prefixed profile picture keys:
+
+```typescript
+// BEFORE (broken)
+const profilePicture = user.profilePicture?.startsWith("b2:")
+  ? null   // ← killed every B2 avatar unconditionally
+  : (user.profilePicture ?? null);
+```
+
+This was added as a migration stub for "B2 removed" but was never narrowed to actually-missing keys. The Profile page worked because it calls `GET /api/profile` → `fmtProfile()` in `profile.ts`, which correctly resolves `b2:` keys to signed URLs. The sidebar read from `useAuth()` → `/api/auth/me` → `fmtUser()`, which returned `null` for every B2 avatar.
+
+### Fixes applied
+
+**Fix 1 — `fmtUser()` in `routes/auth/helpers.ts`**
+
+Replaced the blanket null with the same B2 resolution logic already used in `fmtProfile()`:
+
+```typescript
+// AFTER (fixed)
+let profilePicture = user.profilePicture ?? null;
+if (profilePicture?.startsWith("b2:") && isB2Configured()) {
+  try {
+    profilePicture = await getB2SignedUrl(profilePicture.slice(3), 3600);
+  } catch {
+    profilePicture = null; // key missing or B2 down — show initials
+  }
+} else if (profilePicture?.startsWith("b2:") && !isB2Configured()) {
+  profilePicture = null; // B2 not configured — show initials
+}
+// Legacy base64 data:image/... rows pass through unchanged
+```
+
+**Fix 2 — Frontend cache update in `components/profile/useProfileData.ts`**
+
+After a successful avatar upload, immediately writes the new `profilePicture` URL into the `auth/me` TanStack Query cache so the sidebar updates without waiting for a background re-fetch (eliminating a flash of initials). On avatar delete, explicitly clears the cached value to `null`.
+
+**Fix 3 — Server-side cache invalidation in `routes/profile.ts`**
+
+`POST /profile/avatar` and `DELETE /profile/avatar` now call `invalidateUserCache(userId)` after the DB update so the in-process session cache doesn't serve a stale `profilePicture` to subsequent `GET /auth/me` requests.
+
+**Fix 4 — Upload response already includes `profilePicture`**
+
+`POST /profile/avatar` returns `await fmtProfile(updated)`, which includes the resolved `profilePicture` URL. Fix 2 reads this value directly — no API change needed.
+
+**Files changed:**
+
+| File | Change |
+|------|--------|
+| `artifacts/api-server/src/routes/auth/helpers.ts` | `fmtUser()` — resolve `b2:` keys to signed URLs; add `getB2SignedUrl` / `isB2Configured` import |
+| `artifacts/api-server/src/routes/profile.ts` | `POST /profile/avatar` + `DELETE /profile/avatar` — call `invalidateUserCache` after DB update |
+| `artifacts/sahu-csc/src/components/profile/useProfileData.ts` | Update `auth/me` cache immediately after upload/delete; no `queryClient.clear()` |
+
+No schema changes. No migration needed.
 
 ---
 
