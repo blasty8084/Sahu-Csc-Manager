@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { getB2SignedUrl, isB2Configured } from "../../lib/b2";
 
 /** Generate a 6-digit numeric OTP. */
 export function generateNumericOtp(): string {
@@ -21,11 +22,20 @@ export function maskEmail(email: string): string {
 
 /** Formats a user DB row into the public-safe shape returned by auth endpoints. */
 export async function fmtUser(user: any) {
-  // b2: prefixed keys are legacy storage references; treat them as null since
-  // B2 has been removed — the user will need to re-upload their avatar.
-  const profilePicture = user.profilePicture?.startsWith("b2:")
-    ? null
-    : (user.profilePicture ?? null);
+  let profilePicture = user.profilePicture ?? null;
+
+  // Resolve B2 key to a 1-hour pre-signed URL (same logic as fmtProfile in profile.ts)
+  if (profilePicture?.startsWith("b2:") && isB2Configured()) {
+    try {
+      profilePicture = await getB2SignedUrl(profilePicture.slice(3), 3600);
+    } catch {
+      profilePicture = null; // B2 key missing or B2 down — show initials
+    }
+  } else if (profilePicture?.startsWith("b2:") && !isB2Configured()) {
+    // B2 not configured — cannot resolve key, show initials
+    profilePicture = null;
+  }
+  // Legacy base64 data:image/... rows pass through unchanged
 
   return {
     id: user.id,

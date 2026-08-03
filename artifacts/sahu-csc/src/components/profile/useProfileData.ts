@@ -141,13 +141,33 @@ export function useProfileData() {
     reader.onload = async (ev) => {
       const dataUrl = ev.target?.result as string;
       setAvatarPreview(dataUrl);
-      try { await uploadAvatarMut.mutateAsync({ data: { profilePicture: dataUrl } }); invalidateProfile(); toast.success("Profile picture updated"); }
+      try {
+        const uploadResult = await uploadAvatarMut.mutateAsync({ data: { profilePicture: dataUrl } });
+        // Immediately update the auth/me cache so the sidebar avatar refreshes
+        // without waiting for a full re-fetch (avoids flash of initials).
+        if (uploadResult?.profilePicture) {
+          qc.setQueryData(["auth/me"], (prev: any) =>
+            prev ? { ...prev, profilePicture: uploadResult.profilePicture } : prev
+          );
+        }
+        invalidateProfile();
+        toast.success("Profile picture updated");
+      }
       catch { setAvatarPreview(null); toast({ title: "Failed to upload picture", variant: "destructive" }); }
     };
     reader.readAsDataURL(file);
   };
   const handleDeleteAvatar = async () => {
-    try { await deleteAvatarMut.mutateAsync(); setAvatarPreview(null); invalidateProfile(); toast.success("Profile picture removed"); }
+    try {
+      await deleteAvatarMut.mutateAsync();
+      setAvatarPreview(null);
+      // Clear avatar from auth/me cache so sidebar immediately shows initials
+      qc.setQueryData(["auth/me"], (prev: any) =>
+        prev ? { ...prev, profilePicture: null } : prev
+      );
+      invalidateProfile();
+      toast.success("Profile picture removed");
+    }
     catch { toast({ title: "Failed to remove picture", variant: "destructive" }); }
   };
 

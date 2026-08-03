@@ -186,6 +186,9 @@ router.post("/profile/avatar", requireAuth, asyncHandler(async (req, res) => {
     .where(eq(usersTable.id, userId))
     .returning();
 
+  // Invalidate user cache so /auth/me returns fresh data with new avatar
+  await invalidateUserCache(userId).catch(() => {});
+
   await auditLog(userId, "profile.avatar_update", "User updated profile picture", getClientIp(req));
   res.json(await fmtProfile(updated));
 }));
@@ -202,6 +205,8 @@ router.delete("/profile/avatar", requireAuth, asyncHandler(async (req, res) => {
     }
   }
   await db.update(usersTable).set({ profilePicture: null }).where(eq(usersTable.id, userId));
+  // Invalidate user cache so /auth/me returns null profilePicture immediately
+  await invalidateUserCache(userId).catch(() => {});
   await auditLog(userId, "profile.avatar_delete", "User removed profile picture", getClientIp(req));
   res.json({ message: "Profile picture removed" });
 }));
