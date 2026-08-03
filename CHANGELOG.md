@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Changelog
-**Current version: 4.10.4 — August 2, 2026**
+**Current version: 4.10.5 — August 3, 2026**
 
 > Single authoritative changelog covering all versions from v1.x through v4.x.
 > - **v3.x / v4.x entries** (current) — listed first, newest at top
@@ -9,12 +9,37 @@
 
 ## Table of Contents
 
+0. [Fix — Backup time picker 24h → 12h display (August 3, 2026)](#0-fix--backup-time-picker-24h--12h-display-august-3-2026)
 0. [Fix — Auto-Backup route, B2 upload, dedup, email fallbacks (August 2, 2026)](#0-fix--auto-backup-route-b2-upload-dedup-email-fallbacks-august-2-2026)
 0. [UX — Analog Dial Picker v2 + Gitignore fix (August 2, 2026)](#0-ux--analog-dial-picker-v2--gitignore-fix-august-2-2026)
 0. [Infra — Replace Nodemailer SMTP with Resend HTTP API (July 31, 2026)](#0-infra--replace-nodemailer-smtp-with-resend-http-api-july-31-2026)
 0. [Fix — Email OTP never sent + HTML template restored (July 30, 2026)](#0-fix--email-otp-never-sent--html-template-restored-july-30-2026)
 0. [Infra — 2FA permanently hardcoded ON; SMTP fully configured (July 30, 2026)](#0-infra--2fa-permanently-hardcoded-on-smtp-fully-configured-july-30-2026)
 0. [Refactor — Full CSS variable tokenization across 355+ files (July 27, 2026)](#0-refactor--full-css-variable-tokenization-across-355-files-july-27-2026)
+
+---
+
+## 0. Fix — Backup time picker 24h → 12h display (August 3, 2026)
+
+**Version: 4.10.5**
+
+### Change — `ClockTimePicker` trigger shows 12-hour time (`components/backups/ClockTimePicker.tsx`)
+
+**Problem:** The trigger button on the backup schedule time input displayed the stored 24-hour value (e.g. `07:30`) with a static `24H` badge on the right. The picker modal itself (analog dial on mobile, drum scroll on desktop) already used 12-hour format with AM/PM — so the selected time always showed in 12h inside the picker but reverted to 24h on the trigger after closing.
+
+**Fix:**
+- Computed `{ h: h12, period }` from `to12(h24)` in the trigger render
+- Display string changed to 12-hour padded value: `07:30` (was `07:30`)
+- Right badge now shows live `AM` or `PM` (was static `24h` text)
+- Section heading in `BackupScheduleCard` updated: `TIME (24H)` → `TIME (12H)`
+
+**Files changed:**
+| File | Change |
+|------|--------|
+| `artifacts/sahu-csc/src/components/backups/ClockTimePicker.tsx` | Trigger display uses `to12()`, badge shows `period` |
+| `artifacts/sahu-csc/src/components/backups/BackupScheduleCard.tsx` | Label `TIME (24H)` → `TIME (12H)` |
+
+No API or data-model changes. No migration needed.
 
 ---
 

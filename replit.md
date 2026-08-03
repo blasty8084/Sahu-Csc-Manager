@@ -1,7 +1,11 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 4.10.4** — last updated 2026-08-02
+**Version 4.10.5** — last updated 2026-08-03
 
-> **Latest setup**: After re-import run in order: `pnpm install --frozen-lockfile` → `pnpm --filter @workspace/db run push-force` → `Seed Database` workflow → update `CORS_ORIGIN` to current dev domain. Secrets needed: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. `API Server` port 8080 · Vite dev port 5000 · Worker Server skips (`REDIS_URL` not set) · OTP emails active when `RESEND_API_KEY` is set. Production: Vercel (frontend) + Render (backend/Neon DB).
+> **Latest setup**: After re-import run in order: `pnpm install --frozen-lockfile` → `pnpm --filter @workspace/db run push-force` → `Seed Database` workflow → Secrets needed: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. `API Server` port 8080 · Vite dev port 5000 · Worker Server skips (`REDIS_URL` not set) · OTP emails active when `RESEND_API_KEY` is set. CORS auto-configured from `REPLIT_DEV_DOMAIN` at startup (no manual update needed). Production: Vercel (frontend) + Render (backend/Neon DB).
+
+## Fixes — August 3, 2026
+
+- **Backup time picker: 24h → 12h display** — `ClockTimePicker` trigger button now shows time in 12-hour format (e.g. `07:30 AM`) with an `AM`/`PM` badge instead of `07:30 24H`. The section label in `BackupScheduleCard` updated from `TIME (24H)` → `TIME (12H)`. The picker modal (analog dial on mobile, drum scroll on desktop) was already 12h — the display is now consistent end-to-end. Files: `components/backups/ClockTimePicker.tsx`, `components/backups/BackupScheduleCard.tsx`.
 
 ## Fixes & Refactors — July 20, 2026
 
