@@ -90,7 +90,7 @@ export function BackupScheduleCard({
             </div>
 
             <div className="space-y-1.5">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Time (24h)</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Time (12h)</p>
               <ClockTimePicker
                 value={schedule.time}
                 onChange={(t) => setSchedule((s) => ({ ...s, time: t }))}

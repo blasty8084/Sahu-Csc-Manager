@@ -663,9 +663,10 @@ export function ClockTimePicker({ value, onChange }: ClockTimePickerProps) {
   const [open, setOpen] = useState(false);
   const isMobile = useMobile();
 
-  // Friendly 24h display on the trigger
+  // Friendly 12h display on the trigger
   const [h24, m] = value.split(":").map(Number);
-  const display = `${String(h24 ?? 0).padStart(2, "0")}:${String(m ?? 0).padStart(2, "0")}`;
+  const { h: h12, period } = to12(h24 ?? 0);
+  const display = `${String(h12).padStart(2, "0")}:${String(m ?? 0).padStart(2, "0")}`;
 
   function handleConfirm(v: string) {
     onChange(v);
@@ -685,7 +686,7 @@ export function ClockTimePicker({ value, onChange }: ClockTimePickerProps) {
           {display}
         </span>
         <span className="ml-auto text-[10px] font-medium text-slate-400 dark:text-zinc-400 uppercase tracking-wider">
-          24h
+          {period}
         </span>
       </button>
 
