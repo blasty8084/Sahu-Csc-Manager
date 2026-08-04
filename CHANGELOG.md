@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Changelog
-**Current version: 4.10.10 — August 4, 2026**
+**Current version: 4.10.11 — August 4, 2026**
 
 > Single authoritative changelog covering all versions from v1.x through v4.x.
 > - **v3.x / v4.x entries** (current) — listed first, newest at top
@@ -9,6 +9,7 @@
 
 ## Table of Contents
 
+0. [Fix — Desktop drum scroll time picker unresponsive: transition lag, discrete snapping, no wheel support (August 4, 2026)](#0-fix--desktop-drum-scroll-time-picker-unresponsive-transition-lag-discrete-snapping-no-wheel-support-august-4-2026)
 0. [Infra — Fix pnpm lockfile out of sync after nodemailer removal; unblocked CI (August 4, 2026)](#0-infra--fix-pnpm-lockfile-out-of-sync-after-nodemailer-removal-unblocked-ci-august-4-2026)
 0. [Fix — Admin registration-alert email never sent: sendNewRegistrationAdminEmail signature mismatch (August 4, 2026)](#0-fix--admin-registration-alert-email-never-sent-sendnewregistrationadminemail-signature-mismatch-august-4-2026)
 0. [Refactor — Complete Resend migration: remove nodemailer, direct sendMail everywhere (August 4, 2026)](#0-refactor--complete-resend-migration-remove-nodemailer-direct-sendmail-everywhere-august-4-2026)
@@ -22,6 +23,34 @@
 0. [Fix — Email OTP never sent + HTML template restored (July 30, 2026)](#0-fix--email-otp-never-sent--html-template-restored-july-30-2026)
 0. [Infra — 2FA permanently hardcoded ON; SMTP fully configured (July 30, 2026)](#0-infra--2fa-permanently-hardcoded-on-smtp-fully-configured-july-30-2026)
 0. [Refactor — Full CSS variable tokenization across 355+ files (July 27, 2026)](#0-refactor--full-css-variable-tokenization-across-355-files-july-27-2026)
+
+---
+
+## 0. Fix — Desktop drum scroll time picker unresponsive: transition lag, discrete snapping, no wheel support (August 4, 2026)
+
+**Version: 4.10.11**
+
+### What changed
+
+| File | Change |
+|---|---|
+| `artifacts/sahu-csc/src/components/backups/ClockTimePicker.tsx` | Rewrote `DrumColumn` drag model — continuous `dragOffset` state, `isDragging` flag, transition gated off during drag, pointer-up snap, `onWheel` handler added |
+
+### Root causes (3)
+
+1. **CSS transition always on** — `transition-transform duration-200 ease-out` fired on every pointer-move event. The strip animated toward the new position over 200 ms, meaning it was always chasing the cursor rather than following it. Under fast drags the strip never caught up and appeared frozen.
+
+2. **Discrete snapping during drag** — the strip's `translateY` was derived purely from `selectedIndex` (an integer prop). Any pointer movement that did not cross a full `DRUM_H = 52 px` threshold produced no visual change at all. Users felt the control ignore their input.
+
+3. **No mouse-wheel support** — desktop users routinely scroll UI drums with the scroll wheel. The component had no `onWheel` handler, so the wheel did nothing.
+
+### Fix
+
+- Added `dragOffset: number` and `isDragging: boolean` local state to `DrumColumn`.
+- During drag: `translateY = clamp(DRUM_H - startIdx * DRUM_H + dragOffset)` — the strip follows the pointer pixel-for-pixel with `transition: none`.
+- On pointer-up: `dragOffset` resets to `0`, `isDragging` becomes `false`, and the strip snaps to the nearest index with the `200 ms ease-out` transition restored.
+- Item highlight uses a `visualIndex` computed from `dragOffset` during drag so the centre-row emphasis tracks the pointer in real time.
+- `onWheel` handler with `e.preventDefault()` increments/decrements `selectedIndex` by one step per wheel tick.
 
 ---
 

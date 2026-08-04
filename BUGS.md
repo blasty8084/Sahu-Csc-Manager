@@ -53,6 +53,7 @@
 
 | # | Status | File | Issue |
 |---|--------|------|-------|
+| 31 | ✅ Fixed | `components/backups/ClockTimePicker.tsx` | Desktop drum scroll time picker was completely unresponsive. Three causes: (1) `transition-transform duration-200` always active — every pointer-move triggered a 200 ms animation making the strip lag behind the cursor; (2) strip snapped to discrete integer positions during drag instead of following the pointer continuously; (3) no `onWheel` handler for mouse-wheel scrolling. Fixed by tracking `isDragging` state — transition removed during drag, continuous `dragOffset` drives visual position, snaps with animation on pointer-up. Mouse wheel added via `onWheel` + `preventDefault`. (August 4, 2026) |
 | 16 | ✅ Fixed | `pages/ledger.tsx` | Ledger entry forms reset after successful online creation and offline save. |
 | 17 | ✅ Fixed | `pages/udhari.tsx` | Add-customer forms reset after success and close. |
 | 18 | ✅ Fixed | `pages/register.tsx` → `components/auth/RegisterForm.tsx` | `form.reset()`, `setFormValues(null)`, and `setOtpDigits([])` called after every successful submit path — sensitive state cleared before redirect. Fixed as part of register page refactor (July 18, 2026). |
