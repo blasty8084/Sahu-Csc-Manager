@@ -236,9 +236,16 @@ function DrumScrollSheet({
             <h2 className="text-xl font-bold text-slate-900">Select Time</h2>
             <p className="text-sm text-slate-400 mt-0.5">Drag to scroll · Tap to select</p>
           </div>
-          <div className="text-3xl font-bold text-slate-900 font-mono tabular-nums">
-            {HOURS[hourIdx]}:{MINUTES[minIdx]}
-            <span className="text-lg ml-1 text-orange-500">{PERIODS[periodIdx]}</span>
+          <div className="font-mono tabular-nums flex items-end gap-1 leading-none">
+            <span className="text-5xl font-black" style={{ color: "#0f172a", letterSpacing: "-0.03em" }}>
+              {HOURS[hourIdx]}:{MINUTES[minIdx]}
+            </span>
+            <span
+              className="text-base font-bold mb-1 px-1.5 py-0.5 rounded-md"
+              style={{ background: "#f97316", color: "white", letterSpacing: "0.04em" }}
+            >
+              {PERIODS[periodIdx]}
+            </span>
           </div>
         </div>
 
