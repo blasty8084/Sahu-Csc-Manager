@@ -1,5 +1,5 @@
 # SAHU CSC — Agent Reference Document
-**Version 4.10.7** · Last updated 2026-08-03
+**Version 4.10.8** · Last updated 2026-08-04
 
 This file is the single authoritative reference for any AI agent working on this codebase. Read it first before touching any code.
 
@@ -112,7 +112,7 @@ Target users: rural Odisha CSC operators. UI languages: English, Hindi, Odia (`i
 | `BASE_PATH` | `/` | URL base path |
 | `DB_POOL_MAX` | `5` | Max pg pool connections |
 | `CORS_ORIGIN` | comma-separated URLs (optional) | Extra allowed origins — `REPLIT_DEV_DOMAIN` / `REPLIT_DOMAINS` auto-included |
-| `RESEND_FROM` | `SAHU CSC <info@sahucsc.dpdns.org>` | Sender address — verified domain `sahucsc.dpdns.org` on resend.com. **Must NOT use `noreply@`** — Gmail bounces those from dpdns.org. |
+| `RESEND_FROM` | `SAHU CSC <onboarding@resend.dev>` | Sender address — currently Resend's pre-verified shared domain (delivers reliably). To use your own domain: verify `sahucsc.dpdns.org` in resend.com → Domains, then update to `SAHU CSC <info@sahucsc.dpdns.org>`. |
 | `ADMIN_EMAIL` | admin email | Set on admin account at seed time |
 | `OPERATOR_EMAIL` | operator email | Set on operator account at seed time |
 | `ALLOW_NON_INDIA` | `true` | Bypasses geo-block for Replit dev (not for production) |
@@ -719,6 +719,8 @@ Frontend main chunk: ~438KB (under 500KB Vite warning).
 
 | Version | Date | Key Change |
 |---------|------|-----------|
+| 4.10.8 | 2026-08-04 | Fix RESEND_FROM → `onboarding@resend.dev` (unverified domain caused Gmail to drop emails); fix admin reset-link email 422 + undefined link (duplicate `sendAdminResetLinkEmail` in `index.ts` shadowed the correct one in `adminAlerts.ts`) |
+| 4.10.7 | 2026-08-03 | SMTP refs removed; monthly export email activated; sidebar avatar shows profile picture; backup time picker 24h→12h |
 | 4.10.4 | 2026-08-02 | Bug fixes: internal backup route double `/api` prefix, 30→55 min window + dedup, B2 upload in auto-backup, RESEND_FROM email fallbacks in seed + startup-init |
 | 4.10.3 | 2026-08-02 | Analog Dial Picker v2 (spring hand, 60-dot ring, pulse animation, mode crossfade); .gitignore /backups/ root-anchor fix |
 | 4.10.2 | 2026-07-31 | Email OTP fix, HTML templates restored, 2FA permanently ON, Resend replaces SMTP |

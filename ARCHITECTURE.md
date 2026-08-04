@@ -1,5 +1,5 @@
 # SAHU CSC — Architecture Reference
-**Version 4.10.3 — August 2, 2026**
+**Version 4.10.8 — August 4, 2026**
 
 > This is the single authoritative reference for the SAHU CSC platform architecture.  
 > It supersedes `docs/archive/architectureV2.md` and `docs/archive/ARCHITECTURE.md`.  
