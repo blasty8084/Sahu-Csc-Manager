@@ -5,6 +5,7 @@ export { isSmtpConfigured };
 // ── Re-export rich template functions ─────────────────────────────────────────
 export { sendOtpEmail, buildOtpMailOptions } from "./templates/otp";
 export { buildApprovalMailOptions, buildRejectionMailOptions } from "./templates/approval";
+export { sendAdminResetLinkEmail } from "./templates/adminAlerts";
 
 // ── Simple direct-send helper ─────────────────────────────────────────────────
 async function send(to: string, subject: string, html: string, text: string): Promise<void> {
@@ -45,11 +46,4 @@ export async function sendBroadcastEmail(to: string, subject: string, html: stri
   await send(to, subject, html, text);
 }
 
-export async function sendAdminResetLinkEmail(to: string, link: string): Promise<void> {
-  await send(
-    to,
-    "SAHU CSC password reset link",
-    `<p>Click the link to reset your password: <a href="${link}">${link}</a></p><p>Valid for 1 hour.</p>`,
-    `Password reset link: ${link} (valid for 1 hour)`,
-  );
-}
+// sendAdminResetLinkEmail is re-exported from ./templates/adminAlerts above.

@@ -1,7 +1,12 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 4.10.7** — last updated 2026-08-03
+**Version 4.10.8** — last updated 2026-08-04
 
 > **Latest setup**: After re-import run in order: `pnpm install --frozen-lockfile` → `pnpm --filter @workspace/db run push-force` → `Seed Database` workflow → Secrets needed: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. `API Server` port 8080 · Vite dev port 5000 · Worker Server skips (`REDIS_URL` not set) · OTP emails active when `RESEND_API_KEY` is set. CORS auto-configured from `REPLIT_DEV_DOMAIN` at startup (no manual update needed). Production: Vercel (frontend) + Render (backend/Neon DB).
+
+## Fixes — August 4, 2026
+
+- **OTP email delivery fixed (Resend FROM domain)** — OTP emails were showing "Sent" in the Resend dashboard but never reaching the recipient's inbox. Root cause: `RESEND_FROM` was set to `"SAHU CSC <info@sahucsc.dpdns.org>"` — a custom domain that is not verified in Resend. Gmail silently drops emails from unverified domains (no SPF/DKIM alignment). Fix: `RESEND_FROM` env var updated to `"SAHU CSC <onboarding@resend.dev>"` — Resend's own pre-verified shared sender domain, which delivers reliably to all inboxes. Note: to use a custom branded FROM address in future, verify your domain at resend.com → Domains, then update `RESEND_FROM` back to your domain address.
+- **Admin password-reset email fixed (422 + undefined link)** — `POST /admin/users/:id/email-reset-link` was calling `sendAdminResetLinkEmail` from `lib/mailer/index.ts` (a simple 2-arg function `(to, link)`) while passing an object `{ to, resetUrl, username, ... }`. The whole object became the `to` field → Resend 422 validation error; `link` was `undefined` → `<a href="undefined">undefined</a>` in the email. Root cause: a duplicate simpler function in `index.ts` shadowed the rich HTML version in `templates/adminAlerts.ts`. Fix: removed the duplicate from `index.ts`, re-exported `sendAdminResetLinkEmail` from `templates/adminAlerts.ts` which already has the correct object signature and full HTML template. File: `artifacts/api-server/src/lib/mailer/index.ts`.
 
 ## Fixes — August 3, 2026
 

@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Changelog
-**Current version: 4.10.7 — August 3, 2026**
+**Current version: 4.10.8 — August 4, 2026**
 
 > Single authoritative changelog covering all versions from v1.x through v4.x.
 > - **v3.x / v4.x entries** (current) — listed first, newest at top
@@ -9,6 +9,7 @@
 
 ## Table of Contents
 
+0. [Fix — OTP email delivery: RESEND_FROM switched to verified sender domain (August 4, 2026)](#0-fix--otp-email-delivery-resend_from-switched-to-verified-sender-domain-august-4-2026)
 0. [Fix — Remove remaining SMTP references; activate monthly export email via Resend (August 3, 2026)](#0-fix--remove-remaining-smtp-references-activate-monthly-export-email-via-resend-august-3-2026)
 0. [Fix — Sidebar avatar shows profile picture instead of initials (August 3, 2026)](#0-fix--sidebar-avatar-shows-profile-picture-instead-of-initials-august-3-2026)
 0. [Fix — Backup time picker 24h → 12h display (August 3, 2026)](#0-fix--backup-time-picker-24h--12h-display-august-3-2026)
@@ -18,6 +19,45 @@
 0. [Fix — Email OTP never sent + HTML template restored (July 30, 2026)](#0-fix--email-otp-never-sent--html-template-restored-july-30-2026)
 0. [Infra — 2FA permanently hardcoded ON; SMTP fully configured (July 30, 2026)](#0-infra--2fa-permanently-hardcoded-on-smtp-fully-configured-july-30-2026)
 0. [Refactor — Full CSS variable tokenization across 355+ files (July 27, 2026)](#0-refactor--full-css-variable-tokenization-across-355-files-july-27-2026)
+
+---
+
+## 0. Fix — OTP email delivery + Admin reset-link email (August 4, 2026)
+
+**Version: 4.10.8**
+
+### Fix 1 — OTP delivery: RESEND_FROM switched to verified sender
+
+**Problem:** OTP verification emails appeared as **"Sent"** in the Resend dashboard but **never arrived** in the recipient's Gmail inbox (no "Delivered" event).
+
+**Root Cause:** `RESEND_FROM` env var was set to `"SAHU CSC <info@sahucsc.dpdns.org>"`. Resend forwards the email, but since `sahucsc.dpdns.org` has no Resend DNS records, Gmail's server drops it silently (no SPF/DKIM alignment → no "Delivered" event).
+
+**Fix:** Updated `RESEND_FROM` env var to `"SAHU CSC <onboarding@resend.dev>"` — Resend's own pre-verified shared sender domain. Delivers reliably to Gmail and all major inboxes.
+
+**Files changed:** Replit env var `RESEND_FROM` only (no code change — `transport.ts` reads it at runtime).
+
+---
+
+### Fix 2 — Admin password-reset email: 422 error + undefined link
+
+**Problem:** Admin-generated password-reset emails were failing with Resend HTTP 422 (`"The 'to' field must be a 'string'"`) and the link inside the email was `undefined`.
+
+**Root Cause:** Two functions named `sendAdminResetLinkEmail` existed:
+- `lib/mailer/index.ts` — simple 2-arg version `(to: string, link: string)`
+- `lib/mailer/templates/adminAlerts.ts` — rich HTML version accepting `{ to, displayName, username, resetUrl, expiresAt }`
+
+`admin.ts` imports from `lib/mailer/index.ts` and calls with an object `{ to, resetUrl, ... }`. The simple function received the object as `to` (sending `[{to:"email",...}]` to Resend → 422) and `undefined` as `link` (producing `<a href="undefined">undefined</a>`).
+
+**Fix:** Removed the duplicate simple function from `lib/mailer/index.ts` and re-exported `sendAdminResetLinkEmail` from `templates/adminAlerts.ts` which has the correct object signature and full branded HTML template.
+
+**Files changed:** `artifacts/api-server/src/lib/mailer/index.ts`
+
+### Future: Using a Custom Branded FROM Address
+To send from your own domain (e.g. `info@sahucsc.dpdns.org`):
+1. Go to [resend.com](https://resend.com) → **Domains** → Add Domain → enter `sahucsc.dpdns.org`
+2. Add the provided DNS records (SPF, DKIM, DMARC) to your domain's DNS provider
+3. Wait for verification (usually < 5 minutes)
+4. Update `RESEND_FROM` env var back to `"SAHU CSC <info@sahucsc.dpdns.org>"`
 
 ---
 
