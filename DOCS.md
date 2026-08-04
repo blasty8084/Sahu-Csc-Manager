@@ -76,7 +76,7 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 - **Email OTP delivery fixed** — `enqueueEmail` was a no-op stub and `buildOtpMailOptions` returned `null`; OTP codes were saved to DB but never emailed. Both call sites (`login-helpers.ts`, `otp.ts`) now call `sendOtpEmail` directly from the mailer.
 - **HTML email templates restored** — `templates/otp.ts` imported `createTransporter`, `getFromEmail`, `esc`, and `buildV2Html` from `transport.ts`, but those functions didn't exist. Added all four to `transport.ts`; `mailer/index.ts` now re-exports `sendOtpEmail` from `templates/otp.ts`. OTP emails render the full dark-navy branded HTML design.
 - **2FA permanently ON** — Removed `DISABLE_2FA` env var bypass from `login.ts`, `register.ts`, and `setup-status.ts`. 2FA cannot be disabled via environment variable.
-- **SMTP fully configured** — `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM_EMAIL` all set. Outgoing emails active.
+- **Email via Resend** — All transactional email (OTP, approvals, broadcast) uses Resend HTTP API. `RESEND_API_KEY` required; `RESEND_FROM` must be a verified domain address (not the sandbox `onboarding@resend.dev`).
 - **Seed account emails** — `ADMIN_EMAIL` and `OPERATOR_EMAIL` env vars set; propagated to DB accounts via Seed Database workflow.
 
 ### v4.9.5 — Dark Mode Performance & Verification (2026-07-27)

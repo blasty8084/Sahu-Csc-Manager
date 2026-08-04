@@ -128,13 +128,13 @@ workspace/
 │   │   │       ├── monthly-export.ts       # BARREL → monthly-export/
 │   │   │       ├── notify.ts               # createNotification helper
 │   │   │       ├── logger.ts               # Pino structured logger
-│   │   │       ├── mailer.ts               # Nodemailer: sendOtpEmail · sendApprovalEmail · sendBroadcastEmail · isSmtpConfigured
+│   │   │       ├── mailer.ts               # Resend: sendOtpEmail · sendApprovalEmail · sendBroadcastEmail(→bool) · isSmtpConfigured
 │   │   │       ├── push.ts                 # web-push: sendPushToUser · sendPushToAll
 │   │   │       ├── vapid.ts                # VAPID key auto-generation + env detection
 │   │   │       ├── otp-cleanup.ts          # Hourly job: prunes expired OTP rows
 │   │   │       ├── async-handler.ts        # asyncHandler(fn) — wraps async route handlers to forward rejections to next()
 │   │   │       ├── ledgerHelpers.ts        # Pure ledger helpers: nowInIST · istDateStr · resolveDateRange · lockUserEntries · recalculateBalances · generateReceiptNumber · formatEntry · getUserFilter · entryColumns
-│   │   │       └── queue-client.ts         # enqueueNotification/enqueueEmail — BullMQ when REDIS_URL set, direct fallback otherwise
+│   │   │       └── queue-client.ts         # enqueueNotification — BullMQ when REDIS_URL set, direct fallback otherwise
 │   │   │   ├── services/
 │   │   │   │   ├── adminStatsService.ts    # Cross-user stats: getUsersOverview · getRecentAuditLogs · getDbStats (135 ln)
 │   │   │   │   ├── adminUserService.ts     # Per-user admin queries: getUserLedger (36 ln)
@@ -160,7 +160,6 @@ workspace/
 │   │   │   ├── connection.ts    # Shared ioredis ConnectionOptions
 │   │   │   └── workers/
 │   │   │       ├── notification.worker.ts  # web-push jobs
-│   │   │       ├── email.worker.ts         # nodemailer jobs
 │   │   │       ├── pdf.worker.ts           # PDF generation (stub)
 │   │   │       └── sms.worker.ts           # SMS (stub)
 │   │   └── build.mjs
@@ -437,7 +436,7 @@ workspace/
 | Validation | Zod (`zod/v4`), drizzle-zod | |
 | API contracts | OpenAPI 3.1 → Orval codegen → typed React Query hooks | |
 | Push | web-push (VAPID) | Auto-generates keys on startup if not set |
-| Email | Nodemailer (any SMTP provider) | Disabled gracefully if SMTP not configured |
+| Email | Resend HTTP API (`RESEND_API_KEY`) | Disabled gracefully if key not configured; `RESEND_FROM` must be a verified domain address |
 | i18n | i18next + react-i18next (EN / HI / OR) | |
 | Build | esbuild (API ESM bundle), Vite (frontend) | |
 | PWA | vite-plugin-pwa + Workbox | injectManifest strategy with custom `sw.ts` |
@@ -667,13 +666,16 @@ Permissions by role:
 - `operator`: `["ledger", "aeps", "reports", "udhari", "services", "profile", "notifications"]`
 - `user`: `["ledger:view", "reports:view", "services:view", "profile:view", "notifications:view"]`
 
-### 5.4 SMTP & Email
+### 5.4 Resend Email
 
-`lib/mailer.ts` provides:
-- `isSmtpConfigured()` — returns `true` when `SMTP_HOST` + `SMTP_USER` + (`SMTP_PASSWORD` or legacy `SMTP_PASS`) are all set; email is optional at boot
+`lib/mailer/` provides:
+- `isSmtpConfigured()` — returns `true` when `RESEND_API_KEY` is set; email is optional at boot
 - `sendOtpEmail(to, otp, type)` — 6-digit OTP email with copy block + auto-fill hint
-- `sendApprovalEmail(to, status)` — registration approval/rejection
-- `sendBroadcastEmail(recipients, subject, body)` — admin email blast
+- `sendApprovalEmail(to, name)` — registration approval notification
+- `sendRejectionEmail(to, name, reason?)` — registration rejection notification
+- `sendBroadcastEmail(to, subject, html, text): Promise<boolean>` — single-recipient send; returns `true` on success; caller batches in chunks of 8 with 1.1 s gap to respect Resend's 10 req/s limit
+
+`env.ts` warns at startup when `RESEND_API_KEY` is set but `RESEND_FROM` is missing or still points at `onboarding@resend.dev` (sandbox mode — only delivers to the Resend account owner's own email, 403s on all real users).
 
 ### 5.5 VAPID Push
 
@@ -1057,7 +1059,7 @@ Returns `{ configured: boolean, missing: Array<{ key, label, severity, descripti
 
 Checks:
 - `SESSION_SECRET` → critical
-- `SMTP_HOST` + `SMTP_USER` + `SMTP_PASSWORD` (or `SMTP_PASS`) → optional email group; missing SMTP disables email OTP/password reset/notifications but does not prevent app boot
+- `RESEND_API_KEY` → optional email; missing key disables OTP/approval/broadcast emails but does not prevent app boot. `RESEND_FROM` must be a verified sender domain (not `onboarding@resend.dev`)
 - VAPID keys + persistent flag → optional
 
 ### `SetupWizardBanner`
@@ -1087,7 +1089,7 @@ pnpm --filter @workspace/db run push
 | Item | Where |
 |------|-------|
 | `SESSION_SECRET` | Replit Secrets tab |
-| `SMTP_*` (5 vars) | Replit Secrets tab, only when email features are needed |
+| `RESEND_API_KEY`, `RESEND_FROM` | Replit Secrets / env, only when email features are needed |
 | `B2_KEY_ID`, `B2_APP_KEY`, `B2_BUCKET_NAME`, `B2_BUCKET_ENDPOINT` | Replit Secrets / shared env, only when external avatar/backup storage is needed |
 | `VAPID_*` (optional) | Replit Secrets tab |
 | Run "Seed Database" workflow | Replit Workflows panel (one-time) |
@@ -1101,11 +1103,8 @@ pnpm --filter @workspace/db run push
 | `NEON_DATABASE_URL` | ✅ | Neon PostgreSQL connection string — Replit Secret (takes priority) |
 | `DATABASE_URL` | fallback | Replit-managed PostgreSQL — auto-injected; used only if `NEON_DATABASE_URL` is absent |
 | `SESSION_SECRET` | ✅ | Express session signing secret |
-| `SMTP_HOST` | ✅ for email | SMTP server hostname |
-| `SMTP_PORT` | ✅ for email | SMTP port (587 / 465) |
-| `SMTP_USER` | ✅ for email | SMTP username |
-| `SMTP_PASS` | ✅ for email | SMTP password / app password |
-| `SMTP_FROM_EMAIL` | Optional | From address (defaults to `SMTP_USER`) |
+| `RESEND_API_KEY` | ✅ for email | Resend HTTP API key (resend.com → API Keys) |
+| `RESEND_FROM` | ✅ for email | Verified sender address, e.g. `SAHU CSC <info@sahucsc.dpdns.org>` |
 | `VAPID_PUBLIC_KEY` | Recommended | Web push public key |
 | `VAPID_PRIVATE_KEY` | Recommended | Web push private key |
 | `VAPID_EMAIL` | Optional | VAPID contact email |
