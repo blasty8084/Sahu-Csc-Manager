@@ -47,29 +47,69 @@ function DrumColumn({
   onChange: (i: number) => void;
   accent?: boolean;
 }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const startY       = useRef<number | null>(null);
-  const startIdx     = useRef(selectedIndex);
-  const didDrag      = useRef(false);
+  const containerRef  = useRef<HTMLDivElement>(null);
+  const startY        = useRef<number | null>(null);
+  const startIdx      = useRef(selectedIndex);
+  const didDrag       = useRef(false);
+  const [dragOffset, setDragOffset] = useState(0);
+  const [isDragging,  setIsDragging]  = useState(false);
+
+  // Clamp a raw translate value to the valid item range
+  const clampTranslate = useCallback((t: number) => {
+    const max = DRUM_H;                              // index 0 centred
+    const min = DRUM_H - (items.length - 1) * DRUM_H; // last index centred
+    return Math.max(min, Math.min(max, t));
+  }, [items.length]);
 
   function onPointerDown(e: React.PointerEvent) {
-    didDrag.current = false;
-    startY.current  = e.clientY;
+    didDrag.current  = false;
+    startY.current   = e.clientY;
     startIdx.current = selectedIndex;
+    setIsDragging(true);
+    setDragOffset(0);
     containerRef.current?.setPointerCapture(e.pointerId);
   }
   function onPointerMove(e: React.PointerEvent) {
     if (startY.current === null) return;
     const delta = e.clientY - startY.current;
     if (Math.abs(delta) > 3) didDrag.current = true;
+    setDragOffset(delta);
+    // Live-update the highlighted index while dragging
     const shifted = Math.round(-delta / DRUM_H);
     const next = Math.max(0, Math.min(items.length - 1, startIdx.current + shifted));
     if (next !== selectedIndex) onChange(next);
   }
   function onPointerUp(e: React.PointerEvent) {
+    if (startY.current !== null) {
+      const delta = e.clientY - startY.current;
+      const shifted = Math.round(-delta / DRUM_H);
+      const next = Math.max(0, Math.min(items.length - 1, startIdx.current + shifted));
+      onChange(next);
+    }
     startY.current = null;
+    setIsDragging(false);
+    setDragOffset(0);
     containerRef.current?.releasePointerCapture(e.pointerId);
   }
+
+  // Mouse-wheel support for desktop
+  function onWheel(e: React.WheelEvent) {
+    e.preventDefault();
+    const direction = e.deltaY > 0 ? 1 : -1;
+    const next = Math.max(0, Math.min(items.length - 1, selectedIndex + direction));
+    onChange(next);
+  }
+
+  // Visual transform: smooth continuous during drag, snap-with-transition on release
+  const baseTranslate  = DRUM_H - selectedIndex * DRUM_H;
+  const dragTranslate  = clampTranslate(DRUM_H - startIdx.current * DRUM_H + dragOffset);
+  const translateY     = isDragging ? dragTranslate : baseTranslate;
+
+  // Display index for size/colour: during drag use the live startIdx + offset
+  const visualIndex = isDragging
+    ? Math.max(0, Math.min(items.length - 1,
+        startIdx.current + Math.round(-dragOffset / DRUM_H)))
+    : selectedIndex;
 
   return (
     <div
@@ -80,14 +120,18 @@ function DrumColumn({
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
+      onWheel={onWheel}
     >
       {/* scrolling strip */}
       <div
-        className="flex flex-col w-full transition-transform duration-200 ease-out"
-        style={{ transform: `translateY(${DRUM_H - selectedIndex * DRUM_H}px)` }}
+        className="flex flex-col w-full"
+        style={{
+          transform: `translateY(${translateY}px)`,
+          transition: isDragging ? "none" : "transform 200ms ease-out",
+        }}
       >
         {items.map((item, idx) => {
-          const dist = Math.abs(idx - selectedIndex);
+          const dist = Math.abs(idx - visualIndex);
           return (
             <div
               key={idx}
@@ -100,7 +144,7 @@ function DrumColumn({
                 fontWeight:   dist === 0 ? 700 : 400,
                 color:        dist === 0 ? (accent ? "#f97316" : "#0f172a") : dist === 1 ? "#94a3b8" : "#cbd5e1",
                 letterSpacing: dist === 0 ? "-0.02em" : "0",
-                transition:   "all 200ms ease",
+                transition:   isDragging ? "none" : "all 200ms ease",
               }}>
                 {item}
               </span>
