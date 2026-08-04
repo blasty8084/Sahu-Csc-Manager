@@ -153,10 +153,10 @@ export async function nodeDump(filepath: string): Promise<void> {
     await write(`-- Backup complete\n`);
 
     // Flush and close the write stream
-    await new Promise<void>((res, rej) => ws.end((err) => (err ? rej(err) : res())));
+    await new Promise<void>((res, rej) => ws.end((err: unknown) => (err ? rej(err) : res())));
 
     logger.info({ filepath }, "nodeDump: complete");
-  } catch (err) {
+  } catch (err: unknown) {
     // Ensure the stream is closed before re-throwing
     ws.destroy();
     throw err;

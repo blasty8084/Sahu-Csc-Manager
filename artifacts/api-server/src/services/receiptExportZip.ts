@@ -9,7 +9,8 @@ import {
 import type { BulkExportQuery } from "./receiptExportSchemas";
 
 const _require = createRequire(import.meta.url);
-const { ZipArchive } = _require("archiver") as typeof import("archiver");
+// @ts-ignore — archiver v8 ships ESM-only with no bundled .d.ts; types not available
+const { ZipArchive } = _require("archiver") as any;
 
 const PAGE_SIZE = 200;
 

@@ -41,7 +41,7 @@ function getQueue(): Queue | null {
   if (!url) return null;
   try {
     const connection = new IORedis(url, { maxRetriesPerRequest: null });
-    notificationQueue = new Queue("notifications", { connection });
+    notificationQueue = new Queue("notifications", { connection: connection as any });
   } catch {
     notificationQueue = null;
   }

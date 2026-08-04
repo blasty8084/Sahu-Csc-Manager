@@ -28,7 +28,7 @@ export async function sendApprovalEmail(to: string, name: string): Promise<void>
 
 export async function sendRejectionEmail(to: string, name: string, reason?: string): Promise<void> {
   const { buildRejectionMailOptions } = await import("./templates/rejection");
-  const opts = buildRejectionMailOptions(to, name, reason);
+  const opts = buildRejectionMailOptions(to, name, reason ?? null);
   await send(opts.to, opts.subject, opts.html, opts.text);
 }
 

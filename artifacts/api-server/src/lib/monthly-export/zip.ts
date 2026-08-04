@@ -4,7 +4,8 @@ import { createRequire } from "node:module";
 import { generateReceiptPdf, type BizInfo } from "./pdf";
 
 const _require = createRequire(import.meta.url);
-const { ZipArchive } = _require("archiver") as typeof import("archiver");
+// @ts-ignore — archiver v8 ships ESM-only with no bundled .d.ts; types not available
+const { ZipArchive } = _require("archiver") as any;
 
 export async function buildMonthlyZip(year: number, month: number): Promise<Buffer> {
   const startDate = `${year}-${String(month).padStart(2, "0")}-01`;

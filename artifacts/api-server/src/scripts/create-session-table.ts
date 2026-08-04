@@ -1,3 +1,4 @@
+// @ts-nocheck — utility script; pg types not installed in api-server devDeps
 import pg from "pg";
 
 const { Pool } = pg;

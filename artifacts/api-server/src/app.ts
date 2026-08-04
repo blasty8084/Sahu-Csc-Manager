@@ -100,7 +100,7 @@ function makeRedisStore(prefix: string) {
     // rate-limit-redis calls sendCommand(command, ...args).
     // @upstash/redis is an HTTP client with no sendCommand method, so we
     // talk to the Upstash REST API directly: POST <url> with body = [cmd, ...args].
-    sendCommand: async (...args: string[]): Promise<unknown> => {
+    sendCommand: (async (...args: string[]) => {
       const res = await fetch(url, {
         method: "POST",
         headers: {
@@ -112,7 +112,7 @@ function makeRedisStore(prefix: string) {
       const json = (await res.json()) as { result: unknown; error?: string };
       if (json.error) throw new Error(`Upstash error: ${json.error}`);
       return json.result;
-    },
+    }) as any,
   });
 }
 

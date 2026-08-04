@@ -111,30 +111,8 @@ router.post("/auth/register", asyncHandler(async (req, res) => {
       .where(eq(emailOtpsTable.id, otpRecord.id));
   }
 
-  // Check uniqueness (no-2FA path — 2FA path already checked above)
-  if (twoFaGloballyDisabled) {
-    const conditions: any[] = [
-      eq(usersTable.username, data.username),
-      eq(usersTable.email, data.email),
-    ];
-    if (data.mobile) conditions.push(eq(usersTable.mobile, data.mobile));
-
-    const [existing] = await db
-      .select({ id: usersTable.id, username: usersTable.username, email: usersTable.email, mobile: usersTable.mobile })
-      .from(usersTable)
-      .where(or(...conditions));
-
-    if (existing) {
-      if (existing.username === data.username) {
-        res.status(409).json({ error: "Username already taken" });
-      } else if (existing.email === data.email) {
-        res.status(409).json({ error: "Email already registered" });
-      } else {
-        res.status(409).json({ error: "Mobile number already registered" });
-      }
-      return;
-    }
-  }
+  // Uniqueness is checked during OTP verification above (2FA is permanently ON).
+  // The no-2FA uniqueness block was removed when DISABLE_2FA support was dropped.
 
   const passwordHash = await hashPassword(data.password);
   const [user] = await db
