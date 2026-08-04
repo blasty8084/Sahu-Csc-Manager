@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Platform Documentation
-**Version 4.10.8** — last updated 2026-08-04
+**Version 4.10.3** — last updated 2026-08-02
 
 > Common Service Center (CSC) Business Management Platform for Odisha / India rural service centers.
 > Full-stack · PWA · Offline-capable · Multilingual (English / Hindi / Odia)
@@ -62,17 +62,6 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 ---
 
 ## 2. Version History
-
-### v4.10.8 — Email Delivery Fixes (2026-08-04)
-
-- **RESEND_FROM switched to verified sender** — `RESEND_FROM` env var was `"SAHU CSC <info@sahucsc.dpdns.org>"` (unverified custom domain). Resend showed emails as "Sent" but Gmail silently dropped them (no SPF/DKIM). Changed to `"SAHU CSC <onboarding@resend.dev>"` — Resend's own pre-verified shared sender. To use a branded address later: verify `sahucsc.dpdns.org` in resend.com → Domains, then update the env var.
-- **Admin password-reset email fixed (422 + undefined link)** — `sendAdminResetLinkEmail` existed in two places: a simple 2-arg `(to, link)` stub in `mailer/index.ts` and the correct rich-HTML `({ to, displayName, resetUrl, ... })` version in `templates/adminAlerts.ts`. The route imported from `index.ts`, so the whole options object was passed as `to` (Resend returned 422 "to must be a string") and `link` was `undefined` (broken href). Fixed by removing the stub from `index.ts` and re-exporting the correct function from `adminAlerts.ts`. File: `artifacts/api-server/src/lib/mailer/index.ts`.
-
-### v4.10.7 — SMTP Removal, Avatar Fix, Clock Fix (2026-08-03)
-
-- **SMTP references removed; monthly export email activated** — `scripts/test-services.ts` uses `testResend()`. `lib/monthly-export/email.ts` upgraded from no-op to real Resend send.
-- **Sidebar avatar shows profile picture** — `fmtUser()` in `routes/auth/helpers.ts` now resolves `b2:`-prefixed profile picture keys to signed URLs.
-- **Backup time picker 24h→12h display** — `ClockTimePicker` trigger and `BackupScheduleCard` label both show 12-hour format consistently.
 
 ### v4.10.3 — Analog Dial Picker v2 + Gitignore Scope Fix (2026-08-02)
 
@@ -513,9 +502,9 @@ All secrets are managed in the Replit Secrets tab (🔒 icon in left sidebar). N
 | Variable / Secret | Purpose |
 |----------|---------|
 | `RESEND_API_KEY` *(Secret)* | Resend HTTP API key — resend.com → API Keys → Create API Key |
-| `RESEND_FROM` *(Env var)* | Sender address — currently `SAHU CSC <onboarding@resend.dev>` (Resend's pre-verified shared domain, delivers to all inboxes). To use a custom address: verify your domain in resend.com → Domains, then change to e.g. `SAHU CSC <info@sahucsc.dpdns.org>`. |
+| `RESEND_FROM` *(Env var)* | Sender address, e.g. `SAHU CSC <info@sahucsc.dpdns.org>` — must be from a verified Resend domain. **Do NOT use `noreply@`** — Gmail bounces emails from noreply senders on free dynamic DNS domains. |
 
-> Without `RESEND_API_KEY`, OTP login, password reset, and admin email broadcast are disabled. Username + password login still works.
+> Without `RESEND_API_KEY`, OTP login, password reset, and admin email broadcast are disabled. Username + password login still works. Verified domain `sahucsc.dpdns.org` is configured — all recipient email addresses are supported.
 
 ### Required for Redis cache & background jobs
 
