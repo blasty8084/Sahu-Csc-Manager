@@ -1,19 +1,18 @@
 # BUILD.md — SAHU CSC Manager
+**Last updated: 2026-08-03 | Version: 4.10.7+**
 
 ## Architecture
 
 ```
 Replit (Code + Test)
-    ↓ git push
+    ↓ git push (with PAT token)
 GitHub (blasty8084/Sahu-Csc-Manager)
-    ↓ GitHub Actions (auto on push to main)
-    ├── Vercel  → Frontend (sahu-csc.vercel.app)
-    └── Render  → Backend API (sahu-csc-api.onrender.com)
+    ↓ GitHub Actions — .github/workflows/deploy.yml
+    ├── Vercel  → Frontend (sahu-csc-manager-sahu-csc.vercel.app)
+    └── Render  → Backend API (sahu-csc-api-02wn.onrender.com)
 ```
 
 ## Development Workflow
-
-Code in Replit → Push GitHub → Auto deploy
 
 | Tool | Purpose |
 |---|---|
@@ -48,17 +47,40 @@ Code in Replit → Push GitHub → Auto deploy
 
 ---
 
-## Quick Commands (Replit Shell)
+## Quick Push Command (Replit Shell)
 
 ```bash
-make install               # pnpm install
-make dev-api               # Start API server (port 8080)
-make dev-web               # Start frontend (port 5000)
-make build                 # Build both frontend + backend
-make typecheck             # Run TypeScript checks
-make push msg="feat: xyz"  # Commit + push → triggers auto deploy
-make status                # git status + last 5 commits
+GIT_ASKPASS=true git push https://blasty8084:ghp_YourToken@github.com/blasty8084/Sahu-Csc-Manager.git main
 ```
+
+Or after setting remote URL once:
+```bash
+git remote set-url origin https://blasty8084:ghp_YourToken@github.com/blasty8084/Sahu-Csc-Manager.git
+make push msg="feat: your change"
+```
+
+---
+
+## GitHub Actions — deploy.yml
+
+### Current Working Configuration
+```yaml
+Node.js:   22  (matches Render production)
+pnpm:      10  (matches package.json engines requirement)
+Vercel:    vercel pull → vercel build → vercel deploy --prebuilt
+Render:    curl -f -X POST (deploy hook with error checking)
+```
+
+### Flow
+1. `git push` → GitHub Actions trigger
+2. **Job 1** — Deploy Frontend to Vercel:
+   - `pnpm install --frozen-lockfile`
+   - `vercel pull --yes --environment=production` → downloads `.vercel/output` config
+   - `vercel build --prod` → creates `.vercel/output/` directory
+   - `vercel deploy --prebuilt --prod` → uploads prebuilt output
+3. **Job 2** — Trigger Render Deploy:
+   - `curl -f -X POST $RENDER_DEPLOY_HOOK_URL` → Render rebuilds backend
+4. Both live in ~3-5 minutes
 
 ---
 
@@ -73,10 +95,20 @@ make status                # git status + last 5 commits
 
 ---
 
-## Deployment Flow
+## GitHub Actions Fix History
 
-1. `make push msg="..."` → pushes to GitHub `main`
-2. GitHub Actions runs `.github/workflows/deploy.yml`
-3. Job 1: builds frontend → deploys to Vercel (`--prod`)
-4. Job 2: hits Render deploy hook → Render rebuilds backend
-5. Both live in ~3-5 minutes
+| Issue | Fix | Date |
+|---|---|---|
+| pnpm v8 incompatible | Upgraded to pnpm v10 | 2026-08-03 |
+| `amondnet/vercel-action@v25` outdated (Vercel CLI <47.2.2) | Switched to direct `vercel` CLI | 2026-08-03 |
+| `--prebuilt` failed — no `.vercel/output/` | Added `vercel pull` + `vercel build` before deploy | 2026-08-03 |
+| Node 20 deprecated → forced to Node 24 | Set explicit `node-version: '22'` | 2026-08-03 |
+
+---
+
+## PAT Token Setup (for git push from Replit)
+
+1. github.com → Settings → Developer settings → **Tokens (classic)**
+2. Scopes: ✅ `repo` + ✅ `workflow`
+3. Token starts with `ghp_`
+4. Use in push URL: `https://blasty8084:ghp_token@github.com/...`

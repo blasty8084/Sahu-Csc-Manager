@@ -23,14 +23,25 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build frontend
-        run: pnpm --filter @workspace/sahu-csc run build
-
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
 
+      - name: Pull Vercel environment
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        working-directory: artifacts/sahu-csc
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Build via Vercel
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        working-directory: artifacts/sahu-csc
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
       - name: Deploy to Vercel (prebuilt)
-        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }} --yes
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
         working-directory: artifacts/sahu-csc
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -41,4 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Render Deploy Hook
-        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          curl -f -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" \
+            -H "Accept: application/json" \
+            --max-time 30
