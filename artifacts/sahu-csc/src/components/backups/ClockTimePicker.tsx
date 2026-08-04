@@ -92,13 +92,29 @@ function DrumColumn({
     containerRef.current?.releasePointerCapture(e.pointerId);
   }
 
-  // Mouse-wheel support for desktop
-  function onWheel(e: React.WheelEvent) {
-    e.preventDefault();
-    const direction = e.deltaY > 0 ? 1 : -1;
-    const next = Math.max(0, Math.min(items.length - 1, selectedIndex + direction));
-    onChange(next);
-  }
+  // Mouse-wheel support — must be a native non-passive listener so preventDefault works.
+  // React synthetic onWheel is passive by default; calling e.preventDefault() there is a no-op
+  // and the wheel event propagates to the page, scrolling the background.
+  const selectedIndexRef = useRef(selectedIndex);
+  const onChangeRef      = useRef(onChange);
+  const itemsLenRef      = useRef(items.length);
+  useEffect(() => { selectedIndexRef.current = selectedIndex; }, [selectedIndex]);
+  useEffect(() => { onChangeRef.current = onChange; },          [onChange]);
+  useEffect(() => { itemsLenRef.current  = items.length; },     [items.length]);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const handler = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const direction = e.deltaY > 0 ? 1 : -1;
+      const next = Math.max(0, Math.min(itemsLenRef.current - 1, selectedIndexRef.current + direction));
+      onChangeRef.current(next);
+    };
+    el.addEventListener("wheel", handler, { passive: false });
+    return () => el.removeEventListener("wheel", handler);
+  }, []); // attach once; refs keep values fresh
 
   // Visual transform: smooth continuous during drag, snap-with-transition on release
   const baseTranslate  = DRUM_H - selectedIndex * DRUM_H;
@@ -120,7 +136,6 @@ function DrumColumn({
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
-      onWheel={onWheel}
     >
       {/* scrolling strip */}
       <div
@@ -193,6 +208,13 @@ function DrumScrollSheet({
   const [hourIdx,   setHourIdx]   = useState(init.hourIdx);
   const [minIdx,    setMinIdx]    = useState(init.minIdx);
   const [periodIdx, setPeriodIdx] = useState(init.periodIdx);
+
+  // Lock page scroll while the modal is open
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, []);
 
   function handleConfirm() {
     const h24 = to24(Number(HOURS[hourIdx]), PERIODS[periodIdx]);
