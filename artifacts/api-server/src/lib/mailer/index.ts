@@ -6,7 +6,7 @@ export { isSmtpConfigured };
 export { sendOtpEmail, buildOtpMailOptions } from "./templates/otp";
 export { buildApprovalMailOptions } from "./templates/approval";
 export { buildRejectionMailOptions } from "./templates/rejection";
-export { sendAdminResetLinkEmail } from "./templates/adminAlerts";
+export { sendAdminResetLinkEmail, sendNewRegistrationAdminEmail } from "./templates/adminAlerts";
 
 // ── Simple direct-send helper ─────────────────────────────────────────────────
 async function send(to: string, subject: string, html: string, text: string): Promise<void> {
@@ -32,19 +32,9 @@ export async function sendRejectionEmail(to: string, name: string, reason?: stri
   await send(opts.to, opts.subject, opts.html, opts.text);
 }
 
-export async function sendNewRegistrationAdminEmail(adminEmails: string[], username: string): Promise<void> {
-  for (const email of adminEmails) {
-    await send(
-      email,
-      "New registration pending approval",
-      `<p>New user <strong>${username}</strong> has registered and is pending approval.</p>`,
-      `New user ${username} has registered and is pending approval.`,
-    );
-  }
-}
-
 export async function sendBroadcastEmail(to: string, subject: string, html: string, text: string): Promise<void> {
   await send(to, subject, html, text);
 }
 
-// sendAdminResetLinkEmail is re-exported from ./templates/adminAlerts above.
+// sendAdminResetLinkEmail and sendNewRegistrationAdminEmail are re-exported
+// from ./templates/adminAlerts above — they use the rich V2 dark template.
