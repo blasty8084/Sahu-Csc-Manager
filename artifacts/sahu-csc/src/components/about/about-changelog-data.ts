@@ -3,6 +3,56 @@
 
 export const CHANGELOG = [
   {
+    version: "v4.10.11",
+    title: "Resend Email Hardening & TypeScript Typecheck Clean",
+    date: "2026-08-04",
+    accent: "var(--color-success)",
+    changes: [
+      "Broadcast email no longer hits Resend's 10 req/s rate limit — sends are now chunked in batches of 8 with a 1.1-second gap between batches instead of firing all recipients at once via Promise.all",
+      "Broadcast sent/failed counts are now accurate — sendBroadcastEmail returns a real success/failure result; failedCount in broadcast history was always 0 before this fix",
+      "Orphaned SMTP email worker removed — email.worker.ts (Nodemailer/SMTP) was dead code left over from the Resend migration; it was never fed jobs but was a silent landmine if someone re-connected the queue",
+      "enqueueEmail stub and EmailJobData type removed from queue-client — email is sent directly by the mailer helpers everywhere; the no-op stub was misleading",
+      "nodemailer and @types/nodemailer removed from worker-server dependencies — no SMTP code remains anywhere in the project",
+      "Startup warning added when RESEND_API_KEY is set but RESEND_FROM is missing or still points at the Resend sandbox address (onboarding@resend.dev) — sandbox mode only delivers to the Resend account owner and 403s on all real users",
+      "TypeScript typecheck passes with zero errors in both api-server and worker-server — fixed 8 pre-existing type errors including dead twoFaGloballyDisabled code in register.ts",
+    ],
+  },
+  {
+    version: "v4.10.10",
+    title: "Admin Registration-Alert Email Fix",
+    date: "2026-08-04",
+    accent: "var(--color-warning)",
+    changes: [
+      "Admin registration-alert emails were never delivered — register.ts called sendNewRegistrationAdminEmail with the correct rich-object signature, but mailer/index.ts had a local stub with a completely different two-argument signature that silently discarded the call",
+      "Fix: removed the stub; re-exported the correct rich-HTML version from templates/adminAlerts.ts which was already implemented but shadowed",
+      "No admin was ever notified of new registration requests via email; this is now working correctly",
+    ],
+  },
+  {
+    version: "v4.10.9",
+    title: "Complete Resend Migration — Nodemailer Fully Removed",
+    date: "2026-08-04",
+    accent: "var(--brand-navy-600)",
+    changes: [
+      "nodemailer and @types/nodemailer removed from api-server — zero import sites remain anywhere in the project",
+      "All email templates (approval, rejection, OTP, admin alerts) now call sendMail() directly instead of going through the createTransporter() compatibility shim",
+      "admin-registration.ts and admin-appeals.ts now call sendApprovalEmail() / sendRejectionEmail() directly — these emails were silently dropped before because enqueueEmail() was always a no-op stub",
+      "All SMTP_USER fallback chains removed from monthly export, settings, seed, test-services, and startup-init",
+      "Startup log added: [EMAIL] Resend email service configured (or warning if RESEND_API_KEY is absent)",
+    ],
+  },
+  {
+    version: "v4.10.4",
+    title: "Auto-Backup & Email Fallback Fixes",
+    date: "2026-08-02",
+    accent: "var(--color-warning)",
+    changes: [
+      "Auto-backup internal route fixed — double /api prefix in the trigger URL caused the scheduled backup to always fail silently",
+      "Auto-backup dedup window extended from 30 to 55 minutes and Backblaze B2 upload re-enabled in the scheduled path",
+      "RESEND_FROM email fallbacks corrected in seed.ts and startup-init.ts — seed accounts no longer fall back to example.com addresses",
+    ],
+  },
+  {
     version: "v4.10.3",
     title: "Analog Dial Picker v2 — Spring Animation & Visual Polish",
     date: "2026-08-02",

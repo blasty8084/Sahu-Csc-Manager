@@ -1,6 +1,6 @@
 {
   "name": "@workspace/sahu-csc",
-  "version": "4.10.3",
+  "version": "4.10.11",
   "private": true,
   "type": "module",
   "scripts": {
