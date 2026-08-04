@@ -1,4 +1,4 @@
-import { createTransporter, esc, getFromEmail, buildV2Html } from "../transport";
+import { sendMail, esc, getFromEmail, buildV2Html } from "../transport";
 
 // ── Admin new-registration alert ──────────────────────────────────────────────
 
@@ -10,7 +10,6 @@ export async function sendNewRegistrationAdminEmail(opts: {
   applicantEmail: string;
   submittedAt: Date;
 }): Promise<void> {
-  const transporter = await createTransporter();
   const fromEmail = getFromEmail();
   const { adminEmail, adminName, applicantUsername, applicantFullName, applicantEmail, submittedAt } = opts;
 
@@ -76,7 +75,7 @@ export async function sendNewRegistrationAdminEmail(opts: {
       This is an automated administrative notification. You will receive one alert per new registration request.
     </p>`;
 
-  await transporter.sendMail({
+  await sendMail({
     from: `"SAHU CSC" <${fromEmail}>`,
     to: adminEmail,
     subject: `SAHU CSC — New registration request from @${applicantUsername}`,
@@ -120,7 +119,6 @@ export async function sendBroadcastEmail(opts: {
   recipients: Array<{ email: string; fullName: string | null; username: string }>;
 }): Promise<{ sent: number; failed: number }> {
   const { subject, body, recipients } = opts;
-  const transporter = await createTransporter();
   const fromEmail = getFromEmail();
 
   const bodyHtml = `
@@ -173,7 +171,7 @@ export async function sendBroadcastEmail(opts: {
   await Promise.allSettled(
     recipients.map(async (r) => {
       try {
-        await transporter.sendMail({
+        await sendMail({
           from: `"SAHU CSC" <${fromEmail}>`,
           to: r.email,
           subject,
@@ -200,7 +198,6 @@ export async function sendAdminResetLinkEmail(opts: {
   expiresAt: Date;
 }): Promise<void> {
   const { to, displayName, username, resetUrl, expiresAt } = opts;
-  const transporter = await createTransporter();
   const fromEmail = getFromEmail();
 
   const expiryTime = expiresAt.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
@@ -251,7 +248,7 @@ export async function sendAdminResetLinkEmail(opts: {
       </tr>
     </table>`;
 
-  await transporter.sendMail({
+  await sendMail({
     from: `"SAHU CSC" <${fromEmail}>`,
     to,
     subject: "SAHU CSC — Your password reset link",

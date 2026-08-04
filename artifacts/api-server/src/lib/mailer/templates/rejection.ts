@@ -1,4 +1,4 @@
-import { createTransporter, esc, getFromEmail, buildV2Html } from "../transport";
+import { sendMail, esc, getFromEmail, buildV2Html } from "../transport";
 
 // ── Registration declined ─────────────────────────────────────────────────────
 
@@ -68,7 +68,5 @@ export function buildRejectionMailOptions(to: string, name: string, reason: stri
 }
 
 export async function sendRejectionEmail(to: string, name: string, reason: string | null): Promise<void> {
-  const opts = buildRejectionMailOptions(to, name, reason);
-  const transporter = await createTransporter();
-  await transporter.sendMail(opts);
+  await sendMail(buildRejectionMailOptions(to, name, reason));
 }

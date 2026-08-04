@@ -4,7 +4,8 @@ export { isSmtpConfigured };
 
 // ── Re-export rich template functions ─────────────────────────────────────────
 export { sendOtpEmail, buildOtpMailOptions } from "./templates/otp";
-export { buildApprovalMailOptions, buildRejectionMailOptions } from "./templates/approval";
+export { buildApprovalMailOptions } from "./templates/approval";
+export { buildRejectionMailOptions } from "./templates/rejection";
 export { sendAdminResetLinkEmail } from "./templates/adminAlerts";
 
 // ── Simple direct-send helper ─────────────────────────────────────────────────

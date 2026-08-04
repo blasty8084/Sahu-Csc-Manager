@@ -28,7 +28,7 @@ router.post("/settings/smtp/test", requireRole("admin"), asyncHandler(async (req
     return;
   }
 
-  const to: string = (req.body?.to as string) || process.env["SMTP_USER"] || "";
+  const to: string = (req.body?.to as string) || "";
   if (!to) {
     res.status(400).json({ error: "No recipient email found. Pass { to: 'email@example.com' } in request body." });
     return;

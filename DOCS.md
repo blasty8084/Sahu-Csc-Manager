@@ -418,10 +418,8 @@ All backend source files over ~300 lines split into focused sub-modules using th
    | `SESSION_SECRET` | Any long random string (e.g. 64 hex chars) |
    | `ADMIN_PASSWORD` | Strong password for the admin account |
    | `OPERATOR_PASSWORD` | Strong password for the operator account |
-   | `SMTP_HOST` | Your SMTP server (e.g. `smtp.gmail.com`) |
-   | `SMTP_PORT` | `587` (TLS) or `465` (SSL) |
-   | `SMTP_USER` | SMTP email address |
-   | `SMTP_PASSWORD` | SMTP password or app password |
+   | `RESEND_API_KEY` | API key from resend.com (required for OTP / email delivery) |
+   | `RESEND_FROM` | Sender address e.g. `SAHU CSC <onboarding@resend.dev>` |
 
 4. **Run the Seed Database workflow** (manual, one-shot) — creates admin and operator accounts.
 5. **Start the project** — API Server + frontend start automatically.
@@ -1038,9 +1036,9 @@ Shown at the top of every admin page when secrets are missing. Session-dismissed
   "configured": false,
   "missing": [
     {
-      "key": "SMTP",
-      "label": "Email / SMTP",
-      "description": "Required for OTP login and email notifications. Missing: SMTP_HOST, SMTP_USER, SMTP_PASSWORD."
+      "key": "RESEND",
+      "label": "Email / Resend",
+      "description": "Required for OTP login and email notifications. Missing: RESEND_API_KEY."
     },
     {
       "key": "VAPID",
@@ -1053,7 +1051,7 @@ Shown at the top of every admin page when secrets are missing. Session-dismissed
 
 Secrets checked (in order):
 1. `SESSION_SECRET` — required
-2. `SMTP_HOST` + `SMTP_USER` + `SMTP_PASSWORD` (or `SMTP_PASS`) — required for email
+2. `RESEND_API_KEY` — required for email (OTP, approvals, notifications)
 3. `ADMIN_PASSWORD` — required for Seed Database workflow
 4. `OPERATOR_PASSWORD` — required for Seed Database workflow
 5. `VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` + persistent flag — optional

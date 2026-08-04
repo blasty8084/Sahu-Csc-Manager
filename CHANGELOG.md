@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Changelog
-**Current version: 4.10.8 — August 4, 2026**
+**Current version: 4.10.9 — August 4, 2026**
 
 > Single authoritative changelog covering all versions from v1.x through v4.x.
 > - **v3.x / v4.x entries** (current) — listed first, newest at top
@@ -9,6 +9,7 @@
 
 ## Table of Contents
 
+0. [Refactor — Complete Resend migration: remove nodemailer, direct sendMail everywhere (August 4, 2026)](#0-refactor--complete-resend-migration-remove-nodemailer-direct-sendmail-everywhere-august-4-2026)
 0. [Fix — OTP email delivery: RESEND_FROM switched to verified sender domain (August 4, 2026)](#0-fix--otp-email-delivery-resend_from-switched-to-verified-sender-domain-august-4-2026)
 0. [Fix — Remove remaining SMTP references; activate monthly export email via Resend (August 3, 2026)](#0-fix--remove-remaining-smtp-references-activate-monthly-export-email-via-resend-august-3-2026)
 0. [Fix — Sidebar avatar shows profile picture instead of initials (August 3, 2026)](#0-fix--sidebar-avatar-shows-profile-picture-instead-of-initials-august-3-2026)
@@ -19,6 +20,47 @@
 0. [Fix — Email OTP never sent + HTML template restored (July 30, 2026)](#0-fix--email-otp-never-sent--html-template-restored-july-30-2026)
 0. [Infra — 2FA permanently hardcoded ON; SMTP fully configured (July 30, 2026)](#0-infra--2fa-permanently-hardcoded-on-smtp-fully-configured-july-30-2026)
 0. [Refactor — Full CSS variable tokenization across 355+ files (July 27, 2026)](#0-refactor--full-css-variable-tokenization-across-355-files-july-27-2026)
+
+---
+
+## 0. Refactor — Complete Resend migration: remove nodemailer, direct sendMail everywhere (August 4, 2026)
+
+**Version: 4.10.9**
+
+### What changed
+
+| File | Change |
+|---|---|
+| `lib/mailer/templates/approval.ts` | `createTransporter().sendMail()` → direct `sendMail()` |
+| `lib/mailer/templates/rejection.ts` | `createTransporter().sendMail()` → direct `sendMail()` |
+| `lib/mailer/templates/otp.ts` | `createTransporter().sendMail()` → direct `sendMail()` |
+| `lib/mailer/templates/adminAlerts.ts` | All 3 functions: `transporter.sendMail()` → `sendMail()` |
+| `lib/mailer/index.ts` | Fixed: `buildRejectionMailOptions` was wrongly re-exported from `approval.ts`; moved to `rejection.ts` |
+| `routes/admin-registration.ts` | `enqueueEmail(buildApprovalMailOptions(...))` → `sendApprovalEmail(...)` directly |
+| `routes/admin-registration.ts` | `enqueueEmail(buildRejectionMailOptions(...))` → `sendRejectionEmail(...)` directly |
+| `routes/admin-appeals.ts` | `enqueueEmail(buildApprovalMailOptions(...))` → `sendApprovalEmail(...)` directly |
+| `src/index.ts` | Added startup log: `[EMAIL] Resend email service configured` / warning if key missing |
+| `lib/monthly-export/email.ts` | Removed `SMTP_USER` fallback for recipient — use `ADMIN_EMAIL` only |
+| `routes/settings/smtp.ts` | Removed `SMTP_USER` fallback for test-email recipient |
+| `scripts/test-services.ts` | Removed `SMTP_USER` fallback; updated log message |
+| `scripts/seed.ts` | Removed `SMTP_USER` fallbacks from `adminEmail` and `businessEmail` |
+| `lib/startup-init.ts` | Removed `SMTP_USER` fallback from `adminEmail` |
+| `artifacts/api-server/package.json` | Removed `nodemailer` + `@types/nodemailer` packages |
+| `.env.example` | Removed legacy `SMTP_*` commented lines; updated `RESEND_FROM` example |
+
+### Why
+- `enqueueEmail()` in `queue-client.ts` has always been a no-op stub. Approval/rejection emails from `admin-registration.ts` and `admin-appeals.ts` were silently dropped.
+- Templates still used the `createTransporter()` compatibility shim — unnecessary indirection.
+- `SMTP_USER` environment variable has no meaning in a Resend-only setup; all fallback chains now stop at `ADMIN_EMAIL`.
+- `nodemailer` package was still listed as a runtime dependency despite having zero import sites.
+
+### Not changed
+- All HTML email template content and design (V2 dark premium style preserved)
+- OTP generation and verification logic
+- Database schema or migrations
+- Frontend code or UI
+- Existing API response shapes
+- `buildV2Html()`, `esc()` helpers in `transport.ts`
 
 ---
 

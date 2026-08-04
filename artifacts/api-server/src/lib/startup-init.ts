@@ -54,7 +54,7 @@ async function seedDefaultUsers(): Promise<void> {
       : "startup-init: first boot — creating admin and operator accounts",
   );
 
-  const adminEmail     = process.env["ADMIN_EMAIL"]    ?? process.env["SMTP_USER"]    ?? process.env["RESEND_FROM"]?.match(/<([^>]+)>/)?.[1] ?? "admin@example.com";
+  const adminEmail     = process.env["ADMIN_EMAIL"]    ?? process.env["RESEND_FROM"]?.match(/<([^>]+)>/)?.[1] ?? "admin@example.com";
   const adminMobile    = process.env["ADMIN_MOBILE"]   ?? "0000000000";
   const operatorEmail  = process.env["OPERATOR_EMAIL"] ?? "operator@example.com";
   const operatorMobile = process.env["OPERATOR_MOBILE"] ?? "0000000001";

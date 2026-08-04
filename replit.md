@@ -1,7 +1,11 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 4.10.8** — last updated 2026-08-04
+**Version 4.10.9** — last updated 2026-08-04
 
-> **Latest setup**: After re-import run in order: `pnpm install --frozen-lockfile` → `pnpm --filter @workspace/db run push-force` → `Seed Database` workflow → Secrets needed: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`. `API Server` port 8080 · Vite dev port 5000 · Worker Server skips (`REDIS_URL` not set) · OTP emails active when `RESEND_API_KEY` is set. CORS auto-configured from `REPLIT_DEV_DOMAIN` at startup (no manual update needed). Production: Vercel (frontend) + Render (backend/Neon DB).
+> **Latest setup**: After re-import run in order: `pnpm install --frozen-lockfile` → `pnpm --filter @workspace/db run push-force` → `Seed Database` workflow → Secrets needed: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`, `NEON_DATABASE_URL`, `ENCRYPTION_KEY` (64-char hex), `JWT_SECRET`. OTP emails active when `RESEND_API_KEY` is set. CORS auto-configured from `REPLIT_DEV_DOMAIN` at startup (no manual update needed). Production: Vercel (frontend) + Render (backend/Neon DB).
+
+## Fixes — August 4, 2026 (v4.10.9)
+
+- **Complete Resend migration** — Removed `nodemailer` + `@types/nodemailer` packages (zero import sites remaining). All templates (`approval.ts`, `rejection.ts`, `otp.ts`, `adminAlerts.ts`) now call `sendMail()` directly instead of going through the `createTransporter()` compatibility shim. `admin-registration.ts` and `admin-appeals.ts` now call `sendApprovalEmail()` / `sendRejectionEmail()` directly — approval/rejection emails were silently dropped because `enqueueEmail()` was always a no-op stub. All `SMTP_USER` fallback chains removed from `monthly-export/email.ts`, `settings/smtp.ts`, `scripts/seed.ts`, `scripts/test-services.ts`, `startup-init.ts`. Startup log added: `[EMAIL] Resend email service configured`. `.env.example` updated to remove legacy SMTP comments.
 
 ## Fixes — August 4, 2026
 
@@ -292,10 +296,11 @@ Continuing from the 8.5/10 baseline (N+1 fixes, batched writes, pooled connectio
 | `B2_BUCKET_NAME` | Backblaze B2 bucket name | backblaze.com → Buckets |
 | `B2_BUCKET_ENDPOINT` | B2 S3-compatible endpoint hostname | backblaze.com → Bucket details |
 
-#### Optional secrets
+#### Email secrets (required for OTP / notifications)
 | Secret | Purpose |
 |--------|---------|
-| `SMTP_PASSWORD` | Gmail App Password for OTP / password-reset emails |
+| `RESEND_API_KEY` | Resend API key — resend.com → API Keys |
+| `RESEND_FROM` | Sender address e.g. `SAHU CSC <onboarding@resend.dev>` |
 
 #### Env vars set automatically
 - `DATABASE_URL` — Replit's built-in Postgres (runtime-managed; app prefers `NEON_DATABASE_URL` when both are present)

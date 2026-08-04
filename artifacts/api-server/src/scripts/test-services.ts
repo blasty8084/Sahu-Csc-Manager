@@ -25,10 +25,10 @@ async function testResend() {
     const resend = new Resend(apiKey);
 
     const from  = process.env.RESEND_FROM ?? "SAHU CSC <onboarding@resend.dev>";
-    const to    = process.env.SMTP_USER   ?? process.env.ADMIN_EMAIL ?? "";
+    const to    = process.env.ADMIN_EMAIL ?? "";
 
     if (!to) {
-      console.log(`${SKIP} Resend — no recipient (set SMTP_USER or ADMIN_EMAIL)`);
+      console.log(`${SKIP} Resend — no recipient (set ADMIN_EMAIL)`);
       return;
     }
 

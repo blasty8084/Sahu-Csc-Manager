@@ -15,7 +15,7 @@ export async function sendMonthlyExportEmail(
     return;
   }
 
-  const to = recipientEmail ?? process.env["ADMIN_EMAIL"] ?? process.env["SMTP_USER"];
+  const to = recipientEmail ?? process.env["ADMIN_EMAIL"];
   if (!to) {
     logger.warn({ year, month }, "Monthly export: no recipient email configured");
     return;

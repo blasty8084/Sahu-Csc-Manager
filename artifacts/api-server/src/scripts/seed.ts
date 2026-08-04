@@ -20,8 +20,8 @@ async function seed() {
 
   // Seed contact details — read from env vars so no personal data is hard-coded.
   // ADMIN_EMAIL — set this in Render env vars to your actual email address.
-  // Falls back to SMTP_USER (legacy), then a generic placeholder.
-  const adminEmail    = process.env.ADMIN_EMAIL    ?? process.env.SMTP_USER    ?? process.env.RESEND_FROM?.match(/<([^>]+)>/)?.[1] ?? "admin@example.com";
+  // Falls back to RESEND_FROM sender address, then a generic placeholder.
+  const adminEmail    = process.env.ADMIN_EMAIL    ?? process.env.RESEND_FROM?.match(/<([^>]+)>/)?.[1] ?? "admin@example.com";
   const adminMobile   = process.env.ADMIN_MOBILE   ?? "0000000000";
   const operatorEmail = process.env.OPERATOR_EMAIL ?? "operator@example.com";
   const operatorMobile = process.env.OPERATOR_MOBILE ?? "0000000001";
@@ -99,7 +99,7 @@ async function seed() {
     businessName:         process.env.BUSINESS_NAME    ?? "SAHU CSC Center",
     businessAddress:      process.env.BUSINESS_ADDRESS ?? "Odisha, India",
     businessMobile:       process.env.ADMIN_MOBILE     ?? process.env.BUSINESS_MOBILE ?? "0000000000",
-    businessEmail:        process.env.ADMIN_EMAIL      ?? process.env.SMTP_USER        ?? process.env.RESEND_FROM?.match(/<([^>]+)>/)?.[1] ?? "admin@example.com",
+    businessEmail:        process.env.ADMIN_EMAIL      ?? process.env.RESEND_FROM?.match(/<([^>]+)>/)?.[1] ?? "admin@example.com",
     language: "en",
     theme: "light",
     currency: "INR",

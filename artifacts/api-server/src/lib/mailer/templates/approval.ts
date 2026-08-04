@@ -1,4 +1,4 @@
-import { createTransporter, esc, getFromEmail, buildV2Html } from "../transport";
+import { sendMail, esc, getFromEmail, buildV2Html } from "../transport";
 
 // ── Account approved ──────────────────────────────────────────────────────────
 
@@ -75,7 +75,5 @@ export function buildApprovalMailOptions(to: string, name: string): {
 }
 
 export async function sendApprovalEmail(to: string, name: string): Promise<void> {
-  const opts = buildApprovalMailOptions(to, name);
-  const transporter = await createTransporter();
-  await transporter.sendMail(opts);
+  await sendMail(buildApprovalMailOptions(to, name));
 }

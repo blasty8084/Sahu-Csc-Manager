@@ -19,12 +19,22 @@ async function getKey(): Promise<Buffer> {
   if (keyPromise) return keyPromise;
 
   keyPromise = (async () => {
-    // Allow an operator-supplied key via secret (32 random bytes, base64)
-    const envKey = process.env.ENCRYPTION_KEY;
+    // Allow an operator-supplied key via secret.
+    // Accepts either:
+    //   • 64-char hex string (32 bytes)   — as documented in secrets.md
+    //   • base64-encoded 32 bytes          — legacy format
+    const envKey = process.env.ENCRYPTION_KEY?.trim();
     if (envKey) {
-      const buf = Buffer.from(envKey, "base64");
+      let buf: Buffer;
+      if (/^[0-9a-fA-F]{64}$/.test(envKey)) {
+        buf = Buffer.from(envKey, "hex");
+      } else {
+        buf = Buffer.from(envKey, "base64");
+      }
       if (buf.length !== 32) {
-        throw new Error("ENCRYPTION_KEY must decode to exactly 32 bytes (base64-encoded)");
+        throw new Error(
+          "ENCRYPTION_KEY must be a 64-char hex string or a base64 string that decodes to exactly 32 bytes"
+        );
       }
       cachedKey = buf;
       return buf;

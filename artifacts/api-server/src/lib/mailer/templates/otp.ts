@@ -1,4 +1,4 @@
-import { createTransporter, esc, getFromEmail, buildV2Html } from "../transport";
+import { sendMail, esc, getFromEmail, buildV2Html } from "../transport";
 
 export type OtpPurpose = "registration" | "password_reset" | "2fa_login";
 
@@ -181,7 +181,5 @@ export async function sendOtpEmail(
   purpose: OtpPurpose,
   expiresAt: Date
 ): Promise<void> {
-  const opts = buildOtpMailOptions(to, otp, purpose, expiresAt);
-  const transporter = await createTransporter();
-  await transporter.sendMail(opts);
+  await sendMail(buildOtpMailOptions(to, otp, purpose, expiresAt));
 }

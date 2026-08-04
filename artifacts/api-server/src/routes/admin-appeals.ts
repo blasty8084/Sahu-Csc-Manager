@@ -4,8 +4,8 @@ import { eq, isNotNull } from "drizzle-orm";
 import { requireRole, auditLog, getClientIp } from "../lib/auth";
 import { createNotification } from "../lib/notify";
 import { createSystemNotification } from "../services/notificationService";
-import { isSmtpConfigured } from "../lib/mailer";
-import { enqueueNotification, enqueueEmail, buildApprovalMailOptions } from "../lib/queue-client";
+import { isSmtpConfigured, sendApprovalEmail } from "../lib/mailer";
+import { enqueueNotification } from "../lib/queue-client";
 import { logger } from "../lib/logger";
 import { asyncHandler } from "../lib/async-handler";
 
@@ -53,8 +53,8 @@ router.patch("/admin/users/:id/re-approve", requireRole("admin"), asyncHandler(a
     .catch((err) => logger.warn({ err, userId: id }, "Failed to enqueue appeal approval push"));
 
   if (user.email && isSmtpConfigured()) {
-    enqueueEmail(buildApprovalMailOptions(user.email, user.fullName ?? user.username))
-      .catch((err) => logger.warn({ err, userId: id }, "Failed to enqueue appeal approval email"));
+    sendApprovalEmail(user.email, user.fullName ?? user.username)
+      .catch((err) => logger.warn({ err, userId: id }, "Failed to send appeal approval email"));
   }
 
   res.json({ success: true, message: "Appeal approved", user: { ...fmtUser(updated), appealSubmittedAt: null } });

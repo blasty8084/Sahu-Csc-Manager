@@ -40,6 +40,12 @@ await runStartupInit();
 await ensureEncryptionKey();
 await ensureJwtSecret();
 await ensureVapidKeys();
+
+if (!process.env["RESEND_API_KEY"]) {
+  logger.warn("[EMAIL] RESEND_API_KEY not set — all emails will fail");
+} else {
+  logger.info("[EMAIL] Resend email service configured");
+}
 initPush();
 
 // One-time backfill: if a user has ledger entries but ledger_balance is still 0
