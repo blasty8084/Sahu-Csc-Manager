@@ -15,16 +15,6 @@ export type NotificationJobData =
   | { kind: "send-to-user"; userId: number; payload: PushPayload }
   | { kind: "send-to-all"; payload: PushPayload };
 
-// Email queue — fully pre-rendered by the api-server before enqueuing.
-// The worker just calls transporter.sendMail(data).
-export interface EmailJobData {
-  to: string;
-  from: string;
-  subject: string;
-  html: string;
-  text: string;
-}
-
 // PDF-generation queue (receipt PDFs via PDFKit)
 export interface PdfJobData {
   receiptId: string;

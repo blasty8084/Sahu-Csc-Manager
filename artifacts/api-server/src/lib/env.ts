@@ -56,6 +56,26 @@ if (missingRec.length > 0) {
   );
 }
 
+// Warn if RESEND_API_KEY is set but RESEND_FROM is missing or still points at
+// the Resend sandbox address — sandbox mode can only deliver to the account
+// owner's own verified email and 403s on every real recipient.
+const resendKey = process.env["RESEND_API_KEY"];
+const resendFrom = process.env["RESEND_FROM"];
+
+if (resendKey && (!resendFrom || resendFrom.includes("onboarding@resend.dev"))) {
+  console.warn(
+    [
+      "",
+      "⚠️  RESEND_API_KEY is set but RESEND_FROM is missing or still points",
+      "    at the Resend sandbox address (onboarding@resend.dev).",
+      "    Sandbox mode can only deliver to your own Resend account email —",
+      "    every real send will fail with a 403 until RESEND_FROM is set to",
+      '    a verified domain address, e.g. "SAHU CSC <info@sahucsc.dpdns.org>".',
+      "",
+    ].join("\n"),
+  );
+}
+
 /** Required environment variables (non-nullable). */
 export const env = {
   SESSION_SECRET: process.env["SESSION_SECRET"]!,

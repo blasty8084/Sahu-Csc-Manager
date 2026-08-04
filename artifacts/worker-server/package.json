@@ -14,14 +14,12 @@
     "bullmq": "^5.56.0",
     "drizzle-orm": "catalog:",
     "ioredis": "^5.6.1",
-    "nodemailer": "^9.0.1",
     "pdfkit": "^0.19.1",
     "pino": "^9.14.0",
     "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@types/node": "catalog:",
-    "@types/nodemailer": "^8.0.1",
     "@types/pdfkit": "^0.17.6",
     "@types/web-push": "^3.6.4",
     "esbuild": "^0.28.1",

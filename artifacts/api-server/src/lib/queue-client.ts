@@ -31,14 +31,6 @@ export type NotificationJobData =
   | { kind: "send-to-user"; userId: number; payload: PushPayload }
   | { kind: "send-to-all"; payload: PushPayload };
 
-export interface EmailJobData {
-  to: string;
-  from: string;
-  subject: string;
-  html: string;
-  text: string;
-}
-
 // ── BullMQ queue (lazy init) ──────────────────────────────────────────────────
 
 let notificationQueue: Queue | null = null;
@@ -82,15 +74,6 @@ export async function enqueueNotification(data: NotificationJobData): Promise<vo
   } catch (err: any) {
     logger.warn({ err: err.message }, "enqueueNotification direct-send failed");
   }
-}
-
-/**
- * Email sending — no-op when SMTP is not configured (isSmtpConfigured() gates
- * the mailer internally).
- */
-export async function enqueueEmail(_data: EmailJobData): Promise<void> {
-  // Email is sent synchronously by the mailer helpers; this stub keeps
-  // call sites that use enqueueEmail compiling without changes.
 }
 
 // ── Re-export builder helpers so call sites only need one import ──────────────

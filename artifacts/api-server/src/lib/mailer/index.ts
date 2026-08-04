@@ -32,8 +32,16 @@ export async function sendRejectionEmail(to: string, name: string, reason?: stri
   await send(opts.to, opts.subject, opts.html, opts.text);
 }
 
-export async function sendBroadcastEmail(to: string, subject: string, html: string, text: string): Promise<void> {
-  await send(to, subject, html, text);
+export async function sendBroadcastEmail(to: string, subject: string, html: string, text: string): Promise<boolean> {
+  if (!isSmtpConfigured()) return false;
+  try {
+    const transporter = getTransporter();
+    await transporter.sendMail({ to, subject, html, text });
+    return true;
+  } catch (err) {
+    logger.warn({ err, to, subject }, "Broadcast email send failed");
+    return false;
+  }
 }
 
 // sendAdminResetLinkEmail and sendNewRegistrationAdminEmail are re-exported

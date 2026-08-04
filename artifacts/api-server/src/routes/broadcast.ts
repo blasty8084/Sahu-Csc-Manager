@@ -209,14 +209,27 @@ router.post("/admin/broadcast/email", requireRole("admin"), async (req: any, res
     const bodyText = `SAHU CSC — Management Platform\n\n${subject}\n\n${body}\n\nThis message was sent to all platform users by an administrator.`;
     const bodyHtml = `<p style="font-family:sans-serif;font-size:15px;line-height:1.7;">${body.replace(/\n/g, "<br/>")}</p><p style="font-family:sans-serif;font-size:12px;color:#888;">Sent by your administrator to all active platform users.</p>`;
 
-    // Send directly via Resend — enqueueEmail is a no-op stub (Redis/BullMQ removed)
-    await Promise.all(
-      withEmail.map((u) =>
-        sendBroadcastEmail(u.email!, subject, bodyHtml, bodyText),
-      ),
-    );
+    // Send with concurrency + rate limiting — Resend allows 10 req/sec per team.
+    // Chunk into batches of 8 with a 1.1s gap between batches to stay under the limit.
+    const CHUNK_SIZE = 8;
+    const CHUNK_DELAY_MS = 1100;
 
-    const sent = withEmail.length;
+    let sent = 0;
+    let failed = 0;
+
+    for (let i = 0; i < withEmail.length; i += CHUNK_SIZE) {
+      const chunk = withEmail.slice(i, i + CHUNK_SIZE);
+      const results = await Promise.allSettled(
+        chunk.map((u) => sendBroadcastEmail(u.email!, subject, bodyHtml, bodyText)),
+      );
+      for (const r of results) {
+        if (r.status === "fulfilled" && r.value === true) sent++;
+        else failed++;
+      }
+      if (i + CHUNK_SIZE < withEmail.length) {
+        await new Promise((resolve) => setTimeout(resolve, CHUNK_DELAY_MS));
+      }
+    }
 
     if (createInAppNotification) {
       await createSystemNotification(
@@ -232,15 +245,17 @@ router.post("/admin/broadcast/email", requireRole("admin"), async (req: any, res
       body,
       recipientFilter,
       recipientCount: sent,
-      failedCount: 0,
+      failedCount: failed,
     });
 
-    logger.info({ adminId, subject, sent }, "admin broadcast email enqueued");
+    logger.info({ adminId, subject, sent, failed }, "admin broadcast email sent");
     res.json({
       success: true,
       sent,
-      failed: 0,
-      message: `Email queued for ${sent} recipient(s)`,
+      failed,
+      message: failed > 0
+        ? `Sent to ${sent} recipient(s), ${failed} failed`
+        : `Email sent to ${sent} recipient(s)`,
     });
   } catch (err: any) {
     logger.error({ err }, "broadcast email failed");

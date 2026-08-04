@@ -4,7 +4,6 @@
  * Consumes jobs from BullMQ queues (backed by Redis via REDIS_URL) that the
  * main api-server pushes asynchronously:
  *   • notifications  — web-push to individual users or all subscribers
- *   • emails         — pre-rendered emails sent via SMTP (nodemailer)
  *   • pdf-generation — async PDF receipt creation (placeholder)
  *   • sms            — SMS sending (stub — no provider configured)
  *
@@ -20,7 +19,6 @@ import "./connection";
 
 // Import all workers so they register with BullMQ before the health server starts.
 import { notificationWorker } from "./workers/notification.worker";
-import { emailWorker }        from "./workers/email.worker";
 import { pdfWorker }          from "./workers/pdf.worker";
 import { smsWorker }          from "./workers/sms.worker";
 
@@ -33,7 +31,7 @@ const server = http.createServer((_req, res) => {
     JSON.stringify({
       status: "ok",
       service: "worker-server",
-      workers: ["notifications", "emails", "pdf-generation", "sms"],
+      workers: ["notifications", "pdf-generation", "sms"],
     }),
   );
 });
@@ -44,7 +42,6 @@ server.listen(port, () => {
     {
       workers: [
         notificationWorker.name,
-        emailWorker.name,
         pdfWorker.name,
         smsWorker.name,
       ],
@@ -58,7 +55,6 @@ async function shutdown() {
   logger.info("Shutting down worker server…");
   await Promise.allSettled([
     notificationWorker.close(),
-    emailWorker.close(),
     pdfWorker.close(),
     smsWorker.close(),
   ]);
