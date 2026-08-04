@@ -1,12 +1,7 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 4.10.11** — last updated 2026-08-04
+**Version 4.10.9** — last updated 2026-08-04
 
 > **Latest setup**: After re-import run in order: `pnpm install --frozen-lockfile` → `pnpm --filter @workspace/db run push-force` → `Seed Database` workflow → Secrets needed: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`, `NEON_DATABASE_URL`, `ENCRYPTION_KEY` (64-char hex), `JWT_SECRET`. OTP emails active when `RESEND_API_KEY` is set. CORS auto-configured from `REPLIT_DEV_DOMAIN` at startup (no manual update needed). Production: Vercel (frontend) + Render (backend/Neon DB).
-
-## Fixes — August 4, 2026 (v4.10.11)
-
-- **Resend email hardening** — Three production issues fixed: (1) `POST /api/admin/broadcast/email` no longer fires all sends at once via `Promise.all`; replaced with chunked batches of 8 with a 1.1 s gap to stay under Resend's 10 req/s limit. `sendBroadcastEmail` now returns `Promise<boolean>` so real sent/failed counts are tracked and stored in `broadcast_logs.failedCount` (was always 0). Duplicate `sendBroadcastEmail` in `adminAlerts.ts` deleted. (2) Orphaned SMTP email worker removed: `email.worker.ts` deleted, `emailQueue` and `EmailJobData` removed from `worker-server/queues/`, `enqueueEmail` stub and `EmailJobData` removed from `api-server/queue-client.ts`, `nodemailer`/`@types/nodemailer` removed from `worker-server`. (3) `env.ts` now warns at startup when `RESEND_API_KEY` is set but `RESEND_FROM` is missing or still points at the Resend sandbox address `onboarding@resend.dev` (sandbox only delivers to the account owner's own email). Files: `lib/mailer/index.ts`, `routes/broadcast.ts`, `lib/mailer/templates/adminAlerts.ts`, `worker-server/src/workers/`, `worker-server/src/queues/`, `api-server/src/lib/queue-client.ts`, `api-server/src/lib/env.ts`.
-- **TypeScript typecheck: all errors resolved** — `api-server` and `worker-server` now both pass `tsc --noEmit` with zero errors. Fixes: `mailer/index.ts` `reason ?? null` coercion; `app.ts` Upstash `sendCommand` cast; `queue-client.ts` IORedis→ConnectionOptions cast; `monthly-export/zip.ts` + `receiptExportZip.ts` archiver v8 `as any`; `node-dump.ts` `err: unknown`; `register.ts` dead `twoFaGloballyDisabled` block removed (2FA permanently ON, variable no longer exists); `scripts/create-session-table.ts` `// @ts-nocheck` (utility script, `pg` types not in devDeps).
 
 ## Fixes — August 4, 2026 (v4.10.9)
 

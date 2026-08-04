@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Changelog
-**Current version: 4.10.11 — August 4, 2026**
+**Current version: 4.10.10 — August 4, 2026**
 
 > Single authoritative changelog covering all versions from v1.x through v4.x.
 > - **v3.x / v4.x entries** (current) — listed first, newest at top
@@ -9,8 +9,6 @@
 
 ## Table of Contents
 
-0. [Hardening — Resend broadcast rate-limit, orphaned SMTP worker removed, RESEND_FROM startup validation (August 4, 2026)](#hardening--resend-broadcast-rate-limit-orphaned-smtp-worker-removed-resend_from-startup-validation-august-4-2026)
-0. [Fix — TypeScript typecheck: zero errors in api-server and worker-server (August 4, 2026)](#fix--typescript-typecheck-zero-errors-in-api-server-and-worker-server-august-4-2026)
 0. [Fix — Admin registration-alert email never sent: sendNewRegistrationAdminEmail signature mismatch (August 4, 2026)](#0-fix--admin-registration-alert-email-never-sent-sendnewregistrationadminemail-signature-mismatch-august-4-2026)
 0. [Refactor — Complete Resend migration: remove nodemailer, direct sendMail everywhere (August 4, 2026)](#0-refactor--complete-resend-migration-remove-nodemailer-direct-sendmail-everywhere-august-4-2026)
 0. [Fix — OTP email delivery: RESEND_FROM switched to verified sender domain (August 4, 2026)](#0-fix--otp-email-delivery-resend_from-switched-to-verified-sender-domain-august-4-2026)
@@ -23,62 +21,6 @@
 0. [Fix — Email OTP never sent + HTML template restored (July 30, 2026)](#0-fix--email-otp-never-sent--html-template-restored-july-30-2026)
 0. [Infra — 2FA permanently hardcoded ON; SMTP fully configured (July 30, 2026)](#0-infra--2fa-permanently-hardcoded-on-smtp-fully-configured-july-30-2026)
 0. [Refactor — Full CSS variable tokenization across 355+ files (July 27, 2026)](#0-refactor--full-css-variable-tokenization-across-355-files-july-27-2026)
-
----
-
-## Hardening — Resend broadcast rate-limit, orphaned SMTP worker removed, RESEND_FROM startup validation (August 4, 2026)
-
-**Version: 4.10.11**
-
-### What changed
-
-| File | Change |
-|---|---|
-| `api-server/src/routes/broadcast.ts` | Replaced `Promise.all` with chunked batches of 8 (1.1 s gap); tracks real `sent` / `failed` counts; response message reflects actual outcome |
-| `api-server/src/lib/mailer/index.ts` | `sendBroadcastEmail` returns `Promise<boolean>` (was `Promise<void>`); errors no longer silently swallowed |
-| `api-server/src/lib/mailer/templates/adminAlerts.ts` | Deleted duplicate `sendBroadcastEmail(opts)` — unused, same name as `mailer/index.ts` version, confusing and error-prone |
-| `api-server/src/lib/env.ts` | Added startup warning when `RESEND_API_KEY` is set but `RESEND_FROM` is missing or still points at `onboarding@resend.dev` (sandbox address that 403s on all real recipients) |
-| `worker-server/src/workers/email.worker.ts` | **Deleted** — orphaned Nodemailer/SMTP worker; queue was never fed after Resend migration |
-| `worker-server/src/queues/index.ts` | Removed `emailQueue` export |
-| `worker-server/src/queues/types.ts` | Removed `EmailJobData` interface |
-| `worker-server/src/index.ts` | Removed `emailWorker` import, startup log entry, health-check list entry, and `shutdown()` close call |
-| `api-server/src/lib/queue-client.ts` | Removed `enqueueEmail` stub function and `EmailJobData` interface |
-| `worker-server/package.json` | Removed `nodemailer` (dep) and `@types/nodemailer` (devDep) |
-
-### Root causes
-
-**Broadcast 429s:** `Promise.all` fires every send simultaneously. Resend enforces 10 requests/second per team. Any broadcast to > 10 users triggers 429 responses. The old `sendBroadcastEmail` swallowed errors silently, so `failedCount` was always written as `0` in `broadcast_logs` regardless of actual delivery.
-
-**Orphaned email worker:** `email.worker.ts` sends mail via Nodemailer/SMTP (reading `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`). SMTP was replaced by Resend in v4.10.2. `enqueueEmail()` in `queue-client.ts` was converted to a no-op stub at that point, meaning the worker was never fed jobs. If someone had re-connected the queue to "fix" async emails, all mail would have silently routed back through the broken SMTP setup that caused the migration in the first place.
-
-**RESEND_FROM silent failure:** `isSmtpConfigured()` only checked `RESEND_API_KEY`. If `RESEND_FROM` was absent or still set to `onboarding@resend.dev` (Resend's sandbox sender), every real user send would receive a 403 with no warning at boot.
-
-### Not changed
-- `worker-server` notification, PDF, and SMS workers (untouched)
-- OTP, approval, rejection email templates (untouched)
-- Database schema or API response shapes
-
----
-
-## Fix — TypeScript typecheck: zero errors in api-server and worker-server (August 4, 2026)
-
-**Version: 4.10.11**
-
-### What changed
-
-| File | Error fixed |
-|---|---|
-| `lib/mailer/index.ts` | `buildRejectionMailOptions(to, name, reason)` — `reason?: string` coerced to `reason ?? null` to match param type `string \| null` |
-| `app.ts` | Upstash `sendCommand` lambda cast as `any` to satisfy `rate-limit-redis` `SendCommandFn` (ioredis version mismatch between two pnpm-hoisted copies) |
-| `lib/queue-client.ts` | `new IORedis(...)` instance cast as `any` for `BullMQ Queue` `ConnectionOptions` (same ioredis dual-version issue) |
-| `lib/monthly-export/zip.ts` | `as any` on archiver v8 require — v8 is ESM-only with no bundled `.d.ts` |
-| `services/receiptExportZip.ts` | Same archiver v8 `as any` fix |
-| `lib/node-dump.ts` | `ws.end((err: unknown) => ...)` — callback `err` was implicit `any` |
-| `routes/auth/register.ts` | Removed dead `if (twoFaGloballyDisabled)` block — variable was deleted when `DISABLE_2FA` env-var bypass was removed in v4.10.2; the 2FA path already performs the same uniqueness check |
-| `scripts/create-session-table.ts` | Added `// @ts-nocheck` — utility script; `pg` types (`@types/pg`) not installed in api-server devDeps |
-
-### Result
-Both `pnpm --filter @workspace/api-server run typecheck` and `pnpm --filter @workspace/worker-server run typecheck` now exit with code 0.
 
 ---
 

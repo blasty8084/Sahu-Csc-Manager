@@ -719,9 +719,6 @@ Frontend main chunk: ~438KB (under 500KB Vite warning).
 
 | Version | Date | Key Change |
 |---------|------|-----------|
-| 4.10.11 | 2026-08-04 | Resend broadcast rate-limit (8/chunk, 1.1 s gap), real sent/failed counts, orphaned SMTP email.worker.ts deleted, enqueueEmail stub removed, RESEND_FROM startup validation; typecheck zero errors |
-| 4.10.10 | 2026-08-04 | Admin registration-alert email fix (sendNewRegistrationAdminEmail signature mismatch) |
-| 4.10.9 | 2026-08-04 | Complete Resend migration: nodemailer removed from api-server, all templates direct sendMail |
 | 4.10.4 | 2026-08-02 | Bug fixes: internal backup route double `/api` prefix, 30→55 min window + dedup, B2 upload in auto-backup, RESEND_FROM email fallbacks in seed + startup-init |
 | 4.10.3 | 2026-08-02 | Analog Dial Picker v2 (spring hand, 60-dot ring, pulse animation, mode crossfade); .gitignore /backups/ root-anchor fix |
 | 4.10.2 | 2026-07-31 | Email OTP fix, HTML templates restored, 2FA permanently ON, Resend replaces SMTP |
