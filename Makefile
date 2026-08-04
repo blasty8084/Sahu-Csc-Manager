@@ -15,7 +15,7 @@ typecheck:
 	pnpm run typecheck:libs
 
 push:
-	git add . && git commit -m "$(msg)" && git push origin main
+	git add . && git commit -m "$(msg)" && GIT_ASKPASS=true git push https://blasty8084:$(GITHUB_PERSONAL_ACCESS_TOKEN)@github.com/blasty8084/Sahu-Csc-Manager.git main
 
 status:
 	git status && git log --oneline -5
