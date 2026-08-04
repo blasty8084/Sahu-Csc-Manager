@@ -2,7 +2,7 @@
 
 > Original audit generated: 14 July 2026
 > Status reconciled: 30 July 2026 against the current API, frontend, schema, and changelog
-> Current total: **1 open / 28 fixed** — the async PDF/SMS worker limitation remains intentionally explicit
+> Current total: **1 open / 29 fixed** — the async PDF/SMS worker limitation remains intentionally explicit
 
 ---
 
@@ -63,6 +63,7 @@
 
 | 28 | ✅ Fixed | `lib/mailer/index.ts` · `lib/queue-client.ts` · `routes/auth/login-helpers.ts` · `routes/auth/otp.ts` | Email OTP was never delivered. `enqueueEmail()` in `queue-client.ts` was a no-op stub that discarded its argument; `buildOtpMailOptions()` in `mailer/index.ts` returned `null`. OTP codes were saved to the DB but never sent. Fixed by calling `sendOtpEmail(to, otp, purpose, expiresAt)` directly from the mailer in both call sites. |
 | 29 | ✅ Fixed | `lib/mailer/transport.ts` · `lib/mailer/templates/*.ts` | All template files imported `createTransporter`, `getFromEmail`, `esc`, and `buildV2Html` from `transport.ts`, but those four functions did not exist — any template call would throw `TypeError` at runtime. HTML emails fell back to plain-text stubs. Fixed by adding the missing functions to `transport.ts` and re-exporting `sendOtpEmail` from `templates/otp.ts` in `mailer/index.ts`. |
+| 30 | ✅ Fixed | `lib/mailer/index.ts` | Admin registration-alert emails were never delivered. `mailer/index.ts` defined its own `sendNewRegistrationAdminEmail(adminEmails: string[], username: string)` stub, but `register.ts` called it with a rich object `{ adminEmail, adminName, applicantUsername, ... }` matching the signature in `adminAlerts.ts`. esbuild strips types without checking, so the mismatch compiled silently. At runtime `for...of` on a plain object threw `TypeError: object is not iterable`, caught silently by the `.catch()` in `register.ts`. Fixed by removing the stub from `mailer/index.ts` and re-exporting `sendNewRegistrationAdminEmail` from `./templates/adminAlerts` (the rich V2 dark template with correct signature). |
 
 ---
 

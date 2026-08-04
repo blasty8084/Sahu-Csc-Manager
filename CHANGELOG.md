@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Changelog
-**Current version: 4.10.9 — August 4, 2026**
+**Current version: 4.10.10 — August 4, 2026**
 
 > Single authoritative changelog covering all versions from v1.x through v4.x.
 > - **v3.x / v4.x entries** (current) — listed first, newest at top
@@ -9,6 +9,7 @@
 
 ## Table of Contents
 
+0. [Fix — Admin registration-alert email never sent: sendNewRegistrationAdminEmail signature mismatch (August 4, 2026)](#0-fix--admin-registration-alert-email-never-sent-sendnewregistrationadminemail-signature-mismatch-august-4-2026)
 0. [Refactor — Complete Resend migration: remove nodemailer, direct sendMail everywhere (August 4, 2026)](#0-refactor--complete-resend-migration-remove-nodemailer-direct-sendmail-everywhere-august-4-2026)
 0. [Fix — OTP email delivery: RESEND_FROM switched to verified sender domain (August 4, 2026)](#0-fix--otp-email-delivery-resend_from-switched-to-verified-sender-domain-august-4-2026)
 0. [Fix — Remove remaining SMTP references; activate monthly export email via Resend (August 3, 2026)](#0-fix--remove-remaining-smtp-references-activate-monthly-export-email-via-resend-august-3-2026)
@@ -20,6 +21,34 @@
 0. [Fix — Email OTP never sent + HTML template restored (July 30, 2026)](#0-fix--email-otp-never-sent--html-template-restored-july-30-2026)
 0. [Infra — 2FA permanently hardcoded ON; SMTP fully configured (July 30, 2026)](#0-infra--2fa-permanently-hardcoded-on-smtp-fully-configured-july-30-2026)
 0. [Refactor — Full CSS variable tokenization across 355+ files (July 27, 2026)](#0-refactor--full-css-variable-tokenization-across-355-files-july-27-2026)
+
+---
+
+## 0. Fix — Admin registration-alert email never sent: sendNewRegistrationAdminEmail signature mismatch (August 4, 2026)
+
+**Version: 4.10.10**
+
+### What changed
+
+| File | Change |
+|---|---|
+| `lib/mailer/index.ts` | Removed local `sendNewRegistrationAdminEmail(adminEmails: string[], username: string)` stub; re-exported `sendNewRegistrationAdminEmail` from `./templates/adminAlerts` instead |
+
+### Root cause
+
+`register.ts` imported `sendNewRegistrationAdminEmail` from `../../lib/mailer` and called it with a rich options object `{ adminEmail, adminName, applicantUsername, applicantFullName, applicantEmail, submittedAt }` — matching the signature in `adminAlerts.ts`. However, `mailer/index.ts` defined its own version of the function with a completely different signature: `(adminEmails: string[], username: string)`.
+
+Because esbuild strips TypeScript types without type-checking, the mismatch was never caught at build time. At runtime, the plain object was passed as the `adminEmails` argument. `for (const email of adminEmails)` threw `TypeError: object is not iterable`, which was silently swallowed by the `.catch()` handler on line 175 of `register.ts`. The result: **admin registration-alert emails were never sent** — no error surfaced, no log entry, no delivery.
+
+### Why
+
+`adminAlerts.ts` already had the correct rich-template implementation using the V2 dark premium email design. The stub in `mailer/index.ts` was a leftover from an earlier, simpler version and was never removed when the rich template was added.
+
+### Not changed
+- `adminAlerts.ts` template content and design (unchanged)
+- `register.ts` call site (unchanged — it was already correct)
+- All other email types (OTP, approval, rejection, broadcast, reset-link)
+- Database schema, frontend code, or API response shapes
 
 ---
 
