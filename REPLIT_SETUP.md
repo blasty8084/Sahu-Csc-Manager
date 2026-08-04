@@ -1,4 +1,5 @@
 # Replit Setup Guide — SAHU CSC Manager
+**Last updated: 2026-08-03**
 
 ## Setup Status
 
@@ -8,13 +9,14 @@
 | Vercel frontend deployed | ✅ Done |
 | Render backend deployed | ✅ Done |
 | GitHub Actions secrets added | ✅ Done |
+| GitHub Actions workflow fixed | ✅ Done |
+| Auto-deploy pipeline live | ✅ Done |
 | Replit Secrets added | ⬜ Pending |
-| Auto-deploy pipeline tested | ⬜ Pending |
 
 ---
 
 ## First Import (2 minutes only):
-1. Import from GitHub: blasty8084/Sahu-Csc-Manager
+1. Import from GitHub: `blasty8084/Sahu-Csc-Manager`
 2. Shell: `pnpm install --frozen-lockfile`
 3. Shell: `pnpm --filter @workspace/db run push-force`
 4. Run `Seed Database` workflow
@@ -28,18 +30,28 @@
 ## Daily Workflow:
 1. Write/edit code in Replit editor
 2. Test locally using dev workflows
-3. Shell: `make push msg="feat: your change"`
-4. GitHub Actions triggers auto-deploy:
-   - Vercel builds frontend (2-3 min)
-   - Render builds backend (3-5 min)
-5. Check live at https://sahu-csc.vercel.app
+3. Push to GitHub using PAT token:
+```bash
+GIT_ASKPASS=true git push https://blasty8084:ghp_YourToken@github.com/blasty8084/Sahu-Csc-Manager.git main
+```
+4. GitHub Actions auto-deploys:
+   - ✅ Vercel builds frontend (2-3 min)
+   - ✅ Render rebuilds backend (3-5 min)
+5. Check live at: `https://sahu-csc-manager-sahu-csc.vercel.app`
+
+---
+
+## GitHub PAT Token (for push from Replit Shell)
+
+> Required scopes: ✅ `repo` + ✅ `workflow`
+> Get from: github.com → Settings → Developer settings → Tokens (classic)
 
 ---
 
 ## Required Secrets (Replit Secrets panel):
 
-### Minimum Required (app won't start without these):
-- `SESSION_SECRET` — koi bhi 32-char random string
+### Minimum Required:
+- `SESSION_SECRET` — 32-char random string
 - `ADMIN_PASSWORD` — admin login password
 - `OPERATOR_PASSWORD` — operator login password
 - `NEON_DATABASE_URL` — neon.tech se connection string
@@ -47,36 +59,50 @@
 ### Email:
 - `RESEND_API_KEY` — resend.com se (OTP emails ke liye)
 
-### File Storage (optional):
-- `B2_KEY_ID`
-- `B2_APP_KEY`
-
 ### Security:
 - `ENCRYPTION_KEY` — 64-char hex string
 - `JWT_SECRET` — 32-char random string
 
-### Redis (optional, for caching/workers):
+### File Storage (optional):
+- `B2_KEY_ID`
+- `B2_APP_KEY`
+
+### Redis (optional):
 - `UPSTASH_REDIS_REST_URL`
 - `UPSTASH_REDIS_REST_TOKEN`
 
 ### GeoIP:
-- `ALLOW_NON_INDIA` — set to `true` for testing
+- `ALLOW_NON_INDIA` — `true` for testing
 
 ---
 
-## GitHub Actions Secrets (already added ✅):
-- `VERCEL_TOKEN` ✅
-- `VERCEL_ORG_ID` ✅
-- `VERCEL_PROJECT_ID` ✅
-- `RENDER_DEPLOY_HOOK_URL` ✅
+## GitHub Actions Secrets (✅ All set):
+
+| Secret | Status |
+|---|---|
+| `VERCEL_TOKEN` | ✅ |
+| `VERCEL_ORG_ID` | ✅ |
+| `VERCEL_PROJECT_ID` | ✅ |
+| `RENDER_DEPLOY_HOOK_URL` | ✅ |
 
 ---
 
-## Test Auto-Deploy Pipeline:
-```bash
-make push msg="test: verify auto deploy pipeline"
-```
-GitHub → Actions tab → green ✓ aana chahiye
+## GitHub Actions Workflow — Working Config
+
+`.github/workflows/deploy.yml` — fixed and working:
+
+| Setting | Value |
+|---|---|
+| Node.js | 22 (matches Render) |
+| pnpm | 10 (matches package.json engines) |
+| Vercel deploy | `vercel pull` → `vercel build` → `vercel deploy --prebuilt` |
+| Render deploy | `curl -f -X POST` (deploy hook) |
+
+### Fix History:
+- pnpm v8 → v10 ✅
+- Outdated `vercel-action` → direct Vercel CLI ✅
+- `--prebuilt` without `.vercel/output` → added `vercel pull` + `vercel build` ✅
+- Node 20 deprecated → Node 22 explicit ✅
 
 ---
 
@@ -89,5 +115,5 @@ GitHub → Actions tab → green ✓ aana chahiye
 ## Saves AI Credits:
 - Import once, use many times
 - Only use Agent for new features
-- Use Shell commands for routine tasks
+- Use Shell for routine tasks
 - Push to GitHub = auto deploy (no Agent needed)

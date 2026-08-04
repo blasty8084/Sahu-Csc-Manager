@@ -195,3 +195,34 @@ Expected response mein status `ok` hona chahiye.
 Vercel project ko GitHub `main` branch se connect karne ke baad har new push
 par frontend automatically build aur deploy hoga. Render bhi connected branch
 ke new push par API redeploy karega.
+
+### GitHub Actions deploy pipeline (`.github/workflows/deploy.yml`)
+
+Har `git push origin main` ke baad automatically run hota hai:
+
+```
+✅ Node.js 22  (Render se match, package.json engines compatible)
+✅ pnpm 10     (package.json engines: "pnpm": ">=10.0.0")
+✅ vercel pull --yes --environment=production
+✅ vercel build --prod
+✅ vercel deploy --prebuilt --prod
+✅ curl -f -X POST $RENDER_DEPLOY_HOOK_URL
+```
+
+### Replit se push karne ka sahi tarika
+
+```bash
+# PAT Token chahiye — github.com → Settings → Developer settings → Tokens (classic)
+# Required scopes: repo + workflow
+
+GIT_ASKPASS=true git push https://blasty8084:ghp_YourToken@github.com/blasty8084/Sahu-Csc-Manager.git main
+```
+
+### GitHub Actions fix history
+
+| Problem | Fix | Date |
+|---|---|---|
+| pnpm v8 incompatible | pnpm version: 10 | 2026-08-03 |
+| `vercel-action@v25` outdated (CLI <47.2.2) | Direct vercel CLI | 2026-08-03 |
+| `--prebuilt` failed (no `.vercel/output`) | Added `vercel pull` + `vercel build` | 2026-08-03 |
+| Node 20 deprecated (forced to Node 24) | `node-version: '22'` explicit | 2026-08-03 |

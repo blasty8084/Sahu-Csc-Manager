@@ -1,5 +1,5 @@
 # SAHU CSC — Development & Deployment Workflow
-**Version 4.10.3 · Updated 2026-08-02**
+**Version 4.10.7 · Updated 2026-08-03**
 
 > **TL;DR — Teen platform, ek kaam:**
 > - **Replit** = Code likhna + test karna (development)
@@ -169,10 +169,44 @@ git push -u origin main
 
 ```bash
 git add .
-git commit -m "Fix: login page bug" 
-git push origin main
-# → Vercel aur Render automatically 2-5 min mein update ho jayenge
+git commit -m "fix: your change description"
+
+# Replit Shell se push (PAT token required):
+GIT_ASKPASS=true git push https://blasty8084:ghp_YourToken@github.com/blasty8084/Sahu-Csc-Manager.git main
+
+# → GitHub Actions trigger hoga
+# → Vercel frontend: 2-3 min mein live
+# → Render backend: 3-5 min mein live
 ```
+
+> **PAT Token kahan se milega:**
+> github.com → Settings → Developer settings → Tokens (classic)
+> Scopes: ✅ `repo` + ✅ `workflow`
+
+### GitHub Actions — Working Deploy Workflow
+
+`.github/workflows/deploy.yml` automatically run hota hai har push par:
+
+```
+Job 1 — Deploy Frontend to Vercel:
+  1. Node.js 22 setup (Render se match)
+  2. pnpm 10 install (package.json engines requirement)
+  3. pnpm install --frozen-lockfile
+  4. vercel pull --yes --environment=production  ← .vercel/output config laata hai
+  5. vercel build --prod                         ← .vercel/output/ directory banata hai
+  6. vercel deploy --prebuilt --prod             ← prebuilt output upload karta hai
+
+Job 2 — Trigger Render Deploy:
+  curl -f -X POST $RENDER_DEPLOY_HOOK_URL        ← Render backend rebuild trigger
+```
+
+**GitHub Actions Secrets (sab set hain ✅):**
+| Secret | Status |
+|---|---|
+| `VERCEL_TOKEN` | ✅ |
+| `VERCEL_ORG_ID` | ✅ |
+| `VERCEL_PROJECT_ID` | ✅ |
+| `RENDER_DEPLOY_HOOK_URL` | ✅ |
 
 ### .gitignore — Kya push nahi hota
 
@@ -449,6 +483,11 @@ Cause: Build command ya output directory wrong
 Fix:
   Output Directory: dist/public  (dist nahi, dist/public)
   Root Directory: artifacts/sahu-csc
+
+GitHub Actions specific fixes:
+  - pnpm version error → version: 10 use karo (>=10.0.0 required)
+  - vercel --prebuilt error → vercel pull + vercel build pehle chalao
+  - Node deprecated warning → node-version: '22' set karo
 ```
 
 ### GitHub push rejected
