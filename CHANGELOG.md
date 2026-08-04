@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Changelog
-**Current version: 4.10.11 — August 4, 2026**
+**Current version: 4.10.12 — August 4, 2026**
 
 > Single authoritative changelog covering all versions from v1.x through v4.x.
 > - **v3.x / v4.x entries** (current) — listed first, newest at top
@@ -9,6 +9,8 @@
 
 ## Table of Contents
 
+0. [Fix — Drum scroll header time visibility: larger text, orange AM/PM badge (August 4, 2026)](#0-fix--drum-scroll-header-time-visibility-larger-text-orange-ampm-badge-august-4-2026)
+0. [Fix — Drum scroll wheel scrolls page: native non-passive listener + body scroll lock (August 4, 2026)](#0-fix--drum-scroll-wheel-scrolls-page-native-non-passive-listener--body-scroll-lock-august-4-2026)
 0. [Fix — Desktop drum scroll time picker unresponsive: transition lag, discrete snapping, no wheel support (August 4, 2026)](#0-fix--desktop-drum-scroll-time-picker-unresponsive-transition-lag-discrete-snapping-no-wheel-support-august-4-2026)
 0. [Infra — Fix pnpm lockfile out of sync after nodemailer removal; unblocked CI (August 4, 2026)](#0-infra--fix-pnpm-lockfile-out-of-sync-after-nodemailer-removal-unblocked-ci-august-4-2026)
 0. [Fix — Admin registration-alert email never sent: sendNewRegistrationAdminEmail signature mismatch (August 4, 2026)](#0-fix--admin-registration-alert-email-never-sent-sendnewregistrationadminemail-signature-mismatch-august-4-2026)
@@ -23,6 +25,49 @@
 0. [Fix — Email OTP never sent + HTML template restored (July 30, 2026)](#0-fix--email-otp-never-sent--html-template-restored-july-30-2026)
 0. [Infra — 2FA permanently hardcoded ON; SMTP fully configured (July 30, 2026)](#0-infra--2fa-permanently-hardcoded-on-smtp-fully-configured-july-30-2026)
 0. [Refactor — Full CSS variable tokenization across 355+ files (July 27, 2026)](#0-refactor--full-css-variable-tokenization-across-355-files-july-27-2026)
+
+---
+
+## 0. Fix — Drum scroll header time visibility: larger text, orange AM/PM badge (August 4, 2026)
+
+**Version: 4.10.12**
+
+### What changed
+
+| File | Change |
+|---|---|
+| `artifacts/sahu-csc/src/components/backups/ClockTimePicker.tsx` | `DrumScrollSheet` header: time digits `text-3xl font-bold text-slate-900` → `text-5xl font-black` with `letter-spacing: -0.03em`; AM/PM plain text → solid orange pill badge (`#f97316` bg, white text) |
+
+### Root cause
+
+The live time readout (`12:00 AM`) in the desktop drum picker header was rendered at `text-3xl font-bold` — readable, but not prominent enough to be immediately scannable, especially on lower-contrast monitors.
+
+### Fix
+
+Time digits increased to `text-5xl font-black` with tighter letter-spacing. AM/PM converted from a small inline `text-orange-500` span to a solid orange rounded badge (`px-1.5 py-0.5 rounded-md`, `background: #f97316`, `color: white`) aligned to the baseline of the time digits.
+
+---
+
+## 0. Fix — Drum scroll wheel scrolls page: native non-passive listener + body scroll lock (August 4, 2026)
+
+**Version: 4.10.11**
+
+### What changed
+
+| File | Change |
+|---|---|
+| `artifacts/sahu-csc/src/components/backups/ClockTimePicker.tsx` | Removed React `onWheel` prop from `DrumColumn`; added `useEffect` attaching native `addEventListener("wheel", handler, { passive: false })` with refs to keep `selectedIndex`/`onChange` fresh. Added `useEffect` in `DrumScrollSheet` that sets `document.body.style.overflow = "hidden"` on mount and restores it on unmount. |
+
+### Root cause
+
+React synthetic event listeners (including `onWheel`) are registered as **passive** by default in modern browsers. Calling `e.preventDefault()` inside a passive listener is silently ignored — the browser still scrolls the page. So the wheel event consumed the drum value correctly but also propagated upward and scrolled the background page simultaneously.
+
+### Fix
+
+1. Removed the React `onWheel` prop entirely from `DrumColumn`.
+2. Added a `useEffect` that attaches `el.addEventListener("wheel", handler, { passive: false })` directly on the container DOM node — this gives the handler permission to call `preventDefault()` and fully consume the event.
+3. Stored `selectedIndex`, `onChange`, and `items.length` in refs updated on each render, so the event handler (attached once) always reads current values without needing to re-attach.
+4. `DrumScrollSheet` locks `document.body.style.overflow = "hidden"` on mount so even pointer/touch gestures on the backdrop cannot scroll the underlying page.
 
 ---
 

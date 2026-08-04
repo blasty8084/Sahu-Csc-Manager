@@ -1,11 +1,13 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 4.10.11** — last updated 2026-08-04
+**Version 4.10.12** — last updated 2026-08-04
 
 > **Latest setup (2026-08-04 re-import)**: Run in order: `pnpm install` *(not `--frozen-lockfile`)* → `pnpm --filter @workspace/db run push-force` → `Seed Database` workflow → All secrets set: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`, `NEON_DATABASE_URL`, `ENCRYPTION_KEY`, `JWT_SECRET`. OTP emails active when `RESEND_API_KEY` is set. CORS auto-configured from `REPLIT_DEV_DOMAIN` at startup. CI lockfile fix pushed to GitHub. Production: Vercel (frontend) + Render (backend/Neon DB).
 
-## Fixes — August 4, 2026 (v4.10.11)
+## Fixes — August 4, 2026 (v4.10.12)
 
-- **Desktop drum scroll time picker fixed** — The drum scroll in the Backup schedule time picker was completely unresponsive on desktop. Three root causes: (1) `transition-transform duration-200` was always on — every pointer move triggered a 200 ms animation that made the strip lag behind the cursor and feel frozen; (2) the strip snapped to discrete integer positions during drag instead of following the pointer continuously; (3) no `onWheel` handler — desktop users expect mouse-wheel scrolling. Fix: added `isDragging` state — transition removed during drag (strip follows pointer in real-time), snaps with animation only on release. Also tracks a continuous `dragOffset` for visual position vs `selectedIndex` for highlight. Mouse wheel added (`onWheel` with `preventDefault`). File: `components/backups/ClockTimePicker.tsx`.
+- **Drum scroll header time visibility improved** — The `12:00 AM` time display in the desktop drum picker header was `text-3xl font-bold` — legible but not prominent. Increased to `text-5xl font-black` with tighter letter-spacing (`-0.03em`) and a solid orange pill badge for AM/PM (white text on `#f97316` background) instead of the previous small inline text. File: `components/backups/ClockTimePicker.tsx`.
+- **Drum scroll page scroll fixed** — Mouse wheel on the drum columns was propagating to the page because React's synthetic `onWheel` is passive by default, making `e.preventDefault()` a no-op. Fix: replaced with a native `addEventListener("wheel", handler, { passive: false })` via `useEffect` (attached once; refs keep `selectedIndex`/`onChange` fresh). Also added `document.body.style.overflow = "hidden"` on modal mount to block any residual page scroll. File: `components/backups/ClockTimePicker.tsx`.
+- **Desktop drum scroll time picker fixed** — The drum scroll in the Backup schedule time picker was completely unresponsive on desktop. Three root causes: (1) `transition-transform duration-200` was always on — every pointer move triggered a 200 ms animation that made the strip lag behind the cursor and feel frozen; (2) the strip snapped to discrete integer positions during drag instead of following the pointer continuously; (3) no `onWheel` handler — desktop users expect mouse-wheel scrolling. Fix: added `isDragging` state — transition removed during drag (strip follows pointer in real-time), snaps with animation only on release. Also tracks a continuous `dragOffset` for visual position vs `selectedIndex` for highlight. File: `components/backups/ClockTimePicker.tsx`.
 
 ## Fixes — August 4, 2026 (v4.10.9)
 
