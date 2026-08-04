@@ -1,7 +1,7 @@
 # SAHU CSC — Common Service Center Management Platform
 **Version 4.10.9** — last updated 2026-08-04
 
-> **Latest setup**: After re-import run in order: `pnpm install --frozen-lockfile` → `pnpm --filter @workspace/db run push-force` → `Seed Database` workflow → Secrets needed: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`, `NEON_DATABASE_URL`, `ENCRYPTION_KEY` (64-char hex), `JWT_SECRET`. OTP emails active when `RESEND_API_KEY` is set. CORS auto-configured from `REPLIT_DEV_DOMAIN` at startup (no manual update needed). Production: Vercel (frontend) + Render (backend/Neon DB).
+> **Latest setup (2026-08-04 re-import)**: Run in order: `pnpm install` *(not `--frozen-lockfile`)* → `pnpm --filter @workspace/db run push-force` → `Seed Database` workflow → All secrets set: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`, `NEON_DATABASE_URL`, `ENCRYPTION_KEY`, `JWT_SECRET`. OTP emails active when `RESEND_API_KEY` is set. CORS auto-configured from `REPLIT_DEV_DOMAIN` at startup. CI lockfile fix pushed to GitHub. Production: Vercel (frontend) + Render (backend/Neon DB).
 
 ## Fixes — August 4, 2026 (v4.10.9)
 

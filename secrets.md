@@ -1,5 +1,5 @@
 # SAHU CSC — Secrets & Environment Variables Reference
-**Version 4.10.2** · Last updated 2026-07-31
+**Version 4.10.9** · Last updated 2026-08-04
 
 > Complete reference for every secret and environment variable in this project.
 >
@@ -50,8 +50,8 @@ Set in **Replit → Secrets tab**.
 | Secret | Status | Default if Absent | Explanation |
 |--------|--------|-------------------|-------------|
 | `VAPID_PRIVATE_KEY` | ⬜ Not set | Auto-generated & saved in DB | The private half of the VAPID key pair for Web Push notifications. Auto-generated at first boot and stored in the `settings` table. **Set this explicitly in production** — if the key changes (e.g. after a DB wipe), all existing push subscriptions become invalid and users must re-subscribe. |
-| `ENCRYPTION_KEY` | ⬜ Not set | Auto-generated & saved in DB | 32-byte base64-encoded AES-256-GCM key. Used to encrypt PII fields at rest: `address`, `bio`, `notes`, `totpSecret`, `backupCodes`. Auto-generated at first boot. **Set explicitly in production** — changing this key renders all encrypted data in the DB permanently unreadable. |
-| `JWT_SECRET` | ⬜ Not set | Auto-generated & saved in DB | Signing secret for internal JWT tokens. Auto-generated at first boot. Set explicitly in production for stability. |
+| `ENCRYPTION_KEY` | ✅ Set | 32-byte base64-encoded AES-256-GCM key. Used to encrypt PII fields at rest: `address`, `bio`, `notes`, `totpSecret`, `backupCodes`. Auto-generated at first boot. **Set explicitly in production** — changing this key renders all encrypted data in the DB permanently unreadable. |
+| `JWT_SECRET` | ✅ Set | Auto-generated & saved in DB | Signing secret for internal JWT tokens. Auto-generated at first boot. Set explicitly in production for stability. |
 | `MAXMIND_LICENSE_KEY` | ⬜ Not set | GeoIP uses bundled snapshot | MaxMind license key for weekly GeoIP database updates (runs every Sunday at 03:00 via node-cron). Without it, geo-blocking works from the bundled snapshot that may be a few months old. Get a free key at maxmind.com. |
 | `SENTRY_DSN` | ⬜ Not set | Server-side error tracking disabled | Sentry DSN for capturing unhandled errors and exceptions in the API server. Get from sentry.io → Project → Settings → Client Keys. |
 

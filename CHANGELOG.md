@@ -9,6 +9,7 @@
 
 ## Table of Contents
 
+0. [Infra — Fix pnpm lockfile out of sync after nodemailer removal; unblocked CI (August 4, 2026)](#0-infra--fix-pnpm-lockfile-out-of-sync-after-nodemailer-removal-unblocked-ci-august-4-2026)
 0. [Fix — Admin registration-alert email never sent: sendNewRegistrationAdminEmail signature mismatch (August 4, 2026)](#0-fix--admin-registration-alert-email-never-sent-sendnewregistrationadminemail-signature-mismatch-august-4-2026)
 0. [Refactor — Complete Resend migration: remove nodemailer, direct sendMail everywhere (August 4, 2026)](#0-refactor--complete-resend-migration-remove-nodemailer-direct-sendmail-everywhere-august-4-2026)
 0. [Fix — OTP email delivery: RESEND_FROM switched to verified sender domain (August 4, 2026)](#0-fix--otp-email-delivery-resend_from-switched-to-verified-sender-domain-august-4-2026)
@@ -21,6 +22,30 @@
 0. [Fix — Email OTP never sent + HTML template restored (July 30, 2026)](#0-fix--email-otp-never-sent--html-template-restored-july-30-2026)
 0. [Infra — 2FA permanently hardcoded ON; SMTP fully configured (July 30, 2026)](#0-infra--2fa-permanently-hardcoded-on-smtp-fully-configured-july-30-2026)
 0. [Refactor — Full CSS variable tokenization across 355+ files (July 27, 2026)](#0-refactor--full-css-variable-tokenization-across-355-files-july-27-2026)
+
+---
+
+## 0. Infra — Fix pnpm lockfile out of sync after nodemailer removal; unblocked CI (August 4, 2026)
+
+**Version: 4.10.9**
+
+### What changed
+
+| File | Change |
+|---|---|
+| `pnpm-lock.yaml` | Regenerated — removed stale `nodemailer@^9.0.1` and `@types/nodemailer@^8.0.1` entries from `artifacts/worker-server` specifiers |
+
+### Root cause
+
+`nodemailer` and `@types/nodemailer` were removed from `artifacts/worker-server/package.json` as part of the Resend migration (v4.10.2), but `pnpm-lock.yaml` was not regenerated and committed at the same time. GitHub Actions CI runs `pnpm install --frozen-lockfile`; the stale lockfile caused `ERR_PNPM_OUTDATED_LOCKFILE` and failed every CI deploy from that point.
+
+### Fix
+
+Ran `pnpm install` locally (without `--frozen-lockfile`) to regenerate the lockfile, then pushed the updated file to GitHub. CI now passes.
+
+### Note for future package removals
+
+Always run `pnpm install` and commit the updated `pnpm-lock.yaml` in the same commit as any `package.json` dependency removal. The `--frozen-lockfile` flag used in CI will reject any mismatch.
 
 ---
 

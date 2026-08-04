@@ -1,5 +1,5 @@
 # Replit Setup Guide — SAHU CSC Manager
-**Last updated: 2026-08-03**
+**Last updated: 2026-08-04**
 
 ## Setup Status
 
@@ -11,13 +11,13 @@
 | GitHub Actions secrets added | ✅ Done |
 | GitHub Actions workflow fixed | ✅ Done |
 | Auto-deploy pipeline live | ✅ Done |
-| Replit Secrets added | ⬜ Pending |
+| Replit Secrets added | ✅ Done |
 
 ---
 
 ## First Import (2 minutes only):
 1. Import from GitHub: `blasty8084/Sahu-Csc-Manager`
-2. Shell: `pnpm install --frozen-lockfile`
+2. Shell: `pnpm install` *(not `--frozen-lockfile` — lockfile may lag behind package.json after dependency removals)*
 3. Shell: `pnpm --filter @workspace/db run push-force`
 4. Run `Seed Database` workflow
 5. Add Replit Secrets (see list below)
@@ -103,6 +103,7 @@ GIT_ASKPASS=true git push https://blasty8084:ghp_YourToken@github.com/blasty8084
 - Outdated `vercel-action` → direct Vercel CLI ✅
 - `--prebuilt` without `.vercel/output` → added `vercel pull` + `vercel build` ✅
 - Node 20 deprecated → Node 22 explicit ✅
+- Lockfile out of sync after `nodemailer` removal → pushed updated `pnpm-lock.yaml` (2026-08-04) ✅
 
 ---
 
