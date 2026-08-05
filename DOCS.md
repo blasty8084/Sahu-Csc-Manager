@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Platform Documentation
-**Version 4.10.3** — last updated 2026-08-02
+**Version 4.11.0** — last updated 2026-08-05
 
 > Common Service Center (CSC) Business Management Platform for Odisha / India rural service centers.
 > Full-stack · PWA · Offline-capable · Multilingual (English / Hindi / Odia)
@@ -70,6 +70,22 @@ SAHU CSC is a production-grade, full-stack platform designed for Indian Common S
 - **Drag feedback** — dashed track guide ring turns orange while dragging; two-tone center pivot; radial glow + inner shine on hand tip.
 - **Step indicator redesigned** — HOUR / MIN pill tabs replace blank dots; active unit gets orange underline in the time header; confirm button uses gradient orange.
 - **`.gitignore` fix** — `backups/` pattern anchored to repo root (`/backups/`) so the source directory `src/components/backups/` is no longer accidentally excluded; `git add -f` no longer needed for edits to `ClockTimePicker.tsx`.
+
+### v4.11.0 — TOTP 2FA Security Hardening (2026-08-05)
+
+Nine targeted improvements to the TOTP two-factor authentication system. No DB schema changes required.
+
+- **Redis replay protection** — `isTotpReplay`/`markTotpUsed` now async, Redis-backed (90s TTL) with in-memory fallback; used codes cannot be replayed even across server restarts when Upstash is configured
+- **Per-user brute-force locking** — 5 TOTP failures per user per 15 minutes triggers a rate-limit lock (`checkTotpRateLimit` / `incrementTotpFailure`); clears on success (`clearTotpFailures`)
+- **Session-guarded TOTP secret** — setup saves the TOTP secret to `req.session.setupTotpSecret` (not the DB); secret only written to DB after `verify-totp` succeeds; abandoned setups leave no orphaned secret
+- **Expanded audit trail** — 6 new audit event types: `2fa.totp_setup_started`, `2fa.totp_setup_abandoned`, `2fa.replay_rejected`, `2fa.brute_force_locked`, `2fa.backup_code_used`
+- **2FA-disabled security email** — `send2faDisabledEmail()` sends a dark-navy HTML email with IP, device, and timestamp when 2FA is disabled
+- **Backup-code health warning** — `GET /auth/2fa/status` returns `backupCodesLow: boolean` and `backupCodesWarning: string|null`; frontend shows an amber banner with a Regenerate shortcut when ≤ 3 codes remain (threshold also corrected from 2 → 3 in `BackupCodesHealthBar`)
+- **Backup codes download** — "Download as .txt" button on the backup-codes save screen (plain-text Blob, no PDF library)
+- **Synced countdown timer** — login TOTP entry (`TotpEntry`) and profile TOTP setup card (`TotpSetupCard`) both show a live per-second countdown synced to the real 30s TOTP window; turns red at ≤ 5s
+- **Auto-submit** — 6-digit TOTP code auto-submits on the last digit at both login and profile setup
+- **`trustedUntil` in login response** — ISO string returned in `finalizeLogin` when `trustDevice=true`
+- **Pre-existing TS bugs fixed** — duplicate `className` attrs in `TwoFactorSection`, `BroadcastEmailForm`, `MobileReports` (typecheck now clean, 0 errors)
 
 ### v4.10.2 — Email OTP Fix + 2FA Hardened (2026-07-30)
 
@@ -683,7 +699,7 @@ All routes are mounted under `/api/`. Auth middleware: `requireAuth` (session), 
 | `POST` | `/api/auth/2fa/verify-otp` | Verify email OTP mid-login |
 | `POST` | `/api/auth/2fa/enable-otp` | Enable email-OTP 2FA (requires current password) |
 | `POST` | `/api/auth/2fa/disable` | Disable 2FA entirely (requires current password) |
-| `GET` | `/api/auth/2fa/status` | 2FA enabled/method/backupCodesRemaining/totpConfigured |
+| `GET` | `/api/auth/2fa/status` | 2FA enabled/method/backupCodesRemaining/totpConfigured/backupCodesLow/backupCodesWarning |
 | `POST` | `/api/auth/2fa/regenerate-backup-codes` | Invalidate old codes + generate fresh set (requires password) |
 | `GET` | `/api/ledger` | List ledger entries (per-user) |
 | `POST` | `/api/ledger` | Create ledger entry |
@@ -963,11 +979,19 @@ sahu-csc/                          ← monorepo root
 | TOTP standard | RFC 6238 · 30-second window · `window: 1` clock-drift tolerance |
 | TOTP apps | Any TOTP app (Google Authenticator, Authy, Microsoft Authenticator) via QR code or manual secret |
 | QR export | `setup-totp` returns `qrCodeDataUrl` + `otpauthUri` + plain `secret`; QR re-fetchable via `GET /auth/2fa/totp-qr` |
-| Replay protection | In-memory token log per user — a 30-second code already used once is rejected immediately |
+| Replay protection | **Redis-backed** (90s TTL, Upstash REST) with in-memory fallback — a used code is rejected even across server restarts |
+| Brute-force lock | 5 TOTP failures per user per 15 min → per-user lock; clears on success |
 | Timing-safe | Backup-code hash comparison uses `crypto.timingSafeEqual` to prevent timing oracle attacks |
+| Session-guarded secret | TOTP secret held in `req.session.setupTotpSecret` during setup; only written to DB after `verify-totp` succeeds |
 | Backup codes | 8 single-use codes, bcrypt-hashed at rest, shown once on enrollment; regeneratable via password confirmation |
+| Backup codes low warning | `GET /auth/2fa/status` returns `backupCodesLow` + `backupCodesWarning` when ≤ 3 codes remain; UI shows amber banner |
+| Backup codes download | Plain-text `.txt` download on backup-codes save screen |
+| `trustedUntil` | ISO string included in login response when `trustDevice=true` |
 | Enrollment | Profile → Security (authenticated) or inline at first login (mid-login, before full session exists) |
-| Audit | Every 2FA enable/disable/verify event written to `security_logs` and `audit_logs` |
+| Audit events | `2fa.totp_setup_started`, `2fa.totp_setup_abandoned`, `2fa.replay_rejected`, `2fa.brute_force_locked`, `2fa.backup_code_used`, plus all enable/disable/verify events written to `audit_logs` |
+| 2FA-disabled email | Security email sent on disable with IP, device, timestamp (dark-navy HTML template) |
+| Countdown timer (UI) | Login TOTP entry and profile setup card show synced per-second countdown; red at ≤ 5s |
+| Auto-submit (UI) | 6-digit TOTP code auto-submits on the last digit at login and profile setup |
 
 ### Session endpoints
 

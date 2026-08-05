@@ -1,5 +1,5 @@
 # SAHU CSC — Architecture Reference
-**Version 4.10.3 — August 2, 2026**
+**Version 4.11.0 — August 5, 2026**
 
 > This is the single authoritative reference for the SAHU CSC platform architecture.  
 > It supersedes `docs/archive/architectureV2.md` and `docs/archive/ARCHITECTURE.md`.  
@@ -961,6 +961,37 @@ Minimum 8 chars, uppercase, lowercase, number. Enforced on registration, passwor
 - OTP cleanup job (`otp-cleanup.ts`) runs hourly — deletes used/expired tokens
 - OTP email includes copy block (CSS `user-select: all`) + `autoComplete="one-time-code"` for mobile auto-fill
 
+### TOTP Security (v4.11.0)
+
+**Replay protection (Redis-backed)**
+`isTotpReplay(userId, code)` and `markTotpUsed(userId, code)` are async. On each verify the used `userId:code` key is written to Upstash Redis with a 90-second TTL. Falls back to a per-process `Map` if `UPSTASH_REDIS_REST_URL` is not set. Prevents replay even across server restarts when Redis is configured.
+
+**Per-user brute-force lock**
+`checkTotpRateLimit(userId)` → `incrementTotpFailure(userId)` → `clearTotpFailures(userId)`.  
+5 failures per user per 15-minute window triggers HTTP 429 with audit event `2fa.brute_force_locked`. Clears on first successful verify. Backed by Redis (same Upstash client) with in-memory fallback.
+
+**Session-guarded TOTP secret**
+`POST /auth/2fa/setup-totp` and `setup-totp-pending` save the generated secret to `req.session.setupTotpSecret` / `req.session.pendingTotpSecret` (not the DB). The `totpSecret` column in `users` is only written after `verify-totp` receives a valid code confirming the user controls the authenticator app. Abandoned setup flows leave no orphaned secret in the database.
+
+**Backup-code health signal**
+`GET /auth/2fa/status` returns two additional optional fields:
+- `backupCodesLow: boolean` — true when ≤ 3 codes remain  
+- `backupCodesWarning: string | null` — human-readable message  
+Frontend renders an amber banner with a Regenerate shortcut. `BackupCodesHealthBar` `low` threshold corrected to `<= 3`.
+
+**2FA-disabled security email**
+`notify2faDisabled` forwards IP, device, and timestamp to `send2faDisabledEmail()` (dark-navy HTML template, red warning banner). Non-fatal — email failure does not roll back the disable action.
+
+**Audit events (6 new)**
+
+| Event | Trigger |
+|-------|---------|
+| `2fa.totp_setup_started` | `setup-totp` / `setup-totp-pending` |
+| `2fa.totp_setup_abandoned` | `setup-totp` called while a secret is already in session (replaces) |
+| `2fa.replay_rejected` | Code already used within its 30s window |
+| `2fa.brute_force_locked` | 5th consecutive failure triggers lock |
+| `2fa.backup_code_used` | Backup code accepted in place of TOTP |
+
 ### Per-User Data Isolation
 
 `getUserFilter()` always filters by `userId`. Admin oversight uses separate `/api/admin/*` endpoints. Operators cannot access other operators' data.
@@ -1142,8 +1173,12 @@ pnpm --filter @workspace/db run push
 | i18n constants inside component function | Translated arrays/objects must be after `const { t } = useTranslation()` — module scope = wrong language |
 | `POST /api/auth/send-otp` returns 200 for unknown identifier | Prevents account enumeration |
 | OTP resend cooldown = 120 seconds | Email OTP resend (login/register/forgot-password): `RESEND_COOLDOWN = 120` in `loginTypes.ts`; unrelated to TOTP window |
-| TOTP period = 30 seconds (RFC 6238) | Standard window; `window: 1` on verify for ±30 s clock drift; in-memory replay protection per userId |
+| TOTP period = 30 seconds (RFC 6238) | Standard window; `window: 1` on verify for ±30 s clock drift; replay protection Redis-backed (90s TTL) with in-memory fallback |
+| TOTP brute-force lock | 5 failures/user/15min → per-user lock backed by Redis + in-memory; cleared on success; audit event `2fa.brute_force_locked` |
+| TOTP secret session-guarded | Secret stored in `req.session.setupTotpSecret` until `verify-totp` succeeds; never written to DB from setup endpoint alone |
 | TOTP uses `crypto.timingSafeEqual` | Backup-code hash comparison and OTP hash comparison use constant-time compare to prevent timing oracle attacks |
+| `GET /auth/2fa/status` returns `backupCodesLow` | `backupCodesLow: boolean` + `backupCodesWarning: string\|null` when ≤ 3 codes remain; UI shows amber banner with Regenerate shortcut |
+| 2FA-disabled security email | `send2faDisabledEmail()` sends dark-navy HTML email with IP, device, timestamp; non-fatal (email failure doesn't roll back disable) |
 | VAPID auto-generation | Dev-friendly; no manual key generation needed; production should use persistent secrets |
 | `post-merge.sh` is idempotent | Safe to run multiple times; `--frozen-lockfile` never modifies lockfile |
 | CDN sits in front of the single origin, doesn't split it | Single-VM deployment already sends correct per-asset-type cache headers (`serve.mjs`); a transparent reverse-proxy CDN (see `CDN_SETUP.md`) avoids CORS/asset-path-rewrite risk that a separate CDN-prefixed domain would add |

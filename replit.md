@@ -1,7 +1,22 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 4.10.12** — last updated 2026-08-04
+**Version 4.11.0** — last updated 2026-08-05
 
 > **Latest setup (2026-08-04 re-import)**: Run in order: `pnpm install` *(not `--frozen-lockfile`)* → `pnpm --filter @workspace/db run push-force` → `Seed Database` workflow → All secrets set: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`, `NEON_DATABASE_URL`, `ENCRYPTION_KEY`, `JWT_SECRET`. OTP emails active when `RESEND_API_KEY` is set. CORS auto-configured from `REPLIT_DEV_DOMAIN` at startup. CI lockfile fix pushed to GitHub. Production: Vercel (frontend) + Render (backend/Neon DB).
+
+## What's New — August 5, 2026 (v4.11.0) — TOTP 2FA Security Hardening
+
+Nine targeted improvements to the TOTP two-factor authentication system. No DB schema changes required — all new server state is session-scoped or Redis/in-memory.
+
+- **Redis replay protection** — `isTotpReplay`/`markTotpUsed` now async, backed by Upstash Redis (90s TTL) with in-memory fallback. Used TOTP codes cannot be replayed even across server restarts when Redis is configured.
+- **Per-user brute-force lock** — 5 TOTP failures per user per 15 minutes triggers a rate-limit lock; clears on first successful verify. Backed by same Redis client with in-memory fallback. Audit event `2fa.brute_force_locked` written.
+- **Session-guarded TOTP secret** — `setup-totp` and `setup-totp-pending` now save the generated secret to `req.session.setupTotpSecret` / `req.session.pendingTotpSecret` instead of writing it to the DB. The `totpSecret` DB column is only written after `verify-totp` succeeds. Abandoned setup flows leave no orphaned secrets.
+- **6 new audit events** — `2fa.totp_setup_started`, `2fa.totp_setup_abandoned`, `2fa.replay_rejected`, `2fa.brute_force_locked`, `2fa.backup_code_used`. All written to `audit_logs`.
+- **2FA-disabled security email** — `send2faDisabledEmail()` sends a dark-navy branded HTML email with IP address, device info, and timestamp when a user disables 2FA. Non-fatal — email failure does not roll back the disable action.
+- **Backup-code health warning** — `GET /auth/2fa/status` returns `backupCodesLow: boolean` and `backupCodesWarning: string|null` when ≤ 3 codes remain. Frontend `TwoFactorSection` shows an amber banner with a Regenerate shortcut. `BackupCodesHealthBar` threshold corrected from `<= 2` to `<= 3`.
+- **Backup codes `.txt` download** — "Download as .txt" button on the backup-codes save screen generates a plain-text Blob download (no PDF library).
+- **Synced countdown timer (UI)** — Login `TotpEntry` and profile `TotpSetupCard` both show a per-second countdown timer synced to the real 30-second TOTP window. Turns red at ≤ 5s. Uses `useTotpCountdown()` hook polling at 500ms.
+- **Auto-submit (UI)** — 6-digit TOTP code auto-submits on the last digit at both the login step and the profile setup card. Uses `formRef.current?.requestSubmit()` / direct `onVerify()` call.
+- **TypeScript clean** — 3 pre-existing duplicate `className` TS errors (TS17001) in `TwoFactorSection`, `BroadcastEmailForm`, `MobileReports` fixed. Typecheck passes with 0 errors.
 
 ## Fixes — August 4, 2026 (v4.10.12)
 

@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Changelog
-**Current version: 4.10.12 — August 4, 2026**
+**Current version: 4.11.0 — August 5, 2026**
 
 > Single authoritative changelog covering all versions from v1.x through v4.x.
 > - **v3.x / v4.x entries** (current) — listed first, newest at top
@@ -9,6 +9,7 @@
 
 ## Table of Contents
 
+0. [Security — TOTP 2FA Hardening: Redis replay, brute-force lock, session-guarded secret, audit events, UX countdown (August 5, 2026)](#0-security--totp-2fa-hardening-redis-replay-brute-force-lock-session-guarded-secret-audit-events-ux-countdown-august-5-2026)
 0. [Fix — Drum scroll header time visibility: larger text, orange AM/PM badge (August 4, 2026)](#0-fix--drum-scroll-header-time-visibility-larger-text-orange-ampm-badge-august-4-2026)
 0. [Fix — Drum scroll wheel scrolls page: native non-passive listener + body scroll lock (August 4, 2026)](#0-fix--drum-scroll-wheel-scrolls-page-native-non-passive-listener--body-scroll-lock-august-4-2026)
 0. [Fix — Desktop drum scroll time picker unresponsive: transition lag, discrete snapping, no wheel support (August 4, 2026)](#0-fix--desktop-drum-scroll-time-picker-unresponsive-transition-lag-discrete-snapping-no-wheel-support-august-4-2026)
@@ -25,6 +26,54 @@
 0. [Fix — Email OTP never sent + HTML template restored (July 30, 2026)](#0-fix--email-otp-never-sent--html-template-restored-july-30-2026)
 0. [Infra — 2FA permanently hardcoded ON; SMTP fully configured (July 30, 2026)](#0-infra--2fa-permanently-hardcoded-on-smtp-fully-configured-july-30-2026)
 0. [Refactor — Full CSS variable tokenization across 355+ files (July 27, 2026)](#0-refactor--full-css-variable-tokenization-across-355-files-july-27-2026)
+
+---
+
+## 0. Security — TOTP 2FA Hardening: Redis replay, brute-force lock, session-guarded secret, audit events, UX countdown (August 5, 2026)
+
+**Version: 4.11.0**
+
+Nine targeted improvements to the TOTP two-factor authentication system. No DB schema changes required — all new server state is session-scoped or Redis/in-memory.
+
+### Backend changes
+
+| File | Change |
+|------|--------|
+| `routes/auth/2fa-totp.ts` | `isTotpReplay`/`markTotpUsed` now **async, Redis-backed** (90s TTL) with in-memory fallback; `checkTotpRateLimit`, `incrementTotpFailure`, `clearTotpFailures` added (5 failures / 15 min per user, Redis + in-memory fallback); `setup-totp` and `setup-totp-pending` now save the TOTP secret to **`req.session.setupTotpSecret` / `req.session.pendingTotpSecret`** instead of the DB — secret only written to DB after successful `verify-totp`; audit events `2fa.totp_setup_started`, `2fa.totp_setup_abandoned` added; `totp-qr` and `totp-code-pending` check session secret first |
+| `routes/auth/2fa-backup.ts` | All `isTotpReplay`/`markTotpUsed` calls awaited; Mode A reads secret from `req.session.setupTotpSecret` and writes to DB on verify; Mode B enrollment reads from `req.session.pendingTotpSecret`; per-user rate-limit check on every verify attempt with clear-on-success; audit events `2fa.replay_rejected`, `2fa.brute_force_locked`, `2fa.backup_code_used`; `trustedUntil` ISO string added to `finalizeLogin` response when `trustDevice=true` |
+| `routes/auth/2fa.ts` | `GET /auth/2fa/status` returns two new optional fields: `backupCodesLow: boolean` (true when ≤ 3 codes remain) and `backupCodesWarning: string \| null`; `POST /auth/2fa/disable` clears `req.session.setupTotpSecret`, passes IP/device/timestamp to `notify2faDisabled` |
+| `lib/auth/middleware.ts` | `SessionData` extended with `setupTotpSecret?: string` and `pendingTotpSecret?: string` |
+| `lib/mailer/templates/security.ts` | **New file** — `send2faDisabledEmail(to, { ip, device, timestamp })` using dark V2 HTML template with event detail table and red warning banner |
+| `services/notificationTemplates.ts` | `notify2faDisabled` accepts optional `{ ip, device, timestamp }`, now also sends security email via dynamic import (non-fatal) |
+
+### Frontend changes
+
+| File | Change |
+|------|--------|
+| `components/auth/twofa/TotpEntry.tsx` | `useTotpCountdown()` hook synced via `Math.floor(Date.now()/1000) % 30`, polls every 500ms; countdown timer displayed next to TOTP hint (red at ≤ 5s); `handleCodeChange` strips non-digits; auto-submit via `formRef.current?.requestSubmit()` on 6th digit; `onSwitchToOtp` optional prop; loading spinner on Verify button |
+| `components/auth/twofa/useTwoFactorStep.ts` | `handleSwitchToOtp` added (calls `handleChooseMethod("otp")`), exported |
+| `components/auth/TwoFactorStep.tsx` | Imports and passes `onSwitchToOtp={handleSwitchToOtp}` to `<TotpEntry>` |
+| `components/profile/totp/TotpSetupCard.tsx` | Synced countdown timer next to QR code; auto-submit when 6th digit entered in confirm-code input |
+| `components/profile/TwoFactorSection.tsx` | Query type updated to include `backupCodesLow` and `backupCodesWarning`; amber warning banner shown when `statusData?.backupCodesLow`; "Download as .txt" button in backup-codes save screen (Blob download, no PDF library); pre-existing duplicate `className` TS error fixed |
+| `components/profile/BackupCodesHealthBar.tsx` | `low` threshold corrected from `<= 2` to `<= 3` to match backend spec |
+| `components/broadcast/BroadcastEmailForm.tsx` | Pre-existing duplicate `className` TS error fixed |
+| `components/reports/MobileReports.tsx` | Pre-existing duplicate `className` TS error fixed |
+
+### Security improvements summary
+
+1. **Redis replay protection** — used code cannot be replayed even across server restarts (Upstash REST, falls back to in-memory if unconfigured)
+2. **Per-user brute-force locking** — 5 TOTP failures per user per 15 minutes before lock; clears on success
+3. **Secret never persisted until confirmed** — TOTP secret stays in the session until `verify-totp` succeeds; abandoned setups leave no orphaned secret in the DB
+4. **Richer audit trail** — 6 new audit event types covering setup-start, abandonment, replay rejection, brute-force lock, backup-code use
+5. **2FA-disabled security email** — users are emailed with IP, device, and timestamp when 2FA is turned off
+6. **Backup-code health warning** — `GET /auth/2fa/status` returns `backupCodesLow` flag; UI shows amber banner + Regenerate shortcut when ≤ 3 codes remain; threshold corrected to 3
+7. **Synced countdown timer** — login TOTP entry and profile TOTP setup card both show live per-second countdown synced to the real 30s TOTP window; red at ≤ 5s
+8. **Auto-submit** — 6-digit code entry auto-submits on the last digit (both login and setup card)
+9. **Backup codes download** — plain-text `.txt` download available on the backup-codes save screen
+
+### No DB migration needed
+
+`pendingTotpSecret` and `setupTotpSecret` are session-only. The only DB change is that `totpSecret` is written *later* (on verify) rather than on setup — no schema column change.
 
 ---
 
