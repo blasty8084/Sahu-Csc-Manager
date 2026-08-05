@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { PermissionRow } from "./PermissionRow";
 import { usePermissions } from "./usePermissions";
+import { usePushNotifications } from "@/hooks/use-push-notifications";
 
 // ─── Permission Card — modal overlay shown once after first successful login ─
 // Step 1: "Permissions Required" intro
@@ -43,6 +44,7 @@ export function PermissionCard() {
   } = usePermissions();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { subscribe: pushSubscribe } = usePushNotifications();
 
   useEffect(() => {
     void initializeFromBrowser();
@@ -81,7 +83,16 @@ export function PermissionCard() {
   const handleContinueStep1 = async () => {
     setStep(2);
     await requestLocation();
-    if (!skipNotifications) await requestNotifications();
+    if (!skipNotifications) {
+      const notifResult = await requestNotifications();
+      if (notifResult === "granted") {
+        // Permission just granted — immediately subscribe to PushManager so the
+        // user doesn't need to find the toggle in settings. Mark as prompted so
+        // the dashboard auto-setup hook won't show the native prompt again.
+        localStorage.setItem("sahu-push-prompted", "true");
+        pushSubscribe().catch(() => {}); // non-blocking — failure is silent
+      }
+    }
     await requestFileManager();
     await finish();
   };
