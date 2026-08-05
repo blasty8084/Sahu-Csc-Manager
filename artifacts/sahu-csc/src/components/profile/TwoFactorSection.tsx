@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   ShieldCheck, ShieldOff, Mail, Smartphone, Loader2,
-  Copy, Check, AlertTriangle, QrCode, Zap, Clock, Star,
+  Copy, Check, AlertTriangle, QrCode, Zap, Clock, Star, Download,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
@@ -67,8 +67,15 @@ export function TwoFactorSection() {
   const [showSecret,   setShowSecret]   = useState(false);
   const [copiedSecret, setCopiedSecret] = useState(false);
 
-  // ── Backup-codes count ────────────────────────────────────────────────────
-  const { data: statusData } = useQuery<{ backupCodesRemaining: number; twoFaEnabled: boolean; twoFaMethod: Method; totpConfigured: boolean }>({
+  // ── Backup-codes count + low-warning from server ──────────────────────────
+  const { data: statusData } = useQuery<{
+    backupCodesRemaining: number;
+    twoFaEnabled: boolean;
+    twoFaMethod: Method;
+    totpConfigured: boolean;
+    backupCodesLow: boolean;
+    backupCodesWarning: string | null;
+  }>({
     queryKey: ["2fa-status"],
     queryFn:  () => apiFetch("/auth/2fa/status"),
     enabled:  twoFaEnabled,
@@ -153,6 +160,28 @@ export function TwoFactorSection() {
 
   // One-time backup codes save screen
   if (stage === "backup-codes" && newCodes) {
+    const downloadCodes = () => {
+      const text = [
+        "SAHU CSC — Backup Codes",
+        "=".repeat(30),
+        `Generated: ${new Date().toLocaleString("en-IN")}`,
+        "",
+        "Each code can be used ONCE if you lose access to your",
+        pendingM === "totp" ? "authenticator app." : "email.",
+        "Store these in a safe place — they will NOT be shown again.",
+        "",
+        ...newCodes.map((c, i) => `${i + 1}. ${c}`),
+        "",
+        "=".repeat(30),
+        "SAHU CSC · Common Service Center · Odisha, India",
+      ].join("\n");
+      const blob = new Blob([text], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = "sahu-csc-backup-codes.txt"; a.click();
+      URL.revokeObjectURL(url);
+    };
+
     return (
       <div className="rounded-2xl border-2 border-amber-200 bg-amber-50 p-4 space-y-3">
         <div className="flex items-center gap-2">
@@ -176,6 +205,12 @@ export function TwoFactorSection() {
             </button>
           ))}
         </div>
+        <button
+          type="button" onClick={downloadCodes}
+          className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-amber-300 text-xs font-semibold text-amber-700 bg-white hover:bg-amber-50 transition-colors"
+        >
+          <Download size={12} /> Download as .txt
+        </button>
         <Button
           className="w-full h-11 font-bold text-white border-0"
           style={{ background: `linear-gradient(135deg, ${NAVY}, #1d3070)` }}
@@ -296,8 +331,7 @@ export function TwoFactorSection() {
               return (
                 <button key={m} type="button" disabled={active || setupTotpMut.isPending}
                   onClick={() => initiateMethod(m)}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all disabled:cursor-default"
-                  className={!active ? "dark:!bg-zinc-700/50 dark:!border-zinc-600" : ""}
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all disabled:cursor-default${!active ? " dark:!bg-zinc-700/50 dark:!border-zinc-600" : ""}`}
                   style={{ borderColor: active ? ORANGE : "var(--color-slate-100)", background: active ? "var(--surface-warn-bg)" : "#f9fafb" }}>
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0"
                     style={{ background: active ? `linear-gradient(135deg, ${ORANGE}, var(--brand-orange-600))` : "var(--color-gray-200)" }}>
@@ -357,6 +391,24 @@ export function TwoFactorSection() {
               </button>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Backup codes low warning banner */}
+      {twoFaEnabled && statusData?.backupCodesLow && statusData.backupCodesWarning && (
+        <div className="rounded-2xl border-2 border-amber-300 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 flex items-start gap-3">
+          <AlertTriangle size={15} className="text-amber-500 flex-shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-amber-800 dark:text-amber-300">Low Backup Codes</p>
+            <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">{statusData.backupCodesWarning}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => { setStage("regen-confirm"); setPendingM(twoFaMethod); }}
+            className="text-[11px] font-bold px-2.5 py-1 rounded-lg text-amber-800 bg-amber-200 hover:bg-amber-300 dark:bg-amber-900 dark:text-amber-200 transition-colors flex-shrink-0"
+          >
+            Regenerate
+          </button>
         </div>
       )}
 

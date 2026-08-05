@@ -139,6 +139,13 @@ export function useTwoFactorStep(challenge: TwoFaChallenge, onSuccess: () => voi
     setResendSeconds(0); setEnrollQrDataUrl(null); setEnrollSecret(null);
   };
 
+  /** Switch from TOTP to email OTP (for users who lost their authenticator). */
+  const handleSwitchToOtp = async () => {
+    if (choosing) return;
+    resetCodeEntry();
+    await handleChooseMethod("otp");
+  };
+
   return {
     method, maskedEmail, totpEnrolled,
     choosing, chooseError,
@@ -148,5 +155,6 @@ export function useTwoFactorStep(challenge: TwoFaChallenge, onSuccess: () => voi
     pendingBackupCodes, copiedIdx,
     handleChooseMethod, handleResend, handleSubmit, finishAfterBackupCodes,
     copyKey, copySecretKey, toggleShowSecret, onToggleBackupCode, goBackToMethodPicker,
+    handleSwitchToOtp,
   };
 }

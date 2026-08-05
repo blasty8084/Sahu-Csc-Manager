@@ -5,13 +5,17 @@ import crypto from "node:crypto";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { requireAuth, comparePassword, auditLog, securityLog, getClientIp, parseDevice } from "../../lib/auth";
-import { decryptField } from "../../lib/encryption";
+import { encryptField, decryptField } from "../../lib/encryption";
 import { finalizeLogin } from "./login-helpers";
 import { notify2faEnabled } from "../../services/notificationTemplates";
 import { asyncHandler } from "../../lib/async-handler";
-import { isTotpReplay, markTotpUsed, buildQrData } from "./2fa-totp";
+import {
+  isTotpReplay, markTotpUsed, buildQrData,
+  checkTotpRateLimit, incrementTotpFailure, clearTotpFailures,
+} from "./2fa-totp";
 
 export const BACKUP_CODE_COUNT = 8;
+const TRUST_DURATION_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 // ─── Backup code utilities (exported for use by 2fa-otp.ts) ─────────────────
 
@@ -46,29 +50,61 @@ export async function tryConsumeBackupCode(userId: number, code: string): Promis
 const router: IRouter = Router();
 
 // ─── POST /auth/2fa/verify-totp ──────────────────────────────────────────────
-// Mode A (session.userId): confirms TOTP setup, enables 2FA, issues backup codes.
+// Mode A (session.userId):    confirms TOTP setup, enables 2FA, issues backup codes.
 // Mode B (session.pendingUserId): finalizes a login that required TOTP challenge.
-// Also accepts a backup code as fallback for both modes.
+// Both modes accept a backup code as fallback.
 router.post("/auth/2fa/verify-totp", asyncHandler(async (req, res) => {
   const { code, backupCode, trustDevice } = req.body as { code?: string; backupCode?: string; trustDevice?: boolean };
 
-  // ── Mode A: confirming setup on an already-authenticated session ────────
+  // ── Mode A: confirming setup on an already-authenticated session ──────────
   if (req.session.userId) {
     const userId = req.session.userId;
-    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
-    if (!user?.totpSecret) { res.status(400).json({ error: "No TOTP setup in progress. Call setup-totp first." }); return; }
-    if (!code || !/^\d{6}$/.test(code)) { res.status(400).json({ error: "Enter the 6-digit code from your authenticator app." }); return; }
 
-    const secret = await decryptField(user.totpSecret);
-    if (isTotpReplay(userId, code)) {
-      res.status(400).json({ error: "This code has already been used. Wait for the next code." });
+    // Per-user rate limit: 5 failed attempts / 15 minutes
+    const { blocked } = await checkTotpRateLimit(userId);
+    if (blocked) {
+      await auditLog(userId, "2fa.brute_force_locked", "TOTP rate limit hit during setup", getClientIp(req));
+      res.status(429).json({ error: "Too many attempts — try again in 15 minutes." });
+      return;
+    }
+
+    // Retrieve secret: prefer unverified session secret, fallback to DB (re-verify flow)
+    const sessionSecret = (req.session as any).setupTotpSecret as string | undefined;
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+    if (!user) { res.status(404).json({ error: "User not found" }); return; }
+
+    const rawSecret = sessionSecret ?? (user.totpSecret ? await decryptField(user.totpSecret) : null);
+    if (!rawSecret) {
+      res.status(400).json({ error: "No TOTP setup in progress. Call setup-totp first." });
+      return;
+    }
+    if (!code || !/^\d{6}$/.test(code)) {
+      res.status(400).json({ error: "Enter the 6-digit code from your authenticator app." });
+      return;
+    }
+
+    if (await isTotpReplay(userId, code)) {
+      await incrementTotpFailure(userId);
+      await auditLog(userId, "2fa.replay_rejected", "Replay TOTP code rejected during setup", getClientIp(req));
+      res.status(400).json({ error: "This code was already used — wait for the next one." });
       return;
     }
 
     // window: 1 = accept codes from ±1 period (±30 s) to handle clock drift
-    const valid = authenticator.verify({ token: code, secret: secret!, window: 1 } as any);
-    if (!valid) { res.status(400).json({ error: "Invalid code. Please try again." }); return; }
-    markTotpUsed(userId, code);
+    const valid = authenticator.verify({ token: code, secret: rawSecret, window: 1 } as any);
+    if (!valid) {
+      await incrementTotpFailure(userId);
+      res.status(400).json({ error: "Incorrect code — check your authenticator app." });
+      return;
+    }
+
+    await markTotpUsed(userId, code);
+    await clearTotpFailures(userId);
+
+    // Persist the verified secret to DB now that the user has confirmed it works
+    await db.update(usersTable).set({ totpSecret: await encryptField(rawSecret) }).where(eq(usersTable.id, userId));
+    // Clear pending session secret
+    delete (req.session as any).setupTotpSecret;
 
     const backupCodes = generateBackupCodes();
     await db.update(usersTable).set({
@@ -91,33 +127,61 @@ router.post("/auth/2fa/verify-totp", asyncHandler(async (req, res) => {
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
     if (!user) { res.status(401).json({ error: "Session expired. Please log in again." }); return; }
 
-    let ok = false;
-    if (code && /^\d{6}$/.test(code) && user.totpSecret) {
-      if (isTotpReplay(userId, code)) {
-        await auditLog(userId, "2fa.login_failed", "Replay TOTP code rejected during login", getClientIp(req));
-        res.status(401).json({ error: "This code has already been used. Wait for the next code." });
-        return;
-      }
-      const secret = await decryptField(user.totpSecret);
-      ok = authenticator.verify({ token: code, secret: secret!, window: 1 } as any);
-      if (ok) markTotpUsed(userId, code);
+    // Per-user rate limit
+    const { blocked } = await checkTotpRateLimit(userId);
+    if (blocked) {
+      await auditLog(userId, "2fa.brute_force_locked", "TOTP rate limit hit during login", getClientIp(req));
+      res.status(429).json({ error: "Too many attempts — try again in 15 minutes." });
+      return;
     }
+
+    let ok = false;
+    let usedBackupCode = false;
+
+    if (code && /^\d{6}$/.test(code)) {
+      // Use pending session secret (mid-enrollment) or DB secret (already enrolled)
+      const sessionSecret = (req.session as any).pendingTotpSecret as string | undefined;
+      const rawSecret = sessionSecret ?? (user.totpSecret ? await decryptField(user.totpSecret) : null);
+
+      if (rawSecret) {
+        if (await isTotpReplay(userId, code)) {
+          await auditLog(userId, "2fa.replay_rejected", "Replay TOTP code rejected during login", getClientIp(req));
+          res.status(401).json({ error: "This code was already used — wait for the next one." });
+          return;
+        }
+        ok = authenticator.verify({ token: code, secret: rawSecret, window: 1 } as any);
+        if (ok) {
+          await markTotpUsed(userId, code);
+          // If enrolling, persist the secret to DB now
+          if ((req.session as any).pendingTotpSecret) {
+            await db.update(usersTable).set({ totpSecret: await encryptField(rawSecret) }).where(eq(usersTable.id, userId));
+            delete (req.session as any).pendingTotpSecret;
+          }
+        }
+      }
+    }
+
     if (!ok && backupCode) {
       ok = await tryConsumeBackupCode(userId, backupCode);
+      if (ok) usedBackupCode = true;
     }
 
     if (!ok) {
+      await incrementTotpFailure(userId);
       await auditLog(userId, "2fa.login_failed", "Failed TOTP/backup-code verification during login", getClientIp(req));
       await securityLog(userId, "2fa.login_failed", false, getClientIp(req), req.session.pendingDeviceFingerprint ?? null, "Failed TOTP/backup-code verification");
       res.status(401).json({ error: "Invalid or expired code." });
       return;
     }
 
+    await clearTotpFailures(userId);
+
+    if (usedBackupCode) {
+      await auditLog(userId, "2fa.backup_code_used", "Backup code consumed at login", getClientIp(req));
+    }
     await securityLog(userId, "2fa.login_verified", true, getClientIp(req), req.session.pendingDeviceFingerprint ?? null, "TOTP/backup-code verification succeeded");
 
-    // If the user chose "Authenticator App" on the verification screen and
-    // had no TOTP set up yet, this confirms first-time enrollment — flip on
-    // 2FA and mint backup codes, same as Mode A.
+    // If enrolling for the first time, flip on 2FA and mint backup codes.
     const wasEnrolling = !!req.session.pendingTotpEnrolling;
     let newBackupCodes: string[] | undefined;
     if (wasEnrolling) {
@@ -148,7 +212,13 @@ router.post("/auth/2fa/verify-totp", asyncHandler(async (req, res) => {
       wasNewDevice: !!req.session.pendingIsNewDevice,
       trustDevice: trustDevice === true,
     });
-    res.json(newBackupCodes ? { ...result, backupCodes: newBackupCodes } : result);
+
+    const trustedUntil = trustDevice ? new Date(Date.now() + TRUST_DURATION_MS).toISOString() : undefined;
+    res.json({
+      ...result,
+      ...(trustedUntil ? { trustedUntil } : {}),
+      ...(newBackupCodes ? { backupCodes: newBackupCodes } : {}),
+    });
     return;
   }
 

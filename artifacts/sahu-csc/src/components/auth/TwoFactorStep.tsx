@@ -23,6 +23,7 @@ export function TwoFactorStep({ challenge, onSuccess, onBack }: TwoFactorStepPro
     pendingBackupCodes, copiedIdx,
     handleChooseMethod, handleResend, handleSubmit, finishAfterBackupCodes,
     copyKey, copySecretKey, toggleShowSecret, onToggleBackupCode, goBackToMethodPicker,
+    handleSwitchToOtp,
   } = useTwoFactorStep(challenge, onSuccess);
 
   const isTotp = method === "totp";
@@ -106,6 +107,7 @@ export function TwoFactorStep({ challenge, onSuccess, onBack }: TwoFactorStepPro
             isNewEnrollment={isNewEnrollment} onSubmit={handleSubmit}
             onBack={goBackToMethodPicker} onToggleBackupCode={onToggleBackupCode}
             onToggleShowSecret={toggleShowSecret} onCopySecret={copySecretKey}
+            onSwitchToOtp={handleSwitchToOtp}
           />
         )}
       </AnimatePresence>

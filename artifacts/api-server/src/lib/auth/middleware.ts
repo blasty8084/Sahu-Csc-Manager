@@ -25,6 +25,11 @@ declare module "express-session" {
     // authenticator set up yet). Tells verify-totp's Mode B to also flip
     // twoFaEnabled/twoFaMethod + issue backup codes on success.
     pendingTotpEnrolling: boolean;
+    // Holds an unverified TOTP secret mid-enrollment (session → DB only after verify).
+    // setupTotpSecret: authenticated flow (Profile → Enable TOTP).
+    // pendingTotpSecret: mid-login enrollment flow.
+    setupTotpSecret: string;
+    pendingTotpSecret: string;
   }
 }
 

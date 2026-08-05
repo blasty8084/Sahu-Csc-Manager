@@ -35,10 +35,15 @@ router.post("/auth/2fa/disable", requireAuth, asyncHandler(async (req, res) => {
   }).where(eq(usersTable.id, userId));
 
   clearTotpReplay(userId);
+  // Clear any in-progress setup secret from session
+  delete (req.session as any).setupTotpSecret;
 
-  await auditLog(userId, "2fa.disabled", "2FA disabled", getClientIp(req));
-  await securityLog(userId, "2fa.disabled", true, getClientIp(req), null, null);
-  await notify2faDisabled(userId);
+  const ip     = getClientIp(req);
+  const device = req.headers["user-agent"] ?? "Unknown";
+
+  await auditLog(userId, "2fa.disabled", "2FA disabled", ip);
+  await securityLog(userId, "2fa.disabled", true, ip, null, null);
+  await notify2faDisabled(userId, { ip, device: String(device), timestamp: new Date() });
   res.json({ message: "2FA disabled" });
 }));
 
@@ -53,12 +58,18 @@ router.get("/auth/2fa/status", requireAuth, asyncHandler(async (req, res) => {
     try { backupCodesRemaining = JSON.parse(user.backupCodes).length; } catch { /* ignore */ }
   }
 
+  const backupCodesLow = user.twoFaEnabled && backupCodesRemaining <= 3;
+
   res.json({
     enabled: user.twoFaEnabled,
     method: user.twoFaMethod,
     verifiedAt: user.twoFaVerifiedAt ? user.twoFaVerifiedAt.toISOString() : null,
     backupCodesRemaining,
     totpConfigured: !!user.totpSecret,
+    backupCodesLow,
+    backupCodesWarning: backupCodesLow
+      ? `Only ${backupCodesRemaining} backup code${backupCodesRemaining === 1 ? "" : "s"} left. Regenerate now.`
+      : null,
   });
 }));
 

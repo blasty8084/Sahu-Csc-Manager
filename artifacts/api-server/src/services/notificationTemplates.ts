@@ -160,7 +160,10 @@ export async function notify2faEnabled(userId: number, method: "otp" | "totp") {
   });
 }
 
-export async function notify2faDisabled(userId: number) {
+export async function notify2faDisabled(
+  userId: number,
+  options?: { ip?: string; device?: string; timestamp?: Date }
+) {
   await createNotification({
     userId,
     title: "Two-Factor Authentication Disabled",
@@ -168,7 +171,22 @@ export async function notify2faDisabled(userId: number) {
     type: "security",
     priority: "CRITICAL",
     link: `/profile`,
+    meta: options ? { ip: options.ip, device: options.device } : undefined,
   });
+
+  // Also send a security email (non-fatal if email is not configured)
+  try {
+    const { isSmtpConfigured } = await import("../lib/mailer");
+    if (isSmtpConfigured()) {
+      const { db, usersTable } = await import("@workspace/db");
+      const { eq } = await import("drizzle-orm");
+      const { send2faDisabledEmail } = await import("../lib/mailer/templates/security");
+      const [user] = await db.select({ email: usersTable.email }).from(usersTable).where(eq(usersTable.id, userId));
+      if (user?.email) {
+        await send2faDisabledEmail(user.email, options);
+      }
+    }
+  } catch { /* non-fatal — in-app notification already created */ }
 }
 
 export async function notifyNewDeviceLogin(userId: number, ip: string, device: string) {

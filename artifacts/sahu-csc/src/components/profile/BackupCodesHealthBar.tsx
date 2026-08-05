@@ -24,7 +24,7 @@ export function BackupCodesHealthBar({
   onRegen,
 }: BackupCodesHealthBarProps) {
   const pct = Math.round((codesRemaining / TOTAL_CODES) * 100);
-  const low = codesRemaining <= 2;
+  const low = codesRemaining <= 3;
 
   return (
     <div className="rounded-2xl border border-border bg-card p-4 space-y-3 shadow-sm">

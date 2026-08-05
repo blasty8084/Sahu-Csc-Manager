@@ -1,10 +1,11 @@
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   KeyRound, Loader2, ArrowLeft, Smartphone,
-  ShieldCheck, QrCode, Eye, EyeOff, Copy, Check,
+  ShieldCheck, QrCode, Eye, EyeOff, Copy, Check, Timer, Mail,
 } from "lucide-react";
 
 const NAVY = "var(--brand-navy)";
@@ -27,13 +28,45 @@ interface TotpEntryProps {
   onToggleBackupCode: () => void;
   onToggleShowSecret: () => void;
   onCopySecret: () => void;
+  /** Optional — called when user wants to switch to email OTP instead */
+  onSwitchToOtp?: () => void;
+}
+
+/** Synced countdown: seconds remaining in the current 30-second TOTP window. */
+function useTotpCountdown() {
+  const [remaining, setRemaining] = useState(() => 30 - (Math.floor(Date.now() / 1000) % 30));
+  useEffect(() => {
+    const tick = () => setRemaining(30 - (Math.floor(Date.now() / 1000) % 30));
+    const id = setInterval(tick, 500); // poll at 500ms for smooth updates
+    return () => clearInterval(id);
+  }, []);
+  return remaining;
 }
 
 export function TotpEntry({
   code, setCode, error, trustDevice, setTrustDevice, useBackupCode, isSubmitting,
   enrollQrDataUrl, enrollSecret, showSecret, copiedSecret, isNewEnrollment,
-  onSubmit, onBack, onToggleBackupCode, onToggleShowSecret, onCopySecret,
+  onSubmit, onBack, onToggleBackupCode, onToggleShowSecret, onCopySecret, onSwitchToOtp,
 }: TotpEntryProps) {
+  const remaining = useTotpCountdown();
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Auto-submit when 6th digit is entered in TOTP mode (no manual "Verify" needed)
+  useEffect(() => {
+    if (!useBackupCode && code.length === 6 && !isSubmitting) {
+      formRef.current?.requestSubmit();
+    }
+  }, [code, useBackupCode, isSubmitting]);
+
+  const handleCodeChange = (v: string) => {
+    // Only allow digits in TOTP mode
+    if (!useBackupCode) {
+      setCode(v.replace(/\D/g, "").slice(0, 6));
+    } else {
+      setCode(v.toUpperCase().slice(0, 12));
+    }
+  };
+
   return (
     <motion.div key="code-entry-totp" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       transition={{ duration: 0.15 }} className="space-y-4">
@@ -80,28 +113,52 @@ export function TotpEntry({
         </div>
       )}
 
-      {/* TOTP hint when already enrolled */}
+      {/* TOTP hint + synced countdown timer when already enrolled */}
       {!useBackupCode && !isNewEnrollment && (
         <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 flex items-start gap-3">
           <Smartphone className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
-          <p className="text-xs text-blue-700 leading-relaxed">
-            Open your authenticator app (Google Authenticator, Authy, etc.) and enter the current 6-digit code.
-          </p>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-blue-700 leading-relaxed">
+              Open your authenticator app and enter the current 6-digit code.
+            </p>
+          </div>
+          <div className="flex flex-col items-center flex-shrink-0">
+            <Timer size={12} className={remaining <= 5 ? "text-red-400" : "text-blue-400"} />
+            <span className={`text-[11px] font-mono font-bold tabular-nums ${remaining <= 5 ? "text-red-500" : "text-blue-500"}`}>
+              {remaining}s
+            </span>
+          </div>
         </div>
       )}
 
-      <form onSubmit={onSubmit} className="space-y-4">
+      {/* Countdown timer next to QR during enrollment */}
+      {!useBackupCode && isNewEnrollment && (
+        <div className="flex items-center justify-center gap-1.5 text-[11px] text-orange-500">
+          <Timer size={11} />
+          <span className="font-mono font-bold tabular-nums">{remaining}s</span>
+          <span>until code changes</span>
+        </div>
+      )}
+
+      <form ref={formRef} onSubmit={onSubmit} className="space-y-4">
         <div className="relative">
           <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-          <Input autoFocus
+          <Input
+            autoFocus
             inputMode={useBackupCode ? "text" : "numeric"}
-            placeholder={useBackupCode ? "Backup code (e.g. 1A2B3-C4D5E)" : "Enter your 6-digit code"}
-            value={code} onChange={(e) => setCode(e.target.value)}
+            placeholder={useBackupCode ? "Backup code (e.g. 1A2B3-C4D5E)" : "6-digit code"}
+            value={code}
+            onChange={(e) => handleCodeChange(e.target.value)}
             className="pl-10 h-11 text-gray-900 placeholder:text-gray-400 border-gray-200 bg-white focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:border-blue-400 transition-all tracking-widest text-center font-semibold"
-            maxLength={useBackupCode ? 12 : 6} />
+            maxLength={useBackupCode ? 12 : 6}
+          />
         </div>
 
-        {error && <p className="text-xs font-medium text-center" style={{ color: "var(--color-error-dark)" }}>{error}</p>}
+        {error && (
+          <p className="text-xs font-medium text-center" style={{ color: "var(--color-error-dark)" }}>
+            {error}
+          </p>
+        )}
 
         <label className="flex items-center gap-2 cursor-pointer select-none justify-center">
           <Checkbox checked={trustDevice} onCheckedChange={(v) => setTrustDevice(!!v)}
@@ -127,6 +184,20 @@ export function TotpEntry({
             {useBackupCode ? "Use a code instead" : "Use a backup code"}
           </button>
         </div>
+
+        {/* "Use email OTP instead" fallback — for users who lost their authenticator */}
+        {!useBackupCode && onSwitchToOtp && (
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={onSwitchToOtp}
+              className="inline-flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-blue-500 transition-colors"
+            >
+              <Mail size={10} />
+              Use email OTP instead
+            </button>
+          </div>
+        )}
       </form>
     </motion.div>
   );
