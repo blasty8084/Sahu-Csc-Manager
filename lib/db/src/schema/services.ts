@@ -5,15 +5,22 @@ import { z } from "zod/v4";
 export const servicesTable = pgTable("services", {
   id: serial("id").primaryKey(),
   name: text("name").notNull().unique(),
+  nameHi: text("name_hi"),
+  nameOr: text("name_or"),
   description: text("description").notNull().default(""),
   price: numeric("price", { precision: 12, scale: 2 }).notNull().default("0"),
-  category: text("category").notNull().default("General"),
+  category: text("category").notNull().default("general"),
+  icon: text("icon"),
+  color: text("color"),
+  parentService: text("parent_service"),
+  isDefault: boolean("is_default").notNull().default(false),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 }, (t) => [
   // category is used in ORDER BY / filter in the services list endpoint
   index("services_category_idx").on(t.category),
+  index("services_is_default_idx").on(t.isDefault),
 ]);
 
 export const insertServiceSchema = createInsertSchema(servicesTable).omit({ id: true, createdAt: true, updatedAt: true });

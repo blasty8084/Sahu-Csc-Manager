@@ -11,9 +11,15 @@ function fmt(s: any) {
   return {
     id: s.id,
     name: s.name,
+    nameHi: s.nameHi ?? null,
+    nameOr: s.nameOr ?? null,
     description: s.description,
     price: parseFloat(s.price ?? "0"),
     category: s.category,
+    icon: s.icon ?? null,
+    color: s.color ?? null,
+    parentService: s.parentService ?? null,
+    isDefault: s.isDefault ?? false,
     isActive: s.isActive,
     createdAt: s.createdAt instanceof Date ? s.createdAt.toISOString() : s.createdAt,
   };

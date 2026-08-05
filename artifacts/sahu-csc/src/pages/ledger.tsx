@@ -60,7 +60,7 @@ export default function Ledger() {
 
   // ── Data layer (filter state, pagination, queries, mutations) ────────────
   const {
-    data, isLoading, balance, businessName, businessAddress, businessMobile, businessWebsite,
+    data, isLoading, balance, services, businessName, businessAddress, businessMobile, businessWebsite,
     createMut, updateMut, deleteMut, deleteAllMut, invalidate,
     serviceTypes, customerNameSuggestions, frequentCustomers, receiptEntries,
     page, setPage, startDate, setStartDate, endDate, setEndDate,
@@ -177,8 +177,8 @@ export default function Ledger() {
       {isMobile && <button onClick={openCreate} data-testid="button-new-entry" style={{ position: "fixed", bottom: 88, right: 20, width: 56, height: 56, borderRadius: 18, background: "linear-gradient(135deg,var(--brand-orange),var(--brand-orange-400))", boxShadow: "0 8px 24px rgba(249,115,22,0.45)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 50 }}><Plus size={24} color="#fff" strokeWidth={2.5} /></button>}
 
       {/* ── Entry form ── */}
-      {isMobile && <MobileEntryFormDialog showForm={showForm} setShowForm={setShowForm} editEntry={editEntry} entryType={entryType} setEntryType={setEntryType} rawAmount={rawAmount} setRawAmount={setRawAmount} accentColor={accentColor} accentGrad={accentGrad} accentBg={accentBg} form={form} serviceTypes={serviceTypes} onSubmit={onSubmit} createMut={createMut} updateMut={updateMut} balance={balance} />}
-      {!isMobile && <DesktopEntryFormPanel showForm={showForm} setShowForm={setShowForm} editEntry={editEntry} entryType={entryType} setEntryType={setEntryType} rawAmount={rawAmount} setRawAmount={setRawAmount} accentColor={accentColor} accentGrad={accentGrad} accentBg={accentBg} form={form} serviceTypes={serviceTypes} onSubmit={onSubmit} createMut={createMut} updateMut={updateMut} balance={balance} />}
+      {isMobile && <MobileEntryFormDialog showForm={showForm} setShowForm={setShowForm} editEntry={editEntry} entryType={entryType} setEntryType={setEntryType} rawAmount={rawAmount} setRawAmount={setRawAmount} accentColor={accentColor} accentGrad={accentGrad} accentBg={accentBg} form={form} serviceTypes={serviceTypes} services={services} onSubmit={onSubmit} createMut={createMut} updateMut={updateMut} balance={balance} />}
+      {!isMobile && <DesktopEntryFormPanel showForm={showForm} setShowForm={setShowForm} editEntry={editEntry} entryType={entryType} setEntryType={setEntryType} rawAmount={rawAmount} setRawAmount={setRawAmount} accentColor={accentColor} accentGrad={accentGrad} accentBg={accentBg} form={form} serviceTypes={serviceTypes} services={services} onSubmit={onSubmit} createMut={createMut} updateMut={updateMut} balance={balance} />}
 
       {/* ── Delete single entry ── */}
       <Dialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>

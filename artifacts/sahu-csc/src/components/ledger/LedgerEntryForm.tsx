@@ -1,5 +1,5 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X, User, Calendar, FileText, IndianRupee, CheckCircle2, TrendingUp, TrendingDown, Wallet } from "lucide-react";
 import type { UseFormReturn } from "react-hook-form";
 import type { EntryForm } from "@/hooks/useLedger";
@@ -17,16 +17,64 @@ interface EntryFormPanelProps {
   accentBg: string;
   form: UseFormReturn<EntryForm>;
   serviceTypes: string[];
+  /** Full service objects for grouped-by-category rendering in the dropdown */
+  services?: any[];
   onSubmit: (e?: React.BaseSyntheticEvent) => Promise<void>;
   createMut: { isPending: boolean };
   updateMut: { isPending: boolean };
   balance: any;
 }
 
+const CATEGORY_LABELS: Record<string, string> = {
+  government: "Government",
+  recharge: "Recharge",
+  print: "Print & Scan",
+};
+const CATEGORY_ORDER = ["government", "recharge", "print"];
+
+/** Renders service options grouped by category when full service metadata is available */
+function GroupedServiceSelectContent({ services, serviceTypes }: { services?: any[]; serviceTypes: string[] }) {
+  if (!services?.length) {
+    return (
+      <>
+        {serviceTypes.map((s: string) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+        <SelectItem value="Other">Other</SelectItem>
+      </>
+    );
+  }
+
+  const grouped: Record<string, any[]> = {};
+  for (const s of services) {
+    const cat = s.category ?? "other";
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push(s);
+  }
+  const orderedKeys = [
+    ...CATEGORY_ORDER.filter(k => grouped[k]),
+    ...Object.keys(grouped).filter(k => !CATEGORY_ORDER.includes(k)),
+  ];
+
+  return (
+    <>
+      {orderedKeys.map(cat => (
+        <SelectGroup key={cat}>
+          <SelectLabel>{CATEGORY_LABELS[cat] ?? cat}</SelectLabel>
+          {grouped[cat].map((s: any) => (
+            <SelectItem key={s.name} value={s.name}>{s.name}</SelectItem>
+          ))}
+        </SelectGroup>
+      ))}
+      <SelectGroup>
+        <SelectItem value="Other">Other</SelectItem>
+      </SelectGroup>
+    </>
+  );
+}
+
 // ── Entry Form: Mobile Dialog ──
 export function MobileEntryFormDialog({
   showForm, setShowForm, editEntry, entryType, setEntryType, rawAmount, setRawAmount,
-  accentColor, accentGrad, accentBg, form, serviceTypes, onSubmit, createMut, updateMut,
+  accentColor, accentGrad, accentBg, form, serviceTypes, services, onSubmit, createMut, updateMut,
 }: EntryFormPanelProps) {
   return (
     <Dialog open={showForm} onOpenChange={setShowForm}>
@@ -73,8 +121,7 @@ export function MobileEntryFormDialog({
               <SelectValue placeholder="Select service type" />
             </SelectTrigger>
             <SelectContent className="max-h-60 overflow-y-auto">
-              {serviceTypes.map((s: string) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-              <SelectItem value="Other">Other</SelectItem>
+              <GroupedServiceSelectContent services={services} serviceTypes={serviceTypes} />
             </SelectContent>
           </Select>
           <div style={{ position: "relative" }}>
@@ -103,7 +150,7 @@ export function MobileEntryFormDialog({
 // ── Entry Form: Desktop split-panel ──
 export function DesktopEntryFormPanel({
   showForm, setShowForm, editEntry, entryType, setEntryType, rawAmount, setRawAmount,
-  accentColor, accentGrad, form, serviceTypes, onSubmit, createMut, updateMut, balance,
+  accentColor, accentGrad, form, serviceTypes, services, onSubmit, createMut, updateMut, balance,
 }: EntryFormPanelProps) {
   if (!showForm) return null;
   return (
@@ -227,8 +274,7 @@ export function DesktopEntryFormPanel({
                     <SelectValue placeholder="Select service type" />
                   </SelectTrigger>
                   <SelectContent className="max-h-60 overflow-y-auto">
-                    {serviceTypes.map((s: string) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                    <SelectItem value="Other">Other</SelectItem>
+                    <GroupedServiceSelectContent services={services} serviceTypes={serviceTypes} />
                   </SelectContent>
                 </Select>
               </div>
