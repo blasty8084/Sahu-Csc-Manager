@@ -1,8 +1,8 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X, User, Calendar, FileText, IndianRupee, CheckCircle2, TrendingUp, TrendingDown, Wallet } from "lucide-react";
 import type { UseFormReturn } from "react-hook-form";
 import type { EntryForm } from "@/hooks/useLedger";
-import { ServicePicker } from "./ServicePicker";
 
 interface EntryFormPanelProps {
   showForm: boolean;
@@ -25,6 +25,51 @@ interface EntryFormPanelProps {
   balance: any;
 }
 
+const CATEGORY_LABELS: Record<string, string> = {
+  government: "Government",
+  recharge: "Recharge",
+  print: "Print & Scan",
+};
+const CATEGORY_ORDER = ["government", "recharge", "print"];
+
+/** Renders service options grouped by category when full service metadata is available */
+function GroupedServiceSelectContent({ services, serviceTypes }: { services?: any[]; serviceTypes: string[] }) {
+  if (!services?.length) {
+    return (
+      <>
+        {serviceTypes.map((s: string) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+        <SelectItem value="Other">Other</SelectItem>
+      </>
+    );
+  }
+
+  const grouped: Record<string, any[]> = {};
+  for (const s of services) {
+    const cat = s.category ?? "other";
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push(s);
+  }
+  const orderedKeys = [
+    ...CATEGORY_ORDER.filter(k => grouped[k]),
+    ...Object.keys(grouped).filter(k => !CATEGORY_ORDER.includes(k)),
+  ];
+
+  return (
+    <>
+      {orderedKeys.map(cat => (
+        <SelectGroup key={cat}>
+          <SelectLabel>{CATEGORY_LABELS[cat] ?? cat}</SelectLabel>
+          {grouped[cat].map((s: any) => (
+            <SelectItem key={s.name} value={s.name}>{s.name}</SelectItem>
+          ))}
+        </SelectGroup>
+      ))}
+      <SelectGroup>
+        <SelectItem value="Other">Other</SelectItem>
+      </SelectGroup>
+    </>
+  );
+}
 
 // ── Entry Form: Mobile Dialog ──
 export function MobileEntryFormDialog({
@@ -71,12 +116,14 @@ export function MobileEntryFormDialog({
               className="bg-[var(--surface-card-near-white)] dark:bg-zinc-700 text-[var(--brand-navy-800)] dark:text-zinc-100 dark:placeholder:text-zinc-500"
               style={{ width: "100%", height: 44, paddingLeft: 36, paddingRight: 12, borderRadius: 12, border: "1.5px solid var(--color-slate-200)", fontSize: 14, outline: "none", boxSizing: "border-box", fontWeight: 600 }} />
           </div>
-          <ServicePicker
-            value={form.watch("serviceType")}
-            onChange={(v) => form.setValue("serviceType", v)}
-            services={services}
-            serviceTypes={serviceTypes}
-          />
+          <Select value={form.watch("serviceType")} onValueChange={(v) => form.setValue("serviceType", v)}>
+            <SelectTrigger data-testid="select-service" className="h-11 rounded-xl border-[var(--color-slate-200)] dark:border-zinc-600 bg-[var(--surface-card-near-white)] dark:bg-zinc-700 text-sm font-semibold text-[var(--brand-navy-800)] dark:text-zinc-100">
+              <SelectValue placeholder="Select service type" />
+            </SelectTrigger>
+            <SelectContent className="max-h-60 overflow-y-auto">
+              <GroupedServiceSelectContent services={services} serviceTypes={serviceTypes} />
+            </SelectContent>
+          </Select>
           <div style={{ position: "relative" }}>
             <Calendar size={14} color="var(--color-slate-400)" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
             <input type="date" {...form.register("date", { required: true })} data-testid="input-date"
@@ -222,12 +269,14 @@ export function DesktopEntryFormPanel({
               {/* Service */}
               <div>
                 <label style={{ fontSize: 11, fontWeight: 700, color: "var(--color-slate-600)", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block", marginBottom: 8 }}>Service Type</label>
-                <ServicePicker
-                  value={form.watch("serviceType")}
-                  onChange={(v) => form.setValue("serviceType", v)}
-                  services={services}
-                  serviceTypes={serviceTypes}
-                />
+                <Select value={form.watch("serviceType")} onValueChange={(v) => form.setValue("serviceType", v)}>
+                  <SelectTrigger data-testid="select-service" className="h-[50px] rounded-[14px] border-[var(--color-slate-200)] dark:border-zinc-600 bg-white dark:bg-zinc-700 text-sm font-semibold text-[var(--brand-navy-800)] dark:text-zinc-100 shadow-[0_1px_4px_var(--brand-navy-tint-md)]">
+                    <SelectValue placeholder="Select service type" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60 overflow-y-auto">
+                    <GroupedServiceSelectContent services={services} serviceTypes={serviceTypes} />
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Note */}

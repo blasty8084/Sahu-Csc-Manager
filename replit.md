@@ -1,17 +1,7 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 4.11.2** — last updated 2026-08-05
+**Version 4.11.1** — last updated 2026-08-05
 
-> **Latest setup (2026-08-05)**: Run in order: `pnpm install` *(not `--frozen-lockfile`)* → `pnpm --filter @workspace/db run push-force` → `Seed Database` workflow → All secrets set: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`, `NEON_DATABASE_URL`, `ENCRYPTION_KEY`, `JWT_SECRET`. OTP emails active when `RESEND_API_KEY` is set. CORS auto-configured from `REPLIT_DEV_DOMAIN` at startup. Production: Vercel (frontend) + Render (backend/Neon DB).
-
-## What's New — August 5, 2026 (v4.11.2) — SAHU CSC Default Services + Modern Service Picker
-
-- **Default services replaced** — All 22 old generic default services removed. Replaced with 13 exact SAHU CSC services: Income Certificate, Caste Certificate, Resident Certificate, Form Filling, Mobile Recharge, Photo Print, Document Print, PAN Card — e-PAN, PAN Card — Physical, Xerox — B/W, Xerox — Colour, Scanning, Ayushman Card. Custom admin-added services are never touched (safe `isDefault` flag). Files: `scripts/seed.ts`, `lib/db/src/schema/services.ts`.
-- **New DB columns** — `services` table now has `name_hi` (Hindi), `name_or` (Odia), `icon`, `color`, `parent_service`, `is_default`. Schema pushed to Neon via `drizzle-kit push --force`. File: `lib/db/src/schema/services.ts`.
-- **i18n service names** — ServiceCard shows the Hindi or Odia name when that language is active; English name stays as subtitle. File: `components/services/ServiceCard.tsx`.
-- **Visual service cards** — Each service card now shows a coloured icon badge (lucide-react icon + brand color), category badge, and parent service indicator (e.g. "↳ PAN Card"). File: `components/services/ServiceCard.tsx`.
-- **Modern service picker** — The "Select service type" plain dropdown in the ledger entry form is replaced by a visual chip-grid picker. Services render as coloured pill chips grouped by category (Government / Recharge / Print & Scan). Selected chip fills with the service's brand color + checkmark. Works on both mobile dialog and desktop split-panel. Files: `components/ledger/ServicePicker.tsx` *(new)*, `components/ledger/LedgerEntryForm.tsx`.
-- **Grouped entry form dropdown** — `LedgerEntryForm` now receives full service metadata (`services?: any[]`) alongside the flat `serviceTypes: string[]` to power the grouped picker. File: `pages/ledger.tsx`.
-- **API enriched** — `GET /api/services` now returns `nameHi`, `nameOr`, `icon`, `color`, `parentService`, `isDefault` on every service object. File: `routes/services.ts`.
+> **Latest setup (2026-08-04 re-import)**: Run in order: `pnpm install` *(not `--frozen-lockfile`)* → `pnpm --filter @workspace/db run push-force` → `Seed Database` workflow → All secrets set: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`, `NEON_DATABASE_URL`, `ENCRYPTION_KEY`, `JWT_SECRET`. OTP emails active when `RESEND_API_KEY` is set. CORS auto-configured from `REPLIT_DEV_DOMAIN` at startup. CI lockfile fix pushed to GitHub. Production: Vercel (frontend) + Render (backend/Neon DB).
 
 ## What's New — August 5, 2026 (v4.11.1) — UX Optimizer: OTP Boxes, Notification Speed, Modal Fix
 
