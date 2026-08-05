@@ -26,7 +26,7 @@ export default function AboutHeroSection() {
         </div>
         <div className="hidden sm:block text-right flex-shrink-0">
           <p className="text-white/40 text-[10px]">Last updated</p>
-          <p className="text-white/60 text-xs font-semibold">27 July 2026 · v4</p>
+          <p className="text-white/60 text-xs font-semibold">5 Aug 2026 · v4.11.1</p>
         </div>
       </div>
     </div>

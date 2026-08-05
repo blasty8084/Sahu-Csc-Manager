@@ -1,5 +1,5 @@
 # SAHU CSC — Project Reference
-**Version 4.10.3 — August 2, 2026**
+**Version 4.11.1 — August 5, 2026**
 
 Complete structural guide for anyone importing or onboarding to this project.
 

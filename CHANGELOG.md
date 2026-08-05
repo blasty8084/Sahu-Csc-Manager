@@ -1,5 +1,5 @@
 # SAHU CSC — Complete Changelog
-**Current version: 4.11.0 — August 5, 2026**
+**Current version: 4.11.1 — August 5, 2026**
 
 > Single authoritative changelog covering all versions from v1.x through v4.x.
 > - **v3.x / v4.x entries** (current) — listed first, newest at top
@@ -9,6 +9,7 @@
 
 ## Table of Contents
 
+0. [UX — OTP 6-box input, modal close dedup, notification optimizer (August 5, 2026)](#0-ux--otp-6-box-input-modal-close-dedup-notification-optimizer-august-5-2026)
 0. [Security — TOTP 2FA Hardening: Redis replay, brute-force lock, session-guarded secret, audit events, UX countdown (August 5, 2026)](#0-security--totp-2fa-hardening-redis-replay-brute-force-lock-session-guarded-secret-audit-events-ux-countdown-august-5-2026)
 0. [Fix — Drum scroll header time visibility: larger text, orange AM/PM badge (August 4, 2026)](#0-fix--drum-scroll-header-time-visibility-larger-text-orange-ampm-badge-august-4-2026)
 0. [Fix — Drum scroll wheel scrolls page: native non-passive listener + body scroll lock (August 4, 2026)](#0-fix--drum-scroll-wheel-scrolls-page-native-non-passive-listener--body-scroll-lock-august-4-2026)
@@ -26,6 +27,41 @@
 0. [Fix — Email OTP never sent + HTML template restored (July 30, 2026)](#0-fix--email-otp-never-sent--html-template-restored-july-30-2026)
 0. [Infra — 2FA permanently hardcoded ON; SMTP fully configured (July 30, 2026)](#0-infra--2fa-permanently-hardcoded-on-smtp-fully-configured-july-30-2026)
 0. [Refactor — Full CSS variable tokenization across 355+ files (July 27, 2026)](#0-refactor--full-css-variable-tokenization-across-355-files-july-27-2026)
+
+---
+
+## 0. UX — OTP 6-box input, modal close dedup, notification optimizer (August 5, 2026)
+
+**Version: 4.11.1**
+
+Seven targeted UX and performance improvements across the OTP screen, ledger modal, and notification system. No DB schema changes.
+
+### Frontend changes
+
+| File | Change |
+|------|--------|
+| `components/auth/twofa/OtpEntry.tsx` | Replaced single `<Input>` with `<InputOTP>` / `<InputOTPSlot>` — 6 individual digit boxes using the existing `input-otp` component; each box auto-advances on input; backup code mode keeps plain text field |
+| `components/ledger/LedgerEntryForm.tsx` | Removed duplicate manual `×` button from mobile `MobileEntryFormDialog` header — `DialogContent` already renders a close button automatically |
+| `hooks/use-notifications.ts` | Polling interval 30 s → 60 s (normal), 120 s → 180 s (slow network); stale time extended to match — halves background API calls on mobile |
+| `pages/notifications.tsx` | Optimistic updates for mark-read, mark-all-read, and delete — `setQueryData` updates cache immediately before server round-trip; no flicker or list jump |
+| `pages/notifications.tsx` | Notifications with a `link` field render as `<a>` — entire card is clickable and auto-marks as read on navigation |
+| `pages/notifications.tsx` | Search debounced 400 ms — triggers on keystroke without needing the Filter button; `useRef` clears timeout on fast typing |
+
+### Backend changes
+
+| File | Change |
+|------|--------|
+| `lib/push.ts` | `sendPushToAll` now fetches subscriptions in batches of 50 (`PUSH_BATCH_SIZE`) instead of loading the full table into memory — prevents OOM at scale |
+
+### Summary
+
+1. **OTP UX** — 6-digit boxes replace the single field; standard pattern used by all major 2FA apps
+2. **Modal dedup** — single `×` close button on the ledger entry dialog
+3. **Less polling** — notification badge checks half as often on normal connections
+4. **Instant feedback** — mark/delete actions feel instant; no loading state
+5. **Clickable cards** — actionable notifications no longer require finding the "View" link
+6. **Smart search** — search fires automatically as you type
+7. **Safe push broadcast** — bounded memory usage for large subscriber lists
 
 ---
 

@@ -1,7 +1,17 @@
 # SAHU CSC — Common Service Center Management Platform
-**Version 4.11.0** — last updated 2026-08-05
+**Version 4.11.1** — last updated 2026-08-05
 
 > **Latest setup (2026-08-04 re-import)**: Run in order: `pnpm install` *(not `--frozen-lockfile`)* → `pnpm --filter @workspace/db run push-force` → `Seed Database` workflow → All secrets set: `SESSION_SECRET`, `ADMIN_PASSWORD`, `OPERATOR_PASSWORD`, `NEON_DATABASE_URL`, `ENCRYPTION_KEY`, `JWT_SECRET`. OTP emails active when `RESEND_API_KEY` is set. CORS auto-configured from `REPLIT_DEV_DOMAIN` at startup. CI lockfile fix pushed to GitHub. Production: Vercel (frontend) + Render (backend/Neon DB).
+
+## What's New — August 5, 2026 (v4.11.1) — UX Optimizer: OTP Boxes, Notification Speed, Modal Fix
+
+- **OTP 6-box input** — The 2FA email OTP screen now shows 6 individual digit boxes instead of a single text field. Each box auto-advances on input. Backup code mode still uses a plain text field. File: `components/auth/twofa/OtpEntry.tsx`.
+- **Modal close button dedup** — The New Credit/Debit Entry mobile dialog had two × buttons (shadcn `DialogContent` renders one automatically; a manual one was also in the header). The duplicate manual button removed. File: `components/ledger/LedgerEntryForm.tsx`.
+- **Notification polling halved** — Unread count polling interval: 30 s → 60 s (slow network: 120 s → 180 s). Stale time extended to match. Halves background API calls on mobile. File: `hooks/use-notifications.ts`.
+- **Optimistic notification actions** — Mark-read, mark-all-read, and delete now update the local TanStack Query cache instantly before the server round-trip. No flicker, no page jump. File: `pages/notifications.tsx`.
+- **Clickable notification cards** — Notifications with a `link` field now make the entire card navigate, not just the small "View" text. Clicking auto-marks as read. File: `pages/notifications.tsx`.
+- **Debounced notification search** — Search results update 400 ms after the last keystroke automatically — no need to press the Filter button. File: `pages/notifications.tsx`.
+- **Batched push broadcast** — `sendPushToAll` now queries subscriptions in chunks of 50 (was: full table). Prevents OOM at scale. File: `lib/push.ts`.
 
 ## What's New — August 5, 2026 (v4.11.0) — TOTP 2FA Security Hardening
 

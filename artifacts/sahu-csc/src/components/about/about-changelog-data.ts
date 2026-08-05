@@ -3,6 +3,62 @@
 
 export const CHANGELOG = [
   {
+    version: "v4.11.1",
+    title: "Notification Optimizer · OTP 6-Box Input · Modal Close Fix",
+    date: "2026-08-05",
+    accent: "var(--brand-orange)",
+    changes: [
+      "OTP verification screen: replaced single text field with 6 individual digit boxes — each box auto-advances on input, matches standard 2FA UX",
+      "Backup code mode keeps the original plain-text input field unchanged",
+      "New Credit/Debit Entry modal: removed duplicate × close button — the dialog already provides one; now only a single close button appears",
+      "Notification polling interval reduced from 30 s → 60 s (slow connections: 120 s → 180 s) — halves background API traffic on mobile",
+      "Optimistic UI for notifications: mark-read, mark-all-read, and delete now update the list instantly without waiting for the server — no flicker or page jump",
+      "Notification cards with a link are now fully clickable (entire card), not just the small 'View' text; auto-marks as read on click",
+      "Notification search debounced 400 ms — results update as you type without needing to press the Filter button",
+      "Push broadcast (sendPushToAll) now fetches subscriptions in batches of 50 instead of loading the full table into memory — safe at scale",
+    ],
+  },
+  {
+    version: "v4.11.0",
+    title: "TOTP 2FA Security Hardening — 9 Targeted Improvements",
+    date: "2026-08-05",
+    accent: "var(--color-error-dim)",
+    changes: [
+      "Redis replay protection — used TOTP codes cannot be replayed even across server restarts (Upstash REST with in-memory fallback)",
+      "Per-user brute-force lock — 5 TOTP failures per user per 15 minutes triggers a rate-limit lock; clears on first successful verify",
+      "Session-guarded TOTP secret — secret stored in session only, written to DB after verify succeeds; abandoned setups leave no orphaned secrets",
+      "6 new audit events: totp_setup_started, totp_setup_abandoned, replay_rejected, brute_force_locked, backup_code_used",
+      "2FA-disabled security email — dark-navy HTML email sent with IP, device, and timestamp when a user disables 2FA",
+      "Backup-code health warning — amber banner shown in profile when ≤ 3 codes remain; Regenerate shortcut shown",
+      "Backup codes .txt download — plain-text download on the backup-codes save screen",
+      "Synced countdown timer (UI) — login TotpEntry and profile TotpSetupCard show per-second countdown synced to the 30 s TOTP window; red at ≤ 5 s",
+      "Auto-submit — 6-digit TOTP code auto-submits on the last digit at both login and profile setup",
+    ],
+  },
+  {
+    version: "v4.10.12",
+    title: "Drum Scroll Time Picker — Visibility, Page Scroll & Desktop Fixes",
+    date: "2026-08-04",
+    accent: "var(--brand-navy-600)",
+    changes: [
+      "Header time display enlarged: text-5xl font-black with tighter letter-spacing; AM/PM shown as an orange pill badge",
+      "Mouse wheel on drum columns no longer scrolls the page — replaced React synthetic onWheel with native addEventListener({passive:false}); body scroll locked while modal is open",
+      "Desktop drum scroll was completely unresponsive — transition removed during drag so strip follows pointer in real-time; snaps with animation on release only; mouse-wheel handler added",
+    ],
+  },
+  {
+    version: "v4.10.9",
+    title: "Complete Resend Migration — Nodemailer Fully Removed",
+    date: "2026-08-04",
+    accent: "var(--brand-navy-600)",
+    changes: [
+      "nodemailer and @types/nodemailer packages removed — zero import sites remaining",
+      "All email templates now call sendMail() directly; approval/rejection emails that were silently dropped are now delivered",
+      "Monthly export email upgraded from a no-op stub to a real Resend send gated on isSmtpConfigured()",
+      "Legacy Gmail SMTP env vars and comments removed from all scripts and seed files",
+    ],
+  },
+  {
     version: "v4.10.3",
     title: "Analog Dial Picker v2 — Spring Animation & Visual Polish",
     date: "2026-08-02",
