@@ -17,9 +17,9 @@ export function useUnreadCount() {
     queryFn: fetchUnreadCount,
     // Back off polling on slow connections to save bandwidth/battery;
     // pause entirely while offline (React Query still serves cached data).
-    refetchInterval: isOffline ? false : isSlow ? 120_000 : 30_000,
+    refetchInterval: isOffline ? false : isSlow ? 180_000 : 60_000,
     refetchIntervalInBackground: false,
-    staleTime: isSlow ? 60_000 : 15_000,
+    staleTime: isSlow ? 120_000 : 30_000,
   });
 }
 

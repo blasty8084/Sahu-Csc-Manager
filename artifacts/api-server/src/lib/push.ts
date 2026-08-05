@@ -68,26 +68,43 @@ export async function sendPushToUser(userId: number, payload: PushPayload): Prom
   }
 }
 
+const PUSH_BATCH_SIZE = 50;
+
 export async function sendPushToAll(payload: PushPayload): Promise<void> {
   if (!pushEnabled) return;
   try {
-    const subs = await db.select().from(pushSubscriptionsTable);
-    await Promise.allSettled(
-      subs.map(async (sub) => {
-        try {
-          await webPush.sendNotification(
-            { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-            JSON.stringify(payload)
-          );
-        } catch (err: any) {
-          if (err.statusCode === 404 || err.statusCode === 410) {
-            await db
-              .delete(pushSubscriptionsTable)
-              .where(eq(pushSubscriptionsTable.endpoint, sub.endpoint));
+    let offset = 0;
+    // Process subscriptions in fixed-size batches to avoid loading all rows
+    // into memory at once and to cap concurrent web-push calls per batch.
+    while (true) {
+      const batch = await db
+        .select()
+        .from(pushSubscriptionsTable)
+        .limit(PUSH_BATCH_SIZE)
+        .offset(offset);
+
+      if (batch.length === 0) break;
+
+      await Promise.allSettled(
+        batch.map(async (sub) => {
+          try {
+            await webPush.sendNotification(
+              { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+              JSON.stringify(payload)
+            );
+          } catch (err: any) {
+            if (err.statusCode === 404 || err.statusCode === 410) {
+              await db
+                .delete(pushSubscriptionsTable)
+                .where(eq(pushSubscriptionsTable.endpoint, sub.endpoint));
+            }
           }
-        }
-      })
-    );
+        })
+      );
+
+      if (batch.length < PUSH_BATCH_SIZE) break;
+      offset += PUSH_BATCH_SIZE;
+    }
   } catch (err) {
     logger.error({ err }, "sendPushToAll failed");
   }

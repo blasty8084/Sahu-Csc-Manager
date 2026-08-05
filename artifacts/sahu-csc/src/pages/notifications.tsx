@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
@@ -48,6 +48,7 @@ export default function Notifications() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const TYPE_CONFIG: Record<string, { icon: React.ReactNode; badge: string; label: string }> = {
     info:     { icon: <Info size={15} className="text-blue-500" />,     badge: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",       label: t("notifications.type_info") },
@@ -74,28 +75,98 @@ export default function Notifications() {
     { key: "system",   label: t("notifications.type_system") },
   ];
 
+  const queryKey = ["notifications-page", activeTab, search, page];
+
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ["notifications-page", activeTab, search, page],
+    queryKey,
     queryFn: () => fetchNotifications(activeTab, search, page),
-    staleTime: 15_000,
+    staleTime: 30_000,
   });
 
   const notifications: any[] = data?.notifications ?? [];
   const total: number = data?.total ?? 0;
   const totalPages = Math.ceil(total / 20);
 
-  const invalidate = () => {
+  // Invalidate both caches after mutations that change counts
+  const invalidateAll = useCallback(() => {
     qc.invalidateQueries({ queryKey: ["notifications-page"] });
     qc.invalidateQueries({ queryKey: ["notifications", "unread-count"] });
+  }, [qc]);
+
+  // Optimistic mark-read: flip isRead locally before the server round-trip
+  const handleMarkRead = async (id: number) => {
+    qc.setQueryData(queryKey, (old: any) => {
+      if (!old) return old;
+      return {
+        ...old,
+        notifications: old.notifications.map((n: any) =>
+          n.id === id ? { ...n, isRead: true, readAt: new Date().toISOString() } : n
+        ),
+      };
+    });
+    qc.setQueryData(["notifications", "unread-count"], (old: number | undefined) =>
+      Math.max(0, (old ?? 1) - 1)
+    );
+    await markRead(id);
+    invalidateAll();
+  };
+
+  // Optimistic mark-all-read: flip all items locally immediately
+  const handleMarkAll = async () => {
+    qc.setQueryData(queryKey, (old: any) => {
+      if (!old) return old;
+      return {
+        ...old,
+        notifications: old.notifications.map((n: any) => ({ ...n, isRead: true, readAt: new Date().toISOString() })),
+      };
+    });
+    qc.setQueryData(["notifications", "unread-count"], () => 0);
+    await markAllRead();
+    invalidateAll();
+    toast.success(t("notifications.toast_all_read"));
+  };
+
+  // Optimistic delete: remove item from list immediately
+  const handleDelete = async (id: number) => {
+    const wasUnread = notifications.find((n: any) => n.id === id)?.isRead === false;
+    qc.setQueryData(queryKey, (old: any) => {
+      if (!old) return old;
+      return {
+        ...old,
+        total: Math.max(0, old.total - 1),
+        notifications: old.notifications.filter((n: any) => n.id !== id),
+      };
+    });
+    if (wasUnread) {
+      qc.setQueryData(["notifications", "unread-count"], (old: number | undefined) =>
+        Math.max(0, (old ?? 1) - 1)
+      );
+    }
+    await deleteNotif(id);
+    invalidateAll();
+    toast.success(t("notifications.toast_deleted"));
+  };
+
+  const handleDeleteRead = async () => {
+    await deleteRead();
+    invalidateAll();
+    toast.success(t("notifications.toast_read_cleared"));
   };
 
   const handleTab = (k: string) => { setActiveTab(k); setPage(1); };
-  const handleSearch = () => { setSearch(searchInput); setPage(1); };
 
-  const handleMarkRead = async (id: number) => { await markRead(id); invalidate(); };
-  const handleMarkAll = async () => { await markAllRead(); invalidate(); toast.success(t("notifications.toast_all_read")); };
-  const handleDelete = async (id: number) => { await deleteNotif(id); invalidate(); toast.success(t("notifications.toast_deleted")); };
-  const handleDeleteRead = async () => { await deleteRead(); invalidate(); toast.success(t("notifications.toast_read_cleared")); };
+  // Debounced search: triggers 400 ms after the user stops typing
+  const handleSearchInput = (value: string) => {
+    setSearchInput(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => { setSearch(value); setPage(1); }, 400);
+  };
+
+  const handleSearchCommit = () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    setSearch(searchInput);
+    setPage(1);
+  };
 
   return (
     <Layout>
@@ -131,11 +202,11 @@ export default function Notifications() {
               className="pl-8 h-9 text-sm w-full"
               placeholder={t("notifications.search_placeholder")}
               value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              onChange={(e) => handleSearchInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearchCommit()}
             />
           </div>
-          <Button size="sm" variant="outline" className="h-9 flex-shrink-0" onClick={handleSearch}>
+          <Button size="sm" variant="outline" className="h-9 flex-shrink-0" onClick={handleSearchCommit}>
             <Filter size={13} />
           </Button>
         </div>
@@ -169,14 +240,8 @@ export default function Notifications() {
             {notifications.map((n: any) => {
               const tc = TYPE_CONFIG[n.type] ?? TYPE_CONFIG.info;
               const pc = PRIORITY_CONFIG[n.priority] ?? PRIORITY_CONFIG.MEDIUM;
-              return (
-                <div
-                  key={n.id}
-                  className={`flex items-start gap-3 p-3 sm:p-4 rounded-lg border transition-colors
-                    ${!n.isRead
-                      ? "bg-card border-l-4 border-l-primary border-t-border border-r-border border-b-border shadow-sm"
-                      : "bg-muted/20 border-border opacity-80"}`}
-                >
+              const cardContent = (
+                <>
                   <div className="mt-0.5 flex-shrink-0">{tc.icon}</div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
@@ -188,11 +253,14 @@ export default function Notifications() {
                       </div>
                       <div className="flex items-center gap-0.5 flex-shrink-0 ml-1">
                         {!n.isRead && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleMarkRead(n.id)} title={t("notifications.mark_all_read")}>
+                          <Button variant="ghost" size="icon" className="h-7 w-7"
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleMarkRead(n.id); }}
+                            title={t("notifications.mark_all_read")}>
                             <CheckCheck size={13} />
                           </Button>
                         )}
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(n.id)}>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(n.id); }}>
                           <Trash2 size={13} />
                         </Button>
                       </div>
@@ -208,10 +276,36 @@ export default function Notifications() {
                       </span>
                       {!n.isRead && <span className="w-2 h-2 bg-primary rounded-full flex-shrink-0" />}
                     </div>
-                    {n.link && (
-                      <a href={n.link} className="text-xs text-primary underline mt-1 block">{t("notifications.view")}</a>
-                    )}
                   </div>
+                </>
+              );
+
+              // If the notification has a link, make the whole card navigate to it
+              if (n.link) {
+                return (
+                  <a
+                    key={n.id}
+                    href={n.link}
+                    onClick={() => { if (!n.isRead) handleMarkRead(n.id); }}
+                    className={`flex items-start gap-3 p-3 sm:p-4 rounded-lg border transition-colors no-underline
+                      ${!n.isRead
+                        ? "bg-card border-l-4 border-l-primary border-t-border border-r-border border-b-border shadow-sm hover:bg-muted/30 cursor-pointer"
+                        : "bg-muted/20 border-border opacity-80 hover:opacity-100 cursor-pointer"}`}
+                  >
+                    {cardContent}
+                  </a>
+                );
+              }
+
+              return (
+                <div
+                  key={n.id}
+                  className={`flex items-start gap-3 p-3 sm:p-4 rounded-lg border transition-colors
+                    ${!n.isRead
+                      ? "bg-card border-l-4 border-l-primary border-t-border border-r-border border-b-border shadow-sm"
+                      : "bg-muted/20 border-border opacity-80"}`}
+                >
+                  {cardContent}
                 </div>
               );
             })}
