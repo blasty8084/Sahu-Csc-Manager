@@ -34,13 +34,10 @@ export function MobileEntryFormDialog({
         <div className="flex justify-center pt-3 pb-0">
           <div style={{ width: 40, height: 4, borderRadius: 2, background: "var(--color-slate-200)" }} />
         </div>
-        <div className="px-5 pt-4 pb-3 flex items-center justify-between">
+        <div className="px-5 pt-4 pb-3">
           <h2 style={{ fontSize: 18, fontWeight: 900, color: accentColor }}>
             {editEntry ? "Edit Entry" : (entryType === "credit" ? "New Credit Entry" : "New Debit Entry")}
           </h2>
-          <button type="button" onClick={() => setShowForm(false)} className="bg-[var(--color-slate-100)] dark:bg-zinc-700" style={{ width: 32, height: 32, borderRadius: 8, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-            <X size={15} color="var(--color-slate-500)" />
-          </button>
         </div>
         <form onSubmit={onSubmit} className="px-5 pb-6 space-y-3">
           {!editEntry && (

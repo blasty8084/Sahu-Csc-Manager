@@ -2,7 +2,8 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { KeyRound, Loader2, ArrowLeft } from "lucide-react";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { Loader2, ArrowLeft } from "lucide-react";
 import type { Method } from "./useTwoFactorStep";
 
 const NAVY = "var(--brand-navy)";
@@ -31,15 +32,27 @@ export function OtpEntry({
     <motion.div key="code-entry-otp" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       transition={{ duration: 0.15 }} className="space-y-4">
       <form onSubmit={onSubmit} className="space-y-4">
-        <div className="relative">
-          <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-          <Input autoFocus
-            inputMode={useBackupCode ? "text" : "numeric"}
-            placeholder={useBackupCode ? "Backup code (e.g. 1A2B3-C4D5E)" : "6-digit code"}
-            value={code} onChange={(e) => setCode(e.target.value)}
-            className="pl-10 h-11 text-gray-900 placeholder:text-gray-400 border-gray-200 bg-white focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:border-blue-400 transition-all tracking-widest text-center font-semibold"
-            maxLength={useBackupCode ? 12 : 6} />
-        </div>
+        {useBackupCode ? (
+          <div className="relative">
+            <Input autoFocus
+              inputMode="text"
+              placeholder="Backup code (e.g. 1A2B3-C4D5E)"
+              value={code} onChange={(e) => setCode(e.target.value)}
+              className="h-11 text-gray-900 placeholder:text-gray-400 border-gray-200 bg-white focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:border-blue-400 transition-all tracking-widest text-center font-semibold"
+              maxLength={12} />
+          </div>
+        ) : (
+          <div className="flex justify-center">
+            <InputOTP maxLength={6} value={code} onChange={setCode} autoFocus>
+              <InputOTPGroup>
+                {[0, 1, 2, 3, 4, 5].map((i) => (
+                  <InputOTPSlot key={i} index={i}
+                    className="w-11 h-12 text-lg font-bold text-gray-900 border-gray-200 first:rounded-l-xl last:rounded-r-xl" />
+                ))}
+              </InputOTPGroup>
+            </InputOTP>
+          </div>
+        )}
 
         {error && <p className="text-xs font-medium text-center" style={{ color: "var(--color-error-dark)" }}>{error}</p>}
 
